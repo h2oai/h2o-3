@@ -765,12 +765,40 @@ After completing this procedure, go to Python and use `h2o.init()` to start H2O 
 Refer to the following example: 
 
 ```
-fraw = h2o.import_file("smalldata/logreg/prostate.csv") 
+#Let's say you want to change the second column "CAPSULE" of prostate.csv
+#to categorical. You have 3 options.
+
+#Option 1. Use a dictionary of column names to types. 
+fr = h2o.import_file("smalldata/logreg/prostate.csv", col_types = {"CAPSULE":"Enum"})
+fr.describe()
+
+#Option 2. Use a list of column types.
+c_types = [None]*9
+c_types[1] = "Enum"
+fr = h2o.import_file("smalldata/logreg/prostate.csv", col_types = c_types)
+fr.describe()
+
+#Option 3. Use parse_setup().
+fraw = h2o.import_file("smalldata/logreg/prostate.csv", parse = False)
 fsetup = h2o.parse_setup(fraw) 
-fsetup["column_types"][1] = "Enum" # change second column "CAPSULE" to categorical 
+fsetup["column_types"][1] = '"Enum"'
 fr = h2o.parse_raw(fsetup) 
 fr.describe()
 ```
+
+---
+
+**How do I view a list of variable importances in Python?**
+
+Use `model.varimp(return_list=True)` as shown in the following example:
+
+```
+model = h2o.gbm(y = "IsDepDelayed", x = ["Month"], training_frame = df)
+vi = model.varimp(return_list=True)
+Out[26]:
+[(u'Month', 69.27436828613281, 1.0, 1.0)]
+```
+
 
 
 ---

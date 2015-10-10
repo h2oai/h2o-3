@@ -69,12 +69,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * 3) variable importances (TwoDimTable)
    */
   public static class DeepLearningModelOutput extends Model.Output {
-
-    /**
-     * For autoencoder, there's no response.
-     * Otherwise, there's 1 response at the end, and no other reserved columns in the data
-     * @return Number of features (possible predictors)
-     */
     public DeepLearningModelOutput() { super(); autoencoder = false;}
     public DeepLearningModelOutput(DeepLearning b) {
       super(b);
@@ -102,6 +96,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
   }
 
+  /**
+   * Deviance of given distribution function at predicted value f
+   * @param w observation weight
+   * @param y (actual) response
+   * @param f (predicted) response in original response space
+   * @return value of gradient
+   */
   @Override
   public double deviance(double w, double y, double f) {
     // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
@@ -258,39 +259,26 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
       }
-    } else if (get_params()._nfolds > 1) {
-//      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
-////      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
-//      if (_output.getModelCategory() == ModelCategory.Binomial) {
-//        colHeaders.add("Cross-Validation AUC");
-//        colTypes.add("double");
-//        colFormat.add("%.5f");
-//      }
-//      if (_output.isClassifier()) {
-//        colHeaders.add("Cross-Validation Classification Error");
-//        colTypes.add("double");
-//        colFormat.add("%.5f");
-//      }
     }
 
     final int rows = errors.length;
+    String[] s = new String[0];
     TwoDimTable table = new TwoDimTable(
             "Scoring History", null,
             new String[rows],
-            colHeaders.toArray(new String[0]),
-            colTypes.toArray(new String[0]),
-            colFormat.toArray(new String[0]),
+            colHeaders.toArray(s),
+            colTypes.toArray(s),
+            colFormat.toArray(s),
             "");
     int row = 0;
-    for( int i = 0; i<errors.length ; i++ ) {
-      final DeepLearningScoring e = errors[i];
+    for (final DeepLearningScoring e : errors) {
       int col = 0;
-      assert(row < table.getRowDim());
-      assert(col < table.getColDim());
+      assert (row < table.getRowDim());
+      assert (col < table.getColDim());
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(start_time + e.training_time_ms));
       table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
-      table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%.3f", e.training_samples/(e.training_time_ms/1e3)) + " rows/sec"));
+      table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%.3f", e.training_samples / (e.training_time_ms / 1e3)) + " rows/sec"));
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
@@ -324,7 +312,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           table.set(row, col++, e.validation_AUC != null ? e.validation_AUC._auc : Double.NaN);
         }
         if (_output.isClassifier()) {
-          table.set(row, col++, e.scored_valid != null ? e.scored_valid._classError : Double.NaN);
+          table.set(row, col, e.scored_valid != null ? e.scored_valid._classError : Double.NaN);
         }
       }
       row++;
@@ -334,7 +322,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   /**
    * Helper to allocate keys for output frames for weights and biases
-   * @param destKey
+   * @param destKey Base destination key for output frames
    */
   private void makeWeightsBiases(Key destKey) {
     if (!model_info.get_params()._export_weights_and_biases) {
@@ -346,11 +334,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       _output.normrespsub = null;
       _output.catoffsets = null;
     } else {
-      _output.weights = new Key[model_info.get_params()._hidden.length + 1];
+      _output.weights = new Key[get_params()._hidden.length + 1];
       for (int i = 0; i < _output.weights.length; ++i) {
         _output.weights[i] = Key.makeUserHidden(Key.make(destKey + ".weights." + i));
       }
-      _output.biases = new Key[model_info.get_params()._hidden.length + 1];
+      _output.biases = new Key[get_params()._hidden.length + 1];
       for (int i = 0; i < _output.biases.length; ++i) {
         _output.biases[i] = Key.makeUserHidden(Key.make(destKey + ".biases." + i));
       }
@@ -383,7 +371,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
     DKV.put(dataInfo);
-    assert(model_info().get_params() != cp.model_info().get_params()); //make sure we have a clone
+    assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
     run_time = cp.run_time;
@@ -413,12 +401,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   /**
    * Regular constructor (from scratch)
-   * @param destKey
-   * @param parms
-   * @param output
-   * @param train
-   * @param valid
-   * @param nClasses
+   * @param destKey destination key
+   * @param parms DL parameters
+   * @param output DL model output
+   * @param train Training frame
+   * @param valid Validation frame
+   * @param nClasses Number of classes (1 for regression or autoencoder)
    */
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
@@ -514,7 +502,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     }
 
     _timeLastScoreEnter = now;
-    keep_running = (epoch_counter < model_info().get_params()._epochs) && !stopped_early;
+    keep_running = (epoch_counter < get_params()._epochs) && !stopped_early;
     final long sinceLastScore = now -_timeLastScoreStart;
     final long sinceLastPrint = now -_timeLastPrintStart;
     if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
@@ -637,7 +625,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // store weights and matrices to Frames
       if (_output.weights != null && _output.biases != null) {
         for (int i = 0; i < _output.weights.length; ++i) {
-          model_info.get_weights(i).toFrame(_output.weights[i]);
+          Frame f = model_info.get_weights(i).toFrame(_output.weights[i]);
+          if (i==0) {
+            f._names = model_info.data_info.coefNames();
+            DKV.put(f);
+          }
         }
         for (int i = 0; i < _output.biases.length; ++i) {
           model_info.get_biases(i).toFrame(_output.biases[i]);
@@ -738,7 +730,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (e==null) continue;
         assert(ArrayUtils.sum(e.raw()) == 0);
       }
-      ((Neurons.Input)neurons[0]).setInput(seed, myRow.numVals, myRow.nBins, myRow.binIds);
+      ((Neurons.Input)neurons[0]).setInput(seed, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds);
       DeepLearningTask.step(seed, neurons, model_info(), null, false, null, myRow.offset);
       // check that all non-last layer errors/gradients are empty
       for (int i = 0; i<neurons.length-1;++i) {
@@ -747,7 +739,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         assert(ArrayUtils.sum(e.raw()) == 0);
       }
 
-      if (model_info.get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
+      if (get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
         if (_parms._balance_classes) throw H2O.unimpl();
         int actual = (int) myRow.response[0];
         double pred = neurons[neurons.length - 1]._a.get(actual);
@@ -780,7 +772,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
           }
         }
-        for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+        for (int row = 0; row < neurons[i]._b.size(); ++row) {
           loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
           loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
         }
@@ -895,7 +887,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Frame adaptFrm = new Frame(frame);
     //create new features, will be dense
     final int features = model_info().get_params()._hidden[layer];
-    Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
+    Vec v = adaptFrm.anyVec();
+    Vec[] vecs = v!=null ? v.makeZeros(features) : null;
+    if (vecs == null) throw new IllegalArgumentException("Cannot create deep features from a frame with no columns.");
 
     Scope.enter();
     adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
@@ -1042,7 +1036,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     assert (len == coefnames.length);
     for (int c = 0; c < len; c++) {
       if (c>0) sb.append(",");
-      sb.append(prefix + coefnames[c]);
+      sb.append(prefix).append(coefnames[c]);
     }
     return sb.toString();
   }

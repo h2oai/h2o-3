@@ -1,8 +1,25 @@
 # News for the h2oEnsemble package. #
 
-* TO DO: Add support for new distribution/family arg in `h2o.gbm` and `h2o.glm`
+h2oEnsemble 0.0.9 (In progress)
+----------------
+* TO DO: Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
-* Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
+
+
+h2oEnsemble 0.0.8 (2015-10-07)
+----------------
+* Added support for the `col_sample_rate` and `sample_rate` arguments in the GLM wrapper.
+
+
+h2oEnsemble 0.0.7 (2015-10-04)
+----------------
+* Added backward compatibility for `h2o` package with the data frame class name with "H2OFrame".  Temporarily on master, the `h2o` package is using a data frame class with name "Frame" (Rapids integration).
+
+
+h2oEnsemble 0.0.6 (2015-09-28)
+----------------
+* Add support for new distribution/family arg in `h2o.gbm` and `h2o.glm`.
+* Made some adjustments to the internals of the `h2o.ensemble` function to become compatible with the "Rapids" integration in the `h2o` package.
 
 
 h2oEnsemble 0.0.5 (2015-08-10)

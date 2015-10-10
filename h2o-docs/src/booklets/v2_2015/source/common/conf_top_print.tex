@@ -4,13 +4,26 @@
 \setcounter{tocdepth}{5}
 \usepackage[english]{babel}
 \usepackage{textcomp}
+\usepackage[fit]{truncate}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+\fancyhead{}
+\fancyhead[OR]{\leftmark \hspace{0.1cm}  $\vert$ \hspace{0.1cm}  \thepage}
+\fancyhead[EL]{\thepage \hspace{0.1cm} $\vert$ \hspace{0.1cm} \leftmark}
+\fancyfoot[C]{}%hide footer
+\usepackage[hidelinks,plainpages=false]{hyperref}
+\usepackage{bibentry}
 \usepackage{amsmath,amsthm,amsfonts,amssymb,epsfig}
 \usepackage{array}
 \usepackage{datetime}
 \usepackage{lipsum}% http://ctan.org/pkg/lipsum
 \usepackage{listings}% http://ctan.org/pkg/listings
 \usepackage{spverbatim}
-\usepackage[hidelinks]{hyperref}
+\usepackage{hyperref}
+\usepackage{xcolor} 
+\usepackage[scaled=1]{couriers}
+\xdefinecolor{gray}{rgb}{0.6,0.6,0.6} 
 \Urlmuskip=0mu plus 1mu\relax %needed to make long URLs break nicely
 \usepackage{microtype}
 \hypersetup{colorlinks=false}
@@ -21,21 +34,17 @@
 \titleformat{\section}{\normalfont\bfseries}{\thesection}{1em}{}
 \titlespacing*{\section}{0pt}{*2}{0pt}
 \titlespacing*{\subsection}{0pt}{*2}{0pt}
-\usepackage[square,authoryear,sort&compress]{natbib}
+\usepackage[square, sort, comma, numbers]{natbib} %%uses titles for cited references
+
+%\usepackage[square,authoryear,sort&compress]{natbib}
 %[square, sort, comma, numbers]{natbib} %%uses titles for cited references
-\usepackage[fit]{truncate}
-\usepackage{fancyhdr}
-\pagestyle{fancy}
-\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
-\fancyhead{}
-\fancyhead[OR]{\leftmark \hspace{0.1cm}  $\vert$ \hspace{0.1cm}  \thepage}
-\fancyhead[EL]{\thepage \hspace{0.1cm} $\vert$ \hspace{0.1cm} \leftmark}
-\fancyfoot[C]{}%hide footer
+
 \usepackage{xcolor} 
 \usepackage[scaled=1]{couriers}
 \usepackage{graphicx}
 \xdefinecolor{gray}{rgb}{0.6,0.6,0.6} 
 \usepackage{setspace}
 \usepackage{adjustbox} 
-\usepackage[all,defaultlines]{nowidow} %prevent widows/orphans
-\usepackage{bibentry}
+\usepackage[all]{nowidow} %prevent widows/orphans [all,defaultlines]
+\usepackage{standalone}
+

@@ -18,9 +18,9 @@ options(echo=FALSE)
 H2O.IP                      <<- "127.0.0.1"
 H2O.PORT                    <<- 54321
 ON.JENKINS.HADOOP           <<- FALSE
+H2O.INTERNAL.HDFS.NAME.NODE <<- NULL
 SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
-H2O.INTERNAL.HDFS.NAME.NODE <<- "172.16.2.176"
 
 #'
 #'
@@ -29,6 +29,8 @@ H2O.INTERNAL.HDFS.NAME.NODE <<- "172.16.2.176"
 #'
 h2oRunitSetup <-
 function() {
+    testName <- R.utils::commandArgs(asValues=TRUE)$"f"
+
     # source h2o-r/h2o-package/R
     root.path <- locate("h2o-package/R/", "h2o-r")
     src(root.path)   # overrides package load
@@ -39,8 +41,8 @@ function() {
 
     parseArgs(commandArgs(trailingOnly=TRUE)) # provided by --args
 
-    Log.info("Load default packages. Additional required packages must be loaded explicitly.\n")
     default.packages()
+    Log.info("Loaded default packages. Additional required packages must be loaded explicitly.\n")
 
     Log.info(paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT,"\n"))
     h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE)
@@ -48,11 +50,15 @@ function() {
     setupRandomSeed()
     Log.info(paste0("[SEED] : ",SEED))
 
-    sandbox()
+    sb <- sandbox(create=TRUE)
+    Log.info(paste0("Created sandbox for test ",testName," in directory ",sb,".\n"))
+
+    h2o.startLogging(paste(sb, "/rest.log", sep = ""))
+    Log.info(paste0("Started rest logging in ",sb,"/rest.log.\n"))
 
     h2o.logAndEcho("------------------------------------------------------------")
     h2o.logAndEcho("")
-    h2o.logAndEcho(paste("STARTING TEST: ", R.utils::commandArgs(asValues=TRUE)$"f"))
+    h2o.logAndEcho(paste("STARTING TEST: ", testName))
     h2o.logAndEcho("")
     h2o.logAndEcho("------------------------------------------------------------")
 }
@@ -73,12 +79,12 @@ function(pathStub, root.parent = NULL) {
     # which is /home/0xdiag/ on ALL jenkins machines. If ON.JENKINS.HADOOP is set by the run.py, pathStub MUST be
     # relative to /home/0xdiag/
     return(paste0("/home/0xdiag/",pathStub))
-  } else {
-    pathStub <- clean(pathStub)
-    bucket <- pathStub[1]
-    offset <- pathStub[-1]
-    cur.dir <- getwd()
   }
+  pathStub <- clean(pathStub)
+  bucket <- pathStub[1]
+  offset <- pathStub[-1]
+  cur.dir <- getwd()
+
   #recursively ascend until `bucket` is found
   bucket.abspath <- path.compute(cur.dir, bucket, root.parent)
   if (length(offset) != 0) return(paste(c(bucket.abspath, offset), collapse = "/", sep = "/"))
@@ -125,7 +131,7 @@ function(cur.dir, root, root.parent = NULL) {
     if (parent.name == root) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
 
     # the root is h2o-dev, check the children here (and fail if `root` not found)
-    if (parent.name == PROJECT.ROOT) {
+    if (parent.name == PROJECT.ROOT || parent.name == "workspace") {
       if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
       else stop(paste("Could not find the dataset bucket: ", root, sep = "" ))
     }

@@ -33,7 +33,7 @@ function() {
     params$training_frame  <- training_frame
     params$seed            <- 42
 
-    doJavapredictTest("randomForest",normalizePath(paste0(getwd(),"/..")),test_file,test_frame,params)
+    doJavapredictTest("randomForest",test_file,test_frame,params)
 }
 
 doTest("RF test", test.drf.javapredict.cars.rand)

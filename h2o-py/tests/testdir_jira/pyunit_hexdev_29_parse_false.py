@@ -3,7 +3,7 @@
 ## Verifying that Python can support importing without parsing.
 ##
 ################################################################################
-import sys, os
+import sys
 sys.path.insert(1, "../../")
 import h2o, tests
 

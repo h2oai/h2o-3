@@ -9,8 +9,8 @@ import java.util.regex.Pattern;
 
 public class GenMunger implements Serializable {
   protected Step[] _steps;
-  String[] inTypes() { return _steps[0].types(); }
-  String[] inNames() { return _steps[0].names(); }
+  public String[] inTypes() { return _steps[0].types(); }
+  public String[] inNames() { return _steps[0].names(); }
   public abstract class Step<T> {
     private final String[] _names;
     private final String[] _types;
@@ -25,6 +25,23 @@ public class GenMunger implements Serializable {
     for(Step s: _steps)
       row = s.transform(row);
     return row;
+  }
+
+  public RowData fillDefault(String[] vals) {
+    RowData row = new RowData();
+    String[] types = inTypes();
+    String[] names = inNames();
+    for(int i=0;i<vals.length;++i)
+      row.put(names[i],valueOf(types[i],vals[i]));
+    return row;
+  }
+
+  private static Object valueOf(String type, String val) {
+    return type.equals("Numeric")
+            ? val.equals("")
+              ? Double.NaN
+              : Double.valueOf(val)
+            : val;
   }
 
   // currents/transforms/GenMunger utilities
@@ -70,5 +87,62 @@ public class GenMunger implements Serializable {
     String[] riteArg = parameters.get("rightArg");
     if( leftArg==null ) return d / Double.valueOf(riteArg[0]);
     return Double.valueOf(leftArg[0]) / d;
+  }
+  public static double mod(double d, HashMap<String,String[]> parameters) {
+    String leftArg = parameters.get("leftArg")[0];
+    String riteArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return d % Double.valueOf(riteArg);
+    return Double.valueOf(leftArg) % d;
+  }
+  public static double pow(double d, HashMap<String, String[]> parameters) {
+    String leftArg = parameters.get("leftArg")[0];
+    String riteArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return Math.pow(d,Double.valueOf(riteArg));
+    return Math.pow(Double.valueOf(leftArg),d);
+  }
+  public static String[] strsplit(String s, HashMap<String,String[]> parameters) {
+    String pattern = parameters.get("split")[0];
+    return s.split(pattern);
+  }
+  public static double asnumeric(String s, HashMap<String, String[]> parameters) {
+    return Double.valueOf(s);
+  }
+  public static String trim(String s, HashMap<String, String[]> parameters) {
+    return s.trim();
+  }
+  public static String replaceall(String s, HashMap<String, String[]> parameters) {
+    String pattern = parameters.get("pattern")[0];
+    String replacement = parameters.get("replacement")[0];
+    boolean ignoreCase = parameters.get("ignore_case")[0].equals("TRUE");
+    return ignoreCase
+            ? s.replaceAll("(?i)"+Pattern.quote(pattern),replacement)
+            : s.replaceAll(pattern,replacement);
+  }
+  public static String toupper(String s, HashMap<String, String[]> parameters) {
+    return s.toUpperCase();
+  }
+  public static String tolower(String s, HashMap<String, String[]> parameters) {
+    return s.toLowerCase();
+  }
+  public static String cut(double d, HashMap<String, String[]> parameters) {
+    String[] breaks = parameters.get("breaks");
+    String[] labels = parameters.get("labels");
+    boolean lowest = parameters.get("include_lowest")[0].equals("TRUE");
+    boolean rite = parameters.get("right")[0].equals("TRUE");
+    if( Double.isNaN(d) || (lowest && d < Double.valueOf(breaks[0]))
+            || (!lowest && d <= Double.valueOf(breaks[0]))
+            || (rite    && d >  Double.valueOf(breaks[breaks.length-1]))
+            || (!rite   && d >= Double.valueOf(breaks[breaks.length-1]))) return "";
+    else {
+      for(int i=1;i<breaks.length;++i) {
+        if( rite )
+          if( d <= Double.valueOf(breaks[i]) ) return labels[i-1];
+        else if( d < Double.valueOf(breaks[i]) ) return labels[i-1];
+      }
+    }
+    return "";
+  }
+  public static double nchar(String s, HashMap<String, String[]> parameters) {
+    return s.length();
   }
 }

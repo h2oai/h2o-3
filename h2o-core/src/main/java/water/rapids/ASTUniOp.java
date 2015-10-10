@@ -47,8 +47,7 @@ abstract class ASTUniOp extends ASTPrim {
   abstract double op( double d );
 }
 
-class ASTCeiling extends ASTUniOp{
-  public String str() { return "ceiling";}double op(double d) { return Math.ceil (d); } }
+class ASTCeiling extends ASTUniOp{ public String str() { return "ceiling";}double op(double d) { return Math.ceil (d); } }
 class ASTFloor extends ASTUniOp { public String str() { return "floor"; } double op(double d) { return Math.floor(d); } }
 class ASTNot   extends ASTUniOp { public String str() { return "!!"   ; } double op(double d) { return d==0?1:0; } }
 class ASTTrunc extends ASTUniOp { public String str() { return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}

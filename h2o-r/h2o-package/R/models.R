@@ -439,11 +439,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
   data.id <- if( missingData ) trainingFrame else attr(.eval.frame(data), "id")
-  if( !is.null(trainingFrame) && !missingData && data.id == trainingFrame ) {
-    warning("Given data is same as the training data. Returning the training metrics.")
-    return(model@model$training_metrics)
-  }
-  else if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
+  if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
   else if( missingData &&  valid ) {
     if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
     else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics

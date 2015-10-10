@@ -79,8 +79,8 @@ public class DeepLearningMNIST extends TestUtil {
 
         // Convert response 'C785' to categorical (digits 1 to 10)
         int ci = frame.find("C785");
-        Scope.track(frame.replace(ci, frame.vecs()[ci].toCategorical())._key);
-        Scope.track(vframe.replace(ci, vframe.vecs()[ci].toCategorical())._key);
+        Scope.track(frame.replace(ci, frame.vecs()[ci].toCategoricalVec())._key);
+        Scope.track(vframe.replace(ci, vframe.vecs()[ci].toCategoricalVec())._key);
         DKV.put(frame);
         DKV.put(vframe);
 

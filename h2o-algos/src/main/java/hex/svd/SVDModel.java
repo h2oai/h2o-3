@@ -5,7 +5,9 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
+import org.apache.commons.math3.analysis.function.Power;
 import water.DKV;
+import water.Futures;
 import water.Key;
 import water.MRTask;
 import water.codegen.CodeGeneratorPipeline;
@@ -81,6 +83,14 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
   }
 
   public SVDModel(Key selfKey, SVDParameters parms, SVDOutput output) { super(selfKey,parms,output); }
+
+  @Override protected Futures remove_impl( Futures fs ) {
+    if (null != _output._u_key)
+      _output._u_key.remove(fs);
+    if (null != _output._v_key)
+      _output._v_key.remove(fs);
+    return super.remove_impl(fs);
+  }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     return new ModelMetricsSVD.SVDModelMetrics(_parms._nv);

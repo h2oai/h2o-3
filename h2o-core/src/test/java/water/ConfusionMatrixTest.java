@@ -201,7 +201,7 @@ public class ConfusionMatrixTest extends TestUtil {
   private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toCategorical) {
     Scope.enter();
     try {
-      ConfusionMatrix cm = buildCM(v1.vecs()[0].toCategorical(), v2.vecs()[0].toCategorical());
+      ConfusionMatrix cm = buildCM(v1.vecs()[0].toCategoricalVec(), v2.vecs()[0].toCategoricalVec());
 
       // -- DEBUG --
       if (debug) {

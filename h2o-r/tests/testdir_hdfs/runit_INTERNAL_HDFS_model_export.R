@@ -34,7 +34,7 @@ check.hdfs_model_export <- function(conn) {
   dl_model <- h2o.deeplearning(x=1:4, y=5, training_frame=iris.hex)
   #hdfs_name_node <- "mr-0x6"
   path <- sprintf("hdfs://%s/tmp/dl_model", hdfs_name_node)
-  exportedModelPath <- h2o.saveModel(dl_model, path = path)
+  exportedModelPath <- h2o.saveModel(dl_model, path = sandbox())
   print ("Model exported")
 
   #----------------------------------------------------------------------
@@ -44,7 +44,6 @@ check.hdfs_model_export <- function(conn) {
 
   print ("Model imported")
 
-  
 }
 
 doTest("HDFS operations", check.hdfs_model_export)

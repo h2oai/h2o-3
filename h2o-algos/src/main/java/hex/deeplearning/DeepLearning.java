@@ -95,7 +95,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             valid,
             parms._autoencoder ? 0 : 1, //nResponses
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-            parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+            parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE, //transform predictors
             train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             false, // do not replace NAs in numeric cols with mean

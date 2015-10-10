@@ -11,19 +11,16 @@ import water.fvec.Vec;
  * @author tomasnykodym
  */
 public class FVecParseWriter extends Iced implements StreamParseWriter {
-  protected transient NewChunk[] _nvs;
   protected AppendableVec[] _vecs;
-  protected final Categorical[] _categoricals;
-  protected final transient byte[] _ctypes;
+  protected transient NewChunk[] _nvs;
+  protected transient final Categorical [] _categoricals;
+  protected transient final byte[] _ctypes;
   long _nLines;
   int _nCols;
   int _col = -1;
   final int _cidx;
   final int _chunkSize;
-  int _nChunks;
   private final Vec.VectorGroup _vg;
-
-  public int nChunks(){return _nChunks;}
 
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec[] avs){
     _ctypes = ctypes;           // Required not-null
@@ -41,7 +38,6 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   @Override public FVecParseWriter reduce(StreamParseWriter sdout){
     FVecParseWriter dout = (FVecParseWriter)sdout;
     _nCols = Math.max(_nCols,dout._nCols); // SVMLight: max of columns
-    _nChunks += dout._nChunks;
     if( _vecs != dout._vecs ) {
       if( dout._vecs.length > _vecs.length ) { // Swap longer one over the returned value
         AppendableVec[] tmpv = _vecs;  _vecs = dout._vecs;  dout._vecs = tmpv;
@@ -58,9 +54,11 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     return this;
   }
   @Override public FVecParseWriter close(Futures fs){
-    ++_nChunks;
     if( _nvs == null ) return this; // Might call close twice
-    for(NewChunk nv:_nvs) nv.close(_cidx, fs);
+    for(int i=0; i < _nvs.length; i++) {
+      _nvs[i].close(_cidx, fs);
+      _nvs[i] = null; // free immediately, don't wait for all columns to close
+    }
     _nvs = null;  // Free for GC
     return this;
   }
