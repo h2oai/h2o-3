@@ -11,7 +11,7 @@ class H2OAutoEncoderModel(ModelBase):
   Class for AutoEncoder models.
   """
   def __init__(self, dest_key, model_json):
-    super(H2OAutoEncoderModel, self).__init__(dest_key, model_json,H2OAutoEncoderModelMetrics)
+    super(H2OAutoEncoderModel, self).__init__(dest_key, model_json, H2OAutoEncoderModelMetrics)
 
   def anomaly(self,test_data,per_feature=False):
     """

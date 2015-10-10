@@ -25,10 +25,10 @@ def build_model(algo_params):
 
 
 def _model_build(x, y, tframe, vframe, algo, kwargs):
-  kwargs['training_frame'] = tframe.frame_id
-  if vframe is not None: kwargs["validation_frame"] = vframe.frame_id
-  if y is not None:  kwargs['response_column'] = y
-  kwargs = dict([(k, kwargs[k]._frame().frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
+  kwargs['training_frame'] = tframe
+  if vframe is not None: kwargs["validation_frame"] = vframe
+  if y is not None:  kwargs['response_column'] = tframe[y].names[0]
+  kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
   future_model = H2OModelFuture(H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")), x)
   return _resolve_model(future_model, **kwargs)
 

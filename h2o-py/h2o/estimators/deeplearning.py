@@ -1,4 +1,6 @@
 from .estimator_base import H2OEstimator
+from ..model.autoencoder import H2OAutoEncoderModel
+from ..h2o import H2OConnection, get_frame
 
 
 class H2ODeepLearningEstimator(H2OEstimator):

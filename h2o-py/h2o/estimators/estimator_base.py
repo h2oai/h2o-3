@@ -1,4 +1,10 @@
 from ..model.model_base import ModelBase
+from ..model.autoencoder import H2OAutoEncoderModel
+from ..model.binomial import H2OBinomialModel
+from ..model.clustering import H2OClusteringModel
+from ..model.dim_reduction import H2ODimReductionModel
+from ..model.multinomial import H2OMultinomialModel
+from ..model.regression import H2ORegressionModel
 from ..model import build_model
 import inspect, warnings
 
@@ -58,7 +64,8 @@ class H2OEstimator(ModelBase):
     if tframe is None: raise ValueError("Missing training_frame")
     if y is not None:
       self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
-    self.__dict__.update(build_model(self.parms).__dict__.copy())
+    self.model = build_model(self.parms)
+    self.__dict__.update(self.model.__dict__.copy())
     return self
 
 
@@ -93,7 +100,7 @@ class H2OEstimator(ModelBase):
     training_frame = X.cbind(y) if y is not None else X
     X = X.names
     y = y.names[0] if y is not None else None
-    return self.train(X, y, training_frame, **params)
+    return self.train(X, y, training_frame, **params).model
 
   def get_params(self, deep=True):
     """Useful method for obtaining parameters for this estimator. Used primarily for
