@@ -579,6 +579,14 @@ public class ArrayUtils {
     return -1;
   }
 
+  // Find an element with linear search & return it's index, or -1
+  public static <T> int find(T[] ts, T elem, int off) {
+    for( int i=off; i<ts.length; i++ )
+      if( elem==ts[i] || elem.equals(ts[i]) )
+        return i;
+    return -1;
+  }
+
   private static final DecimalFormat default_dformat = new DecimalFormat("0.#####");
   public static String pprint(double[][] arr){
     return pprint(arr, default_dformat);
@@ -1083,5 +1091,22 @@ public class ArrayUtils {
       result[i] = value;
     }
     return result;
+  }
+
+  public static String [] remove(String [] ary, String s) {
+    if(s == null)return ary;
+    int cnt = 0;
+    int idx = find(ary,s);
+    while(idx > 0) {
+      ++cnt;
+      idx = find(ary,s,++idx);
+    }
+    if(cnt == 0)return ary;
+    String [] res = new String[ary.length-cnt];
+    int j = 0;
+    for(String x:ary)
+      if(!x.equals(s))
+        res[j++] = x;
+    return res;
   }
 }

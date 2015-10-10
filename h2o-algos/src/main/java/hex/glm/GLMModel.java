@@ -60,7 +60,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     if(domain == null && _parms._family == Family.binomial)
       domain = binomialClassNames;
-    return new GLMValidation(domain, _ymu, _parms, _output.bestSubmodel().rank(), _output._threshold, true);
+    return new GLMValidation(domain, _ymu, _parms, _output.bestSubmodel().rank(), _output._threshold, true, _parms._intercept);
   }
 
   public double [] beta() { return _output._global_beta;}
@@ -96,8 +96,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
     public boolean _intercept = true;
-    public double _beta_epsilon = 1e-5;
-    public double _objective_epsilon = 1e-5;
+    public double _beta_epsilon = 1e-4;
+    public double _objective_epsilon = 1e-4;
     public double _gradient_epsilon = 1e-4;
 
     public Key<Frame> _beta_constraints = null;
@@ -296,10 +296,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       switch(_link) {
         case identity:
 //        case multinomial:
-//          return x;
+          return x;
         case logit:
           assert 0 <= x && x <= 1:"x out of bounds, expected <0,1> range, got " + x;
           return Math.log(x / (1 - x));
+        case multinomial:
         case log:
           return Math.log(x);
         case inverse:
@@ -526,8 +527,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       super(glm);
       _dinfo = glm._dinfo;
       String[] cnames = glm._dinfo.coefNames();
-      _names = glm._dinfo._adaptedFrame.names();
-      _domains = glm._dinfo._adaptedFrame.domains();
+      String [] names = _dinfo._adaptedFrame._names;
+      String [][] domains = _dinfo._adaptedFrame.domains();
+      int id = ArrayUtils.find(names, glm._generatedWeights);
+      if(id >= 0) {
+        String [] ns = new String[names.length-1];
+        String[][] ds = new String[domains.length-1][];
+        System.arraycopy(names,0,ns,0,id);
+        System.arraycopy(domains,0,ds,0,id);
+        System.arraycopy(names,id+1,ns,id,ns.length-id);
+        System.arraycopy(domains,id+1,ds,id,ds.length-id);
+        names = ns;
+        domains = ds;
+      }
+      _names = names;
+      _domains = domains;
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
       _binomial = glm._parms._family == Family.binomial;
@@ -685,37 +699,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return _output._model_summary;
   }
 
-  /**
-   * Make GLM model with given coefficients (predictors can be numeric only at the moment)
-   *
-   * Example: @see GLMTest.testMakeModel().
-   *
-   * @param fam - glm family, always uses canonical link
-   * @param coefficients - vector of coefficients, assumed the same order as predictor names, intercept in the end
-   * @param predictors - NAmes of predictor columns, does not include Intercept
-   * @return GLM model usable for scoring
-   */
-  public static GLMModel makeGLMModel(Family fam, double [] coefficients, String [] predictors, String response) {
-    if(coefficients.length != predictors.length+1)
-      throw new IllegalArgumentException("coefficients length is expected to be predictros.length + 1, as each coefficient must have name + intercept term with no name.");
-    GLMParameters parms = new GLMParameters(Family.binomial);
-    parms._alpha = new double[]{0};
-    parms._lambda = new double[]{0};
-    parms._standardize = false;
-    parms._prior = -1;
-    parms._train = null;
-    if(fam == Family.multinomial) throw H2O.unimpl();
-    GLMModel m = new GLMModel(Key.make(),parms,null, fam == Family.binomial?new double[]{.5}:new double[]{0},Double.NaN,Double.NaN,-1, false, false);
-    predictors = ArrayUtils.append(predictors, new String[]{response});
-    m._output._names = predictors;
-    m._output._coefficient_names = predictors;
-    m._output._dinfo = DataInfo.makeEmpty(coefficients.length-1);
-    m._output._domains = new String[predictors.length][];
-    // double lambda , double [] beta, int iteration, double devTrain, double devTest
-    m.setSubmodel(new Submodel(0, coefficients, -1, Double.NaN, Double.NaN));
-    m._output.setSubmodelIdx(0);
-    return m;
-  }
 
   @Override public long checksum_impl(){
     if(_parms._train == null) return 0;

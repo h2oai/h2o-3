@@ -133,7 +133,7 @@ public class LinearAlgebraUtils {
 
     @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
       for(int p = 0; p < _yt.length; p++) {
-        double x = row.innerProduct(_yt[p],0);
+        double x = row.innerProduct(_yt[p]);
         outputs[p].addNum(x);
       }
     }
@@ -174,7 +174,7 @@ public class LinearAlgebraUtils {
         int bidx = _ncolX;
         for (int p = 0; p < _yt.length; p++) {
           // Inner product of X row with Y column (Y' row)
-          sum = xrow.innerProduct(_yt[p],0);
+          sum = xrow.innerProduct(_yt[p]);
           cs[bidx].set(row, sum);   // Save inner product to B
           bidx++;
         }

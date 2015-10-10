@@ -350,6 +350,24 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
+  public void insertVec(int i, String name, Vec vec) {
+    String [] names = new String[_names.length+1];
+    Vec [] vecs = new Vec[_vecs.length+1];
+    Key [] keys = new Key[_keys.length+1];
+    System.arraycopy(_names,0,names,0,i);
+    System.arraycopy(_vecs,0,vecs,0,i);
+    System.arraycopy(_keys,0,keys,0,i);
+    names[i] = name;
+    vecs[i] = vec;
+    keys[i] = vec._key;
+    System.arraycopy(_names,i,names,i+1,_names.length-i);
+    System.arraycopy(_vecs,i,vecs,i+1,_vecs.length-i);
+    System.arraycopy(_keys,i,keys,i+1,_keys.length-i);
+    _names = names;
+    _vecs = vecs;
+    _keys = keys;
+  }
+
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {
     public Key<Frame> _frame;
@@ -1079,8 +1097,7 @@ public class Frame extends Lockable<Frame> {
         throw H2O.fail();
       }
     }
-
-    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null, "", strCells, dblCells).toString();
+    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.clone(),coltypes,null, "", strCells, dblCells).toString();
   }
 
 

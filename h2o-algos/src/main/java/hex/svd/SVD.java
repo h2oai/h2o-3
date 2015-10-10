@@ -555,7 +555,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
 
     @Override protected void processRow(long gid, DataInfo.Row r, NewChunk[] outputs) {
-      double num = r.innerProduct(_svec,0);
+      double num = r.innerProduct(_svec);
       outputs[0].addNum(num);
       _sval += num * num;
       ++_nobs;
@@ -591,7 +591,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       double w = 1; // TODO: add weights to dinfo?
       double[] nums = new double[_ivv.length];
       for(int row = 0; row < _ivv.length; row++)
-        nums[row] = r.innerProduct(_ivv[row],0);
+        nums[row] = r.innerProduct(_ivv[row]);
       _gram.addRow(_dinfo.newDenseRow(nums), w);
       ++_nobs;
     }
@@ -641,7 +641,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
       for(int k = 0; k < _gaus.length; k++) {
-        double y = row.innerProduct(_gaus[k],0);
+        double y = row.innerProduct(_gaus[k]);
         outputs[k].addNum(y);
       }
     }

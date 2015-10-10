@@ -35,15 +35,16 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
   final private int _rank;
   final double _threshold;
   MetricBuilder _metricBuilder;
-  boolean _intercept = true;
+  final boolean _intercept;
 
   final boolean _computeMetrics;
-  public GLMValidation(String[] domain, double [] ymu, GLMParameters parms, int rank, double threshold, boolean computeMetrics){
+  public GLMValidation(String[] domain, double [] ymu, GLMParameters parms, int rank, double threshold, boolean computeMetrics, boolean intercept){
     super(domain == null?1:domain.length, domain);
     _rank = rank;
     _parms = parms;
     _threshold = threshold;
     _computeMetrics = computeMetrics;
+    _intercept = intercept;
     if(parms._family == Family.multinomial) {
       _ymus = ymu;
       assert _ymus.length == domain.length;
@@ -131,7 +132,7 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
       assert !(_metricBuilder instanceof MetricBuilderMultinomial):"using incorrect add call fro multinomial";
       _metricBuilder.perRow(_ds, _yact, weight, offset, null);
     }
-    add2(yreal, _ds, weight, offset );
+    add2(yreal, ymodel, weight, offset );
   }
 
   private void add2(double yreal, double ymodel [] , double weight, double offset) {

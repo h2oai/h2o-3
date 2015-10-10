@@ -22,6 +22,14 @@ public class DataInfo extends Keyed {
   public Frame _adaptedFrame;
   public int _responses;   // number of responses
 
+  public Vec setWeights(String name, Vec vec) {
+    if(_weights)
+      return _adaptedFrame.replace(weightChunkId(),vec);
+    _adaptedFrame.insertVec(weightChunkId(),name,vec);
+    _weights = true;
+    return null;
+  }
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -69,7 +77,7 @@ public class DataInfo extends Keyed {
   public double [] _numMeans;
   public boolean _intercept = true;
   public final boolean _offset;
-  public final boolean _weights;
+  public boolean _weights;
   public final boolean _fold;
   public int responseChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
@@ -514,16 +522,15 @@ public class DataInfo extends Keyed {
       numVals[i] = val;
     }
 
-    public final double innerProduct(double [] vec, double sparseOffset) {
+    public final double innerProduct(double [] vec) {
       double res = 0;
       int numStart = numStart();
       for(int i = 0; i < nBins; ++i)
         res += vec[binIds[i]];
-      if(numIds == null) {
+      if(numIds == null || (vec.length == nBins + nNums + 1)) {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];
       } else {
-        res += sparseOffset;
         for (int i = 0; i < nNums; ++i)
           res += numVals[i] * vec[numIds[i]];
       }
@@ -637,7 +644,7 @@ public class DataInfo extends Keyed {
     public final int _nrows;
     private final Row _denseRow;
     private final Row [] _sparseRows;
-    private final boolean _sparse;
+    public final boolean _sparse;
     private final Chunk [] _chks;
 
     private Rows(Chunk [] chks, boolean sparse) {
@@ -723,7 +730,7 @@ public class DataInfo extends Keyed {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        if(!c.isSparse() && c.atd(r) == 0)continue;
+        if(c.atd(r) == 0)continue;
         assert r > oldRow;
         oldRow = r;
         Row row = rows[r];
