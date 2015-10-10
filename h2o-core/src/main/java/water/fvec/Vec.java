@@ -1103,7 +1103,7 @@ public class Vec extends Keyed<Vec> {
             else              nc.addNum(Double.valueOf(c.atStr(bStr,row).toString()));
           }
         }
-      }.doAll_numericResult(1,new Frame(this)).outputFrame().anyVec();
+      }.doAll(1, Vec.T_NUM, new Frame(this)).outputFrame().anyVec();
     }
     return makeCopy(null, T_NUM);
   }

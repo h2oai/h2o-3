@@ -78,7 +78,7 @@ class ASTHist extends ASTPrim {
           }
         }
       }
-    }.doAll_numericResult(4, new Frame(layoutVec)).outputFrame(null, new String[]{"breaks", "counts", "mids_true", "mids"},null);
+    }.doAll(4, Vec.T_NUM, new Frame(layoutVec)).outputFrame(null, new String[]{"breaks", "counts", "mids_true", "mids"},null);
     layoutVec.remove();
     return new ValFrame(fr2);
   }

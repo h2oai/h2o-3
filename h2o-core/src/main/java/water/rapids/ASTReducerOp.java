@@ -158,7 +158,7 @@ class ASTMad extends ASTPrim {
         for(int i=0;i<c._len;++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
-    }.doAll_numericResult(1, f).outputFrame();
+    }.doAll(1, Vec.T_NUM, f).outputFrame();
     if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev.names(),abs_dev.vecs())); }
     double mad = ASTMedian.median(abs_dev,cm);
     DKV.remove(f._key); // drp mapping, keep vec
