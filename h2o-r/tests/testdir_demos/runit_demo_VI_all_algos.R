@@ -14,8 +14,6 @@ test <- function() {
 print("Parsing data into H2O")
 # From an h2o git workspace.
 data.hex <- h2o.importFile( locate("smalldata/demos/bank-additional-full.csv"), destination_frame="data")
-# Or directly from github.
-# data.hex = h2o.importFile( path = "https://raw.github.com/0xdata/h2o/master/smalldata/bank-additional-full.csv", destination_frame="data.hex")
 
 print("Expectation: All Algos should pick the predictor - 'duration' as the most important variable")
 
@@ -97,7 +95,7 @@ print(dl.VI)
 # Plot variable importance from deeplearing
 barplot(dl.VI$scaled_importance[1:20], names.arg = dl.VI$variable[1:20], las=2,main="VI from Deep Learning")
 
-testEnd()
+
 }
 
 doTest("Plot to compare the Variable Importance as predicted by different algorithms on the bank-marketing dataset", test)

@@ -10,7 +10,7 @@ is.factor(prostate.hex[,4])
 is.factor(prostate.hex[,3])
 
 
-testEnd()
+
 }
 
 doTest("R Doc is.factor", test.isfactor.golden)

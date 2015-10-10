@@ -43,7 +43,7 @@ test.km.init_err <- function() {
   start[3,] <- start[1,]    # Row 3 is duplicate of row 1
   h2o.kmeans(benign.hex, init = start)
   
-  testEnd()
+  
 }
 
 doTest("KMeans Test: User-specified initial cluster error cases", test.km.init_err)

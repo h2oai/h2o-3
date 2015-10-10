@@ -5,6 +5,7 @@ import Jama.SingularValueDecomposition;
 import hex.DataInfo;
 
 import hex.ModelBuilder;
+import hex.ModelMetrics;
 import hex.ModelCategory;
 import hex.glrm.EmbeddedGLRM;
 import hex.glrm.GLRM;
@@ -252,6 +253,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Calculate standard deviation, but not projection
           parms._only_v = false;
           parms._keep_u = false;
+          parms._save_v_frame = false;
 
           SVDModel svd = null;
           SVD job = null;
@@ -309,16 +311,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         update(1, "Scoring and computing metrics on training data");
         if (_parms._compute_metrics) {
           model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
-          ModelMetricsPCA mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+          ModelMetrics mm = ModelMetrics.getFromDKV(model,_parms.train());
           model._output._training_metrics = mm;
         }
 
         // At the end: validation scoring (no need to gather scoring history)
         update(1, "Scoring and computing metrics on validation data");
         if (_valid != null) {
-          Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics on the validation set
-          model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-          pred.delete();
+          model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set
+          model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
         }
         model.update(self());
         done();

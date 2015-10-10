@@ -5,8 +5,8 @@ import random
 
 def milsong_checkpoint():
 
-    milsong_train = h2o.upload_file(h2o.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
-    milsong_valid = h2o.upload_file(h2o.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
+    milsong_train = h2o.upload_file(tests.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
+    milsong_valid = h2o.upload_file(tests.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
     distribution = "gaussian"
 
     # build first model

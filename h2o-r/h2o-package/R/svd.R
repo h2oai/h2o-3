@@ -4,7 +4,7 @@
 #' Singular value decomposition of a H2O dataset using the power method.
 #'
 #'
-#' @param training_frame An Frame object containing the
+#' @param training_frame An H2O Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param nv The number of right singular vectors to be computed. This must be
@@ -50,14 +50,13 @@ h2o.svd <- function(training_frame, x, nv,
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
-  
-  # Training_frame may be a key or an Frame object
+  # Training_frame may be a key or an H2O Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
-  
+
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame
@@ -75,7 +74,7 @@ h2o.svd <- function(training_frame, x, nv,
     parms$seed <- seed
   if(!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
-  
+
   # Error check and build model
-  .h2o.modelJob('svd', parms, do_future=FALSE, h2oRestApiVersion=99)
+  .h2o.modelJob('svd', parms, h2oRestApiVersion=99)
 }

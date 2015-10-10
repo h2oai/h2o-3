@@ -15,7 +15,7 @@ import water.H2O;
  */
 public class ByteVec extends Vec {
 
-  public ByteVec( Key key, long espc[] ) { super(key,espc); }
+  public ByteVec( Key key, int rowLayout ) { super(key, rowLayout); }
 
   @Override public C1NChunk chunkForChunkIdx(int cidx) { return (C1NChunk)super.chunkForChunkIdx(cidx); }
 

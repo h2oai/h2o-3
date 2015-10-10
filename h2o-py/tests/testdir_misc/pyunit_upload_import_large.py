@@ -6,8 +6,8 @@ def upload_import():
     # Connect to a pre-existing cluster
     
 
-    uploaded_frame = h2o.upload_file(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
-    imported_frame = h2o.import_file(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
+    uploaded_frame = h2o.upload_file(tests.locate("bigdata/laptop/mnist/train.csv.gz"))
+    imported_frame = h2o.import_file(tests.locate("bigdata/laptop/mnist/train.csv.gz"))
 
     rows_u, cols_u = uploaded_frame.dim
     rows_i, cols_i = imported_frame.dim

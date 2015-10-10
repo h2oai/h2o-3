@@ -3,7 +3,6 @@ package hex.splitframe;
 import java.util.Random;
 import water.*;
 import water.fvec.*;
-import water.parser.ValueString;
 
 /** Frame splitter function to divide given frame into multiple partitions
  *  based on given ratios.
@@ -24,9 +23,13 @@ public class ShuffleSplitFrame {
       ratios[i] = sum;
     }
     assert water.util.MathUtils.equalsWithinOneSmallUlp(sum,1.0);
+    byte[] types = fr.types();
+    final int ncols = fr.numCols();
+    byte[] alltypes = new byte[ncols*ratios.length];
+    for( int i = 0; i<ratios.length; i++ )
+      System.arraycopy(types,0,alltypes,i*ncols,ncols);
 
     // Do the split, into ratios.length groupings of NewChunks
-    final int ncols = fr.numCols();
     MRTask mr = new MRTask() {
       @Override public void map( Chunk cs[], NewChunk ncs[] ) {
         Random rng = new Random(seed*cs[0].cidx());
@@ -36,8 +39,6 @@ public class ShuffleSplitFrame {
           int x=0;              // Pick the NewChunk split
           for( ; x<ratios.length-1; x++ ) if( r<ratios[x] ) break;
           x *= ncols;
-          // Helper string holder
-          ValueString vstr = new ValueString();
           // Copy row to correct set of NewChunks
           for( int j=0; j<ncols; j++ ) {
             byte colType = cs[j].vec().get_type();
@@ -46,7 +47,7 @@ public class ShuffleSplitFrame {
               case Vec.T_STR : ncs[x + j].addStr(cs[j], i); break;
               case Vec.T_UUID: ncs[x + j].addUUID(cs[j], i); break;
               case Vec.T_NUM : /* fallthrough */
-              case Vec.T_ENUM:
+              case Vec.T_CAT :
               case Vec.T_TIME:
                 ncs[x + j].addNum(cs[j].atd(i));
                 break;
@@ -56,7 +57,7 @@ public class ShuffleSplitFrame {
           }
         }
       }
-    }.doAll(ncols*ratios.length,fr);
+    }.doAll(alltypes,fr);
 
     // Build output frames
     Frame frames[] = new Frame[ratios.length];
@@ -65,9 +66,11 @@ public class ShuffleSplitFrame {
     Futures fs = new Futures();
     for( int i=0; i<ratios.length; i++ ) {
       Vec[] nvecs = new Vec[ncols];
+      final int rowLayout = mr.appendables()[i*ncols].compute_rowLayout();
       for( int c=0; c<ncols; c++ ) {
-        mr.appendables()[i*ncols+c].setDomain(vecs[c].domain());
-        nvecs[c] = mr.appendables()[i*ncols+c].close(fs);
+        AppendableVec av = mr.appendables()[i*ncols + c];
+        av.setDomain(vecs[c].domain());
+        nvecs[c] = av.close(rowLayout,fs);
       }
       frames[i] = new Frame(keys[i],fr.names(),nvecs);
       DKV.put(frames[i],fs);

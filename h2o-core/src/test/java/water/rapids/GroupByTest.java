@@ -185,6 +185,50 @@ public class GroupByTest extends TestUtil {
   }
 
 
+  // covtype.altered response column has this distribution:
+  //      -1  20510
+  //       1 211840
+  //       2 283301
+  //       3  35754
+  //       4   2747
+  //       6  17367
+  //   10000   9493
+  @Test public void testSplitCats() {
+    Frame cov = parse_test_file(Key.make("cov"),"smalldata/covtype/covtype.altered.gz");
+    System.out.println(cov.toString(0,10));
+
+    Val v_ddply = Exec.exec("(ddply cov [54] nrow)");
+    System.out.println(v_ddply.toString());
+    ((ValFrame)v_ddply)._fr.delete();
+
+    Val v_groupby = Exec.exec("(GB cov [54] [0] nrow 54 \"all\")");
+    System.out.println(v_groupby.toString());
+    ((ValFrame)v_groupby)._fr.delete();
+
+    cov.delete();
+  }
+
+  @Test public void testGroupbyTableSpeed() {
+    Frame ids = parse_test_file(Key.make("cov"),"smalldata/junit/id_cols.csv");
+    ids.replace(0,ids.anyVec().toCategoricalVec()).remove();
+    System.out.println(ids.toString(0,10));
+
+    long start = System.currentTimeMillis();
+    Val v_gb = Exec.exec("(GB cov [0] [0] nrow 0 \"all\")");
+    System.out.println("GB Time= "+(System.currentTimeMillis()-start)+"msec");
+    System.out.println(v_gb.toString());
+    ((ValFrame)v_gb)._fr.delete();
+    
+    long start2 = System.currentTimeMillis();
+    Val v_tb = Exec.exec("(table cov)");
+    System.out.println("Table Time= "+(System.currentTimeMillis()-start2)+"msec");
+    System.out.println(v_tb.toString());
+    ((ValFrame)v_tb)._fr.delete();
+
+    ids.delete();
+  }    
+
+
   private void chkDim( Frame fr, int col, int row ) {
     Assert.assertEquals(col,fr.numCols());
     Assert.assertEquals(row,fr.numRows());

@@ -148,7 +148,7 @@ public class DataInfo extends Keyed {
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
     for(int i = 0; i < n; ++i)
-      if (tvecs[i].isEnum())
+      if (tvecs[i].isCategorical())
         cats[ncats++] = i;
       else
         nums[nnums++] = i;
@@ -271,7 +271,7 @@ public class DataInfo extends Keyed {
   }
 
   public static int imputeCat(Vec v) {
-    if(v.isEnum()) return v.mode();
+    if(v.isCategorical()) return v.mode();
     return (int)Math.round(v.mean());
   }
 
@@ -498,10 +498,10 @@ public class DataInfo extends Keyed {
       if(i >= off) { // numbers
         if(numIds == null)
           return numVals[i-off];
-        int j = Arrays.binarySearch(numIds,i);
+        int j = Arrays.binarySearch(numIds,0,nNums,i);
         return j >= 0?numVals[j]:0;
       } else { // categoricals
-        int j = Arrays.binarySearch(binIds,i);
+        int j = Arrays.binarySearch(binIds,0,nBins,i);
         return j >= 0?1:0;
       }
     }
@@ -680,7 +680,6 @@ public class DataInfo extends Keyed {
    * @return array of sparse rows
    */
   public final Row[]  extractSparseRows(Chunk [] chunks, double offset) {
-    if(!_skipMissing)  throw H2O.unimpl();
     Row[] rows = new Row[chunks[0]._len];
 
     for (int i = 0; i < rows.length; ++i) {
@@ -750,8 +749,7 @@ public class DataInfo extends Keyed {
         if(row.bad) continue;
         row.response[row.response.length - i] = rChunk.atd(r);
         if (_normRespMul != null) {
-          assert false;
-          row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
+          row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
         }
         if (Double.isNaN(row.response[row.response.length - i]))
           row.bad = true;

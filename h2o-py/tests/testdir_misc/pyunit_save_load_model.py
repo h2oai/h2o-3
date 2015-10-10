@@ -5,7 +5,7 @@ from h2o.model.binomial import H2OBinomialModel
 
 def save_load_model():
 
-    prostate = h2o.import_file(h2o.locate("smalldata/prostate/prostate.csv"))
+    prostate = h2o.import_file(tests.locate("smalldata/prostate/prostate.csv"))
     prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
     prostate_glm = h2o.glm(y=prostate["CAPSULE"], x=prostate[["AGE","RACE","PSA","DCAPS"]], family = "binomial",
                            alpha = [0.5])

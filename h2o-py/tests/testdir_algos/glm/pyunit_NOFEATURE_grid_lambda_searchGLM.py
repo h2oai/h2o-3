@@ -8,7 +8,7 @@ def grid_lambda_search():
   
 
   # Log.info("Importing prostate.csv data...\n")
-  prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
 
   #prostate.summary()
 

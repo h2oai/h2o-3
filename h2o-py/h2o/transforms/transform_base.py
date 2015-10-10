@@ -1,4 +1,5 @@
 from ..frame import H2OFrame
+import urllib
 
 class TransformAttributeError(AttributeError):
   def __init__(self,obj,method):
@@ -23,7 +24,7 @@ class H2OTransformer(object):
   def inverse_transform(self,X,y=None,**params): raise TransformAttributeError(self,"inverse_transform")
   def export(self,X,y,**params):                 raise TransformAttributeError(self,"export")
   def fit_transform(self, X, y=None, **params):
-      return self.fit(X, y, **params).transform(X)
+      return self.fit(X, y, **params).transform(X, **params)
 
   def get_params(self, deep=True):
     """
@@ -52,4 +53,4 @@ class H2OTransformer(object):
     return dummy
 
   def to_rest(self, args):
-    return "{}__{}__{}__{}".format(*args)
+    return urllib.quote("{}__{}__{}__{}__{}".format(*args))

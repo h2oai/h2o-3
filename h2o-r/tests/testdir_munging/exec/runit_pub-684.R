@@ -34,7 +34,7 @@ test.ifelse <- function() {
     b.h2o.R
     expect_that(all(b == b.h2o.R), equals(T))
 
-    testEnd()
+    
 }
 
 doTest("Test for ifelse.", test.ifelse)

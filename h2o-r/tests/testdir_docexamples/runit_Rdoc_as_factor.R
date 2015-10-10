@@ -18,7 +18,7 @@ Log.info(paste("H2O Summary  :" ,sum))
 expect_true(is)
 
 
-testEnd()
+
 }
 
 doTest("R Doc as factor", test.rdocasfactor.golden)

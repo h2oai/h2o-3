@@ -3,7 +3,7 @@ package water.util;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
-import water.fvec.EnumWrappedVec;
+import water.fvec.CategoricalWrappedVec;
 import water.fvec.Vec;
 
 /**
@@ -94,8 +94,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       int nlen = cname.length();
       assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
       String sname = cname.substring(0,nlen-5);
-      if (sname.equals("EnumWrapped")) {
-        Chunk ec = ((EnumWrappedVec.EnumWrappedChunk)c)._c;
+      if (sname.equals("CategoricalWrapped")) {
+        Chunk ec = ((CategoricalWrappedVec.CategoricalWrappedChunk)c)._c;
         cname = ec.getClass().getSimpleName();
         nlen = cname.length();
         assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';

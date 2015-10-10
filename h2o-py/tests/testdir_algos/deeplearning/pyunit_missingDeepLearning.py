@@ -12,7 +12,7 @@ def missing():
     errors = [0, 0, 0, 0, 0, 0]
 
     for i in range(len(missing_ratios)):
-        data = h2o.upload_file(h2o.locate("smalldata/junit/weather.csv"))
+        data = h2o.upload_file(tests.locate("smalldata/junit/weather.csv"))
         data[15] = data[15].asfactor() #ChangeTempDir
         data[16] = data[16].asfactor() #ChangeTempMag
         data[17] = data[17].asfactor() #ChangeWindDirect

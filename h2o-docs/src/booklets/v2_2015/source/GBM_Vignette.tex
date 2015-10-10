@@ -3,12 +3,13 @@
 \input{common/conf_top.tex}
 %\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
-
 \input{common/conf_titles.tex}
 
 \begin{document}
 
-\input{common/conf_listings.tex}
+%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+\input{common/conf_listings_colorized.tex}  %Use this for online version
+
 
 \thispagestyle{empty} %removes page number
 \newgeometry{bmargin=0cm, hmargin=0cm}
@@ -28,14 +29,14 @@
 
 \normalsize
 
-\bigskip
 \line(1,0){250}  %inserts  horizontal line
 
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-September 2015: Third Edition 
-\\ 
+
+\monthname \hspace{1pt}  \the\year: Third Edition 
+
 \bigskip
 \end{center}
 
@@ -55,7 +56,7 @@ September 2015: Third Edition
 
 {\raggedright 
 
-Gradient Boosted Models with H2O's R Package\\
+Gradient Boosted Models with H2O\\
 
   by Cliff Click, Jessica Lanford, \\
 Michal Malohlava, Viraj Parmar, \\
@@ -65,10 +66,10 @@ Michal Malohlava, Viraj Parmar, \\
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
-\textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
+\textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-September 2015: Third Edition
+\monthname \hspace{1pt}  \the\year: Third Edition 
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -136,6 +137,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Aug. 2015). \t
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 \newpage
+
 \section{Overview}
 
 A GBM is an ensemble of either regression or classification tree models.
@@ -156,7 +158,7 @@ H2O's GBM functionalities include:
 \item the ability to run H2O from R, Python, Scala, or the intuitive web UI (Flow)
 \item grid search for hyperparameter optimization and model selection
 \item model export in plain Java code for deployment in production environments
-\item additional parameters for model tuning (for a complete listing of parameters, refer to the\nameref{ssec:Model Parameters} section.)
+\item additional parameters for model tuning (for a complete listing of parameters, refer to the {\textbf{\nameref{ssec:Model Parameters}}} section.)
 \end{itemize}
 
 
@@ -199,11 +201,12 @@ Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
 \\
 \line(1,0){350}
 
-In the above algorithm for multi-class classification, H2O builds $k$-regression trees: one tree represents each target class. The index, $m$, tracks of the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. 
-\newpage
+In the above algorithm for multi-class classification, H2O builds $k$-regression trees: one tree represents each target class. The index, $m$, tracks the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. 
+
+\begin{minipage}{\textwidth}
 Within this inner loop, the first step is to compute the residuals, $r_{ikm}$, which are actually the gradient values, for each of the $N$ bins in the CART model. A regression tree is then fit to these gradient computations. This fitting process is distributed and parallelized. Details on this framework are available at {\url{http://h2o.ai/blog/2013/10/building-distributed-gbm-h2o/}}.
-\\
-\\
+\end{minipage}
+
 The final procedure in the inner loop is to add the current model to the fitted regression tree to improve the accuracy of the model during the inherent gradient descent step. After $M$ iterations, the final ``boosted" model can be tested out on new data.
 
 %%\subsection{Loss Function}
@@ -232,7 +235,7 @@ there are 2000 (20x100) possible split points.
 
 Each layer represents another MR task: a tree that is five layers deep requires five passes. Each tree
 level is fully data-parallelized. Each pass  builds a per-node histogram in the MR call over one layer in the tree.  During each pass, H2O analyzes the tree level and decides how to build the next level. In another pass, H2O reassigns rows to new levels by merging the two passes and then builds a histogram for each node. Each per-level histogram is done in parallel.
-\newpage
+
 Scoring and building is done in the same pass. Each row is tested against the decision from the previous pass and assigned
 to a new leaf, where a histogram is built. To score, H2O traverses the tree and obtains the results. The
 tree is compressed to a smaller object that can still be traversed, scored, and printed.
@@ -263,88 +266,96 @@ Values greater than 1024 (the maximum number of levels supported in R) are suppo
 
 The value of \texttt{nbins\_cats} for categorical factors has a much greater impact on the generalization error rate than \texttt{nbins} for real- or integer-valued columns (where higher values mainly lead to more accurate numerical split points).
 For columns with many factors, a small \texttt{nbins\_cats} value can add randomness to the split decisions (since the columns are grouped together somewhat arbitrarily), while large values can lead to perfect splits, resulting in overfitting.
-\newpage
+
 \subsection{Key Parameters}
 \label{ssec:Key parameters}
-
+\raggedbottom
 In the above example, an important user-specified value is $N$, which represents the number of bins used to partition the data before the tree's best split point is determined. To model all factors individually, specify high $N$ values, but this will slow down the modeling process. For shallow trees, we recommend keeping the total count of bins across all splits at 1024  for numerical columns (so that a top-level split uses 1024, but a second-level split uses 512 bins, and so forth). This value is then maxed with the input bin count.
-\\
-\\
+
 Specify the size of the trees ($J$) to avoid overfitting. Increasing $J$ results in larger variable interaction effects. Large values of $J$ have also been found to have an excessive computational cost,
 since Cost = \#columns $\cdot N \cdot K \cdot 2^{J}$. Lower values generally have the highest
-performance. Models with $4 \leq J \leq 8$ and a larger number of trees $M$ reflect this generalization.
-Grid search models can be used to tune these parameters in the model selection process. For more information, refer to \nameref{ssec:Grid search}. 
-\\
-\\
+performance. 
+
+Models with $4 \leq J \leq 8$ and a larger number of trees $M$ reflect this generalization.
+Grid search models can be used to tune these parameters in the model selection process. For more information, refer to {\textbf{\nameref{ssec:Grid search}}}. 
+
 To control the learning rate of the model, specify the \texttt{learn\_rate} constant, which is actually a
 form of regularization. Shrinkage modifies the algorithm's update of $f_{km}(x)$ with the scaled
-addition $\nu \cdot \sum_{j=1}^{J_m} \gamma_{jkm} I(x \in R_{jkm})$, where the constant $\nu$ is between 0 and 1.
-Smaller values of $\nu$ lead to greater rates of training errors, assuming that $M$ is constant. In general,
-$\nu$ and $M$ are inversely related when the error rate is  constant.
-However, despite the greater rate of training error with small values of $\nu$, very small ($\nu < 0.1$) values 
-typically lead to better generalization and performance on test data.
+addition $\nu \cdot \sum_{j=1}^{J_m} \gamma_{jkm} I(x \in R_{jkm})$, where the constant $\nu$ is between 0 and 1. 
+
+Smaller values of $\nu$ lead to greater rates of training errors, assuming that $M$ is constant. In general, $\nu$ and $M$ are inversely related when the error rate is  constant. However, despite the greater rate of training error with small values of $\nu$, very small ($\nu < 0.1$) values typically lead to better generalization and performance on test data.
+
 
 \section{Use Case: Airline Data Classification}
-
 Download the Airline dataset from: {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/airlines/allyears2k_headers.zip}} and save the .csv file to your working directory. 
 
 \subsection{Loading Data}
 
-Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology, as we must convert
-our datasets into \texttt{H2OParsedData} objects. For this example, download the toy weather dataset from
+Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology because the datasets must be converted into \texttt{H2OParsedData} objects. For this example, download the toy weather dataset from
 {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/weather.csv}}.
-\newpage
+
+
 \waterExampleInR
 Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
+
 \lstinputlisting[style=R]{gbm/gbm_uploadfile_example.R}
+\medskip
 \waterExampleInPython
 Load the data to your current working directory in Python (do this for any future dataset downloads), and then run the following command.
+
 \lstinputlisting[style=python]{gbm/gbm_uploadfile_example.py}
+
+
 \subsection{Performing a Trial Run}
-Load the Airline dataset into H2O and select the variables to use to predict  the
-response. The following example models delayed flights based on the departure's scheduled day of the week and day of the month.
+Load the Airline dataset into H2O and select the variables to use to predict  the response. The following example models delayed flights based on the departure's scheduled day of the week and day of the month.
 
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_examplerun.R}
 
+
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_examplerun.py}
-\noindent
+
+
 Since it is meant just as a trial run, the model contains only 100 trees. In this trial run, no validation set was
-specified, so by default, the model evaluates the entire training set.  To use n-fold validation, specify an n-folds value (for example,
-\texttt{nfolds=5}).
+specified, so by default, the model evaluates the entire training set.  To use n-fold validation, specify an n-folds value (for example, \texttt{nfolds=5}).
 
 \subsection{Extracting and Handling the Results}
 
 Now, extract the parameters of the model, examine the scoring process, and make predictions on the new data.
-\newpage
+
+\begin{minipage}{\textwidth}
+
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_extractmodelparams.R}
+\end{minipage}
+
+\begin{minipage}{\textwidth}
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_extractmodelparams.py}
+\end{minipage}
 
-\noindent
 The first command ({\texttt{air.model}}) returns the trained model's training and validation errors.
 After generating a satisfactory model, use the \texttt{h2o.predict()} command to compute and store predictions on the
 new data, which can then be used for further tasks in the interactive modeling process.
 
+\begin{minipage}{\textwidth}
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_predict.R}
+\end{minipage}
+
+\begin{minipage}{\textwidth}
 \waterExampleInPython
 \lstinputlisting[style=python]{gbm/gbm_predict.py}
+\end{minipage}
 
 \subsection{Web Interface}
 
-
-H2O users have the option of using an intuitive web interface for H2O, Flow. After
-loading data or training a model, point your browser to your IP address and port number (e.g., localhost:12345)
-to launch the web interface. In the web UI, click \textsc{Admin} $>$ \textsc{Jobs} to view specific details
-about your model or click \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames.
+H2O users have the option of using an intuitive web interface for H2O, Flow. After loading data or training a model, point your browser to your IP address and port number (e.g., localhost:12345) to launch the web interface. In the web UI, click \textsc{Admin} $>$ \textsc{Jobs} to view specific details about your model or click \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames.
 
 \subsection{Variable Importances}
 
-The GBM algorithm automatically calculates variable importances. The model output includes the
-the absolute and relative predictive strength of each feature in the prediction task. To extract the variable importances from the model:
+The GBM algorithm automatically calculates variable importances. The model output includes the absolute and relative predictive strength of each feature in the prediction task. To extract the variable importances from the model:
 \begin{itemize}
 \item \textbf{In R}: Use \texttt{h2o.varimp(air.model)} 
 \item \textbf{In Python}: Use \texttt{air\_model.varimp(return\_list=True)}
@@ -352,27 +363,30 @@ the absolute and relative predictive strength of each feature in the prediction 
 
 To view a visualization of the variable importances using the web interface, click the \textsc{Model} menu, then select \textsc{List All Models}. Click the \textsc{Inspect} button next to the model, then select \textsc{output - Variable Importances}. 
 
+\begin{minipage}{\textwidth}
 \subsection{Supported Output}
 The following algorithm outputs are supported:
+
 \begin{itemize}
 \item {\bf{Regression}}: Mean Squared Error (MSE), with an option to output variable importances or a Plain Old Java Object (POJO) model
-\item {\bf{Binary Classification}}: Confusion Matrix or Area Under Curve (AUC), with an option to output variable
-importances or a Java POJO model
+
+\item {\bf{Binary Classification}}: Confusion Matrix or Area Under Curve (AUC), with an option to output variable importances or a Java POJO model
+
 \item {\bf{Classification}}: Confusion Matrix (with an option to output variable importances or a Java POJO model)
 \end{itemize}
+\end{minipage}
+
 
 \subsection{Java Models}
 
-To access Java code to use to build the current model in Java, click the \textsc{Preview POJO} button at the
-bottom of the model results. This button generates a POJO model that can be used in a Java application independently of H2O. If the model is small enough, the code for the model displays within the GUI; larger
-models can be inspected after downloading the model.
-\newpage
+To access Java code to use to build the current model in Java, click the \textsc{Preview POJO} button at the bottom of the model results. This button generates a POJO model that can be used in a Java application independently of H2O. If the model is small enough, the code for the model displays within the GUI; larger models can be inspected after downloading the model.
+
 To download the model:
 \begin{enumerate}
 \item Open the terminal window.
 \item Create a directory where the model will be saved.
 \item Set the new directory as the working directory.
-\item Follow the curl and java compile commands displayed in the instructions at the top of the Java model.
+\item Follow the \texttt{curl} and \texttt{java compile} commands displayed in the instructions at the top of the Java model.
 \end{enumerate}
 
 For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick Start Guide} at {\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/POJO_QuickStart.md}}. 
@@ -380,30 +394,26 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 \subsection{Grid Search for Model Comparison}
 \label{ssec:Grid search}
 
-To enable grid search capabilities for model tuning, specify sets of values for parameter arguments that will configure
-certain parameters and then observe the changes in the model behavior. The following example represents a grid search:
+To enable grid search capabilities for model tuning, specify sets of values for parameter arguments that will configure certain parameters and then observe the changes in the model behavior. The following example represents a grid search:
 
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_gridsearch.R}
 
 %is a Python example available?
 
-This example specifies three different tree numbers, three different tree sizes, and two different shrinkage values.
-This grid search model effectively trains eighteen different models over the possible combinations of these parameters.
+This example specifies three different tree numbers, three different tree sizes, and two different shrinkage values. This grid search model effectively trains eighteen different models over the possible combinations of these parameters.
 
-Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle
-insights in the model tuning and selection process, especially during inspection and comparison of the trained
-models after the grid search process is complete. To decide how and when to choose different parameter configurations
-in a grid search, refer to\nameref{ssec:Model Parameters} for parameter descriptions and suggested values.
+Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle insights in the model tuning and selection process, especially during inspection and comparison of the trained models after the grid search process is complete. To decide how and when to choose different parameter configurations in a grid search, refer to {\textbf{\nameref{ssec:Model Parameters}}} for parameter descriptions and suggested values.
 
-\newpage
+\begin{minipage}{\textwidth}
 \waterExampleInR
 \lstinputlisting[style=R]{gbm/gbm_gridsearch_result.R} 
+\end{minipage}
+
 
 
 \subsection{ Model Parameters}
 \label{ssec:Model Parameters}
-
 This section describes the functions of the parameters for GBM. 
 \begin{itemize}
 \item {\texttt{x}}: A vector containing the names of the predictors to use while building the GBM model. 
@@ -416,10 +426,10 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{max\_depth}}: The user-defined tree depth. The default is 5.
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10.
 \item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of at least the specified number of bins, then split at the best point The default is 20.
-\item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024.
+\item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024. \label{nbins_cats}
 \item {\texttt{seed}}: Seed containing random numbers that affects sampling.
 \item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0.
-\item {\texttt{distribution}}: The distribution function options: {\texttt{AUTO, bernoulli, multinomial, \\ gaussian, poisson, gamma}} or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
+\item {\texttt{distribution}}: The distribution function options: {\texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma}} or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
 \item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  The default is  {\texttt{FALSE}}.
 \item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if  \\ \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
 \item \texttt{fold\_column}:  Column with cross-validation fold index assignment per observation. 
@@ -439,38 +449,45 @@ This section describes the functions of the parameters for GBM.
 \item \texttt{model\_id}: The unique ID assigned to the generated model. If not specified, an ID is generated automatically.
 \end{itemize}
 
-\input{common/further_info.tex}
-
 \newpage
-
 \section{References}
+\bibliographystyle{plainnat}  %alphadin}
+\nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included
+%use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
 
-Click, Cliff  {\textbf{``Building a Distributed GBM on H2O``}}\\
- \url{http://h2o.ai/blog/2013/10/building-distributed-gbm-h2o/} H2O.ai (2013).
+\bibentry{cliffgbm}
 
-\medskip
+\bibentry{bias}
 
-Dietterich, Thomas G, and Eun Bae Kong. {\textbf{``Machine Learning Bias, Statistical Bias, and Statistical Variance of Decision Tree Algorithms.``}} \\
-\url{http://www.iiia.csic.es/~vtorra/tr-bias.pdf} ML-95 255 (1995).
-\\
-\\
-Elith, Jane, John R Leathwick, and Trevor Hastie. {\textbf{``A Working Guide to Boosted Regression Trees.``}} \\\url{http://onlinelibrary.wiley.com/doi/10.1111/j.1365-2656.2008.01390.x/abstract} Journal of Animal Ecology 77.4 (2008): 802-813
-\\
-\\
-Friedman, Jerome H. {\textbf{``Greedy Function Approximation: A Gradient Boosting Machine.``}}\\
- \url{http://statweb.stanford.edu/~jhf/ftp/trebst.pdf} Annals of Statistics (2001): 1189-1232.
-\\
-\\
-Friedman, Jerome, Trevor Hastie, Saharon Rosset, Robert Tibshirani, and Ji Zhu. {\textbf{``Discussion of Boosting Papers.``}}\\
-\url{http://web.stanford.edu/~hastie/Papers/boost_discussion.pdf} Ann. Statist 32 (2004): 102-107
-\\
-\\
-Friedman, Jerome, Trevor Hastie, and Robert Tibshirani. {\textbf{``Additive Logistic Regression: A Statistical View of Boosting (With Discussion and a Rejoinder by the Authors).``}}\\
- \url{http://projecteuclid.org/DPubS?service=UI&version=1.0&verb=Display&handle=euclid.aos/1016218223} The Annals of Statistics 28.2 (2000): 337-407
-\\
-\\
-Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. {\textbf{``The Elements of Statistical Learning``}}\\
-  \url{http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf}. Vol.1. N.p., page 339: Springer New York, 2001.
+\bibentry{boost}
+
+\bibentry{greedyfunction}
+
+\bibentry{discussion}
+
+\bibentry{additivelogistic}
+
+\bibentry{esl}
+
+\bibentry{h2osite}
+
+\bibentry{h2odocs}
+
+\bibentry{h2ogithubrepo}
+
+\bibentry{h2odatasets}
+
+\bibentry{h2ojira}
+
+\bibentry{stream}
+
+\bibentry{rdocs}
+
+
+
+%Friedman, Jerome, Trevor Hastie, and Robert Tibshirani. {\textbf{``Additive Logistic Regression: A Statistical View of Boosting (With Discussion and a Rejoinder by the Authors).``}} \url{http://projecteuclid.org/DPubS?service=UI&version=1.0&verb=Display&handle=euclid.aos/1016218223} The Annals of Statistics 28.2 (2000): 337-407
+
+%Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. {\textbf{``The Elements of Statistical Learning``}}  \url{http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf}. Vol.1. N.p., page 339: Springer New York, 2001.
 
 \newpage
 
@@ -478,7 +495,7 @@ Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. {\textbf{``The Eleme
 
 \textbf{Cliff Click}
 
-Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff wrote his first compiler when he was 15 (Pascal to TRS Z-80!), although Cliff’s most famous compiler is the HotSpot Server Compiler (the Sea of Nodes IR). Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
+Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff wrote his first compiler when he was 15 (Pascal to TRS Z-80!), although Cliff`s most famous compiler is the HotSpot Server Compiler (the Sea of Nodes IR). Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
 
 \textbf{Jessica Lanford}
 

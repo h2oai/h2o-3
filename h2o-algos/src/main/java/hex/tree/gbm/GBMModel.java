@@ -3,13 +3,23 @@ package hex.tree.gbm;
 import hex.Distribution;
 import hex.tree.SharedTreeModel;
 import water.Key;
-import water.util.SB;
 import water.util.SBPrintStream;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
-    public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
+    public float _learn_rate;
+    public float _col_sample_rate;
+
+    public GBMParameters() {
+      super();
+      _learn_rate = 0.1f;
+      _col_sample_rate = 1.0f;
+      _sample_rate = 1.0f;
+      _ntrees = 50;
+      _max_depth = 5;
+    }
+
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
@@ -42,7 +52,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   }
 
   // Note: POJO scoring code doesn't support per-row offsets (the scoring API would need to be changed to pass in offsets)
-  @Override protected void toJavaUnifyPreds(SBPrintStream body, SB file) {
+  @Override protected void toJavaUnifyPreds(SBPrintStream body) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
     if( _parms._distribution == Distribution.Family.bernoulli ) {

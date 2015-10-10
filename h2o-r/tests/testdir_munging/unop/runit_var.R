@@ -31,7 +31,7 @@ test.var <- function() {
 
   expect_equal(h2o_vec, r_vec, tol=1e-6)
 
-  testEnd()
+  
 }
 
 doTest("Test out the var() functionality", test.var)

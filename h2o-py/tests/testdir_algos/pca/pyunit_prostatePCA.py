@@ -6,7 +6,7 @@ def pca_prostate():
     
 
     print "Importing prostate.csv data...\n"
-    prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.upload_file(tests.locate("smalldata/logreg/prostate.csv"))
 
     print "Converting CAPSULE, RACE, DPROS and DCAPS columns to factors"
     prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()

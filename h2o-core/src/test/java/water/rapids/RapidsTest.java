@@ -9,78 +9,79 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.util.ArrayUtils;
 
 import java.io.File;
 import java.util.Arrays;
 
 public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void bigSlice() {
     // check that large slices do something sane
-    String tree = "(rows %a.hex [0:2147483647])";
+    String tree = "(rows a.hex [0:2147483647])";
     checkTree(tree);
   }
 
   @Test public void test1() {
     // Checking `hex + 5`
-    String tree = "(+ %a.hex #5)";
+    String tree = "(+ a.hex #5)";
     checkTree(tree);
   }
 
   @Test public void test2() {
     // Checking `hex + 5 + 10`
-    String tree = "(+ %a.hex (+ #5 #10))";
+    String tree = "(+ a.hex (+ #5 #10))";
     checkTree(tree);
   }
 
   @Test public void test3() {
     // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
-    String tree = "(+ (- (+ %a.hex #5) (* #1 %a.hex)) (* #15 (/ #23 %a.hex)))";
+    String tree = "(+ (- (+ a.hex #5) (* #1 a.hex)) (* #15 (/ #23 a.hex)))";
     checkTree(tree);
   }
 
   @Test public void test4() {
     //Checking `hex == 5`, <=, >=, <, >, !=
-    String tree = "(== %a.hex #5)";
+    String tree = "(== a.hex #5)";
     checkTree(tree);
-    tree = "(<= %a.hex #5)";
+    tree = "(<= a.hex #5)";
     checkTree(tree);
-    tree = "(>= %a.hex #1.25132)";
+    tree = "(>= a.hex #1.25132)";
     checkTree(tree);
-    tree = "(< %a.hex #112.341e-5)";
+    tree = "(< a.hex #112.341e-5)";
     checkTree(tree);
-    tree = "(> %a.hex #0.0123)";
+    tree = "(> a.hex #0.0123)";
     checkTree(tree);
-    tree = "(!= %a.hex #0)";
+    tree = "(!= a.hex #0)";
     checkTree(tree);
   }
   @Test public void test4_throws() {
-    String tree = "(== %a.hex (cols a.hex [1 2]))";
+    String tree = "(== a.hex (cols a.hex [1 2]))";
     checkTree(tree,true);
   }
   
   @Test public void test5() {
     // Checking `hex && hex`, ||, &, |
-    String tree = "(&& %a.hex %a.hex)";
+    String tree = "(&& a.hex a.hex)";
     checkTree(tree);
-    tree = "(|| %a.hex %a.hex)";
+    tree = "(|| a.hex a.hex)";
     checkTree(tree);
-    tree = "(& %a.hex %a.hex)";
+    tree = "(& a.hex a.hex)";
     checkTree(tree);
-    tree = "(| %a.hex %a.hex)";
+    tree = "(| a.hex a.hex)";
     checkTree(tree);
   }
 
   @Test public void test6() {
     // Checking `hex[,1]`
-    String tree = "(cols %a.hex [0])";
+    String tree = "(cols a.hex [0])";
     checkTree(tree);
     // Checking `hex[1,5]`
-    tree = "(rows (cols %a.hex [0]) [5])";
+    tree = "(rows (cols a.hex [0]) [5])";
     checkTree(tree);
     // Checking `hex[c(1:5,7,9),6]`
-    tree = "(cols (rows %a.hex [0:4 6 7]) [0])";
+    tree = "(cols (rows a.hex [0:4 6 7]) [0])";
     checkTree(tree);
     // Checking `hex[c(8,1,1,7),1]`
     tree = "(rows a.hex [8 1 1 7])";
@@ -90,19 +91,19 @@ public class RapidsTest extends TestUtil {
   @Test public void testRowAssign() {
     String tree;
     // Assign column 3 over column 0
-    tree = "(= %a.hex (cols %a.hex [3]) 0 [0:150])";
+    tree = "(= a.hex (cols a.hex [3]) 0 [0:150])";
     checkTree(tree);
 
     // Assign 17 over column 0
-    tree = "(= %a.hex 17 [0] [0:150])";
+    tree = "(= a.hex 17 [0] [0:150])";
     checkTree(tree);
 
     // Assign 17 over column 0, row 5
-    tree = "(= %a.hex 17 [0] [5])";
+    tree = "(= a.hex 17 [0] [5])";
     checkTree(tree);
 
     // Append 17
-    tree = "(= %a.hex 17 [4] [0:150])";
+    tree = "(= a.hex 17 [4] [0:150])";
     checkTree(tree);
   }
 
@@ -114,7 +115,7 @@ public class RapidsTest extends TestUtil {
     tree = "({var1 . (* var1 var2)} 3)";
     checkTree(tree,true);
     // Compute 3* a.hex[0,0]
-    tree = "({var1 . (* var1 (rows %a.hex [0]))} 3)";
+    tree = "({var1 . (* var1 (rows a.hex [0]))} 3)";
     checkTree(tree);
 
     // Some more horrible functions.  Drop the passed function and return a 3
@@ -242,12 +243,12 @@ public class RapidsTest extends TestUtil {
   @Test public void testMerge() {
     Frame l=null,r=null,f=null;
     try {
-      l = frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
+      l = ArrayUtils.frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
       l.    add("age"  ,vec(ar(">dirt" ,"middle","middle","young'n"),ari(0,1,2,3)));
       l = new Frame(l);
       DKV.put(l);
       System.out.println(l);
-      r = frame("name" ,vec(ar("Arno","Tomas","Michael","Cliff"),ari(0,1,2,3)));
+      r = ArrayUtils.frame("name" ,vec(ar("Arno","Tomas","Michael","Cliff"),ari(0,1,2,3)));
       r.    add("skill",vec(ar("science","linearmath","sparkling","hacker"),ari(0,1,2,3)));
       r = new Frame(r);
       DKV.put(r);
@@ -256,6 +257,12 @@ public class RapidsTest extends TestUtil {
       Val res = Exec.exec(x);
       f = res.getFrame();
       System.out.println(f);
+      Vec names = f.vec(0);
+      Assert.assertEquals(names.factor(names.at8(0)),"Cliff");
+      Vec ages  = f.vec(1);
+      Assert.assertEquals(ages .factor(ages .at8(0)),">dirt");
+      Vec skilz = f.vec(2);
+      Assert.assertEquals(skilz.factor(skilz.at8(0)),"hacker");
     } finally {
       if( f != null ) f.delete();
       if( r != null ) r.delete();
@@ -267,18 +274,18 @@ public class RapidsTest extends TestUtil {
   @Test public void testQuantile() {
     Frame f = null;
     try {
-      Frame fr = frame(ard(ard(1.223292e-02),
-                           ard(1.635312e-25),
-                           ard(1.601522e-11),
-                           ard(8.452298e-10),
-                           ard(2.643733e-10),
-                           ard(2.671520e-06),
-                           ard(1.165381e-06),
-                           ard(7.193265e-10),
-                           ard(3.383532e-04),
-                           ard(2.561221e-05)));
+      Frame fr = ArrayUtils.frame(ard(ard(1.223292e-02),
+                                      ard(1.635312e-25),
+                                      ard(1.601522e-11),
+                                      ard(8.452298e-10),
+                                      ard(2.643733e-10),
+                                      ard(2.671520e-06),
+                                      ard(1.165381e-06),
+                                      ard(7.193265e-10),
+                                      ard(3.383532e-04),
+                                      ard(2.561221e-05)));
       double[] probs = new double[]{0.001, 0.005, .01, .02, .05, .10, .50, .8883, .90, .99};
-      String x = String.format("(quantile %%%s %s \"interpolate\")", fr._key, Arrays.toString(probs));
+      String x = String.format("(quantile %s %s \"interpolate\")", fr._key, Arrays.toString(probs));
       Val val = Exec.exec(x);
       fr.delete();
       f = val.getFrame();
@@ -326,8 +333,8 @@ public class RapidsTest extends TestUtil {
   static void checkSaneFrame() {  assert checkSaneFrame_impl(); }
   static boolean checkSaneFrame_impl() {
     for( Key k : H2O.localKeySet() ) {
-      Value val = H2O.raw_get(k);
-      if( val.isFrame() ) {
+      Value val = Value.STORE_get(k);
+      if( val != null && val.isFrame() ) {
         Frame fr = val.get();
         Vec vecs[] = fr.vecs();
         for( int i=0; i<vecs.length; i++ ) {
@@ -353,7 +360,7 @@ public class RapidsTest extends TestUtil {
       assert f != null && f.exists():" file not found: " + fname;
       NFSFileVec nfs = NFSFileVec.make(f);
       ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
-      ps.getColumnTypes()[1] = Vec.T_ENUM;
+      ps.getColumnTypes()[1] = Vec.T_CAT;
       census = ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
 
       census = exec_str("(colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"])", "census.hex");
@@ -435,7 +442,7 @@ public class RapidsTest extends TestUtil {
       weather.remove();
 
       // nary_op_37 = merge( X Y ); Vecs in X & nary_op_37 shared
-      Frame nary_op_37 = exec_str("(merge subset_35 census.hex FALSE FALSE)", "nary_op_37");
+      Frame nary_op_37 = exec_str("(merge subset_35 census.hex TRUE FALSE)", "nary_op_37");
 
       // nary_op_38 = merge( nary_op_37 subset_36); Vecs in nary_op_38 and nary_pop_37 and X shared
       Frame subset_41 = exec_str("(rows (tmp= nary_op_38 (merge nary_op_37 subset_36 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8)))", "subset_41");

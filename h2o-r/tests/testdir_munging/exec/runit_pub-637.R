@@ -63,7 +63,7 @@ test.frame_add <- function() {
     d.h2o.R <- as.data.frame(d.h2o)
     expect_that(all(d == d.h2o.R), equals(T))
 
-    testEnd()
+    
 }
 
 doTest("Test frame add.", test.frame_add)

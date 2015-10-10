@@ -5,7 +5,7 @@ import h2o, tests
 
 def pyunit_types():
 
-  pros = h2o.import_file(h2o.locate("smalldata/prostate/prostate.csv"))
+  pros = h2o.import_file(tests.locate("smalldata/prostate/prostate.csv"))
   types = pros.types
   print types
 

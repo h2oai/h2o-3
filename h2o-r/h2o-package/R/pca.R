@@ -5,7 +5,7 @@
 #' to calculate the singular value decomposition of the Gram matrix.
 #'
 #'
-#' @param training_frame An Frame object containing the
+#' @param training_frame An H2O Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param k The number of principal components to be computed. This must be
@@ -53,7 +53,7 @@ h2o.prcomp <- function(training_frame, x, k,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
-  # Training_frame may be a key or an Frame object
+  # Training_frame may be a key or an H2O Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
@@ -75,5 +75,5 @@ h2o.prcomp <- function(training_frame, x, k,
   if(!missing(use_all_factor_levels)) parms$use_all_factor_levels <- use_all_factor_levels
 
   # Error check and build model
-  .h2o.modelJob('pca', parms, do_future=FALSE)
+  .h2o.modelJob('pca', parms)
 }

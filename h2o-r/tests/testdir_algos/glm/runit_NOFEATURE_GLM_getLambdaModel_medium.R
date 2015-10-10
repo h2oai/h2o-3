@@ -35,7 +35,7 @@ for(i in 1:10){
 	expect_equal(m1,m2)
 }
 
-testEnd()
+
 }
 
 doTest("GLM get Model for each Lambda Test: Prostate", test.GLM.getLambdaModel)

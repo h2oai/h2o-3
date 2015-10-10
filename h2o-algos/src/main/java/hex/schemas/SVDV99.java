@@ -11,26 +11,26 @@ public class SVDV99 extends ModelBuilderSchema<SVD,SVDV99,SVDV99.SVDParametersV9
 
   public static final class SVDParametersV99 extends ModelParametersSchema<SVDModel.SVDParameters, SVDParametersV99> {
     static public String[] fields = new String[] {
-				"model_id",
-				"training_frame",
-				"validation_frame",
-				"ignored_columns",
-				"ignore_const_cols",
-				"score_each_iteration",
-				"transform",
+        "model_id",
+        "training_frame",
+        "validation_frame",
+        "ignored_columns",
+        "ignore_const_cols",
+        "score_each_iteration",
+        "transform",
                 "svd_method",
-				"nv",
-				"max_iterations",
-				"seed",
-				"keep_u",
-				"u_name",
-				"use_all_factor_levels"
-		};
+        "nv",
+        "max_iterations",
+        "seed",
+        "keep_u",
+        "u_name",
+        "use_all_factor_levels"
+    };
 
-    @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
+    @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of categorical class
     public DataInfo.TransformType transform;
 
-    @API(help = "Method for computing SVD (Caution: Power and Probablistic are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" })   // TODO: pull out of enum class
+    @API(help = "Method for computing SVD (Caution: Power and Randomized are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" })   // TODO: pull out of enum class
     public SVDParameters.Method svd_method;
 
     @API(help = "Number of right singular vectors")

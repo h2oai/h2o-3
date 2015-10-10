@@ -10,7 +10,7 @@ summary(prostate.hex)
 summary(prostate.hex$GLEASON)
 summary(prostate.hex[,4:6])
 
-testEnd()
+
 }
 
 doTest("R Doc Summary", test.rdocsummary.golden)

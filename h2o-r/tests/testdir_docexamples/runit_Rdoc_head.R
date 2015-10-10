@@ -9,7 +9,7 @@ head(australia.hex, 10)
 tail(australia.hex, 10)
 
 
-testEnd()
+
 }
 
 doTest("R Doc head", test.head.golden)

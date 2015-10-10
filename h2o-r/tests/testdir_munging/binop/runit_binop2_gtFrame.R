@@ -19,7 +19,7 @@ test.gt.frame <- function() {
   hex > hex
   print(head(hex > hex))
 
-  testEnd()
+  
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '>' on frames", test.gt.frame)

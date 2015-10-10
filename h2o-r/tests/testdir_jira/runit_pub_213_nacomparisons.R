@@ -27,7 +27,7 @@ na_comparisons <- function(){
   print(is.na(loc[,3]))
   
   #expect_true(all(is.na(loc[,3]) == c(FALSE,FALSE,FALSE,TRUE,FALSE,TRUE,FALSE)))
-  testEnd()
+  
 }
 
 if(F){

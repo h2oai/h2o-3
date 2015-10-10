@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test_one_file <- function(fnam, mins, maxs) {
-  DF <- h2o.importFile(h2o:::.h2o.locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
+  DF <- h2o.importFile(locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
   raw_payload = .h2o.doSafeREST(urlSuffix = paste0("Frames.json/",fnam,".hex/columns/B/summary"), method = "GET")
   # print(raw_payload)
   json = .h2o.fromJSON(jsonlite::fromJSON(raw_payload,simplifyDataFrame=FALSE))
@@ -19,7 +19,6 @@ mytest = function() {
   test_one_file("test4", mins=c(2L,5L,8L,11L,NA), maxs=c(11L,8L,5L,2L,NA))
   test_one_file("test5", mins=c(2L,5L,8L,11L,14L), maxs=c(14L,11L,8L,5L,2L))
   test_one_file("test6", mins=c(2L,5L,8L,11L,14L), maxs=c(17L,14L,11L,8L,5L))
-  testEnd()
 }
 
 doTest("PUBDEV-150: summary mins and maxs on files of 0 to 6 rows", mytest)

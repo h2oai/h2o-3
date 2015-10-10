@@ -34,15 +34,13 @@ plot_scoring <- function(model) {
   }
 }
 
-clean_up <- function(client) {
-  keys <- h2o.ls()$key
-  id   <- grep("subset|nary|group|rapids|file", keys)
-  id_i <- grep("modelmetrics", keys)
-  h2o.rm(ids = as.character(keys[setdiff(id,id_i)]))
+clean_up <- function() {
+  keys <- as.vector(h2o.ls())
+  sapply(keys[grep("subset|nary|group|rapids|file", keys)], function (x) h2o.rm(x))
 }
 
 
-test.lendingclub.demo <- function(conn) {
+test.lendingclub.demo <- function() {
 # Pick either the big or the small demo.
   small_test <-  locate("bigdata/laptop/lending-club/LoanStats3a.csv")
   big_test <-  c(locate("bigdata/laptop/lending-club/LoanStats3a.csv"),
@@ -110,7 +108,7 @@ test.lendingclub.demo <- function(conn) {
   loanStats$longest_credit_length <- loanStats$issue_d_Year - loanStats$earliest_cr_line_Year
   loanStats$issue_d_Year_factor   <- as.factor(loanStats$issue_d_Year)
   # Clean up the KV Store
-  clean_up(conn)
+  clean_up()
   
   print("Set variables to predict bad loans...")
   myY <- "bad_loan"
@@ -200,7 +198,7 @@ test.lendingclub.demo <- function(conn) {
   diff <- - sum_loss$sum_earned[1] - sum_loss$sum_earned[2]
   print(paste0("Total immediate gain the implementation of the model would've had on completed approved loans : $",printMoney(diff),""))
   
-  testEnd()
+  
 }
 
 doTest("Test out Lending Club Demo", test.lendingclub.demo)

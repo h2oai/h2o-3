@@ -96,7 +96,9 @@ abstract public class AST extends Iced<AST> {
     init(new ASTAnd ());
     init(new ASTDiv ());
     init(new ASTIntDiv());
+    init(new ASTIntDivR());
     init(new ASTMod ());
+    init(new ASTModR());
     init(new ASTMul ());
     init(new ASTOr  ());
     init(new ASTPlus());
@@ -168,7 +170,7 @@ abstract public class AST extends Iced<AST> {
     // Generic data mungers
     init(new ASTAnyFactor());
     init(new ASTAsFactor());
-    init(new ASTCharacter());
+    init(new ASTAsCharacter());
     init(new ASTAsNumeric());
     init(new ASTCBind());
     init(new ASTColNames());
@@ -197,8 +199,8 @@ abstract public class AST extends Iced<AST> {
 
     // String Ops
     init(new ASTStrSplit());
-    init(new ASTStrSub());
-    init(new ASTGSub());
+    init(new ASTReplaceFirst());
+    init(new ASTReplaceAll());
     init(new ASTTrim());
     init(new ASTToLower());
     init(new ASTCountMatches());
@@ -227,7 +229,8 @@ abstract public class AST extends Iced<AST> {
     init(new ASTStratifiedKFold());
   }
 
-  public static ASTId newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
+  public static ASTId  newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
+  public static ASTStr newASTStr  (String s) { return new ASTStr(s); }
 }
 
 /** A number.  Execution is just to return the constant. */
@@ -264,20 +267,21 @@ class ASTFrame extends AST {
 /** A Row.  Execution is just to return the constant. */
 class ASTRow extends AST {
   final ValRow _row;
-  ASTRow(double[] ds) { _row = new ValRow(ds); }
+  ASTRow(double[] ds, String[] names) { _row = new ValRow(ds,names); }
   @Override public String str() { return _row.toString(); }
   @Override public ValRow exec(Env env) { return _row; }
   @Override int nargs() { return 1; }
 }
 
 /** An ID.  Execution does lookup in the current scope. */
-class ASTId extends AST {
+class ASTId extends ASTParameter {
   final String _id;
   ASTId(Exec e) { _id = e.token(); }
   ASTId(String id) { _id=id; }
   @Override public String str() { return _id; }
   @Override public Val exec(Env env) { return env.lookup(_id); }
   @Override int nargs() { return 1; }
+  @Override public String toJavaString() { return "\"" + str() + "\""; }
 }
 
 /** A primitive operation.  Execution just returns the function.  *Application*

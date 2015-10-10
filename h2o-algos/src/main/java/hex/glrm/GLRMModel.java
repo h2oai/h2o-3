@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.*;
+import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -18,7 +19,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public int _k = 1;                            // Rank of resulting XY matrix
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
-    public Key<Frame> _user_points;               // User-specified Y matrix (for _init = User)
+    public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
+    public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
+    public Key<Frame> _user_x;               // User-specified X matrix (for _init = User)
 
     // Loss functions
     public Loss _loss = Loss.Quadratic;                  // Default loss function for numeric cols
@@ -43,15 +46,24 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
+    // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
+    // Absolute -> Laplace distribution ~ exp(-|a-u|)
     public enum Loss {
-      Quadratic(true), L1(true), Huber(true), Poisson(true), Hinge(true), Logistic(true), Periodic(true),  // One-dimensional loss (numeric)
+      Quadratic(true), Absolute(true), Huber(true), Poisson(true), Periodic(true),  // One-dimensional loss (numeric)
+      Logistic(true, true), Hinge(true, true),  // Boolean loss (categorical)
       Categorical(false), Ordinal(false);    // Multi-dimensional loss (categorical)
 
       private boolean forNumeric;
-      Loss(boolean forNumeric) { this.forNumeric = forNumeric; }
+      private boolean forBinary;
+      Loss(boolean forNumeric) { this(forNumeric, false); }
+      Loss(boolean forNumeric, boolean forBinary) {
+        this.forNumeric = forNumeric;
+        this.forBinary = forBinary;
+      }
 
       public boolean isForNumeric() { return forNumeric; }
       public boolean isForCategorical() { return !forNumeric; }
+      public boolean isForBinary() { return forBinary; }
     }
 
     // Non-negative matrix factorization (NNMF): r_x = r_y = NonNegative
@@ -60,6 +72,20 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Quadratic mixture: r_x = Simplex, r_y = 0 (\gamma_y = 0)
     public enum Regularizer {
       None, Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
+    }
+
+    // Check if all elements of _loss_by_col are equal to a specific loss function
+    private final boolean allLossEquals(Loss loss) {
+      if (null == _loss_by_col) return false;
+
+      boolean res = true;
+      for(int i = 0; i < _loss_by_col.length; i++) {
+        if(_loss_by_col[i] != loss) {
+          res = false;
+          break;
+        }
+      }
+      return res;
     }
 
     // Closed form solution only if quadratic loss, no regularization or quadratic regularization (same for X and Y), and no missing values
@@ -72,7 +98,10 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     public final boolean hasClosedForm(long na_cnt) {
-      return na_cnt == 0 && ((_loss == Quadratic && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
+      boolean loss_quad = (null == _loss_by_col && _loss == Quadratic) ||
+              (null != _loss_by_col && allLossEquals(Quadratic) && (_loss_by_col.length == _train.get().numCols() || _loss == Quadratic));
+
+      return na_cnt == 0 && ((loss_quad && (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == GLRMParameters.Regularizer.Quadratic)
               && (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == GLRMParameters.Regularizer.Quadratic)));
     }
 
@@ -85,16 +114,19 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       switch(loss) {
         case Quadratic:
           return (u-a)*(u-a);
-        case L1:
+        case Absolute:
           return Math.abs(u-a);
         case Huber:
           return Math.abs(u-a) <= 1 ? 0.5*(u-a)*(u-a) : Math.abs(u-a)-0.5;
         case Poisson:
-          return Math.exp(u) - a*u + a*Math.log(a) - a;
+          assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
+          return Math.exp(u) + (a == 0 ? 0 : -a*u + a*Math.log(a) - a);   // Since \lim_{a->0} a*log(a) = 0
         case Hinge:
-          return Math.max(1-a*u,0);
+          // return Math.max(1-a*u,0);
+          return Math.max(1 - (a == 0 ? -u : u), 0);   // Booleans are coded {0,1} instead of {-1,1}
         case Logistic:
-          return Math.log(1 + Math.exp(-a * u));
+          // return Math.log(1 + Math.exp(-a * u));
+          return Math.log(1 + Math.exp(a == 0 ? u : -u));    // Booleans are coded {0,1} instead of {-1,1}
         case Periodic:
           return 1-Math.cos((a-u)*(2*Math.PI)/_period);
         default:
@@ -111,16 +143,19 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       switch(loss) {
         case Quadratic:
           return 2*(u-a);
-        case L1:
+        case Absolute:
           return Math.signum(u - a);
         case Huber:
           return Math.abs(u-a) <= 1 ? u-a : Math.signum(u-a);
         case Poisson:
+          assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
           return Math.exp(u)-a;
         case Hinge:
-          return a*u <= 1 ? -a : 0;
+          // return a*u <= 1 ? -a : 0;
+          return a == 0 ? (-u <= 1 ? 1 : 0) : (u <= 1 ? -1 : 0);  // Booleans are coded as {0,1} instead of {-1,1}
         case Logistic:
-          return -a/(1+Math.exp(a*u));
+          // return -a/(1+Math.exp(a*u));
+          return a == 0 ? 1/(1+Math.exp(-u)) : -1/(1+Math.exp(u));    // Booleans are coded as {0,1} instead of {-1,1}
         case Periodic:
           return ((2*Math.PI)/_period) * Math.sin((a-u) * (2*Math.PI)/_period);
         default:
@@ -174,7 +209,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       }
     }
 
-    // r_i(x_i): Regularization function for single row x_i
+    // r_i(x_i), r_j(y_j): Regularization function for single row x_i or column y_j
     public final double regularize_x(double[] u) { return regularize(u, _regularization_x); }
     public final double regularize_y(double[] u) { return regularize(u, _regularization_y); }
     public final double regularize(double[] u, Regularizer regularization) {
@@ -351,17 +386,15 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
       switch(loss) {
         case Quadratic:
-        case L1:
+        case Absolute:
         case Huber:
         case Periodic:
           return u;
         case Poisson:
           return Math.exp(u)-1;
         case Hinge:
-          return 1/u;
         case Logistic:
-          if (u == 0) return 0;   // Any finite real number is minimizer if u = 0
-          return (u > 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);
+          return u > 0 ? 1 : 0;   // Booleans are coded as {0,1} instead of {-1,1}
         default:
           throw new RuntimeException("Unknown loss function " + loss);
       }
@@ -396,13 +429,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Average change in objective function this iteration
     public double _avg_change_obj;
+    public double[/*iterations*/] _history_avg_change_obj = new double[0];
 
     // Mapping from lower dimensional k-space to training features (Y)
     public TwoDimTable _archetypes;
     public GLRM.Archetypes _archetypes_raw;   // Needed for indexing into Y for scoring
 
-    // Final step size
-    public double _step_size;
+    // Step size each iteration
+    public double[/*iterations*/] _history_step_size = new double[0];
 
     // SVD of output XY
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
@@ -411,6 +445,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Frame key of X matrix
     public Key<Frame> _loading_key;
+    public Key<? extends Model> _init_key;
 
     // Number of categorical and numeric columns
     public int _ncats;
@@ -435,6 +470,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Loss function for every column in adapted training frame
     public GLRMParameters.Loss[] _lossFunc;
 
+    // Training time
+    public long[/*iterations*/] _training_time_ms = new long[0];
+
     public GLRMOutput(GLRM b) { super(b); }
 
     /** Override because base class implements ncols-1 for features with the
@@ -447,6 +485,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey, parms, output); }
+
+  @Override protected Futures remove_impl( Futures fs ) {
+    if(null != _output._init_key)
+      _output._init_key.remove(fs);
+    if(null != _output._loading_key)
+      _output._loading_key.remove(fs);
+    return super.remove_impl(fs);
+  }
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
@@ -473,7 +519,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
+    gs._mb.makeModelMetrics(GLRMModel.this, orig);   // save error metrics based on imputed data
     return f;
   }
 

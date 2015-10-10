@@ -3,7 +3,7 @@ package water.rapids;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,8 +15,13 @@ class ASTColSlice extends ASTPrim {
   @Override int nargs() { return 1+2; } // (cols src [col_list])
   @Override
   public String str() { return "cols" ; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val v = stk.track(asts[1].exec(env));
+    if( v instanceof ValRow ) {
+      ValRow vv = (ValRow)v;
+      return vv.slice(asts[2].columns(vv._names));
+    }
+    Frame fr = v.getFrame();
     int[] cols = asts[2].columns(fr.names());
 
     Frame fr2 = new Frame();
@@ -98,7 +103,7 @@ class ASTRowSlice extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(), fr).outputFrame(fr.names(),fr.domains());
+      }.doAll(fr.types(), fr).outputFrame(fr.names(),fr.domains());
     } else if( (asts[2] instanceof ASTNum) ) {
       long[] rows = new long[]{(long)(((ASTNum)asts[2])._v.getNum())};
       returningFrame = fr.deepSlice(rows,null);
@@ -122,7 +127,7 @@ class ASTFlatten extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols()==1 && fr.numRows()==1 ) {
       if( fr.anyVec().isNumeric() || fr.anyVec().isBad() ) return new ValNum(fr.anyVec().at(0));
-      else if( fr.anyVec().isString() ) return new ValStr(fr.anyVec().atStr(new ValueString(),0).toString());
+      else if( fr.anyVec().isString() ) return new ValStr(fr.anyVec().atStr(new BufferedString(),0).toString());
       return new ValStr(fr.domains()[0][(int) fr.anyVec().at8(0)]);
     }
     return new ValFrame(fr); // did not flatten
@@ -231,7 +236,7 @@ class ASTRBind extends ASTPrim {
     final Frame frs[] = new Frame[asts.length]; // Input frame
     final byte[] types = fr.types();  // Column types
     final int ncols = fr.numCols();
-    final long[] espc = new long[nchks+1];
+    final long[] espc = new long[nchks+1]; // Compute a new layout!
     int coffset = 0;
 
     for( int i=1; i<asts.length; i++ ) {
@@ -252,7 +257,7 @@ class ASTRBind extends ASTPrim {
 
       // Roll up the ESPC row counts
       long roffset = espc[coffset];
-      long[] espc2 = fr0.anyVec().get_espc();
+      long[] espc2 = fr0.anyVec().espc();
       for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
         espc[coffset + j] = (roffset+espc2[j]);
       coffset += espc2.length-1; // Chunk offset
@@ -262,12 +267,12 @@ class ASTRBind extends ASTPrim {
     // build up the new domains for each vec
     HashMap<String, Integer>[] dmap = new HashMap[types.length];
     String[][] domains = new String[types.length][];
-    int[][][] emaps = new int[types.length][][];
+    int[][][] cmaps = new int[types.length][][];
     for(int k=0;k<types.length;++k) {
       dmap[k] = new HashMap<>();
       int c = 0;
       byte t = types[k];
-      if( t == Vec.T_ENUM ) {
+      if( t == Vec.T_CAT ) {
         int[][] maps = new int[frs.length][];
         for(int i=1; i < frs.length; i++) {
           maps[i] = new int[frs[i].vec(k).domain().length];
@@ -277,9 +282,9 @@ class ASTRBind extends ASTPrim {
             else                         maps[i][j] = dmap[k].get(s);
           }
         }
-        emaps[k] = maps;
+        cmaps[k] = maps;
       } else {
-        emaps[k] = new int[frs.length][];
+        cmaps[k] = new int[frs.length][];
       }
       domains[k] = c==0?null:new String[c];
       for( Map.Entry<String, Integer> e : dmap[k].entrySet())
@@ -289,14 +294,15 @@ class ASTRBind extends ASTPrim {
     // Now make Keys for the new Vecs
     Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
     Vec[] vecs = new Vec[fr.numCols()];
+    int rowLayout = Vec.ESPC.rowLayout(keys[0],espc);
     for( int i=0; i<vecs.length; i++ )
-      vecs[i] = new Vec( keys[i], espc, domains[i], types[i]);
+      vecs[i] = new Vec( keys[i], rowLayout, domains[i], types[i]);
 
 
     // Do the row-binds column-by-column.
     // Switch to F/J thread for continuations
     ParallelRbinds t;
-    H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs,emaps)).join();
+    H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs,cmaps)).join();
     return new ValFrame(new Frame(fr.names(), t._vecs));
   }
 
@@ -308,11 +314,11 @@ class ASTRBind extends ASTPrim {
     private final AtomicInteger _ctr; // Concurrency control
     private static int MAXP = 100;    // Max number of concurrent columns
     private Frame[] _frs;             // All frame args
-    private int[][][] _emaps;         // Individual emaps per each set of vecs to rbind
+    private int[][][] _cmaps;         // Individual cmaps per each set of vecs to rbind
     private long[] _espc;             // Rolled-up final ESPC
 
     private Vec[] _vecs;        // Output
-    ParallelRbinds( Frame[] frs, long[] espc, Vec[] vecs, int[][][] emaps) { _frs = frs; _espc = espc; _vecs = vecs; _emaps=emaps;_ctr = new AtomicInteger(MAXP-1); }
+    ParallelRbinds( Frame[] frs, long[] espc, Vec[] vecs, int[][][] cmaps) { _frs = frs; _espc = espc; _vecs = vecs; _cmaps=cmaps;_ctr = new AtomicInteger(MAXP-1); }
 
     @Override protected void compute2() {
       final int ncols = _frs[1].numCols();
@@ -325,7 +331,7 @@ class ASTRBind extends ASTPrim {
       Vec[] vecs = new Vec[_frs.length]; // Source Vecs
       for( int i = 1; i < _frs.length; i++ )
         vecs[i] = _frs[i].vec(colnum);
-      new RbindTask(new Callback(), vecs, _vecs[colnum], _espc, _emaps[colnum]).fork();
+      new RbindTask(new Callback(), vecs, _vecs[colnum], _espc, _cmaps[colnum]).fork();
     }
 
     private class Callback extends H2O.H2OCallback {
@@ -343,14 +349,14 @@ class ASTRBind extends ASTPrim {
     final Vec[] _vecs;          // Input vecs to be row-bound
     final Vec _v;               // Result vec
     final long[] _espc;         // Result layout
-    int[][] _emaps;             // enum mapping array
+    int[][] _cmaps;             // categorical mapping array
 
-    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc, int[][] emaps) { super(cc); _vecs = vecs; _v = v; _espc = espc; _emaps=emaps; }
+    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc, int[][] cmaps) { super(cc); _vecs = vecs; _v = v; _espc = espc; _cmaps=cmaps; }
     @Override protected void compute2() {
       addToPendingCount(_vecs.length-1-1);
       int offset=0;
       for( int i=1; i<_vecs.length; i++ ) {
-        new RbindMRTask(this, _emaps[i], _v, offset).asyncExec(_vecs[i]);
+        new RbindMRTask(this, _cmaps[i], _v, offset).asyncExec(_vecs[i]);
         offset += _vecs[i].nChunks();
       }
     }
@@ -360,21 +366,21 @@ class ASTRBind extends ASTPrim {
   }
 
   private static class RbindMRTask extends MRTask<RbindMRTask> {
-    private final int[] _emap;
+    private final int[] _cmap;
     private final int _chunkOffset;
     private final Vec _v;
-    RbindMRTask(H2O.H2OCountedCompleter hc, int[] emap, Vec v, int offset) { super(hc); _emap = emap; _v = v; _chunkOffset = offset;}
+    RbindMRTask(H2O.H2OCountedCompleter hc, int[] cmap, Vec v, int offset) { super(hc); _cmap = cmap; _v = v; _chunkOffset = offset;}
 
     @Override public void map(Chunk cs) {
       int idx = _chunkOffset+cs.cidx();
       Key ckey = Vec.chunkKey(_v._key, idx);
-      if (_emap != null) {
-        assert !cs.hasFloat(): "Input chunk ("+cs.getClass()+") has float, but is expected to be enum";
+      if (_cmap != null) {
+        assert !cs.hasFloat(): "Input chunk ("+cs.getClass()+") has float, but is expected to be categorical";
         NewChunk nc = new NewChunk(_v, idx);
         // loop over rows and update ints for new domain mapping according to vecs[c].domain()
         for (int r=0;r < cs._len;++r) {
           if (cs.isNA(r)) nc.addNA();
-          else nc.addNum(_emap[(int)cs.at8(r)], 0);
+          else nc.addNum(_cmap[(int)cs.at8(r)], 0);
         }
         nc.close(_fs);
       } else {

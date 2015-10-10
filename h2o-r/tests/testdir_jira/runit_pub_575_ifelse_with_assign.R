@@ -14,7 +14,7 @@ print(ifelse(1, hex, hex[,1] <- hex[,1] + 1))
 #ensure that base ifelse is not broken
 print(ifelse(TRUE, iris, iris[,1] <- iris[,1] + 1))
 
-testEnd()
+
 
 }
 

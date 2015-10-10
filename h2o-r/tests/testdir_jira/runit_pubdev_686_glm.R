@@ -22,7 +22,7 @@ test <- function() {
     family = "gaussian"))
 
 
-  testEnd()
+  
 }
 
 doTest("GLM PUBDEV-686", test)

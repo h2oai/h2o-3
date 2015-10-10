@@ -95,8 +95,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             valid,
             parms._autoencoder ? 0 : 1, //nResponses
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-            parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            train.lastVec().isEnum() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
+            parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+            train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
@@ -213,9 +213,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           throw new IllegalArgumentException("Model type must be the same as for the checkpointed model.");
 
         // check the user-given arguments for consistency
-        DeepLearningParameters oldP = previous._parms; //user-given parameters for checkpointed model
+        DeepLearningParameters oldP = previous._parms; //sanitized parameters for checkpointed model
         DeepLearningParameters newP = _parms; //user-given parameters for restart
-        DeepLearningParameters.Sanity.checkpoint(oldP, newP);
+
+        DeepLearningParameters oldP2 = (DeepLearningParameters)oldP.clone();
+        DeepLearningParameters newP2 = (DeepLearningParameters)newP.clone();
+        DeepLearningParameters.Sanity.modifyParms(oldP, oldP2, nclasses()); //sanitize the user-given parameters
+        DeepLearningParameters.Sanity.modifyParms(newP, newP2, nclasses()); //sanitize the user-given parameters
+        DeepLearningParameters.Sanity.checkpoint(oldP2, newP2);
 
         try {
           final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);

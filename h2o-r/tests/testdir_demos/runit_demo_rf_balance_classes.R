@@ -52,7 +52,7 @@ test.h2o.rf.balance.classes <- function() {
     cat("\n\nWITH CLASS BALANCING\n")
     func(air.rf.balance)
 
-  testEnd()
+  
 }
 
 doTest("Demo random forest balance classes feature", test.h2o.rf.balance.classes)

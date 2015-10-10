@@ -61,7 +61,7 @@ test <- function() {
 	expect_equal(1.073911, min(ph[,1]), tolerance=1e-1 )
 	expect_equal(397.3288, max(ph[,1]), tolerance=1e-1 )
 	
-	testEnd()
+	
 }
 doTest("Deeplearning offset Test: deeplearning w/ offset for tweedie distribution", test)
 

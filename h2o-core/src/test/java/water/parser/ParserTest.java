@@ -9,7 +9,7 @@ import water.util.Log;
 import java.io.File;
 
 public class ParserTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
@@ -19,7 +19,7 @@ public class ParserTest extends TestUtil {
     long[] espc  = new long[data.length+1];
     for( int i = 0; i < data.length; ++i ) espc[i+1] = espc[i]+data[i].length();
     Key k = Vec.newKey();
-    ByteVec bv = new ByteVec(k,espc);
+    ByteVec bv = new ByteVec(k,Vec.ESPC.rowLayout(k,espc));
     DKV.put(k,bv,fs);
     for( int i = 0; i < data.length; ++i ) {
       Key ck = bv.chunkKey(i);
@@ -237,14 +237,14 @@ public class ParserTest extends TestUtil {
     Assert.assertTrue(fr3.vecs()[0].isUUID());
     fr3.delete();
 
-    String[] enumDataset = new String[]{"Foo-bar"};
-    Key k4 = makeByteVec(enumDataset);
+    String[] categoricalDataset = new String[]{"Foo-bar"};
+    Key k4 = makeByteVec(categoricalDataset);
     Key r4 = Key.make();
     ParseDataset.parse(r4, k4);
     Frame fr4 = DKV.get(r4).get();
     Assert.assertTrue(fr4.numCols()  == 1);
     Assert.assertTrue(fr4.numRows()  == 1);
-    Assert.assertTrue(fr4.vecs()[0].isEnum());
+    Assert.assertTrue(fr4.vecs()[0].isCategorical());
     String[] dom = fr4.vecs()[0].domain();
     Assert.assertTrue(dom.length == 1);
     Assert.assertEquals("Foo-bar", dom[0]);
@@ -393,7 +393,7 @@ public class ParserTest extends TestUtil {
     fr.delete();
   }
 
-  // TODO Update, originally tested enum to string conversion
+  // TODO Update, originally tested categorical to string conversion
   // TODO now just tests missing values among strings
 @Test public void testStrings() {
     Frame fr = null;
@@ -415,8 +415,8 @@ public class ParserTest extends TestUtil {
       Assert.assertTrue(vecs[5].isString());
       Assert.assertTrue(vecs[6].isString());
 
-      //checks column counts - expects MAX_ENUM == 65000
-      //Categorical registration is racy so actual enum limit can exceed MAX by a few values
+      //checks column counts - expects MAX_CATEGORICAL_COUNT == 65000
+      //Categorical registration is racy so actual categorical limit can exceed MAX by a few values
       Assert.assertTrue(65003 <= vecs[0].nzCnt()); //ColV2 A lacks starting values
       Assert.assertTrue(65002 <= vecs[1].nzCnt()); //ColV2 B has random missing values & dble quotes
       Assert.assertTrue(65005 <= vecs[2].nzCnt()); //ColV2 C has all values & single quotes
@@ -426,12 +426,12 @@ public class ParserTest extends TestUtil {
       Assert.assertTrue(65003 <= vecs[6].nzCnt()); //ColV2 G missing final values
 
       //spot check value parsing
-      ValueString vs = new ValueString();
-      Assert.assertEquals("A2", vecs[0].atStr(vs, 2).toString());
-      Assert.assertEquals("B7", vecs[1].atStr(vs, 7).toString());
-      Assert.assertEquals("'C65001'", vecs[2].atStr(vs, 65001).toString());
-      Assert.assertEquals("E65004", vecs[4].atStr(vs, 65004).toString());
-      Assert.assertNull(vecs[6].atStr(vs, 65004));
+      BufferedString str = new BufferedString();
+      Assert.assertEquals("A2", vecs[0].atStr(str, 2).toString());
+      Assert.assertEquals("B7", vecs[1].atStr(str, 7).toString());
+      Assert.assertEquals("'C65001'", vecs[2].atStr(str, 65001).toString());
+      Assert.assertEquals("E65004", vecs[4].atStr(str, 65004).toString());
+      Assert.assertNull(vecs[6].atStr(str, 65004));
 
       fr.delete();
     } finally {
@@ -684,7 +684,7 @@ public class ParserTest extends TestUtil {
     testParsed(r1,pows10_exp);
   }
 
-  // if there's only 3 different things - 2 strings and one other things (number of string), then declare this column an enum column
+  // if there's only 3 different things - 2 strings and one other things (number of string), then declare this column an categorical column
   @Test @Ignore public void testBinaryWithNA() {
     String[] data = new String[] {
             "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
@@ -779,7 +779,7 @@ public class ParserTest extends TestUtil {
             Frame fr = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
             fr.delete();
           } catch (Throwable t) {
-            Log.throwErr(t);
+            throw Log.throwErr(t);
           }
         }
       }

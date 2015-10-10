@@ -15,6 +15,6 @@ sliceTest_prostate_2_4 <- function() {
     slicedHex <- hex[c(5),c(3,2)]
         Log.info("Performing a 1-by-1 column slice of prostate_2 using these columns: ")
         Log.info("Performing a 1-by-1 row slice of prostate_2 using these rows: ")
-testEnd()
+
 }
 doTest("sliceTest_ on data prostate_2 unit= [", sliceTest_prostate_2_4)

@@ -1,4 +1,4 @@
-####### This tests deviance for poisson, tweedie and gamma distributions in deeplearing by comparing with expected results ######
+####### This tests deviance for poisson, tweedie and gamma distributions in deeplearning by comparing with expected results ######
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
@@ -49,7 +49,7 @@ test <- function() {
 	
 
 	print("poisson")
-	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
+	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	hh = h2o.deeplearning(x = 4:12,y = "ClaimNb",training_frame = fre,hidden = c(5,5),epochs = 1,
                        train_samples_per_iteration = -1,validation_frame = fre,activation = "Tanh",distribution = "poisson", score_training_samples=0)
@@ -63,6 +63,6 @@ test <- function() {
 	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	
-	testEnd()
+	
 }
 doTest("DL residual deviance Test: DL deviance for poisson/gamma/tweedie distributions", test)

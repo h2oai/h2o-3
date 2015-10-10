@@ -174,12 +174,6 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
   public final long nullDOF() { return _nobs - (_intercept?1:0);}
   public final long resDOF() { return _nobs - _rank;}
 
-  protected double computeAUC(){
-    if(_parms._family != Family.binomial)
-      throw new IllegalArgumentException("AUC only defined for family == 'binomial', got '" + _parms._family + "'");
-    return ((MetricBuilderBinomial)_metricBuilder).auc();
-  }
-
   protected void computeAIC(){
     _aic = 0;
     switch( _parms._family) {
@@ -205,8 +199,6 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
     _aic += 2*_rank;
   }
 
-  private transient ModelMetrics _metrics;
-
   @Override
   public String toString(){
     if(_metricBuilder != null)
@@ -217,7 +209,7 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
   @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
     GLMModel gm = (GLMModel)m;
     computeAIC();
-    ModelMetrics metrics = _metrics == null?_metricBuilder.makeModelMetrics(m, f):_metrics;
+    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f);
     if (_parms._family == Family.binomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), _aic, nullDOF(), resDOF());
@@ -228,7 +220,6 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
       metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), residualDeviance()/_wcount, nullDeviance(), _aic, nullDOF(), resDOF());
     }
-    DKV.put(metrics._key,metrics);
-    return gm._output.addModelMetrics(metrics);
+    return gm._output.addModelMetrics(metrics); // Update the metrics in-place with the GLM version
   }
 }

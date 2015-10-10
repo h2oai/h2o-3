@@ -38,7 +38,7 @@ test.slice.colTail <- function() {
   
   tryCatch(iris.hex[1,1],error=function(e) print(paste("Could not perform head(iris.hex[1,1]",e)))
 
-  testEnd()
+  
 }
 
 doTest("Slice Test: Tail of a column sliced out ", test.slice.colTail)

@@ -1,18 +1,13 @@
-#New Improvements in R
+#R Interface Improvements for H2O (Slater 3.2.0.5) 
 
 Recent improvements in the R wrapper for H2O may cause previously written R scripts to be inoperable. This document describes these changes and provides guidelines on updating scripts for compatibility. 
 
 ##H2O Connection Object
 
 The H2O connection object (`conn`) has been removed from nearly all calls.
-The `conn` object is still used in the following commands: 
+The `conn` object is still used in the `h2o.clusterIsUp` command. 
 
-- `h2o.clusterIsUp`
-- `h2o.init`
-- `h2o.rest`
-- `h2o.gitbase.url`
-
-Any `conn` references (for commands other than those listed above) must be removed from scripts to ensure compatibility. 
+Any `conn` references for commands other than `h2o.clusterIsUp` must be removed from scripts to ensure compatibility. 
 
 ##Changes to `apply`
 

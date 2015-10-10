@@ -15,7 +15,7 @@ ids = "prostate.hex")
 remove(prostate.hex)
 h2o.ls()
 
-testEnd()
+
 }
 
 doTest("R Doc RM", test.rdocRM.golden)

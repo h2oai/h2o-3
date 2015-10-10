@@ -13,9 +13,7 @@ public class H2OScaler extends Transform<H2OScaler> {
   double[] means;
   double[] sdevs;
 
-  H2OScaler(String name, String ast, boolean inplace) {
-    super(name,ast,inplace);
-  }
+  H2OScaler(String name, String ast, boolean inplace, String[] newNames) { super(name,ast,inplace,newNames); }
 
   @Override public Transform<H2OScaler> fit(Frame f) {
     means = new double[f.numCols()];
@@ -27,7 +25,7 @@ public class H2OScaler extends Transform<H2OScaler> {
     return this;
   }
 
-  // TODO: handle Enum, String, NA
+  // TODO: handle Categorical, String, NA
   @Override protected Frame transformImpl(Frame f) {
     final double[] fmeans = means;
     final double[] fmults = ArrayUtils.invert(sdevs);
@@ -42,7 +40,7 @@ public class H2OScaler extends Transform<H2OScaler> {
             ncs[col].addNum(in[col]);
         }
       }
-    }.doAll(f.numCols(),f).outputFrame(f.names(),f.domains());
+    }.doAll_numericResult(f.numCols(),f).outputFrame(f.names(),f.domains());
   }
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }

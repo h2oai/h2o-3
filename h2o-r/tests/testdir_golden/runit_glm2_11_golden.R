@@ -57,7 +57,7 @@ function() {
 	print(paste("Objective function for model from R:  ",objective_R, sep = ""))
 	print(paste("Objective function for model from H2O:  ",objective, sep = ""))
 	expect_true(objective < objective_R + 1e-5*gg$nulldev)
-    testEnd()
+    
 }
 doTest("Comapares objective function results from H2O-glm and glmnet: marketing data with no NAs Smalldata", glm.objectiveFun.test)
 

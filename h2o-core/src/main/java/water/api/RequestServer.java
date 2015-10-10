@@ -174,7 +174,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Frames/(?<frame_id>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs",
              "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
     register("/3/Frames/(?<frame_id>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain", null,
-            "Return the domains for the specified column. \"null\" if the column is not an Enum.");
+            "Return the domains for the specified column. \"null\" if the column is not a categorical.");
     register("/3/Frames/(?<frame_id>.*)/columns/(?<column>.*)"        ,"GET"   ,FramesHandler.class, "column", null,
       "Return the specified column from a Frame.");
     register("/3/Frames/(?<frame_id>.*)/columns"                      ,"GET"   ,FramesHandler.class, "columns", null,

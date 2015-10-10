@@ -22,7 +22,8 @@ public class FVecTest extends TestUtil {
       espc[i+1] = espc[i] + data[i].length();
     }
     Futures fs = new Futures();
-    ByteVec bv = new ByteVec(Vec.newKey(),espc);
+    Key key = Vec.newKey();
+    ByteVec bv = new ByteVec(key,Vec.ESPC.rowLayout(key,espc));
     for(int i = 0; i < chunks.length; ++i){
       Key chunkKey = bv.chunkKey(i);
       DKV.put(chunkKey, new Value(chunkKey,chunks[i].length,chunks[i],TypeMap.C1NCHUNK,Value.ICE),fs);
@@ -99,7 +100,7 @@ public class FVecTest extends TestUtil {
     // Make and insert a File8Vec to the global store
     File file = find_test_file("./smalldata/junit/cars.csv");
     NFSFileVec nfs = NFSFileVec.make(file);
-    Vec res = new TestNewVec().doAll(1,nfs).outputFrame(new String[]{"v"},new String[][]{null}).anyVec();
+    Vec res = new TestNewVec().doAll(new byte[]{Vec.T_NUM},nfs).outputFrame(new String[]{"v"},new String[][]{null}).anyVec();
     assertEquals(nfs.at8(0)+1,res.at8(0));
     assertEquals(nfs.at8(1)+1,res.at8(1));
     assertEquals(nfs.at8(2)+1,res.at8(2));

@@ -28,7 +28,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
          vecSize, windowSize, sentSampleRate, initLearningRate, epochs) {
 
   # param checking
-  if (!is.Frame(trainingFrame)) stop("`data` must be an Frame object")
+  if (!is.Frame(trainingFrame)) stop("`data` must be an H2O Frame object")
   if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
   if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
   if (!is.null(negExCnt)) {
@@ -41,7 +41,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   if (missing(initLearningRate) || !is.numeric(initLearningRate)) stop("`initLearningRate` must be numeric")
   if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
   if (!is.Frame(trainingFrame)) invisible(nrow(trainingFrame))  # try to force the eval of the frame
-  if (!is.Frame(trainingFrame)) stop("Could not evaluate `trainingFrame` as an Frame object")
+  if (!is.Frame(trainingFrame)) stop("Could not evaluate `trainingFrame` as an H2O Frame object")
 
   params <- list(training_frame = attr(.eval.frame(trainingFrame), "id"),
                  wordModel = wordModel,

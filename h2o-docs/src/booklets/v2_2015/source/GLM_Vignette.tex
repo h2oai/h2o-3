@@ -1,6 +1,7 @@
 % -*- mode: tex; fill-column: 115; -*-
 
-\input{common/conf_top.tex}
+%\input{common/conf_top.tex}
+\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \defcitealias{glmnet}{Regularization Paths for Generalized Linear Models via Coordinate Descent by Friedman et. al}
 \defcitealias{strong}{Strong Rules for Discarding Predictors in Lasso-type Problems by Bien et. al}
@@ -8,19 +9,19 @@
 \defcitealias{prox}{Proximal Algorithms by Boyd et. al}
 
 \input{common/conf_titles.tex}
+%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
 \begin{document}
 
-\input{common/conf_listings.tex}
 
 \thispagestyle{empty} %removes page number
 \newgeometry{bmargin=0cm, hmargin=0cm}
 
 
 \begin{center}
-\textsc{\Large\bf{Generalized Linear Modeling with H2O's R Package}}
+\textsc{\Large\bf{Generalized Linear Modeling with H2O}}
 \\
-\bigskip
 \small
 
 \line(1,0){250}  %inserts  horizontal line 
@@ -37,13 +38,13 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-September 2015: Third Edition
+\monthname \hspace{1pt}  \the\year: Third Edition 
 
  
 \bigskip
 \end{center}
 
-% commenting out lines image due to print issues, but leaving in since it took a while to figure it out
+% commenting out lines image due to print issues, but leaving for future ref. 
 %\null\vfill
 %\begin{figure}[!b]
 %\noindent\makebox[\textwidth]{%
@@ -68,10 +69,10 @@ by Nadine Hussami, Tom Kraljevic, \\ Jessica Lanford, Tomas Nykodym, \\ Ariel Ra
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
-\textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
+\textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-September 2015: Third Edition
+\monthname \hspace{1pt}  \the\year: Third Edition 
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -224,10 +225,11 @@ GLM models are fitted by finding the set of parameters that maximizes the likeli
 
 This is also applicable when the $\ell_2$ penalty is added to the optimization.  For all other families and when the $\ell_1$ penalty is included, the maximum likelihood problem has no analytical solution. An iterative method such as IRLSM, L-BFGS, the Newton method, or gradient descent, must be used. To select the solver, select the model and specify the exponential density. 
 
+
 \subsection{Model Validation}
 
-After selecting the model, evaluate the precision of the estimates to determine its accuracy. The quality of the fitted model can be obtained 
-by computing the goodness of fit between the predicted values that it generates and the given input data. Multiple measures of discrepancy may be used. 
+After selecting the model, evaluate the precision of the estimates to determine its accuracy. The quality of the fitted model can be obtained by computing the goodness of fit between the predicted values that it generates and the given input data. Multiple measures of discrepancy may be used. 
+\nowidow[3]
 
 H2O returns the logarithm of the ratio of likelihoods, called deviance, and the Akaike information criterion (AIC) after fitting a GLM. A benchmark for a good model is the saturated or full model, which is the largest model that can be fitted. Assuming the dataset consists of $N$ observations, the saturated model fits $N$ parameters $\hat{\mu}_i$. Since it gives a model with one parameter per observation, its predictions trivially fit the data perfectly.
 
@@ -287,10 +289,11 @@ The elastic net both selects variables and preserves the grouping effect (shrink
 H2O supports elastic net regularization, which is a combination of the $\ell_1$ and $\ell_2$ penalties parametrized by the $\alpha$ and $\lambda$ arguments (similar to \citetalias{glmnet}).
 \begin{itemize}
 \item $\alpha$ controls the elastic net penalty distribution between the $\ell_1$ and $\ell_2$ norms. It can have any value
-in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM using ridge regression. If $\alpha = 1$, the Lasso penalty is used.
+in the $[0,1]$ range or a vector of values (which triggers grid search). If $\alpha = 0$, H2O solves the GLM using ridge regression. If $\alpha = 1$, the Lasso penalty is used. \nowidow[3]
 \item $\lambda$ controls the penalty strength. The range is any positive value or a vector of values (which triggers grid search). 
 \textbf{Note:} Lambda values are capped at $\lambda_{max}$, which is the smallest $\lambda$ for which the solution is
-all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. \end{itemize}
+all zeros (except for the intercept term). %%this needs to be clarified - it doesn't really make sense to me. 
+\end{itemize}
 
 The combination of the $\ell_1$ and $\ell_2$ penalties is beneficial, since the $\ell_1$ induces sparsity while the $\ell_2$ gives
 stability and encourages the grouping effect (where a group of correlated variables tends to be dropped or added
@@ -316,7 +319,6 @@ $$ \max_{\beta,\beta_0} \ - \frac{1}{2N} \sum_{i=1}^N  (x_i^{\top}\beta + \beta_
 The deviance is the sum of the squared prediction errors: 
 $$ D = \sum_{i=1}^{N} (y_i - \hat{y}_i)^2 . $$
 
-\newpage
 \waterExampleInR
 
 Included in the H2O package is a prostate cancer dataset. The data was collected by Dr. Donn Young at the Ohio State
@@ -357,7 +359,7 @@ $$D = -2\sum_{i=1}^{n} \left(y_i \log(\hat{y}_i) + (1 - y_i)\log(1-\hat{y}_i)  \
 Using the prostate dataset, this example builds a binomial model that classifies the incidence of penetration of the prostatic
 capsule (CAPSULE). Confirm the entries in the CAPSULE column are binary using the \texttt{h2o.table()}
 function. Change the regression by changing the family to binomial.
-\newpage
+
 \lstinputlisting[style=R]{glm/glm_binomial_example.R}
 
 \waterExampleInPython
@@ -367,6 +369,7 @@ function. Change the regression by changing the family to binomial.
 Poisson regression is typically used for datasets where the response represents counts and the errors are assumed to have a Poisson distribution. In general, it can be applied to any data where the response is non-negative. It models the dependency between the response and covariates as: 
 %When building a Poisson model, we usually model dependency of the mean on the log scale, i.e. canonical link is log
 %and prediction is:
+\nowidow[3]
 
 $$\hat{y} = e^{x^T\beta + \beta_0}$$
 
@@ -375,7 +378,6 @@ The model is fitted by maximizing the corresponding penalized likelihood:
 $$  \max_{\beta,\beta_0}  \ \frac{1}{N} \sum_{i=1}^{N}  \left(   y_i (x_i^{\top}\beta  + \beta_0) - e^{x_i^{\top}\beta  + \beta_0} \right) 
 - \lambda \left(\alpha \|\beta \|_1 + \frac{1}{2}(1-\alpha) \| \beta \|_2^2 \right)$$
 
-\newpage
 The corresponding deviance is equal to: 
 
 $$D = -2\sum_{i=1}^{N} \left( y_i \log(y_i/\hat{y}_i) - ( y_i - \hat{y}_i  ) \right)$$
@@ -397,26 +399,28 @@ constant. It is usually used with the log link $g(\mu_i)= \log(\mu_i)$, or the i
 
 The model is fitted by solving the following likelihood maximization:
 
-$$  \max_{\beta,\beta_0} \  - \frac{1}{N}  \sum_{i=1}^N  \ \frac{y_i}{x_i^{\top}\beta+\beta_0 } + \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right). $$
+$$  \max_{\beta,\beta_0} \  - \frac{1}{N}  \sum_{i=1}^N  \ \frac{y_i}{x_i^{\top}\beta+\beta_0 } + \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right) $$
 %\[  \min\limits_{\beta,\beta_0} { {1 \over N}\sum\limits_{i=1}\limits^{N}{y_i \over (x_i^{T}\beta  + \beta_0)} - log({x_i^{T}\beta  + \beta_0})  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
 
 The corresponding deviance is equal to:
 
-$$D = 2\sum_{i=1}^{N} - \log\left({\frac{ y_i }{\hat{y}_i}}\right) + \frac{(y_i - \hat{y}_i)}{\hat{y}_i}. $$
+$$D = 2\sum_{i=1}^{N} - \log\left({\frac{ y_i }{\hat{y}_i}}\right) + \frac{(y_i - \hat{y}_i)}{\hat{y}_i} $$
 
+\begin{minipage}{\textwidth}
 \waterExampleInR
-\\
 To change the link function from the default inverse function to the log link function, modify the \texttt{link}
-argument.
-\bigskip
+argument. 
 \lstinputlisting[style=R]{glm/glm_gamma_example.R}
-\newpage
+\end{minipage}
+
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_gamma_example.py}
 
 \subsubsection{Tweedie Models}
 
-Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. The Tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
+Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. 
+
+The Tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
 
 \begin{itemize}
 \item  $p=0$: Normal
@@ -470,7 +474,7 @@ The following examples show how to coerce the data type of a column to a factor.
 
 \waterExampleInR
 \lstinputlisting[style=R]{glm/coerce_column_to_factor.R}
-\newpage
+
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/coerce_column_to_factor.py}
 
@@ -508,14 +512,14 @@ We strongly recommend avoiding one-hot encoding categorical columns with many le
 \subsection{Family and Link}
 
 Family and Link are optional parameters. The default family is \texttt{Gaussian} and the default link is a
-canonical link for the selected family. These are passed as strings, e.g. \texttt{family=`gamma', link =`$\log$'}.
-While it is possible to select  a non-canonical link, this can lead to an unstable computation. 
+canonical link for the selected family. These are passed as strings, e.g. \texttt{family = "gamma", link = "log"}.
+While it is possible to select  a non-canonical link, this may lead to an unstable computation. 
 
 \subsection{Regularization Parameters}
 
 To get the best possible model, we need to find the optimal values of the regularization parameters $\alpha$ and
 $\lambda$.  To find the optimal values, H2O provides grid search over $\alpha$ and a special form of grid search
-called ``lambda search" over $\lambda$. For a detailed explanation, refer to \nameref{regularization}.
+called ``lambda search" over $\lambda$. For a detailed explanation, refer to {\textbf{\nameref{regularization}}}.
 
 The recommended way to find optimal regularization settings on H2O is to do
 a grid search over a few $\alpha$ values with an automatic lambda search for each $\alpha$. Both are described
@@ -523,12 +527,12 @@ below in greater detail.
 
 \subsubsection{Alpha and Lambda}
 
-\texttt{alpha} controls the distribution between  the $\ell_1$ (Lasso) and  $\ell_2$ (Ridge regression) penalties.  An \texttt{alpha} 
-of 1.0 indicates Lasso, and an \texttt{alpha} of 0.0 indicates ridge regression.
+The \texttt{alpha} parameter controls the distribution between  the $\ell_1$ (Lasso) and  $\ell_2$ (Ridge regression) penalties.  A value of 1.0 for \texttt{alpha} 
+ represents Lasso, and an \texttt{alpha} value of 0.0 produces ridge regression.
 
-\texttt{lambda} controls the amount of regularization applied.  If \texttt{lambda} is 0.0, no 
+The \texttt{lambda} parameter controls the amount of regularization applied.  If \texttt{lambda} is 0.0, no 
 regularization is applied and the \texttt{alpha} parameter is ignored.  The default value for \texttt{lambda} is
-calculated by H2O using a heuristic based on the training data.  If you let H2O calculate \texttt{lambda}, you can see the chosen value in the model output.
+calculated by H2O using a heuristic based on the training data.  If you let H2O calculate the value for \texttt{lambda}, you can see the chosen value in the model output.
 
 \subsubsection{Lambda Search}
 Lambda search enables efficient and automatic search for the optimal value of the \texttt{lambda} parameter. When lambda search is enabled, GLM will first fit a model with maximum regularization and then keep decreasing it until overfitting occurs. The resulting model is based on the best \texttt{lambda} value. 
@@ -553,30 +557,31 @@ H2O computes $\lambda$-models sequentially and in decreasing order, warm-startin
  lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the neighboring lambdas are ``close" to each other. The default values are \texttt{nlambda} = 100 and $\lambda_{min}
 = \lambda_{max} 1e^{-4}$, which gives us the ratio of 0.912.  For best results when using strong rules, keep the
 ratio close to the default.
-\newpage
+
 \item \texttt{max\_active\_predictors}: This limits the number of active predictors (the actual number of non-zero predictors in the model is going to be slightly lower). It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
 
 \end{itemize}
 
 \subsection{Solver Selection}
 
-This section provides general guidelines to help get the best performance out of the H2O GLM implementation options. The optimal solver depends on the properties of the data and prior information regarding the variables (if available). 
+This section provides general guidelines for best performance from the H2O GLM implementation options. The optimal solver depends on the data properties and prior information regarding the variables (if available). 
 
-The data are considered sparse when the ratio of zeros to non-zeros in the input matrix is greater than $\sim 10$. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. On the other hand a dense solution is one where all predictors have non-zero coefficients in the final model.
+The data are considered sparse if the ratio of zeros to non-zeros in the input matrix is greater than $\sim 10$. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. In a dense solution, all predictors have non-zero coefficients in the final model.
 
 \subsubsection{Solver Details}
-
+\begin{minipage}{\textwidth}
 H2O's GLM offers two different solvers: 
 
 \begin{itemize}
 \item the Iteratively Reweighted Least Squares Method (IRLSM)
 \item the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS)
 \end{itemize}
-IRLSM uses
-a Gram Matrix approach, which is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense
+\end{minipage}
+
+IRLSM uses a Gram Matrix approach, which is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense
 datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than $\sim 500$ predictors in the data, use the default, which is IRLSM. 
 
-For larger numbers of predictors, it is recommended to run IRLSM with lambda search and compare it to L-BFGS with just the $\ell_2$ penalty. The more advanced user may follow these general guidelines:
+For larger numbers of predictors, it is recommended to run IRLSM with lambda search and compare it to L-BFGS with just the $\ell_2$ penalty. For advanced users, we recommend the following general guidelines:
 %H2O's GLM offers two different approaches for datasets with more than a thousand predictors.%depending on the expected number of coefficients to be included in the model: % to handling wide datasets: the IRLSM and the L-BFGS solvers.
 \begin{itemize}
 \item For a dense solution and a dense dataset, use IRLSM if there are fewer than $\sim 500$ predictors in the data; otherwise, use L-BFGS. Set \texttt{alpha} to 0 to include $\ell_2$ regularization in the elastic net penalty term to avoid inducing sparsity in the model.
@@ -595,9 +600,13 @@ For larger numbers of predictors, it is recommended to run IRLSM with lambda sea
 %\subsection{Solver Selection} %wide data want lambda search with alpha > 0 
 %The two solvers provided in H2O are the Iteratively Reweighted Least Squares Method (IRLSM) and the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS).  
 %comment on using IRLSM with coordinate descent or with ADMM as in the IRLSM called algo?
-IRLSM can be run with two algorithms to solve its innermost loop: ADMM and cyclical coordinate descent. The latter is used in glmnet. The method is able to handle large datasets well and deals efficiently with sparse features. It should improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. Coordinate descent can be implemented with naive or covariance updates as explained in the glmnet paper. The covariance updates version is faster when $N>p$ and $p \sim 500$. 
+IRLSM can be run with two algorithms to solve its innermost loop: ADMM and cyclical coordinate descent. The latter is used in glmnet. 
 
-The solver options for fitting a GLM in H2O are:
+The method is able to handle large datasets well and deals efficiently with sparse features. It should improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. 
+
+Coordinate descent can be implemented with naive or covariance updates as explained in the glmnet paper. The covariance updates version is faster when $N>p$ and $p \sim 500$. 
+
+In summary, the solver options for fitting a GLM in H2O are:
 \begin{itemize}
  \item \textbf{L-BFGS}: when the number of predictors is large
  \item \textbf{IRLSM}: IRLSM with the ADMM solver in the innermost loop when you have a limited number of predictors
@@ -609,23 +618,29 @@ The solver options for fitting a GLM in H2O are:
 
 \subsubsection{Stopping criteria}
 
-When using the $\ell_1$ penalty with lambda search, specify the \\ \texttt{max\_active\_predictors} parameter to stop
-the search before it completes.  Models built at the beginning of the lambda search have higher lambda values, consider fewer predictors, and take less time to calculate the model.  Models built at the end of the lambda search have
-lower lambda values, incorporate more predictors, and take a longer time to calculate the model. Set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
+When using the $\ell_1$ penalty with lambda search, specify a value for the \\ \texttt{max\_active\_predictors} parameter to stop the search before it completes.  
+
+Models built at the beginning of the lambda search have higher lambda values, consider fewer predictors, and take less time to calculate the model. 
+
+Models built at the end of the lambda search have
+lower lambda values, incorporate more predictors, and take a longer time to calculate the model. 
+
+Set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
 
 \bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_stopping_criteria.R}
 
+\begin{minipage}{\textwidth}
 \waterExampleInPython
 \lstinputlisting[style=python]{glm/glm_stopping_criteria.py}
+\end{minipage}
 
 %For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
 %model building can be slower. It is often better to run lambda search with the IRLSM solver instead.
 \subsection{Advanced Features}
 
 H2O's GLM has several advanced features to help build better models.
-\newpage
 \subsubsection{Standardizing Data}
 
 The \texttt{standardize} parameter, which is enabled by default, standardizes numeric columns to have zero mean and
@@ -644,12 +659,9 @@ used for training.
 You can also specify the rows that are assigned to each fold using the\\ \texttt{fold\_assignment}
 or \texttt{fold\_column} parameters.
 
-\bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_cross_validation.R}
 
-
-\newpage
 \subsubsection{Grid Search Over Alpha}
 
 Alpha search is not always needed and simply changing its value to 0.5 (or 0 or 1 if we only want Ridge or Lasso,
@@ -662,6 +674,7 @@ Use caution when including $\alpha=0$ or $\alpha=1$ in the grid search. $\alpha=
 and it can be very slow (or even impossible) to compute in large $N$ situations. $\alpha=1$ has no  $\ell_2$ penalty, so
 it is therefore less numerically stable and can be very slow as well due to slower convergence. In general, we recommend running with $alpha=1-\epsilon$ instead.
 
+\begin{minipage}{\textwidth}
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_grid_search_over_alpha.R}
 
@@ -677,6 +690,7 @@ it is therefore less numerically stable and can be very slow as well due to slow
 
 Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the built-in lambda
 search capability in GLM.
+\end{minipage}
 
 \subsubsection{Offsets}
 
@@ -696,11 +710,11 @@ constraints are upper and lower bounds and the proximal operator interface, as d
 The constraints are specified as a frame with following vecs (matched by name; all vecs can be sparse):
 
 \begin{itemize}
-\item \texttt{names (mandatory)}  - coefficient names. 
-\item \texttt{lower\_bounds (optional)} - coefficient lower bounds , must be $<= 0$
-\item \texttt{upper\_bounds (optional)} - coefficient upper bounds , must be $>= 0$
-\item \texttt{beta\_given (optional)} - specifies the given solution in proximal operator interface
-\item \texttt{rho} (mandatory if \texttt{beta\_given} is specified, otherwise ignored) - specifies per-column  $\ell_2$ penalties on the distance from the given solution
+\item \texttt{names}: (mandatory) coefficient names
+\item \texttt{lower\_bounds}: (optional) coefficient lower bounds , must be less than or equal to \texttt{upper\_bounds}
+\item \texttt{upper\_bounds}: (optional) coefficient upper bounds , must be greater than or equal to \texttt{lower\_bounds}
+\item \texttt{beta\_given}: (optional) specifies the given solution in proximal operator interface
+\item \texttt{rho} (mandatory if \texttt{beta\_given} is specified, otherwise ignored): specifies per-column  $\ell_2$ penalties on the distance from the given solution
 \end{itemize}
  
 \subsubsection{Proximal Operators}
@@ -719,7 +733,6 @@ The following sections explain the output produced by logistic regression (i.e. 
 \bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_model_output_10.R}
-\newpage
 \begin{lstlisting}[style=output]
 Model Details:
 ==============
@@ -794,7 +807,7 @@ Maximum Metrics:
 6           max absolute_MCC  0.469237 0.391977  38
 7 max min_per_class_accuracy  0.482906 0.692308  36
 \end{lstlisting}
-\newpage
+
 \subsection{Coefficients and Normalized Coefficients}
 
 Coefficients are the predictor weights (i.e. the actual model used for prediction).  Coefficients should be used to
@@ -863,7 +876,7 @@ Various model statistics are available:
 Retrieve these statistics using the following accessor functions:
 
 \lstinputlisting[style=R]{glm/glm_accessors.R}
-\newpage
+
 \subsection{Confusion Matrix}
 
 Fetch the confusion matrix directly using the following accessor function:
@@ -891,13 +904,12 @@ Scoring History:
 
 \section{Making Predictions}
 
-Once you have built a model, you can use it to make predictions using two different approaches:  the in-H2O batch
-scoring approach and the real-time nano-fast POJO approach.
+Once you have built a model, you can use it to make predictions using two different approaches:  the in-H2O batch scoring approach and the real-time nano-fast POJO approach.
 
 \subsection{Batch In-H2O Predictions}
 
-Batch in-H2O predictions are made using a normal H2O cluster on a new H2OFrame.  In addition to predictions, you
-can also get metrics like AUC if you include the response column in the new data.  Refer to the following example for logistic regression (i.e. binomial classification).
+Batch in-H2O predictions are made using a normal H2O cluster on a new H2OFrame.  When you use \texttt{h2o.predict()}, the order of the rows in the results is the same as the order in which the data was loaded, even if some rows fail (for example, due to missing values or unseen factor levels). 
+In addition to predictions, you can view metrics such as area under curve (AUC) if you include the response column in the new data.  The following example represents a logistic regression model (i.e. binomial classification).
 
 \bigskip
 \waterExampleInR
@@ -942,14 +954,11 @@ or a Spark Streaming pipeline, for example).
 The POJO does nothing but pure math, and has no dependencies on any other software packages (not even H2O),
 so it is easy to implement.
 
-Directions for using the POJO in detail are beyond the scope of this document, but here is an example of how to get
-one and view it.  You can also access the POJO from the Flow Web UI.
+Directions for using the POJO in detail are beyond the scope of this document, but the following example demonstrates how to generate and view a POJO.  To access the POJO from the Flow Web UI, click the \textsc{Download POJO} button at the bottom of the cell containing the generated model.
 
 For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick Start Guide} at {\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/POJO_QuickStart.md}}. 
 
-\bigskip
 \waterExampleInR
-
 \lstinputlisting[style=R]{glm/glm_download_pojo.R}
 
 %----------------------------------------------------------------------
@@ -960,44 +969,48 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 Here are a few rules of thumb to follow:
 
 \begin{itemize}
+\item Use symmetric nodes in your H2O cluster
+\item Impute data before running GLM
 \item The IRLSM solver works best on tall and skinny datasets
 \item If you have a wide dataset, use an  $\ell_1$ penalty to eliminate columns from the model
-\item If you have a wide dataset, try the L\_BFGS solver
-\item When trying lambda search, specify \texttt{max\_predictors} if it is taking too long. 90\% of the time is spent on the larger models with the small lambdas, so specifying \texttt{max\_predictors} helps a lot
-\item Retain a small  $\ell_2$ penalty (i.e. ridge regression) for numerical stability (i.e. don’t use \texttt{alpha} 1.0, use 0.95 instead)
-\item Use symmetric nodes in your H2O cluster
-\item For the IRLSM solver, bigger nodes can help the ADMM / Cholesky decomposition run faster
-\item If you need to impute data, do so before running GLM
+\item If you have a wide dataset, use the L-BFGS solver
+\item When using lambda search, specify a value for \texttt{max\_predictors} if the process takes too long. 90\% of the time is spent on the larger models with the small lambdas, so specifying \texttt{max\_predictors} can reduce this time
+\item Retain a small  $\ell_2$ penalty (i.e. ridge regression) for numerical stability (i.e. don`t use \texttt{alpha} 1.0, use 0.95 instead)
+\item When using the IRLSM solver, larger nodes can help the ADMM (Cholesky decomposition) run faster
 \end{itemize}
 
 \subsection{Verifying Model Results}
 
-To determine the accuracy of your model: 
+To determine the accuracy of your model, use the following guidelines: 
 
 \begin{itemize}
 \item Look for conspicuously different cross-validation results between folds:
+
 \waterExampleInR
 \lstinputlisting[style=R]{glm/glm_compare_cross_validation_folds.R}
 
-\item Look for explained deviance ($1 - {NullDev - ResDev \over NullDev}$)  
+
+\item Look for explained deviance ($1 - {NullDev - ResDev \over NullDev}$) 
       \begin{itemize}
-      \item Too close to 0:  model doesn’t predict well
-      \item Too close to 1:  model predicts “too” well (one of your input columns is probably a cheating column)
+      \item Too close to 0:  model doesn`t predict well (underfitting)
+      \item Too close to 1:  model predicts too well due to noisy data (overfitting)
       \end{itemize}
+
+
 \item For logistic regression (i.e. binomial classification) models, look for AUC
       \begin{itemize}
-      \item Too close to 0.5:  model doesn’t predict well
-      \item Too close to 1:  model predicts “too” well
+      \item Too close to 0.5:  model doesn`t predict well (underfitting)
+      \item Too close to 1:  model predicts too well due to noisy data (overfitting)
       \end{itemize}
-\item Look at the number\_of\_iterations or scoring history to see if GLM stops early for a particular
-      lambda that interests you (performing all the iterations probably means the solution is not good).  This is
+\item Look at the number of iterations  or scoring history to see if GLM stops early for a specific
+      lambda; performing all the iterations usually means the solution is not good.  This is
       controlled by the \texttt{max\_iterations} parameter.
-\item Too many NAs in your training data is bad (GLM discards rows with NA values)
-     You should always check degrees of freedom of the output model. Degrees of freedom is number of observations used to train the model minus the size of the model. If this number is way smaller than expected, it is likely that too many rows have been excluded due to having missing values. 
+\item The fewer the NA values in your training data, the better; GLM discards rows with NA values.
+     Always check degrees of freedom in the output model. Degrees of freedom is the number of observations used to train the model minus the size of the model. If this number is much smaller than expected, it is likely that too many rows have been excluded due to missing values. 
 
       \begin{itemize}
-      \item If you have few columns with many NAs, you might accidentally be losing all your rows and it's better to exclude them.
-      \item If you have many columns with small fraction of uniformly distributed missing values, every row is likely going to have at least one missing value. In this case, NAs should be imputed (filled in, e.g. with mean) before modeling.
+      \item If you have few columns with many NAs, you might accidentally be losing all your rows, so it`s better to exclude them.
+      \item If you have many columns with small fraction of uniformly-distributed missing values, every row will likely have at least one missing value. In this case, impute the NAs (e.g. substituted with mean values) before modeling.
       \end{itemize}
 \end{itemize}
 
@@ -1007,7 +1020,7 @@ To determine the accuracy of your model:
 
 The following sections discuss some of the implementation choices in H2O's GLM.
 
-\subsection{Categorical variables}
+\subsection{Categorical Variables}
 
 When applying linear models to datasets with categorical variables, the usual approach is to expand the
 categoricals into a set of binary vectors, with one vector per each categorical level (e.g. by calling
@@ -1020,7 +1033,7 @@ Categoricals have special handling during GLM computation as well. When forming 
 advantage of the fact that columns belonging to the same categorical never co-occur and the gram matrix region
 belonging to these columns will not have any non-zero elements outside of the diagonal. 
 
-This keep it in sparse representation, taking only $O(N)$ elements instead of $O(N*N)$. Furthermore, the complexity of Choelsky
+This keeps it in sparse representation, taking only $O(N)$ elements instead of $O(N*N)$. Furthermore, the complexity of Choelsky
 decomposition of a matrix that starts with a diagonal region can be greatly reduced. H2O's GLM exploits these two
 facts to handle the largest categorical ``for free". Therefore, when analyzing the performance of GLM in the
 equation expressed above, we can subtract the size of the largest categoricals from the number of predictors.
@@ -1037,14 +1050,13 @@ The implementation is based on iterative re-weighted least squares with an ADMM 
 in \citetalias{admm}) to deal with the  $\ell_1$ penalty. Every iteration of the algorithm consists of following steps:
 
 \begin{enumerate} 
-\item Generate weighted least squares problem based on previous solution, i.e. vector of weights w and response z 
+\item Generate weighted least squares problem based on previous solution, i.e. vector of weights $w$ and response $z$ 
 \item Compute the weighted gram matrix $X^TWX$ and $X^Tz$ vector
 \item Decompose the gram matrix (Cholesky decomposition) and apply ADMM solver to solve the  $\ell_1$ penalized least squares problem
 \end{enumerate}
 
 Steps 1 and 2 are performed distributively. Step 3 is computed in parallel on a single node. This method
-characterizes the computational complexity and scalability of dataset with $M$ observations and $N$ columns (predictors)
-on a cluster with $n$ nodes with $p$ CPUs each as follows:
+characterizes the computational complexity and scalability of a dataset with $M$ observations and $N$ columns (predictors) on a cluster with $n$ nodes with $p$ CPUs each.
 
 \bigskip
 
@@ -1090,11 +1102,15 @@ on a cluster with $n$ nodes with $p$ CPUs each as follows:
 
 If $M>>N$, the algorithm scales linearly both in the number of nodes and the number of CPUs per node. However,
 the algorithm is limited in the number of predictors it can handle, since the size of the Gram matrix grows
-quadratically, due to a memory and network throughput issue with the number of predictors. Its decomposition
+quadratically, due to a memory and network throughput issue with the number of predictors. 
+
+Its decomposition
 cost grows as the cube of the number of predictors increases, which is a computational cost issue. In many cases, H2O can work around these limitations due to its handling of categoricals and by employing strong rules to filter out inactive predictors.
 
 \subsubsection{L-BFGS solver}
-In each iteration, L-BFGS computes a gradient at the current vector of coefficients and then computes an updated vector of coefficients in an approximated Newton-method step. The cost of the coefficient update is $k*N$, where $N$ is number of predictors and $k$ is a constant, the cost of gradient computation is $M*N\over pn$ where $M$ is number of observations in the dataset and $pn$ is the number of CPU cores in the cluster. Since $k$ is a small constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully parallelized, scaling L-BFGS almost linearly. 
+In each iteration, L-BFGS computes a gradient at the current vector of coefficients and then computes an updated vector of coefficients in an approximated Newton-method step. 
+
+The cost of the coefficient update is $k*N$, where $N$ is number of predictors and $k$ is a constant, the cost of gradient computation is $M*N\over pn$ where $M$ is number of observations in the dataset and $pn$ is the number of CPU cores in the cluster. Since $k$ is a small constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully parallelized, scaling L-BFGS almost linearly. 
 
 \subsection{FAQ}
 
@@ -1141,7 +1157,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{tweedie\_link\_power}: A numeric specifying the power for the link function when \texttt{family = "tweedie"}. 
 \item \texttt{alpha}: The elastic-net mixing parameter, which must be in $[0,1]$. The penalty is defined to be $P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|] $ so \texttt{alpha=1} is the Lasso penalty, while \texttt{alpha=0} is the ridge penalty. Default is 0.5.
 \item \texttt{prior}: (Optional) A numeric specifying the prior probability of class 1 in the response when \texttt{family = "binomial"}. The default value is the observation frequency of class 1. 
-\item \texttt{lambda}: A non-negative value representing the shrinkage parameter, which multiplies $P(\alpha,\beta)$ in the objective. The larger lambda is, the more the coefficients are shrunk toward zero (and each other). When the value is 0, no elastic-net penalty is applied and ordinary generalized linear models are fit. Default is 1e-05.
+\item \texttt{lambda}: A non-negative value representing the shrinkage parameter, which multiplies $P(\alpha,\beta)$ in the objective. The larger lambda is, the more the coefficients are shrunk toward zero (and each other). When the value is 0, regularization is disabled and ordinary generalized linear models are fit. The default is 1e-05.
 \item \texttt{lambda\_search}: A logical value indicating whether to conduct a search over the space of lambda values, starting from the max lambda, given lambda will be interpreted as the min. lambda. Default is false.
 \item \texttt{nlambdas}: The number of lambda values when \texttt{lambda\_search = TRUE}. Default is -1.
 \item \texttt{lambda\_min\_ratio}: Smallest value for lambda as a fraction of \\ lambda.max, the entry value, which is the smallest value for which all coefficients in the model are zero. If the number of observations is greater than the number of variables then \texttt{lambda\_min\_ratio = 0.0001}; if the number of observations is less than the number of variables then \texttt{lambda\_min\_ratio = 0.01}. Default is -1.0.
@@ -1160,55 +1176,39 @@ H2O supports binomial models only; any extra levels in the test response will ge
 %Non-negative: Restricts coefficients to be non-negative. Default is false.
 %parallelism: @Is this just a python thing?
 
-\input{common/further_info.tex}
 
 \newpage
 
-\begin{thebibliography}{9}
+\section{References}
+\bibliographystyle{plainnat}  
+\nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included
+%use \bibentry{bibname} (where bibname is the entry name in the bibliography) to include entries from bibliography.bib; double brackets {{ are required in .bib file to preserve capitalization
 
-\bibitem{glmnet} 
-Jerome Friedman, Trevor Hastie, and Rob Tibshirani.
-\textbf{Regularization Paths for Generalized Linear Models via Coordinate Descent}.
-April 29, 2009
+\bibentry{glmnet} 
 
-\bibitem{strong} 
-  Robert Tibshirani, Jacob Bien, Jerome Friedman, Trevor Hastie, Noah Simon, Jonathan Taylor, and Ryan J. Tibshirani. 
-  \textbf{Strong Rules for Discarding Predictors in Lasso-type Problems}.
-  J. R. Statist. Soc. B, vol. 74, 2012.
-\bibitem{elastic}
-Hui Zou and Trevor Hastie
-\textbf{Regularization and variable selection via the elastic net}. 
-J. R. Statist. Soc. B (2005) 67, Part 2, pp. 301-320
+\bibentry{strongrules}
 
-\bibitem{lasso}
-Robert Tibshirani.
-\textbf{Regression Shrinkage and Selection via the Lasso}
-Journal of the Royal Statistical Society. Series B (Methodological), Volume 58, Issue 1 (1996), 267-288
+\bibentry{elastic}
 
-\bibitem{admm}
-S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein.
-\textbf{Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers}. 
-Foundations and Trends in Machine Learning, 3(1):1–122, 2011. (Original draft posted November 2010.)
+\bibentry{lasso}
 
-\bibitem{prox}
-N. Parikh and S. Boyd.\
-\textbf{Proximal Algorithms}.
-Foundations and Trends in Optimization, 1(3):123-231, 2014.
+\bibentry{admm}
 
-\bibitem{git}
-{\url{http://github.com/h2oai/h2o.git}}
+\bibentry{prox}
 
-\bibitem{docs}
-{\url{http://docs.h2o.ai}}
+\bibentry{h2osite}
 
-\bibitem{stream}
-{\url{https://groups.google.com/forum/#!forum/h2ostream}}
+\bibentry{h2odocs}
 
-\bibitem{h2o}
-{\url{http://h2o.ai}}
+\bibentry{h2ogithubrepo}
 
+\bibentry{h2odatasets}
 
-\end{thebibliography}
+\bibentry{h2ojira}
+
+\bibentry{stream}
+
+\bibentry{rdocs}
 
 \newpage
 
@@ -1224,7 +1224,7 @@ Tom is VP of Engineering of Customer and Pre-Sales Engineering at H2O and key to
 
 \textbf{Jessica Lanford}
 
-Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+Jessica is a word hacker and seasoned technical communicator at H2O.ai. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
 
 \textbf{Tomas Nykodym}
 

@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import static water.util.FrameUtils.parseFrame;
 
@@ -15,7 +16,7 @@ import java.util.Arrays;
 
 public class ConfusionMatrixTest extends TestUtil {
   @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
+  public static void stall() { stall_till_cloudsize(5); }
 
   final boolean debug = false;
 
@@ -157,8 +158,8 @@ public class ConfusionMatrixTest extends TestUtil {
   @Test public void testBadModelPrect() {
 
     simpleCMTest(
-            frame("v1", vec(ar("A","B","C"), ari(0,0,1,1,2) )),
-            frame("v1", vec(ar("A","B","C"), ari(1,1,2,2,2) )),
+            ArrayUtils.frame("v1", vec(ar("A", "B", "C"), ari(0, 0, 1, 1, 2))),
+            ArrayUtils.frame("v1", vec(ar("A", "B", "C"), ari(1, 1, 2, 2, 2))),
             ar("A","B","C"),
             ar("A","B","C"),
             ar("A","B","C"),
@@ -172,8 +173,8 @@ public class ConfusionMatrixTest extends TestUtil {
 
   @Test public void testBadModelPrect2() {
     simpleCMTest(
-            frame("v1", vec(ar("-1", "0", "1"), ari(0, 0, 1, 1, 2))),
-            frame("v1", vec(ar("0", "1"), ari(0, 0, 1, 1, 1))),
+            ArrayUtils.frame("v1", vec(ar("-1", "0", "1"), ari(0, 0, 1, 1, 2))),
+            ArrayUtils.frame("v1", vec(ar("0", "1"), ari(0, 0, 1, 1, 1))),
             ar("-1", "0", "1"),
             ar("0", "1"),
             ar("-1", "0", "1"),
@@ -185,22 +186,22 @@ public class ConfusionMatrixTest extends TestUtil {
 
   }
 
-  private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toEnum) {
+  private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toCategorical) {
     try {
       Frame v1 = parseFrame(Key.make("v1.hex"), find_test_file(f1));
       Frame v2 = parseFrame(Key.make("v2.hex"), find_test_file(f2));
       v2 = v1.makeCompatible(v2);
-      simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug, toEnum);
+      simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug, toCategorical);
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  /** Delete v1, v2 after potential modifying operations during processing: enums and/or train/test adaptation. */
-  private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toEnum) {
+  /** Delete v1, v2 after potential modifying operations during processing: categoricals and/or train/test adaptation. */
+  private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toCategorical) {
     Scope.enter();
     try {
-      ConfusionMatrix cm = buildCM(v1.vecs()[0].toEnum(), v2.vecs()[0].toEnum());
+      ConfusionMatrix cm = buildCM(v1.vecs()[0].toCategoricalVec(), v2.vecs()[0].toCategoricalVec());
 
       // -- DEBUG --
       if (debug) {

@@ -48,16 +48,16 @@ public class DeepLearningProstateTest extends TestUtil {
       try {
         for (int resp : responses[i]) {
           boolean classification = !(i == 0 && resp == 2);
-          if (classification && !frame.vec(resp).isEnum()) {
+          if (classification && !frame.vec(resp).isCategorical()) {
             DKV.remove(frame._key);
             String respname = frame.name(resp);
-            Vec r = frame.vec(respname).toEnum();
+            Vec r = frame.vec(respname).toCategoricalVec();
             frame.remove(respname).remove();
             frame.add(respname, r);
             DKV.put(frame);
 
             DKV.remove(vframe._key);
-            Vec vr = vframe.vec(respname).toEnum();
+            Vec vr = vframe.vec(respname).toCategoricalVec();
             vframe.remove(respname).remove();
             vframe.add(respname, vr);
             DKV.put(vframe);
@@ -67,7 +67,7 @@ public class DeepLearningProstateTest extends TestUtil {
                   DeepLearningParameters.Loss.CrossEntropy,
                   DeepLearningParameters.Loss.Huber,
                   DeepLearningParameters.Loss.Absolute,
-                  DeepLearningParameters.Loss.MeanSquare
+                  DeepLearningParameters.Loss.Quadratic
           }) {
             if ( !classification && loss == DeepLearningParameters.Loss.CrossEntropy ) continue;
             for (Distribution.Family dist : new Distribution.Family[]{
@@ -263,6 +263,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           assert(model1.model_info().get_params()._l1 == 0);
                                           assert(model1.model_info().get_params()._l2 == 0);
 
+                                          if (n_folds != 0) continue;
                                           // Do some more training via checkpoint restart
                                           // For n_folds, continue without n_folds (not yet implemented) - from now on, model2 will have n_folds=0...
                                           DeepLearningParameters p2 = new DeepLearningParameters();
@@ -271,7 +272,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                           {
                                             p2._model_id = Key.make();
                                             p2._checkpoint = model1._key;
-                                            p2._nfolds = 0;
+                                            p2._distribution = dist;
+                                            p2._loss = loss;
+                                            p2._nfolds = n_folds;
                                             p2._train = frame._key;
                                             p2._activation = activation;
                                             p2._hidden = hidden;
@@ -405,8 +408,14 @@ public class DeepLearningProstateTest extends TestUtil {
                                           t.printStackTrace();
                                           throw new RuntimeException(t);
                                         } finally {
-                                          if (model1 != null) model1.delete();
-                                          if (model2 != null) model2.delete();
+                                          if (model1 != null) {
+                                            model1.deleteCrossValidationModels();
+                                            model1.delete();
+                                          }
+                                          if (model2 != null) {
+                                            model2.deleteCrossValidationModels();
+                                            model2.delete();
+                                          }
                                         }
                                       }
                                     }

@@ -71,22 +71,30 @@ class ASTApply extends ASTPrim {
 
   // --------------------------------------------------------------------------
   private Val rowwise( final Env env, Frame fr, final AST fun ) {
-
+    final String[] names = fr._names;
     // Break each row into it's own Row, then execute the function passing the
     // 1 argument.  All rows are independent, and run in parallel
+
+    // do a single row of the frame to determine the size of the output.
+    double[] ds = new double[fr.numCols()];
+    for(int col=0;col<fr.numCols();++col)
+      ds[col] = fr.vec(col).at(0);
+    int noutputs = fun.apply(env,env.stk(),new AST[]{fun,new ASTRow(ds,fr.names())}).getRow().length;
     Frame res = new MRTask() {
-        @Override public void map( Chunk chks[], NewChunk nc ) {
+        @Override public void map( Chunk chks[], NewChunk[] nc ) {
           double ds[] = new double[chks.length]; // Working row
-          AST[] asts = new AST[]{fun,new ASTRow(ds)}; // Arguments to be called; they are reused endlessly
+          AST[] asts = new AST[]{fun,new ASTRow(ds,names)}; // Arguments to be called; they are reused endlessly
           for( int row=0; row<chks[0]._len; row++ ) {
             for( int col=0; col<chks.length; col++ ) // Fill the row
               ds[col] = chks[col].atd(row);
             try (Env.StackHelp stk_inner = env.stk()) {
-                nc.addNum(fun.apply(env,stk_inner,asts).getNum()); // Make the call per-row
+              double[] valRow = fun.apply(env,stk_inner,asts).getRow(); // Make the call per-row
+              for( int newCol=0;newCol<nc.length;++newCol)
+                nc[newCol].addNum(valRow[newCol]);
               }
           }
         }
-      }.doAll(1,fr).outputFrame();
+      }.doAll_numericResult(noutputs,fr).outputFrame();
     return new ValFrame(res);
   }
 }

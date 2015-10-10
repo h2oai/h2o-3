@@ -78,7 +78,7 @@ class ASTHist extends ASTPrim {
           }
         }
       }
-    }.doAll(4, layoutVec).outputFrame(null, new String[]{"breaks", "counts", "mids_true", "mids"},null);
+    }.doAll_numericResult(4, new Frame(layoutVec)).outputFrame(null, new String[]{"breaks", "counts", "mids_true", "mids"},null);
     layoutVec.remove();
     return new ValFrame(fr2);
   }
@@ -215,7 +215,7 @@ class ASTMode extends ASTPrim {
   @Override int nargs() { return 1+1; } // (mode ary)
   @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() != 1 || !fr.anyVec().isEnum() )
+    if( fr.numCols() != 1 || !fr.anyVec().isCategorical() )
       throw new IllegalArgumentException("mean only works on a single categorical column");
     return new ValNum(mode(fr.anyVec()));
   }

@@ -9,7 +9,7 @@ import water.util.ArrayUtils;
 /** Subclasses take a Frame and produces a scalar.  NAs -> NAs */
 abstract class ASTReducerOp extends ASTPrim {
   @Override int nargs() { return -1; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     // NOTE: no *initial* value needed for the reduction.  Instead, the
     // reduction op is used between pairs of actual values, and never against
     // the empty list.  NaN is returned if there are *no* values in the
@@ -68,14 +68,14 @@ abstract class ASTRollupOp extends ASTReducerOp {
   @Override
   public String[] args() { return new String[]{"ary"}; }
   abstract double rup( Vec vec );
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val arg1 = asts[1].exec(env);
     if( arg1.isRow() ) {        // Row-wise operation
       double[] ds = arg1.getRow();
       double d = ds[0];
       for( int i=1; i<ds.length; i++ )
         d = op(d,ds[i]);
-      return new ValNum(d);
+      return new ValRow(new double[]{d}, null);
     }
 
     // Normal column-wise operation
@@ -158,7 +158,7 @@ class ASTMad extends ASTPrim {
         for(int i=0;i<c._len;++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
-    }.doAll(1, f).outputFrame();
+    }.doAll_numericResult(1, f).outputFrame();
     if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev.names(),abs_dev.vecs())); }
     double mad = ASTMedian.median(abs_dev,cm);
     DKV.remove(f._key); // drp mapping, keep vec
@@ -290,11 +290,11 @@ class ASTMean extends ASTPrim {
     }
     Futures fs = new Futures();
     Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key);
+    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
     NewChunk chunk = new NewChunk(v, 0);
     for( int i=0;i<fr.numCols();++i ) chunk.addNum((fr.vec(i).isNumeric()||fr.vec(i).naCnt()>0)?fr.vec(i).mean():Double.NaN);
     chunk.close(0,fs);
-    Vec vec = v.close(fs);
+    Vec vec = v.layout_and_close(fs);
     fs.blockForPending();
     Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
     DKV.put(fr2);
@@ -316,11 +316,11 @@ class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package res
     }
     Futures fs = new Futures();
     Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key);
+    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
     NewChunk chunk = new NewChunk(v, 0);
     for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isNumeric()?fr.vec(i).sigma():Double.NaN);
     chunk.close(0,fs);
-    Vec vec = v.close(fs);
+    Vec vec = v.layout_and_close(fs);
     fs.blockForPending();
     Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
     DKV.put(fr2);
@@ -337,7 +337,7 @@ class ASTProd extends ASTPrim {
   public String str(){ return "prod";}
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
+    for(Vec v : fr.vecs()) if (v.isCategorical() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
     double prod=new RedProd().doAll(fr)._d;
     return new ValNum(prod);
   }
@@ -366,7 +366,7 @@ class ASTProdNA extends ASTPrim {
   public String str(){ return "prod.na";}
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
+    for(Vec v : fr.vecs()) if (v.isCategorical() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
     double prod=new RedProd().doAll(fr)._d;
     return new ValNum(prod);
   }
@@ -404,7 +404,7 @@ abstract class ASTCumu extends ASTPrim {
     if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
 
     CumuTask t = new CumuTask(f.anyVec().nChunks(),init());
-    t.doAll(1,f.anyVec());
+    t.doAll(new byte[]{Vec.T_NUM},f.anyVec());
     final double[] chkCumu = t._chkCumu;
     Vec cumuVec = t.outputFrame().anyVec();
     new MRTask() {

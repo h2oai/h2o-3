@@ -17,7 +17,7 @@ test.RF.nfolds <- function() {
   h2o.randomForest(y = 5, x = 1:4, training_frame = iris.hex,
                    ntrees = 50, nfolds = 5,
                    validation_frame = iris.hex)
-  testEnd()
+  
 }
 
 doTest("RF Cross-Validation Test: Iris", test.RF.nfolds)

@@ -8,8 +8,8 @@ def group_by():
     # Connect to a pre-existing cluster
     
 
-    h2o_iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    pd_iris = pd.read_csv(h2o.locate("smalldata/iris/iris_wheader.csv"))
+    h2o_iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    pd_iris = pd.read_csv(tests.locate("smalldata/iris/iris_wheader.csv"))
 
     na_handling = ["ignore","rm","all"]
     col_names = h2o_iris.col_names[0:4]

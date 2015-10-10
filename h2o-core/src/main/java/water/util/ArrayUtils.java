@@ -1,6 +1,13 @@
 package water.util;
 
+import water.DKV;
+import water.Futures;
+import water.Key;
 import water.MemoryManager;
+import water.fvec.AppendableVec;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -183,7 +190,7 @@ public class ArrayUtils {
     return a;
   }
   public static double[][] add(double[][] a, double[][] b) {
-    for(int i = 0; i < a.length; i++ ) a[i] = add(a[i],b[i]);
+    for(int i = 0; i < a.length; i++ ) a[i] = add(a[i], b[i]);
     return a;
   }
   public static double[][][] add(double[][][] a, double[][][] b) {
@@ -572,18 +579,18 @@ public class ArrayUtils {
   }
 
   // Find an element with linear search & return it's index, or -1
-  public static <T> int find(T[] ts, T elem) {
-    for( int i=0; i<ts.length; i++ )
-      if( elem==ts[i] || elem.equals(ts[i]) )
-        return i;
-    return -1;
-  }
+  public static <T> int find(T[] ts, T elem) {return find(ts,elem,0);}
 
   // Find an element with linear search & return it's index, or -1
   public static <T> int find(T[] ts, T elem, int off) {
-    for( int i=off; i<ts.length; i++ )
-      if( elem==ts[i] || elem.equals(ts[i]) )
+    for (int i = off; i < ts.length; i++)
+      if (elem == ts[i] || elem.equals(ts[i]))
         return i;
+    return -1;
+  }
+  public static int find(long[] ls, long elem) {
+    for(int i=0; i<ls.length; ++i )
+      if( elem==ls[i] ) return i;
     return -1;
   }
 
@@ -1109,4 +1116,33 @@ public class ArrayUtils {
         res[j++] = x;
     return res;
   }
+
+  /** Create a new frame based on given row data.
+   *  @param key   Key for the frame
+   *  @param names names of frame columns
+   *  @param rows  data given in the form of rows
+   *  @return new frame which contains columns named according given names and including given data */
+  public static Frame frame(Key key, String[] names, double[]... rows) {
+    assert names == null || names.length == rows[0].length;
+    Futures fs = new Futures();
+    Vec[] vecs = new Vec[rows[0].length];
+    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
+    int rowLayout = -1;
+    for( int c = 0; c < vecs.length; c++ ) {
+      AppendableVec vec = new AppendableVec(keys[c], Vec.T_NUM);
+      NewChunk chunk = new NewChunk(vec, 0);
+      for (double[] row : rows) chunk.addNum(row[c]);
+      chunk.close(0, fs);
+      if( rowLayout== -1) rowLayout = vec.compute_rowLayout();
+      vecs[c] = vec.close(rowLayout,fs);
+    }
+    fs.blockForPending();
+    Frame fr = new Frame(key, names, vecs);
+    if( key != null ) DKV.put(key, fr);
+    return fr;
+  }
+  public static Frame frame(double[]... rows) { return frame(null, rows); }
+  public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(), names, rows); }
+  public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
+
 }

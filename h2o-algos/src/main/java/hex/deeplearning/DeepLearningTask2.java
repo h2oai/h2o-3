@@ -50,7 +50,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     _res = new DeepLearningTask(_jobKey, _sharedmodel, _sync_fraction, _iteration);
     addToPendingCount(1);
     _res.setCompleter(this);
-    _res.asyncExec(0, _fr, true /*run_local*/);
+    _res.asyncExec(null, _fr, true /*run_local*/);
   }
 
   /**

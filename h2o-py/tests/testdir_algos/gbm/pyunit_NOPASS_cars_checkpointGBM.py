@@ -5,7 +5,7 @@ import random
 
 def cars_checkpoint():
 
-    cars = h2o.upload_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.upload_file(tests.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars.runif()
     train = cars[s > .2]
     valid = cars[s <= .2]

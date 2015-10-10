@@ -9,7 +9,7 @@ test.pubdev.1578 <- function() {
 
   expect_equal(glm.model.A@model, glm.model.B@model)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1578: GLM models are different", test.pubdev.1578)

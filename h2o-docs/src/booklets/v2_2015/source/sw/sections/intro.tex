@@ -3,7 +3,7 @@
 Sparkling Water integrates H2O's fast scalable machine learning engine with Spark.
 
 \subsection{Typical Use-Case}
-Sparkling Water excels in leveraging existing Spark-based workflows that need to call advanced machine learning algorithms. A typical example involves data munging with help of Spark API, where a prepared table is passed to the H2O DeepLearning algorithm. The constructed DeepLearning model estimates different metrics based on the testing data, which can be used in the rest of the Spark workflow.
+Sparkling Water excels in leveraging existing Spark-based workflows that need to call advanced machine learning algorithms. A typical example involves data munging with help of Spark API, where a prepared table is passed to an H2O algorithm. The constructed model estimates different metrics based on the testing data or gives prediction which can be used then in the rest of the Spark workflow.
 
 \subsection{Provided Features}
 
@@ -12,7 +12,8 @@ Sparkling Water provides transparent integration for the H2O engine and its mach
 \begin{itemize}
  \item Use of H2O algorithms in Spark workflow
  \item Transformation between H2O and Spark data structures
- \item Sse of Spark RDDs and DataFrames as input for H2O algorithms
+ \item Use of Spark RDDs and DataFrames as input for H2O algorithms
+ \item Use of H2O Frame as input for MLlib algorithms
  \item Transparent execution of Sparkling Water applications on top of Spark
 \end{itemize}
 
@@ -31,6 +32,8 @@ Currently, Sparkling Water can use the following data source types:
   \end{itemize}
 \end{itemize}
 
+For more details please consult H2O documentation~\footnote{\url{http://docs.h2o.ai}}.
+
 \subsection{Supported Data Formats}
 
 Sparkling Water can read data stored in the following formats:
@@ -40,6 +43,8 @@ Sparkling Water can read data stored in the following formats:
   \item SVMLight
   \item ARFF
 \end{itemize}
+
+For more details please consult H2O documentation~\footnote{\url{http://docs.h2o.ai}}.
 
 \subsection{Supported Spark Execution Environments}
 

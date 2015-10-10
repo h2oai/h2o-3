@@ -4,7 +4,7 @@ import h2o, tests
 
 def weights_and_distributions():
 
-    htable  = h2o.upload_file(h2o.locate("smalldata/gbm_test/moppe.csv"))
+    htable  = h2o.upload_file(tests.locate("smalldata/gbm_test/moppe.csv"))
     htable["premiekl"] = htable["premiekl"].asfactor()
     htable["moptva"] = htable["moptva"].asfactor()
     htable["zon"] = htable["zon"]

@@ -6,7 +6,7 @@ def anyfactor():
     
     
 
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
 
     # frame (positive example)
     assert iris.anyfactor(), "Expected true, but got false. Column 5 is a factor."

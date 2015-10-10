@@ -48,7 +48,7 @@ check.deeplearning_missing <- function() {
   }
   checkTrue(sum(errors) < 2.2, "Sum of classification errors is too large!")
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Missing Values Test", check.deeplearning_missing)

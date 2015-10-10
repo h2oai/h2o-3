@@ -2,11 +2,43 @@
 
 ##H2O
 
+###Slater (3.2.0.7) - 10/09/15
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bc6f15ab71f5d41553bbe566bcc0585ef2a2bdf1): Fix Java 6 compatibility
+
+	The Java 7 API call
+`_rawChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);`
+has been replaced by the Java 6 API call
+`_rawChannel.socket().setTcpNoDelay(true);`
+
+  The Java 7 API call 
+`sock.getRemoteAddress())`
+has been replaced by
+`sock.socket().getRemoteSocketAddress()`
+
+---
+
+###Slater (3.2.0.5) - 09/24/15
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+#####Algorithms
+
+* [PUBDEV-2133](https://0xdata.atlassian.net/browse/PUBDEV-2133): Enum test/train mapping is faster [(GitHub commit)](https://github.com/h2oai/h2o-3/commit/fe94591e6ef84e1f2b051d18beece2b10006de7a)
+
+- [PUBDEV-2030](https://0xdata.atlassian.net/browse/PUBDEV-2030): Improved POJO support to DRF
+
+---
 
 ###Slater (3.2.0.3) - 09/21/15
 
 ####New Features
-The following changes represent features that have been added since the previous release:
 
 #####R
 
@@ -14,7 +46,6 @@ The following changes represent features that have been added since the previous
 
 ####Enhancements
 
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
@@ -34,8 +65,6 @@ The following changes are improvements to existing features (which includes chan
 
 
 ####Bug Fixes 
-
-The following changes are to resolve incorrect software behavior:
 
 #####Algorithms
 

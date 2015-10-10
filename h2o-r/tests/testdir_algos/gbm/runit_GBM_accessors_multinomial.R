@@ -65,7 +65,7 @@ test.gbm.mult.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(iris.gbm))
 
-  testEnd()
+  
 }
 
 doTest("Testing model accessors for GBM", test.gbm.mult.accessors)

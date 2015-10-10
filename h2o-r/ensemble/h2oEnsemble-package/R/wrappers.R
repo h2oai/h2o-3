@@ -34,7 +34,8 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = "", validation_fram
 h2o.gbm.wrapper <- function(x, y, training_frame, model_id = "", #checkpoint
                             family = c("AUTO", "gaussian", "bernoulli", "binomial", "multinomial", "poisson", "gamma", "tweedie"),
                             tweedie_power = 1.5, ntrees = 50, max_depth = 5, min_rows = 10,
-                            learn_rate = 0.1, nbins = 20, nbins_cats = 1024,
+                            learn_rate = 0.1, sample_rate = 1, col_sample_rate = 1,
+                            nbins = 20, nbins_cats = 1024,
                             validation_frame = NULL, balance_classes = FALSE,
                             max_after_balance_size = 1, seed, build_tree_one_node = FALSE,
                             nfolds = 0, fold_column = NULL,
@@ -53,12 +54,12 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = "", #checkpoint
   }
   h2o.gbm(x = x, y = y, training_frame = training_frame, model_id = model_id, 
           distribution = distribution, tweedie_power = tweedie_power, ntrees = ntrees, max_depth = max_depth, min_rows = min_rows, 
-          learn_rate = learn_rate, nbins = nbins, nbins_cats = nbins_cats, 
+          learn_rate = learn_rate, sample_rate = sample_rate, col_sample_rate = col_sample_rate,
+          nbins = nbins, nbins_cats = nbins_cats, 
           validation_frame = validation_frame, balance_classes = balance_classes, 
           max_after_balance_size = max_after_balance_size, seed = seed, build_tree_one_node = build_tree_one_node, 
           nfolds = nfolds, fold_column = fold_column, fold_assignment = match.arg(fold_assignment), 
           keep_cross_validation_predictions = keep_cross_validation_predictions, 
-          #keep_cross_validation_predictions = TRUE, 
           score_each_iteration = score_each_iteration)#, #offset_column = offset_column,
           #weights_column = weights_column)
 }
@@ -105,7 +106,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = "",
                                      hidden_dropout_ratios, l1 = 0, l2 = 0, max_w2 = Inf,
                                      initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                                      initial_weight_scale = 1,
-                                     loss = c("Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"), 
+                                     loss = c("Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"), 
                                      distribution = c("AUTO", "gaussian", "bernoulli", "multinomial", 
                                                       "poisson", "gamma", "tweedie", "laplace", "huber"),
                                      tweedie_power = 1.5, score_interval = 5,

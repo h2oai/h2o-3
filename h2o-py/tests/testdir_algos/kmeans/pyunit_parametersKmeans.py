@@ -5,7 +5,7 @@ import h2o, tests
 def parametersKmeans():
 
     print "Getting data..."
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
 
     print "Create and and duplicate..."
     iris_km = h2o.kmeans(x=iris[0:4], k=3, seed=1234)

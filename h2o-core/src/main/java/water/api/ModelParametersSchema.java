@@ -73,7 +73,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help = "Column with cross-validation fold index assignment per observation", level = API.Level.secondary, is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column", "offset_column"}, direction = API.Direction.INOUT)
   public FrameV3.ColSpecifierV3 fold_column;
 
-  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"AUTO", "Random", "Modulo"}, level = API.Level.secondary, direction=API.Direction.INOUT)
+  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"AUTO", "Random", "Modulo", "Stratified"}, level = API.Level.secondary, direction=API.Direction.INOUT)
   public Model.Parameters.FoldAssignmentScheme fold_assignment;
 
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)

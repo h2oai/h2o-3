@@ -26,7 +26,7 @@ test.pipe.frame <- function() {
   hexPipeHex <- hex | hex
   print(hexPipeHex)
   
-  testEnd()
+  
 }
 
 doTest("BINOP2 TEST: Exec 2 test on '|'", test.pipe.frame)

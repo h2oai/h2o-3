@@ -10,7 +10,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.ParseTime;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 
 import java.util.Set;
 
@@ -84,7 +84,7 @@ abstract class ASTTime extends ASTPrim {
             for( int i=0; i<chk._len; i++ )
               cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt,chk.at8(i)));
           }
-        }.doAll(1,fr).outputFrame(fr._names, factors()));
+        }.doAll_numericResult(1,fr).outputFrame(fr._names, factors()));
     default: throw water.H2O.fail();
     }
   }
@@ -116,7 +116,7 @@ class ASTasDate extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec vec = fr.vecs()[0];
-    if( fr.vecs().length != 1 || !(vec.isEnum() || vec.isString()))
+    if( fr.vecs().length != 1 || !(vec.isCategorical() || vec.isString()))
       throw new IllegalArgumentException("as.Date requires a single column of factors or strings");
 
     final String format = asts[2].exec(env).getStr();
@@ -133,16 +133,16 @@ class ASTasDate extends ASTPrim {
       @Override public void map( Chunk c, NewChunk nc ) {
         //done on each node in lieu of rewriting DateTimeFormatter as Iced
         String date;
-        ValueString vStr = new ValueString();
+        BufferedString tmpStr = new BufferedString();
         for( int i=0; i<c._len; ++i ) {
           if( !c.isNA(i) ) {
-            if( isStr ) date = c.atStr(vStr, i).toString();
+            if( isStr ) date = c.atStr(tmpStr, i).toString();
             else        date = dom[(int)c.at8(i)];
             nc.addNum(DateTime.parse(date,_fmt).getMillis(),0);
           } else nc.addNA();
         }
       }
-    }.doAll(1,fr).outputFrame(fr._names, null);
+    }.doAll_numericResult(1,fr).outputFrame(fr._names, null);
     return new ValFrame(fr2);
   }
 }
@@ -206,7 +206,7 @@ class ASTMktime extends ASTPrim {
           n.addNum(dt.getMillis());
         }
       }
-    }.doAll(1,vecs).outputFrame(new String[]{"msec"},null);
+    }.doAll(new byte[]{Vec.T_NUM},vecs).outputFrame(new String[]{"msec"},null);
     // Clean up the constants
     for( int i=0; i<nargs()-1; i++ )
       if( fs[i] == null )
