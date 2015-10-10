@@ -23,15 +23,15 @@ test <- function() {
 	#					data = dd,weights=Exposure)) #deviance(gg) = 142814.2349666518; gg$null.deviance = 147048.37352688
 	
 	print("Check deviance and predictions")
-	expect_equal(147048.37352688, hh_with_weights@model$training_metrics@metrics$null_deviance)
-	expect_equal(142814.2349666518,hh_with_weights@model$training_metrics@metrics$residual_deviance)
+	expect_equal( 76405.380, hh_with_weights@model$training_metrics@metrics$null_deviance)
+	expect_equal( 73749.504, hh_with_weights@model$training_metrics@metrics$residual_deviance)
 
-	expect_equal(246200.2912844299, hh_no_weights@model$training_metrics@metrics$null_deviance)
-	expect_equal(241268.2585101248,hh_no_weights@model$training_metrics@metrics$residual_deviance)
+	expect_equal(122804.587, hh_no_weights@model$training_metrics@metrics$null_deviance)
+	expect_equal(118117.291, hh_no_weights@model$training_metrics@metrics$residual_deviance)
 
 	ph = as.data.frame(h2o.predict(hh_with_weights,newdata = dh)) 
 	#pr = predict(gg_with_offset,newdata = dd,type = "response") # mean(pr) = 0.06598871946540595
-	expect_equal(mean(ph[,1]),0.06598871946540595,tolerance=1e-8)
+	expect_equal(mean(ph[,1]),0.0947140432,tolerance=1e-8)
 
 	print("parse data")
 	library(MASS) 
