@@ -2385,8 +2385,9 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
     if( breaks=="Doane"   ) breaks <- "doane"
     if( breaks=="FD"      ) breaks <- "fd"
     if( breaks=="Scott"   ) breaks <- "scott"
+    breaks <- .quote(breaks)
   }
-  h <- as.data.frame(.newExpr("hist", chk.Frame(x), .quote(breaks)))
+  h <- as.data.frame(.newExpr("hist", chk.Frame(x), breaks))
   counts <- stats::na.omit(h[,2])
   mids <- stats::na.omit(h[,4])
   histo <- list()
