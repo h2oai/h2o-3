@@ -1,4 +1,3 @@
-
 ### This tests tweedie distribution,tweedie with offsets,  and tweedie with weights in glm ######
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
@@ -17,10 +16,9 @@ test <- function() {
                 tweedie_link_power = 0,lambda = 0,alpha = 0,training_frame = dh)
 
 	# From glm in R
-	 dd = as.data.frame(dh)
-	 gg_no_weights<-glm(ClaimNb~.-Exposure-IDpol,family=tweedie(var.power=1.05,link.power=0), data = dd)
-	 gg_with_weights<-glm(ClaimNb~.-Exposure-IDpol,family=tweedie(var.power=1.05,link.power=0),
-						data = dd,weights=Exposure)
+        dd = as.data.frame(dh)
+        gg_no_weights   <- glm(ClaimNb~.-Exposure-IDpol, family=tweedie(var.power=1.05,link.power=0), data = dd)
+        gg_with_weights <- glm(ClaimNb~.-Exposure-IDpol, family=tweedie(var.power=1.05,link.power=0), data = dd,weights=Exposure)
 	
 	expect_equal(gg_with_weights$null.deviance, hh_with_weights@model$training_metrics@metrics$null_deviance)
 	expect_equal(deviance(gg_with_weights),hh_with_weights@model$training_metrics@metrics$residual_deviance)
