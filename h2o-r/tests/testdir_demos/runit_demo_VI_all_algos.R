@@ -14,8 +14,6 @@ test <- function() {
 print("Parsing data into H2O")
 # From an h2o git workspace.
 data.hex <- h2o.importFile( locate("smalldata/demos/bank-additional-full.csv"), destination_frame="data")
-# Or directly from github.
-# data.hex = h2o.importFile( path = "https://raw.github.com/0xdata/h2o/master/smalldata/bank-additional-full.csv", destination_frame="data.hex")
 
 print("Expectation: All Algos should pick the predictor - 'duration' as the most important variable")
 

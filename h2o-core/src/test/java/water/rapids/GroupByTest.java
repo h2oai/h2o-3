@@ -9,7 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -194,7 +194,7 @@ public class GroupByTest extends TestUtil {
   //       6  17367
   //   10000   9493
   @Test public void testSplitCats() {
-    Frame cov = parse_test_file(Key.make("cov"),"smalldata/jira/covtype.altered.gz");
+    Frame cov = parse_test_file(Key.make("cov"),"smalldata/covtype/covtype.altered.gz");
     System.out.println(cov.toString(0,10));
 
     Val v_ddply = Exec.exec("(ddply cov [54] nrow)");
@@ -207,7 +207,26 @@ public class GroupByTest extends TestUtil {
 
     cov.delete();
   }
+
+  @Test public void testGroupbyTableSpeed() {
+    Frame ids = parse_test_file(Key.make("cov"),"smalldata/junit/id_cols.csv");
+    ids.replace(0,ids.anyVec().toCategoricalVec()).remove();
+    System.out.println(ids.toString(0,10));
+
+    long start = System.currentTimeMillis();
+    Val v_gb = Exec.exec("(GB cov [0] [0] nrow 0 \"all\")");
+    System.out.println("GB Time= "+(System.currentTimeMillis()-start)+"msec");
+    System.out.println(v_gb.toString());
+    ((ValFrame)v_gb)._fr.delete();
     
+    long start2 = System.currentTimeMillis();
+    Val v_tb = Exec.exec("(table cov)");
+    System.out.println("Table Time= "+(System.currentTimeMillis()-start2)+"msec");
+    System.out.println(v_tb.toString());
+    ((ValFrame)v_tb)._fr.delete();
+
+    ids.delete();
+  }    
 
 
   private void chkDim( Frame fr, int col, int row ) {
