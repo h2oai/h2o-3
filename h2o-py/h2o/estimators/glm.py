@@ -10,8 +10,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None):
     """
     Build a Generalized Linear Model
-    Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error
-    distribution.
+    Fit a generalized linear model, specified by a response variable, a set of predictors,
+    and a description of the error distribution.
 
     Parameters
     ----------
@@ -51,29 +51,41 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       A numeric in [0, 1] specifying the elastic-net mixing parameter.
 
       The elastic-net penalty is defined to be:
-      eqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|],
+      eqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 +
+      \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|],
       making alpha = 1 the lasso penalty and alpha = 0 the ridge penalty.
 
     Lambda : float
-      A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta) in the objective function.
-      When Lambda = 0, no elastic-net penalty is applied and ordinary generalized linear models are fit.
+      A non-negative shrinkage parameter for the elastic-net, which multiplies
+      \eqn{P(\alpha,\beta) in the objective function.
+      When Lambda = 0, no elastic-net penalty is applied and ordinary generalized linear
+      models are fit.
     prior : float, optional
-      A numeric specifying the prior probability of class 1 in the response when family = "binomial". The default prior is the observational frequency of class 1.
+      A numeric specifying the prior probability of class 1 in the response when
+      family = "binomial". The default prior is the observational frequency of class 1.
     lambda_search : bool
-      A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given lambda is interpreted as lambda minself.
+      A logical value indicating whether to conduct a search over the space of lambda
+      values starting from the lambda max, given lambda is interpreted as lambda minself.
     nlambdas : int
       The number of lambda values to use when lambda_search = TRUE.
     lambda_min_ratio : float
-      Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the the number of
-      variables then lambda_min_ratio = 0.0001; if the number of observations is less than the number of variables then lambda_min_ratio = 0.01.
+      Smallest value for lambda as a fraction of lambda.max. By default if the number of
+      observations is greater than the the number of variables then
+      lambda_min_ratio = 0.0001; if the number of observations is less than the number
+      of variables then lambda_min_ratio = 0.01.
     beta_constraints : H2OFrame
-      A data.frame or H2OParsedData object with the columns ["names", "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
-      in the GLM. "names" contains the predictor names, "lower"/"upper_bounds", are the lower and upper bounds of beta, and "beta_given" is some supplied starting
-      values for the
+      A data.frame or H2OParsedData object with the columns
+      ["names", "lower_bounds", "upper_bounds", "beta_given"],
+      where each row corresponds to a predictor in the GLM.
+      "names" contains the predictor names, "lower"/"upper_bounds",
+      are the lower and upper bounds of beta, and "beta_given" is some supplied starting
+      values.
     nfolds : int, optional
-      Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+      Number of folds for cross-validation. If nfolds >= 2, then validation must
+      remain empty.
     fold_assignment : str
-      Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
+      Cross-validation fold assignment scheme, if fold_column is not specified Must be
+      "AUTO", "Random" or "Modulo"
     keep_cross_validation_predictions : bool
       Whether to keep the predictions of the cross-validation models
     intercept : bool
@@ -83,15 +95,16 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     Returns
     -------
-      A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand (if
-      it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a H2ORegressionModel is
-      returned). The default print-out of the models is shown, but further GLM-specifc information can be queried out of
-      the object.
-      Upon completion of the GLM, the resulting object has coefficients, normalized coefficients, residual/null deviance,
-      aic, and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion
-      matrices.
+      A subclass of ModelBase is returned. The specific subclass depends on the machine
+      learning task at hand (if it's binomial classification, then an H2OBinomialModel
+      is returned, if it's regression then a H2ORegressionModel is returned). The default
+      print-out of the models is shown, but further GLM-specifc information can be
+      queried out of the object. Upon completion of the GLM, the resulting object has
+      coefficients, normalized coefficients, residual/null deviance, aic, and a host of
+      model metrics including MSE, AUC (for logistic regression), degrees of freedom, and
+      confusion matrices.
     """
     super(H2OGeneralizedLinearEstimator, self).__init__()
     self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
+    self.parms = {k: v for k, v in self.parms.iteritems() if k != "self"}
     self.parms["algo"] = "glm"
