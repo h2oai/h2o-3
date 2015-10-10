@@ -1,50 +1,81 @@
-from .transform_base import H2OTransformer
-from ..h2o import prcomp
+from ..estimators.estimator_base import H2OEstimator
 
-class H2OPCA(H2OTransformer):
+
+class H2OPCA(H2OEstimator):
   """
   Principal Component Analysis
   """
-  def __init__(self, n_components=None,max_iterations=None,seed=None,
-               use_all_factor_levels=False,pca_method=("GramSVD", "Power", "GLRM")):
+
+  def __init__(self, model_id=None, k=None, max_iterations=None, seed=None,
+               transform=("NONE","DEMEAN","DESCALE","STANDARDIZE","NORMALIZE"),
+               use_all_factor_levels=False,
+               pca_method=("GramSVD", "Power", "GLRM")):
     """
-    :param n_components: The number of components to compute.
-    :param max_iterations: Max iterations in each power loop. Capped at 1e6.
-    :param seed: Used for initializing right singular vectors at the start of each power iteration.
-    :param use_all_factor_levels: A boolean value indicating whether all factor levels should be
-           included in each categorical column expansion. If FALSE, the indicator column
-           correpsonding to the first level of every categorical variable will be dropped.
-    :param pca_method: Method used to compute PCA. Power and GLRM are still experimental.
-    :return: An instance of H2OPCA transform.
+    Principal Components Analysis
+
+    Parameters
+    ----------
+      model_id : str, optional
+        The unique hex key assigned to the resulting model. Automatically generated if
+        none is provided.
+      k : int
+        The number of principal components to be computed. This must be between 1 and
+        min(ncol(training_frame), nrow(training_frame)) inclusive.
+      transform : str
+        A character string that indicates how the training data should be transformed
+        before running PCA. Possible values are
+          "NONE": for no transformation,
+          "DEMEAN": for subtracting the mean of each column,
+          "DESCALE": for dividing by the standard deviation of each column,
+          "STANDARDIZE": for demeaning and descaling, and
+          "NORMALIZE": for demeaning and dividing each column by its range (max - min).
+      seed : int, optional
+         Random seed used to initialize the right singular vectors at the beginning of
+         each power method iteration.
+      max_iterations : int, optional
+        The maximum number of iterations when pca_method is "Power"
+      use_all_factor_levels : bool, optional
+        A logical value indicating whether all factor levels should be included in each
+        categorical column expansion. If False, the indicator column corresponding to the
+        first factor level of every categorical variable will be dropped. Default False.
+      pca_method : str
+        A character string that indicates how PCA should be calculated. Possible values
+        are
+          "GramSVD": distributed computation of the Gram matrix followed by a local SVD
+          using the JAMA package,
+          "Power": computation of the SVD using the power iteration method,
+          "GLRM": fit a generalized low rank model with an l2 loss function
+          (no regularization) and solve for the SVD using local matrix algebra.
+
+    Returns
+    -------
+      A new instance of H2OPCA.
     """
+    super(H2OPCA, self).__init__()
     self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["pca_method"]="GramSVD" if isinstance(pca_method,tuple) else pca_method
-    self.pca_model=None
+    self.parms = {k: v for k, v in self.parms.iteritems() if k != "self"}
+    self.parms["pca_method"] = "GramSVD" if isinstance(pca_method, tuple) else pca_method
+    self.parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
+    self.parms["algo"] = "pca"
 
-  def fit(self,X,y=None,**params):
-    """
-    Fit the PCA.
+  def fit(self, X,y=None,  **params):
+    return super(H2OPCA, self).fit(X)
 
-    :param X: An H2OFrame; may contain NAs and/or categoricals.
-    :param y: (Ignored)
-    :param params: (Ignored)
-    :return: This instance of H2OPCA.
-    """
-    self.pca_model = prcomp(x=X,k=self.parms["n_components"],
-                            max_iterations=self.parms["max_iterations"],
-                            seed=self.parms["seed"],
-                            use_all_factor_levels=self.parms["use_all_factor_levels"],
-                            pca_method=self.parms["pca_method"])
-    return self
-
-  def transform(self,X,y=None,**params):
+  def transform(self, X, y=None, **params):
     """
     Transform the given H2OFrame with the fitted PCA model.
 
-    :param X: An H2OFrame; may contain NAs and/or categoricals.
-    :param y: (Ignored)
-    :param params: (Ignored)
-    :return: An H2OFrame.
+    Parameters
+    ----------
+      X : H2OFrame
+        May contain NAs and/or categorical data.
+      y : H2OFrame
+        Ignored for PCA. Should be None.
+      params : dict
+        Ignored.
+
+    Returns
+    -------
+      The input H2OFrame transformed by the Principal Components
     """
-    return self.pca_model.predict(X)
+    return self.predict(X)

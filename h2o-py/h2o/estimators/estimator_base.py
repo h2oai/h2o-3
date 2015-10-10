@@ -20,7 +20,7 @@ class H2OEstimator(ModelBase):
 
   def __init__(self):
     super(H2OEstimator, self).__init__(None, None, None)
-    self.estimator=None
+    self.model=None
     self.parms=None
     self._estimator_type = ""
 
@@ -56,7 +56,7 @@ class H2OEstimator(ModelBase):
     if tframe is None: raise ValueError("Missing training_frame")
     if y is not None:
       self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
-    self.__dict__=build_model(self.parms).__dict__.copy()
+    self.__dict__.update(build_model(self.parms).__dict__.copy())
     return self
 
 
@@ -91,8 +91,7 @@ class H2OEstimator(ModelBase):
     training_frame = X.cbind(y) if y is not None else X
     X = X.names
     y = y.names[0] if y is not None else None
-    self.train(X, y, training_frame, **params)
-    return self
+    return self.train(X, y, training_frame, **params)
 
   def get_params(self, deep=True):
     """Useful method for obtaining parameters for this estimator. Used primarily for
