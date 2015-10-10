@@ -84,7 +84,7 @@
 #'  # Also see:
 #'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
 #'  data.hex = h2o.importFile(
-#'    path = "https://raw.github.com/h2oai/h2o/master/smalldata/bank-additional-full.csv",
+#'    path = "smalldata/demos/bank-additional-full.csv",
 #'    destination_frame = "data.hex")
 #'  myX = 1:20
 #'  myY="y"
