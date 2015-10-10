@@ -1336,7 +1336,7 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
 
   :return: a new dim reduction model
   """
-  warnings.warn("`h2o.prcomp` is deprecated. Use the estimators sub module to build an H2OPCAEstimator.", category=DeprecationWarning, stacklevel=2)
+  warnings.warn("`h2o.prcomp` is deprecated. Use the transforms sub module to build an H2OPCA.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="pca"
   return h2o_model_builder.unsupervised(parms)
@@ -1373,6 +1373,7 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 
   :return: a new dim reduction model
   """
+  warnings.warn("`h2o.svd` is deprecated. Use the transforms sub module to build an H2OSVD.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="svd"
   parms['_rest_version']=99
@@ -1448,6 +1449,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
 
   :return: a new dim reduction model
   """
+  warnings.warn("`h2o.glrm` is deprecated. Use the estimators sub module to build an H2OGeneralizedLowRankEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="glrm"
   parms['_rest_version']=99
@@ -1494,6 +1496,7 @@ def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,vali
 
   :return: Returns an H2OBinomialModel if the response has two categorical levels, H2OMultinomialModel otherwise.
   """
+  warnings.warn("`h2o.naive_bayes` is deprecated. Use the estimators sub module to build an H2ONaiveBayesEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="naivebayes"
   return h2o_model_builder.supervised(parms)

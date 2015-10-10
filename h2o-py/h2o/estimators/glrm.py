@@ -1,13 +1,13 @@
 from .estimator_base import H2OEstimator
 
 
-class H2OGLRMEstimator(H2OEstimator):
+class H2OGeneralizedLowRankEstimator(H2OEstimator):
   def __init__(self,k=None, max_iterations=None, transform=None, seed=None,
                ignore_const_cols=None,loss=None, multi_loss=None, loss_by_col=None,
                loss_by_col_idx=None, regularization_x=None, regularization_y=None,
                gamma_x=None, gamma_y=None, init_step_size=None, min_step_size=None,
                init=None, svd_method=None, user_x=None, user_y=None, recover_svd=None):
-    super(H2OGLRMEstimator, self).__init__()
+    super(H2OGeneralizedLowRankEstimator, self).__init__()
     self.parms = locals()
     self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
     self.parms["algo"]="glrm"

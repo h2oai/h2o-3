@@ -35,11 +35,13 @@ class H2OEstimator(ModelBase):
       y : str
         An index or a column name indicating the response column.
       training_frame : H2OFrame
-        The H2OFrame having the columns indicated by X and y (as well as any additional columns specified by fold, offset, and weights).
+        The H2OFrame having the columns indicated by X and y (as well as any
+        additional columns specified by fold, offset, and weights).
       offset_column : str, optional
         The name or index of the column in training_frame that holds the offsets.
       fold_column : str, optional
-        The name or index of the column in training_frame that holds the per-row fold assignments.
+        The name or index of the column in training_frame that holds the per-row fold
+        assignments.
       weights_column : str, optional
         The name or index of the column in training_frame that holds the per-row weights.
       validation_frame : H2OFrame, optional
