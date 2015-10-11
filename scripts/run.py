@@ -558,7 +558,7 @@ class Test:
         """
         return -9999999
 
-    def __init__(self, test_dir, test_short_dir, test_name, output_dir, ipynb_runner_dir):
+    def __init__(self, test_dir, test_short_dir, test_name, output_dir, ipynb_runner_dir, hadoop_namenode, on_hadoop):
         """
         Create a Test.
 
@@ -575,6 +575,8 @@ class Test:
         self.output_dir = output_dir
         self.output_file_name = ""
         self.notebook_runner = os.path.join(ipynb_runner_dir, "notebook_runner.py")
+        self.hadoop_namenode = hadoop_namenode
+        self.on_hadoop = on_hadoop
 
         self.cancelled = False
         self.terminated = False
@@ -593,8 +595,6 @@ class Test:
         @param port: Port of cloud to run on.
         @return: none
         """
-        global g_on_jenk_hadoop
-        global g_hdfs_name_node
         global g_r_demo
 
         if (self.cancelled or self.terminated):
@@ -609,7 +609,8 @@ class Test:
                    self.test_name,
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
+            if self.on_hadoop: cmd = cmd + ["--onHadoop"]
+            if self.hadoop_namenode: cmd = cmd + ["--hadoopNamenode", self.hadoop_namenode]
         elif (is_ipython_notebook(self.test_name)):
             cmd = ["python",
                    self.notebook_runner,
@@ -617,7 +618,6 @@ class Test:
                    self.ip + ":" + str(self.port),
                    "--ipynb",
                    self.test_name]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
         elif (is_runit_test_file(self.test_name)):
             cmd = ["R",
                    "-f",
@@ -625,7 +625,8 @@ class Test:
                    "--args",
                    "--usecloud",
                    self.ip + ":" + str(self.port)]
-            if g_on_jenk_hadoop: cmd = cmd + ["--onJenkHadoop", g_hdfs_name_node]
+            if self.on_hadoop: cmd = cmd + ["--onHadoop"]
+            if self.hadoop_namenode: cmd = cmd + ["--hadoopNamenode", self.hadoop_namenode]
         elif (is_rdemo(self.test_name) and g_r_demo):
             cmd = ["R",
                    "-f",
@@ -834,7 +835,7 @@ class TestRunner:
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
-                 testreport_dir, ipynb_runner_dir, r_pkg_ver_chk, r_demo):
+                 testreport_dir, ipynb_runner_dir, r_pkg_ver_chk, r_demo, hadoop_namenode, on_hadoop):
         """
         Create a runner.
 
@@ -858,6 +859,8 @@ class TestRunner:
         @param ipynb_runner_dir: directory that has ipython notebook runner script (called notebook_runner.py)
         @param r_pkg_ver_chk: check R packages/versions
         @param r_demo: run the R script against the R package, instead of using the h2o-runit test harness
+        @param hadoop_namenode
+        @param on_hadoop
         @return: The runner object.
         """
         self.test_root_dir = test_root_dir
@@ -900,6 +903,8 @@ class TestRunner:
         self.path_to_whl = path_to_whl
         self.r_pkg_ver_chk = r_pkg_ver_chk
         self.r_demo = r_demo
+        self.hadoop_namenode = hadoop_namenode
+        self.on_hadoop = on_hadoop
 
         if (use_cloud):
             node_num = 0
@@ -1103,7 +1108,8 @@ class TestRunner:
 
         test_short_dir = self._calc_test_short_dir(test_path)
 
-        test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.ipynb_runner_dir)
+        test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.ipynb_runner_dir,
+                    self.hadoop_namenode, self.on_hadoop)
         self.tests.append(test)
         self.tests_not_started.append(test)
 
@@ -1145,6 +1151,12 @@ class TestRunner:
         """
         if (self.terminated):
             return
+
+        if self.on_hadoop and self.hadoop_namenode == None:
+            print("")
+            print("ERROR: Must specify --namenode when using --onHadoop option.")
+            print("")
+            sys.exit(1)
 
         if self._have_some_r_tests() and self.r_pkg_ver_chk == True: self._r_pkg_ver_chk()
 
@@ -1699,8 +1711,8 @@ g_produce_unit_reports = True
 g_phantomjs_to = 3600
 g_phantomjs_packs = "examples"
 g_r_pkg_ver_chk = False
-g_on_jenk_hadoop = False
-g_hdfs_name_node = None
+g_on_hadoop = False
+g_hadoop_namenode = None
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1799,9 +1811,11 @@ def usage():
     print("")
     print("    --rPkgVerChk     Check that Jenkins-approved R packages/versions are present")
     print("")
-    print("    --onJenkHadoop   Signify to runit/pyunit test that they are being run on jenkins h2o-hadoop clusters.")
-    print("                     The tests need this signal for the `locate` and `sandbox` functions to behave properly.")
-    print("                     Supply hdfs name node to use.")
+    print("    --onHadoop       Indication that tests will be run on h2o multinode hadoop clusters.")
+    print("                     `locate` and `sandbox` runit/pyunit test utilities use this indication in order to")
+    print("                     behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
+    print("    --hadoopNamenode Specifies that the runit/pyunit tests have access to this hadoop namenode.")
+    print("                     `get_hadoop_namenode` runit/pyunit test utilities return this value.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
@@ -1890,8 +1904,8 @@ def parse_args(argv):
     global g_phantomjs_to
     global g_phantomjs_packs
     global g_r_pkg_ver_chk
-    global g_on_jenk_hadoop
-    global g_hdfs_name_node
+    global g_on_hadoop
+    global g_hadoop_namenode
 
     i = 1
     while (i < len(argv)):
@@ -2007,12 +2021,13 @@ def parse_args(argv):
             usage()
         elif (s == "--rPkgVerChk"):
             g_r_pkg_ver_chk = True
-        elif (s == "--onJenkHadoop"):
-            g_on_jenk_hadoop = True
+        elif (s == "--onHadoop"):
+            g_on_hadoop = True
+        elif (s == "--hadoopNamenode"):
             i += 1
             if (i > len(argv)):
                 usage()
-            g_hdfs_name_node = argv[i]
+            g_hadoop_namenode = argv[i]
         else:
             unknown_arg(s)
 
@@ -2138,7 +2153,7 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir, ipynb_runner_dir, g_r_pkg_ver_chk, g_r_demo)
+                          testreport_dir, ipynb_runner_dir, g_r_pkg_ver_chk, g_r_demo, g_hadoop_namenode, g_on_hadoop)
 
     # Build test list.
     if (g_test_to_run is not None):

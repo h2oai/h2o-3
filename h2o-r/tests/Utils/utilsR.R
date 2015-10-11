@@ -163,11 +163,12 @@ function(args) {
         argsplit <- strsplit(args[i], ":")[[1]]
         H2O.IP   <<- argsplit[1]
         H2O.PORT <<- as.numeric(argsplit[2])
-      } else if (s == "--onJenkHadoop") {
-        ON.JENKINS.HADOOP <<- TRUE
+      } else if (s == "--hadoopNamenode") {
         i <- i + 1
         if (i > length(args)) usage()
-        H2O.INTERNAL.HDFS.NAME.NODE <<- args[i]
+        HADOOP.NAMENODE <<- args[i]
+      } else if (s == "--onHadoop") {
+        ON.HADOOP <<- TRUE
       } else {
         unknownArg(s)
       }
@@ -313,9 +314,11 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
   genDummyCols(df.clone, use_all_factor_levels)
 }
 
-#' HDFS helper
-is.running.internal.to.h2o <- function() {
-    url <- sprintf("http://%s:50070", H2O.INTERNAL.HDFS.NAME.NODE);
+#' Hadoop helpers
+hadoop.namenode.is.accessible <- function() {
+    url <- sprintf("http://%s:50070", HADOOP.NAMENODE);
     internal <- url.exists(url, timeout = 5)
     return(internal)
 }
+
+hadoop.namenode <- function() { return(HADOOP.NAMENODE) }

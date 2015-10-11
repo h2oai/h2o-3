@@ -17,8 +17,8 @@ options(echo=FALSE)
 #'
 H2O.IP                      <<- "127.0.0.1"
 H2O.PORT                    <<- 54321
-ON.JENKINS.HADOOP           <<- FALSE
-H2O.INTERNAL.HDFS.NAME.NODE <<- NULL
+ON.HADOOP                   <<- FALSE
+HADOOP.NAMENODE             <<- NULL
 SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
 
@@ -73,10 +73,10 @@ function() {
 #' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
 locate<-
 function(pathStub, root.parent = NULL) {
-  if (ON.JENKINS.HADOOP) {
+  if (ON.HADOOP) {
     # HACK: jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
     # in a h2o-hadoop cluster scenario, the other machines don't have this link. We need to reference the actual path,
-    # which is /home/0xdiag/ on ALL jenkins machines. If ON.JENKINS.HADOOP is set by the run.py, pathStub MUST be
+    # which is /home/0xdiag/ on ALL jenkins machines. If ON.HADOOP is set by the run.py, pathStub MUST be
     # relative to /home/0xdiag/
     return(paste0("/home/0xdiag/",pathStub))
   }

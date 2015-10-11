@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 rtest <- function() {
 
-hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
+hdfs_name_node = hadoop.namenode()
 hdfs_data_file = "/datasets/15Mx2.2k.csv"
 #----------------------------------------------------------------------
 # Parameters for the test.

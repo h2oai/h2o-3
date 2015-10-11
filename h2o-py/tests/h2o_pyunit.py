@@ -6,8 +6,8 @@ from tests import utils
 
 _H2O_IP_                      = "127.0.0.1"
 _H2O_PORT_                    = 54321
-_ON_JENKINS_HADOOP_           = False
-_H2O_INTERNAL_HDFS_NAME_NODE_ = None
+_ON_HADOOP_                   = False
+_HADOOP_NAMENODE_             = None
 _IPYNB_                       = None
 
 """
@@ -48,20 +48,6 @@ def run_test(sys_args, test_to_run):
         h2o.remove_all()
         # if h2o.keys_leaked(num_keys): print "Leaked Keys!"
 
-# HDFS helpers
-def get_h2o_internal_hdfs_name_node():
-    global _H2O_INTERNAL_HDFS_NAME_NODE_
-    return _H2O_INTERNAL_HDFS_NAME_NODE_
-
-def is_running_internal_to_h2o():
-    url = "http://{0}:50070".format(get_h2o_internal_hdfs_name_node())
-    try:
-        urllib2.urlopen(urllib2.Request(url))
-        internal = True
-    except:
-        internal = False
-    return internal
-
 def locate(path):
     """
     Search for a relative path and turn it into an absolute path.
@@ -75,11 +61,11 @@ def locate(path):
 
     :return: Absolute path if it is found.  None otherwise.
     """
-    global _ON_JENKINS_HADOOP_
-    if (_ON_JENKINS_HADOOP_):
+    global _ON_HADOOP_
+    if (_ON_HADOOP_):
         # HACK: jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
         # in a h2o-hadoop cluster scenario, the other machines don't have this link. We need to reference the actual path,
-        # which is /home/0xdiag/ on ALL jenkins machines. If _ON_JENKINS_HADOOP_ is set by the run.py, path MUST be
+        # which is /home/0xdiag/ on ALL jenkins machines. If _ON_HADOOP_ is set by the run.py, path MUST be
         # relative to /home/0xdiag/
         return os.path.join("/home/0xdiag/",path)
     else:
@@ -99,8 +85,8 @@ def locate(path):
 def parse_args(args):
     global _H2O_IP_
     global _H2O_PORT_
-    global _ON_JENKINS_HADOOP_
-    global _H2O_INTERNAL_HDFS_NAME_NODE_
+    global _ON_HADOOP_
+    global _HADOOP_NAMENODE_
     global _IPYNB_
     i = 1
     while (i < len(args)):
@@ -111,11 +97,12 @@ def parse_args(args):
             argsplit   = args[i].split(":")
             _H2O_IP_   = argsplit[0]
             _H2O_PORT_ = int(argsplit[1])
-        elif (s == "--onJenkHadoop"):
-            _ON_JENKINS_HADOOP_ = True
+        elif (s == "--hadoopNamenode"):
             i = i + 1
             if (i > len(args)): usage()
-            _H2O_INTERNAL_HDFS_NAME_NODE_ = args[i]
+            _HADOOP_NAMENODE_ = args[i]
+        elif (s == "--onHadoop"):
+            _ON_HADOOP_ = True
         elif (s == "--ipynb"):
             i = i + 1
             if (i > len(args)): usage()
@@ -143,3 +130,17 @@ def unknownArg(arg):
     print("ERROR: Unknown argument: " + arg)
     print("")
     usage()
+
+# HDFS helpers
+def hadoop_namenode():
+    global _HADOOP_NAMENODE_
+    return _HADOOP_NAMENODE_
+
+def hadoop_namenode_is_accessible():
+    url = "http://{0}:50070".format(hadoop_namenode())
+    try:
+        urllib2.urlopen(urllib2.Request(url))
+        internal = True
+    except:
+        internal = False
+    return internal

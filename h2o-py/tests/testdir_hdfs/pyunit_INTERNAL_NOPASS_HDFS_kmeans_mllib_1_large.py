@@ -12,10 +12,10 @@ def kmeans_mllib():
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    running_inside_h2o = tests.is_running_internal_to_h2o()
+    hadoop_namenode_is_accessible = tests.hadoop_namenode_is_accessible()
 
-    if running_inside_h2o:
-        hdfs_name_node = tests.get_h2o_internal_hdfs_name_node()
+    if hadoop_namenode_is_accessible:
+        hdfs_name_node = tests.hadoop_namenode()
         hdfs_cross_file = "/datasets/runit/BigCross.data"
 
         print "Import BigCross.data from HDFS"
