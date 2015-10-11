@@ -181,11 +181,14 @@ function() {
   print("")
   print("Usage for:  R -f runit.R --args [...options...]")
   print("")
-  print("    --usecloud       connect to h2o on specified ip and port, where ip and port are specified as follows:")
-  print("                     IP:PORT")
+  print("    --usecloud        connect to h2o on specified ip and port, where ip and port are specified as follows:")
+  print("                      IP:PORT")
   print("")
-  print("    --onJenkHadoop   signal to runit that it will be run on h2o-hadoop cluster with the specified hdfs name")
-  print("                     node.")
+  print("    --onHadoop        Indication that tests will be run on h2o multinode hadoop clusters.")
+  print("                      `locate` and `sandbox` runit test utilities use this indication in order to")
+  print("                      behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
+  print("    --hadoopNamenode  Specifies that the runit tests have access to this hadoop namenode.")
+  print("                      `hadoop.namenode` runit test utility returns this value.")
   print("")
   q("no",1,FALSE) #exit with nonzero exit code
 }
@@ -314,11 +317,3 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
   genDummyCols(df.clone, use_all_factor_levels)
 }
 
-#' Hadoop helpers
-hadoop.namenode.is.accessible <- function() {
-    url <- sprintf("http://%s:50070", HADOOP.NAMENODE);
-    internal <- url.exists(url, timeout = 5)
-    return(internal)
-}
-
-hadoop.namenode <- function() { return(HADOOP.NAMENODE) }

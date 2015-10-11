@@ -32,9 +32,8 @@ So each test must have an ip and port
 """
 
 def run_test(sys_args, test_to_run):
-    global _IPYNB_
     parse_args(sys_args)
-    h2o.init(ip=_H2O_IP_, port=_H2O_PORT_, strict_version_check=False)
+    h2o.init(ip=get_test_ip(), port=get_test_port(), strict_version_check=False)
     h2o.log_and_echo("------------------------------------------------------------")
     h2o.log_and_echo("")
     h2o.log_and_echo("STARTING TEST: "+str(h2o.ou()))
@@ -42,7 +41,8 @@ def run_test(sys_args, test_to_run):
     h2o.log_and_echo("------------------------------------------------------------")
     # num_keys = h2o.store_size()
     try:
-        if _IPYNB_: utils.ipy_notebook_exec(_IPYNB_, save_and_norun=False)
+        nb = get_ipynb()
+        if nb: utils.ipy_notebook_exec(nb, save_and_norun=False)
         else: test_to_run()
     finally:
         h2o.remove_all()
@@ -61,13 +61,16 @@ def locate(path):
 
     :return: Absolute path if it is found.  None otherwise.
     """
-    global _ON_HADOOP_
-    if (_ON_HADOOP_):
-        # HACK: jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
-        # in a h2o-hadoop cluster scenario, the other machines don't have this link. We need to reference the actual path,
-        # which is /home/0xdiag/ on ALL jenkins machines. If _ON_HADOOP_ is set by the run.py, path MUST be
-        # relative to /home/0xdiag/
-        return os.path.join("/home/0xdiag/",path)
+    if (test_is_on_hadoop()):
+        # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
+        # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
+        # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
+        # machines store smalldata and bigdata in /home/0xdiag/. If ON.HADOOP is set by the run.py, the path arg MUST
+        # be an immediate subdirectory of /home/0xdiag/. Moreover, the only guaranteed subdirectories of /home/0xdiag/ are
+        # smalldata and bigdata.
+        p = os.path.realpath(os.path.join("/home/0xdiag/",path))
+        if not os.path.exists(p): raise ValueError("File not found: " + path)
+        return p
     else:
         tmp_dir = os.path.realpath(os.getcwd())
         possible_result = os.path.join(tmp_dir, path)
@@ -115,13 +118,16 @@ def usage():
     print("")
     print("Usage for:  python pyunit.py [...options...]")
     print("")
-    print("    --usecloud       connect to h2o on specified ip and port, where ip and port are specified as follows:")
-    print("                     IP:PORT")
+    print("    --usecloud        connect to h2o on specified ip and port, where ip and port are specified as follows:")
+    print("                      IP:PORT")
     print("")
-    print("    --onJenkHadoop   signal to pyunit that it will be run on h2o-hadoop cluster with the specified hdfs name")
-    print("                     node.")
+    print("    --onHadoop        Indication that tests will be run on h2o multinode hadoop clusters.")
+    print("                      `locate` and `sandbox` pyunit test utilities use this indication in order to")
+    print("                      behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
+    print("    --hadoopNamenode  Specifies that the pyunit tests have access to this hadoop namenode.")
+    print("                      `hadoop_namenode` pyunit test utility returns this value.")
     print("")
-    print("    --ipynb          name of the ipython notebook.")
+    print("    --ipynb           name of the ipython notebook.")
     print("")
     sys.exit(1) #exit with nonzero exit code
 
@@ -144,3 +150,19 @@ def hadoop_namenode_is_accessible():
     except:
         internal = False
     return internal
+
+def test_is_on_hadoop():
+    global _ON_HADOOP_
+    return _ON_HADOOP_
+
+def get_ipynb():
+    global _IPYNB_
+    return _IPYNB_
+
+def get_test_ip():
+    global _H2O_IP_
+    return _H2O_IP_
+
+def get_test_port():
+    global _H2O_PORT_
+    return _H2O_PORT_

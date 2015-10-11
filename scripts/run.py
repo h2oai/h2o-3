@@ -1815,7 +1815,7 @@ def usage():
     print("                     `locate` and `sandbox` runit/pyunit test utilities use this indication in order to")
     print("                     behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
     print("    --hadoopNamenode Specifies that the runit/pyunit tests have access to this hadoop namenode.")
-    print("                     `get_hadoop_namenode` runit/pyunit test utilities return this value.")
+    print("                     runit/pyunit test utilities have ability to retrieve this value.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
