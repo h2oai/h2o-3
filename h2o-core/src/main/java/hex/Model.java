@@ -787,6 +787,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
+      if (isCancelled()) return;
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : new C0DChunk(1, chks[0]._len);
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : new C0DChunk(0, chks[0]._len);
       Chunk responseChunk = null;
