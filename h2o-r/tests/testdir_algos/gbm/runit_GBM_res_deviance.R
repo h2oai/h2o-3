@@ -38,7 +38,7 @@ test <- function() {
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,149.4331681)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
 	
-	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv"),destination_frame = "fre")
+	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	#fren = as.data.frame(fre)
 	#fren$VehPower = as.factor(fren$VehPower)
@@ -51,8 +51,8 @@ test <- function() {
 	print("poisson")
 	#expect_equal(hh@model$init_f,gg$initF)
 	#expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,gg$train.error)
-	expect_equal(hh@model$init_f,0.05082977727418977)
-	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,1.997025249117459)
+	expect_equal(hh@model$init_f,-2.40404516)
+	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,0.610489769)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
 
 	

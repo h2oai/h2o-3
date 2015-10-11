@@ -7,11 +7,27 @@ from metrics_base import *
 
 class H2ORegressionModel(ModelBase):
   """
-  Class for Regression models.  
+  Class for Regression models.
   """
   def __init__(self, dest_key, model_json):
     super(H2ORegressionModel, self).__init__(dest_key, model_json,H2ORegressionModelMetrics)
 
+  def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
+    """
+    Plots training set (and validation set if available) scoring history for an H2ORegressionModel. The timestep and metric
+    arguments are restricted to what is available in its scoring history.
+
+    :param timestep: A unit of measurement for the x-axis.
+    :param metric: A unit of measurement for the y-axis.
+    :return: A scoring history plot.
+    """
+
+    if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
+      if metric == "AUTO": metric = "MSE"
+      elif metric not in ("MSE","deviance", "r2"):
+        raise ValueError("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance, r2")
+
+    self._plot(timestep=timestep, metric=metric, **kwargs)
 
 def _mean_var(frame, weights=None):
   """

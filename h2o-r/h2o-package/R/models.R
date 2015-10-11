@@ -1814,20 +1814,20 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     if (is(x, "H2OBinomialModel")) {
       if (metric == "AUTO") {
         metric <- "logloss"
-      } else if (!(metric %in% c("r2","logloss","AUC","classification_error","MSE"))) {
-        stop("metric for H2OBinomialModel must be one of: AUTO, r2, logloss, AUC, classification_error, MSE")
+      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
+        stop("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
       }
     } else if (is(x, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
-      } else if (!(metric %in% c("r2","logloss","classification_error","MSE"))) {
-        stop("metric for H2OMultinomialModel must be one of: AUTO, r2, logloss, classification_error, MSE")
+      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
+        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
       }
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
         metric <- "MSE"
-      } else if (!(metric %in% c("MSE","deviance"))) {
-        stop("metric for H2OMultinomialModel must be one of: MSE, deviance")
+      } else if (!(metric %in% c("MSE","deviance", "r2"))) {
+        stop("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance, r2")
       }
     } else {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
@@ -1839,7 +1839,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       } else if (!(timestep %in% c("duration","number_of_trees"))) {
         stop("timestep for gbm or drf must be one of: duration, number_of_trees")
       }
-    } else if (x@algorithm == "deeplearning") {
+    } else { # x@algorithm == "deeplearning"
       # Delete first row of DL scoring history since it contains NAs & NaNs
       if (df$samples[1] == 0) {
         df <- df[-1,]
@@ -1849,8 +1849,6 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       } else if (!(timestep %in% c("epochs","samples","duration"))) {
         stop("timestep for deeplearning must be one of: epochs, samples, duration")
       }
-    } else {
-      stop("Plotting not implemented for this type of model")
     }
     training_metric <- sprintf("training_%s", metric)
     validation_metric <- sprintf("validation_%s", metric)
@@ -1874,6 +1872,8 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
                      main = "Training Scoring History", col = "blue", ylim = ylim)
 
     }
+  } else { # algo is not glm, deeplearning, drf, gbm
+  	stop("Plotting not implemented for this type of model")
   }
 }
 
