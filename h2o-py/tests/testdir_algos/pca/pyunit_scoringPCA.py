@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 
 def pca_scoring():
-    
+
 
     print "Importing arrests.csv data..."
     arrestsH2O = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
@@ -15,7 +15,7 @@ def pca_scoring():
     print "Project training data into eigenvector subspace"
     predH2O = fitH2O.predict(arrestsH2O)
     print "H2O Projection:"
-    print predH2O.head()
+    predH2O.head()
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, pca_scoring)

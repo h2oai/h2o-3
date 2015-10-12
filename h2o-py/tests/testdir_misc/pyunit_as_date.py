@@ -4,7 +4,7 @@ import h2o, tests
 
 def test_as_data():
   hdf = h2o.import_file(path=tests.locate("smalldata/jira/v-11.csv"))
-  print hdf.head()
+  hdf.head()
 
   # NB: columns 1,5 are currently unsupported as date types
   # that is, h2o cannot understand:
