@@ -372,7 +372,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self._eager()
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
-    res = self.as_data_frame(nrows=nrows,ncols=ncols,use_pandas=use_pandas)
+    res = self[0:nrows,0:ncols].as_data_frame(use_pandas=use_pandas)
     if show:
       self._do_show(res,use_pandas)
     else:
@@ -406,7 +406,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
     start_idx = self.nrow - nrows if rows is not None else 0
-    res = self.as_data_frame(skiprows=range(1,start_idx+1),ncols=ncols,use_pandas=use_pandas)
+    res = self[start_idx:nrows,0:ncols].as_data_frame(skiprows=range(1,start_idx+1),ncols=ncols,use_pandas=use_pandas)
     if show:
       self._do_show(res,use_pandas)
     else:
