@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 rtest <- function() {
 
-    hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
+    hdfs_name_node = hadoop.namenode()
     hdfs_airlines_file = "/datasets/airlinesbillion.csv"
     url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
 

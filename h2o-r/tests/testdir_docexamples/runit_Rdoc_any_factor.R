@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.anyFactor <- function() {
 
- irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+ irisPath <- locate("smalldata/extdata/iris_wheader.csv")
  iris.hex <- h2o.uploadFile( path = irisPath)
  h2o.anyFactor(iris.hex)
 

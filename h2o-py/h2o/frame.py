@@ -401,23 +401,25 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     self.head(rows=10,cols=sys.maxint,show=True,use_pandas=use_pandas)  # all columns
 
-  def head(self,rows=10,cols=200,show=False,use_pandas=False):
+  def head(self,rows=10,cols=200,show=True,use_pandas=False):
     """
     Analogous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
 
     :param rows: Number of rows starting from the topmost to display.
     :param cols: Number of columns starting from the leftmost to display.
-    :param show: A flag specifying whether or not to display the output.
+    :param show: A flag specifying whether or not to display the output. If True, return None.
     :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
     :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a
-    pandas DataFrame) containing this H2OFrame instance's data.
+    pandas DataFrame) containing this H2OFrame instance's data. If show = True, print only and return None.
     """
     self._eager()
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
     res = self.as_data_frame(nrows=nrows,ncols=ncols,use_pandas=use_pandas)
-    if show: self._do_show(res,use_pandas)
-    return res
+    if show:
+      self._do_show(res,use_pandas)
+    else:
+      return res
 
   def _do_show(self,fr,use_pandas):
     print "H2OFrame with {} rows and {} columns: ".format(self.nrow, self.ncol)
@@ -432,24 +434,26 @@ class H2OFrame(H2OFrameWeakRefMixin):
     else:
       h2o.H2ODisplay(fr[1:],fr[0])
 
-  def tail(self, rows=10, cols=200, show=False, use_pandas=False):
+  def tail(self, rows=10, cols=200, show=True, use_pandas=False):
     """
     Analogous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
 
     :param rows: Number of rows starting from the bottommost to display in their original order.
     :param cols: Number of columns starting from the leftmost to display.
-    :param show: A flag specifying whether or not to display the output.
+    :param show: A flag specifying whether or not to display the output. If True, return None.
     :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
     :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a pandas
-     DataFrame) containing this H2OFrame instance's data.
+     DataFrame) containing this H2OFrame instance's data. If show = True, print only and return None.
     """
     self._eager()
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
     start_idx = self.nrow - nrows if rows is not None else 0
     res = self.as_data_frame(skiprows=range(1,start_idx+1),ncols=ncols,use_pandas=use_pandas)
-    if show: self._do_show(res,use_pandas)
-    return res
+    if show:
+      self._do_show(res,use_pandas)
+    else:
+      return res
 
   def levels(self, col=None):
     """
@@ -707,7 +711,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :return: None
     """
-    df = self.head().as_data_frame(use_pandas=False)
+    df = self.as_data_frame(use_pandas=False)
     nr = self.nrow
     nc = len(df[0])
     cn = df.pop(0)
@@ -766,12 +770,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
       return df
     else:
       cr = csv.reader(response)
-      rows = []
-      for row in cr: rows.append([''] if row == [] else row[:ncols])
-      if not skiprows:
-        return rows[:None if nrows is None else nrows+1]
-      else:
-        return [rows[0]] + rows[skiprows[-1]+1:]
+      rows = [[''] if row == [] else row[:ncols] for row in cr]
+      return [rows[0]] + rows[skiprows[-1]+1:] if skiprows else rows[:None if nrows is None else nrows+1]
 
   # Find a named H2OVec and return the zero-based index for it.  Error if name is missing
   def _find_idx(self,name):

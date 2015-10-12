@@ -6,7 +6,7 @@ source('../../h2o-runit.R')
 test <- function() {
 	#read in data
 	print("read in data")
-	fre = h2o.importFile(locate("smalldata/glm_test/freMTPL2freq.csv"),destination_frame = "fre")
+	fre = h2o.importFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre = fre[1:5000,]
 	fre$VehPower = as.factor(fre$VehPower)
 	fren = as.data.frame(fre)

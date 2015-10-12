@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 
 def pca_prostate():
-    
+
 
     print "Importing prostate.csv data...\n"
     prostate = h2o.upload_file(tests.locate("smalldata/logreg/prostate.csv"))
@@ -20,7 +20,7 @@ def pca_prostate():
     pred = fitPCA.predict(prostate)
 
     print "Projection matrix:\n"
-    print pred.head()
+    pred.head()
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, pca_prostate)

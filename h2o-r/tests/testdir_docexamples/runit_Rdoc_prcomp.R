@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.principalcomp.golden <- function() {
   #Example from prcomp R doc
 
-  ausPath <- system.file("extdata", "australia.csv", package="h2o")
+  ausPath <- locate("smalldata/extdata/australia.csv")
   australia.hex <- h2o.uploadFile(path = ausPath)
   australia.pca <- h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
   model <- print(australia.pca)

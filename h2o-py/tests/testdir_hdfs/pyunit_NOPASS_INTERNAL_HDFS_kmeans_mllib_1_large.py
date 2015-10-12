@@ -12,10 +12,10 @@ def kmeans_mllib():
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    running_inside_h2o = tests.is_running_internal_to_h2o()
+    hadoop_namenode_is_accessible = tests.hadoop_namenode_is_accessible()
 
-    if running_inside_h2o:
-        hdfs_name_node = tests.get_h2o_internal_hdfs_name_node()
+    if hadoop_namenode_is_accessible:
+        hdfs_name_node = tests.hadoop_namenode()
         hdfs_cross_file = "/datasets/runit/BigCross.data"
 
         print "Import BigCross.data from HDFS"
@@ -50,6 +50,8 @@ def kmeans_mllib():
             print "H2O Average Within-Cluster SSE: \n".format(wcsse_h2o)
             assert wcsse_h2o == wcsse_mllib, "Expected mllib and h2o to get the same wcsse. Mllib got {0}, and H2O " \
                                              "got {1}".format(wcsse_mllib, wcsse_h2o)
+    else:
+        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, kmeans_mllib)
