@@ -1,7 +1,7 @@
-from .estimator_base import H2OEstimator
+from .estimator_base import *
 
 
-class H2ORandomForestEstimator(H2OEstimator):
+class H2ORandomForestEstimator(H2OEstimator,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel):
   def __init__(self, model_id=None, mtries=None, sample_rate=None, build_tree_one_node=None,
                ntrees=None, max_depth=None, min_rows=None, nbins=None, nbins_cats=None,
                binomial_double_trees=None, balance_classes=None, max_after_balance_size=None,

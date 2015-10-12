@@ -3,12 +3,10 @@ Clustering Models
 """
 
 from metrics_base import *
+from model_base import DeprecatedModelBase
 
 
-class H2OClusteringModel(ModelBase):
-
-  def __init__(self, dest_key, model_json):
-    super(H2OClusteringModel, self).__init__(dest_key, model_json,H2OClusteringModelMetrics)
+class H2OClusteringModel(object):
 
   def size(self, train=False, valid=False, xval=False):
     """
@@ -148,3 +146,8 @@ class H2OClusteringModel(ModelBase):
     for cidx, cval in enumerate(cvals):
       centers_std.append(list(cvals[cidx])[1:])
     return centers_std
+
+
+class DeprecatedClusteringModel(DeprecatedModelBase, H2OClusteringModel):
+  def __init__(self, key, model_json):
+    super(DeprecatedClusteringModel, self).__init__(key,model_json,H2OClusteringModelMetrics)

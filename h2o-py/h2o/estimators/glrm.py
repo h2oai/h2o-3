@@ -1,7 +1,7 @@
-from .estimator_base import H2OEstimator
+from .estimator_base import *
 
 
-class H2OGeneralizedLowRankEstimator(H2OEstimator):
+class H2OGeneralizedLowRankEstimator(H2OEstimator,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel):
   def __init__(self,k=None, max_iterations=None, transform=None, seed=None,
                ignore_const_cols=None,loss=None, multi_loss=None, loss_by_col=None,
                loss_by_col_idx=None, regularization_x=None, regularization_y=None,

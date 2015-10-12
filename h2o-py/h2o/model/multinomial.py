@@ -5,11 +5,10 @@ Multinomial Models
 from . import H2OFrame
 from . import H2OConnection
 from metrics_base import *
+from model_base import DeprecatedModelBase
 
 
-class H2OMultinomialModel(ModelBase):
-  def __init__(self, dest_key, model_json):
-    super(H2OMultinomialModel, self).__init__(dest_key, model_json,H2OMultinomialModelMetrics)
+class H2OMultinomialModel(object):
 
   def confusion_matrix(self, data):
     """
@@ -55,3 +54,7 @@ class H2OMultinomialModel(ModelBase):
 
     self._plot(timestep=timestep, metric=metric, **kwargs)
 
+
+class DeprecatedMultinomialModel(DeprecatedModelBase, H2OMultinomialModel):
+  def __init__(self, key, model_json):
+    super(DeprecatedMultinomialModel, self).__init__(key,model_json,H2OMultinomialModelMetrics)

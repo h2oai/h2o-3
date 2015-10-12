@@ -1,9 +1,7 @@
-from .estimator_base import H2OEstimator
-from ..model.autoencoder import H2OAutoEncoderModel
-from ..h2o import H2OConnection, get_frame
+from .estimator_base import *
 
 
-class H2ODeepLearningEstimator(H2OEstimator):
+class H2ODeepLearningEstimator(H2OEstimator,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel):
   def __init__(self, model_id=None, overwrite_with_best_model=None, checkpoint=None,
                use_all_factor_levels=None, activation=None, hidden=None, epochs=None,
                train_samples_per_iteration=None, seed=None, adaptive_rate=None, rho=None,
@@ -188,5 +186,5 @@ class H2ODeepLearningEstimator(H2OEstimator):
     self.parms["autoencoder"] = isinstance(self, H2OAutoEncoderEstimator)
 
 
-class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
+class H2OAutoEncoderEstimator(H2ODeepLearningEstimator,H2OAutoEncoderModel):
   pass

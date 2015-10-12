@@ -3,17 +3,13 @@ Binomial Models
 """
 
 from metrics_base import *
+from model_base import DeprecatedModelBase
 
 
-class H2OBinomialModel(ModelBase):
+class H2OBinomialModel(object):
   """
   Class for Binomial models.
   """
-  def __init__(self, dest_key, model_json):
-    """
-    Create a new binomial model.
-    """
-    super(H2OBinomialModel, self).__init__(dest_key, model_json,H2OBinomialModelMetrics)
 
   def F1(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -429,3 +425,8 @@ class H2OBinomialModel(ModelBase):
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.find_idx_by_threshold(threshold)
     return m.values()[0] if len(m) == 1 else m
+
+
+class DeprecatedBinomialModel(DeprecatedModelBase, H2OBinomialModel):
+  def __init__(self, key, model_json):
+    super(DeprecatedBinomialModel, self).__init__(key,model_json,H2OBinomialModelMetrics)

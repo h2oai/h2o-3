@@ -23,10 +23,21 @@ def anomaly():
     ae_model = H2OAutoEncoderEstimator(activation="Tanh", hidden=[2], l1=1e-5, ignore_const_cols=False, epochs=1)
     ae_model.train(X=predictors,training_frame=train)
 
+    old_model_style = h2o.deeplearning(x=train[predictors],
+                                       autoencoder=True,
+                                       activation="Tanh",
+                                       hidden=[2],
+                                       l1=1e-5,
+                                       ignore_const_cols=False,
+                                       epochs=1
+                                       )
+
+    old_model_style.anomaly(test).show()
+
     # 2) DETECT OUTLIERS
     # anomaly app computes the per-row reconstruction error for the test data set
     # (passing it through the autoencoder model and computing mean square error (MSE) for each row)
-    test_rec_error = ae_model.model.anomaly(test)
+    test_rec_error = ae_model.anomaly(test)
 
     # 3) VISUALIZE OUTLIERS
     # Let's look at the test set points with low/median/high reconstruction errors.

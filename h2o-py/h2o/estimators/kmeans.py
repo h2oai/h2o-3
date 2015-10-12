@@ -1,7 +1,7 @@
-from .estimator_base import H2OEstimator
+from .estimator_base import *
 
 
-class H2OKMeansEstimator(H2OEstimator):
+class H2OKMeansEstimator(H2OEstimator,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel):
   def __init__(self, model_id=None, k=None, max_iterations=None,standardize=None,init=None,seed=None,
                nfolds=None,fold_assignment=None, user_points=None,ignored_columns=None,
                score_each_iteration=None, keep_cross_validation_predictions=None,

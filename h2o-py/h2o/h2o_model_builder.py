@@ -11,12 +11,12 @@ from connection import H2OConnection
 from frame      import H2OFrame
 from job        import H2OJob
 from model.model_future import H2OModelFuture
-from model.dim_reduction import H2ODimReductionModel
-from model.autoencoder import H2OAutoEncoderModel
-from model.multinomial import H2OMultinomialModel
-from model.regression import H2ORegressionModel
-from model.binomial import H2OBinomialModel
-from model.clustering import H2OClusteringModel
+from model.dim_reduction import DeprecatedDimReductionModel
+from model.autoencoder import DeprecatedAutoEncoderModel
+from model.multinomial import DeprecatedMultinomialModel
+from model.regression import DeprecatedRegressionModel
+from model.binomial import DeprecatedBinomialModel
+from model.clustering import DeprecatedClusteringModel
 
 
 def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,weights=None,fold_column=None,kwargs=None):
@@ -102,11 +102,11 @@ def _resolve_model(future_model, **kwargs):
   else:                                model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
 
   model_type = model_json["output"]["model_category"]
-  if   model_type=="Binomial":     model = H2OBinomialModel(    future_model.job.dest_key,model_json)
-  elif model_type=="Clustering":   model = H2OClusteringModel(  future_model.job.dest_key,model_json)
-  elif model_type=="Regression":   model = H2ORegressionModel(  future_model.job.dest_key,model_json)
-  elif model_type=="Multinomial":  model = H2OMultinomialModel( future_model.job.dest_key,model_json)
-  elif model_type=="AutoEncoder":  model = H2OAutoEncoderModel( future_model.job.dest_key,model_json)
-  elif model_type=="DimReduction": model = H2ODimReductionModel(future_model.job.dest_key,model_json)
+  if   model_type=="Binomial":     model = DeprecatedBinomialModel(    future_model.job.dest_key,model_json)
+  elif model_type=="Clustering":   model = DeprecatedClusteringModel(  future_model.job.dest_key,model_json)
+  elif model_type=="Regression":   model = DeprecatedRegressionModel(  future_model.job.dest_key,model_json)
+  elif model_type=="Multinomial":  model = DeprecatedMultinomialModel( future_model.job.dest_key,model_json)
+  elif model_type=="AutoEncoder":  model = DeprecatedAutoEncoderModel( future_model.job.dest_key,model_json)
+  elif model_type=="DimReduction": model = DeprecatedDimReductionModel(future_model.job.dest_key,model_json)
   else: raise NotImplementedError(model_type)
   return model

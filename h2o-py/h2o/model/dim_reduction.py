@@ -3,11 +3,10 @@ DimReduction Models
 """
 
 from metrics_base import *
+from model_base import DeprecatedModelBase
 
-class H2ODimReductionModel(ModelBase):
 
-    def __init__(self, dest_key, model_json):
-        super(H2ODimReductionModel, self).__init__(dest_key, model_json,H2ODimReductionModelMetrics)
+class H2ODimReductionModel(object):
     
     def num_iterations(self):
       """
@@ -72,3 +71,8 @@ class H2ODimReductionModel(ModelBase):
         if type == "barplot": plt.bar(range(1,len(variances)+1), variances)
         elif type == "lines": plt.plot(range(1,len(variances)+1), variances, 'b--')
         if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
+
+
+class DeprecatedDimReductionModel(DeprecatedModelBase, H2ODimReductionModel):
+  def __init__(self, key, model_json):
+    super(DeprecatedDimReductionModel, self).__init__(key,model_json,H2ODimReductionModelMetrics)

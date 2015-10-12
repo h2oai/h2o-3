@@ -1,12 +1,13 @@
+from ..model.metrics_base import *
 from ..model.model_base import ModelBase
-from ..model.autoencoder import H2OAutoEncoderModel
+from ..h2o import H2OConnection, H2OJob, H2OFrame
 from ..model.binomial import H2OBinomialModel
-from ..model.clustering import H2OClusteringModel
-from ..model.dim_reduction import H2ODimReductionModel
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
-from ..model import build_model
-import inspect, warnings
+from ..model.autoencoder import H2OAutoEncoderModel
+import inspect
+import warnings
+
 
 class EstimatorAttributeError(AttributeError):
   def __init__(self,obj,method):
@@ -23,12 +24,6 @@ class H2OEstimator(ModelBase):
   Because H2OEstimator instances are instances of ModelBase, these objects can use the
   H2O model API.
   """
-
-  def __init__(self):
-    super(H2OEstimator, self).__init__(None, None, None)
-    self.model=None
-    self.parms=None
-    self._estimator_type = ""
 
   def train(self,X,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     """Train the H2O model by specifying the predictor columns, response column, and any
@@ -64,9 +59,62 @@ class H2OEstimator(ModelBase):
     if tframe is None: raise ValueError("Missing training_frame")
     if y is not None:
       self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
-    self.model = build_model(self.parms)
-    self.__dict__.update(self.model.__dict__.copy())
+    self.build_model(self.parms)
     return self
+
+  def build_model(self, algo_params):
+    if algo_params["training_frame"] is None: raise ValueError("Missing training_frame")
+    x = algo_params.pop("X")
+    y = algo_params.pop("y",None)
+    training_frame = algo_params.pop("training_frame")
+    validation_frame = algo_params.pop("validation_frame",None)
+    algo  = algo_params.pop("algo")
+    is_auto_encoder = algo_params is not None and "autoencoder" in algo_params and algo_params["autoencoder"] is not None
+    is_unsupervised = is_auto_encoder or algo == "pca" or algo == "kmeans"
+    if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
+    if not is_unsupervised and y is None: raise ValueError("Missing response")
+    self._model_build(x, y, training_frame, validation_frame, algo, algo_params)
+
+  def _model_build(self, x, y, tframe, vframe, algo, kwargs):
+    kwargs['training_frame'] = tframe
+    if vframe is not None: kwargs["validation_frame"] = vframe
+    if y is not None:  kwargs['response_column'] = tframe[y].names[0]
+    kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
+
+    #### POLL MODEL FOR COMPLETION ####
+    model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")).poll()
+    ###################################
+
+    if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
+    else:                                model_json = H2OConnection.get_json("Models/"+model.dest_key)["models"][0]
+
+    model_type = model_json["output"]["model_category"]
+    if   model_type=="Binomial":     self._make_model(model.dest_key,model_json, H2OBinomialModelMetrics)
+    elif model_type=="Clustering":   self._make_model(model.dest_key,model_json, H2OClusteringModelMetrics)
+    elif model_type=="Regression":   self._make_model(model.dest_key,model_json, H2ORegressionModelMetrics)
+    elif model_type=="Multinomial":  self._make_model(model.dest_key,model_json, H2OMultinomialModelMetrics)
+    elif model_type=="AutoEncoder":  self._make_model(model.dest_key,model_json, H2OAutoEncoderModelMetrics)
+    elif model_type=="DimReduction": self._make_model(model.dest_key,model_json, H2ODimReductionModelMetrics)
+    else: raise NotImplementedError(model_type)
+
+  def _make_model(self, key, model_json, metrics_class):
+    self._id = key
+    self._model_json = model_json
+    self._metrics_class = metrics_class
+
+    if key is not None and model_json is not None and metrics_class is not None:
+      # build Metric objects out of each metrics
+      for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
+        if metric in model_json["output"]:
+          if model_json["output"][metric] is not None:
+            if metric=="cross_validation_metrics":
+              self._is_xvalidated=True
+            model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
+
+      if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
+
+      # build a useful dict of the params
+      for p in self._model_json["parameters"]: self.parms[p["label"]]=p
 
 
   ##### Scikit-learn Interface Methods #####

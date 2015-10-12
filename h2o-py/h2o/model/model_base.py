@@ -9,27 +9,15 @@ import imp
 
 
 class ModelBase(object):
-  def __init__(self, dest_key, model_json, metrics_class):
-    self._id = dest_key
-    self._model_json = model_json
-    self._metrics_class = metrics_class
-    self._is_xvalidated=False
-    self._xval_keys=None
 
-    if dest_key is not None and model_json is not None and metrics_class is not None:
-      # build Metric objects out of each metrics
-      for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
-        if metric in model_json["output"]:
-          if  model_json["output"][metric] is not None:
-            if metric=="cross_validation_metrics":
-              self._is_xvalidated=True
-            model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
-
-      if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
-
-      # build a useful dict of the params
-      self._params={}
-      for p in self._model_json["parameters"]: self._params[p["label"]]=p
+  def __init__(self):
+    self._id = None
+    self._model_json = None
+    self._metrics_class = None
+    self._is_xvalidated = False
+    self._xval_keys = None
+    self.parms = {}
+    self._estimator_type = None
 
   @property
   def model_id(self):
@@ -52,8 +40,8 @@ class ModelBase(object):
     :return: A dictionary of parameters used to build this model.
     """
     params = {}
-    for p in self._params:
-      params[p] = {"default":self._params[p]["default_value"], "actual":self._params[p]["actual_value"]}
+    for p in self.parms:
+      params[p] = {"default":self.parms[p]["default_value"], "actual":self.parms[p]["actual_value"]}
     return params
 
   @property
@@ -499,7 +487,7 @@ class ModelBase(object):
         if timestep == "AUTO": timestep = "number_of_trees"
         elif timestep not in ("duration","number_of_trees"):
           raise ValueError("timestep for gbm or drf must be one of: duration, number_of_trees")
-      else: #self._model_json["algo"] == "deeplearning":
+      else:  #self._model_json["algo"] == "deeplearning":
         # Delete first row of DL scoring history since it contains NAs & NaNs
         if scoring_history["samples"][0] == 0:
           scoring_history = scoring_history.ix[1:]
@@ -522,7 +510,7 @@ class ModelBase(object):
         plt.plot(scoring_history[timestep], scoring_history[training_metric], label = "Training")
         plt.plot(scoring_history[timestep], scoring_history[validation_metric], color = "orange", label = "Validation")
         plt.legend()
-      else: #Training scoring history only
+      else:  #Training scoring history only
         ylim = (scoring_history[training_metric].min(), scoring_history[training_metric].max())
         plt.xlabel(timestep)
         plt.ylabel(training_metric)
@@ -550,3 +538,25 @@ class ModelBase(object):
     """
     if len(y_actual) != len(y_predicted):
       raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))
+
+
+class DeprecatedModelBase(ModelBase):
+  def __init__(self, key, model_json, metrics_class):
+    super(DeprecatedModelBase, self).__init__()
+    self._id = key
+    self._model_json = model_json
+    self._metrics_class = metrics_class
+
+    if key is not None and model_json is not None and metrics_class is not None:
+      # build Metric objects out of each metrics
+      for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
+        if metric in model_json["output"]:
+          if model_json["output"][metric] is not None:
+            if metric=="cross_validation_metrics":
+              self._is_xvalidated=True
+            model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
+
+      if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
+
+      # build a useful dict of the params
+      for p in self._model_json["parameters"]: self.parms[p["label"]]=p

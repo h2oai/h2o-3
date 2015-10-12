@@ -2,15 +2,14 @@
 Regression Models
 """
 
-import math
 from metrics_base import *
+from model_base import DeprecatedModelBase
 
-class H2ORegressionModel(ModelBase):
+
+class H2ORegressionModel(object):
   """
   Class for Regression models.
   """
-  def __init__(self, dest_key, model_json):
-    super(H2ORegressionModel, self).__init__(dest_key, model_json,H2ORegressionModelMetrics)
 
   def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
     """
@@ -113,3 +112,8 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
   if denominator == 0.0:
     return 1. if numerator == 0. else 0.  # 0/0 => 1, else 0
   return 1 - numerator / denominator
+
+
+class DeprecatedRegressionModel(DeprecatedModelBase, H2ORegressionModel):
+  def __init__(self, key, model_json):
+    super(DeprecatedRegressionModel, self).__init__(key,model_json,H2ORegressionModelMetrics)
