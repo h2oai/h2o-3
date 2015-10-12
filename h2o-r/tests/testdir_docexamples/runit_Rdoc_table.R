@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.rdoc_table.golden <- function() {
 
-prosPath <- locate("smalldata/extdata/prostate.csv", package="h2o")
+prosPath <- locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 summary(prostate.hex)
 

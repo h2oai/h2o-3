@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 
 test.rdocrunif.golden <- function() {
 
-prosPath <- locate("smalldata/extdata/prostate.csv", package="h2o")
+prosPath <- locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 s <- h2o.runif(prostate.hex)
 summary(s)

@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.rdocsd.golden <- function() {
 
-    prosPath <- locate("smalldata/extdata/prostate.csv", package="h2o")
+    prosPath <- locate("smalldata/extdata/prostate.csv")
     prostate.hex <- h2o.uploadFile(path = prosPath)
     sd(prostate.hex$AGE)
 

@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.head.golden <- function() {
 
-ausPath <- locate("smalldata/extdata/australia.csv", package="h2o")
+ausPath <- locate("smalldata/extdata/australia.csv")
 australia.hex <- h2o.uploadFile(path = ausPath)
 head(australia.hex, 10)
 tail(australia.hex, 10)

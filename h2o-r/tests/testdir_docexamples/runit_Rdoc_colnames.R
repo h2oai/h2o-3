@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.rdoccolnames.golden <- function() {
 
 
-irisPath <- locate("smalldata/extdata/iris.csv", package="h2o")
+irisPath <- locate("smalldata/extdata/iris.csv")
 iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 summary(iris.hex)
 colnames(iris.hex)
