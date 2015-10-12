@@ -7,22 +7,41 @@ from model_base import DeprecatedModelBase
 
 
 class H2OBinomialModel(object):
-  """
-  Class for Binomial models.
-  """
-
   def F1(self, thresholds=None, train=False, valid=False, xval=False):
     """
-    Get the F1 for a set of thresholds.
-    If all are False (default), then return the training metric value.
-    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-    and "xval"
+    Get the F1 value for a set of thresholds
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the F1 value for the training data.
-    :param valid: If valid is True, then return the F1 value for the validation data.
-    :param xval:  If xval is True, then return the F1 value for the cross validation data.
-    :return: The F1 for this binomial model.
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where
+    the keys are "train", "valid", and "xval".
+
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+      train : bool, optional
+        If True, return the F1 value for the training data.
+      valid : bool, optional
+        If True, return the F1 value for the validation data.
+      xval : bool, optional
+        If True, return the F1 value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The F1 values for the specified key(s).
+
+
+    Examples
+    --------
+    >>> import h2o as ml
+    >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    >>> ml.init()
+    >>> rows=[[1,2,3,4,0],[2,1,2,4,1],[2,1,4,2,1],[0,1,2,34,1],[2,3,4,1,0]]*50
+    >>> fr = ml.H2OFrame(rows)
+    >>> fr[4] = fr[4].asfactor()
+    >>> model = H2OGradientBoostingEstimator(ntrees=10, max_depth=10, nfolds=4)
+    >>> model.train(X=range(4), y=4, training_frame=fr)
+    >>> model.F1(train=True)
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}

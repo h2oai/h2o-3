@@ -87,15 +87,18 @@ class H2OEstimator(ModelBase):
 
     if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
     else:                                model_json = H2OConnection.get_json("Models/"+model.dest_key)["models"][0]
+    self._resolve_model(model.dest_key,model_json)
 
+  def _resolve_model(self, model_id, model_json):
     model_type = model_json["output"]["model_category"]
-    if   model_type=="Binomial":     self._make_model(model.dest_key,model_json, H2OBinomialModelMetrics)
-    elif model_type=="Clustering":   self._make_model(model.dest_key,model_json, H2OClusteringModelMetrics)
-    elif model_type=="Regression":   self._make_model(model.dest_key,model_json, H2ORegressionModelMetrics)
-    elif model_type=="Multinomial":  self._make_model(model.dest_key,model_json, H2OMultinomialModelMetrics)
-    elif model_type=="AutoEncoder":  self._make_model(model.dest_key,model_json, H2OAutoEncoderModelMetrics)
-    elif model_type=="DimReduction": self._make_model(model.dest_key,model_json, H2ODimReductionModelMetrics)
+    if model_type=="Binomial":       metrics_class = H2OBinomialModelMetrics
+    elif model_type=="Clustering":   metrics_class = H2OClusteringModelMetrics
+    elif model_type=="Regression":   metrics_class = H2ORegressionModelMetrics
+    elif model_type=="Multinomial":  metrics_class = H2OMultinomialModelMetrics
+    elif model_type=="AutoEncoder":  metrics_class = H2OAutoEncoderModelMetrics
+    elif model_type=="DimReduction": metrics_class = H2ODimReductionModelMetrics
     else: raise NotImplementedError(model_type)
+    self._make_model(model_id,model_json,metrics_class)
 
   def _make_model(self, key, model_json, metrics_class):
     self._id = key

@@ -11,7 +11,7 @@ from connection import H2OConnection
 from job import H2OJob
 from expr import ExprNode
 from frame import H2OFrame, _py_tmp_key, _is_list_of_lists, _gen_header
-from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
+from estimators.estimator_base import H2OEstimator
 import h2o_model_builder
 
 
@@ -314,15 +314,12 @@ def get_model(model_id):
   :return: H2OModel
 
   """
-  model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
-  model_type = model_json["output"]["model_category"]
-  if   model_type=="Binomial":    return H2OBinomialModel(model_id, model_json)
-  elif model_type=="Clustering":  return H2OClusteringModel(model_id, model_json)
-  elif model_type=="Regression":  return H2ORegressionModel(model_id, model_json)
-  elif model_type=="Multinomial": return H2OMultinomialModel(model_id, model_json)
-  elif model_type=="AutoEncoder": return H2OAutoEncoderModel(model_id, model_json)
-  else:                           raise NotImplementedError(model_type)
 
+  # TODO: call H2OEstimator()._resolve_model
+  m = H2OEstimator()
+  model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
+  m._resolve_model(model_id,model_json)
+  return m
 
 def get_frame(frame_id):
   """
@@ -331,6 +328,7 @@ def get_frame(frame_id):
   :return: An H2OFrame
   """
   return H2OFrame.get_frame(frame_id)
+
 
 def ou():
   """
