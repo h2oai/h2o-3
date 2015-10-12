@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 
 test.rdoc_deep_learning.golden <- function() {
 
-irisPath = system.file("extdata", "iris.csv", package = "h2o")
+irisPath = locate("smalldata/extdata/iris.csv")
 iris.hex = h2o.uploadFile(path = irisPath)
 indep <- names(iris.hex)[1:4]
 dep <- names(iris.hex)[5]

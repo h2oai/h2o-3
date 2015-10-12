@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.rdocls.golden <- function() {
 
 
-prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+prosPath <- locate("smalldata/extdata/prostate.csv", package="h2o")
 prostate.hex <- h2o.uploadFile(path = prosPath)
 h2o.ls()
 

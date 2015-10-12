@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.rdocglm.golden <- function() {
 	
     # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
-    prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
+    prostatePath = locate("smalldata/extdata/prostate.csv")
     prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
     h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
              family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
