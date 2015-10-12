@@ -1,4 +1,5 @@
 import h2o
+from h2o.h2o import _locate # private function. used to find files within h2o git project directory.
 import sys, os
 import site
 
@@ -20,7 +21,7 @@ def system_file(name):
 
     if h2o_data_path is None:
         if name == "prostate.csv":
-            h2o_data_path = h2o.locate(os.path.join("smalldata", "prostate", name))
+            h2o_data_path = _locate(os.path.join("smalldata", "prostate", name))
 
     if h2o_data_path is None or not os.path.exists(h2o_data_path):
         raise(ValueError, "This demo depends on " + name + " which could not be found")

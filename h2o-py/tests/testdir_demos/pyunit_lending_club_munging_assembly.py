@@ -6,7 +6,7 @@ from h2o.transforms.preprocessing import *
 
 def lending_club_munging_assembly():
 
-  small_test = [h2o.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
+  small_test = [tests.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
 
   # lending-club munging assembly
   print "Import and Parse data"

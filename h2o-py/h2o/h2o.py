@@ -1616,7 +1616,7 @@ def network_test():
   res["table"].show()
 
 
-def locate(path):
+def _locate(path):
   """
   Search for a relative path and turn it into an absolute path.
   This is handy when hunting for data files to be passed into h2o and used by import file.
