@@ -311,7 +311,7 @@ public class RadixOrder {
       }
     }
 
-    assert ArrayUtils.maxValue(_MSBhist) > DF.numRows() / 20;   // TO DO: better test of a good even split
+    assert ArrayUtils.maxValue(_MSBhist) < Math.max(1000, DF.numRows() / 20);   // TO DO: better test of a good even split
     // TO DO: otherwise, expand width. Once too wide (and interestingly large width may not be a problem since small buckets won't impact cache),
     // start rolling up bins (maybe into pairs or even quads)
 
