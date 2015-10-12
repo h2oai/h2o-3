@@ -1,7 +1,7 @@
 \section{Deployment}
 Since Sparkling Water is designed as a regular Spark application, its deployment cycle is strictly driven by Spark deployment strategies (see Spark documentation\footnote{Spark deployment guide \url{http://spark.apache.org/docs/latest/cluster-overview.html}}). Spark applications are deployed by the \texttt{spark-submit}~\footnote{Submitting Spark applications \url{http://spark.apache.org/docs/latest/submitting-applications.html}} script which handles all deployment scenarios:
 
-\begin{verbatim}
+\begin{lstlisting}[style=Bash]
 ./bin/spark-submit \
 --class <main-class>
 --master <master-url> \
@@ -9,14 +9,14 @@ Since Sparkling Water is designed as a regular Spark application, its deployment
 ... # other options
 <application-jar> \
 [application-arguments]
-\end{verbatim}
+\end{lstlisting}
 
 \begin{itemize}
-	\item $--class$ name of main class with $main$ method to be executed. For example, the $water.SparklingWaterDriver$ application launches H2O services.
-	\item $--master$ location of Spark cluster, see below
-	\item $--conf$ specifies any configuration property in form $key=value$
-	\item $application-jar$ jar with all classes and dependencies required for application execution
-	\item $application-arguments$ arguments passed to the main method of the class passed via $--class$ option
+	\item \texttt{--class} name of main class with \texttt{main} method to be executed. For example, the \texttt{water.SparklingWaterDriver} application launches H2O services.
+	\item \texttt{--master} location of Spark cluster, see below
+	\item \texttt{--conf} specifies any configuration property in form \texttt{key=value}
+	\item \texttt{application-jar} jar with all classes and dependencies required for application execution
+	\item \texttt{application-arguments} arguments passed to the main method of the class passed via \texttt{--class} option
 \end{itemize}
 
 
@@ -28,17 +28,17 @@ Sparkling water supports deployments to the following Spark clusters:
 \end{itemize}
 
 \subsection{Local cluster}
-Local cluster is identified by the following master URLs - $local$, $local[K]$, $local[*]$. In this case, cluster is composed of single JVM and created during application submission.
+Local cluster is identified by the following master URLs - \texttt{local}, \texttt{local[K]}, \texttt{local[*]}. In this case, cluster is composed of single JVM and created during application submission.
 
 For example, the command:
-\begin{verbatim}
+\begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \ 
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master local[*] \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   sparkling-water-assembly-1.5.1-all.jar  
-\end{verbatim}
+\end{lstlisting}
 will run ChicagoCrimeApp application inside single JVM with heap size 5g.
 
 \subsection{On Standalone Cluster}
@@ -46,14 +46,14 @@ Standalone cluster deployment\footnote{See Spark documentation~\url{http://spark
 
 The following command deploys ChicagoCrimeApp on standalone cluster which master node is exposed on IP mr-0xd10-precise1.0xdata.loc and port 7077:
 
-\begin{verbatim}
+\begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \ 
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master spark://mr-0xd10-precise1.0xdata.loc:7077 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   sparkling-water-assembly-1.5.1-all.jar  
-\end{verbatim}
+\end{lstlisting}
 
 In this case the standalone Spark cluster has to be configured to provide requested 5g of memory per executor node. 
 
@@ -61,7 +61,7 @@ In this case the standalone Spark cluster has to be configured to provide reques
 The most of production environments are using YARN cluster deployment since it allows for effective resource management and control.\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/running-on-yarn.html}} 
 In this case the environment has to contain shell variable~\texttt{HADOOP\_CONF\_DIR} or \texttt{YARN\_CONF\_DIR}.
 
-\begin{verbatim}
+\begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \ 
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
@@ -69,6 +69,6 @@ $SPARK_HOME/bin/spark-submit \
   --master yarn-client \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
 sparkling-water-assembly-1.5.1-all.jar  
-\end{verbatim}
+\end{lstlisting}
 
 The command creates YARN job and requests 5 nodes, each with 5G of memory. The \texttt{yarn-client} option forces driver to run in the client process.

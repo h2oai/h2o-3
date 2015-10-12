@@ -18,9 +18,38 @@ Sparkling Water enables transformation between different types of RDDs and H2O's
 
 When converting from H2OFrame to RDD, a wrapper is created around the H2O H2OFrame to provide an RDD-like API. In this case, no data is duplicated; instead, the data is served directly from then underlying H2OFrame.
 
-Converting in the opposite direction (from RDD to H2OFrame) introduces data duplication, since it transfers data from RDD storage into H2OFrame. However, data stored in H2OFrame is heavily compressed.
+Converting in the opposite direction (from RDD/DataFrame to H2OFrame) introduces data duplication, since it transfers data from RDD storage into H2OFrame. However, data stored in H2OFrame is heavily compressed and does not need to be preserved in RDD anymore.
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{sw/images/DataShare.png}
+	\caption{Sharing between Spark and H2O inside an executor JVM.}
+\end{figure}
+
 
 \subsection{Provided Primitives}
+
+The Sparkling Water provides several primitives (see Table~\ref{tab:primitives}). The first step before using H2O algorithms and data structures is to create and start \texttt{H2OContext} via \texttt{val hc = new H2OContext(sc).start()} call. The context holds information about running H2O services and exposes methods to transform data between Spark RDD/DataFrame and H2O Frame. The start of \texttt{H2OContext} involves distributed operation which contacts all accessible Spark executor nodes and initialize H2O services (KV store, RPC) inside executors' JVMs.
+
+When \texttt{H2OContext} is running, H2O data structures and algorithms can be manipulated. The key data structure is \texttt{H2OFrame} which represents a distributed table composed of vectors. A new H2O frame can be created by:
+\begin{itemize}
+	\item loading a cluster local file\footnote{A file which is located on each node of the cluster.}:
+\begin{lstlisting}[style=Scala]
+val h2oFrame = new H2OFrame(new File("/data/iris.csv"))
+\end{lstlisting}
+	\item loading a file from HDFS/S3/S3N/S3A:
+\begin{lstlisting}[style=Scala]
+val h2oFrame = new H2OFrame(URI.create("hdfs://data/iris.csv"))
+\end{lstlisting}
+	\item transforming Spark RDD or DataFrame:
+\begin{lstlisting}[style=Scala]
+val h2oFrame = h2oContext.asH2OFrame(rdd)
+\end{lstlisting}
+	\item referencing existing H2O frame by its key
+\begin{lstlisting}[style=Scala]
+val h2oFrame = new H2OFrame("iris.hex")
+\end{lstlisting}		
+\end{itemize}
+
 
 \begin{table}
 \centering
@@ -50,4 +79,23 @@ algorithms. \\
 \caption{Sparkling Water primitives}
 \label{tab:primitives}
 \end{table}
+
+When \texttt{H2OContext} is running any H2O algorithm can be called. Most of provided algorithms are located in the package \texttt{hex}. The call of an algorithm is composed of two step:
+
+\begin{itemize}
+	\item parameters specification:
+\begin{lstlisting}[style=Scala]
+val train: H2OFrame = new H2OFrame(new File("prostate.csv"))
+val gbmParams = new GBMParameters()
+gbmParams._train = train
+gbmParams._response_column = 'CAPSULE
+gbmParams._ntrees = 10
+\end{lstlisting}
+
+	\item creating model builder and launching computation. The \texttt{trainModel} method is non-blocking and returns a job which represents computation.
+\begin{lstlisting}[style=Scala]
+val gbmModel = new GBM(gbmParams).trainModel.get
+\end{lstlisting}
+\end{itemize}
+
 

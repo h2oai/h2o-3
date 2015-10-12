@@ -2,10 +2,8 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.hex_1775 <- function() {
-  temp_dir = tempdir()
-  temp_subdir1 = paste(temp_dir, "tmp", sep = .Platform$file.sep)
-  temp_subdir2 = paste(temp_dir, "tmp2", sep = .Platform$file.sep)
-  dir.create(temp_subdir1)
+
+  temp_subdir1 = sandboxMakeSubDir(dirname="tmp")
 
   # Test saving and loading of GLM model
   Log.info("Importing prostate.csv...")
@@ -55,8 +53,8 @@ test.hex_1775 <- function() {
   h2o.removeAll()
 
   # Proving we can move files from one directory to another and not affect the load of the model
+  temp_subdir2 = sandboxRenameSubDir(temp_subdir1,"tmp2")
   Log.info(paste("Moving models from", temp_subdir1, "to", temp_subdir2))
-  file.rename(temp_subdir1, temp_subdir2)
 
   model_paths = c(prostate.glm.path, prostate.gbm.path, iris.speedrf.path, iris.rf.path, iris.nb.path, iris.dl.path)
   new_model_paths = {}
@@ -107,7 +105,6 @@ test.hex_1775 <- function() {
   expect_equal(nrow(speedrf.pred), 150)
   expect_equal(speedrf.pred, speedrf.pred2)
 
-  
 }
 
 doTest("HEX-1775 Test: Save and Load GLM Model", test.hex_1775)

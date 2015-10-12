@@ -228,9 +228,10 @@ public final class ParseDataset extends Job<Frame> {
         //Test domains for excessive length.
         List<String> offendingColNames = new ArrayList<>();
         for (int i = 0; i < ecols.length; i++) {
-          if (gcdt.getDomainLength(i) < Categorical.MAX_CATEGORICAL_COUNT)
-            avs[ecols[i]].setDomain(gcdt.getDomain(i));
-          else
+          if (gcdt.getDomainLength(i) < Categorical.MAX_CATEGORICAL_COUNT) {
+            if( gcdt.getDomainLength(i)==0 ) avs[ecols[i]].setBad(); // The all-NA column
+            else avs[ecols[i]].setDomain(gcdt.getDomain(i));
+          } else
             offendingColNames.add(setup._column_names[ecols[i]]);
         }
         if (offendingColNames.size() > 0)
@@ -416,7 +417,7 @@ public final class ParseDataset extends Job<Frame> {
         _packedDomains[i] = packDomain(_perColDomains[i]);
         i++;
       }
-      Log.trace("Done collecting local domains.");
+      Log.trace("Done locally collecting domains on each node.");
     }
 
     @Override
@@ -643,7 +644,7 @@ public final class ParseDataset extends Job<Frame> {
       int nchunks = 0;          // Count chunks across all Vecs
       int nCols = 0;            // SVMLight special: find max columns
       for( FVecParseWriter dout : _dout ) {
-        nchunks += dout.nChunks();
+        nchunks += dout._vecs[0]._tmp_espc.length;
         nCols = Math.max(dout._vecs.length,nCols);
       }
       // One Big Happy Shared ESPC
@@ -660,14 +661,13 @@ public final class ParseDataset extends Job<Frame> {
       for( FVecParseWriter fvpw : _dout ) {
         AppendableVec[] avs = fvpw._vecs;
         long[] file_local_espc = avs[0]._tmp_espc;
-        int len = fvpw.nChunks();
-        assert len <= file_local_espc.length;
         // Quick assert that all partial AVs in each DOUT are sharing a common chunkOff, and common Vec Keys
         for( int j = 0; j < avs.length; ++j ) {
           assert res[j]._key.equals(avs[j]._key);
           assert avs[0]._chunkOff == avs[j]._chunkOff;
+          assert file_local_espc == avs[j]._tmp_espc || Arrays.equals(file_local_espc,avs[j]._tmp_espc);
         }
-        System.arraycopy(file_local_espc, 0, espc, avs[0]._chunkOff, len);
+        System.arraycopy(file_local_espc, 0, espc, avs[0]._chunkOff, file_local_espc.length);
       }
 
       _vecs = res;
@@ -946,8 +946,8 @@ public final class ParseDataset extends Job<Frame> {
 
     int namelen = 0;
     for (String s : fr.names()) namelen = Math.max(namelen, s.length());
-    String format = " %"+namelen+"s %7s %12.12s %12.12s %11s %8s %6s";
-    Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "cardinality"));
+    String format = " %"+namelen+"s %7s %12.12s %12.12s %12.12s %12.12s %11s %8s %6s";
+    Log.info(String.format(format, "ColV2", "type", "min", "max", "mean", "sigma", "NAs", "constant", "cardinality"));
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     for( int i = 0; i < vecArr.length; i++ ) {
@@ -958,12 +958,19 @@ public final class ParseDataset extends Job<Frame> {
       String typeStr;
       String minStr;
       String maxStr;
+      String meanStr="";
+      String sigmaStr="";
 
       switch( v.get_type() ) {
         case Vec.T_BAD :   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
-        case Vec.T_NUM :  typeStr = "numeric";  minStr = String.format("%g", v.min());  maxStr = String.format("%g", v.max());  break;
+        case Vec.T_NUM :  typeStr = "numeric";
+          minStr = String.format("%g", v.min());
+          maxStr = String.format("%g", v.max());
+          meanStr = String.format("%g", v.mean());
+          sigmaStr = String.format("%g", v.sigma());
+          break;
         case Vec.T_CAT :  typeStr = "factor" ;  minStr = v.factor(0);  maxStr = v.factor(v.cardinality()-1); break;
         case Vec.T_TIME:  typeStr = "time"   ;  minStr = sdf.format(v.min());  maxStr = sdf.format(v.max());  break;
         default: throw H2O.unimpl();
@@ -1001,7 +1008,7 @@ public final class ParseDataset extends Job<Frame> {
       if (printLogSeparatorToStdout)
         Log.info("Additional column information only sent to log file...");
 
-      String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
+      String s = String.format(format, CStr, typeStr, minStr, maxStr, meanStr, sigmaStr, naStr, isConstantStr, numLevelsStr);
       Log.info(s,printColumnToStdout);
     }
     Log.info(FrameUtils.chunkSummary(fr).toString());

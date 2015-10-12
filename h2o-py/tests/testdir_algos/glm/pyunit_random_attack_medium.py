@@ -18,7 +18,8 @@ def random_attack():
         # randomly select parameters and their corresponding values
         if random.randint(0,1): kwargs['max_iterations'] = random.randint(1,50)
         if random.random() > 0.8: kwargs['beta_epsilon'] = random.random()
-        if random.randint(0,1): kwargs['solver'] = ["IRLSM", "L_BFGS"][random.randint(0,1)]
+        if random.randint(0,1): kwargs['solver'] = ["AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE",
+                                                    "COORDINATE_DESCENT"][random.randint(0,1)]
         if random.randint(0,1): kwargs['standardize'] = [True, False][random.randint(0,1)]
         if random.randint(0,1):
             if   family == "gaussian": kwargs['link'] = gaussian_links[random.randint(0,2)]
@@ -36,13 +37,15 @@ def random_attack():
         if random.randint(0,1):
             bc = []
             for n in x:
-                name = train.names[n]
-                lower_bound = random.uniform(-1,1)
-                upper_bound = lower_bound + random.random()
-                bc.append([name, lower_bound, upper_bound])
-            beta_constraints = h2o.H2OFrame(python_obj=bc)
-            beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
-            kwargs['beta_constraints'] = beta_constraints.send_frame()
+                if train[n].isnumeric():
+                    name = train.names[n]
+                    lower_bound = random.uniform(-1,1)
+                    upper_bound = lower_bound + random.random()
+                    bc.append([name, lower_bound, upper_bound])
+            if len(bc) > 0:
+                beta_constraints = h2o.H2OFrame(python_obj=bc)
+                beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
+                kwargs['beta_constraints'] = beta_constraints._id
 
         # display the parameters and their corresponding values
         print "-----------------------"
@@ -60,15 +63,17 @@ def random_attack():
         print "-----------------------"
 
     print "Import and data munging..."
+    seed = random.randint(1,10000)
+    print "SEED: {0}".format(seed)
     pros = h2o.upload_file(tests.locate("smalldata/prostate/prostate.csv.zip"))
     pros[1] = pros[1].asfactor()
-    r = pros[0].runif() # a column of length pros.nrow with values between 0 and 1
+    r = pros[0].runif(seed=seed) # a column of length pros.nrow with values between 0 and 1
     # ~80/20 train/validation split
     pros_train = pros[r > .2]
     pros_valid = pros[r <= .2]
 
     cars = h2o.upload_file(tests.locate("smalldata/junit/cars.csv"))
-    r = cars[0].runif()
+    r = cars[0].runif(seed=seed)
     cars_train = cars[r > .2]
     cars_valid = cars[r <= .2]
 

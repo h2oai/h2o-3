@@ -67,7 +67,7 @@ public class DRFBasic extends TestNGUtil {
                 _airquality = ParseDataset.parse(airqualityKey, nfs_airquality._key);
 
                 for (int i : new int[]{4, 5}) {
-                    _airquality.vecs()[i] = _airquality.vecs()[i].toCategorical();
+                    _airquality.vecs()[i] = _airquality.vecs()[i].toCategoricalVec();
                 }
 
                 DRFModel.DRFParameters parms = new DRFModel.DRFParameters();

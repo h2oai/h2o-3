@@ -14,7 +14,7 @@ import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import java.util.concurrent.ExecutionException;
 
 public class NaiveBayesTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void testIris() throws InterruptedException, ExecutionException {
     NaiveBayes job = null;
@@ -109,7 +109,7 @@ public class NaiveBayesTest extends TestUtil {
       Scope.enter();
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategorical())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec())._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -151,7 +151,7 @@ public class NaiveBayesTest extends TestUtil {
     try {
       Scope.enter();
       train = parse_test_file(Key.make("covtype.hex"), "smalldata/covtype/covtype.20k.data");
-      Scope.track(train.replace(54, train.vecs()[54].toCategorical())._key);   // Change response to categorical
+      Scope.track(train.replace(54, train.vecs()[54].toCategoricalVec())._key);   // Change response to categorical
       DKV.put(train);
 
       NaiveBayesParameters parms = new NaiveBayesParameters();

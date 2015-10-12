@@ -24,23 +24,27 @@ To update or download the latest version of the `h2o` package, type these comman
 if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
 if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
 
-# Now we download, install and initialize the H2O package for R.
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-simons/7/R")))
+# Now we download, install and initialize the latest stable release of the *h2o* package for R.
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-slater/5/R")))
 library(h2o)
 ```
 
 ### Install H2O Ensemble
 The `h2oEnsemble` package can be installed using either of the following methods.
-- Clone the main h2o repository and install the package:
-```
-git clone https://github.com/h2oai/h2o-3.git
-R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
-```
+
+Recommended:
 - Install in R using `devtools::install_github`:
 ```
 library(devtools)
 install_github("h2oai/h2o-3/h2o-r/ensemble/h2oEnsemble-package")
 ```
+If you cloned the main h2o-3 repo:
+- Clone the main h2o repository and install the package:
+```
+git clone https://github.com/h2oai/h2o-3.git
+R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
+```
+
 
 ## Create Ensembles
 - An example of how to train and test an ensemble is in the `h2o.ensemble` function documentation in the `h2oEnsemble` package.

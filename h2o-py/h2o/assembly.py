@@ -9,6 +9,19 @@ class H2OAssembly:
     * to_pojo: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
     * union: Combine two H2OAssembly objects, the resulting row from each H2OAssembly are joined with simple concatenation.
   """
+
+  # static properties pointing to H2OFrame methods
+  divide = H2OFrame.__div__
+  plus   = H2OFrame.__add__
+  multiply= H2OFrame.__mul__
+  minus = H2OFrame.__sub__
+  less_than = H2OFrame.__lt__
+  less_than_equal = H2OFrame.__le__
+  equal_equal = H2OFrame.__eq__
+  not_equal = H2OFrame.__ne__
+  greater_than = H2OFrame.__gt__
+  greater_than_equal = H2OFrame.__ge__
+
   def __init__(self, steps):
     """
     Build a new H2OAssembly.
@@ -61,32 +74,11 @@ class H2OAssembly:
     self.id = j["assembly"]["name"]
     return get_frame(j["result"]["name"])
 
-  @property
-  def divide(self): return H2OFrame.__div__
+class H2OCol:
+  """
+  Wrapper class for H2OBinaryOp step's left/right args.
 
-  @property
-  def plus(self): return H2OFrame.__add__
-
-  @property
-  def multiply(self): return H2OFrame.__mul__
-
-  @property
-  def minus(self): return H2OFrame.__sub__
-
-  @property
-  def less_than(self): return H2OFrame.__lt__
-
-  @property
-  def less_than_equal(self): return H2OFrame.__le__
-
-  @property
-  def equal_equal(self): return H2OFrame.__eq__
-
-  @property
-  def not_equal(self): return H2OFrame.__ne__
-
-  @property
-  def greater_than(self): return H2OFrame.__gt__
-
-  @property
-  def greater_than_equal(self): return H2OFrame.__ge__
+  Use if you want to signal that a column actually comes from the train to be fitted on.
+  """
+  def __init__(self, column):
+    self.col = column
