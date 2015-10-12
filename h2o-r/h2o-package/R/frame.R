@@ -43,10 +43,14 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 #' @param x A Frame
 #' @return The id
 #' @export
-h2o.getId <- function(x) {
-  chk.Frame(x)
-  attr(x, "id")
-}
+h2o.getId <- function(x) attr( chk.Frame(x), "id")
+
+#' Get the types-per-column
+#'
+#' @param x A Frame
+#' @return A list of types
+#' @export
+h2o.getTypes <- function(x) attr( chk.Frame(x), "types")
 
 .h2o.gc <- function() {
   gc()
