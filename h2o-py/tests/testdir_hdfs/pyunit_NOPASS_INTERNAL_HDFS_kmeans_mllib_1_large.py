@@ -50,6 +50,8 @@ def kmeans_mllib():
             print "H2O Average Within-Cluster SSE: \n".format(wcsse_h2o)
             assert wcsse_h2o == wcsse_mllib, "Expected mllib and h2o to get the same wcsse. Mllib got {0}, and H2O " \
                                              "got {1}".format(wcsse_mllib, wcsse_h2o)
+    else:
+        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, kmeans_mllib)

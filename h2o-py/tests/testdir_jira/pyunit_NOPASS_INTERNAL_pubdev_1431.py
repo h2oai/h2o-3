@@ -18,7 +18,7 @@ def pubdev_1431():
         h2o.download_csv(predictions,csv)
         os.remove(csv)
     else:
-        print "Not running on H2O internal network.  No access to HDFS."
+        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, pubdev_1431)

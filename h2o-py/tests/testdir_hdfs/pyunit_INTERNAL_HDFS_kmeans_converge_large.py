@@ -44,7 +44,7 @@ def hdfs_kmeans_converge():
         assert avg_change < 1e-6 or iters > miters, "Expected k-means to converge or reach max iterations. avg_change = " \
                                                     "{0} and iterations = {1}".format(avg_change, iters)
     else:
-        print "Not running on H2O internal network.  No access to HDFS."
+        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, hdfs_kmeans_converge)

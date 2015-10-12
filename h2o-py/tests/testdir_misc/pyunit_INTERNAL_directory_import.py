@@ -19,6 +19,8 @@ def directory_import():
 
         assert r1*3 == ra, "Expected 3 times the rows, but got {0} and {1}".format(r1,ra)
         assert c1 == ca, "Expected same number of cols, but got {0} and {1}".format(c1,ca)
+    else:
+        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
     small1 = tests.locate("smalldata/jira/identical_files/iris1.csv")
     small2 = small1.split("iris1.csv")[0]

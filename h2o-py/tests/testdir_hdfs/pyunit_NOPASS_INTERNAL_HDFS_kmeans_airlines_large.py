@@ -29,7 +29,7 @@ def hdfs_kmeans_airlines():
                                  max_iterations = 10, standardize = True)
         print airlines_km
     else:
-        print "Not running on H2O internal network.  No access to HDFS."
+        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, hdfs_kmeans_airlines)
