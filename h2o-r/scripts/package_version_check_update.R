@@ -25,6 +25,8 @@ function(reqs) {
     pkgNames <- append(pkgNames,"bit64",after=which(pkgNames %in% "bit"))
     pkgNames <- pkgNames[-which(pkgNames %in% "ggplot2")]
     pkgNames <- append(pkgNames,"ggplot2",after=which(pkgNames %in% "scales"))
+    pkgNames <- pkgNames[-which(pkgNames %in% "rversions")]
+    pkgNames <- append(pkgNames,"rversions",after=which(pkgNames %in% "xml2"))
     return(reqs[match(pkgNames,reqs[,1]),])
 }
 
