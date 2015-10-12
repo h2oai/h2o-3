@@ -148,7 +148,7 @@ class H2OEstimator(ModelBase):
     training_frame = X.cbind(y) if y is not None else X
     X = X.names
     y = y.names[0] if y is not None else None
-    return self.train(X, y, training_frame, **params).model
+    return self.train(X, y, training_frame, **params)
 
   def get_params(self, deep=True):
     """Useful method for obtaining parameters for this estimator. Used primarily for
