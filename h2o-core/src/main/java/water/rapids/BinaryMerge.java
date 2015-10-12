@@ -1,11 +1,9 @@
 package water.rapids;
 
-/**
- * Created by mdowle on 10/1/15.
- */
-
 // Since we have a single key field in H2O (different to data.table), bmerge() becomes a lot simpler (no
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
+
+import water.util.ArrayUtils;
 
 public class BinaryMerge {
   long _retFirst[];  // The row number of the first right table's index key that matches
@@ -13,24 +11,47 @@ public class BinaryMerge {
   byte _leftKey[/*n2GB*/][/*i mod 2GB * _keySize*/];
   byte _rightKey[][];
   boolean _allLen1 = true;
-  int _keySize;  // Same size key both sides. TO DO: not only left and right different sizes, but composition different. Vectors of min and range/numbytes needed to be attached to key, vector along key columns
+  int _leftFieldSizes[], _rightFieldSizes[];  // the widths of each column in the key
+  int _leftKeyNCol, _rightKeyNCol;  // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
+  int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
+  int _numJoinCols;
 
-  BinaryMerge(byte[][] leftKey, byte[][] rightKey, long leftN, long rightN, int keySize) {   // In X[Y], 'left'=i and 'right'=x
+  BinaryMerge(byte[][] leftKey, byte[][] rightKey, long leftN, long rightN, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
     _leftKey = leftKey;
     _rightKey = rightKey;
-    _retFirst = new long[(int)leftN];    // TO DO: allow more than 2bn
+    assert leftN <= 268435456;    // 2^31/8
+    _retFirst = new long[(int)leftN];    // TO DO: batch to allow more
     _retLen = new long[(int)leftN];
-    _keySize = keySize;
+    _leftFieldSizes = leftFieldSizes;
+    _rightFieldSizes = rightFieldSizes;
+    _leftKeyNCol = _leftFieldSizes.length;
+    _rightKeyNCol = _rightFieldSizes.length;
+    _leftKeySize = ArrayUtils.sum(leftFieldSizes);
+    _rightKeySize = ArrayUtils.sum(rightFieldSizes);
+    _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
     bmerge_r(-1, leftN, -1, rightN);
   }
 
   int keycmp(byte x[][], long xi, byte y[][], long yi) {   // TO DO - faster way closer to CPU like batches of long compare, maybe.
-    xi *= _keySize;
-    yi *= _keySize;   // x[] and y[] are len keys. All keys fixed length and left size same size as right size, currently.  Same return value as strcmp in C. <0 => xi<yi
+    xi *= _leftKeySize;
+    yi *= _rightKeySize;   // x[] and y[] are len keys.
     // TO DO: rationalize x and y being chunked into 2GB pieces.  Take x[0][] and y[0][] outside loop / function
-    int len = _keySize;
-    while (len > 1 && x[0][(int)xi] == y[0][(int)yi]) { xi++; yi++; len--; }
-    return ((x[0][(int)xi] & 0xFF) - (y[0][(int)yi] & 0xFF));
+    // TO DO: switch to use keycmp_sameShape() for common case of all(leftFieldSizes == rightFieldSizes), although, skipping to current column will
+    //        help save repeating redundant work and saving the outer for() loop and one if() may not be worth it.
+    int i=0, xlen=0, ylen=0, diff=0;
+    while (i<_numJoinCols && xlen==0) {    // TO DO: pass i in to start at a later key column, when known
+      xlen = _leftFieldSizes[i];
+      ylen = _rightFieldSizes[i];
+      if (xlen!=ylen) {
+        while (xlen > ylen && x[0][(int)xi] == 0) { xi++; xlen--; }
+        while (ylen > xlen && y[0][(int)yi] == 0) { yi++; ylen--; }
+        if (xlen != ylen) return (xlen - ylen);
+      }
+      while (xlen > 0 && (diff = x[0][(int)xi] - y[0][(int)yi])==0) { xi++; yi++; xlen--; }
+      i++;
+    }
+    return diff;
+    // Same return value as strcmp in C. <0 => xi<yi
   }
 
   void bmerge_r(long lLowIn, long lUppIn, long rLowIn, long rUppIn) {

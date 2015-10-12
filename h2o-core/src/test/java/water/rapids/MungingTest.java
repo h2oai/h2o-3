@@ -9,14 +9,13 @@ import water.parser.ParseDataset;
 //import water.util.Log;
 //import water.rapids.ASTGroupBy.*;
 
+import javax.management.Query;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 //import java.util.Arrays;
 
-/**
- * Created by mdowle on 7/31/15.
- */
+
 public class MungingTest extends TestUtil {
     @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
     private void copyStream(OutputStream os, InputStream is, final int buffer_size) {
@@ -37,66 +36,27 @@ public class MungingTest extends TestUtil {
         NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1.csv"));
         Frame frame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
         System.out.println("Loaded file, now calling Query ...");
-        //Frame myF = new Frame(frame.vec(0));                // group by id
-        Frame myF = new Frame(frame.vec(0), frame.vec(1));    // group by id, date
-        // *** Note if change the above, be sure to change width hardcoded in Query.java to be 5 or 7
-        new Query(myF, frame.vec(3), true);   // 3 == quantity
+        new RadixOrder(frame, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
+        // TO DO: change back to DoGroup(frame, new int[] {0,1}, frame.vec(3), true)
         frame.delete();
     }
 
     @Test public void run3() throws Exception {
-        System.out.println("Running run3 ...");
-        NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1.csv"));
-        Frame rightFrame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
+      System.out.println("Running run3 ...");
 
-        nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1_subset.csv"));
-        Frame leftFrame = ParseDataset.parse(Key.make(), nfs._key);
+      NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1_subset.csv"));
+      Frame leftFrame = ParseDataset.parse(Key.make(), nfs._key);
 
-        System.out.println("Loaded two files, now calling order ...");
-        //Frame myF = new Frame(frame.vec(0));
-        Frame rightJoinCols = new Frame(rightFrame.vec(0), rightFrame.vec(1));    // group by id, date
-        // *** Note if change the above, be sure to change width hardcoded in Query.java to be 5 or 7
-        Frame leftJoinCols = new Frame(leftFrame.vec(0), leftFrame.vec(1));    // stuffing it into current framework just to get index1 and index2 output
+      nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/test.csv"));
+      Frame rightFrame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
 
-        ArrayList rightIndex = new Query(rightJoinCols, rightFrame.vec(3), false)._returnList;   // 3 == quantity
-        ArrayList leftIndex = new Query(leftJoinCols, leftFrame.vec(0), false)._returnList;   // stuffing it into current structure
+      System.out.println("Loaded two files, now calling order ...");
 
-        for (int i=0; i<256; i++) { // each of msd values.  TO DO: go parallel
-          long[][] x = ((long[][][])leftIndex.get(0))[i];
-          int lenx = x == null ? 0 : x[0].length;
-          if (lenx > 0) {
-            long[][] y = ((long[][][])rightIndex.get(0))[i];
-            int leny = y == null ? 0 : y[0].length;
-            if (leny > 0) {
-              //System.out.print(i + " left " + lenx + " => right " + leny);
-              BinaryMerge bm = new BinaryMerge(
-                      ((byte [][][])leftIndex.get(1))[i],
-                      ((byte [][][])rightIndex.get(1))[i],
-                      (long)lenx,
-                      (long)leny,
-                      7);
-              //System.out.println(" ... first match " + bm._retFirst[0] + " len " + bm._retLen[0]);
-              for (int j=0; j<lenx; j++) {
-                System.out.print("Left row" + x[0][j] + " matches to right row(s): ");
-                for (int k = 0; k < bm._retLen[j]; k++)
-                  System.out.print(y[0][(int) bm._retFirst[j] + k] + " ");
-                System.out.println();
-              }
-            }
-          }
+      new Merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1});  // 0==id, 1==date  (no dups)
+      new Merge(leftFrame, rightFrame, new int[] {0}, new int[] {0});      // 0==id           (many dups)
 
-          //long[][] y = ((long[][])rightIndex.get(1))
-          //System.out.println(i + " right " + ((byte[][][]) rightIndex.get(0))[i].length);
-          //
-          //System.out.println(retFirst[0]);
-          // TO DO:   We don't even need to descend into all the buckets of the right, just the ones that the left matches to.
-          // TO DO:   Add some small to v-large benchmarks
-        }
-
-        // TO DO: if first msd bytes are skipped in key, will need to store their value for joining later.
-
-        leftFrame.delete();
-        rightFrame.delete();
+      leftFrame.delete();
+      rightFrame.delete();
     }
 
 

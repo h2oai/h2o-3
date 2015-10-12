@@ -2,16 +2,24 @@ package water.rapids;
 
 import water.fvec.*;
 import water.*;
+import water.util.ArrayUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class ASTGroupSorted {
    // 2^31 bytes > java max (2^31-1), so 2^30 / 8 bytes per long.   TO DO - how to make global?
-  private static final int MAXVECLONG = 134217728;
-  private static final int MAXVECBYTE = 1073741824;
+  //private static final int MAXVECLONG = 134217728;
+  //private static final int MAXVECBYTE = 1073741824;
 
   long[][] sort(Frame groupCols) {
+
+    //return (new RadixOrder(groupCols, ArrayUtils.seq(0,groupCols.numCols()-1))._groupIndex);   // TO DO: won't work yet as needs 2nd group step
+    return (new long[][] {{1,2,3}});
+    // a vector
+
+    /*
     System.out.println("Calling RadixCount ...");
     long t0 = System.nanoTime();
     long t00 = t0;
@@ -51,7 +59,7 @@ public class ASTGroupSorted {
     for (int c=0; c<256; c++) {
       if (totalHist[c] == 0) continue;
       int d;
-      int nbatch = (int)(totalHist[c] * Math.max(keySize,8) / MAXVECBYTE);   // TODO. can't be 2^31 because 2^31-1 was limit. If we use 2^30, instead of /, can we do >> for speed?
+      int nbatch = (int)(totalHist[c] * Math.max(keySize,8) / MAXVECBYTE);   // TO DO. can't be 2^31 because 2^31-1 was limit. If we use 2^30, instead of /, can we do >> for speed?
       int rem = (int)(totalHist[c] * Math.max(keySize,8) % MAXVECBYTE);
       assert nbatch==0;  // in the case of 20m rows, we should always be well within a batch size
       // The Math.max ensures that batches are aligned, even for wide keys.  For efficiency inside insert() above so it doesn't have to cross boundaries.
@@ -120,5 +128,6 @@ public class ASTGroupSorted {
     fs.blockForPending();
     System.out.println("Time to assign group index (length nrows): " + (System.nanoTime() - t0) / 1e9 ); t0 = System.nanoTime();
     return g;
+    */
   }
 }
