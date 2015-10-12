@@ -34,7 +34,7 @@ public class ASTMerge extends ASTPrim {
   // Hash tables beyond this count are assumed to be inefficient, and we're
   // better served by sorting all the join columns and doing a global
   // merge-join.
-  static final int MAX_HASH_SIZE = 100000000;
+  static final int MAX_HASH_SIZE = 120000000;
 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();

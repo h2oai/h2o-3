@@ -89,7 +89,6 @@ Printed in the United States of America.
 
 \tableofcontents
 
-
 \newpage
 
 \section{Preface}
@@ -110,16 +109,32 @@ Need to put into something about where H2O fits into the PyData / SciKit ecosyst
 \section{Getting setup}
 
 \subsection{Installing H2O}
+\newcommand{\waterVersion}{3.2.0.5}
 \input{common/installation.tex}
 
 \section{Data Preparation}
 H2OFrame what is it, how does it compare to PD Series and DataFrames?
 H2OFrame data model
 
-\subsection{Loading}
-From disk
-Also from local computer (upload), from URI, from Python local
-File types supported
+\waterExampleInPython
+Customarily, we import and start H2O as follows:
+\lstinputlisting[style=python]{python/start_h2o.py}
+
+\subsection{Object Creation}
+
+\waterExampleInPython
+To create an H2OFrame object from a python tuple:
+\lstinputlisting[style=python]{python/h2oframe_from_tuple.py}
+
+\waterExampleInPython
+To create an H2OFrame object from a python list:
+\lstinputlisting[style=python]{python/h2oframe_from_list.py}
+
+\waterExampleInPython
+To create an H2OFrame object from a python dict (or collections.OrderedDict):
+\lstinputlisting[style=python]{python/h2oframe_from_dict.py}
+
+\subsection{Viewing Data}
 df (just looking at the data frame)
 df data types
 df column names
@@ -163,7 +178,11 @@ how does h2o handle them
 determine levels
 interactions
 
-\subsection{Saving Data}
+\subsection{Loading and Saving Data}
+File types supported
+From disk
+Also from local computer (upload), from URI, from Python local
+
 
 \subsection{Gotchas}
 
