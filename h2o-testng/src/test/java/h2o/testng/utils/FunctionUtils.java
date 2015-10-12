@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
 
@@ -32,7 +33,6 @@ import water.Scope;
 import water.TestNGUtil;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.parser.ParseDataset;
 
 public class FunctionUtils {
@@ -49,11 +49,38 @@ public class FunctionUtils {
 	// ---------------------------------------------- //
 	// execute testcase
 	// ---------------------------------------------- //
+	private static String validateTestcaseType(Dataset train_dataset, HashMap<String, String> rawInput) {
+
+		if (train_dataset == null || !train_dataset.isAvailabel()) {
+			return null;
+		}
+
+		String result = null;
+		String[] columnNames = train_dataset.getColumnNames();
+		String[] columnTypes = train_dataset.getColumnTypes();
+		String reponseColumnType = columnTypes[ArrayUtils.indexOf(columnNames, train_dataset.getResponseColumn())];
+		if (Param.parseBoolean(rawInput.get(CommonHeaders.classification))
+				&& !"enum".equals(reponseColumnType.toLowerCase())) {
+
+			result = "This is classification testcase but response_column type is not enum";
+		}
+		else if (Param.parseBoolean(rawInput.get(CommonHeaders.regression))
+				&& "enum".equals(reponseColumnType.toLowerCase())) {
+
+			result = "This is regresstion testcase but response_column type is enum";
+		}
+
+		return result;
+	}
+
 	public static String validate(Param[] params, String train_dataset_id, Dataset train_dataset,
 			String validate_dataset_id, Dataset validate_dataset, HashMap<String, String> rawInput) {
 
 		System.out.println("Validate Parameters object with testcase: " + rawInput.get(CommonHeaders.testcase_id));
 		String result = null;
+
+		String verifyTrainDSMessage = validateTestcaseType(train_dataset, rawInput);
+		String verifyValidateDSMessage = validateTestcaseType(validate_dataset, rawInput);
 
 		if (StringUtils.isEmpty(train_dataset_id)) {
 			result = "In testcase, train dataset id is empty";
@@ -68,8 +95,15 @@ public class FunctionUtils {
 				&& (validate_dataset == null || !validate_dataset.isAvailabel())) {
 			result = String.format("Dataset id %s is not available in dataset characteristic", validate_dataset_id);
 		}
+		else if (verifyTrainDSMessage != null) {
+			result = verifyTrainDSMessage;
+		}
+		else if (verifyValidateDSMessage != null) {
+			result = verifyValidateDSMessage;
+		}
 		else {
 			result = Param.validateAutoSetParams(params, rawInput);
+
 		}
 
 		if (result != null) {
@@ -326,7 +360,6 @@ public class FunctionUtils {
 			HashMap<String, String> rawInput) {
 
 		boolean isTestSuccessfully = false;
-		Vec trainResponseColumnVec = null;
 		Frame trainFrame = null;
 		Frame score = null;
 		Model.Output modelOutput = null;
@@ -344,16 +377,6 @@ public class FunctionUtils {
 		GBMModel gbmModel = null;
 
 		trainFrame = parameter._train.get();
-
-		//TODO: I am implementing it but I can't test
-		// cast ResponseColumn to Enum when testcase is classification
-//		if (Param.parseBoolean(rawInput.get(CommonHeaders.classification))
-//				&& !trainFrame.vec(parameter._response_column).isCategorical()) {
-
-//			System.out.println("Cast response_column to enum");
-//			trainResponseColumnVec = trainFrame.remove(parameter._response_column);
-//			trainFrame.add(parameter._response_column, trainResponseColumnVec.toCategorical());
-//		}
 
 		try {
 			Scope.enter();
@@ -439,11 +462,6 @@ public class FunctionUtils {
 			handleTestcaseFailed(isNegativeTestcase, ae, rawInput, algorithm);
 		}
 		finally {
-			if (trainResponseColumnVec != null) {
-				trainFrame.vec(parameter._response_column).remove();
-				trainFrame.remove(parameter._response_column);
-				trainFrame.add(parameter._response_column, trainResponseColumnVec);
-			}
 			if (drfJob != null) {
 				drfJob.remove();
 			}
