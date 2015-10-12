@@ -50,11 +50,13 @@ def counterToBooklet(int counter) {
             "GBM_Vignette",
             "DeepLearning_Vignette",
             "SparklingWaterVignette",
-            "R_Vignette"]
+            "R_Vignette",
+            "Python_booklet"]
     return booklets[counter];
 }
 
-5.times {
+// Note: The '6' here is the number of items in the list of booklets.
+6.times {
     counter ->
         task "compile_${counter}_0"(type: Exec, dependsOn: createBuildInfoTex) {
             workingDir bookletPath
@@ -63,7 +65,7 @@ def counterToBooklet(int counter) {
         }
 }
 
-5.times {
+6.times {
     counter ->
         task "compile_${counter}_1"(type: Exec, dependsOn: "compile_${counter}_0") {
             workingDir bookletPath
@@ -72,7 +74,7 @@ def counterToBooklet(int counter) {
         }
 }
 
-5.times {
+6.times {
     counter ->
         task "compile_${counter}_2"(type: Exec, dependsOn: "compile_${counter}_1") {
             workingDir bookletPath
@@ -81,7 +83,7 @@ def counterToBooklet(int counter) {
         }
 }
 
-5.times {
+6.times {
     counter ->
         task "compile_${counter}_3"(type: Exec, dependsOn: "compile_${counter}_2") {
             workingDir bookletPath
@@ -101,7 +103,7 @@ def counterToBooklet(int counter) {
 //   phase 2 pdflatex
 //   phase 3 pdflatex
 //
-task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3"])
+task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3", "compile_5_3"])
 
 task cleanBooklets << {
     ant.delete() { fileset(dir: file(bookletPath), includes: '*.out')     }
