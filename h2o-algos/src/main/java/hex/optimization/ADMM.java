@@ -1,6 +1,5 @@
 package hex.optimization;
 
-import hex.optimization.L_BFGS.GradientInfo;
 import water.H2O;
 import water.MemoryManager;
 import water.util.ArrayUtils;

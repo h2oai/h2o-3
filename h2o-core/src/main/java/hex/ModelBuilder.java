@@ -600,7 +600,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public int nclasses(){return _nclass;}
 
-  public final boolean isClassifier() { return _nclass > 1; }
   public final boolean isClassifier() { return nclasses() > 1; }
 
   /**
