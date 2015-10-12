@@ -40,7 +40,7 @@ expect_equal(380, dim(prostate.hex[-c(1000:9230),])[1])
 
   print(covtype)
 
-  slice_range_across_chunks <- c(-1:-50, -400000:-450000)
+  slice_range_across_chunks <- c(-1:-50, -40000:-45000)
 
   Log.info("Number of rows to slice out")
   print(length(slice_range_across_chunks))
