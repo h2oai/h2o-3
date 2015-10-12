@@ -13,6 +13,22 @@ JENKINS.R.VERSION.MAJOR <- "3"
 JENKINS.R.VERSION.MINOR <- "2.2"
 
 #'
+#' Given a dataframe of required packages, reorder the rows to satisfy package interdependencies
+#'
+orderByDependencies<-
+function(reqs) {
+    # create character vector of package names in desired order
+    pkgNames <- as.character(reqs[,1])
+    pkgNames <- pkgNames[-which(pkgNames %in% "fpc")]
+    pkgNames <- append(pkgNames,"fpc",after=which(pkgNames %in% "trimcluster"))
+    pkgNames <- pkgNames[-which(pkgNames %in% "bit64")]
+    pkgNames <- append(pkgNames,"bit64",after=which(pkgNames %in% "bit"))
+    pkgNames <- pkgNames[-which(pkgNames %in% "ggplot2")]
+    pkgNames <- append(pkgNames,"ggplot2",after=which(pkgNames %in% "scales"))
+    return(reqs[match(pkgNames,reqs[,1]),])
+}
+
+#'
 #' Given a vector of installed packages, and a data frame of requirements (package,version,repo_name), return
 #' a vector of packages that need to be retrieved
 #'
@@ -110,6 +126,8 @@ function(args) {
         q("no",1,FALSE)
     })
     reqs <- read.csv(textConnection(url), header=FALSE)
+    # reorder the rows to satisfy package interdependencies
+    reqs <- orderByDependencies(reqs)
     write("",stdout())
     write("INFO: Jenkins' (package,version) list:",stdout())
     write("",stdout())
