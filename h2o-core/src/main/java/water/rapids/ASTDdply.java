@@ -58,7 +58,7 @@ class ASTDdply extends ASTPrim {
     // same Chunk layout, except each Chunk will be the filter rows numbers; a
     // list of the Chunk-relative row-numbers for that group in an original
     // data Chunk.  Each Vec will have a *different* number of rows.
-    Vec[] vgrps = new BuildGroup(gbCols,gss).doAll_numericResult(gss.size(),fr).close();
+    Vec[] vgrps = new BuildGroup(gbCols,gss).doAll(gss.size(), Vec.T_NUM, fr).close();
 
     // Pass 3: For each group, build a full frame for the group, run the
     // function on it and tear the frame down.

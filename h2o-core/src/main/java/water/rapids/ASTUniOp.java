@@ -33,7 +33,7 @@ abstract class ASTUniOp extends ASTPrim {
                 nc.addNum(op(c.atd(i)));
             }
           }
-        }.doAll_numericResult(fr.numCols(),fr).outputFrame());
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
       case Val.ROW:
         ValRow v = (ValRow)val;
         double[] ds = new double[v._ds.length];
@@ -106,7 +106,7 @@ class ASTIsNA  extends ASTPrim {
                 nc.addNum(c.isNA(i) ? 1 : 0);
             }
           }
-        }.doAll_numericResult(fr.numCols(),fr).outputFrame());
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
     case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
     default: throw H2O.unimpl("is.na unimpl: " + val.getClass());
     }
@@ -162,7 +162,7 @@ class ASTStratifiedSplit extends ASTPrim {
           }
         }
       }
-    }.doAll_numericResult(1,new Frame(y)).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
+    }.doAll(1, Vec.T_NUM, new Frame(y)).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
   }
 }
 

@@ -46,7 +46,7 @@ class ASTStrSplit extends ASTPrim {
             for (; cnt < ncs.length; ++cnt) ncs[cnt].addNA();
         }
       }
-    }.doAll_numericResult(new_domains.length, fr).outputFrame(null,null,new_domains);
+    }.doAll(new_domains.length, Vec.T_NUM, fr).outputFrame(null,null,new_domains);
     return new ValFrame(fr2);
   }
 
@@ -137,7 +137,7 @@ class ASTCountMatches extends ASTPrim {
           } else ncs[i].addNA();
         }
       }
-    }.doAll_numericResult(1, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
   }
 
   int[] countDomainMatches(String[] domain, String[] pattern) {
@@ -168,7 +168,7 @@ class ASTCountMatches extends ASTPrim {
           }
         }
       }
-    }.doAll_numericResult(1, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
   }
 }
 
@@ -570,7 +570,7 @@ class ASTStrLength extends ASTPrim {
             else
               newChk.addNum(catLengths[(int)chk.atd(i)],0);
         }
-      }.doAll_numericResult(1, new Frame(vec)).outputFrame().anyVec();
+      }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
     return res;
   }
 
