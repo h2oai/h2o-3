@@ -5,7 +5,6 @@ Multinomial Models
 from . import H2OFrame
 from . import H2OConnection
 from metrics_base import *
-from model_base import DeprecatedModelBase
 
 
 class H2OMultinomialModel(object):

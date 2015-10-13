@@ -3,7 +3,6 @@ Regression Models
 """
 
 from metrics_base import *
-from model_base import DeprecatedModelBase
 
 
 class H2ORegressionModel(object):

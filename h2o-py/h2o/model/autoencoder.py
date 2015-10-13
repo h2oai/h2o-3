@@ -1,7 +1,6 @@
 """AutoEncoder Models"""
 
-from metrics_base import *
-from model_base import H2OConnection, h2o, DeprecatedModelBase
+from model_base import H2OConnection, h2o
 
 
 class H2OAutoEncoderModel(object):
