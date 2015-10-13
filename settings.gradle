@@ -27,6 +27,8 @@ if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HA
     include 'h2o-hadoop:h2o-hdp2.1-assembly'
     include 'h2o-hadoop:h2o-hdp2.2'
     include 'h2o-hadoop:h2o-hdp2.2-assembly'
+    include 'h2o-hadoop:h2o-hdp2.3'
+    include 'h2o-hadoop:h2o-hdp2.3-assembly'
     include 'h2o-hadoop:h2o-mapr3.1.1'
     include 'h2o-hadoop:h2o-mapr3.1.1-assembly'
     include 'h2o-hadoop:h2o-mapr4.0.1'
