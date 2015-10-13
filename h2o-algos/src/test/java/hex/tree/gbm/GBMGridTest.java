@@ -23,7 +23,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
-import water.util.VecUtils;
 
 import static hex.grid.ModelFactories.GBM_MODEL_FACTORY;
 import static org.junit.Assert.assertTrue;
@@ -45,7 +44,7 @@ public class GBMGridTest extends TestUtil {
       fr = parse_test_file("smalldata/junit/cars.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("cylinders");
-      fr.add("cylinders", VecUtils.toCategoricalVec(old)); // response to last column
+      fr.add("cylinders", old.toCategoricalVec()); // response to last column
       DKV.put(fr);
 
       // Setup hyperparameter search space

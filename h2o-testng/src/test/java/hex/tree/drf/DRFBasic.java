@@ -6,7 +6,6 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.util.VecUtils;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -68,7 +67,7 @@ public class DRFBasic extends TestNGUtil {
                 _airquality = ParseDataset.parse(airqualityKey, nfs_airquality._key);
 
                 for (int i : new int[]{4, 5}) {
-                    _airquality.vecs()[i] = VecUtils.toCategoricalVec(_airquality.vecs()[i]);
+                    _airquality.vecs()[i] = _airquality.vecs()[i].toCategoricalVec();
                 }
 
                 DRFModel.DRFParameters parms = new DRFModel.DRFParameters();

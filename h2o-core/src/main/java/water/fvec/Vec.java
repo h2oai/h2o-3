@@ -416,7 +416,7 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
   public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
-    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}), domain);
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
     for(long d:vals)
@@ -622,7 +622,7 @@ public class Vec extends Keyed<Vec> {
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
    *  histogram is computed on first use and cached thereafter.
    *  @return A set of histogram bins. */
-  public long[] bins() { return RollupStats.get(this,true)._bins;      }
+  public long[] bins() { return RollupStats.get(this, true)._bins;      }
   /** Optimistically return the histogram bins, or null if not computed 
    *  @return the histogram bins, or null if not computed */
   public long[] lazy_bins() { return rollupStats()._bins; }
@@ -765,7 +765,7 @@ public class Vec extends Keyed<Vec> {
 
   private boolean checkMissing(int cidx, Value val) {
     if( val != null ) return true;
-    Log.err("Error: Missing chunk "+cidx+" for "+_key);
+    Log.err("Error: Missing chunk " + cidx + " for " + _key);
     return false;
   }
 
@@ -793,7 +793,7 @@ public class Vec extends Keyed<Vec> {
     bits[1] = -1;         // Not homed
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
     UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
-    System.arraycopy(kb, 0, bits, 4+4+1+1, kb.length);
+    System.arraycopy(kb, 0, bits, 4 + 4 + 1 + 1, kb.length);
     return Key.make(bits);
   }
 
@@ -1000,6 +1000,22 @@ public class Vec extends Keyed<Vec> {
     }
     return s+"}]";
   }
+
+  /**
+   * Convenience method for converting to a categorical vector.
+   * @return A categorical vector based on the contents of the original vector.
+   */
+  public Vec toCategoricalVec() {return VecUtils.toCategoricalVec(this);}
+  /**
+   * Convenience method for converting to a string vector.
+   * @return A string vector based on the contents of the original vector.
+   */
+  public Vec toStringVec() {return VecUtils.toStringVec(this);}
+  /**
+   * Convenience method for converting to a numeric vector.
+   * @return A numeric vector based on the contents of the original vector.
+   */
+  public Vec toNumericVec() {return VecUtils.toNumericVec(this);}
 
   /** True if two Vecs are equal.  Checks for equal-Keys only (so it is fast)
    *  and not equal-contents.
