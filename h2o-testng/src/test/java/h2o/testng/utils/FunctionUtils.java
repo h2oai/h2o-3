@@ -4,6 +4,10 @@ import h2o.testng.db.MySQL;
 import hex.Distribution.Family;
 import hex.Model;
 import hex.ModelMetrics;
+import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningConfig;
+import hex.deeplearning.DeepLearningModel;
+import hex.deeplearning.DeepLearningParameters;
 import hex.glm.GLM;
 import hex.glm.GLMConfig;
 import hex.glm.GLMModel;
@@ -42,6 +46,7 @@ public class FunctionUtils {
 	public final static String glm = "glm";
 	public final static String gbm = "gbm";
 	public final static String drf = "drf";
+	public final static String dl = "dl";
 
 	public final static String smalldata = "smalldata";
 	public final static String bigdata = "bigdata";
@@ -253,6 +258,62 @@ public class FunctionUtils {
 					isTunedValue = true;
 				}
 				break;
+			case FunctionUtils.dl:
+
+				modelParameter = new DeepLearningParameters();
+
+				// set distribution param
+				Family dlDistribution = (Family) DeepLearningConfig.distributionOptionsParams.getValue(rawInput);
+
+				if (dlDistribution != null) {
+					System.out.println("Set _distribution: " + dlDistribution);
+					modelParameter._distribution = dlDistribution;
+
+					isTunedValue = true;
+				}
+
+				DeepLearningParameters.Activation dlActivation =
+						(DeepLearningParameters.Activation) DeepLearningConfig.activationOptionsParams.getValue(rawInput);
+
+				if (dlActivation != null) {
+					System.out.println("Set _activation: " + dlActivation);
+					((DeepLearningParameters) modelParameter)._activation = dlActivation;
+
+					isTunedValue = true;
+				}
+
+				DeepLearningParameters.Loss dlLoss =
+						(DeepLearningParameters.Loss) DeepLearningConfig.lossOptionsParams.getValue(rawInput);
+
+				if (dlLoss != null) {
+					System.out.println("Set _activation: " + dlLoss);
+					((DeepLearningParameters) modelParameter)._loss = dlLoss;
+
+				}
+
+				DeepLearningParameters.InitialWeightDistribution dlInitialWeightDistribution =
+						(DeepLearningParameters.InitialWeightDistribution) DeepLearningConfig.
+								initialWeightDistributionOptionsParams.getValueKey(rawInput,"_initial_weight_distribution");
+
+				if (dlInitialWeightDistribution != null) {
+					System.out.println("Set _initial_weight_distribution: " + dlInitialWeightDistribution);
+					((DeepLearningParameters) modelParameter)._initial_weight_distribution = dlInitialWeightDistribution;
+
+					isTunedValue = true;
+				}
+
+				DeepLearningParameters.MissingValuesHandling dlMissingValuesHandling =
+						(DeepLearningParameters.MissingValuesHandling) DeepLearningConfig.
+								missingValuesHandlingOptionsParams.getValueKey(rawInput, "_missing_values_handling");
+
+				if (dlMissingValuesHandling != null) {
+					System.out.println("Set _missing_values_handling: " + dlMissingValuesHandling);
+					((DeepLearningParameters) modelParameter)._missing_values_handling = dlMissingValuesHandling;
+
+					isTunedValue = true;
+				}
+
+				break;
 
 			default:
 				System.out.println("can not parse to object parameter with algorithm: " + algorithm);
@@ -376,6 +437,9 @@ public class FunctionUtils {
 		GBM gbmJob = null;
 		GBMModel gbmModel = null;
 
+		DeepLearning dlJob = null;
+		DeepLearningModel dlModel = null;
+
 		trainFrame = parameter._train.get();
 
 		try {
@@ -423,6 +487,20 @@ public class FunctionUtils {
 					score = gbmModel.score(trainFrame);
 
 					modelOutput = gbmModel._output;
+					break;
+
+				case FunctionUtils.dl:
+
+					System.out.println("Build model ");
+					dlJob = new DeepLearning((DeepLearningParameters) parameter);
+
+					System.out.println("Train model");
+					dlModel = dlJob.trainModel().get();
+
+					System.out.println("Predict testcase ");
+					score = dlModel.score(trainFrame);
+
+					modelOutput = dlModel._output;
 					break;
 			}
 
@@ -480,6 +558,12 @@ public class FunctionUtils {
 			if (gbmModel != null) {
 				gbmModel.delete();
 			}
+			if (dlJob != null) {
+				dlJob.remove();
+			}
+			if (dlModel != null) {
+				dlModel.delete();
+			}
 			if (score != null) {
 				score.remove();
 				score.delete();
@@ -510,6 +594,7 @@ public class FunctionUtils {
 		Object[][] drfTestcase = readAllTestcaseOneAlgorithm(dataSetCharacteristic, FunctionUtils.drf);
 		Object[][] gbmTestcase = readAllTestcaseOneAlgorithm(dataSetCharacteristic, FunctionUtils.gbm);
 		Object[][] glmTestcase = readAllTestcaseOneAlgorithm(dataSetCharacteristic, FunctionUtils.glm);
+		Object[][] dlTestcase = readAllTestcaseOneAlgorithm(dataSetCharacteristic, FunctionUtils.dl);
 
 		if (drfTestcase != null && drfTestcase.length != 0) {
 			nrows = drfTestcase[0].length;
@@ -522,6 +607,10 @@ public class FunctionUtils {
 		if (glmTestcase != null && glmTestcase.length != 0) {
 			nrows = glmTestcase[0].length;
 			ncols += glmTestcase.length;
+		}
+		if (dlTestcase != null && dlTestcase.length != 0) {
+			nrows = dlTestcase[0].length;
+			ncols += dlTestcase.length;
 		}
 
 		result = new Object[ncols][nrows];
@@ -541,7 +630,11 @@ public class FunctionUtils {
 				result[r++] = glmTestcase[i];
 			}
 		}
-
+		if (dlTestcase != null && dlTestcase.length != 0) {
+			for (i = 0; i < dlTestcase.length; i++) {
+				result[r++] = dlTestcase[i];
+			}
+		}
 		return result;
 	}
 
@@ -573,6 +666,12 @@ public class FunctionUtils {
 				positiveTestcaseFilePath = GBMConfig.positiveTestcaseFilePath;
 				negativeTestcaseFilePath = GBMConfig.negativeTestcaseFilePath;
 				listHeaders = GBMConfig.listHeaders;
+				break;
+			case FunctionUtils.dl:
+				indexRowHeader = DeepLearningConfig.indexRowHeader;
+				positiveTestcaseFilePath = DeepLearningConfig.positiveTestcaseFilePath;
+				negativeTestcaseFilePath = DeepLearningConfig.negativeTestcaseFilePath;
+				listHeaders = DeepLearningConfig.listHeaders;
 				break;
 
 			default:

@@ -8,6 +8,7 @@ import h2o.testng.utils.FunctionUtils;
 import h2o.testng.utils.Param;
 import h2o.testng.utils.RecordingTestcase;
 import hex.Model;
+import hex.deeplearning.DeepLearningConfig;
 import hex.glm.GLMConfig;
 import hex.tree.drf.DRFConfig;
 import hex.tree.gbm.GBMConfig;
@@ -106,7 +107,7 @@ public class TestNG extends TestNGUtil {
 		String invalidMessage = null;
 		String notImplMessage = null;
 
-		redirectStandardStreams();
+		//redirectStandardStreams();
 
 		switch (algorithm) {
 			case FunctionUtils.drf:
@@ -119,6 +120,10 @@ public class TestNG extends TestNGUtil {
 
 			case FunctionUtils.glm:
 				params = GLMConfig.params;
+				break;
+
+			case FunctionUtils.dl:
+				params = DeepLearningConfig.params;
 				break;
 
 			default:

@@ -192,9 +192,30 @@ public class Param {
 				v = Integer.parseInt(value);
 				break;
 
+			case "int[]":
+				String[] splitValues=value.split(";");
+				int[] values= new int[]{splitValues.length};
+				for(int iter=0;iter<splitValues.length;iter++){
+					if(!splitValues[iter].trim().equals(""))
+						values[iter]=Integer.parseInt(splitValues[iter]);
+				}
+				v = values;
+				break;
+
 			case "float":
 				v = Float.parseFloat(value);
 				break;
+
+			case "float[]":
+				String[] splitValuesfloat=value.split(";");
+				float[] valuesfloat= new float[splitValuesfloat.length];
+				for(int iter=0;iter<splitValuesfloat.length;iter++){
+					if(!splitValuesfloat[iter].trim().equals(""))
+						valuesfloat[iter]=Float.parseFloat(splitValuesfloat[iter]);
+				}
+				v = valuesfloat;
+				break;
+
 			case "Key":
 				v = Key.make(value);
 				break;
