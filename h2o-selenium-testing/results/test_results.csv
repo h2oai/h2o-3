@@ -1,4 +1,0 @@
-testcase_id,result,message,mse,auc,train_dataset_id,validate_dataset_id,distribution,sparse
-glm_testcase_50,PASS,This tescase is passed,0.222658,,higgs_train_5k,higgs_test_5k,,
-glm_testcase_51,PASS,This tescase is passed,0.235852,,higgs_train_5k,higgs_test_5k,,
-glm_testcase_52,PASS,This tescase is passed,0.230842,,higgs_train_5k,higgs_test_5k,,

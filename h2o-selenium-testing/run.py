@@ -15,10 +15,11 @@ import sys
 import codecs
 
 
-from utils import se_functions
-from utils.common import load_csv, append_xml, DatasetCharacteristics
+from utils import se_functions, constant
+from utils.common import load_csv, append_xml
 from utils import config
 from utils import Logger
+from utils import DatasetCharacteristics
 
 
 def load_testclass(modulename, classname):
@@ -96,10 +97,9 @@ def run_testsuite(testsuite, additional_configs):
     '''
 
     #are_headers_written = False
-
-    result_filename = r'results/testng-results.xml'
     total_tc_Pass = 0
     total_tc_Fail = 0
+    total_tc_Invalid = 0
 
     testng_results = ET.Element("testng_results")
     test = ET.SubElement(testng_results, "test")
@@ -111,17 +111,33 @@ def run_testsuite(testsuite, additional_configs):
         # redirect output console to write log into TestNG format file
         sys.stdout = Logger.Logger(config.temporary_log_file_name)
 
-        driver = se_functions.open_browser(additional_configs['args'])
-        additional_configs['driver'] = driver
+        try:
+            driver = se_functions.open_browser(additional_configs['args'])
+            additional_configs['driver'] = driver
 
-        testscript = test_cfgs.pop('testscript')
-        classname = test_cfgs.pop('classname')
+            testscript = test_cfgs.pop('testscript')
+            classname = test_cfgs.pop('classname')
 
-        testclass = load_testclass(testscript, classname)
-        test_result = run_testcase(testclass, tc_id, test_cfgs, additional_configs)
+            testclass = load_testclass(testscript, classname)
+            test_result = run_testcase(testclass, tc_id, test_cfgs, additional_configs)
 
+        except Exception as ex:
+            # sys.stdout.close()
+            # driver.quit()
+
+            test_result = {
+                'result' : constant.testcase_result_status_invalid,
+                'message' : ex.message,
+                'mse' : 'N/A',
+                constant.train_dataset_id : test_cfgs[constant.train_dataset_id],
+                constant.validate_dataset_id : test_cfgs[constant.validate_dataset_id],
+            }
+            # todo: do not handle it
+            # raise ex
+
+        # create xml file
+        # todo: refactor it
         test_method_attributes =  dict()
-
         test_method_attributes['started-at'] = str(time_start_tc.strftime("%Y-%m-%dT%H:%M:%SZ"))
         test_method_attributes['name'] = tc_id
         test_method_attributes['status'] = test_result['result']
@@ -137,9 +153,9 @@ def run_testsuite(testsuite, additional_configs):
         param0 = ET.SubElement(params, 'param', index = '0')
         ET.SubElement(param0, 'value').text = "<![CDATA[Testcase: %s]]>" % tc_id
         param2 = ET.SubElement(params, 'param', index = '1')
-        ET.SubElement(param2, 'value').text =  "<![CDATA[Train Dataset: %s]]>" % test_result['train_dataset_id']
+        ET.SubElement(param2, 'value').text =  "<![CDATA[Train Dataset: %s]]>" % test_result[constant.train_dataset_id]
         param3 = ET.SubElement(params, 'param', index = '2')
-        ET.SubElement(param3, 'value').text =  "<![CDATA[Validate Dataset: %s]]>" % test_result['validate_dataset_id']
+        ET.SubElement(param3, 'value').text =  "<![CDATA[Validate Dataset: %s]]>" % test_result[constant.validate_dataset_id]
         param4 = ET.SubElement(params, 'param', index = '3')
         ET.SubElement(param4, 'value').text =  "<![CDATA[MSE: %s]]>" % test_result['mse']
 
@@ -148,24 +164,21 @@ def run_testsuite(testsuite, additional_configs):
         #get log from log file
         ET.SubElement(reporter_output, 'line').text =  "<![CDATA[%s]]>" % (sys.stdout.read())
 
-
-
-        if "PASS" == test_result['result']:
+        if constant.testcase_result_status_pass == test_result['result']:
             total_tc_Pass += 1
-        else:
+        elif constant.testcase_result_status_fail == test_result['result']:
             total_tc_Fail += 1
+        else:
+            total_tc_Invalid += 1
 
-        total = total_tc_Pass + total_tc_Fail
-
-
+        total = total_tc_Pass + total_tc_Fail + total_tc_Invalid
         driver.quit()
-
         testng_results.set('Passed',str(total_tc_Pass))
         testng_results.set('Failed',str(total_tc_Fail))
+        testng_results.set('Invalied', str(total_tc_Invalid))
         testng_results.set('total', str(total))
 
-
-        append_xml(result_filename, testng_results)
+        append_xml(config.result_filename, testng_results)
 
 
 def parse_arguments():
@@ -217,7 +230,7 @@ def main():
     # Create web driver instance, load dataset characteristics and pass them in as
     additional_configs = dict(
         args = args,
-        dataset_chars = DatasetCharacteristics(config.dataset_chars),
+        dataset_chars = DatasetCharacteristics.DatasetCharacteristics(config.dataset_chars),
     )
 
     # Load the testsuite and run all its testcases

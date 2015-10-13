@@ -1,0 +1,27 @@
+testcase_id,regression,classification,auto,gaussian,binomial,multinomial,poisson,gamma,tweedie,nfolds,fold_column,ignore_const_cols,offset_column,weights_column,ntrees,max_depth,min_rows,nbins,nbins_cats,score each iteration,balance_classes,max_confusion_matrix_size,max_hit_ratio,r2_stopping,build_tree_one_node,class_sampling_factors,binomial_double_trees,checkpoint,nbins_top_level,Regression/Balanced/Unbalanced,sparse,dense,train_dataset_id,validate_dataset_id,ignored_columns,R,Scikit,AUC,MSE,Accuracy,AUC,MSE,Accuracy,testscript,classname
+rf_testcase_1,x,,x,,,,,,,,,,,,,,,,,,,,,,,,,,,Regression,,x,airquality_train1,airquality_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_2,x,,x,,,,,,,,,,,,,,,,,,,,,,,,,,,Regression,x,,sparse_gaussian_train,sparse_gaussian_test,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_3,,x,x,,,,,,,,,,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_4,,x,x,,,,,,,,,,,,,,,,,,,,,,,,,,,Unbalanced,,x,airquality_train2_classification,airquality_test2_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_5,,x,x,,,,,,,,,,,,,,,,,,,,,,,,,,,Balanced,x,,mnist_binomial_train,mnist_binomial_test,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_6,,x,x,,,,,,,,,,,,,,,,,,,,,,,,,,,Unbalanced,x,,mnist_sparse_binary_unbalanced_train,mnist_sparse_binary_unbalanced_test,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_7,,x,x,,,,,,,,,,,weights,,,,,,,,,,,,,,,,Balanced,,,insurance_zero_one_weights,,,,,,,,,,,drf_basic,DrfBasic
+rf_testcase_8,,x,x,,,,,,,,,,,weights,,,,,,,,,,,,,,,,Balanced,,,lung_zero_one_weights_classification,,,,,,,,,,,drf_basic,DrfBasic
+rf_testcase_9,,x,x,,,,,,,,,,,weights,,,,,,,,,,,,,,,,Balanced,,,sweden_zero_one_weights,,,,,,,,,,,drf_basic,DrfBasic
+rf_testcase_10,,x,x,,,,,,,,,,,,150,5,,,,,x,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_11,,x,x,,,,,,,,,,,,150,5,,,,,,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_12,,x,x,,,,,,,,,,,,150,20,,,,,x,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_13,,x,x,,,,,,,,,,,,150,20,,,,,,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_14,,x,x,,,,,,,,,,,,,,1,,,,x,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_15,,x,x,,,,,,,,,,,,,,1,,,,,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_16,,x,x,,,,,,,,,,,,,,,50,,,x,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_17,,x,x,,,,,,,,,,,,,,,50,,,,,,,,,,,,Balanced,,x,iris_train1,iris_validation1,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_18,,x,x,,,,,,,,,,,,,,,,20,,x,,,,,,,,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_19,,x,x,,,,,,,,,,,,,,,,20,,,,,,,,,,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_20,,x,x,,,,,,,,,,,,,,,,,,x,,,,,,,,,Unbalanced,,x,airquality_train2_classification,airquality_test2_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_21,,x,x,,,,,,,,,,,,,,,,,,x,,,,,,,,,Unbalanced,x,,mnist_sparse_binary_unbalanced_train,mnist_sparse_binary_unbalanced_test,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_22,,x,x,,,,,,,20,,,,,,,,,,,x,,,,,,,,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_23,,x,x,,,,,,,20,,,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_24,,x,x,,,,,,,150,,,,,,,,,,,x,,,,,,,,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_25,,x,x,,,,,,,150,,,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k_classification,higgs_test_5k_classification,,x,x,,,,,,,drf_basic,DrfBasic
+rf_testcase_26,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Balanced,,x,higgs_train_5k,higgs_test_5k,,,,,,,,,,drf_basic,DrfBasic

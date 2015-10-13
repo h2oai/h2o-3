@@ -79,39 +79,6 @@ def load_dataset_characteristics(filename):
     return ds_chars
 
 
-class DatasetCharacteristics:
-    def __init__(self, filename):
-        self.filename = filename
-        self.ds_chars = load_dataset_characteristics(filename)
-
-
-    def get_filepath(self, key):
-        filepath = config.file__small_paths
-
-        if 'bigdata' == self.ds_chars[key]['dataset_directory']:
-            filepath = config.file__big_paths
-
-        return filepath + (self.ds_chars[key]['file_name'])
-
-
-    def get_target(self, key):
-        return self.ds_chars[key]['target']
-
-    mylist= []
-
-
-    is_import = dict(
-        key = False,
-    )
-
-
-    def set_imported(self):
-        if not self.is_import['key']:
-            return  True
-        return  False
-
-
-
 def unit_test():
     from pprint import pprint as pp
     print

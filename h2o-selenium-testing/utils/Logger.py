@@ -13,6 +13,16 @@ class Logger(object):
         self.terminal.write(message)
         self.log.write(message)
 
+    def read(self):
+        self.flush()
+        temp = open(self.filename, "r")
+        content_log_file = temp.read()
+        temp.close()
+
+        self.close()
+
+        return content_log_file
+
     def flush_all(self):
         self.terminal.flush()
         self.log.flush()
@@ -20,15 +30,8 @@ class Logger(object):
     def flush(self):
         self.log.flush()
 
-    def read(self):
-        self.flush()
-        temp = open(self.filename, "r")
-        content_log_file = temp.read()
-        temp.close()
-
+    def close(self):
         # reset stdout stream
         sys.stdout = sys.__stdout__
         self.flush_all()
         self.log.close()
-
-        return content_log_file

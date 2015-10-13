@@ -36,18 +36,6 @@ def get_web_driver(browser, location):
 
     return driver
 
-# def get_web_driver(name, location):
-#     '''
-#     TODO: implement for other browsers too
-#     '''
-#     #driver = webdriver.PhantomJS (location, port = 65000)
-#     driver = webdriver.Chrome(location)
-#     driver.get(H2O_WEBSITE)
-#     driver.implicitly_wait(60)
-#     driver.set_window_size (1124, 850)
-#
-#     return driver
-
 
 def wait_n_click(driver, xpath, timeout = 100):
     '''
