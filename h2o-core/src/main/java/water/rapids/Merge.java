@@ -1,12 +1,15 @@
 package water.rapids;
 
+import water.H2ONode;
+import water.RPC;
 import water.fvec.Frame;
-import java.util.ArrayList;
 
 public class Merge {
 
+  // single-threaded driver logic
   Merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[]) {
 
+    // each of those launches an MRTask
     RadixOrder leftIndex = new RadixOrder(leftFrame, leftCols);
     RadixOrder rightIndex = new RadixOrder(rightFrame, rightCols);
 
@@ -31,35 +34,37 @@ public class Merge {
     //   We hope most common case. Common width keys (e.g. ids, codes, enums, integers, etc) both sides over similar range
     //   Left msb will match exactly to right msb one-to-one, without any alignment needed.
 
-    for (int i=0; i<leftExtent; i++) { // each of left msb values.  TO DO: go parallel
-      long leftLen = leftIndex._MSBhist[i];
-      if (leftLen > 0) {
-        int jbase = i >> bitShift;  // could be positive or negative, or most commonly and ideally bitShift==0
-        for (int k=0; k<rightExtent; k++) {
-          int j = jbase+k;
-          long rightLen = rightIndex._MSBhist[j];
-          if (rightLen > 0) {
-            //System.out.print(i + " left " + lenx + " => right " + leny);
-            // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node.
-            //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
-            BinaryMerge bm = new BinaryMerge(
-                    leftIndex._x[i],   // TO DO: align the MSB value between the keys. It isn't 'i'!  It'll be a shift.
-                    rightIndex._x[j],
-                    leftLen,
-                    rightLen,
-                    leftIndex._bytesUsed,   // field sizes for each column in the key
-                    rightIndex._bytesUsed);
-            //System.out.println(" ... first match " + bm._retFirst[0] + " len " + bm._retLen[0]);
-            long lefto[][] = leftIndex._o[i];
-            long righto[][] = rightIndex._o[j];
-            for (int lr = 0; lr < leftLen; lr++) {
-              System.out.print("Left row" + lefto[0][lr] + " matches to right row(s): ");
-              for (int rr = 0; rr < bm._retLen[lr]; rr++)
-                System.out.print(righto[0][(int) bm._retFirst[lr] + rr] + " ");
-              System.out.println();
-            }
-          }
-        }
+    for (int leftMSB =0; leftMSB <leftExtent; leftMSB++) { // each of left msb values.  TO DO: go parallel
+//      long leftLen = leftIndex._MSBhist[i];
+//      if (leftLen > 0) {
+      int rightMSBBase = leftMSB >> bitShift;  // could be positive or negative, or most commonly and ideally bitShift==0
+      for (int k=0; k<rightExtent; k++) {
+        int rightMSB = rightMSBBase +k;
+//          long rightLen = rightIndex._MSBhist[j];
+//          if (rightLen > 0) {
+        //System.out.print(i + " left " + lenx + " => right " + leny);
+        // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node.
+        //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
+        H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
+        H2ONode rightNode = MoveByFirstByte.ownerOfMSB(rightMSB);
+        BinaryMerge bm = new RPC<>(rightNode,
+                new BinaryMerge(leftMSB, rightMSB, leftNode.index(),
+                        leftIndex._bytesUsed,   // field sizes for each column in the key
+                        rightIndex._bytesUsed
+                )
+        ).call().get();
+
+        //System.out.println(" ... first match " + bm._retFirst[0] + " len " + bm._retLen[0]);
+        long lefto[][] = leftIndex._o[leftMSB];
+        long righto[][] = rightIndex._o[rightMSB];
+//        for (int lr = 0; lr < leftLen; lr++) {
+//          System.out.print("Left row" + lefto[0][lr] + " matches to right row(s): ");
+//          for (int rr = 0; rr < bm._retLen[lr]; rr++)
+//            System.out.print(righto[0][(int) bm._retFirst[lr] + rr] + " ");
+//          System.out.println();
+//            }
+//          }
+//        }
       }
 
       //long[][] y = ((long[][])rightIndex.get(1))

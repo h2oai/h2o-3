@@ -1,25 +1,42 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.C8Chunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.AtomicUtils;
+import water.util.Log;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 class RadixCount extends MRTask<RadixCount> {
-  long _counts[][];
-  int _nChunks;
+  public static class Long2DArray extends Iced {
+    Long2DArray(int len) { _val = new long[len][]; }
+    long _val[][];
+  }
+  Long2DArray _counts;
   int _biggestBit;
-  RadixCount(int nChunks, int biggestBit) { _counts = new long[nChunks][]; _nChunks = nChunks; _biggestBit = biggestBit; }
+  int _col;
+  Key _frameKey;
+
+  RadixCount(Key frameKey, int biggestBit, int col) {
+    _frameKey = frameKey;
+    _biggestBit = biggestBit;
+    _col = col;
+  }
+
+  // make a unique deterministic key as a function of frame, column and node
+  // make it homed to the owning node
+  static Key getKey(Key frKey, int col, H2ONode node) {
+    return Key.make("counts_" + frKey.toString() + "_col" + col + "_node" + node, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
+  }
+
+  @Override protected void setupLocal() {
+    _counts = new Long2DArray(_fr.anyVec().nChunks());
+  }
+
   @Override public void map( Chunk chk ) {
-    long tmp[] = _counts[chk.cidx()] = new long[256];
+    long tmp[] = _counts._val[chk.cidx()] = new long[256];
     int shift = _biggestBit-8;
     if (shift<0) shift = 0;
     // TO DO: assert chk instanceof integer or enum;  -- but how?  // alternatively: chk.getClass().equals(C8Chunk.class)
@@ -28,56 +45,92 @@ class RadixCount extends MRTask<RadixCount> {
       // TO DO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
     }
   }
-  @Override public void reduce(RadixCount g) {
-    if (g._counts != _counts) {
-      // merge the spine across two nodes
-      System.out.println("Not yet implemented");
-      throw H2O.unimpl();
-      /*for (int c=0; c<_nChunks; c++) {
-        if (g._counts[c] != null) {
-          assert _counts[c] == null;
-          _counts[c] = g._counts[c];
-        } else {
-          assert _counts[c] != null;
-        }
-      }*/
-    }
+
+  @Override protected void postLocal() {
+    DKV.put(getKey(_frameKey, _col, H2O.SELF), _counts);
   }
 }
 
 class MoveByFirstByte extends MRTask<MoveByFirstByte> {
-  long _counts[][], _o[][][];
+  long _counts[][];
+  long _o[][][];
   byte _x[][][];
+  Key _frameKey;
   int _biggestBit, _batchSize, _bytesUsed[], _keySize;
-  MoveByFirstByte(long o[][][], byte x[][][], long counts[][], int biggestBit, int keySize, int batchSize, int bytesUsed[]) {
-    _o = o; _x = x; _counts = counts; _biggestBit = biggestBit; _batchSize=batchSize; _bytesUsed = bytesUsed;
+  public int[] _nbatch;
+  int[]_col;
+  MoveByFirstByte(Key frameKey, int biggestBit, int keySize, int batchSize, int bytesUsed[], int[] col) {
+    _frameKey = frameKey;
+    _biggestBit = biggestBit; _batchSize=batchSize; _bytesUsed = bytesUsed; _col = col;
     _keySize = keySize;  // ArrayUtils.sum(_bytesUsed) -1;
   }
-/*
-  @Override
-  protected void postLocal() {
-    super.postLocal();
-    DKV.put();
+
+  @Override protected void setupLocal() {
+    // First accumulate counts across chunks in this node into histograms for most significant 8 bits
+    _counts = ((RadixCount.Long2DArray)DKV.getGet(RadixCount.getKey(_frameKey, _col[0], H2O.SELF)))._val;
+    long[] MSBhist = new long[256];  // total across nodes but retain original spine as we need that below
+    int nc = _fr.anyVec().nChunks();
+    for (int c = 0; c < nc; c++) {
+      if (_counts[c]!=null) {
+        for (int h = 0; h < 256; h++) {
+          MSBhist[h] += _counts[c][h];
+        }
+      }
+    }
+    if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
+      Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
+              + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
+              + " " + Arrays.toString(MSBhist) + ")");
+    }
+    // shared between threads on the same node, all mappers write into distinct locations (no conflicts, no need to atomic updates, etc.)
+    _o = new long[256][][];
+    _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
+    for (int c = 0; c < 256; c++) {
+      if (MSBhist[c] == 0) continue;
+      int nbatch = (int) (MSBhist[c]-1)/_batchSize +1;  // at least one batch
+      int lastSize = (int) (MSBhist[c] - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize)
+      assert nbatch == 1;  // Prevent large testing for now.  TO DO: test nbatch>0 by reducing batchSize very small and comparing results with non-batched
+      assert lastSize > 0;
+      _o[c] = new long[nbatch][];
+      _x[c] = new byte[nbatch][];
+      int b;
+      for (b = 0; b < nbatch-1; b++) {
+        _o[c][b] = new long[_batchSize];          // TO DO?: use MemoryManager.malloc8()
+        _x[c][b] = new byte[_batchSize * _keySize];
+      }
+      _o[c][b] = new long[lastSize];
+      _x[c][b] = new byte[lastSize * _keySize];
+    }
+
+    // TO DO: otherwise, expand width. Once too wide (and interestingly large width may not be a problem since small buckets won't impact cache),
+    // start rolling up bins (maybe into pairs or even quads)
+
+    for (int h = 0; h < 256; h++) {
+      long rollSum = 0;  // each of the 256 columns starts at 0 for the 0th chunk. This 0 offsets into x[MSBvalue][batch div][mod] and o[MSBvalue][batch div][mod]
+      for (int c = 0; c < nc; c++) {
+        long tmp = _counts[c][h];
+        _counts[c][h] = rollSum; //Warning: modify the POJO DKV cache, but that's fine since this node won't ask for the original DKV.get() version again
+        rollSum += tmp;
+      }
+    }
+    // NB: no radix skipping in this version (unlike data.table we'll use biggestBit and assume further bits are used).
   }
-*/
+
   @Override public void map(Chunk chk[]) {
-    long myCounts[] = _counts[chk[0].cidx()];
-    //long DateMin = 0;
-    //if (chk.length>1) DateMin = (long)chk[1].vec().min();
-    //DateMin = 1389427200000L;  // hard code so left and right in the test are the same minimum.  TO DO: attach minimum to key and feed through.  Is that enough to know the skipped-byte values? Need num bytes per field as well.
+    long myCounts[] = _counts[chk[0].cidx()]; //cumulative offsets into o and x
 
     //int leftAlign = (8-(_biggestBit % 8)) % 8;   // only the first column is left aligned, currently. But they all could be for better splitting.
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       long thisx = chk[0].at8(r);  // - _colMin[0]) << leftAlign;  (don't subtract colMin because it unlikely helps compression and makes joining 2 compressed keys more difficult and expensive).
-      //int MSBvalue = (int) (thisx >> 8*(_bytesUsed[0]-1) & 0xFFL);
-      int MSBvalue = (int) (thisx >> (_biggestBit-8) & 0xFFL);  // TO DO:  what if biggestBit < 8
+      assert(_biggestBit >= 8) : "biggest bit should be >= 8, need to dip into next column otherwise";
+      int MSBvalue = (int) (thisx >> (_biggestBit-8) & 0xFFL);
       long target = myCounts[MSBvalue]++;
-      int chunk = (int) (target / _batchSize);
+      int batch = (int) (target / _batchSize);
       int offset = (int) (target % _batchSize);
-      _o[MSBvalue][chunk][offset] = (long) r + chk[0].start();    // move i and the index.
+      _o[MSBvalue][batch][offset] = (long) r + chk[0].start();    // move i and the index.
 
-      byte this_x[] = _x[MSBvalue][chunk];
-      offset *= _keySize;
+      byte this_x[] = _x[MSBvalue][batch];
+      offset *= _keySize; //can't overflow because batchsize was chosen above to be maxByteSize/max(keysize,8)
       for (int i = _bytesUsed[0] - 1; i >= 0; i--) {   // a loop because I don't believe System.arraycopy() can copy parts of (byte[])long to byte[]
         this_x[offset + i] = (byte) (thisx & 0xFF);
         thisx >>= 8;
@@ -92,6 +145,51 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
       }
     }
   }
+
+  static H2ONode ownerOfMSB(int MSBvalue) {
+    int blocksize = (int) Math.ceil(256. / H2O.CLOUD.size());
+    H2ONode node = H2O.CLOUD._memary[MSBvalue / blocksize];
+    return node;
+  }
+
+  static Key getIndexKeyForMSB(int MSBvalue, int batch, int fromNode) {
+    return Key.make("ox_MSB_" + MSBvalue + "_batch_" + batch + "_fromNode_" + fromNode, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, ownerOfMSB(MSBvalue));
+  }
+
+  static class OXWrapper extends Iced {
+    OXWrapper(long[] o, byte[] x) { _o = o; _x = x; }
+    long[/*offset*/] _o;
+    byte[/*offset*/] _x;
+  }
+
+  static Key getMSBHeaderKey(int MSBvalue, int fromNode) {
+    return Key.make("header_MSB_" + MSBvalue + "_fromNode_" + fromNode, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, ownerOfMSB(MSBvalue));
+  }
+
+  static class MSBHeader extends Iced {
+    MSBHeader(int nbatch) { _nbatch = nbatch; }
+    int _nbatch; //how many batches
+    //TODO: fill up more values for header
+    long[] _MSBhist; //histo counts of each chunk for this MSB
+    int[] _chkIdx;
+  }
+
+  // Push o/x in chunks to owning nodes
+  @Override protected void postLocal() {
+    _nbatch = new int[_o.length];
+    long[] MSBhist = new long[_o.length];
+    for (int i=0;i<_o.length /*256*/; ++i) {
+      if(_o[i] == null) continue;
+      _nbatch[i] = _o[i].length;
+      _MSBhist[i] //TODO
+      MSBHeader msbh = new MSBHeader(_nbatch[i]);
+      DKV.put(getMSBHeaderKey(i, H2O.SELF.index()), msbh);
+      for (int b=0;b<_nbatch[i]; ++b) {
+        OXWrapper oxPair = new OXWrapper(_o[i][b], _x[i][b]);
+        DKV.put(getIndexKeyForMSB(i, b, H2O.SELF.index()), oxPair);
+      }
+    }
+  }
 }
 
 // It is intended that several of these SingleThreadRadixOrder run on the same node, to utilize the cores available.
@@ -100,10 +198,16 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
 // Since o[] and x[] are arrays here (not Vecs) it's harder to see how to parallelize inside this function. Therefore avoid that issue by using more threads in calling split.
 // General principle here is that several parallel, tight, branch free loops, faster than one heavy DKV pass per row
 
-class SingleThreadRadixOrder extends H2O.H2OCountedCompleter<SingleThreadRadixOrder> {
+class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
+  public long _o[][]; //INPUT
+  public byte _x[][]; //INPUT
+
+  //TODO: realigned arrays with new batching
+  public long _oProper[][]; //OUTPUT
+  public byte _xProper[][]; //OUTPUT
+
+  // TEMPs
   long _counts[][];
-  long _o[][], _otmp[][];
-  byte _x[][], _xtmp[][];
   byte keytmp[];
   //public long _groupSizes[][];
 
@@ -123,30 +227,43 @@ class SingleThreadRadixOrder extends H2O.H2OCountedCompleter<SingleThreadRadixOr
   //int _byte;
   //int _keySize;   // bytes
 
-  SingleThreadRadixOrder(long o[/* len div batchSize */][/* mod */],
-                         byte x[/* len div batchSize */][/* mod*keySize */],
-                         long len, int batchSize, int keySize, long nGroup[], int MSBvalue) {
-    _len = len;
+  SingleThreadRadixOrder(int batchSize, int keySize, long nGroup[], int MSBvalue) {
+    MoveByFirstByte.MSBHeader[] msbh = new MoveByFirstByte.MSBHeader[H2O.CLOUD.size()];
+    int sumBatch=0;
+    for (int n=0; n<H2O.CLOUD.size(); ++n) {
+      msbh[n] = DKV.getGet(MoveByFirstByte.getMSBHeaderKey(MSBvalue, n));
+      if (msbh[n]==null) continue;
+      sumBatch += msbh[n]._nbatch;
+    }
+    if (sumBatch == 0) return;
+    int finalB = 0;
+    _o = new long[sumBatch][];
+    _x = new byte[sumBatch][];
+//    _oProper = new long[][];
+//    _xProper = new byte[][];
+    _len = 0;
+    MoveByFirstByte.OXWrapper ox[] = new MoveByFirstByte.OXWrapper[H2O.CLOUD.size()];
+    for (int n=0; n<H2O.CLOUD.size(); ++n) {
+      if (msbh[n]==null) continue;
+      for (int b=0; b<msbh[n]._nbatch; ++b) {
+        ox[n] = DKV.getGet(MoveByFirstByte.getIndexKeyForMSB(MSBvalue, b, n));
+        _len += ox[n]._o.length;
+        _o[finalB] = ox[n]._o;
+        _x[finalB] = ox[n]._x;
+        finalB++;
+      }
+    }
     _batchSize = batchSize;
     _keySize = keySize;
     _nGroup = nGroup;
     _MSBvalue = MSBvalue;
     keytmp = new byte[_keySize];
     _counts = new long[keySize][256];
-    _xtmp = new byte[x.length][];
-    _otmp = new long[o.length][];
-    assert x.length == o.length;  // i.e. aligned batch size between x and o (think 20 bytes keys and 8 bytes of long in o)
-    for (int i=0; i<x.length; i++) {    // Seems like no deep clone available in Java. Maybe System.arraycopy but maybe that needs target to be allocated first
-      _xtmp[i] = Arrays.copyOf(x[i], x[i].length);
-      _otmp[i] = Arrays.copyOf(o[i], o[i].length);
-    }
     // TO DO: a way to share this working memory between threads.
     //        Just create enough for the 4 threads active at any one time.  Not 256 allocations and releases.
     //        We need o[] and x[] in full for the result. But this way we don't need full size xtmp[] and otmp[] at any single time.
     //        Currently Java will allocate and free these xtmp and otmp and maybe it does good enough job reusing heap that we don't need to explicitly optimize this reuse.
     //        Perhaps iterating this task through the largest bins first will help java reuse heap.
-    _x = x;
-    _o = o;
     //_groupSizes = new long[256][];
     //_groups = groups;
     //_nGroup = nGroup;
@@ -154,7 +271,12 @@ class SingleThreadRadixOrder extends H2O.H2OCountedCompleter<SingleThreadRadixOr
     //_groups[_whichGroup] = new long[(int)Math.min(MAXVECLONG, len) ];   // at most len groups (i.e. all groups are 1 row)
   }
   @Override protected void compute2() {
-    run(0, _len, _keySize-1);  // if keySize is 6 bytes, first byte is byte 5
+    if (_len != 0) {
+      run(0, _len, _keySize-1);  // if keySize is 6 bytes, first byte is byte 5
+    }
+    _counts = null;
+    keytmp = null;
+    _nGroup = null;
     tryComplete();
   }
 
@@ -246,6 +368,7 @@ class SingleThreadRadixOrder extends H2O.H2OCountedCompleter<SingleThreadRadixOr
       rollSum += tmp;
     }
     long _obatch[] = _o[batch0];
+    //TODO: scratch space for shuffling
     byte _xtmpbatch[] = _xtmp[batch0];  // TO DO- ignoring >2^31 for now.  No batching.
     long _otmpbatch[] = _otmp[batch0];
     idx = (int)start*_keySize + _keySize-Byte-1;
@@ -277,17 +400,14 @@ class SingleThreadRadixOrder extends H2O.H2OCountedCompleter<SingleThreadRadixOr
 
 public class RadixOrder {
   private static final int MAXVECBYTE = 1073741824;   // not 2^31 because that needs long to store it (could do)
-  //public ArrayList<Object> _returnList;
-  long _o[][][];
-  byte _x[][][];
   int _biggestBit[];
   int _bytesUsed[];
-  long _MSBhist[];
+  long[][][] _o;
+  byte[][][] _x;
 
   RadixOrder(Frame DF, int whichCols[]) {
     System.out.println("Calling RadixCount ...");
     long t0 = System.nanoTime();
-    int nChunks = DF.anyVec().nChunks();
     _biggestBit = new int[whichCols.length];   // currently only biggestBit[0] is used
     _bytesUsed = new int[whichCols.length];
     //long colMin[] = new long[whichCols.length];
@@ -299,81 +419,39 @@ public class RadixOrder {
       _bytesUsed[i] = (int) Math.ceil(_biggestBit[i] / 8.0);
       //colMin[i] = (long) col.min();   // TO DO: non-int/enum
     }
-    long counts[/*nChunks*/][/*256*/] = new RadixCount(nChunks, _biggestBit[0]).doAll(DF.vec(whichCols[0]))._counts;
+    new RadixCount(DF._key, _biggestBit[0], whichCols[0]).doAll(DF.vec(whichCols[0]));
     System.out.println("Time of MSB count: " + (System.nanoTime() - t0) / 1e9);
-    t0 = System.nanoTime();
-    // for (int c=0; c<5; c++) { System.out.print("First 10 for chunk "+c+" byte 0: "); for (int i=0; i<10; i++) System.out.print(counts[0][c][i] + " "); System.out.print("\n"); }
-
-    _MSBhist = new long[256];  // total across nodes but retain original spine as we need that below
-    for (int c = 0; c < nChunks; c++) {
-      for (int h = 0; h < 256; h++) {
-        _MSBhist[h] += counts[c][h];
-      }
-    }
-
-    assert ArrayUtils.maxValue(_MSBhist) < Math.max(1000, DF.numRows() / 20);   // TO DO: better test of a good even split
-    // TO DO: otherwise, expand width. Once too wide (and interestingly large width may not be a problem since small buckets won't impact cache),
-    // start rolling up bins (maybe into pairs or even quads)
-
-    for (int h = 0; h < 256; h++) {
-      long rollSum = 0;  // each of the 256 columns starts at 0 for the 0th chunk. This 0 offsets into x[MSBvalue][batch div][mod] and o[MSBvalue][batch div][mod]
-      for (int c = 0; c < nChunks; c++) {
-        long tmp = counts[c][h];
-        counts[c][h] = rollSum;
-        rollSum += tmp;
-      }
-    }
-    // NB: no radix skipping in this version (unlike data.table we'll use biggestBit and assume further bits are used).
-    System.out.println("Time to cumulate counts: " + (System.nanoTime() - t0) / 1e9);
-    t0 = System.nanoTime();
 
     // Create final result. TO DO: take this multi-node and leave it on each node
     //_returnList = new ArrayList<>();
-    //long o[][][];
-    _o = new long[256][][];
-    //byte x[][][];
-    _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
 
     int keySize = ArrayUtils.sum(_bytesUsed);   // The MSB is stored (seemingly wastefully on first glance) because we need it when aligning two keys in Merge()
     int batchSize = MAXVECBYTE / Math.max(keySize, 8);
     // The Math.max ensures that batches of o and x are aligned, even for wide keys. To save % and / in deep iteration; e.g. in insert().
 
-    for (int c = 0; c < 256; c++) {
-      if (_MSBhist[c] == 0) continue;
-      int nbatch = (int) (_MSBhist[c]-1)/batchSize +1;  // at least one batch
-      int lastSize = (int) (_MSBhist[c] - (nbatch-1) * batchSize);   // the size of the last batch (could be batchSize)
-      assert nbatch == 1;  // Prevent large testing for now.  TO DO: test nbatch>0 by reducing batchSize very small and comparing results with non-batched
-      assert lastSize > 0;
-      _o[c] = new long[nbatch][];
-      _x[c] = new byte[nbatch][];
-      int b;
-      for (b = 0; b < nbatch-1; b++) {
-        _o[c][b] = new long[batchSize];          // TO DO?: use MemoryManager.malloc8()
-        _x[c][b] = new byte[batchSize * keySize];
-      }
-      _o[c][b] = new long[lastSize];
-      _x[c][b] = new byte[lastSize * keySize];
-    }
     System.out.println("Time to allocate o[][] and x[][]: " + (System.nanoTime() - t0) / 1e9);
     t0 = System.nanoTime();
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
     // o is the full ordering vector of the right size
     // x is the byte key aligned with o
     // o AND x are what bmerge() needs. Pushing x to each node as well as o avoids inter-node comms.
-    new MoveByFirstByte(_o, _x, counts, _biggestBit[0], keySize, batchSize, _bytesUsed).doAll(DF.vecs(whichCols));   // postLocal needs DKV.put()
+    new MoveByFirstByte(DF._key, _biggestBit[0], keySize, batchSize, _bytesUsed, whichCols).doAll(DF.vecs(whichCols));   // postLocal needs DKV.put()
     System.out.println("Time to MoveByFirstByte: " + (System.nanoTime() - t0) / 1e9);
     t0 = System.nanoTime();
 
     long nGroup[] = new long[257];   // one extra for later to make undo of cumulate easier when finding groups.  TO DO: let grouper do that and simplify here to 256
 
     Futures fs = new Futures();
+    _o = new long[256][][];
+    _x = new byte[256][][];
     for (int i = 0; i < 256; i++) {
-      if (_MSBhist[i] > 0)
-        fs.add(H2O.submitTask(new SingleThreadRadixOrder(_o[i], _x[i], _MSBhist[i], batchSize, keySize, nGroup, i)));
+      H2ONode node = MoveByFirstByte.ownerOfMSB(i);
+      SingleThreadRadixOrder radixOrder = new RPC<>(node, new SingleThreadRadixOrder(batchSize, keySize, nGroup, i)).call().get(); //TODO: make async
+      _o[i] = radixOrder._o;
+      _x[i] = radixOrder._x;
     }
     fs.blockForPending();
     System.out.println("Time for all calls to SingleThreadRadixOrder: " + (System.nanoTime() - t0) / 1e9);
-    t0 = System.nanoTime();
 
     // If sum(nGroup) == nrow then the index is unique.
     // 1) useful to know if an index is unique or not (when joining to it we know multiples can't be returned so can allocate more efficiently)

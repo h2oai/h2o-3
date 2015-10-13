@@ -3,9 +3,10 @@ package water.rapids;
 // Since we have a single key field in H2O (different to data.table), bmerge() becomes a lot simpler (no
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
 
+import water.DTask;
 import water.util.ArrayUtils;
 
-public class BinaryMerge {
+public class BinaryMerge extends DTask<BinaryMerge> {
   long _retFirst[];  // The row number of the first right table's index key that matches
   long _retLen[];    // How many rows does it match to?
   byte _leftKey[/*n2GB*/][/*i mod 2GB * _keySize*/];
@@ -15,13 +16,14 @@ public class BinaryMerge {
   int _leftKeyNCol, _rightKeyNCol;  // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
   int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
   int _numJoinCols;
+  int _leftNodeIdx;
 
-  BinaryMerge(byte[][] leftKey, byte[][] rightKey, long leftN, long rightN, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
-    _leftKey = leftKey;
-    _rightKey = rightKey;
-    assert leftN <= 268435456;    // 2^31/8
-    _retFirst = new long[(int)leftN];    // TO DO: batch to allow more
-    _retLen = new long[(int)leftN];
+  BinaryMerge(int leftMSB, int rightMSB, int leftNodeIdx, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
+//    _leftKey = leftKey;
+//    _rightKey = rightKey;
+//    _retFirst = new long[(int)leftN];    // TO DO: batch to allow more
+//    _retLen = new long[(int)leftN];
+    _leftNodeIdx = leftNodeIdx;
     _leftFieldSizes = leftFieldSizes;
     _rightFieldSizes = rightFieldSizes;
     _leftKeyNCol = _leftFieldSizes.length;
@@ -29,10 +31,23 @@ public class BinaryMerge {
     _leftKeySize = ArrayUtils.sum(leftFieldSizes);
     _rightKeySize = ArrayUtils.sum(rightFieldSizes);
     _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
-    bmerge_r(-1, leftN, -1, rightN);
   }
 
-  int keycmp(byte x[][], long xi, byte y[][], long yi) {   // TO DO - faster way closer to CPU like batches of long compare, maybe.
+  @Override
+  protected void compute2() {
+    int leftN, rightN;
+
+    // do the work
+    bmerge_r(-1, leftN, -1, rightN);
+
+    //put stuff into DKV
+
+    //null out members before returning to calling node
+    tryComplete();
+  }
+
+
+  private int keycmp(byte x[][], long xi, byte y[][], long yi) {   // TO DO - faster way closer to CPU like batches of long compare, maybe.
     xi *= _leftKeySize;
     yi *= _rightKeySize;   // x[] and y[] are len keys.
     // TO DO: rationalize x and y being chunked into 2GB pieces.  Take x[0][] and y[0][] outside loop / function
@@ -54,7 +69,7 @@ public class BinaryMerge {
     // Same return value as strcmp in C. <0 => xi<yi
   }
 
-  void bmerge_r(long lLowIn, long lUppIn, long rLowIn, long rUppIn) {
+  private void bmerge_r(long lLowIn, long lUppIn, long rLowIn, long rUppIn) {
     // TO DO: parallel each of the 256 bins
     long lLow = lLowIn, lUpp = lUppIn, rLow = rLowIn, rUpp = rUppIn;
     long mid, tmpLow, tmpUpp;
