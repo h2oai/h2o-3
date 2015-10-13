@@ -1126,22 +1126,26 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
+      int totalMiss = 0;
       int miss = 0;
       for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
 
         // Native Java API
-        for( int col=0; col<features.length; col++ ) // Build feature set
+        for (int col = 0; col < features.length; col++) // Build feature set
           features[col] = dvecs[col].at(row);
-        genmodel.score0(features,predictions);            // POJO predictions
-        for( int col=0; col<pvecs.length; col++ ) { // Compare predictions
+        genmodel.score0(features, predictions);            // POJO predictions
+        for (int col = 0; col < pvecs.length; col++) { // Compare predictions
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
-          if( col==0 && omap != null ) d = omap[(int)d];  // map categorical response to scoring domain
-          if( !MathUtils.compare(predictions[col],d,1e-15,rel_epsilon) ) {
+          if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
+          if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
             if (miss++ < 10)
-              System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
+              System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
           }
         }
+        totalMiss = miss;
+      }
 
+      for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
         // EasyPredict API
         RowData rowData = new RowData();
         for( int col=0; col<features.length; col++ ) {
@@ -1163,8 +1167,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         try { if (p==null) p = epmw.predictBinomial(rowData); } catch (AbstractPredictException e) { }
         try { if (p==null) p = epmw.predictMultinomial(rowData); } catch (AbstractPredictException e) { }
         if  (p==null) continue;
-        miss=0;
-        int oldmiss=0;
+        int oldmiss=miss;
         for (int col = 0; col < pvecs.length; col++) { // Compare predictions
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
@@ -1197,12 +1200,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
           if (miss > oldmiss)
             System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
-          oldmiss = miss;
+          totalMiss = miss;
         }
-
       }
-      if (miss != 0) System.err.println("Number of mismatches: " + miss);
-      return miss==0;
+      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss);
+      return totalMiss==0;
     } finally {
       // Remove temp keys.
       cleanup_adapt(fr, data);
