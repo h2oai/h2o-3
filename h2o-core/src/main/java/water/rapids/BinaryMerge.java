@@ -19,8 +19,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   int _leftNodeIdx;
 
   BinaryMerge(int leftMSB, int rightMSB, int leftNodeIdx, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
-//    _leftKey = leftKey;
-//    _rightKey = rightKey;
+    _leftKey =   _o MSB on leftNodeIdx;
+    _rightKey = _x MSB on this node;
+
+
 //    _retFirst = new long[(int)leftN];    // TO DO: batch to allow more
 //    _retLen = new long[(int)leftN];
     _leftNodeIdx = leftNodeIdx;
@@ -31,6 +33,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _leftKeySize = ArrayUtils.sum(leftFieldSizes);
     _rightKeySize = ArrayUtils.sum(rightFieldSizes);
     _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
+    _leftN =  MSBnode
   }
 
   @Override

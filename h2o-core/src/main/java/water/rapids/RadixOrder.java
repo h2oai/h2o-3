@@ -53,11 +53,11 @@ class RadixCount extends MRTask<RadixCount> {
 
 class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   long _counts[][];
+  long _MSBhist[];
   long _o[][][];
   byte _x[][][];
   Key _frameKey;
   int _biggestBit, _batchSize, _bytesUsed[], _keySize;
-  public int[] _nbatch;
   int[]_col;
   MoveByFirstByte(Key frameKey, int biggestBit, int keySize, int batchSize, int bytesUsed[], int[] col) {
     _frameKey = frameKey;
@@ -68,27 +68,27 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   @Override protected void setupLocal() {
     // First accumulate counts across chunks in this node into histograms for most significant 8 bits
     _counts = ((RadixCount.Long2DArray)DKV.getGet(RadixCount.getKey(_frameKey, _col[0], H2O.SELF)))._val;
-    long[] MSBhist = new long[256];  // total across nodes but retain original spine as we need that below
+    _MSBhist = new long[256];  // total across nodes but retain original spine as we need that below
     int nc = _fr.anyVec().nChunks();
     for (int c = 0; c < nc; c++) {
       if (_counts[c]!=null) {
         for (int h = 0; h < 256; h++) {
-          MSBhist[h] += _counts[c][h];
+          _MSBhist[h] += _counts[c][h];
         }
       }
     }
-    if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
+    if (ArrayUtils.maxValue(_MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
       Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
-              + " " + Arrays.toString(MSBhist) + ")");
+              + " " + Arrays.toString(_MSBhist) + ")");
     }
     // shared between threads on the same node, all mappers write into distinct locations (no conflicts, no need to atomic updates, etc.)
     _o = new long[256][][];
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
     for (int c = 0; c < 256; c++) {
-      if (MSBhist[c] == 0) continue;
-      int nbatch = (int) (MSBhist[c]-1)/_batchSize +1;  // at least one batch
-      int lastSize = (int) (MSBhist[c] - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize)
+      if (_MSBhist[c] == 0) continue;
+      int nbatch = (int) (_MSBhist[c]-1)/_batchSize +1;  // at least one batch
+      int lastSize = (int) (_MSBhist[c] - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize)
       assert nbatch == 1;  // Prevent large testing for now.  TO DO: test nbatch>0 by reducing batchSize very small and comparing results with non-batched
       assert lastSize > 0;
       _o[c] = new long[nbatch][];
@@ -167,26 +167,26 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   }
 
   static class MSBHeader extends Iced {
-    MSBHeader(int nbatch) { _nbatch = nbatch; }
-    int _nbatch; //how many batches
-    //TODO: fill up more values for header
-    long[] _MSBhist; //histo counts of each chunk for this MSB
-    int[] _chkIdx;
+    MSBHeader(int MSBnodeChunkCounts[/*chunks*/]) { _MSBnodeChunkCounts = MSBnodeChunkCounts;}
+    int _MSBnodeChunkCounts[];
   }
 
   // Push o/x in chunks to owning nodes
   @Override protected void postLocal() {
-    _nbatch = new int[_o.length];
-    long[] MSBhist = new long[_o.length];
-    for (int i=0;i<_o.length /*256*/; ++i) {
-      if(_o[i] == null) continue;
-      _nbatch[i] = _o[i].length;
-      _MSBhist[i] //TODO
-      MSBHeader msbh = new MSBHeader(_nbatch[i]);
-      DKV.put(getMSBHeaderKey(i, H2O.SELF.index()), msbh);
-      for (int b=0;b<_nbatch[i]; ++b) {
-        OXWrapper oxPair = new OXWrapper(_o[i][b], _x[i][b]);
-        DKV.put(getIndexKeyForMSB(i, b, H2O.SELF.index()), oxPair);
+    int nc = _fr.anyVec().nChunks();
+    for (int msb =0; msb <_o.length /*256*/; ++msb) {
+      if(_o[msb] == null) continue;
+      int numChunks = 0;  // how many of the chunks on this node had some rows with this MSB
+      for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) numChunks++;
+      int MSBnodeChunkCounts[] = new int[numChunks];   // make dense.  And by construction (i.e. cumulative counts) these chunks contributed in order
+      int j=0;
+      for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) MSBnodeChunkCounts[j++] = (int)_counts[c][msb];  // _counts is long so it can be accumulated in-place I think.  TO DO: check
+      assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
+      MSBHeader msbh = new MSBHeader(MSBnodeChunkCounts);
+      DKV.put(getMSBHeaderKey(msb, H2O.SELF.index()), msbh);
+      for (int b=0;b<_o[msb].length; ++b) {
+        OXWrapper oxPair = new OXWrapper(_o[msb][b], _x[msb][b]);
+        DKV.put(getIndexKeyForMSB(msb, b, H2O.SELF.index()), oxPair);
       }
     }
   }
@@ -199,12 +199,10 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
 // General principle here is that several parallel, tight, branch free loops, faster than one heavy DKV pass per row
 
 class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
-  public long _o[][]; //INPUT
-  public byte _x[][]; //INPUT
-
-  //TODO: realigned arrays with new batching
-  public long _oProper[][]; //OUTPUT
-  public byte _xProper[][]; //OUTPUT
+  public long _o[][]; // output.  The gathered _o from all the nodes and concatenated in order of chunk number
+  public byte _x[][]; // same
+  long _otmp[][];
+  byte _xtmp[][];
 
   // TEMPs
   long _counts[][];
@@ -227,31 +225,100 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   //int _byte;
   //int _keySize;   // bytes
 
-  SingleThreadRadixOrder(int batchSize, int keySize, long nGroup[], int MSBvalue) {
-    MoveByFirstByte.MSBHeader[] msbh = new MoveByFirstByte.MSBHeader[H2O.CLOUD.size()];
-    int sumBatch=0;
+  SingleThreadRadixOrder(Frame fr, int batchSize, int keySize, long nGroup[], int MSBvalue) {
+    MoveByFirstByte.MSBHeader[] MSBnodeHeader = new MoveByFirstByte.MSBHeader[H2O.CLOUD.size()];
+    long numRows=0;
     for (int n=0; n<H2O.CLOUD.size(); ++n) {
-      msbh[n] = DKV.getGet(MoveByFirstByte.getMSBHeaderKey(MSBvalue, n));
-      if (msbh[n]==null) continue;
-      sumBatch += msbh[n]._nbatch;
+      MSBnodeHeader[n] = DKV.getGet(MoveByFirstByte.getMSBHeaderKey(MSBvalue, n));
+      if (MSBnodeHeader[n]==null) continue;
+      numRows += ArrayUtils.sum(MSBnodeHeader[n]._MSBnodeChunkCounts);   // This numRows is split into nbatch batches on that node.
+      // This header also has the counts of each chunk (the ordered chunk numbers on that node)
     }
-    if (sumBatch == 0) return;
-    int finalB = 0;
-    _o = new long[sumBatch][];
-    _x = new byte[sumBatch][];
-//    _oProper = new long[][];
-//    _xProper = new byte[][];
-    _len = 0;
-    MoveByFirstByte.OXWrapper ox[] = new MoveByFirstByte.OXWrapper[H2O.CLOUD.size()];
-    for (int n=0; n<H2O.CLOUD.size(); ++n) {
-      if (msbh[n]==null) continue;
-      for (int b=0; b<msbh[n]._nbatch; ++b) {
-        ox[n] = DKV.getGet(MoveByFirstByte.getIndexKeyForMSB(MSBvalue, b, n));
-        _len += ox[n]._o.length;
-        _o[finalB] = ox[n]._o;
-        _x[finalB] = ox[n]._x;
-        finalB++;
+    if (numRows == 0) return;
+
+    // Allocate final _o and _x for this MSB which is gathered together on this node from the other nodes.
+    int nbatch = (int) (numRows -1) / batchSize +1;   // at least one batch.    TO DO:  as Arno suggested, wrap up into class for fixed width batching (to save espc overhead)
+    int lastSize = (int) (numRows - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize, too if happens to be exact multiple of batchSize)
+    _o = new long[nbatch][];
+    _x = new byte[nbatch][];
+    int b;
+    for (b = 0; b < nbatch-1; b++) {
+      _o[b] = new long[_batchSize];          // TO DO?: use MemoryManager.malloc8()
+      _x[b] = new byte[_batchSize * _keySize];
+    }
+    _o[b] = new long[lastSize];
+    _x[b] = new byte[lastSize * _keySize];
+
+    MoveByFirstByte.OXWrapper MSBnodeCurrentOX[] = new MoveByFirstByte.OXWrapper[H2O.CLOUD.size()];
+    int MSBnodeCurrentBatch[] = new int[H2O.CLOUD.size()];  // which batch of OX are we on from that node?  Initialized to 0.
+    for (int node=0; node<H2O.CLOUD.size(); node++) {
+      MSBnodeCurrentOX[node] = DKV.getGet(MoveByFirstByte.getIndexKeyForMSB(MSBvalue, /*batch=*/0, node));   // get the first batch for each node for this MSB
+    }
+    int MSBnodeCurrentOffset[] = new int[H2O.CLOUD.size()];
+    int MSBnodeCurrentChunkIdx[] = new int[H2O.CLOUD.size()];  // that node has n chunks and which of those are we currently on?
+
+    int targetBatch = 0, targetOffset = 0, targetBatchRemaining = batchSize;
+
+    for (int c=0; c<fr.anyVec().nChunks(); c++) {   // TO DO: put this into class as well, to ArrayCopy into batched
+      int fromNode = fr.anyVec().chunkKey(c).home_node().index();
+      int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[MSBnodeCurrentChunkIdx[fromNode]++];
+      int sourceBatchRemaining = batchSize - MSBnodeCurrentOffset[fromNode];    // at most batchSize remaining.  No need to actually put the number of rows left in here
+      if (sourceBatchRemaining <= numRowsToCopy) {
+        if (targetBatchRemaining <= sourceBatchRemaining) {
+          System.arraycopy(MSBnodeCurrentOX[fromNode]._o, MSBnodeCurrentOffset[fromNode], _o[targetBatch], targetOffset, targetBatchRemaining);
+          System.arraycopy(MSBnodeCurrentOX[fromNode]._x, MSBnodeCurrentOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, targetBatchRemaining*_keySize);
+          MSBnodeCurrentOffset[fromNode] += targetBatchRemaining;
+          sourceBatchRemaining -= targetBatchRemaining;
+          assert sourceBatchRemaining >= 0;
+          numRowsToCopy -= targetBatchRemaining;
+          targetBatch++;
+          targetOffset = 0;
+          targetBatchRemaining = batchSize;
+          assert targetBatchRemaining >= sourceBatchRemaining;
+        }
+        if (sourceBatchRemaining <= numRowsToCopy) {
+          System.arraycopy(MSBnodeCurrentOX[fromNode]._o, MSBnodeCurrentOffset[fromNode], _o[targetBatch], targetOffset, sourceBatchRemaining);
+          System.arraycopy(MSBnodeCurrentOX[fromNode]._x, MSBnodeCurrentOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, sourceBatchRemaining*_keySize);
+          numRowsToCopy -= sourceBatchRemaining;
+          targetOffset += sourceBatchRemaining;
+          targetBatchRemaining -= sourceBatchRemaining;
+          // TO DO:  delete and free MSBnodeCurrentBatch[fromNode].  Have used it all now.
+          // get the next batch from the node ...
+          MSBnodeCurrentOX[fromNode] = DKV.getGet(MoveByFirstByte.getIndexKeyForMSB(MSBvalue, ++MSBnodeCurrentBatch[fromNode], fromNode));
+          MSBnodeCurrentOffset[fromNode] = 0;
+          sourceBatchRemaining = batchSize;
+        }
+        assert sourceBatchRemaining >= numRowsToCopy;
       }
+      if (targetBatchRemaining <= numRowsToCopy) {
+        System.arraycopy(MSBnodeCurrentOX[fromNode]._o, MSBnodeCurrentOffset[fromNode], _o[targetBatch], targetOffset, targetBatchRemaining);
+        System.arraycopy(MSBnodeCurrentOX[fromNode]._x, MSBnodeCurrentOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, targetBatchRemaining*_keySize);
+        MSBnodeCurrentOffset[fromNode] += targetBatchRemaining;
+        sourceBatchRemaining -= targetBatchRemaining;
+        assert sourceBatchRemaining >= 0;
+        numRowsToCopy -= targetBatchRemaining;
+        targetBatch++;
+        targetOffset = 0;
+        targetBatchRemaining = batchSize;
+        assert targetBatchRemaining >= numRowsToCopy;
+      }
+      if (numRowsToCopy > 0) {
+        assert targetBatchRemaining > numRowsToCopy;
+        System.arraycopy(MSBnodeCurrentOX[fromNode]._o, MSBnodeCurrentOffset[fromNode], _o[targetBatch], targetOffset, numRowsToCopy);
+        System.arraycopy(MSBnodeCurrentOX[fromNode]._x, MSBnodeCurrentOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, numRowsToCopy*_keySize);
+        MSBnodeCurrentOffset[fromNode] += numRowsToCopy;
+        sourceBatchRemaining -= numRowsToCopy;
+        assert sourceBatchRemaining > 0;
+        targetOffset += numRowsToCopy;
+        targetBatchRemaining -= numRowsToCopy;
+      }
+    }
+    _xtmp = new byte[_x.length][];
+    _otmp = new long[_o.length][];
+    assert _x.length == _o.length;  // i.e. aligned batch size between x and o (think 20 bytes keys and 8 bytes of long in o)
+    for (int i=0; i<_x.length; i++) {    // Seems like no deep clone available in Java. Maybe System.arraycopy but maybe that needs target to be allocated first
+      _xtmp[i] = Arrays.copyOf(_x[i], _x[i].length);
+      _otmp[i] = Arrays.copyOf(_o[i], _o[i].length);
     }
     _batchSize = batchSize;
     _keySize = keySize;
@@ -368,7 +435,6 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       rollSum += tmp;
     }
     long _obatch[] = _o[batch0];
-    //TODO: scratch space for shuffling
     byte _xtmpbatch[] = _xtmp[batch0];  // TO DO- ignoring >2^31 for now.  No batching.
     long _otmpbatch[] = _otmp[batch0];
     idx = (int)start*_keySize + _keySize-Byte-1;
@@ -394,6 +460,25 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       }
       itmp = thisHist[i];
       thisHist[i] = 0;  // important, to save clearing counts on next iteration
+    }
+  }
+  // Push gathered and sorted o/x (the final index) to DKV for use by Merge, Grouping etc.
+  @Override protected void postLocal() {
+    int nc = _fr.anyVec().nChunks();
+    for (int msb =0; msb <_o.length /*256*/; ++msb) {
+      if(_o[msb] == null) continue;
+      int numChunks = 0;  // how many of the chunks on this node had some rows with this MSB
+      for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) numChunks++;
+      int MSBnodeChunkCounts[] = new int[numChunks];   // make dense.  And by construction (i.e. cumulative counts) these chunks contributed in order
+      int j=0;
+      for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) MSBnodeChunkCounts[j++] = (int)_counts[c][msb];  // _counts is long so it can be accumulated in-place I think.  TO DO: check
+      assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
+      MSBHeader msbh = new MSBHeader(MSBnodeChunkCounts);
+      DKV.put(getMSBHeaderKey(msb, H2O.SELF.index()), msbh);
+      for (int b=0;b<_o[msb].length; ++b) {
+        OXWrapper oxPair = new OXWrapper(_o[msb][b], _x[msb][b]);
+        DKV.put(getIndexKeyForMSB(msb, b, H2O.SELF.index()), oxPair);
+      }
     }
   }
 }
@@ -446,7 +531,7 @@ public class RadixOrder {
     _x = new byte[256][][];
     for (int i = 0; i < 256; i++) {
       H2ONode node = MoveByFirstByte.ownerOfMSB(i);
-      SingleThreadRadixOrder radixOrder = new RPC<>(node, new SingleThreadRadixOrder(batchSize, keySize, nGroup, i)).call().get(); //TODO: make async
+      SingleThreadRadixOrder radixOrder = new RPC<>(node, new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call().get(); //TODO: make async
       _o[i] = radixOrder._o;
       _x[i] = radixOrder._x;
     }
