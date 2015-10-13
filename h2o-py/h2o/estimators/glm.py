@@ -1,7 +1,7 @@
-from .estimator_base import *
+from .estimator_base import H2OEstimator
 
 
-class H2OGeneralizedLinearEstimator(H2OEstimator,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel):
+class H2OGeneralizedLinearEstimator(H2OEstimator):
   def __init__(self, model_id=None, max_iterations=None, beta_epsilon=None, solver=None,
                standardize=None, family=None, link=None, tweedie_variance_power=None,
                tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,

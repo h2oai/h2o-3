@@ -1,7 +1,7 @@
 from .estimator_base import *
 
 
-class H2ONaiveBayesEstimator(H2OEstimator,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel):
+class H2ONaiveBayesEstimator(H2OEstimator):
   def __init__(self, laplace=None, threshold=None, eps=None, compute_metrics=None,
                balance_classes=None,max_after_balance_size=None, nfolds=None,
                fold_assignment=None, keep_cross_validation_predictions=None,

@@ -1,7 +1,7 @@
 from .estimator_base import *
 
 
-class H2OGradientBoostingEstimator(H2OEstimator,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel):
+class H2OGradientBoostingEstimator(H2OEstimator):
   """
   Builds gradient boosted classification trees, and gradient boosted regression trees on
   a parsed data set. The default distribution function will guess the model type based on

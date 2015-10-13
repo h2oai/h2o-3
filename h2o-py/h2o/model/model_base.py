@@ -538,25 +538,3 @@ class ModelBase(object):
     """
     if len(y_actual) != len(y_predicted):
       raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))
-
-
-class DeprecatedModelBase(ModelBase):
-  def __init__(self, key, model_json, metrics_class):
-    super(DeprecatedModelBase, self).__init__()
-    self._id = key
-    self._model_json = model_json
-    self._metrics_class = metrics_class
-
-    if key is not None and model_json is not None and metrics_class is not None:
-      # build Metric objects out of each metrics
-      for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
-        if metric in model_json["output"]:
-          if model_json["output"][metric] is not None:
-            if metric=="cross_validation_metrics":
-              self._is_xvalidated=True
-            model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
-
-      if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
-
-      # build a useful dict of the params
-      for p in self._model_json["parameters"]: self.parms[p["label"]]=p

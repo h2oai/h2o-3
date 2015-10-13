@@ -5,6 +5,7 @@ from ..model.binomial import H2OBinomialModel
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
 from ..model.autoencoder import H2OAutoEncoderModel
+from ..model.clustering import H2OClusteringModel
 import inspect
 import warnings
 
@@ -14,7 +15,7 @@ class EstimatorAttributeError(AttributeError):
     super(AttributeError, self).__init__("No {} method for {}".format(method,obj.__class__.__name__))
 
 
-class H2OEstimator(ModelBase):
+class H2OEstimator(ModelBase,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel,H2OClusteringModel,H2OAutoEncoderModel):
   """H2O Estimators
 
   H2O Estimators implement the following methods for model construction:
