@@ -9,6 +9,7 @@ import water.TestUtil;
 import static org.junit.Assert.assertTrue;
 import static water.fvec.Vec.makeCon;
 import static water.fvec.Vec.makeSeq;
+import water.util.VecUtils;
 
 /** This test tests stability of Vec API. */
 public class VecTest extends TestUtil {
@@ -24,7 +25,7 @@ public class VecTest extends TestUtil {
   private void testToCategoricalDomainMatch(Vec f, String[] expectedDomain) {
     Vec ef = null;
     try {
-      ef = f.toCategoricalVec();
+      ef = VecUtils.toCategoricalVec(f);
       String[] actualDomain = ef.domain();
       Assert.assertArrayEquals("toCategoricalVec call returns wrong domain!", expectedDomain, actualDomain);
     } finally {

@@ -538,7 +538,7 @@ setMethod("show", "H2OGrid", function(object) {
 #' @param show_stack_traces  a flag to show stack traces for model failures
 #' @export
 setMethod("summary", "H2OGrid",
-          function(object, show_stack_traces = F) {
+          function(object, show_stack_traces = FALSE) {
             show(object)
             cat("H2O Grid Summary\n")
             cat("================\n\n")
