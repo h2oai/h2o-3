@@ -46,7 +46,7 @@ public class VecUtils {
     long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(src).domain() : new CollectDomain().doAll(src).domain();
     if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
       throw new IllegalArgumentException("Column domain is too large to be represented as an categorical: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
-    return copyOver(src, dom);
+    return copyOver(src, Vec.T_CAT, dom);
   }
 
   /** Transform an categorical Vec to a Int Vec. If the domain of the Vec is stringified ints, then
@@ -58,11 +58,11 @@ public class VecUtils {
    * @return A new Vec
    */
   public static Vec toIntVec(final Vec src) {
-    if( src.isInt() && src.domain()==null ) return copyOver(src, null);
+    if( src.isInt() && src.domain()==null ) return copyOver(src, Vec.T_NUM, null);
     if( !src.isCategorical() ) throw new IllegalArgumentException("toIntVec conversion only works on categorical and Int vecs");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;
-    Vec newVec = copyOver(src, null);
+    Vec newVec = copyOver(src, Vec.T_NUM, null);
     try {
       Integer.parseInt(src.domain()[0]);
       useDomain=true;
@@ -201,10 +201,10 @@ public class VecUtils {
     public long[] domain() { return _d; }
   }
 
-  private static Vec copyOver(Vec src, long[] domain) {
+  private static Vec copyOver(Vec src, byte type, long[] domain) {
     String[][] dom = new String[1][];
     dom[0]=domain==null?null:ArrayUtils.toString(domain);
-    return new CPTask(domain).doAll(src.get_type(),src).outputFrame(null,dom).anyVec();
+    return new CPTask(domain).doAll(type, src).outputFrame(null,dom).anyVec();
   }
 
   private static class CPTask extends MRTask<CPTask> {
