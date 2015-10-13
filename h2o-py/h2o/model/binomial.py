@@ -444,8 +444,3 @@ class H2OBinomialModel(object):
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.find_idx_by_threshold(threshold)
     return m.values()[0] if len(m) == 1 else m
-
-
-class DeprecatedBinomialModel(DeprecatedModelBase, H2OBinomialModel):
-  def __init__(self, key, model_json):
-    super(DeprecatedBinomialModel, self).__init__(key,model_json,H2OBinomialModelMetrics)

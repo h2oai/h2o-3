@@ -13,7 +13,7 @@ from job import H2OJob
 from expr import ExprNode
 from frame import H2OFrame, _py_tmp_key, _is_list_of_lists, _gen_header
 from estimators.estimator_base import H2OEstimator
-import h2o_model_builder
+from h2o_model_builder import supervised, unsupervised, _resolve_model
 
 
 def lazy_import(path):
@@ -340,7 +340,7 @@ def get_future_model(future_model):
 
   :return: a resolved model (i.e. an H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, ...)
   """
-  return h2o_model_builder._resolve_model(future_model)
+  return _resolve_model(future_model)
 
 
 def get_model(model_id):
@@ -356,8 +356,6 @@ def get_model(model_id):
   :return: H2OModel
 
   """
-
-  # TODO: call H2OEstimator()._resolve_model
   m = H2OEstimator()
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
   m._resolve_model(model_id,model_json)
@@ -903,7 +901,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   warnings.warn("`h2o.deeplearning` is deprecated. Use the estimators sub module to build an H2ODeepLearningEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["y","training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
 
 
 def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=None,checkpoint=None,
@@ -1051,7 +1049,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
   parms["autoencoder"]=True
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
 
 
 def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,
@@ -1129,7 +1127,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   warnings.warn("`h2o.gbm` is deprecated. Use the estimators sub module to build an H2OGradientBoostedEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="gbm"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
 
 
 def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,validation_frame=None,
@@ -1236,7 +1234,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   if "alpha" in parms and not isinstance(parms["alpha"], (list,tuple)): parms["alpha"] = [parms["alpha"]]
   parms["algo"]="glm"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
 
 
 def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
@@ -1292,7 +1290,7 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
   warnings.warn("`h2o.kmeans` is deprecated. Use the estimators sub module to build an H2OKMeansEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="kmeans"
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
 
 
 def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,mtries=None,sample_rate=None,
@@ -1363,7 +1361,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
   warnings.warn("`h2o.random_forest` is deprecated. Use the estimators sub module to build an H2ORandomForestEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="drf"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
 
 
 def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None,
@@ -1401,7 +1399,7 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   warnings.warn("`h2o.prcomp` is deprecated. Use the transforms sub module to build an H2OPCA.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="pca"
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
 
 
 def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
@@ -1440,7 +1438,7 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="svd"
   parms['_rest_version']=99
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
 
 
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
@@ -1517,7 +1515,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="glrm"
   parms['_rest_version']=99
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
 
 
 def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,validation_frame=None,
@@ -1564,7 +1562,7 @@ def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,vali
   warnings.warn("`h2o.naive_bayes` is deprecated. Use the estimators sub module to build an H2ONaiveBayesEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="naivebayes"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
 
 
 def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0, real_range = 100,

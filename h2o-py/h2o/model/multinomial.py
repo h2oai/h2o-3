@@ -53,8 +53,3 @@ class H2OMultinomialModel(object):
         raise ValueError("metric for H2OMultinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
 
     self._plot(timestep=timestep, metric=metric, **kwargs)
-
-
-class DeprecatedMultinomialModel(DeprecatedModelBase, H2OMultinomialModel):
-  def __init__(self, key, model_json):
-    super(DeprecatedMultinomialModel, self).__init__(key,model_json,H2OMultinomialModelMetrics)

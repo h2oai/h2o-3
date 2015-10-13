@@ -28,8 +28,3 @@ class H2OAutoEncoderModel(object):
     if not test_data: raise ValueError("Must specify test data")
     j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, reconstruction_error=True, reconstruction_error_per_feature=per_feature)
     return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
-
-
-class DeprecatedAutoEncoderModel(DeprecatedModelBase, H2OAutoEncoderModel):
-  def __init__(self, key, model_json):
-    super(DeprecatedAutoEncoderModel, self).__init__(key,model_json,H2OAutoEncoderModelMetrics)

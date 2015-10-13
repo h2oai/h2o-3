@@ -213,8 +213,3 @@ class H2OClusteringModel(object):
     for cidx, cval in enumerate(cvals):
       centers_std.append(list(cvals[cidx])[1:])
     return centers_std
-
-
-class DeprecatedClusteringModel(DeprecatedModelBase, H2OClusteringModel):
-  def __init__(self, key, model_json):
-    super(DeprecatedClusteringModel, self).__init__(key,model_json,H2OClusteringModelMetrics)

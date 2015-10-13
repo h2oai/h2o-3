@@ -51,7 +51,7 @@ class ModelBase(object):
 
     :return: a dictionary of parameters used to build this model.
     """
-    return self._params
+    return self.parms
 
   def __repr__(self):
     self.show()

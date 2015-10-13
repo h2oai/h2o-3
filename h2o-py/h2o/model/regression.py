@@ -112,8 +112,3 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
   if denominator == 0.0:
     return 1. if numerator == 0. else 0.  # 0/0 => 1, else 0
   return 1 - numerator / denominator
-
-
-class DeprecatedRegressionModel(DeprecatedModelBase, H2ORegressionModel):
-  def __init__(self, key, model_json):
-    super(DeprecatedRegressionModel, self).__init__(key,model_json,H2ORegressionModelMetrics)
