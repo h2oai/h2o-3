@@ -106,6 +106,7 @@
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
@@ -113,6 +114,7 @@
 #'
 #' # now make a prediction
 #' predictions <- h2o.predict(iris.dl, iris.hex)
+#' }
 #'
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
