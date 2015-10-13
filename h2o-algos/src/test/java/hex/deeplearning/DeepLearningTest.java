@@ -822,12 +822,25 @@ public class DeepLearningTest extends TestUtil {
   @Test public void testWhatever() {
     DeepLearningParameters dl;
     Frame frTrain = null;
+    Frame frTest = null;
     DeepLearningModel model = null;
     dl = new DeepLearningParameters();
     Scope.enter();
     try {
-      frTrain = parse_test_file("/users/arno/good.svm");
+      frTrain = parse_test_file("/users/arno/good10.svm");
       Scope.track(frTrain.replace(frTrain.find("C1"), VecUtils.toCategoricalVec(frTrain.vec("C1")))._key);
+
+      frTest = parse_test_file("/users/arno/good10.tsv");
+      frTest.remove(frTest.find("C1")); //remove id
+      Vec response = VecUtils.toCategoricalVec(frTest.vec("C2")); //turn response into a categorical
+      frTest.remove(frTest.find("C2")); //remove response
+      frTest.prepend("C2", frTest.anyVec().makeCon(0)); //add a dummy column (will be the first predictor)
+      frTest.add("C1", response); //add back response as first column
+      frTest._names = new String[frTest.numCols()];
+      for (int i=0; i<frTest._names.length; ++i) { //make column names consistent for both frames
+        frTest._names[i] = "C" + (i+1);
+      }
+      DKV.put(frTest);
 
       // Configure DL
       dl._train = frTrain._key;
@@ -846,13 +859,23 @@ public class DeepLearningTest extends TestUtil {
         Log.info(model._output);
         Frame pred;
         assertTrue(model.testJavaScoring(frTrain, pred = model.score(frTrain), 1e-5));
-        pred.delete();
+        pred.remove();
+        model._key = Key.make(); DKV.put(model); //to let javac not get two models with the same key
+        assertTrue(model.testJavaScoring(frTest,  pred = model.score(frTest), 1e-5));
+        pred.remove();
+        model._key = Key.make(); DKV.put(model);
+        assertTrue(model.testJavaScoring(frTest,  pred = model.score(frTrain), 1e-5));
+        pred.remove();
+        model._key = Key.make(); DKV.put(model);
+        assertTrue(model.testJavaScoring(frTrain,  pred = model.score(frTest), 1e-5));
+        pred.remove();
       } finally {
         if (job != null) job.remove();
       }
       assertTrue(job._state == Job.JobState.DONE); //HEX-1817
     } finally {
       if (frTrain != null) frTrain.remove();
+      if (frTest != null) frTest.remove();
       if (model != null) model.delete();
       Scope.exit();
     }
