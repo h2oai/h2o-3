@@ -13,6 +13,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.VecUtils;
 
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
@@ -102,7 +103,7 @@ public class GLRMCategoricalTest extends TestUtil {
       Scope.enter();
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec())._key);
+        Scope.track(train.replace(cats[i], VecUtils.toCategoricalVec(train.vec(cats[i])))._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -158,7 +159,7 @@ public class GLRMCategoricalTest extends TestUtil {
     try {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec())._key);
+        Scope.track(train.replace(cats[i], VecUtils.toCategoricalVec(train.vec(cats[i])))._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -233,7 +234,7 @@ public class GLRMCategoricalTest extends TestUtil {
     try {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec())._key);
+        Scope.track(train.replace(cats[i], VecUtils.toCategoricalVec(train.vec(cats[i])))._key);
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -328,7 +329,7 @@ public class GLRMCategoricalTest extends TestUtil {
       Scope.enter();
       fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toCategoricalVec())._key);
+        Scope.track(fr.replace(cats[i], VecUtils.toCategoricalVec(fr.vec(cats[i])))._key);
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
       DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);

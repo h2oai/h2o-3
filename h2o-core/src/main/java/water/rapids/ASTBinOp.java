@@ -9,6 +9,7 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
+import water.util.VecUtils;
 import java.util.Arrays;
 
 /**
@@ -472,7 +473,7 @@ class ASTIfElse extends ASTPrim {
     if( domains!=null ) {
       for (int i = 0; i < res.numCols(); ++i) {
         if (res.vec(i).domain() != null) {
-          final long[] dom = new Vec.CollectDomainFast((int) res.vec(i).max()).doAll(res.vec(i)).domain();
+          final long[] dom = new VecUtils.CollectDomainFast((int) res.vec(i).max()).doAll(res.vec(i)).domain();
           String[] newDomain = new String[dom.length];
           for (int l = 0; l < dom.length; ++l)
             newDomain[l] = res.vec(i).domain()[(int) dom[l]];

@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.VecUtils;
 
 import static water.util.FrameUtils.parseFrame;
 
@@ -201,7 +202,7 @@ public class ConfusionMatrixTest extends TestUtil {
   private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toCategorical) {
     Scope.enter();
     try {
-      ConfusionMatrix cm = buildCM(v1.vecs()[0].toCategoricalVec(), v2.vecs()[0].toCategoricalVec());
+      ConfusionMatrix cm = buildCM(VecUtils.toCategoricalVec(v1.vecs()[0]), VecUtils.toCategoricalVec(v2.vecs()[0]));
 
       // -- DEBUG --
       if (debug) {

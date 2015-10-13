@@ -18,6 +18,8 @@ import java.io.File;
 import java.util.HashMap;
 
 import water.fvec.*;
+import water.util.VecUtils;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -39,8 +41,8 @@ public class GLMBasicTestRegression extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(f);
     Key outputKey = Key.make("prostate_cat_train.hex");
     _canCarTrain = ParseDataset.parse(outputKey, nfs._key);
-    _canCarTrain.add("Merit", (_merit = _canCarTrain.remove("Merit")).toCategoricalVec());
-    _canCarTrain.add("Class",(_class = _canCarTrain.remove("Class")).toCategoricalVec());
+    _canCarTrain.add("Merit", VecUtils.toCategoricalVec((_merit = _canCarTrain.remove("Merit"))));
+    _canCarTrain.add("Class",VecUtils.toCategoricalVec((_class = _canCarTrain.remove("Class"))));
 
     DKV.put(_canCarTrain._key, _canCarTrain);
     f = find_test_file_static("smalldata/glm_test/earinf.txt");

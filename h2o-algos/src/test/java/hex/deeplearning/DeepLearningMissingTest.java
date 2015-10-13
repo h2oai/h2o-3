@@ -12,6 +12,7 @@ import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.FrameUtils;
 import water.util.Log;
+import water.util.VecUtils;
 
 import java.util.*;
 
@@ -89,8 +90,8 @@ public class DeepLearningMissingTest extends TestUtil {
           // Convert response to categorical
           int ri = train.numCols()-1;
           int ci = test.find(p._response_column);
-          Scope.track(train.replace(ri, train.vecs()[ri].toCategoricalVec())._key);
-          Scope.track(test .replace(ci, test.vecs()[ci].toCategoricalVec())._key);
+          Scope.track(train.replace(ri, VecUtils.toCategoricalVec(train.vecs()[ri]))._key);
+          Scope.track(test .replace(ci, VecUtils.toCategoricalVec(test.vecs()[ci]))._key);
           DKV.put(train);
           DKV.put(test);
 
