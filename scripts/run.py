@@ -88,10 +88,8 @@ def is_rdemo(file_name):
     """
     Return True if file_name matches a regexp for a R demo.  False otherwise.
     """
-    demos = ["h2o.anomaly.R", "h2o.deeplearning.R", "h2o.gbm.R", "h2o.glm.R", "h2o.glrm.R", "h2o.kmeans.R",
-             "h2o.naiveBayes.R", "h2o.prcomp.R", "h2o.randomForest.R"]
-    for demo in demos:
-        if file_name == demo: return True
+    if (re.match(".*\.[rR]$", file_name)):
+        return True
 
     return False
 
@@ -558,7 +556,8 @@ class Test:
         """
         return -9999999
 
-    def __init__(self, test_dir, test_short_dir, test_name, output_dir, ipynb_runner_dir, hadoop_namenode, on_hadoop):
+    def __init__(self, test_dir, test_short_dir, test_name, output_dir, ipynb_runner_dir, hadoop_namenode, on_hadoop,
+                 r_demo):
         """
         Create a Test.
 
@@ -577,6 +576,7 @@ class Test:
         self.notebook_runner = os.path.join(ipynb_runner_dir, "notebook_runner.py")
         self.hadoop_namenode = hadoop_namenode
         self.on_hadoop = on_hadoop
+        self.r_demo = r_demo
 
         self.cancelled = False
         self.terminated = False
@@ -595,7 +595,6 @@ class Test:
         @param port: Port of cloud to run on.
         @return: none
         """
-        global g_r_demo
 
         if (self.cancelled or self.terminated):
             return
@@ -627,10 +626,19 @@ class Test:
                    self.ip + ":" + str(self.port)]
             if self.on_hadoop: cmd = cmd + ["--onHadoop"]
             if self.hadoop_namenode: cmd = cmd + ["--hadoopNamenode", self.hadoop_namenode]
-        elif (is_rdemo(self.test_name) and g_r_demo):
+        elif (self.r_demo):
+            global g_r_demo_runner
+            global g_output_dir
             cmd = ["R",
                    "-f",
-                   self.test_name]
+                   g_r_demo_runner,
+                   "--args",
+                   "--usecloud",
+                   self.ip + ":" + str(self.port),
+                   "--demo",
+                   self.test_name,
+                   "--resultsDir",
+                   g_output_dir]
         elif (is_javascript_test_file(self.test_name)):
             cmd = ["phantomjs",
                    self.test_name,
@@ -917,9 +925,6 @@ class TestRunner:
                 cloud = H2OUseCloud(node_num, c[0], c[1])
                 self.clouds.append(cloud)
                 node_num += 1
-        elif (r_demo):
-            cloud = H2OCloud(0, False, 1, h2o_jar, self.base_port, xmx, self.output_dir)
-            self.clouds.append(cloud)
         else:
             for i in range(self.num_clouds):
                 cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
@@ -1109,7 +1114,7 @@ class TestRunner:
         test_short_dir = self._calc_test_short_dir(test_path)
 
         test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.ipynb_runner_dir,
-                    self.hadoop_namenode, self.on_hadoop)
+                    self.hadoop_namenode, self.on_hadoop, self.r_demo)
         self.tests.append(test)
         self.tests_not_started.append(test)
 
@@ -1159,14 +1164,6 @@ class TestRunner:
             sys.exit(1)
 
         if self._have_some_r_tests() and self.r_pkg_ver_chk == True: self._r_pkg_ver_chk()
-
-        elif self._have_some_r_demos() and self.r_demo:
-            if self.path_to_tar is None:
-                print("")
-                print("ERROR: Must specify --tar when using --rDemo option.")
-                print("")
-                sys.exit(1)
-            self._install_h2o_r_pkg(self.path_to_tar)
 
         elif self.path_to_tar is not None: self._install_h2o_r_pkg(self.path_to_tar)
 
@@ -1472,17 +1469,6 @@ class TestRunner:
 
         return False
 
-    def _have_some_r_demos(self):
-        """
-        Do we have any R demos to run at all?
-        """
-        for test in self.tests:
-            test_name = test.get_test_name()
-            if (is_rdemo(test_name)):
-                return True
-
-        return False
-
     def _have_some_py_tests(self):
         """
         dumb check for pyunits
@@ -1713,6 +1699,8 @@ g_phantomjs_packs = "examples"
 g_r_pkg_ver_chk = False
 g_on_hadoop = False
 g_hadoop_namenode = None
+g_r_demo_runner = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                "../h2o-r/scripts/h2o-rdemo.R"))
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -2146,7 +2134,7 @@ def main(argv):
 
     # Create runner object.
     # Just create one cloud if we're only running one test, even if the user specified more.
-    if ((g_test_to_run is not None) or g_r_demo):
+    if ((g_test_to_run is not None)):
         g_num_clouds = 1
 
     g_runner = TestRunner(test_root_dir,
