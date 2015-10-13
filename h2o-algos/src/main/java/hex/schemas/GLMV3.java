@@ -101,6 +101,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver", level = Level.expert)
     public double gradient_epsilon;
 
+    @API(help="likelihood divider in objective value computation, default is 1/nobs")
+    public double obj_reg;
+
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
     public GLMParameters.Link link;
 

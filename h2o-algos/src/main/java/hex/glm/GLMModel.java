@@ -101,6 +101,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _beta_epsilon = 1e-4;
     public double _objective_epsilon = 1e-4;
     public double _gradient_epsilon = 1e-4;
+    public double _obj_reg = -1;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
