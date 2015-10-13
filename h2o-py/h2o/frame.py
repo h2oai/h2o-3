@@ -372,7 +372,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self._eager()
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
-    res = self.as_data_frame(nrows=nrows,ncols=ncols,use_pandas=use_pandas)
+    res = self[:nrows,:ncols].as_data_frame(use_pandas=use_pandas)
     if show:
       self._do_show(res,use_pandas)
     else:
@@ -406,7 +406,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
     start_idx = self.nrow - nrows if rows is not None else 0
-    res = self.as_data_frame(skiprows=range(1,start_idx+1),ncols=ncols,use_pandas=use_pandas)
+    res = self[start_idx:self.nrow,:ncols].as_data_frame(use_pandas=use_pandas)
     if show:
       self._do_show(res,use_pandas)
     else:
@@ -687,13 +687,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
       else:
         print "num {} ...".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:]))
 
-  def as_data_frame(self, nrows=None, skiprows=None, ncols=None, use_pandas=True):
+  def as_data_frame(self, use_pandas=True):
     """
     Obtain the dataset as a python-local object (pandas frame if possible, list otherwise)
 
-    :param nrows: The number of rows for pandas to read. Default is None, which reads all rows.
-    :param skiprows: A list of rows to skip. Default is None, which skips no rows.
-    :param ncols: The number of columns for pandas to read. Default is None, which reads all columns.
     :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
     :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a
     pandas DataFrame) containing this H2OFrame instance's data.
@@ -703,11 +700,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     response = urllib2.urlopen(url)
     if h2o.can_use_pandas() and use_pandas:
       import pandas
-      df = pandas.read_csv(response,low_memory=False,nrows=nrows,skiprows=skiprows,usecols=None if ncols is None else range(ncols))
+      df = pandas.read_csv(response,low_memory=False)
       time_cols = []
       category_cols = []
       if self.types is not None:
-        for col_name in self.names[:ncols]:
+        for col_name in self.names:
           type = self.types[col_name]
           if type.lower() == 'time': time_cols.append(col_name)
           elif type.lower() == 'enum': category_cols.append(col_name)
@@ -727,8 +724,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
       return df
     else:
       cr = csv.reader(response)
-      rows = [[''] if row == [] else row[:ncols] for row in cr]
-      return [rows[0]] + rows[skiprows[-1]+1:] if skiprows else rows[:None if nrows is None else nrows+1]
+      return [[''] if row == [] else row for row in cr]
 
   # Find a named H2OVec and return the zero-based index for it.  Error if name is missing
   def _find_idx(self,name):
