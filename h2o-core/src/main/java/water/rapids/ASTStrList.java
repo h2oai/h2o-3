@@ -4,6 +4,7 @@ import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.VecUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,6 +72,7 @@ class ASTColNames extends ASTPrim {
     return new ValFrame(fr);
   }  
 }
+
 /** Convert to StringVec */
 class ASTAsCharacter extends ASTPrim {
   @Override
@@ -80,11 +82,18 @@ class ASTAsCharacter extends ASTPrim {
   public String str() { return "as.character"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
-    if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
-    Vec v0 = ary.anyVec();
-    Vec v1 = v0.isString() ? null : v0.toStringVec(); // toCategoricalVec() creates a new vec --> must be cleaned up!
-    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
-    return new ValFrame(fr);
+    Vec[] nvecs = new Vec[ary.numCols()];
+    Vec vv;
+    for(int c=0;c<nvecs.length;++c) {
+      vv = ary.vec(c);
+      try {
+        nvecs[c] = VecUtils.toStringVec(vv);
+      } catch (Exception e) {
+        VecUtils.deleteVecs(nvecs, c);
+        throw e;
+      }
+    }
+    return new ValFrame(new Frame(ary._names, nvecs));
   }
 }
 
@@ -96,11 +105,26 @@ class ASTAsFactor extends ASTPrim {
   @Override
   public String str() { return "as.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() != 1 ) throw new IllegalArgumentException("as.factor requires a single column");
-    Vec v0 = fr.anyVec();
-    if( !v0.isCategorical() ) v0 = v0.toCategoricalVec();
-    return new ValFrame(new Frame(fr._names, new Vec[]{v0}));
+    Frame ary = stk.track(asts[1].exec(env)).getFrame();
+    Vec[] nvecs = new Vec[ary.numCols()];
+
+    // Type check  - prescreen for correct types
+    for (Vec v : ary.vecs())
+      if (!(v.isCategorical() || v.isString()|| v.isNumeric()))
+        throw new IllegalArgumentException("asfactor() requires a string, categorical, or numeric column. "
+            +"Received "+ary.anyVec().get_type_str()
+            +". Please convert column to a string or categorical first.");
+    Vec vv;
+    for(int c=0;c<nvecs.length;++c) {
+      vv = ary.vec(c);
+      try {
+        nvecs[c] = VecUtils.toCategoricalVec(vv);
+      } catch (Exception e) {
+        VecUtils.deleteVecs(nvecs, c);
+        throw e;
+      }
+    }
+    return new ValFrame(new Frame(ary._names, nvecs));
   }
 }
 
@@ -117,9 +141,12 @@ class ASTAsNumeric extends ASTPrim {
     Vec vv;
     for(int c=0;c<nvecs.length;++c) {
       vv = fr.vec(c);
-      if( vv.isCategorical() ) nvecs[c] = vv.toIntVec();
-      else if( vv.isString() ) nvecs[c] = vv.toNumeric();
-      else                     nvecs[c] = vv.makeCopy();
+      try {
+        nvecs[c] = VecUtils.toNumericVec(vv);
+      } catch (Exception e) {
+        VecUtils.deleteVecs(nvecs, c);
+        throw e;
+      }
     }
     return new ValFrame(new Frame(fr._names, nvecs));
   }
@@ -197,5 +224,3 @@ class ASTAnyFactor extends ASTPrim {
     return new ValStr(res);
   }
 }
-
-

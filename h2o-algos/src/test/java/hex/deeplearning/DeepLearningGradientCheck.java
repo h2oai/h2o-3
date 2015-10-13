@@ -12,6 +12,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.VecUtils;
 import water.util.PrettyPrint;
 
 import java.util.Random;
@@ -32,7 +33,7 @@ public class DeepLearningGradientCheck extends TestUtil {
       for (String s : new String[]{
               "Merit", "Class"
       }) {
-        Vec f = tfr.vec(s).toCategoricalVec();
+        Vec f = VecUtils.toCategoricalVec(tfr.vec(s));
         tfr.remove(s).remove();
         tfr.add(s, f);
       }
