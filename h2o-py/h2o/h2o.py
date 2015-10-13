@@ -665,7 +665,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   port : int
     A port, default is 54321
   size : int
-    THe expected number of h2o instances (ignored if start_h2o is True)
+    The expected number of h2o instances (ignored if start_h2o is True)
   start_h2o : bool
     A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
   enable_assertions : bool
