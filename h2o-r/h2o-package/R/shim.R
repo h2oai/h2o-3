@@ -592,7 +592,7 @@ h2o.shim <- function(enable = TRUE) {
       if(!missing(stat.type))
         paramsIn$stat.type <- stat.type
       if(missing(type) || identical(type,"fast")){
-        stop("SpeedRF is no longer a supported model type.", call. = F)
+        stop("SpeedRF is no longer a supported model type.", call. = FALSE)
       }
       paramsDev <- .dep.params(paramsIn, .drf.dep.map, .drf.unsp.map)
       paramsDev <- append(paramsDev, list(...))

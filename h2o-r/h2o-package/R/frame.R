@@ -532,7 +532,7 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #'   max(abs(df1-df2))
 #' }
 #' @export
-h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
+h2o.dct <- function(data, destination_frame, dimensions, inverse=FALSE) {
   if(!is.logical(inverse)) stop("inverse must be a boolean value")
   params <- list()
   params$dataset <- attr(.eval.frame(chk.Frame(data)), "id")
@@ -2235,7 +2235,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 #' # Add function taking mean of sepal_len column
-#' fun = function(df) { sum(df[,1], na.rm = T)/nrow(df) }
+#' fun = function(df) { sum(df[,1], na.rm = TRUE)/nrow(df) }
 #' # Apply function to groups by class of flower
 #' # uses h2o's ddply, since iris.hex is a Frame object
 #' res = h2o.ddply(iris.hex, "class", fun)
