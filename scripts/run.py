@@ -88,6 +88,9 @@ def is_rdemo(file_name):
     """
     Return True if file_name matches a regexp for a R demo.  False otherwise.
     """
+    if not g_r_demo:
+        return False
+
     if (re.match(".*\.[rR]$", file_name)):
         return True
 
@@ -1691,7 +1694,7 @@ g_nointernal = False
 g_convenient = False
 g_path_to_h2o_jar = None
 g_path_to_tar = None
-g_r_demo = None
+g_r_demo = False
 g_path_to_whl = None
 g_produce_unit_reports = True
 g_phantomjs_to = 3600
