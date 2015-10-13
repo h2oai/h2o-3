@@ -2,6 +2,12 @@
 
 ##H2O
 
+###Slater (3.2.0.8) - 12/09/15
+
+####Test environment
+
+Several tests were fixed to match changes in test environment and inputs.
+
 ###Slater (3.2.0.7) - 10/09/15
 
 ####Bug Fixes
