@@ -81,6 +81,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
 
   private int keycmp(byte x[][], long xi, byte y[][], long yi) {   // TO DO - faster way closer to CPU like batches of long compare, maybe.
+    byte xByte=0, yByte=0;
     xi *= _leftKeySize;
     yi *= _rightKeySize;   // x[] and y[] are len keys.
     // TO DO: rationalize x and y being chunked into 2GB pieces.  Take x[0][] and y[0][] outside loop / function
@@ -91,14 +92,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       xlen = _leftFieldSizes[i];
       ylen = _rightFieldSizes[i];
       if (xlen!=ylen) {
-        while (xlen > ylen && x[0][(int)xi] == 0) { xi++; xlen--; }
-        while (ylen > xlen && y[0][(int)yi] == 0) { yi++; ylen--; }
-        if (xlen != ylen) return (xlen - ylen);
+        while (xlen>ylen && x[0][(int)xi]==0) { xi++; xlen--; }
+        while (ylen>xlen && y[0][(int)yi]==0) { yi++; ylen--; }
+        if (xlen!=ylen) return (xlen - ylen);
       }
-      while (xlen > 0 && (diff = x[0][(int)xi] - y[0][(int)yi])==0) { xi++; yi++; xlen--; }
+      while (xlen>0 && (xByte=x[0][(int)xi])==(yByte=y[0][(int)yi])) { xi++; yi++; xlen--; }
       i++;
     }
-    return diff;
+    return (xByte & 0xFF) - (yByte & 0xFF);
     // Same return value as strcmp in C. <0 => xi<yi
   }
 
