@@ -25,10 +25,13 @@ class H2OKMeansEstimator(H2OEstimator):
         Indicates whether the data should be standardized before running k-means.
       init : str
         A character string that selects the initial set of k cluster centers. Possible
-        values are "Random": for random initialization,
-        "PlusPlus": for k-means plus initialization,
-        or "Furthest": for initialization at the furthest point from each successive
-        center. Additionally, the user may specify a the initial centers as a matrix,
+        values are
+            "Random": for random initialization,
+            "PlusPlus": for k-means plus initialization, or
+            "Furthest": for initialization at the furthest point from each successive
+                        center.
+
+        Additionally, the user may specify a the initial centers as a matrix,
         data.frame, H2OFrame, or list of vectors. For matrices, data.frames,
         and H2OFrames, each row of the respective structure is an initial center. For
         lists of vectors, each vector is an initial center.

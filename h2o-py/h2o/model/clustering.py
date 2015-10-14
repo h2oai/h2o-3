@@ -1,11 +1,10 @@
-"""
-Clustering Models
-"""
-
-from metrics_base import *
+from ..estimators.estimator_base import H2OEstimator
 
 
-class H2OClusteringModel(object):
+class H2OClusteringModel(H2OEstimator):
+
+  def _make_model(self):
+    return H2OClusteringModel()
 
   def size(self, train=False, valid=False, xval=False):
     """
@@ -28,7 +27,7 @@ class H2OClusteringModel(object):
     -------
       Returns the cluster sizes for the specified key(s).
     """
-    tm = ModelBase._get_metrics(self, train, valid, xval)
+    tm = H2OEstimator._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else [ v[2] for v in  v._metric_json["centroid_stats"].cell_values]
     return m.values()[0] if len(m) == 1 else m
@@ -68,7 +67,7 @@ class H2OClusteringModel(object):
     -------
       Returns the between sum of squares values for the specified key(s).
     """
-    tm = ModelBase._get_metrics(self, train, valid, xval)
+    tm = H2OEstimator._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v._metric_json["betweenss"]
     return m.values()[0] if len(m) == 1 else m
@@ -97,7 +96,7 @@ class H2OClusteringModel(object):
     -------
       Returns the total sum of squares values for the specified key(s).
     """
-    tm = ModelBase._get_metrics(self, train, valid, xval)
+    tm = H2OEstimator._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v._metric_json["totss"]
     return m.values()[0] if len(m) == 1 else m
@@ -126,7 +125,7 @@ class H2OClusteringModel(object):
     -------
       Returns the total within cluster sum of squares values for the specified key(s).
     """
-    tm = ModelBase._get_metrics(self, train, valid, xval)
+    tm = H2OEstimator._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v._metric_json["tot_withinss"]
     return m.values()[0] if len(m) == 1 else m
@@ -155,9 +154,9 @@ class H2OClusteringModel(object):
     -------
       Returns the total sum of squares values for the specified key(s).
     """
-    tm = ModelBase._get_metrics(self, train, valid, xval)
+    tm = H2OEstimator._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else [ z[-1] for z in  v._metric_json["centroid_stats"].cell_values]
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else [ z[-1] for z in v._metric_json["centroid_stats"].cell_values]
     return m.values()[0] if len(m) == 1 else m
 
   def centroid_stats(self, train=False, valid=False, xval=False):
@@ -182,7 +181,7 @@ class H2OClusteringModel(object):
     -------
       Returns the centroid statistics for the specified key(s).
     """
-    tm = ModelBase._get_metrics(self, train, valid, xval)
+    tm = H2OEstimator._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v._metric_json["centroid_stats"]
     return m.values()[0] if len(m) == 1 else m

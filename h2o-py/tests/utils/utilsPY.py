@@ -6,7 +6,13 @@ from subprocess import STDOUT,PIPE
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
-from h2o import H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, H2OClusteringModel, H2OFrame, H2OConnection
+from h2o import H2OFrame, H2OConnection
+from h2o.model.autoencoder import H2OAutoEncoderModel
+from h2o.model.binomial import H2OBinomialModel
+from h2o.model.clustering import H2OClusteringModel
+from h2o.model.dim_reduction import H2ODimReductionModel
+from h2o.model.multinomial import H2OMultinomialModel
+from h2o.model.regression import H2ORegressionModel
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
     """

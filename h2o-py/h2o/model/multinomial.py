@@ -1,13 +1,12 @@
-"""
-Multinomial Models
-"""
-
 from . import H2OFrame
 from . import H2OConnection
-from metrics_base import *
+from ..estimators.estimator_base import H2OEstimator
 
 
-class H2OMultinomialModel(object):
+class H2OMultinomialModel(H2OEstimator):
+
+  def _make_model(self):
+    return H2OMultinomialModel()
 
   def confusion_matrix(self, data):
     """
@@ -31,7 +30,7 @@ class H2OMultinomialModel(object):
     :param xval:  If xval is True, then return the R^2 value for the cross validation data.
     :return: The R^2 for this regression model.
     """
-    tm = ModelBase._get_metrics(self, train, valid, xval)
+    tm = H2OEstimator._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.hit_ratio_table()
     return m.values()[0] if len(m) == 1 else m

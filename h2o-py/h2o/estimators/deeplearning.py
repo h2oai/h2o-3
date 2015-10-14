@@ -122,7 +122,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
     max_confusion_matrix_size : int
       Max. size (number of classes) for confusion matrices to be shown
     max_hit_ratio_k : float
-      Max number (top K) of predictions to use for hit ratio computation(for multi-class only, 0 to disable)
+      Max number (top K) of predictions to use for hit ratio computation
+      (for multi-class only, 0 to disable)
     balance_classes : bool
       Balance training data class counts via over/under-sampling (for imbalanced data)
     class_sampling_factors : list
@@ -169,9 +170,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
     export_weights_and_biases : bool
       Whether to export Neural Network weights and biases to H2O Frames"
     nfolds : int, optional
-      Number of folds for cross-validation. If nfolds >= 2, then validation must remain empty.
+      Number of folds for cross-validation. If nfolds >= 2, then validation must remain
+      empty.
     fold_assignment : str
-      Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
+      Cross-validation fold assignment scheme, if fold_column is not specified
+      Must be "AUTO", "Random" or "Modulo"
     keep_cross_validation_predictions : bool
       Whether to keep the predictions of the cross-validation models
 

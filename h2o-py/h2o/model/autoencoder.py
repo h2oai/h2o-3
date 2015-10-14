@@ -1,16 +1,13 @@
-"""AutoEncoder Models"""
+from ..estimators.estimator_base import H2OEstimator
+from model_base import H2OConnection
+from h2o import get_frame
 
-from model_base import H2OConnection, h2o
 
-
-class H2OAutoEncoderModel(object):
-  """
-  Class for AutoEncoder models.
-  """
+class H2OAutoEncoderModel(H2OEstimator):
+  """Class for AutoEncoder models."""
 
   def anomaly(self,test_data,per_feature=False):
-    """
-    Obtain the reconstruction error for the input test_data.
+    """Obtain the reconstruction error for the input test_data.
 
     Parameters
     ----------
@@ -26,4 +23,7 @@ class H2OAutoEncoderModel(object):
     """
     if not test_data: raise ValueError("Must specify test data")
     j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, reconstruction_error=True, reconstruction_error_per_feature=per_feature)
-    return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
+    return get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
+
+  def _make_model(self):
+    return H2OAutoEncoderModel()

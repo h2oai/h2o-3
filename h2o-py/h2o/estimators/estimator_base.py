@@ -1,11 +1,6 @@
-from ..model.metrics_base import *
 from ..model.model_base import ModelBase
+from ..model.metrics_base import *
 from ..h2o import H2OConnection, H2OJob, H2OFrame
-from ..model.binomial import H2OBinomialModel
-from ..model.multinomial import H2OMultinomialModel
-from ..model.regression import H2ORegressionModel
-from ..model.autoencoder import H2OAutoEncoderModel
-from ..model.clustering import H2OClusteringModel
 import inspect
 import warnings
 
@@ -15,7 +10,7 @@ class EstimatorAttributeError(AttributeError):
     super(AttributeError, self).__init__("No {} method for {}".format(method,obj.__class__.__name__))
 
 
-class H2OEstimator(ModelBase,H2OBinomialModel,H2OMultinomialModel,H2ORegressionModel,H2OClusteringModel,H2OAutoEncoderModel):
+class H2OEstimator(ModelBase):
   """H2O Estimators
 
   H2O Estimators implement the following methods for model construction:
@@ -91,35 +86,29 @@ class H2OEstimator(ModelBase,H2OBinomialModel,H2OMultinomialModel,H2ORegressionM
     self._resolve_model(model.dest_key,model_json)
 
   def _resolve_model(self, model_id, model_json):
-    model_type = model_json["output"]["model_category"]
-    if model_type=="Binomial":       metrics_class = H2OBinomialModelMetrics
-    elif model_type=="Clustering":   metrics_class = H2OClusteringModelMetrics
-    elif model_type=="Regression":   metrics_class = H2ORegressionModelMetrics
-    elif model_type=="Multinomial":  metrics_class = H2OMultinomialModelMetrics
-    elif model_type=="AutoEncoder":  metrics_class = H2OAutoEncoderModelMetrics
-    elif model_type=="DimReduction": metrics_class = H2ODimReductionModelMetrics
-    else: raise NotImplementedError(model_type)
-    self._make_model(model_id,model_json,metrics_class)
+    metrics_class = H2OEstimator._metrics_class(model_json)
+    m = self._make_model()
+    m._id = model_id
+    m._model_json = model_json
+    m._metrics_class = metrics_class
 
-  def _make_model(self, key, model_json, metrics_class):
-    self._id = key
-    self._model_json = model_json
-    self._metrics_class = metrics_class
-
-    if key is not None and model_json is not None and metrics_class is not None:
+    if model_id is not None and model_json is not None and metrics_class is not None:
       # build Metric objects out of each metrics
       for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
         if metric in model_json["output"]:
           if model_json["output"][metric] is not None:
             if metric=="cross_validation_metrics":
-              self._is_xvalidated=True
+              m._is_xvalidated=True
             model_json["output"][metric] = metrics_class(model_json["output"][metric],metric,model_json["algo"])
 
-      if self._is_xvalidated: self._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
+      if m._is_xvalidated: m._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
       # build a useful dict of the params
-      for p in self._model_json["parameters"]: self.parms[p["label"]]=p
+      for p in m._model_json["parameters"]: m.parms[p["label"]]=p
+    self.__dict__ = m.__dict__.copy()
 
+  def _make_model(self):
+    H2OEstimator._make_model(self)
 
   ##### Scikit-learn Interface Methods #####
   def fit(self, X, y=None, **params):
@@ -191,3 +180,15 @@ class H2OEstimator(ModelBase,H2OBinomialModel,H2OMultinomialModel,H2ORegressionM
     """
     self.parms.update(parms)
     return self
+
+  @staticmethod
+  def _metrics_class(model_json):
+    model_type = model_json["output"]["model_category"]
+    if model_type=="Binomial":       metrics_class = H2OBinomialModelMetrics
+    elif model_type=="Clustering":   metrics_class = H2OClusteringModelMetrics
+    elif model_type=="Regression":   metrics_class = H2ORegressionModelMetrics
+    elif model_type=="Multinomial":  metrics_class = H2OMultinomialModelMetrics
+    elif model_type=="AutoEncoder":  metrics_class = H2OAutoEncoderModelMetrics
+    elif model_type=="DimReduction": metrics_class = H2ODimReductionModelMetrics
+    else: raise NotImplementedError(model_type)
+    return metrics_class

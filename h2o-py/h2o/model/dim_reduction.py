@@ -3,10 +3,14 @@ DimReduction Models
 """
 
 from metrics_base import *
+from ..estimators.estimator_base import H2OEstimator
 
 
-class H2ODimReductionModel(object):
-    
+class H2ODimReductionModel(H2OEstimator):
+
+    def _make_model(self):
+      return H2ODimReductionModel()
+
     def num_iterations(self):
       """
       Get the number of iterations that it took to converge or reach max iterations.
