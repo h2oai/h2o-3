@@ -57,7 +57,8 @@ function(args) {
 
 removeH2OInit<-
 function() {
-    hackedDemo <- normalizePath(paste(RESULTS.DIR, .Platform$file.sep, DEMO, sep = ""))
+    options(warn=-1)
+    hackedDemo <- paste(RESULTS.DIR, .Platform$file.sep, DEMO, sep = "")
     lines <- readLines(DEMO)
     lines <- lines[-which(sapply(lines, function(l) grepl("^h2o.init",l)))]
     writeLines(lines, hackedDemo)

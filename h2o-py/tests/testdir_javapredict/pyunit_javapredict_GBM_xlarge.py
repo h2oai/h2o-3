@@ -8,7 +8,7 @@ def javapredict_gbm_xlarge():
     hdfs_file_name = "/datasets/z_repro.csv.gz"
     url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_file_name)
 
-    params = {'ntrees':22, 'max_depth':37, 'min_rows':1, 'sample_rate':0.1} # MB pojo
+    params = {'ntrees':22, 'max_depth':37, 'min_rows':1, 'sample_rate':0.1} # 651MB pojo
     print "Parameter list:"
     for k,v in zip(params.keys(), params.values()): print "{0}, {1}".format(k,v)
 
