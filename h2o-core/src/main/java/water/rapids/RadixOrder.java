@@ -27,8 +27,8 @@ class RadixCount extends MRTask<RadixCount> {
 
   // make a unique deterministic key as a function of frame, column and node
   // make it homed to the owning node
-  static Key getKey(Key frKey, int col, H2ONode node) {
-    return Key.make("MSBcounts_" + frKey.toString() + "_col" + col + "_node" + node, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
+  static Key getKey(Key frameKey, int col, H2ONode node) {
+    return Key.make(frameKey + "_MSBcounts_" + "_col_" + col + "_node_" + node, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
     // TO DO: need the biggestBit in here too, that the MSB is offset from
   }
 
@@ -111,6 +111,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
     for (int h = 0; h < 256; h++) {
       long rollSum = 0;  // each of the 256 columns starts at 0 for the 0th chunk. This 0 offsets into x[MSBvalue][batch div][mod] and o[MSBvalue][batch div][mod]
       for (int c = 0; c < nc; c++) {
+        if (_counts[c] == null) continue;
         long tmp = _counts[c][h];
         _counts[c][h] = rollSum; //Warning: modify the POJO DKV cache, but that's fine since this node won't ask for the original DKV.get() version again
         rollSum += tmp;
@@ -121,6 +122,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
 
   @Override public void map(Chunk chk[]) {
     long myCounts[] = _counts[chk[0].cidx()]; //cumulative offsets into o and x
+    if (myCounts == null || _o==null || _x==null) return;
 
     //int leftAlign = (8-(_biggestBit % 8)) % 8;   // only the first column is left aligned, currently. But they all could be for better splitting.
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
@@ -176,18 +178,24 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
 
   // Push o/x in chunks to owning nodes
   @Override protected void postLocal() {
+    if (_counts[0] == null) return;
     int nc = _fr.anyVec().nChunks();
     for (int msb =0; msb <_o.length /*256*/; ++msb) {
       if(_o[msb] == null) continue;
       int numChunks = 0;  // how many of the chunks on this node had some rows with this MSB
-      for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) numChunks++;
+      for (int c=0; c<nc; c++) {
+        if (_counts[c] != null && _counts[c][msb] > 0)
+          numChunks++;
+      }
       int MSBnodeChunkCounts[] = new int[numChunks];   // make dense.  And by construction (i.e. cumulative counts) these chunks contributed in order
       int j=0;
       long lastCount = 0; // _counts are cumulative at this stage so need to undo
-      for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) {
-        MSBnodeChunkCounts[j] = (int)(_counts[c][msb] - lastCount);  // _counts is long so it can be accumulated in-place I think.  TO DO: check
-        lastCount = _counts[c][msb];
-        j++;
+      for (int c=0; c<nc; c++) {
+        if (_counts[c] != null && _counts[c][msb] > 0) {
+          MSBnodeChunkCounts[j] = (int)(_counts[c][msb] - lastCount);  // _counts is long so it can be accumulated in-place I think.  TO DO: check
+          lastCount = _counts[c][msb];
+          j++;
+        }
       }
       assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
       MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
@@ -278,6 +286,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
     for (int c=0; c<fr.anyVec().nChunks(); c++) {   // TO DO: put this into class as well, to ArrayCopy into batched
       int fromNode = fr.anyVec().chunkKey(c).home_node().index();
+      if (MSBnodeHeader[fromNode] == null) continue;
       int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[oxChunkIdx[fromNode]++];
       int sourceBatchRemaining = batchSize - oxOffset[fromNode];    // at most batchSize remaining.  No need to actually put the number of rows left in here
       if (sourceBatchRemaining <= numRowsToCopy) {

@@ -14,11 +14,10 @@ import javax.management.Query;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-//import java.util.Arrays;
 
 
 public class MungingTest extends TestUtil {
-    @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+    @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
     private void copyStream(OutputStream os, InputStream is, final int buffer_size) {
         try {
             byte[] bytes=new byte[buffer_size];
@@ -45,10 +44,10 @@ public class MungingTest extends TestUtil {
     @Test public void run3() throws Exception {
       System.out.println("Running run3 ...");
 
-      NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1_subset.csv"));
+      NFSFileVec nfs = NFSFileVec.make(find_test_file("/Users/arno/devtestdata/step1_subset.csv"));
       Frame leftFrame = ParseDataset.parse(Key.make(), nfs._key);
 
-      nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/fullsize.csv"));
+      nfs = NFSFileVec.make(find_test_file("/Users/arno/devtestdata/fullsize.csv"));
       Frame rightFrame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
 
       System.out.println("Loaded two files, now calling order ...");
