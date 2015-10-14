@@ -48,7 +48,9 @@ public class Merge {
         H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
         H2ONode rightNode = MoveByFirstByte.ownerOfMSB(rightMSB);
         BinaryMerge bm = new RPC<>(rightNode,
-                new BinaryMerge(leftMSB, rightMSB, leftNode.index(),
+                new BinaryMerge(leftFrame, rightFrame,
+                        leftMSB, rightMSB,
+                        leftNode.index(), //convention - right frame is local, but left frame is potentially remote
                         leftIndex._bytesUsed,   // field sizes for each column in the key
                         rightIndex._bytesUsed
                 )

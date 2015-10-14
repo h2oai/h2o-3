@@ -5,6 +5,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.util.Log;
 //import water.persist.PersistManager;
 //import water.util.Log;
 //import water.rapids.ASTGroupBy.*;

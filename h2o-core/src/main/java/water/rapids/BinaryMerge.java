@@ -3,28 +3,58 @@ package water.rapids;
 // Since we have a single key field in H2O (different to data.table), bmerge() becomes a lot simpler (no
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
 
+import water.DKV;
 import water.DTask;
+import water.H2O;
+import water.fvec.Frame;
+import static water.rapids.SingleThreadRadixOrder.getMSBHeaderKey;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 public class BinaryMerge extends DTask<BinaryMerge> {
   long _retFirst[];  // The row number of the first right table's index key that matches
   long _retLen[];    // How many rows does it match to?
   byte _leftKey[/*n2GB*/][/*i mod 2GB * _keySize*/];
   byte _rightKey[][];
+  long _leftOrder[/*n2GB*/][/*i mod 2GB * _keySize*/];
+  long _rightOrder[][];
   boolean _allLen1 = true;
   int _leftFieldSizes[], _rightFieldSizes[];  // the widths of each column in the key
   int _leftKeyNCol, _rightKeyNCol;  // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
   int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
   int _numJoinCols;
   int _leftNodeIdx;
+  long _leftN, _rightN;
+  long _leftBatchSize, _rightBatchSize;
 
-  BinaryMerge(int leftMSB, int rightMSB, int leftNodeIdx, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
-    _leftKey =   _o MSB on leftNodeIdx;
-    _rightKey = _x MSB on this node;
+  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftNodeIdx, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
+    SingleThreadRadixOrder.MSBHeader leftMSBHeader = DKV.getGet(getMSBHeaderKey(leftFrame, leftMSB));
+    SingleThreadRadixOrder.MSBHeader rightMSBHeader = DKV.getGet(getMSBHeaderKey(rightFrame, rightMSB));
+    if (leftMSBHeader == null || rightMSBHeader == null) return;
+    _leftBatchSize = leftMSBHeader._batchSize;
+    _rightBatchSize = rightMSBHeader._batchSize;
 
+    // get left batches
+    _leftKey = new byte[leftMSBHeader._nBatch][];
+    _leftOrder = new long[leftMSBHeader._nBatch][];
+    for (int b=0;b<leftMSBHeader._nBatch; ++b) {
+      MoveByFirstByte.OXWrapper leftOXPair = DKV.getGet(MoveByFirstByte.getIndexKeyForMSB(leftMSB, b, leftNodeIdx));
+      _leftKey[b] = leftOXPair._x;
+      _leftOrder[b] = leftOXPair._o;
+    }
+    _leftN = leftMSBHeader._numRows;
+    // get right batches
+    _rightKey = new byte[rightMSBHeader._nBatch][];
+    _rightOrder = new long[rightMSBHeader._nBatch][];
+    for (int b=0;b<rightMSBHeader._nBatch; ++b) {
+      MoveByFirstByte.OXWrapper rightOXPair = DKV.getGet(MoveByFirstByte.getIndexKeyForMSB(rightMSB, b, H2O.SELF.index()));
+      _rightKey[b] = rightOXPair._x;
+      _rightOrder[b] = rightOXPair._o;
+    }
+    _rightN = rightMSBHeader._numRows;
 
-//    _retFirst = new long[(int)leftN];    // TO DO: batch to allow more
-//    _retLen = new long[(int)leftN];
+    _retFirst = new long[(int)_leftN];
+    _retLen = new long[(int)_leftN];
     _leftNodeIdx = leftNodeIdx;
     _leftFieldSizes = leftFieldSizes;
     _rightFieldSizes = rightFieldSizes;
@@ -33,17 +63,16 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _leftKeySize = ArrayUtils.sum(leftFieldSizes);
     _rightKeySize = ArrayUtils.sum(rightFieldSizes);
     _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
-    _leftN =  MSBnode
   }
 
   @Override
   protected void compute2() {
-    int leftN, rightN;
+    if (_leftN != 0 && _rightN != 0) {
+      // do the work
+      bmerge_r(-1, _leftN, -1, _rightN);
 
-    // do the work
-    bmerge_r(-1, leftN, -1, rightN);
-
-    //put stuff into DKV
+      //put stuff into DKV
+    }
 
     //null out members before returning to calling node
     tryComplete();
@@ -123,6 +152,15 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
         _retFirst[(int) j] = rLow + 1;
         _retLen[(int) j] = len;
+        StringBuilder sb = new StringBuilder();
+        sb.append("Found : " + _retLen[(int)j] + " matches: ");
+
+        long a = _retFirst[(int) j];
+        for (int i=0; i<_retLen[(int)j]; ++i) {
+          long loc = a+i;
+          sb.append(_rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)] + " ");
+        }
+        Log.info(sb);
       }
     }
     // TO DO: check assumption that retFirst and retLength are initialized to 0, for case of no match
