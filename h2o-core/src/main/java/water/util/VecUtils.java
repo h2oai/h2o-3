@@ -18,13 +18,13 @@ import water.parser.Categorical;
 
 public class VecUtils {
   /**
-   * Create a new vector of categorical values from an existing vector.
+   * Create a new {@link Vec} of categorical values from an existing {@link Vec}.
    *
-   * This method accepts all vector types as input. The original Vec is not mutated.
+   * This method accepts all {@link Vec} types as input. The original Vec is not mutated.
    *
-   * If src is a categorical vector, a copy is returned.
+   * If src is a categorical {@link Vec}, a copy is returned.
    *
-   * If src is a numeric vector, the values are converted to strings used as domain
+   * If src is a numeric {@link Vec}, the values are converted to strings used as domain
    * values.
    *
    * For all other types, an exception is currently thrown. These need to be replaced
@@ -33,7 +33,7 @@ public class VecUtils {
    * Throws H2OIllegalArgumentException() if the resulting domain exceeds
    * Categorical.MAX_CATEGORICAL_COUNT.
    *
-   *  @param src A vector whose values will be used as the basis for a new categorical vec
+   *  @param src A {@link Vec} whose values will be used as the basis for a new categorical {@link Vec}
    *  @return the resulting categorical Vec
    */
   public static Vec toCategoricalVec(Vec src) {
@@ -59,12 +59,12 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of categorical values from string vector.
+   * Create a new {@link Vec} of categorical values from string {@link Vec}.
    *
    * To be finished, PUBDEV-2204
    *
-   * @param src a string vector
-   * @return a categorical vector
+   * @param src a string {@link Vec}
+   * @return a categorical {@link Vec}
    */
   public static Vec stringToCategorical(Vec src) {
     Vec res = null;
@@ -72,14 +72,14 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of categorical values from a numeric vector.
+   * Create a new {@link Vec} of categorical values from a numeric {@link Vec}.
    *
-   * This currently only ingests a vector of integers.
+   * This currently only ingests a {@link Vec} of integers.
    *
    * Handling reals is PUBDEV-2207
    *
-   * @param src a numeric vector
-   * @return a categorical vector
+   * @param src a numeric {@link Vec}
+   * @return a categorical {@link Vec}
    */
   public static Vec numericToCategorical(Vec src) {
     if (src.isInt()) {
@@ -93,26 +93,26 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of numeric values from an existing vector.
+   * Create a new {@link Vec} of numeric values from an existing {@link Vec}.
    *
-   * This method accepts all vector types as input. The original Vec is not mutated.
+   * This method accepts all {@link Vec} types as input. The original Vec is not mutated.
    *
-   * If src is a categorical vector, a copy is returned.
+   * If src is a categorical {@link Vec}, a copy is returned.
    *
-   * If src is a string vector, all values that can be are parsed into reals or integers, and all
+   * If src is a string {@link Vec}, all values that can be are parsed into reals or integers, and all
    * others become NA. See stringToNumeric for parsing details.
    *
-   * If src is a numeric vector, a copy is made.
+   * If src is a numeric {@link Vec}, a copy is made.
    *
-   * If src is a time vector, the milliseconds since the epoch are used to populate the new Vec.
+   * If src is a time {@link Vec}, the milliseconds since the epoch are used to populate the new Vec.
    *
-   * If src is a UUID vector, the existing numeric storage is used to populate the new Vec.
+   * If src is a UUID {@link Vec}, the existing numeric storage is used to populate the new Vec.
    *
    * Throws H2OIllegalArgumentException() if the resulting domain exceeds
    * Categorical.MAX_CATEGORICAL_COUNT.
    *
-   *  @param src A vector whose values will be used as the basis for a new numeric vec
-   *  @return the resulting numeric Vec
+   *  @param src A {@link Vec} whose values will be used as the basis for a new numeric {@link Vec}
+   *  @return the resulting numeric {@link Vec}
    */
   public static Vec toNumericVec(Vec src) {
     switch (src.get_type()) {
@@ -131,15 +131,15 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of numeric values from a string vector. Any rows that cannot be
+   * Create a new {@link Vec} of numeric values from a string {@link Vec}. Any rows that cannot be
    * converted to a number are set to NA.
    *
    * Currently only does basic numeric formats. No exponents, or hex values. Doesn't
    * even like commas or spaces.  :( Needs love. Handling more numeric
    * representations is PUBDEV-2209
    *
-   * @param src a string vector
-   * @return a numeric vector
+   * @param src a string {@link Vec}
+   * @return a numeric {@link Vec}
    */
   public static Vec stringToNumeric(Vec src) {
     if(!src.isString()) throw new H2OIllegalArgumentException("stringToNumeric conversion only works on string columns");
@@ -173,7 +173,7 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of numeric values from a categorical vector.
+   * Create a new {@link Vec} of numeric values from a categorical {@link Vec}.
    *
    * If the first value in the domain of the src Vec is a stringified ints,
    * then it will use those ints. Otherwise, it will use the raw enumeration level mapping.
@@ -186,8 +186,8 @@ public class VecUtils {
    * maps. If the user wants domains to be used, call categoricalDomainsToNumeric().
    * PUBDEV-2209
    *
-   * @param src a categorical vector
-   * @return a numeric vector
+   * @param src a categorical {@link Vec}
+   * @return a numeric {@link Vec}
    */
   public static Vec categoricalToInt(final Vec src) {
     if( src.isInt() && src.domain()==null ) return copyOver(src, Vec.T_NUM, null);
@@ -214,20 +214,20 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of string values from an existing vector.
+   * Create a new {@link Vec} of string values from an existing {@link Vec}.
    *
-   * This method accepts all vector types as input. The original Vec is not mutated.
+   * This method accepts all {@link Vec} types as input. The original Vec is not mutated.
    *
-   * If src is a string vector, a copy of the vector is made.
+   * If src is a string {@link Vec}, a copy of the {@link Vec} is made.
    *
-   * If src is a categorical vector, levels are dropped, and the vector only records the string.
+   * If src is a categorical {@link Vec}, levels are dropped, and the {@link Vec} only records the string.
    *
-   * For all numeric vectors, the number is converted to a string.
+   * For all numeric {@link Vec}s, the number is converted to a string.
    *
-   * For all UUID vectors, the hex representation is stored as a string.
+   * For all UUID {@link Vec}s, the hex representation is stored as a string.
    *
-   *  @param src A vector whose values will be used as the basis for a new string Vec
-   *  @return the resulting string Vec
+   *  @param src A {@link Vec} whose values will be used as the basis for a new string {@link Vec}
+   *  @return the resulting string {@link Vec}
    */
   public static Vec toStringVec(Vec src) {
     switch (src.get_type()) {
@@ -247,13 +247,13 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of string values from a categorical vector.
+   * Create a new {@link Vec} of string values from a categorical {@link Vec}.
    *
    * Transformation is done by a {@link Categorical2StrChkTask} which provides a mapping
    *  between values - without copying the underlying data.
    *
-   * @param src a categorical vector
-   * @return a string vector
+   * @param src a categorical {@link Vec}
+   * @return a string {@link Vec}
    */
   public static Vec categoricalToStringVec(Vec src) {
     if( !src.isCategorical() )
@@ -275,13 +275,13 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of string values from a numeric vector.
+   * Create a new {@link Vec} of string values from a numeric {@link Vec}.
    *
    * Currently only uses a default pretty printer. Would be better if
    * it accepted a format string PUBDEV-2211
    *
-   * @param src a numeric vector
-   * @return a string vector
+   * @param src a numeric {@link Vec}
+   * @return a string {@link Vec}
    */
   public static Vec numericToStringVec(Vec src) {
     if (src.isCategorical() || src.isUUID())
@@ -308,12 +308,12 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of string values from a UUID vector.
+   * Create a new {@link Vec} of string values from a UUID {@link Vec}.
    *
-   * String vector is the standard hexadecimal representations of a UUID.
+   * String {@link Vec} is the standard hexadecimal representations of a UUID.
    *
-   * @param src a UUID vector
-   * @return a string vector
+   * @param src a UUID {@link Vec}
+   * @return a string {@link Vec}
    */
   public static Vec UUIDToStringVec(Vec src) {
     if( !src.isUUID() ) throw new H2OIllegalArgumentException("UUIDToStringVec() conversion only works on UUID columns");
@@ -337,14 +337,14 @@ public class VecUtils {
   }
 
   /**
-   * Create a new vector of numeric values from a categorical vector.
+   * Create a new {@link Vec} of numeric values from a categorical {@link Vec}.
    *
    * Numeric values are generated explicitly from the domain values, and not the
    * enumeration levels. If a domain value cannot be translated as a number, that
    * domain and all values for that domain will be NA.
    *
-   * @param src a categorical vector
-   * @return a numeric vector
+   * @param src a categorical {@link Vec}
+   * @return a numeric {@link Vec}
    */
   public static Vec categoricalDomainsToNumeric(final Vec src) {
     if( !src.isCategorical() ) throw new H2OIllegalArgumentException("categoricalToNumeric() conversion only works on categorical columns");
@@ -358,9 +358,9 @@ public class VecUtils {
       }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
   }
 
-  /** Collect numeric domain of given vector
-   *  A map-reduce task to collect up the unique values of an integer vector
-   *  and returned as the domain for the vector.
+  /** Collect numeric domain of given {@link Vec}
+   *  A map-reduce task to collect up the unique values of an integer {@link Vec}
+   *  and returned as the domain for the {@link Vec}.
    * */
   public static class CollectDomain extends MRTask<CollectDomain> {
     transient NonBlockingHashMapLong<String> _uniques;
@@ -390,7 +390,7 @@ public class VecUtils {
       _uniques = that._uniques;
     }
 
-    /** Returns exact numeric domain of given vector computed by this task.
+    /** Returns exact numeric domain of given {@link Vec} computed by this task.
      * The domain is always sorted. Hence:
      *    domain()[0] - minimal domain value
      *    domain()[domain().length-1] - maximal domain value
@@ -403,9 +403,9 @@ public class VecUtils {
   }
 
   // >11x faster than CollectDomain
-  /** (Optimized for positive ints) Collect numeric domain of given vector
-   *  A map-reduce task to collect up the unique values of an integer vector
-   *  and returned as the domain for the vector.
+  /** (Optimized for positive ints) Collect numeric domain of given {@link Vec}
+   *  A map-reduce task to collect up the unique values of an integer {@link Vec}
+   *  and returned as the domain for the {@link Vec}.
    * */
   public static class CollectDomainFast extends MRTask<CollectDomainFast> {
     private final int _s;
@@ -430,7 +430,7 @@ public class VecUtils {
       Arrays.sort(_d);
     }
 
-    /** Returns exact numeric domain of given vector computed by this task.
+    /** Returns exact numeric domain of given {@link Vec} computed by this task.
      * The domain is always sorted. Hence:
      *    domain()[0] - minimal domain value
      *    domain()[domain().length-1] - maximal domain value
