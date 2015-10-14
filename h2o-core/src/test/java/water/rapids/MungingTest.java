@@ -45,10 +45,10 @@ public class MungingTest extends TestUtil {
     @Test public void run3() throws Exception {
       System.out.println("Running run3 ...");
 
-      NFSFileVec nfs = NFSFileVec.make(find_test_file("/Users/arno/devtestdata/step1_subset.csv"));
+      NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1_subset.csv"));
       Frame leftFrame = ParseDataset.parse(Key.make(), nfs._key);
 
-      nfs = NFSFileVec.make(find_test_file("/Users/arno/devtestdata/test.csv"));
+      nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/test.csv"));
       Frame rightFrame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
 
       System.out.println("Loaded two files, now calling order ...");

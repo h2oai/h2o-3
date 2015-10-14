@@ -38,18 +38,19 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _leftKey = new byte[leftMSBHeader._nBatch][];
     _leftOrder = new long[leftMSBHeader._nBatch][];
     for (int b=0;b<leftMSBHeader._nBatch; ++b) {
-      MoveByFirstByte.OXWrapper leftOXPair = DKV.getGet(MoveByFirstByte.getIndexKeyForMSB(leftMSB, b, leftNodeIdx));
-      _leftKey[b] = leftOXPair._x;
-      _leftOrder[b] = leftOXPair._o;
+      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getOXbatchKey(leftFrame._key, leftMSB, leftNodeIdx, b));
+      _leftKey[b] = oxLeft._x;
+      _leftOrder[b] = oxLeft._o;
     }
     _leftN = leftMSBHeader._numRows;
+
     // get right batches
     _rightKey = new byte[rightMSBHeader._nBatch][];
     _rightOrder = new long[rightMSBHeader._nBatch][];
     for (int b=0;b<rightMSBHeader._nBatch; ++b) {
-      MoveByFirstByte.OXWrapper rightOXPair = DKV.getGet(MoveByFirstByte.getIndexKeyForMSB(rightMSB, b, H2O.SELF.index()));
-      _rightKey[b] = rightOXPair._x;
-      _rightOrder[b] = rightOXPair._o;
+      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getOXbatchKey(rightFrame._key, rightMSB, H2O.SELF.index(), b));
+      _rightKey[b] = oxRight._x;
+      _rightOrder[b] = oxRight._o;
     }
     _rightN = rightMSBHeader._numRows;
 
@@ -153,8 +154,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         _retFirst[(int) j] = rLow + 1;
         _retLen[(int) j] = len;
         StringBuilder sb = new StringBuilder();
-        sb.append("Found : " + _retLen[(int)j] + " matches: ");
-
+        sb.append("Left row " + _leftOrder[(int)(j/_leftBatchSize)][(int)(j%_leftBatchSize)] + " matches to " + _retLen[(int)j] + " right rows: ");
         long a = _retFirst[(int) j];
         for (int i=0; i<_retLen[(int)j]; ++i) {
           long loc = a+i;
