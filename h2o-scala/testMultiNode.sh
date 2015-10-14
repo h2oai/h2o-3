@@ -27,11 +27,27 @@ function cleanup () {
 
 trap cleanup SIGTERM SIGINT
 
+# Find java command
+if [ -z "$TEST_JAVA_HOME" ]; then
+  # Use default
+  JAVA_CMD="java"
+else
+  # Use test java home
+  JAVA_CMD="$TEST_JAVA_HOME/bin/java"
+  # Increase XMX since JAVA_HOME can point to java6
+  JAVA6_REGEXP=".*1\.6.*"
+  if [[ $TEST_JAVA_HOME =~ $JAVA6_REGEXP ]]; then
+    JAVA_CMD="${JAVA_CMD} -Xmx2g"
+  fi
+fi
+
 # Gradle puts files:
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-JVM="nice java -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+# Command to invoke test
+JVM="nice $JAVA_CMD -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Runner
 # Default JUnit runner is org.junit.runner.JUnitCore
