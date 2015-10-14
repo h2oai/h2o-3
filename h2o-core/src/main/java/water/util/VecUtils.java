@@ -17,35 +17,70 @@ import water.parser.BufferedString;
 import water.parser.Categorical;
 
 public class VecUtils {
-  /** Create a new Vec (as opposed to wrapping it) that is the categorical'ified version of the original.
-   *  The original Vec is not mutated.  */
+  /**
+   * Create a new vector of categorical values from an existing vector.
+   *
+   * This method accepts all vector types as input. The original Vec is not mutated.
+   *
+   * If src is a categorical vector, a copy is returned.
+   *
+   * If src is a numeric vector, the values are converted to strings used as domain
+   * values.
+   *
+   * For all other types, an exception is currently thrown. These need to be replaced
+   * with appropriate conversions.
+   *
+   * Throws H2OIllegalArgumentException() if the resulting domain exceeds
+   * Categorical.MAX_CATEGORICAL_COUNT.
+   *
+   *  @param src A vector whose values will be used as the basis for a new categorical vec
+   *  @return the resulting categorical Vec
+   */
   public static Vec toCategoricalVec(Vec src) {
     switch (src.get_type()) {
-      case Vec.T_STR:
+      case Vec.T_CAT:
+        return src.makeCopy(src.domain());
+      case Vec.T_NUM:
+        return numericToCategorical(src);
+      case Vec.T_STR: // PUBDEV-2204
         throw new H2OIllegalArgumentException("Changing string columns to a categorical"
             + " column has not been implemented yet.");
         //return stringToCategorical(src);
-      case Vec.T_CAT:
-        return src.makeCopy(src.domain());
+      case Vec.T_TIME: // PUBDEV-2205
+        throw new H2OIllegalArgumentException("Changing time/date columns to a categorical"
+            + " column has not been implemented yet.");
       case Vec.T_UUID:
         throw new H2OIllegalArgumentException("Changing UUID columns to a categorical"
             + " column has not been implemented yet.");
-      case Vec.T_TIME:
-        throw new H2OIllegalArgumentException("Changing time/date columns to a categorical"
-            + " column has not been implemented yet.");
-      case Vec.T_NUM:
-        return numericToCategorical(src);
       default:
         throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
             + " given to toCategoricalVec()");
     }
   }
 
+  /**
+   * Create a new vector of categorical values from string vector.
+   *
+   * To be finished, PUBDEV-2204
+   *
+   * @param src a string vector
+   * @return a categorical vector
+   */
   public static Vec stringToCategorical(Vec src) {
     Vec res = null;
     return res;
   }
 
+  /**
+   * Create a new vector of categorical values from a numeric vector.
+   *
+   * This currently only ingests a vector of integers.
+   *
+   * Handling reals is PUBDEV-2207
+   *
+   * @param src a numeric vector
+   * @return a categorical vector
+   */
   public static Vec numericToCategorical(Vec src) {
     if (src.isInt()) {
       int min = (int) src.min(), max = (int) src.max();
@@ -58,25 +93,36 @@ public class VecUtils {
   }
 
   /**
-   * Convert to a numeric value.
+   * Create a new vector of numeric values from an existing vector.
    *
-   * For string columns, any row that can parse to a number does so,
-   * and all others become NA.
+   * This method accepts all vector types as input. The original Vec is not mutated.
    *
-   * For enumeration columns, the levels of each category are returned.
+   * If src is a categorical vector, a copy is returned.
    *
-   * For all numeric columns, a copy is made.
+   * If src is a string vector, all values that can be are parsed into reals or integers, and all
+   * others become NA. See stringToNumeric for parsing details.
    *
+   * If src is a numeric vector, a copy is made.
+   *
+   * If src is a time vector, the milliseconds since the epoch are used to populate the new Vec.
+   *
+   * If src is a UUID vector, the existing numeric storage is used to populate the new Vec.
+   *
+   * Throws H2OIllegalArgumentException() if the resulting domain exceeds
+   * Categorical.MAX_CATEGORICAL_COUNT.
+   *
+   *  @param src A vector whose values will be used as the basis for a new numeric vec
+   *  @return the resulting numeric Vec
    */
   public static Vec toNumericVec(Vec src) {
     switch (src.get_type()) {
-      case Vec.T_STR:
-        return stringToNumeric(src);
       case Vec.T_CAT:
         return categoricalToInt(src);
-      case Vec.T_UUID:
-      case Vec.T_TIME:
+      case Vec.T_STR:
+        return stringToNumeric(src);
       case Vec.T_NUM:
+      case Vec.T_TIME:
+      case Vec.T_UUID:
         return src.makeCopy(null, Vec.T_NUM);
       default:
         throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
@@ -85,12 +131,15 @@ public class VecUtils {
   }
 
   /**
-   * Transform a string Vec where all values are string versions of a number to
-   * a numeric Vec. Any rows that cannot be converted to a number are set to NA.
-   * Currently only does basic numeric formats. No exponents, or hex values. Doesn't
-   * even like commas or spaces.  :( Needs love.
+   * Create a new vector of numeric values from a string vector. Any rows that cannot be
+   * converted to a number are set to NA.
    *
-   * @return A new Vec
+   * Currently only does basic numeric formats. No exponents, or hex values. Doesn't
+   * even like commas or spaces.  :( Needs love. Handling more numeric
+   * representations is PUBDEV-2209
+   *
+   * @param src a string vector
+   * @return a numeric vector
    */
   public static Vec stringToNumeric(Vec src) {
     if(!src.isString()) throw new H2OIllegalArgumentException("stringToNumeric conversion only works on string columns");
@@ -123,14 +172,22 @@ public class VecUtils {
     return res;
   }
 
-
-  /** Transform an categorical Vec to a Int Vec. If the domain of the Vec is stringified ints, then
-   * it will use those ints. Otherwise, it will use the raw domain mapping.
+  /**
+   * Create a new vector of numeric values from a categorical vector.
+   *
+   * If the first value in the domain of the src Vec is a stringified ints,
+   * then it will use those ints. Otherwise, it will use the raw enumeration level mapping.
    * If the domain is stringified ints, then all of the domain must be able to be parsed as
    * an int. If it cannot be parsed as such, a NumberFormatException will be caught and
-   * rethrown as an IllegalArgumentException that declares the illegal domain value.
+   * rethrown as an H2OIllegalArgumentException that declares the illegal domain value.
    * Otherwise, the this pointer is copied to a new Vec whose domain is null.
-   * @return A new Vec
+   *
+   * The magic of this method should be eliminated. It should just use enumeration level
+   * maps. If the user wants domains to be used, call categoricalDomainsToNumeric().
+   * PUBDEV-2209
+   *
+   * @param src a categorical vector
+   * @return a numeric vector
    */
   public static Vec categoricalToInt(final Vec src) {
     if( src.isInt() && src.domain()==null ) return copyOver(src, Vec.T_NUM, null);
@@ -157,17 +214,20 @@ public class VecUtils {
   }
 
   /**
-   * Convert to a string value.
+   * Create a new vector of string values from an existing vector.
    *
-   * For string columns, a copy of the column is made.
+   * This method accepts all vector types as input. The original Vec is not mutated.
    *
-   * For categorical columns, levels are dropped, and the column only records the string.
+   * If src is a string vector, a copy of the vector is made.
    *
-   * For all numeric columns, the number is converted to a string.
+   * If src is a categorical vector, levels are dropped, and the vector only records the string.
    *
-   * For all UUID columns, the hex representation is stored as a string.
+   * For all numeric vectors, the number is converted to a string.
    *
-   * @return
+   * For all UUID vectors, the hex representation is stored as a string.
+   *
+   *  @param src A vector whose values will be used as the basis for a new string Vec
+   *  @return the resulting string Vec
    */
   public static Vec toStringVec(Vec src) {
     switch (src.get_type()) {
@@ -186,11 +246,15 @@ public class VecUtils {
     }
   }
 
-  /** Transform this vector to strings.  If the
-   *  vector is categorical an identity transformation vector is returned.
-   *  Transformation is done by a {@link Categorical2StrChkTask} which provides a mapping
+  /**
+   * Create a new vector of string values from a categorical vector.
+   *
+   * Transformation is done by a {@link Categorical2StrChkTask} which provides a mapping
    *  between values - without copying the underlying data.
-   *  @return A new String Vec  */
+   *
+   * @param src a categorical vector
+   * @return a string vector
+   */
   public static Vec categoricalToStringVec(Vec src) {
     if( !src.isCategorical() )
       throw new H2OIllegalValueException("Can not convert a non-categorical column"
@@ -210,6 +274,15 @@ public class VecUtils {
     }
   }
 
+  /**
+   * Create a new vector of string values from a numeric vector.
+   *
+   * Currently only uses a default pretty printer. Would be better if
+   * it accepted a format string PUBDEV-2211
+   *
+   * @param src a numeric vector
+   * @return a string vector
+   */
   public static Vec numericToStringVec(Vec src) {
     if (src.isCategorical() || src.isUUID())
       throw new H2OIllegalValueException("Cannot convert a non-numeric column"
@@ -234,7 +307,16 @@ public class VecUtils {
     return res;
   }
 
+  /**
+   * Create a new vector of string values from a UUID vector.
+   *
+   * String vector is the standard hexadecimal representations of a UUID.
+   *
+   * @param src a UUID vector
+   * @return a string vector
+   */
   public static Vec UUIDToStringVec(Vec src) {
+    if( !src.isUUID() ) throw new H2OIllegalArgumentException("UUIDToStringVec() conversion only works on UUID columns");
     Vec res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk) {
         if (chk instanceof C0DChunk) { // all NAs
@@ -253,33 +335,27 @@ public class VecUtils {
     assert res != null;
     return res;
   }
+
   /**
-   * Transform a categorical Vec where all domain values are string versions of a number to
-   * a numeric Vec. Any rows that cannot be converted to a number are set to NA.
+   * Create a new vector of numeric values from a categorical vector.
    *
-   * @return A new Vec
+   * Numeric values are generated explicitly from the domain values, and not the
+   * enumeration levels. If a domain value cannot be translated as a number, that
+   * domain and all values for that domain will be NA.
+   *
+   * @param src a categorical vector
+   * @return a numeric vector
    */
   public static Vec categoricalDomainsToNumeric(final Vec src) {
-    if( !src.isCategorical() ) throw new H2OIllegalArgumentException("categoricalToNumeric() conversion only works on categorical vecs");
+    if( !src.isCategorical() ) throw new H2OIllegalArgumentException("categoricalToNumeric() conversion only works on categorical columns");
     // check if the 1st lvl of the domain can be parsed as int
-    boolean useDomain=false;
-    Vec newVec = copyOver(src, Vec.T_NUM, null);
-    try {
-      Integer.parseInt(src.domain()[0]);
-      useDomain=true;
-    } catch (NumberFormatException e) {
-      // makeCopy and return...
-    }
-    if( useDomain ) {
-      new MRTask() {
+    return new MRTask() {
         @Override public void map(Chunk c) {
           for (int i=0;i<c._len;++i)
             if( !c.isNA(i) )
               c.set(i, Integer.parseInt(src.domain()[(int)c.at8(i)]));
         }
-      }.doAll(newVec);
-    }
-    return newVec;
+      }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
   }
 
   /** Collect numeric domain of given vector
