@@ -14,7 +14,6 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.Log;
-import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -52,13 +51,13 @@ public class DeepLearningProstateTest extends TestUtil {
           if (classification && !frame.vec(resp).isCategorical()) {
             DKV.remove(frame._key);
             String respname = frame.name(resp);
-            Vec r = VecUtils.toCategoricalVec(frame.vec(respname));
+            Vec r = frame.vec(respname).toCategoricalVec();
             frame.remove(respname).remove();
             frame.add(respname, r);
             DKV.put(frame);
 
             DKV.remove(vframe._key);
-            Vec vr = VecUtils.toCategoricalVec(vframe.vec(respname));
+            Vec vr = vframe.vec(respname).toCategoricalVec();
             vframe.remove(respname).remove();
             vframe.add(respname, vr);
             DKV.put(vframe);

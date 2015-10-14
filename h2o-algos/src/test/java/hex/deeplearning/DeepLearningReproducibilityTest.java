@@ -11,7 +11,6 @@ import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.FrameUtils;
 import water.util.Log;
-import water.util.VecUtils;
 
 import static org.junit.Assert.assertTrue;
 
@@ -56,7 +55,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           p._model_id = Key.make();
           p._response_column = train.names()[train.names().length-1];
           int ci = train.names().length-1;
-          Scope.track(train.replace(ci, VecUtils.toCategoricalVec(train.vecs()[ci]))._key);
+          Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec())._key);
           DKV.put(train);
           p._ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
           p._activation = DeepLearningParameters.Activation.RectifierWithDropout;

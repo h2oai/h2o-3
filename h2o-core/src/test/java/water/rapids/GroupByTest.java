@@ -7,10 +7,9 @@ import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.VecUtils;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -211,7 +210,7 @@ public class GroupByTest extends TestUtil {
 
   @Test public void testGroupbyTableSpeed() {
     Frame ids = parse_test_file(Key.make("cov"),"smalldata/junit/id_cols.csv");
-    ids.replace(0, VecUtils.toCategoricalVec(ids.anyVec())).remove();
+    ids.replace(0,ids.anyVec().toCategoricalVec()).remove();
     System.out.println(ids.toString(0,10));
 
     long start = System.currentTimeMillis();

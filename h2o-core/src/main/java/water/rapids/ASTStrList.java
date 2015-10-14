@@ -87,7 +87,7 @@ class ASTAsCharacter extends ASTPrim {
     for(int c=0;c<nvecs.length;++c) {
       vv = ary.vec(c);
       try {
-        nvecs[c] = VecUtils.toStringVec(vv);
+        nvecs[c] = vv.toStringVec();
       } catch (Exception e) {
         VecUtils.deleteVecs(nvecs, c);
         throw e;
@@ -118,7 +118,7 @@ class ASTAsFactor extends ASTPrim {
     for(int c=0;c<nvecs.length;++c) {
       vv = ary.vec(c);
       try {
-        nvecs[c] = VecUtils.toCategoricalVec(vv);
+        nvecs[c] = vv.toCategoricalVec();
       } catch (Exception e) {
         VecUtils.deleteVecs(nvecs, c);
         throw e;
@@ -142,7 +142,7 @@ class ASTAsNumeric extends ASTPrim {
     for(int c=0;c<nvecs.length;++c) {
       vv = fr.vec(c);
       try {
-        nvecs[c] = VecUtils.toNumericVec(vv);
+        nvecs[c] = vv.toNumericVec();
       } catch (Exception e) {
         VecUtils.deleteVecs(nvecs, c);
         throw e;

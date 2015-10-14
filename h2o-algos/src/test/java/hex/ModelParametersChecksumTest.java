@@ -7,7 +7,6 @@ import org.junit.Test;
 import hex.tree.drf.DRFModel;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.VecUtils;
 
 /**
  * Tests to catch problems with hash collisions on model parameters.
@@ -25,7 +24,7 @@ public class ModelParametersChecksumTest extends TestUtil {
 
     try {
       fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
-      fr.replace(fr.find("cylinders"), VecUtils.toCategoricalVec(fr.vec("cylinders"))).remove();
+      fr.replace(fr.find("cylinders"), fr.vec("cylinders").toCategoricalVec()).remove();
 
       DRFModel.DRFParameters p1 = new DRFModel.DRFParameters();
       p1._train = fr._key;
