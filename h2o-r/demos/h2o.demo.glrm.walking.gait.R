@@ -1,10 +1,5 @@
-## Set your working directory
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-
-## Load library and initialize h2o
 library(h2o)
-print("Launching H2O and initializing connection object...")
-conn <- h2o.init(nthreads = -1)
+h2o.init()
 
 ## Find and import data into H2O
 locate       <- h2o:::.h2o.locate
@@ -20,7 +15,7 @@ summary(gait.hex)
 #          Matrix Decomposition         #
 #---------------------------------------#
 ## Basic GLRM using quadratic loss and no regularization (PCA)
-gait.glrm <- h2o.glrm(training_frame = gait.hex, x = 2:ncol(gait.hex), k = 5, init = "PlusPlus", loss = "Quadratic", 
+gait.glrm <- h2o.glrm(training_frame = gait.hex, x = 2:ncol(gait.hex), k = 5, init = "PlusPlus", loss = "Quadratic",
                       regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 gait.glrm
 
@@ -49,7 +44,7 @@ legend("topright", legend = colnames(gait.x.df), col = 1:5, pch = 1)
 # print("Reconstruct data from matrix product XY")
 # gait.pred <- predict(gait.glrm, gait.hex)
 # head(gait.pred)
-# 
+#
 # print(paste0("Plot original and reconstructed L.Acromium.X over time range [", time.df[1], ",", time.df[2], "]"))
 # lacro.df <- as.data.frame(gait.hex$L.Acromium.X[1:150])
 # lacro.pred.df <- as.data.frame(gait.pred$reconstr_L.Acromium.X[1:150])
@@ -66,7 +61,7 @@ gait.miss <- h2o.importFile(path = pathToMissingData, destination_frame = "gait.
 summary(gait.miss)
 
 ## Basic GLRM using quadratic loss and no regularization (PCA)
-gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, x = 2:ncol(gait.miss), k = 15, init = "PlusPlus", 
+gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, x = 2:ncol(gait.miss), k = 15, init = "PlusPlus",
                       loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 500, min_step_size = 1e-7)
 gait.glrm2
 
@@ -79,4 +74,3 @@ lacro.df2 <- as.data.frame(gait.hex$L.Acromium.X[1:150])
 lacro.pred.df2 <- as.data.frame(gait.pred2$reconstr_L.Acromium.X[1:150])
 matplot(time.df, cbind(lacro.df2, lacro.pred.df2), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = 1:2)
 legend("topright", legend = c("Original", "Imputed"), col = 1:2, pch = 1)
-
