@@ -183,7 +183,12 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
       for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) numChunks++;
       int MSBnodeChunkCounts[] = new int[numChunks];   // make dense.  And by construction (i.e. cumulative counts) these chunks contributed in order
       int j=0;
-      for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) MSBnodeChunkCounts[j++] = (int)_counts[c][msb];  // _counts is long so it can be accumulated in-place I think.  TO DO: check
+      long lastCount = 0; // _counts are cumulative at this stage so need to undo
+      for (int c=0; c<nc; c++) if (_counts[c][msb] > 0) {
+        MSBnodeChunkCounts[j] = (int)(_counts[c][msb] - lastCount);  // _counts is long so it can be accumulated in-place I think.  TO DO: check
+        lastCount = _counts[c][msb];
+        j++;
+      }
       assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
       MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
       DKV.put(getMSBNodeHeaderKey(_frameKey, msb, H2O.SELF.index()), msbh);
