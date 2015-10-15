@@ -178,7 +178,7 @@ hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -jks h2o.jks -output hdfsOutputDire
 
 ##### Sparkling Water EE
 
-The following new Spark conf properties exist in H2O Enterprise Edition for Java keystore configurtion:
+The following new Spark conf properties exist in H2O Enterprise Edition for Java Keystore configuration:
 
 Spark conf property | Description
 --- | ---
@@ -189,6 +189,38 @@ Example:
 
 ```
 $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.jks=/path/to/h2o.jks sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
+```
+
+##### Creating your own self-signed Java Keystore
+
+Here is an example of how to create your own self-signed Java Keystore (mykeystore.jks) with a custom keystore password (mypass) and how to run standalone H2O using your Keystore:
+
+```
+# Be paranoid and delete any previously existing keystore.
+rm -f mykeystore.jks
+
+# Generate a new keystore.
+keytool -genkey -keyalg RSA -keystore mykeystore.jks -storepass mypass -keysize 2048
+What is your first and last name?
+  [Unknown]:  
+What is the name of your organizational unit?
+  [Unknown]:  
+What is the name of your organization?
+  [Unknown]:  
+What is the name of your City or Locality?
+  [Unknown]:  
+What is the name of your State or Province?
+  [Unknown]:  
+What is the two-letter country code for this unit?
+  [Unknown]:  
+Is CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown correct?
+  [no]:  yes
+
+Enter key password for <mykey>
+	(RETURN if same as keystore password):  
+
+# Run H2O using the newly generated self-signed keystore.
+java -jar h2o.jar -jks mykeystore.jks -jks_pass mypass
 ```
 
 ### LDAP authentication
