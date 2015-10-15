@@ -197,6 +197,9 @@ class ModelBase(object):
 
     :return: None
     """
+    if self._model_json is None:
+      print "No model trained yet"
+      return
     model = self._model_json["output"]
     print "Model Details"
     print "============="

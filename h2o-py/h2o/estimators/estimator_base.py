@@ -51,10 +51,6 @@ class H2OEstimator(ModelBase):
         The name or index of the column in training_frame that holds the per-row weights.
       validation_frame : H2OFrame, optional
         H2OFrame with validation data to be scored on while training.
-
-    Returns
-    -------
-      Returns self.
     """
     algo_params = locals()
     self.parms.update({k:v for k, v in algo_params.iteritems() if k not in ["self","params", "algo_params"] })
@@ -141,7 +137,7 @@ class H2OEstimator(ModelBase):
 
     Returns
     -------
-      None
+      The current instance of H2OEstimator for method chaining.
     """
     stk = inspect.stack()[1:]
     warn = True

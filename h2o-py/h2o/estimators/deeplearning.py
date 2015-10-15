@@ -178,9 +178,16 @@ class H2ODeepLearningEstimator(H2OEstimator):
     keep_cross_validation_predictions : bool
       Whether to keep the predictions of the cross-validation models
 
-    Returns
-    -------
-      Return a new classifier or regression model.
+    Examples
+    --------
+      >>> import h2o as ml
+      >>> from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+      >>> ml.init()
+      >>> rows=[[1,2,3,4,0],[2,1,2,4,1],[2,1,4,2,1],[0,1,2,34,1],[2,3,4,1,0]]*50
+      >>> fr = ml.H2OFrame(rows)
+      >>> fr[4] = fr[4].asfactor()
+      >>> model = H2ODeepLearningEstimator()
+      >>> model.train(X=range(4), y=4, training_frame=fr)
     """
     super(H2ODeepLearningEstimator, self).__init__()
     self.parms = locals()
@@ -190,4 +197,16 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
 
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
+  """
+  Examples
+  --------
+    >>> import h2o as ml
+    >>> from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
+    >>> ml.init()
+    >>> rows=[[1,2,3,4,0],[2,1,2,4,1],[2,1,4,2,1],[0,1,2,34,1],[2,3,4,1,0]]*50
+    >>> fr = ml.H2OFrame(rows)
+    >>> fr[4] = fr[4].asfactor()
+    >>> model = H2OAutoEncoderEstimator()
+    >>> model.train(X=range(4), training_frame=fr)
+  """
   pass
