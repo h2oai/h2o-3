@@ -1,16 +1,14 @@
-## Set your working directory
-setwd("~/Downloads/")
-
-## Load library and initialize h2o
 library(h2o)
-print("Launching H2O and initializing connection object...")
-conn <- h2o.init(nthreads = -1)
+h2o.init()
 
 ## Find and import data into H2O
-locate       <- h2o:::.h2o.locate
-pathToData   <- locate("airlines_all.05p.csv")
+pathToData   <- h2o:::.h2o.locate("bigdata/laptop/airlines_all.05p.csv")
 print("Importing airlines dataset into H2O...")
-airlines.hex <- h2o.importFile(path = pathToData, destination_frame = "airlines.hex")
+raw <- h2o.importFile(path = pathToData, parse=FALSE)
+setup <- h2o.parseSetup(raw)
+setup$column_types[which(setup$column_names %in% "AirTime")]  <- "Numeric"
+setup$column_types[which(setup$column_names %in% "AirDelay")] <- "Numeric"
+airlines.hex <- h2o.parseRaw(raw, col.types=setup$column_types)
 
 ## Grab a summary of imported frame
 summary(airlines.hex)
@@ -23,17 +21,17 @@ h2o.hist(airlines.hex$Month)
 scatter_plot <- function(data, x, y, max_points = 1000, fit = T) {
   if (fit) {
     lr <- h2o.glm(x = x, y = y, training_frame = data, family = "gaussian")
-    coeff <- lr@model$coefficients_table$coefficients    
+    coeff <- lr@model$coefficients_table$coefficients
   }
-  
+
   df <- data[,c(x, y)]
-  
+
   runif <- h2o.runif(df)
   df.subset <- df[runif < max_points/nrow(data),]
   df.R <- as.data.frame(df.subset)
   h2o.rm(df.subset)
-  if (fit) h2o.rm(data@conn, lr@model_id)
-  
+  if (fit) h2o.rm(lr@model_id)
+
   plot(x = df.R[,x], y = df.R[,y], col = "yellow", xlab = x, ylab = y)
   if (fit) abline(coef = coeff, col = "black")
 }
@@ -80,9 +78,9 @@ data.test <- data.split[[2]]
 myY <- "IsDepDelayed"
 myX <- c("Origin", "Dest", "Year", "UniqueCarrier", "DayOfWeek", "Month", "Distance", "FlightNum")
 
-## Build GLM 
+## Build GLM
 start    <- Sys.time()
-data.glm <- h2o.glm(y = myY, x = myX, training_frame = data.train, validation_frame = data.test, family = "binomial", 
+data.glm <- h2o.glm(y = myY, x = myX, training_frame = data.train, validation_frame = data.test, family = "binomial",
                     standardize=T, model_id = "glm_model", alpha = 0.5, lambda = 1e-05)
 glm_time <- Sys.time() - start
 print(paste("Took", round(glm_time, digits = 2), units(glm_time), "to build logistic regression model."))
@@ -101,7 +99,7 @@ data.drf <- h2o.randomForest(y = myY, x = myX, training_frame = data.train, vali
                              max_depth = 5, model_id = "drf_model", balance_classes = T)
 drf_time <- Sys.time() - start
 print(paste("Took", round(drf_time, digits = 2), units(drf_time), "to build a Random Forest model."))
-  
+
 ## Build Deep Learning Model
 start   <- Sys.time()
 data.dl <- h2o.deeplearning(y = myY, x = myX, training_frame = data.train, validation_frame = data.test, hidden=c(10, 10),
