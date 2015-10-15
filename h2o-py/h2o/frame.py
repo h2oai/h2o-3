@@ -26,6 +26,7 @@ class H2OFrameWeakRefMixin(object):
   def drop_instance(cls, inst):
     cls.__refs__[cls].remove(weakref.ref(inst))
 
+
 class H2OFrame(H2OFrameWeakRefMixin):
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
@@ -503,23 +504,34 @@ class H2OFrame(H2OFrameWeakRefMixin):
     return H2OFrame(expr=ExprNode("setDomain",self,levels))
 
   def set_names(self,names):
-    """
-    Change the column names to `names`.
+    """Change all of this H2OFrame instance's column names.
 
-    :param names: A list of strings equal to the number of columns in the H2OFrame.
-    :return: None. Rename the column names in this H2OFrame.
+    Parameters
+    ----------
+      names : list
+        A list of strings equal to the number of columns in the H2OFrame.
+
+    Returns
+    -------
+      The current instance of H2OFrame for flow coding.
     """
     h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol), names)._eager()), id=self._id)
     self._update()
     return self
 
   def set_name(self,col=None,name=None):
-    """
-    Set the name of the column at the specified index.
+    """Set the name of the column at the specified index.
 
-    :param col: Index of the column whose name is to be set. Or current name of the column to change.
-    :param name: The new name of the column to set
-    :return: the input frame
+    Parameters
+    ----------
+      col : int, str
+        Index or column name to be changed.
+      name : str
+        The new name for the column specified by col.
+
+    Returns
+    -------
+      The current instance of H2OFrame for flow coding.
     """
     if isinstance(col, basestring): col = self._find_idx(col)  # lookup the name!
     if not isinstance(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
@@ -529,13 +541,9 @@ class H2OFrame(H2OFrameWeakRefMixin):
     return self
 
   def describe(self):
-    """
-    Generate an in-depth description of this H2OFrame.
-
+    """Generate an in-depth description of this H2OFrame.
     The description is a tabular print of the type, min, max, sigma, number of zeros,
     and number of missing elements for each H2OVec in this H2OFrame.
-
-    :return: None (print to stdout)
     """
     self._eager()
     thousands_sep = h2o.H2ODisplay.THOUSANDS
@@ -548,11 +556,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self.summary()
 
   def summary(self):
-    """
-    Generate summary of the frame on a per-Vec basis.
-
-    :return: None
-    """
+    """Generate summary of the frame on a per column basis."""
     self._eager()
     fr_sum =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(self._id) + "/summary")["frames"][0]
     type = ["type"]
@@ -581,11 +585,16 @@ class H2OFrame(H2OFrameWeakRefMixin):
       return ""
 
   def as_date(self,format):
-    """
-    Return the column with all elements converted to millis since the epoch.
+    """Return the column with all elements converted to millis since the epoch.
 
-    :param format: The date time format string
-    :return: H2OFrame
+    Parameters
+    ----------
+      format : str
+        A datetime format string (e.g. "YYYY-mm-dd")
+
+    Returns
+    -------
+      An H2OFrame instance.
     """
     return H2OFrame(expr=ExprNode("as.Date",self,format))
 
@@ -664,27 +673,36 @@ class H2OFrame(H2OFrameWeakRefMixin):
     return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
 
   def kfold_column(self, n_folds=3, seed=-1):
-    """
-    Build a fold assignments column for cross-validation. This call will produce a column
-    having the same data layout as the calling object.
-
-    :param n_folds: Number of folds.
-    :param seed:Seed for random numbers (affects sampling when balance_classes=T)
-    :return: A column of fold IDs.
-    """
-    return H2OFrame(expr=ExprNode("kfold_column",self,n_folds,seed))._frame()
-
-  def modulo_kfold_column(self, n_folds=3):
-    """
-    Build a fold assignments column for cross-validation. Rows are assigned a fold according
-    to the current row number modulo n_folds.
+    """Build a fold assignments column for cross-validation. This call will produce a
+    column having the same data layout as the calling object.
 
     Parameters
     ----------
       n_folds : int
-        The number of folds to build.
+        An integer specifying the number of validation sets to split the training data
+        into.
+      seed : int, optional
+        Seed for random numbers as fold IDs are randomly assigned.
 
-    :return: An H2OFrame holding a single column of the fold assignments.
+    Returns
+    -------
+      An H2OFrame consisting of 1 column of the fold IDs.
+    """
+    return H2OFrame(expr=ExprNode("kfold_column",self,n_folds,seed))._frame()
+
+  def modulo_kfold_column(self, n_folds=3):
+    """Build a fold assignments column for cross-validation. Rows are assigned a fold
+    according to the current row number modulo n_folds.
+
+    Parameters
+    ----------
+      n_folds : int
+        An integer specifying the number of validation sets to split the training data
+        into.
+
+    Returns
+    -------
+      An H2OFrame holding a single column of the fold assignments.
     """
     return H2OFrame(expr=ExprNode("modulo_kfold_column",self,n_folds))._frame()
 
@@ -700,16 +718,16 @@ class H2OFrame(H2OFrameWeakRefMixin):
       seed: int
         A random seed.
 
-    :return: An H2OFrame holding a single column of the fold assignments.
+    Returns
+    -------
+      An H2OFrame holding a single column of the fold assignments.
     """
     return H2OFrame(expr=ExprNode("stratified_kfold_column",self,n_folds,seed))._frame()
 
 
   def structure(self):
-    """
-    Similar to R's str method: Compactly Display the Structure of this H2OFrame instance.
-
-    :return: None
+    """Similar to R's str method: Compactly Display the Structure of this H2OFrame
+    instance.
     """
     df = self.as_data_frame(use_pandas=False)
     nr = self.nrow
@@ -731,12 +749,18 @@ class H2OFrame(H2OFrameWeakRefMixin):
         print "num {} ...".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:]))
 
   def as_data_frame(self, use_pandas=True):
-    """
-    Obtain the dataset as a python-local object (pandas frame if possible, list otherwise)
+    """Obtain the dataset as a python-local object.
 
-    :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
-    :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a
-    pandas DataFrame) containing this H2OFrame instance's data.
+    Parameters
+    ----------
+      use_pandas : bool, optional
+        A flag specifying whether or not to return a pandas DataFrame.
+
+    Returns
+    -------
+      A local python object (a list of lists of strings, each list is a row,
+      if use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame
+      instance's data.
     """
     self._eager()
     url = 'http://' + h2o.H2OConnection.ip() + ':' + str(h2o.H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self._id) + "&hex_string=false"
@@ -824,7 +848,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
       res = H2OFrame(expr=ExprNode("rows", ExprNode("cols",self,item[1]),item[0]))
       return res.flatten() if isinstance(item[0], (basestring,int)) and isinstance(item[1],(basestring,int)) else res
-
 
   def __setitem__(self, b, c):
     """

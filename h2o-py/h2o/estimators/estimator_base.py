@@ -7,6 +7,7 @@ from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
 from ..model.metrics_base import *
 from ..h2o import H2OConnection, H2OJob, H2OFrame
+import h2o
 import inspect
 import warnings
 import types
@@ -80,9 +81,9 @@ class H2OEstimator(ModelBase):
   def _model_build(self, x, y, tframe, vframe, algo, kwargs):
     kwargs['training_frame'] = tframe
     if vframe is not None: kwargs["validation_frame"] = vframe
-    if y is not None:  kwargs['response_column'] = tframe[y].names[0]
-    ignored_columns = list(set(tframe.names) - set(x+[y]))
-    kwargs["ignored_columns"] = None if ignored_columns==[] else ignored_columns
+    if y is not None: kwargs['response_column'] = y = tframe[y].names[0]
+    ignored_columns = list(set(tframe.names) - set(tframe[x].names + [y]))
+    kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
     kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
 
     ##### POLL MODEL FOR COMPLETION #####
