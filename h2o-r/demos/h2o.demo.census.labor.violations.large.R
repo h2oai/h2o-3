@@ -1,15 +1,6 @@
-## Set your working directory
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-
-## Load library and initialize h2o
-library(h2o)
-print("Launching H2O and initializing connection object...")
-conn <- h2o.init(nthreads = -1)
-
 ## Find and import data into H2O
-locate       <- h2o:::.h2o.locate
-pathToACSData   <- locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
-pathToWHDData   <- locate("bigdata/laptop/census/whd_zcta_cleaned.zip")
+pathToACSData   <- h2o:::.h2o.locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
+pathToWHDData   <- h2o:::.h2o.locate("bigdata/laptop/census/whd_zcta_cleaned.zip")
 
 print("Importing ACS 2013 5-year DP02 demographic dataset into H2O...")
 acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 149)))
@@ -46,7 +37,7 @@ test  <- whd_zcta[split > 0.8,]
 print("Build a GBM model on original WHD data to predict repeat violators")
 myY <- "flsa_repeat_violator"
 myX <- setdiff(4:ncol(train), which(colnames(train) == myY))
-orig_time <- system.time(gbm_orig <- h2o.gbm(x = myX, y = myY, training_frame = train, validation_frame = test, 
+orig_time <- system.time(gbm_orig <- h2o.gbm(x = myX, y = myY, training_frame = train, validation_frame = test,
                                              ntrees = 10, max_depth = 6, distribution = "multinomial"))
 
 print("Replace ZCTA5 column in WHD data with GLRM archetypes")
@@ -61,7 +52,7 @@ test_mod  <- whd_arch[split > 0.8,]
 
 print("Build a GBM model on modified WHD data to predict repeat violators")
 myX <- setdiff(4:ncol(train_mod), which(colnames(train_mod) == myY))
-mod_time <- system.time(gbm_mod <- h2o.gbm(x = myX, y = myY, training_frame = train_mod, validation_frame = test_mod, 
+mod_time <- system.time(gbm_mod <- h2o.gbm(x = myX, y = myY, training_frame = train_mod, validation_frame = test_mod,
                                            ntrees = 10, max_depth = 6, distribution = "multinomial"))
 
 print("Performance comparison:")
