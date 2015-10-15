@@ -25,9 +25,9 @@ def check_models(model1, model2, use_cross_validation=False, op='e'):
     :return: None. Throw meaningful error messages if the check fails
     """
     # 1. Check model types
-    model1_type = type(model1)
-    model2_type = type(model2)
-    assert model1_type == model2_type, "The model types differ. The first model is of type {0} and the second " \
+    model1_type = model1.__class__.__name__
+    model2_type = model1.__class__.__name__
+    assert model1_type is model2_type, "The model types differ. The first model is of type {0} and the second " \
                                        "models is of type {1}.".format(model1_type, model2_type)
 
     # 2. Check model metrics

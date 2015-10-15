@@ -3,6 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
+
 def cv_carsRF():
 
     # read in the dataset and construct training set (and validation set)
@@ -54,10 +55,6 @@ def cv_carsRF():
                                                     "{1}".format(num_folds, num_cv_models)
     cv_model1 = h2o.get_model(rf._model_json['output']['cross_validation_models'][0]['name'])
     cv_model2 = h2o.get_model(rf._model_json['output']['cross_validation_models'][1]['name'])
-    assert isinstance(cv_model1, type(rf)), "Expected cross-validation model to be the same model type as the " \
-                                             "constructed model, but got {0} and {1}".format(type(cv_model1),type(rf))
-    assert isinstance(cv_model2, type(rf)), "Expected cross-validation model to be the same model type as the " \
-                                             "constructed model, but got {0} and {1}".format(type(cv_model2),type(rf))
 
     # 4. keep_cross_validation_predictions
     cv_predictions = rf1._model_json['output']['cross_validation_predictions']

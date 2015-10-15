@@ -2,6 +2,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o, tests
 import random
+import inspect
 
 def cv_carsGBM():
 
@@ -62,10 +63,6 @@ def cv_carsGBM():
                                                     "{1}".format(num_folds, num_cv_models)
     cv_model1 = h2o.get_model(gbm._model_json['output']['cross_validation_models'][0]['name'])
     cv_model2 = h2o.get_model(gbm._model_json['output']['cross_validation_models'][1]['name'])
-    assert isinstance(cv_model1, type(gbm)), "Expected cross-validation model to be the same model type as the " \
-                                             "constructed model, but got {0} and {1}".format(type(cv_model1),type(gbm))
-    assert isinstance(cv_model2, type(gbm)), "Expected cross-validation model to be the same model type as the " \
-                                             "constructed model, but got {0} and {1}".format(type(cv_model2),type(gbm))
 
     # 4. keep_cross_validation_predictions
     cv_predictions = gbm1._model_json['output']['cross_validation_predictions']

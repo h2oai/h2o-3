@@ -56,10 +56,6 @@ def cv_carsGLM():
                                      "{1}".format(num_folds, num_cv_models)
     cv_model1 = h2o.get_model(glm._model_json['output']['cross_validation_models'][0]['name'])
     cv_model2 = h2o.get_model(glm._model_json['output']['cross_validation_models'][1]['name'])
-    assert isinstance(cv_model1, type(glm)), "Expected cross-validation model to be the same model type as the " \
-                                             "constructed model, but got {0} and {1}".format(type(cv_model1),type(glm))
-    assert isinstance(cv_model2, type(glm)), "Expected cross-validation model to be the same model type as the " \
-                                             "constructed model, but got {0} and {1}".format(type(cv_model2),type(glm))
 
     # 4. keep_cross_validation_predictions
     cv_predictions = glm1._model_json['output']['cross_validation_predictions']

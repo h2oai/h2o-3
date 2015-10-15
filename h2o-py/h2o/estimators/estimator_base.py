@@ -9,6 +9,7 @@ from ..model.metrics_base import *
 from ..h2o import H2OConnection, H2OJob, H2OFrame
 import inspect
 import warnings
+import types
 
 
 class EstimatorAttributeError(AttributeError):
@@ -111,8 +112,15 @@ class H2OEstimator(ModelBase):
 
       # build a useful dict of the params
       for p in m._model_json["parameters"]: m.parms[p["label"]]=p
-    self.__class__ = type(model_class.__name__, (H2OEstimator,model_class),{})
-    self.__dict__ = m.__dict__.copy()
+    H2OEstimator.mixin(self,model_class)
+    self.__dict__.update(m.__dict__.copy())
+
+  @staticmethod
+  def mixin(obj,cls):
+    for name in cls.__dict__:
+      if name.startswith('__') and name.endswith('__') or not type(cls.__dict__[name])==types.FunctionType:
+        continue
+      obj.__dict__[name]=cls.__dict__[name].__get__(obj)
 
   ##### Scikit-learn Interface Methods #####
   def fit(self, X, y=None, **params):
@@ -137,7 +145,7 @@ class H2OEstimator(ModelBase):
     warn = True
     for s in stk:
       mod = inspect.getmodule(s[0])
-      if mod: 
+      if mod:
         warn = "sklearn" not in mod.__name__
         if not warn: break
     if warn:
