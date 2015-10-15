@@ -1,7 +1,7 @@
-from ..estimators.estimator_base import H2OEstimator
+from model_base import ModelBase
 
 
-class H2ORegressionModel(H2OEstimator):
+class H2ORegressionModel(ModelBase):
 
   def _make_model(self):
     return H2ORegressionModel()
@@ -44,7 +44,7 @@ def h2o_mean_absolute_error(y_actual, y_predicted, weights=None):
   :return: loss (float) (best is 0.0)
 
   """
-  H2OEstimator._check_targets(y_actual, y_predicted)
+  ModelBase._check_targets(y_actual, y_predicted)
   return (y_predicted-y_actual).abs().mean()
 
 
@@ -57,7 +57,7 @@ def h2o_mean_squared_error(y_actual, y_predicted, weights=None):
   :param weights: (Optional) sample weights
   :return: loss (float) (best is 0.0)
   """
-  H2OEstimator._check_targets(y_actual, y_predicted)
+  ModelBase._check_targets(y_actual, y_predicted)
   return ((y_predicted-y_actual)**2).mean()
 
 
@@ -69,7 +69,7 @@ def h2o_median_absolute_error(y_actual, y_predicted):
   :param y_predicted: H2OFrame of predicted response.
   :return: loss (float) (best is 0.0)
   """
-  H2OEstimator._check_targets(y_actual, y_predicted)
+  ModelBase._check_targets(y_actual, y_predicted)
   return (y_predicted-y_actual).abs().median()
 
 
@@ -82,7 +82,7 @@ def h2o_explained_variance_score(y_actual, y_predicted, weights=None):
   :param weights: (Optional) sample weights
   :return: the explained variance score (float)
   """
-  H2OEstimator._check_targets(y_actual, y_predicted)
+  ModelBase._check_targets(y_actual, y_predicted)
 
   _, numerator   = _mean_var(y_actual - y_predicted, weights)
   _, denominator = _mean_var(y_actual, weights)
@@ -100,7 +100,7 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
   :param weights: (Optional) sample weights
   :return: R^2 (float) (best is 1.0, lower is worse)
   """
-  H2OEstimator._check_targets(y_actual, y_predicted)
+  ModelBase._check_targets(y_actual, y_predicted)
   numerator   = (weights * (y_actual - y_predicted) ** 2).sum()
   denominator = (weights * (y_actual - y_actual.mean()) ** 2).sum()
 

@@ -1,15 +1,8 @@
-"""
-DimReduction Models
-"""
-
+from model_base import ModelBase
 from metrics_base import *
-from ..estimators.estimator_base import H2OEstimator
 
 
-class H2ODimReductionModel(H2OEstimator):
-
-    def _make_model(self):
-      return H2ODimReductionModel()
+class H2ODimReductionModel(ModelBase):
 
     def num_iterations(self):
       """

@@ -1,9 +1,8 @@
 from . import H2OFrame
 from . import H2OConnection
-from ..estimators.estimator_base import H2OEstimator
+from model_base import ModelBase
 
-
-class H2OMultinomialModel(H2OEstimator):
+class H2OMultinomialModel(ModelBase):
 
   def _make_model(self):
     return H2OMultinomialModel()
@@ -30,7 +29,7 @@ class H2OMultinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the R^2 value for the cross validation data.
     :return: The R^2 for this regression model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.hit_ratio_table()
     return m.values()[0] if len(m) == 1 else m

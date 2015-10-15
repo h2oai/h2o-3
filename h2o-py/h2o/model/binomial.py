@@ -1,7 +1,7 @@
-from ..estimators.estimator_base import H2OEstimator
+from model_base import ModelBase
 
 
-class H2OBinomialModel(H2OEstimator):
+class H2OBinomialModel(ModelBase):
   def F1(self, thresholds=None, train=False, valid=False, xval=False):
     """Get the F1 value for a set of thresholds
 
@@ -36,7 +36,7 @@ class H2OBinomialModel(H2OEstimator):
     >>> model.train(X=range(4), y=4, training_frame=fr)
     >>> model.F1(train=True)
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in tm.iteritems():
       m[k] = None if v is None else v.metric("f1", thresholds=thresholds)
@@ -54,7 +54,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the F2 value for the cross validation data.
     :return: The F2 for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("f2", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -71,7 +71,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the F0point5 value for the cross validation data.
     :return: The F0point5 for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("f0point5", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -89,7 +89,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the accuracy value for the cross validation data.
     :return: The accuracy for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("accuracy", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -107,7 +107,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the error value for the cross validation data.
     :return: The error for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else [[acc[0],1-acc[1]] for acc in v.metric("accuracy", thresholds=thresholds)]
     return m.values()[0] if len(m) == 1 else m
@@ -125,7 +125,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the precision value for the cross validation data.
     :return: The precision for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("precision", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -143,7 +143,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the tpr value for the cross validation data.
     :return: The tpr for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -161,7 +161,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the tnr value for the cross validation data.
     :return: The F1 for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tnr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -179,7 +179,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the fnr value for the cross validation data.
     :return: The fnr for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("fnr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -197,7 +197,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the fpr value for the cross validation data.
     :return: The fpr for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("fpr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -215,7 +215,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the recall value for the cross validation data.
     :return: The recall for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -234,7 +234,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the sensitivity value for the cross validation data.
     :return: The sensitivity for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -252,7 +252,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the fallout value for the cross validation data.
     :return: The fallout for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("fpr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -270,7 +270,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the missrate value for the cross validation data.
     :return: The missrate for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("fnr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -288,7 +288,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the specificity value for the cross validation data.
     :return: The specificity for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tnr", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -306,7 +306,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the mcc value for the cross validation data.
     :return: The mcc for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("absolute_MCC", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -324,7 +324,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the max_per_class_error value for the cross validation data.
     :return: The max_per_class_error for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else [[mpca[0],1-mpca[1]] for mpca in v.metric("min_per_class_accuracy", thresholds=thresholds)]
     return m.values()[0] if len(m) == 1 else m
@@ -341,7 +341,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the metrics for the cross validation data.
     :return: The metrics for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric(metric,thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -376,7 +376,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval: If xval is true, then return the ROC coordinates for the cross validation data.
     :return rocs_cooridinates: the true cooridinates of the roc curve.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()):
       if v is not None:
@@ -399,7 +399,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the confusion matrix value for the cross validation data.
     :return: The confusion matrix for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.confusion_matrix(metrics=metrics, thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
@@ -415,7 +415,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the threshold_by_max_metric value for the cross validation data.
     :return: The threshold_by_max_metric for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.find_threshold_by_max_metric(metric)
     return m.values()[0] if len(m) == 1 else m
@@ -432,10 +432,7 @@ class H2OBinomialModel(H2OEstimator):
     :param xval:  If xval is True, then return the idx_by_threshold for the cross validation data.
     :return: The idx_by_threshold for this binomial model.
     """
-    tm = H2OEstimator._get_metrics(self, train, valid, xval)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.find_idx_by_threshold(threshold)
     return m.values()[0] if len(m) == 1 else m
-
-  def _make_model(self):
-    return H2OBinomialModel()

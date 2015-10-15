@@ -1,4 +1,10 @@
 from ..model.model_base import ModelBase
+from ..model.autoencoder import H2OAutoEncoderModel
+from ..model.binomial import H2OBinomialModel
+from ..model.clustering import H2OClusteringModel
+from ..model.dim_reduction import H2ODimReductionModel
+from ..model.multinomial import H2OMultinomialModel
+from ..model.regression import H2ORegressionModel
 from ..model.metrics_base import *
 from ..h2o import H2OConnection, H2OJob, H2OFrame
 import inspect
@@ -86,8 +92,8 @@ class H2OEstimator(ModelBase):
     self._resolve_model(model.dest_key,model_json)
 
   def _resolve_model(self, model_id, model_json):
-    metrics_class = H2OEstimator._metrics_class(model_json)
-    m = self._make_model()
+    metrics_class, model_class = H2OEstimator._metrics_class(model_json)
+    m = model_class()
     m._id = model_id
     m._model_json = model_json
     m._metrics_class = metrics_class
@@ -105,10 +111,8 @@ class H2OEstimator(ModelBase):
 
       # build a useful dict of the params
       for p in m._model_json["parameters"]: m.parms[p["label"]]=p
+    self.__class__ = type(model_class.__name__, (H2OEstimator,model_class),{})
     self.__dict__ = m.__dict__.copy()
-
-  def _make_model(self):
-    H2OEstimator._make_model(self)
 
   ##### Scikit-learn Interface Methods #####
   def fit(self, X, y=None, **params):
@@ -184,11 +188,11 @@ class H2OEstimator(ModelBase):
   @staticmethod
   def _metrics_class(model_json):
     model_type = model_json["output"]["model_category"]
-    if model_type=="Binomial":       metrics_class = H2OBinomialModelMetrics
-    elif model_type=="Clustering":   metrics_class = H2OClusteringModelMetrics
-    elif model_type=="Regression":   metrics_class = H2ORegressionModelMetrics
-    elif model_type=="Multinomial":  metrics_class = H2OMultinomialModelMetrics
-    elif model_type=="AutoEncoder":  metrics_class = H2OAutoEncoderModelMetrics
-    elif model_type=="DimReduction": metrics_class = H2ODimReductionModelMetrics
+    if model_type=="Binomial":       metrics_class = H2OBinomialModelMetrics;      model_class = H2OBinomialModel
+    elif model_type=="Clustering":   metrics_class = H2OClusteringModelMetrics;    model_class = H2OClusteringModel
+    elif model_type=="Regression":   metrics_class = H2ORegressionModelMetrics;    model_class = H2ORegressionModel
+    elif model_type=="Multinomial":  metrics_class = H2OMultinomialModelMetrics;   model_class = H2OMultinomialModel
+    elif model_type=="AutoEncoder":  metrics_class = H2OAutoEncoderModelMetrics;   model_class = H2OAutoEncoderModel
+    elif model_type=="DimReduction": metrics_class = H2ODimReductionModelMetrics;  model_class = H2ODimReductionModel
     else: raise NotImplementedError(model_type)
-    return metrics_class
+    return [metrics_class,model_class]

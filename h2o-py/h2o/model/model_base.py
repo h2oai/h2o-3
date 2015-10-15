@@ -4,6 +4,8 @@ This module implements the base model class.  All model things inherit from this
 
 from . import H2OFrame
 from . import H2OConnection
+import h2o
+import imp
 
 
 class ModelBase(object):
@@ -28,7 +30,7 @@ class ModelBase(object):
   def model_id(self, value):
     oldname = self.model_id
     self._id = value
-    rapids("(rename \"{}\" \"{}\")".format(oldname, value))
+    h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
 
   @property
   def params(self):
@@ -66,7 +68,7 @@ class ModelBase(object):
     test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id)
     # prediction_frame_id = j["predictions_frame"] #j["model_metrics"][0]["predictions"]["frame_id"]["name"]
-    return get_frame(j["predictions_frame"]["name"])
+    return h2o.get_frame(j["predictions_frame"]["name"])
 
   def is_cross_validated(self):
     """
@@ -87,7 +89,7 @@ class ModelBase(object):
     :param key: If None, return all cross-validated models; otherwise return the model that key points to.
     :return: A model or list of models.
     """
-    return get_model(key) if key is not None else [get_model(k) for k in self._xval_keys]
+    return h2o.get_model(key) if key is not None else [h2o.get_model(k) for k in self._xval_keys]
 
   @property
   def xvals(self):
@@ -108,7 +110,7 @@ class ModelBase(object):
     if test_data is None: raise ValueError("Must specify test data")
     test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data._id, deep_features_hidden_layer=layer)
-    return get_frame(j["predictions_frame"]["name"])
+    return h2o.get_frame(j["predictions_frame"]["name"])
 
   def weights(self, matrix_id=0):
     """
@@ -120,7 +122,7 @@ class ModelBase(object):
     if matrix_id not in range(num_weight_matrices):
       raise ValueError("Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
                        "was requested.".format(num_weight_matrices, matrix_id))
-    return get_frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
+    return h2o.get_frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
 
   def biases(self, vector_id=0):
     """
@@ -132,7 +134,7 @@ class ModelBase(object):
     if vector_id not in range(num_bias_vectors):
       raise ValueError("Bias vector does not exist. Model has {0} bias vectors (0-based indexing), but vector {1} "
                        "was requested.".format(num_bias_vectors, vector_id))
-    return get_frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
+    return h2o.get_frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
 
   def model_performance(self, test_data=None, train=False, valid=False):
     """
@@ -170,7 +172,7 @@ class ModelBase(object):
     model = self._model_json["output"]
     if 'scoring_history' in model.keys() and model["scoring_history"] != None:
       s = model["scoring_history"]
-      if can_use_pandas():
+      if h2o.can_use_pandas():
         import pandas
         pandas.options.display.max_rows = 20
         return pandas.DataFrame(s.cell_values,columns=s.col_header)
@@ -438,7 +440,7 @@ class ModelBase(object):
     :param path:  An absolute path to the directory where POJO should be saved.
     :return: None
     """
-    download_pojo(self,path)  # call the "package" function
+    h2o.download_pojo(self,path)  # call the "package" function
 
   @staticmethod
   def _get_metrics(o, train, valid, xval):
