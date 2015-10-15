@@ -53,13 +53,47 @@ public class EasyPredictModelWrapper {
   }
 
   /**
+   * Make a prediction on a new data point.
+   *
+   * The type of prediction returned depends on the model type.
+   * The caller needs to know what type of prediction to expect.
+   *
+   * This call is convenient for generically automating model deployment.
+   * For specific applications (where the kind of model is known and doesn't change), it is recommended to call
+   * specific prediction calls like predictBinomial() directly.
+   *
+   * @param data A new data point.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public AbstractPrediction predict(RowData data) throws PredictException {
+    switch (m.getModelCategory()) {
+      case AutoEncoder:
+        return predictAutoEncoder(data);
+      case Binomial:
+        return predictBinomial(data);
+      case Multinomial:
+        return predictMultinomial(data);
+      case Clustering:
+        return predictClustering(data);
+      case Regression:
+        return predictRegression(data);
+
+      case Unknown:
+        throw new PredictException("Unknown model category");
+      default:
+        throw new PredictException("Unhandled model category (" + m.getModelCategory() + ") in switch statement");
+    }
+  }
+
+  /**
    * Make a prediction on a new data point using an AutoEncoder model.
    *
    * @param data A new data point.
    * @return The prediction.
-   * @throws AbstractPredictException
+   * @throws PredictException
    */
-  public AutoEncoderModelPrediction predictAutoEncoder(RowData data) throws AbstractPredictException {
+  public AutoEncoderModelPrediction predictAutoEncoder(RowData data) throws PredictException {
     double[] preds = preamble(ModelCategory.AutoEncoder, data);
     throw new RuntimeException("Unimplemented " + preds.length);
   }
@@ -69,9 +103,9 @@ public class EasyPredictModelWrapper {
    *
    * @param data A new data point.
    * @return The prediction.
-   * @throws AbstractPredictException
+   * @throws PredictException
    */
-  public BinomialModelPrediction predictBinomial(RowData data) throws AbstractPredictException {
+  public BinomialModelPrediction predictBinomial(RowData data) throws PredictException {
     double[] preds = preamble(ModelCategory.Binomial, data);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
@@ -90,9 +124,9 @@ public class EasyPredictModelWrapper {
    *
    * @param data A new data point.
    * @return The prediction.
-   * @throws AbstractPredictException
+   * @throws PredictException
    */
-  public MultinomialModelPrediction predictMultinomial(RowData data) throws AbstractPredictException {
+  public MultinomialModelPrediction predictMultinomial(RowData data) throws PredictException {
     double[] preds = preamble(ModelCategory.Multinomial, data);
 
     MultinomialModelPrediction p = new MultinomialModelPrediction();
@@ -110,9 +144,9 @@ public class EasyPredictModelWrapper {
    *
    * @param data A new data point.
    * @return The prediction.
-   * @throws AbstractPredictException
+   * @throws PredictException
    */
-  public ClusteringModelPrediction predictClustering(RowData data) throws AbstractPredictException {
+  public ClusteringModelPrediction predictClustering(RowData data) throws PredictException {
     double[] preds = preamble(ModelCategory.Clustering, data);
 
     ClusteringModelPrediction p = new ClusteringModelPrediction();
@@ -126,9 +160,9 @@ public class EasyPredictModelWrapper {
    *
    * @param data A new data point.
    * @return The prediction.
-   * @throws AbstractPredictException
+   * @throws PredictException
    */
-  public RegressionModelPrediction predictRegression(RowData data) throws AbstractPredictException {
+  public RegressionModelPrediction predictRegression(RowData data) throws PredictException {
     double[] preds = preamble(ModelCategory.Regression, data);
 
     RegressionModelPrediction p = new RegressionModelPrediction();
@@ -172,13 +206,13 @@ public class EasyPredictModelWrapper {
   // Private methods below this line.
   //----------------------------------------------------------------------
 
-  private void validateModelCategory(ModelCategory c) throws AbstractPredictException {
+  private void validateModelCategory(ModelCategory c) throws PredictException {
     if (m.getModelCategory() != c) {
       throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + m.getModelCategory());
     }
   }
 
-  private double[] preamble(ModelCategory c, RowData data) throws AbstractPredictException {
+  private double[] preamble(ModelCategory c, RowData data) throws PredictException {
     validateModelCategory(c);
     double[] preds = new double[m.getPredsSize()];
     preds = predict(data, preds);
@@ -191,7 +225,7 @@ public class EasyPredictModelWrapper {
     }
   }
 
-  private void fillRawData(RowData data, double[] rawData) throws AbstractPredictException {
+  private void fillRawData(RowData data, double[] rawData) throws PredictException {
     for (String dataColumnName : data.keySet()) {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
 
@@ -239,7 +273,7 @@ public class EasyPredictModelWrapper {
     }
   }
 
-  private double[] predict(RowData data, double[] preds) throws AbstractPredictException {
+  private double[] predict(RowData data, double[] preds) throws PredictException {
     double[] rawData = new double[m.nfeatures()];
     setToNaN(rawData);
     fillRawData(data, rawData);
