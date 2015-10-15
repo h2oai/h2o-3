@@ -25,10 +25,10 @@
 #` - TRUE : Node is evaluated, cluster has the ID, and an R GC finalizer will remove this temp ID
 #` - FALSE: Node is evaluated, cluster has the ID, and the user has to explictly remove this permanent ID
 #` - list of Nodes: Then further ID is one of:
-#` - - missing: this Node is lazy and has never been evaluated
+#` - - missing: this Node is lazy and has never been evaluated 
 #` - - NA: this Node has been executed once, but no temp ID was made
 #` - - String: this Node is-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to FALSE
-#`
+#` 
 #` # A number of fields represent cached queries of an evaluated frame.
 #` E$data   <- A cached result; can be a scalar, or a R dataframe result holding
 #`             the first N (typically 10) rows and all cols of the frame
@@ -415,7 +415,10 @@ median.Frame <- h2o.median
 #' @param x An H2O Frame object.
 #' @param na.rm ignore missing values
 #' @export
-range.Frame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
+range <- function(x,na.rm = TRUE) {
+  if( !is.Frame(x) ) .Primitive("range")(x,na.rm)
+  else .newExpr("range",x,na.rm)
+}
 
 #' Cut H2O Numeric Data to Factor
 #'
@@ -491,7 +494,10 @@ match.Frame <- h2o.match
 # %in% method
 #' @rdname h2o.match
 #' @export
-`%in%` <- function(x,table) h2o.match(x,table,nomatch=0)
+`%in%` <- function(x,table) {
+  if( is.Frame(x) ) h2o.match(x,table,nomatch=0)
+  else base::`%in%`(x,table)
+}
 
 #' Remove Rows With NAs
 #'
@@ -999,15 +1005,24 @@ t.Frame <- function(x) .newExpr("t",x)
 
 #' @rdname Frame
 #' @export
-log.Frame <- function(x) .newExpr("log",x)
+log <- function(x, ...) {
+  if( !is.Frame(x) ) .Primitive("log")(x)
+  else .newExpr("log",x)
+}
 
 #' @rdname Frame
 #' @export
-trunc.Frame <- function(x, ...) .newExpr("trunc",x)
+trunc <- function(x, ...) {
+  if( !is.Frame(x) ) .Primitive("trunc")(x)
+  else .newExpr("trunc",x)
+}
 
 #' @rdname Frame
 #' @export
-`%*%` <- function(x, y) .newExpr("x",x,y)
+`%*%` <- function(x, y) {
+  if( !is.Frame(x) ) .Primitive("%*%")(x,y)
+  else .newExpr("x",x,y)
+}
 
 #' Returns the Dimensions of an H2O Frame
 #'
@@ -1048,7 +1063,10 @@ names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1))
 #' @param do.NULL logical. If FALSE and names are NULL, names are created.
 #' @param prefix for created names.
 #' @export
-colnames <- function(x, do.NULL=TRUE, prefix = "col") names.Frame(x)
+colnames <- function(x, do.NULL=TRUE, prefix = "col") {
+  if( !is.Frame(x) ) return(base::colnames(x,do.NULL,prefix))
+  return(names.Frame(x))
+}
 
 #' @rdname Frame
 #' @export
@@ -1117,7 +1135,7 @@ h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.Frame(x), levels)
 #' tail(australia.hex, 10)
 #' }
 #' @export
-h2o.head <- function(x, n=6L) {
+h2o.head <- function(x, ..., n=6L) {
   stopifnot(length(n) == 1L)
   n <- if (n < 0L) max(nrow(x) + n, 0L)
        else        min(n, nrow(x))
@@ -1133,7 +1151,7 @@ head.Frame <- h2o.head
 
 #' @rdname h2o.head
 #' @export
-h2o.tail <- function(x, n=6L) {
+h2o.tail <- function(x, ..., n=6L) {
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if( n==0L ) head(x,n=0L)
@@ -1154,8 +1172,10 @@ tail.Frame <- h2o.tail
 #' @export
 is.factor <- function(x) {
   # Eager evaluate and use the cached result to return a scalar
-  x <- .fetch.data(x,1)
-  if( ncol(x)==1L ) x <- x[,1]
+  if( is.Frame(x) ) {
+    x <- .fetch.data(x,1)
+    if( ncol(x)==1L ) x <- x[,1]
+  }
   base::is.factor(x)
 }
 
@@ -1164,14 +1184,17 @@ is.factor <- function(x) {
 #' @rdname is.numeric
 #' @param x An H2O Frame object
 #' @export
-is.numeric <- function(x) attr(.eval.frame(.newExpr("is.numeric",x)), "data")
+is.numeric <- function(x) {
+  if( !is.Frame(x) ) .Primitive("is.numeric")(x)
+  else attr(.eval.frame(.newExpr("is.numeric",x)), "data")
+}
 
 #' Print An H2O Frame
 #'
 #' @param x An H2O Frame object
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
-print.Frame <- function(x, ...) { print(head(x), ...) }
+print.Frame <- function(x, ...) { print(head(x)) }
 
 #' Display the structure of an H2O Frame object
 #'
@@ -1301,8 +1324,10 @@ str.Frame <- function(object, ..., cols=FALSE) {
 
 #' @rdname Frame
 #' @export
-`colnames<-` <- function(x, value) `names<-.Frame`(x,if( is.Frame(value) ) colnames(value) else value)
-
+`colnames<-` <- function(x, value) {
+  if( !is.Frame(x) ) return(base::`colnames<-`(x,value))
+  return(`names<-.Frame`(x,if( is.Frame(value) ) colnames(value) else value))
+}
 
 #'
 #' Quantiles of H2O Frames.
@@ -1521,6 +1546,7 @@ summary.Frame <- h2o.summary
 #'
 #' @name h2o.mean
 #' @param x An H2O Frame object.
+#' @param ... Further arguments to be passed from or to other methods.
 #' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
 #' @seealso \code{\link[base]{mean}} for the base R implementation.
 #' @examples
@@ -1531,7 +1557,7 @@ summary.Frame <- h2o.summary
 #' mean(prostate.hex$AGE)
 #' }
 #' @export
-h2o.mean <- function(x, na.rm=TRUE) attr(.eval.frame(.newExpr("mean",x,na.rm)), "data")
+h2o.mean <- function(x, ..., na.rm=TRUE) attr(.eval.frame(.newExpr("mean",x,na.rm)), "data")
 
 #' @rdname h2o.mean
 #' @export
@@ -1582,7 +1608,10 @@ h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
 
 #' @rdname h2o.var
 #' @export
-var <- function(x, y = NULL, na.rm = FALSE, use) h2o.var(x, y, na.rm, use)
+var <- function(x, y = NULL, na.rm = FALSE, use)  {
+  if( is.Frame(x) ) h2o.var(x,y,na.rm,use)
+  else stats::var(x,y,na.rm,use)
+}
 
 #'
 #' Standard Deviation of a column of data.
@@ -1608,7 +1637,10 @@ h2o.sd <- function(x, na.rm = FALSE) {
 
 #' @rdname h2o.sd
 #' @export
-sd <- function(x, na.rm=FALSE) h2o.sd(x, na.rm)
+sd <- function(x, na.rm=FALSE) {
+  if( is.Frame(x) ) h2o.sd(x)
+  else stats::sd(x,na.rm)
+}
 
 #'
 #' Scaling and Centering of an H2O Frame
@@ -1757,15 +1789,15 @@ as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #'
 #' @name as.vector
 #' @param x An H2O Frame object
-#' @param mode character string naming an atomic mode or "list" or "expression" or (except for vector) "any"
+#' @param mode Unused
 #' @S3method as.vector Frame
 #' @usage \\method{as.vector}{Frame}(x,mode)
 #' @export
-as.vector.Frame <- function(x, mode) as.vector(as.matrix.Frame(x, mode))
+as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
 
 #`
 #' @export
-as.double.Frame <- function(x) {
+as.double.Frame <- function(x, ...) {
   res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
     if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a double")
@@ -1775,7 +1807,7 @@ as.double.Frame <- function(x) {
 }
 
 #' @export
-as.logical.Frame <- function(x) {
+as.logical.Frame <- function(x, ...) {
   res <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(res) ) {
     if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a logical")
@@ -1785,7 +1817,7 @@ as.logical.Frame <- function(x) {
 }
 
 #' @export
-as.integer.Frame <- function(x) {
+as.integer.Frame <- function(x, ...) {
   x <- .fetch.data(x,1) # Force evaluation
   if( is.data.frame(x) ) {
     if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element Frame into an integer")
@@ -1808,13 +1840,21 @@ as.integer.Frame <- function(x) {
 #' summary(prostate.hex)
 #' }
 #' @export
-as.factor <- function(x) .newExpr("as.factor",x)
+as.factor <- function(x) {
+  if( is.Frame(x) ) .newExpr("as.factor",x)
+  else base::as.factor(x)
+}
+
 
 #' Convert an H2O Frame to a String
 #'
 #' @param x An H2O Frame object
+#' @param ... Further arguments to be passed from or to other methods.
 #' @export
-as.character.Frame <- function(x) .newExpr("as.character",x)
+as.character.Frame <- function(x, ...) {
+  if( is.Frame(x) ) .newExpr("as.character",x)
+  else base::as.character(x)
+}
 
 #' Convert H2O Data to Numeric
 #'
@@ -1830,7 +1870,10 @@ as.character.Frame <- function(x) .newExpr("as.character",x)
 #' prostate.hex[,2] <- as.numeric(prostate.hex[,2])
 #' }
 #' @export
-as.numeric <- function(x) .newExpr("as.numeric",x)
+as.numeric <- function(x) {
+  if( is.Frame(x) ) .newExpr("as.numeric",x)
+  else base::as.numeric(x)
+}
 
 #'
 #' Delete Columns from a Frame
@@ -1877,6 +1920,14 @@ h2o.removeVecs <- function(data, cols) {
 #' }
 #' @export
 h2o.ifelse <- function(test, yes, no) {
+  if( !is.Frame(yes) && is.character(yes) ) yes <- .quote(yes)
+  if( !is.Frame(no)  && is.character(no ) ) no  <- .quote(no )
+  .newExpr("ifelse",test,yes,no)
+}
+
+#' @rdname h2o.ifelse
+#' @export
+ifelse <- function(test, yes, no) {
   if( is.atomic(test) ) {
     if (typeof(test) != "logical")
       storage.mode(test) <- "logical"
@@ -1894,14 +1945,9 @@ h2o.ifelse <- function(test, yes, no) {
       }
     }
   }
-  if( !is.Frame(yes) && is.character(yes) ) yes <- .quote(yes)
-  if( !is.Frame(no)  && is.character(no ) ) no  <- .quote(no )
-  .newExpr("ifelse",test,yes,no)
+  if( is.Frame(test) || is.Frame(yes) || is.Frame(no) ) return(h2o.ifelse(test,yes,no))
+  else base::ifelse(test,yes,no)
 }
-
-#' @rdname h2o.ifelse
-#' @export
-ifelse <- h2o.ifelse
 
 #' Combine H2O Datasets by Columns
 #'
@@ -2312,6 +2358,7 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
 #' }
 #' @export
 apply <- function(X, MARGIN, FUN, ...) {
+  if( !is.Frame(X) ) return(base::apply(X,MARGIN,FUN,...))
 
   # Margin must be 1 or 2 and specified
   if( missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))) )
@@ -2458,46 +2505,3 @@ h2o.trim <- function(x) .newExpr("trim", x)
 #' @param x The column whose string lengths will be returned.
 #' @export
 h2o.nchar <- function(x) .newExpr("length", x)
-
-#Overwrites functions from the h2o package that are name conflicts to conditionally call the h2o
-#version (if input has Frame) or the conflicting version of the function from the other package (if input
-#does not have Frame). Another way to solve the problem of functions of earlier packages with the same name
-#being masked by h2o is setOldClass("Frame") and setMethod(f='fxn', signature='Frame', def =)
-.overwrite <- function() {
-
-	#Step 1: Create a list (map_names_pkgs) of function names that conflict with h2o and their packages.
-	conflict <- conflicts(detail=TRUE)
-	#conflicts() gives a list of function names that conflict/overlap across all envs/packages/tools.
-	#The order of the envs given by conflicts is sorted from .GlobalEnv to base, with intermediary envs
-	#listed in the order they were loaded.
-	map_names_pkgs <- setNames(vector("list", length(conflict[[1]])), conflict[[1]]) #initialize list
-	for (i in length(conflict):2) { #go backwards so that the most recent env's function is grabbed
-		type_and_pkgname = strsplit(names(conflict)[i],":")[[1]]
-		if (type_and_pkgname[1] == "package") { #only grab packages, not tools
-			map_names_pkgs[base::`%in%`(names(map_names_pkgs), conflict[[i]])] <- type_and_pkgname[2]
-		}
-	}
-
-	#Step 2: Wrapper
-	#Wrapper takes two functions (f,h) and returns another function, which will handle inputs (...) by computing
-	#f(...) if any inputs are Frame, or g(...) if no inputs are Frame
-	wrapper <- function(f,h) {
-		force(f)
-		force(h)
-		#The force calls are needed since f,h don't get evaluated when the returned function is created. In some cases
-		# without it then f,h won't get found when running the wrapped version due to R's lazy evaluation or "promises" or
-		# something. Adding a force call to unevaluated arguments to closure generators is zero-overhead. -Stack Overflow
-		function(...) if (any(sapply(list(...), is.Frame))) f(...) else h(...)
-	}
-
-	#Step 3: Call the wrapper to replace h2o's functions with new functions that calls h2o's verison (if input has Frame)
-	#or the conflicting package's version (if input does not have Frame)
-	for (i in 1:length(map_names_pkgs)) {
-		fxn = names(map_names_pkgs[i])
-		pkg = as.character(map_names_pkgs[i])
-		#make the assignment if the function is not a generic, which already behaves properly
-		if (is.null(attr(get(fxn, pos=1), "generic"))) assign(fxn, wrapper(get(fxn, pos=1),get(fxn, pos=paste0("package:",pkg))), pos=1)
-	}
-}
-
-if (names(conflicts(detail=TRUE))[1] == ".GlobalEnv") .overwrite()
