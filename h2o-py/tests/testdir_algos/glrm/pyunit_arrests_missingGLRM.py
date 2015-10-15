@@ -41,7 +41,7 @@ def glrm_arrests_miss():
         
         train_err[i] = train_numerr
         valid_err[i] = valid_numerr
-        h2o.remove(arrests_glrm._model_json['output']['loading_key']['name'])
+        h2o.remove(arrests_glrm._model_json['output']['representation_name'])
     
     for i in range(len(missing_ratios)):
         print "Missing ratio: {0}% --> Training error: {1}\tValidation error: {2}".format(missing_ratios[i]*100, train_err[i], valid_err[i])

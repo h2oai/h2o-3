@@ -1,6 +1,10 @@
+library(h2o)
+h2o.init()
+
 ## Find and import data into H2O
-pathToACSData   <- h2o:::.h2o.locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
-pathToWHDData   <- h2o:::.h2o.locate("bigdata/laptop/census/whd_zcta_cleaned.zip")
+locate <- h2o:::.h2o.locate
+pathToACSData   <- locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
+pathToWHDData   <- locate("bigdata/laptop/census/whd_zcta_cleaned.zip")
 
 print("Importing ACS 2013 5-year DP02 demographic dataset into H2O...")
 acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 149)))
@@ -8,22 +12,29 @@ acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 1
 ## Save and drop zip code column from training frame
 acs_zcta_col <- acs_orig$ZCTA5
 acs_full <- acs_orig[,-which(colnames(acs_orig) == "ZCTA5")]
+dim(acs_full)
 summary(acs_full)
+# EDIT: Rename columns to meaningful descriptors using metadata file
 
 print("Importing WHD 2014-2015 labor violations dataset into H2O...")
 whd_zcta <- h2o.uploadFile(pathToWHDData, col.types = c(rep("enum", 7), rep("numeric", 97)))
 dim(whd_zcta)
 summary(whd_zcta)
+# EDIT: Script for what dataset represents and what it means as a low-rank model
+# EDIT: Might try recoding violations to Bad (R, W, RW) vs. Not Bad (N/A)
 
 print("Run GLRM to reduce ZCTA demographics to k = 5 archetypes")
-acs_model <- h2o.glrm(training_frame = acs_full, k = 5, transform = "STANDARDIZE", init = "PlusPlus",
-                      loss = "Quadratic", max_iterations = 100, regularization_x = "Quadratic",
-                      regularization_y = "L1", gamma_x = 0.25, gamma_y = 0.5)
+acs_model <- h2o.glrm(training_frame = acs_full, k = 5, transform = "STANDARDIZE", 
+                      loss = "Quadratic", regularization_x = "Quadratic", 
+                      regularization_y = "L1", max_iterations = 100, gamma_x = 0.25, gamma_y = 0.5)
 acs_model
+# EDIT: Demonstrate setting loss by individual column (manual override of defaults)
+# EDIT: Need history of objective values for each iteration
 
 ## Embedding of ZCTAs into archetypes (X)
-zcta_arch_x <- h2o.getFrame(acs_model@model$loading_key$name)
+zcta_arch_x <- h2o.getFrame(acs_model@model$representation_name)
 head(zcta_arch_x)
+# EDIT: Rename output parameters to acs_model@model$representation_name
 
 ## Archetype to full feature mapping (Y)
 arch_feat_y <- acs_model@model$archetypes
@@ -59,3 +70,5 @@ print("Performance comparison:")
 data.frame(original  = c(orig_time[3], gbm_orig@model$training_metric@metrics$MSE, gbm_orig@model$validation_metric@metrics$MSE),
            reduced   = c(mod_time[3], gbm_mod@model$training_metric@metrics$MSE, gbm_mod@model$validation_metric@metrics$MSE),
            row.names = c("runtime", "train_mse", "test_mse"))
+# EDIT: Examine validation (test) error
+# EDIT: Try original GBM with categorical column excluded

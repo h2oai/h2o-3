@@ -677,9 +677,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
-        String loading_name = (_parms._loading_name == null || _parms._loading_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._loading_name;
-        model._output._loading_key = Key.make(loading_name);
-        Frame x = new Frame(model._output._loading_key, xnames, xvecs);
+        model._output._representation_name = (_parms._representation_name == null || _parms._representation_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._representation_name;
+        model._output._representation_key = Key.make(model._output._representation_name);
+        Frame x = new Frame(model._output._representation_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x);
         DKV.put(xinfo);

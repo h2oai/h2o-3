@@ -32,7 +32,7 @@ test.glrm.arrests_miss <- function() {
     expect_equal(validmm$caterr, 0)
     expect_true(validmm$numcnt > trainmm$numcnt)
     expect_equal(validmm$numcnt, totobs)
-    h2o.rm(arrests.glrm@model$loading_key$name)    # Remove loading matrix to free memory
+    h2o.rm(arrests.glrm@model$representation_name)    # Remove X matrix to free memory
     
     # Save relevant information from this run
     misserr <- (validmm$numerr - trainmm$numerr) / (validmm$numcnt - trainmm$numcnt)   # Average squared error over missing entries only

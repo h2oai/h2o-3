@@ -19,7 +19,7 @@ def glrm_iris():
         print "Impute original data from XY decomposition"
         pred_h2o = glrm_h2o.predict(irisH2O)
         pred_h2o.describe()
-        h2o.remove(glrm_h2o._model_json['output']['loading_key']['name'])
+        h2o.remove(glrm_h2o._model_json['output']['representation_name'])
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, glrm_iris)
