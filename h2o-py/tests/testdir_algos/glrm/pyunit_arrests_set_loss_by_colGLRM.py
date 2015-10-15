@@ -20,7 +20,7 @@ def glrm_set_loss_by_col():
     fit_y = glrm_h2o._model_json['output']['archetypes'].cell_values
     fit_y_np = [[float(s) for s in list(row)[1:]] for row in fit_y]
     fit_y_np = np.array(fit_y_np)
-    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['loading_key']['name'])
+    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
     
     print "Check final objective function value"

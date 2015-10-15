@@ -56,7 +56,7 @@ acs_best_full <- h2o.glrm(training_frame = acs_full, k = k_dim, transform = "STA
 print(acs_best_full)
 
 print("Embedding of ZCTAs into archetypes (X):")
-zcta_arch_x <- h2o.getFrame(acs_best_full@model$loading_key$name)
+zcta_arch_x <- h2o.getFrame(acs_best_full@model$representation_name)
 print(head(zcta_arch_x))
 print("Archetype to full feature mapping (Y):")
 arch_feat_y <- acs_best_full@model$archetypes

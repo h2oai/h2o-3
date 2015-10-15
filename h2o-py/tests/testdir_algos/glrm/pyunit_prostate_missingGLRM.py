@@ -48,7 +48,7 @@ def glrm_prostate_miss():
         valid_numerr[i] = prostate_glrm._model_json['output']['validation_metrics']._metric_json['numerr']
         train_caterr[i] = prostate_glrm._model_json['output']['training_metrics']._metric_json['caterr']
         valid_caterr[i] = prostate_glrm._model_json['output']['validation_metrics']._metric_json['caterr']
-        h2o.remove(prostate_glrm._model_json['output']['loading_key']['name'])
+        h2o.remove(prostate_glrm._model_json['output']['representation_name'])
     
     for i in range(len(missing_ratios)):
         print "Missing ratio: {0}% --> Training numeric error: {1}\tValidation numeric error: {2}".format(missing_ratios[i]*100, train_numerr[i], valid_numerr[i])
