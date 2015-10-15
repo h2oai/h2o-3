@@ -545,6 +545,14 @@ In-H2O scoring is triggered on an existing H2O cluster, typically using a REST A
 
 ---
 
+**I am using an older version of H2O (2.8 or prior) - where can I find documentation for this version?**
+
+If you are using H2O 2.8 or prior, we strongly recommend <a href="http://h2o.ai/download/" target="_blank">upgrading to the latest version of H2O</a> if possible. 
+
+If you do not wish to upgrade to the latest version, documentation for H2O Classic is available [here](http://docs.h2o.ai/h2oclassic/index.html). 
+
+---
+
 ##Hadoop
 
 
@@ -1107,6 +1115,28 @@ model <- h2o.getModel(model_id = "my_H2O_modelID",conn=localH2O)
 
 varimp<-as.data.frame(h2o.varimp(model))
 ```
+
+
+---
+
+**How do I add random noise to a column in an H2O frame?**
+
+To add random noise to a column in an H2O frame, refer to the following example: 
+
+```
+h2o.init()
+
+fr <- as.h2o(iris)
+
+  |======================================================================| 100%
+
+random_column <- h2o.runif(fr)
+
+new_fr <- h2o.cbind(fr,random_column)
+
+new_fr
+```
+
 
 
 ---

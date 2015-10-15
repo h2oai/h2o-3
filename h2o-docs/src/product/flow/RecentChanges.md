@@ -12,6 +12,10 @@ The following changes represent features that have been added since the previous
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/a17dcc0637a04fc7e63c020bd0a3f2bba7b6f674): PUBDEV-1247: Added stochastic GBM parameters (`sample_rate` and `col_sample_rate`) to R/Py APIs
 
 
+#####Hadoop
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ba2755313d22f3812742786269ababc72257a179): Added support for H2O with HDP2.3
+
 #####Python
 
 - [PUBDEV-2098](https://0xdata.atlassian.net/browse/PUBDEV-2098): Scoring history in Python is now visualized ([GitHub commit](https://github.com/h2oai/h2o-3/commit/77b27109c84c4739f9f1b7a3078f8992beefc813))
@@ -21,6 +25,7 @@ The following changes represent features that have been added since the previous
 
 >This software release introduces changes to the R API that may cause previously written R scripts to be inoperable. For more information, refer to the following [link](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/RChanges.md). 
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a989234a0ec9d6ded30441a2c6d2672ef5731379): Added `h2o.getTypes()` to the R wrapper
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/c630e40f5ba577e912aaf44d3c7f7fb10f1693dd): Added ability to set `col.types` with a named list 
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/875418caebf8f12aca1675f124c2d5135670642a): Added `h2o.getId()` to get the back-end distributed key/value store ID from a Frame
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/9420547451c5ef6dcb04b8803d0a400c720445a4): Added column types to H2O frame in R, which allows R to set the correct column types when `as.data.frame()` is used on an H2O frame
@@ -29,6 +34,8 @@ The following changes represent features that have been added since the previous
 #####System
 
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/de0b19c71a18f09eeace304773adebb51772e311): Added string length util for Enum columns
+- [[GitHub commit](https://github.com/h2oai/h2o-3/commit/7b8e39e8a6624d2512620d9e230ff91dd9c7e240): Added pass-through version of `toCategoricalVec()`, `toNumericVec()`, and `toStringVec()` to `Vec.java` for code simplicity and backwards compatibility
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/20ccac7947232fbb68e318e013c0ac2a96870284): Added string column handling to `StrSplit()`
 
 
 ####Enhancements
@@ -58,6 +65,8 @@ The following changes are improvements to existing features (which includes chan
 
 #####Python
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6877f2c69f42abc779df4bb98fc8b5d000a0bd88): `head` and `tail` no longer download the entire dataset
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1fd6ae0a988ca421dedf6338a895b53f9220d030): Truncated DF in `head` and `tail` before calling `/DownloadDataset`
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/54279fbf168abc8dc45b080d47eebc6ea56e616d): `head()` and `tail()` now default to pretty printing in Python
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/56f1c364897c25b082f800fce9549160661fed03): Moved setup functionality from parse to parse setup; `col_types` and `na_strings` can now be dictionaries
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/adf612fd1f5c764a05231d6b8023c83ba9ffe0f5): Updated `H2OColSelect` to supply extra argument
@@ -69,6 +78,7 @@ The following changes are improvements to existing features (which includes chan
 
 #####R
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fc8c337bad6178783286a262d0a18a246811e6fc): Changed `T`/`F` to `TRUE`/`FALSE`
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/0a2f64f526b35456614188806e38ed2c54ed8b5c): `xml2` package is now required for `rversions` package
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/d3956c45a6de6e845ed9791f295195778902116e): Package dependencies are taken into account when installing R packages
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/4c18d351207f2441e80a74e55df205edcaacbfcd): Metrics are now always computer if a dataset is provided (R `h2o.performance` call)
@@ -87,6 +97,10 @@ The following changes are improvements to existing features (which includes chan
 
 #####System
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/70d91bed44172257d6d804572c985ec1ec67201e): Changed parse setup guess when encountering large NA counts to not favor numeric over dates or UUIDs
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e0ed51ce8a7cc52ef522a15915f7444635ee2b5d): Refactored vector type conversion methods into a class called VecUtils
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/836c32ebd5a00b0c255ac3bdb418af2b5d4da81a): Cleaned up ASTStrList to handle frames with more than one vector during column conversion; checks types before converting; added several new column type conversions
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/678fa6af2b20105e17cacbe9c38bec4266b89246): If the job is cancelled, scoring is now canceled
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/ad2548754ad909edb0f4b01c61c09708d8ba3ee6): Refactored `doAll_numericResult() -> doAll(nout, type, frame)` where all output vecs are of the given type
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/5206760f20fa2394d16e30e4c025c6a3f4a62c44): Improved hash function
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/55874fa3e7c9ffbbdfb1cbb26d132304bf81deed): The output of `_train.get()` is now passed to a Frame
@@ -169,6 +183,7 @@ The following changes are to resolve incorrect software behavior:
 
 #####System
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/44994ee4998543ccf13c38e44017adee307db4da): Fixed `VecUtils.copyOver()` to accept a column type for the resulting copy
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/a1f06c4ed21cbec4ac1c5f250f7cf5470758484a): Fixed `Vec.preWriting` so that it does not use an anonymous inner task which causes the entire Vec header to be passed
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/bcec96c0fc088c5be2a923654a9581055f2ad969): Fixed parse to mark categorical references in ParseWriter as transient (enums must be node-shared during the entire multiple parse task)
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/c5d5f166fce56fddd808fa6b1267b9c13d83063f): PUBDEV-2182: Fixed DL checkpoint restart with given validation set after R (currents) behavior changed; now the validation set key no longer necessarily matches the file name
