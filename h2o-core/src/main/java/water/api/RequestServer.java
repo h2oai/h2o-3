@@ -127,10 +127,10 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Cloud",      "GET", CloudHandler.class,  "status", null, "Determine the status of the nodes in the H2O cloud.");
     register("/3/Cloud",                  "HEAD",CloudHandler.class, "head", null, "Determine the status of the nodes in the H2O cloud.");
     register("/3/Jobs"       ,"GET", JobsHandler.class,   "list", null,   "Get a list of all the H2O Jobs (long-running actions).");
-    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       , null,"Something something something.");
-    register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       , null,"Something something something.");
-    register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       , null,"Something something something.");
-    register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       , null,"Something something something.");
+    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       , null,"Show a time line.");
+    register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       , null,"Report real-time profiling information for all nodes (sorted, aggregated stack traces).");
+    register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       , null,"Report stack traces for all threads on all nodes.");
+    register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       , null,"Run a network test to measure the performance of the cluster interconnect.");
     register("/3/UnlockKeys", "POST", UnlockKeysHandler.class, "unlock", null, "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
     register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    , null,"Shut down the cluster");
 
