@@ -455,7 +455,6 @@ class ModelBase(object):
   # def __del__(self):
   #   h2o.remove(self._id)
 
-
   def _plot(self, timestep, metric, **kwargs):
 
     # check for matplotlib. exit if absent

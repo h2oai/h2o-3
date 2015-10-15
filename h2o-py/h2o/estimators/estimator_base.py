@@ -63,7 +63,6 @@ class H2OEstimator(ModelBase):
     if y is not None:
       self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
     self.build_model(self.parms)
-    return self
 
   def build_model(self, algo_params):
     if algo_params["training_frame"] is None: raise ValueError("Missing training_frame")
@@ -72,7 +71,7 @@ class H2OEstimator(ModelBase):
     training_frame = algo_params.pop("training_frame")
     validation_frame = algo_params.pop("validation_frame",None)
     algo  = algo_params.pop("algo")
-    is_auto_encoder = algo_params is not None and "autoencoder" in algo_params and algo_params["autoencoder"] is not None
+    is_auto_encoder = algo_params is not None and "autoencoder" in algo_params and algo_params["autoencoder"]
     is_unsupervised = is_auto_encoder or algo == "pca" or algo == "kmeans"
     if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
     if not is_unsupervised and y is None: raise ValueError("Missing response")
@@ -82,11 +81,13 @@ class H2OEstimator(ModelBase):
     kwargs['training_frame'] = tframe
     if vframe is not None: kwargs["validation_frame"] = vframe
     if y is not None:  kwargs['response_column'] = tframe[y].names[0]
+    ignored_columns = list(set(tframe.names) - set(x+[y]))
+    kwargs["ignored_columns"] = None if ignored_columns==[] else ignored_columns
     kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
 
-    #### POLL MODEL FOR COMPLETION ####
+    ##### POLL MODEL FOR COMPLETION #####
     model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")).poll()
-    ###################################
+    #####################################
 
     if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
     else:                                model_json = H2OConnection.get_json("Models/"+model.dest_key)["models"][0]
@@ -153,7 +154,8 @@ class H2OEstimator(ModelBase):
     training_frame = X.cbind(y) if y is not None else X
     X = X.names
     y = y.names[0] if y is not None else None
-    return self.train(X, y, training_frame, **params)
+    self.train(X, y, training_frame, **params)
+    return self
 
   def get_params(self, deep=True):
     """Useful method for obtaining parameters for this estimator. Used primarily for

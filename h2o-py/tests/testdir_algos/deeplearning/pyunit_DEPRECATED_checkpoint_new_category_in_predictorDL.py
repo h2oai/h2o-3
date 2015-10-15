@@ -1,7 +1,7 @@
 import sys
 sys.path.insert(1,"../../../")
 import h2o, tests
-from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
 
 def checkpoint_new_category_in_predictor():
 
@@ -9,17 +9,14 @@ def checkpoint_new_category_in_predictor():
   sv2 = h2o.upload_file(tests.locate("smalldata/iris/setosa_versicolor.csv"))
   vir = h2o.upload_file(tests.locate("smalldata/iris/virginica.csv"))
 
-  m1 = H2ODeepLearningEstimator(epochs=100)
-  m1.train(X=[0,1,2,4], y=3, training_frame=sv1)
+  m1 = h2o.deeplearning(x=sv1[[0,1,2,4]], y=sv1[3], epochs=100)
 
-  m2 = H2ODeepLearningEstimator(epochs=200, checkpoint=m1.model_id)
-  m2.train(X=[0,1,2,4], y=3, training_frame=sv2)
+  m2 = h2o.deeplearning(x=sv2[[0,1,2,4]], y=sv2[3], epochs=200, checkpoint=m1.model_id)
 
   # attempt to continue building model, but with an expanded categorical predictor domain.
   # this should fail
   try:
-    m3 = H2ODeepLearningEstimator(epochs=200, checkpoint=m1.model_id)
-    m3.train(X=[0,1,2,4], y=3, training_frame=vir)
+    m3 = h2o.deeplearning(x=vir[[0,1,2,4]], y=vir[3], epochs=200, checkpoint=m1.model_id)
     assert False, "Expected continued model-building to fail with new categories introduced in predictor"
   except EnvironmentError:
     pass
