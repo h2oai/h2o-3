@@ -28,8 +28,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   long _leftBatchSize, _rightBatchSize;
 
   BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftNodeIdx, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
-    SingleThreadRadixOrder.MSBHeader leftMSBHeader = DKV.getGet(getMSBHeaderKey(leftFrame, leftMSB));
-    SingleThreadRadixOrder.MSBHeader rightMSBHeader = DKV.getGet(getMSBHeaderKey(rightFrame, rightMSB));
+    SingleThreadRadixOrder.MSBHeader leftMSBHeader = DKV.getGet(getMSBHeaderKey(leftFrame._key, leftMSB));
+    SingleThreadRadixOrder.MSBHeader rightMSBHeader = DKV.getGet(getMSBHeaderKey(rightFrame._key, rightMSB));
     if (leftMSBHeader == null || rightMSBHeader == null) return;
     _leftBatchSize = leftMSBHeader._batchSize;
     _rightBatchSize = rightMSBHeader._batchSize;

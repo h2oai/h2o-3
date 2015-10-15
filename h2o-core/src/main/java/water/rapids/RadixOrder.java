@@ -48,6 +48,7 @@ class RadixCount extends MRTask<RadixCount> {
   }
 
   @Override protected void postLocal() {
+    Log.info("Putting MSB counts per chunk for Frame " + _frameKey + " to myself");
     DKV.put(getKey(_frameKey, _col, H2O.SELF), _counts);
     // just the MSB counts per chunk on this node.  Most of this spine will be empty here.  TO DO: could condense to just the chunks on this node but for now, leave sparse.
     // We'll use this sparse spine right now on this node and the reduce happens on _o and _x later
@@ -70,6 +71,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
 
   @Override protected void setupLocal() {
     // First accumulate counts across chunks in this node into histograms for most significant 8 bits
+    Log.info("Getting RadixCounts for Frame " + _frameKey + " for column " + _col[0] + " from myself");
     _counts = ((RadixCount.Long2DArray)DKV.getGet(RadixCount.getKey(_frameKey, _col[0], H2O.SELF)))._val;   // get the sparse spine for this node, created and DKV-put above
     _MSBhist = new long[256];  // total across nodes but retain original spine as we need that below
     int nc = _fr.anyVec().nChunks();
@@ -199,9 +201,11 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
       }
       assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
       MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
+      Log.info("Putting MSB node headers for Frame " + _frameKey + " for MSB " + msb);
       DKV.put(getMSBNodeHeaderKey(_frameKey, msb, H2O.SELF.index()), msbh);
       for (int b=0;b<_o[msb].length; ++b) {
         OXbatch ox = new OXbatch(_o[msb][b], _x[msb][b]);
+        Log.info("Putting OX batch for Frame " + _frameKey + " for batch " + b + " for MSB " + msb);
         DKV.put(getOXbatchKey(_frameKey, msb, H2O.SELF.index(), b), ox);
       }
     }
@@ -254,6 +258,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     MoveByFirstByte.MSBNodeHeader[] MSBnodeHeader = new MoveByFirstByte.MSBNodeHeader[H2O.CLOUD.size()];
     _numRows =0;
     for (int n=0; n<H2O.CLOUD.size(); ++n) {
+      Log.info("Getting MSB Node Header for Frame " + _fr._key + " for MSB " + MSBvalue + " from node " + n);
       MSBnodeHeader[n] = DKV.getGet(MoveByFirstByte.getMSBNodeHeaderKey(_fr._key, MSBvalue, n));
       if (MSBnodeHeader[n]==null) continue;
       _numRows += ArrayUtils.sum(MSBnodeHeader[n]._MSBnodeChunkCounts);   // This numRows is split into nbatch batches on that node.
@@ -277,6 +282,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     MoveByFirstByte.OXbatch ox[/*node*/] = new MoveByFirstByte.OXbatch[H2O.CLOUD.size()];
     int oxBatchNum[/*node*/] = new int[H2O.CLOUD.size()];  // which batch of OX are we on from that node?  Initialized to 0.
     for (int node=0; node<H2O.CLOUD.size(); node++) {
+      Log.info("Getting OX for Frame " + _fr._key + " for MSB " + MSBvalue + " from node " + node + " for batch 0");
       ox[node] = DKV.getGet(MoveByFirstByte.getOXbatchKey(_fr._key, MSBvalue, node, /*batch=*/0));   // get the first batch for each node for this MSB
     }
     int oxOffset[] = new int[H2O.CLOUD.size()];
@@ -313,6 +319,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
           DKV.remove(MoveByFirstByte.getOXbatchKey(_fr._key, _MSBvalue, fromNode, oxBatchNum[fromNode]));
 
           // get the next batch from the node ...
+          Log.info("Getting OX for Frame " + _fr._key + " for MSB " + _MSBvalue + " from node " + fromNode + " for batch 0");
           ox[fromNode] = DKV.getGet(MoveByFirstByte.getOXbatchKey(_fr._key, _MSBvalue, fromNode, ++oxBatchNum[fromNode]));
           oxOffset[fromNode] = 0;
           sourceBatchRemaining = batchSize;
@@ -370,17 +377,19 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
       // tell the world how many batches and rows for this MSB
       MSBHeader msbh = new MSBHeader(_o.length, _numRows, _batchSize);
-      DKV.put(getMSBHeaderKey(_fr, _MSBvalue), msbh);
+      Log.info("Putting MSB header for Frame " + _fr._key + " for MSB " + _MSBvalue);
+      DKV.put(getMSBHeaderKey(_fr._key, _MSBvalue), msbh);
       for (int b=0;b<_o.length; ++b) {
         MoveByFirstByte.OXbatch ox = new MoveByFirstByte.OXbatch(_o[b], _x[b]);
+        Log.info("Putting OX header for Frame " + _fr._key + " for MSB " + _MSBvalue);
         DKV.put(MoveByFirstByte.getOXbatchKey(_fr._key, _MSBvalue, H2O.SELF.index(), b), ox);  // the OXbatchKey's on this node will be reused for the new keys
       }
     }
     tryComplete();
   }
 
-  public static Key getMSBHeaderKey(Frame fr, int MSBvalue) {
-    return Key.make("header_MSB_" + fr._key + "_MSB_" + MSBvalue, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
+  public static Key getMSBHeaderKey(Key frameKey, int MSBvalue) {
+    return Key.make("header_MSB_" + frameKey + "_MSB_" + MSBvalue, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
   }
 
   public static class MSBHeader extends Iced {
