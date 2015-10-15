@@ -1,7 +1,7 @@
 import sys, os
 sys.path.insert(1, "../../")
 import h2o, tests
-from h2o.model.binomial import H2OBinomialModel
+from h2o.estimators.estimator_base import H2OEstimator
 
 def save_load_model():
 
@@ -18,7 +18,7 @@ def save_load_model():
     assert os.path.isdir(model_path), "Expected load directory {0} to exist, but it does not.".format(model_path)
     the_model = h2o.load_model(model_path)
 
-    assert isinstance(the_model, H2OBinomialModel), "Expected and H2OBinomialModel, but got {0}".format(the_model)
+    assert isinstance(the_model, H2OEstimator), "Expected and H2OBinomialModel, but got {0}".format(the_model)
 
 if __name__ == "__main__":
     tests.run_test(sys.argv, save_load_model)
