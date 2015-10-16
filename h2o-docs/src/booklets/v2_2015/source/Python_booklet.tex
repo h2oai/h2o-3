@@ -14,7 +14,7 @@
 
 
 \begin{center}
-\textsc{\Large\bf{Python with H2O}}
+\textsc{\Large\bf{Machine Learning with Python and H2O}}
 
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
@@ -54,8 +54,7 @@
 
 {\raggedright 
 
-TODO PLACEHOLDER Python with H2O\\
-
+Machine Learning with Python and H2O\\
   by Spencer Aiello, Cliff Click, \\ 
 Jessica Lanford, Ludi Rehak \\
 \&\  Hank Roark\\
@@ -88,6 +87,7 @@ Printed in the United States of America.
 \thispagestyle{empty}%remove pg#
 
 \tableofcontents
+\thispagestyle{empty}%remove pg#
 
 \newpage
 
@@ -104,23 +104,340 @@ a simple but typical workflow.  More documentation available as part of H2O's
 other documentation.
 
 \input{common/what_is_h2o.tex}
-Need to put into something about where H2O fits into the PyData / SciKit ecosystem.
+%Need to put into something about where H2O fits into the PyData / SciKit ecosystem.
 
-\section{Getting setup}
 
-\subsection{Installing H2O}
-\newcommand{\waterVersion}{3.2.0.5}
-\input{common/installation.tex}
+\section{Installation} 
+\Urlmuskip=0mu plus 1mu\relax %needed to make long URLs break nicely
+
+H2O requires Java; if you do not already have Java installed, install it from {\url{https://java.com/en/download/}} before installing H2O. 
+
+The easiest way to directly install H2O is  via a Python package.
+
+({\bf{Note}}: The examples in this document were created with H2O version \waterVersion.)
+
+\subsection{Installation in Python}
+
+To load a recent H2O package from PyPI, run:
+
+\begin{lstlisting}[style=python]
+pip install h2o
+\end{lstlisting}
+
+To download the
+latest stable H2O-3 build from the H2O download page:
+
+\begin{enumerate}
+\item Go to {\url{http://h2o.ai/download}}.
+\item Choose the latest stable H2O-3 build.
+\item Click the ``Install in Python'' tab.
+\item Copy and paste the commands into your Python session.
+\end{enumerate}
+
+
+\bigskip
+After H2O is installed, verify the installation:
+
+\begin{lstlisting}[style=python]
+import h2o
+
+# Start H2O on your local machine
+h2o.init()
+
+# Get help
+help(h2o.glm)
+help(h2o.gbm)
+
+# Show a demo
+h2o.demo("glm")
+h2o.demo("gbm")
+
+\end{lstlisting}
+
+
 
 \section{Data Preparation}
-H2OFrame what is it, how does it compare to PD Series and DataFrames?
-H2OFrame data model
 
-\waterExampleInPython
-Customarily, we import and start H2O as follows:
-\lstinputlisting[style=python]{python/start_h2o.py}
+%let's add a brief intro on the necessity of data prep here -JL
 
-\subsection{Object Creation}
+\subsection{The H2O Object System}
+
+H2O uses a distributed key-value store (the "DKV" or "K/V") that contains pointers to the various objects of the H2O ecosystem. The DKV is a kind of biosphere in that it encapsulates all shared objects; however, it may not encapsulate all objects. 
+
+Some shared objects are mutable by the client; some shared objects are read-only by the client, but are mutable by H2O (e.g. a model being constructed will change over time); and actions by the client may have side-effects on other clients (multi-tenancy is not a supported model of use, but it is possible for multiple clients to attach to a single H2O cloud).
+
+Briefly, these objects are:
+
+\begin{itemize}
+\item \texttt{Key}: A key is an entry in the DKV that maps to an object in H2O.
+\item \texttt{Frame}: A Frame is a collection of Vec objects. It is a 2D array of elements.
+\item \texttt{Vec}: A Vec is a collection of Chunk objects. It is a 1D array of elements.
+\item \texttt{Chunk}: A Chunk holds a fraction of the BigData. It is a 1D array of elements.
+\item \texttt{ModelMetrics}: A collection of metrics for a given category of model.
+\item \texttt{Model}: A model is an immutable object having predict and metrics methods.
+\item \texttt{Job}: A Job is a non-blocking task that performs a finite amount of work.
+\end{itemize}
+Many of these objects have no meaning to a Python end-user, but to make sense of the objects available in this module it is helpful to understand how these objects map to objects in the JVM. After all, this module is an interface that allows the manipulation of a distributed system.
+
+
+\subsubsection{H2OFrames}
+
+An H2OFrame is a 2D array of uniformly-typed columns. Data in H2O is compressed (often achieving 2-4x better compression than gzip on disk) and is held in the JVM heap (i.e. data is "in memory"), and not in the Python process local memory. 
+
+The H2OFrame is an iterable (supporting list comprehensions) wrapper around a list of H2OVec objects. All an H2OFrame object is, therefore, is a wrapper on a list that supports various types of operations that may or may not be lazy. Here's an example showing how a list comprehension is combined with lazy expressions to compute the column means for all columns in the H2OFrame:
+
+\begin{lstlisting}[style=python]
+>>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+>>>
+>>> colmeans = [v.mean() for v in df]                           
+ # compute column means
+>>>
+>>> colmeans                                                     
+# print the results
+[5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]
+\end{lstlisting}
+
+Lazy expressions will be discussed briefly in the coming sections, as they are not necessarily going to be integral to the practicing data scientist. However, their primary purpose is to cut down on the chatter between the client (a.k.a the python interface) and H2O. Lazy expressions are combined and only ever evaluated when some piece of output is requested (e.g. print-to-screen).
+
+The set of operations on an H2OFrame is described in a dedicated chapter, but in general, this set of operations closely resembles those that may be performed on an R data.frame. This includes all types of slicing (with complex conditionals), broadcasting operations, and a slew of math operations for transforming and mutating a Frame -- all the while the actual Big Data is sitting in the H2O cloud. 
+
+The semantics for modifying a Frame closely resemble R's copy-on-modify semantics, except when it comes to mutating a Frame in place. For example, it's possible to assign all occurrences of the number 0 in a column to missing (or NA in R parlance) as demonstrated in the following snippet:
+
+\begin{lstlisting}[style=python]
+>>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+>>>
+>>> vol = df['VOL']                                              
+# select the VOL column
+>>>
+>>> vol[vol == 0] = None                                         
+# 0 VOL means 'missing'
+\end{lstlisting}
+
+After this operation, \texttt{vol} has been permanently mutated in place (it is not a copy!).
+
+
+%H2OFrame what is it, how does it compare to PD Series and DataFrames? [definition of H2OFrame covered in above (from https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.rst), will leave it to others to cover PD series & DataFrames - JL]
+%H2OFrame data model
+
+
+%Already provided in 3.1 above
+%\waterExampleInPython
+%Customarily, we import and start H2O as follows:
+%\lstinputlisting[style=python]{python/start_h2o.py}
+
+\subsubsection{H2OVec}
+
+An H2OVec is a single column of data that is uniformly typed and possibly lazily computed. As with H2OFrame, an H2OVec is a pointer to a distributed Java object residing in the H2O cloud. In reality, an H2OFrame is simply a collection of H2OVec pointers along with some metadata and various member methods.
+
+\subsubsection{Expr}
+
+In the guts of this module is the Expr class, which defines objects holding the cumulative, unevaluated expressions that may become H2OFrame/H2OVec objects. For example:
+
+\begin{lstlisting}[style=python]
+>>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+>>>
+>>> a = fr + 3.14159                         
+# "a" is now an Expr
+>>>
+>>> type(a)                                        
+# <class 'h2o.expr.Expr'>
+\end{lstlisting}
+
+These objects are not as important to distinguish at the user level, and all operations can be performed with the mental model of operating on 2D frames (i.e. everything is an H2OFrame).
+
+In the previous snippet, a has not yet triggered any big data evaluation and is, in fact, a pending computation. Once a is evaluated, it stays evaluated. Additionally, all dependent subparts composing a are also evaluated.
+
+This module relies on reference counting of python objects to dispose of out-of-scope objects. The Expr class destroys objects and their big data counterparts in the H2O cloud using a remove call:
+
+\begin{lstlisting}[style=python]
+>>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  
+# import prostate data
+>>>
+>>> h2o.remove(fr)                                               
+# remove prostate data
+>>> fr                                                           
+# attempting to use fr results in a ValueError
+\end{lstlisting}
+
+Notice that attempting to use the object after a remove call has been issued will result in a ValueError. Therefore, any working references may not be cleaned up, but they will no longer be functional. Deleting an unevaluated expression will not delete all subparts.
+
+\subsubsection{Models}
+
+The model-building experience with this module is unique, especially for those coming from a background in scikit-learn. Instead of using objects to build the model, builder functions are provided in the top-level module, and the result of a call is a model object belonging to one of the following categories:
+
+\begin{itemize}
+\item Regression
+\item Binomial
+\item Multinomial
+\item Clustering
+\item Autoencoder
+\end{itemize}
+
+To better demonstrate this concept, refer to the following example:
+\begin{lstlisting}[style=python]
+>>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  
+# import prostate data
+>>>
+>>> fr[1] = fr[1].asfactor()                                     
+# make 2nd column a factor
+>>>
+>>> m = h2o.glm(x=fr[3:], y=fr[2])                               
+# build a glm with a method call
+>>>
+>>> m.__class__                                                 
+ # <h2o.model.binomial.H2OBinomialModel object at 0x104659cd0>
+>>>
+>>> m.show()                                                   
+  # print the model details
+>>>
+>>> m.summary()                                                  
+# print a model summary
+\end{lstlisting}
+
+
+As you can see in the example, the result of the GLM call is a binomial model. This example also showcases an important feature-munging step needed for GLM to perform a classification task rather than a regression task. Namely, the second column is initially read as a numeric column, but it must be changed to a factor by way of the H2OVec operation asfactor. Let's take a look at this more deeply:
+
+\begin{lstlisting}[style=python]
+>>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")  
+# import prostate data
+>>>
+>>> fr[1].isfactor()                                             
+# produces False
+>>>
+>>> m = h2o.gbm(x=fr[2:],y=fr[1])                                
+# build the gbm
+>>>
+>>> m.__class__                                                  
+# <h2o.model.regression.H2ORegressionModel object at 0x104d07590>
+>>>
+>>> fr[1] = fr[1].asfactor()                                    
+ # cast the 2nd column to a factor column
+>>>
+>>> fr[1].isfactor()                                             
+# produces True
+>>>
+>>> m = h2o.gbm(x=fr[2:],y=fr[1])                                
+# build the gbm
+>>>
+>>> m.__class__                                                  
+# <h2o.model.binomial.H2OBinomialModel object at 0x104d18f50>
+\end{lstlisting}
+
+
+The above example shows how to properly deal with numeric columns you would like to use in a classification setting. Additionally, H2O can perform on-the-fly scoring of validation data and provide a host of metrics on the validation and training data. Here's an example of this functionality, where we additionally split the data set into three pieces for training, validation, and finally testing:
+\begin{lstlisting}[style=python]
+>>> fr = h2o.import_frame(path="smalldata/logreg/prostate.csv")
+  # import prostate
+>>>
+>>> fr[1] = fr[1].asfactor()                                     
+# cast to factor
+>>>
+>>> r = fr[0].runif()                                            
+# Random UNIform numbers, one per row
+>>>
+>>> train = fr[ r < 0.6 ]                                        
+# 60% for training data
+>>>
+>>> valid = fr[ (0.6 <= r) & (r < 0.9) ]                         
+# 30% for validation
+>>>
+>>> test  = fr[ 0.9 <= r ]                                       
+# 10% for testing
+>>>
+>>> m = h2o.deeplearning(x=train[2:],y=train[1],validation_x=valid[2:],validation_y=valid[1])  # build a deeplearning with a validation set (yes it's this simple)
+>>>
+>>> m                                                            
+# display the model summary by default (can also call m.show())
+>>>
+>>> m.show()                                                     
+# equivalent to the above
+>>>
+>>> m.model_performance()                                        
+# show the performance on the training data, (can also be m.performance(train=True)
+>>>
+>>> m.model_performance(valid=True)                              
+# show the performance on the validation data
+>>>
+>>> m.model_performance(test_data=test)                          
+# score and compute new metrics on the test data!
+\end{lstlisting}
+
+
+Expanding on this example, there are a number of ways of querying a model for its attributes. Here are some examples of how to do just that:
+\begin{lstlisting}[style=python]
+>>> m.mse()           # MSE on the training data
+>>>
+>>> m.mse(valid=True) # MSE on the validation data
+>>>
+>>> m.r2()            # R^2 on the training data
+>>>
+>>> m.r2(valid=True)  # R^2 on the validation data
+>>>
+>>> m.confusion_matrix()  # confusion matrix for max F1
+>>>
+>>> m.confusion_matrix("tpr") # confusion matrix for max true positive rate
+>>>
+>>> m.confusion_matrix("max_per_class_error")   # etc.
+\end{lstlisting}
+
+All of our models support various accessor methods such as these. The following section will discuss model metrics in greater detail.
+
+On a final note, each of H2O's algorithms handles missing (colloquially: "missing" or "NA") and categorical data automatically differently, depending on the algorithm. 
+%UPDATE You can find out more about each of the individual differences at the following link: http://docs2.h2o.ai/datascience/top.html
+
+\subsubsection{Metrics}
+
+H2O models exhibit a wide array of metrics for each of the model categories: - Clustering - Binomial - Multinomial - Regression - AutoEncoder In turn, each of these categories is associated with a corresponding H2OModelMetrics class.
+
+All algorithm calls return at least one type of metrics: the training set metrics. When building a model in H2O, you can optionally provide a validation set for on-the-fly evaluation of holdout data. If the validation set is provided, then two types of metrics are returned: the training set metrics and the validation set metrics.
+
+In addition to the metrics that can be retrieved at model-build time, there is a possible third type of metrics available post-build for the final holdout test set that contains data that does not appear in either the training or validation sets: the test set metrics. While the returned object is an H2OModelMetrics rather than an H2O model, it can be queried in the same exact way. Here's an example:
+\begin{lstlisting}[style=python]
+>>> fr = h2o.import_frame(path="smalldata/iris/iris_wheader.csv")  
+ # import iris
+>>>
+>>> r = fr[0].runif()                       
+# generate a random vector for splitting
+>>>
+>>> train = fr[ r < 0.6 ]                   
+# split out 60% for training
+>>>
+>>> valid = fr[ 0.6 <= r & r < 0.9 ]       
+ # split out 30% for validation
+>>>
+>>> test = fr[ 0.9 <= r ]                   
+# split out 10% for testing
+>>>
+>>> my_model = h2o.glm(x=train[1:], y=train[0], validation_x=valid[1:], validation_y=valid[0])  
+# build a GLM
+>>>
+>>> my_model.coef()                         
+# print the GLM coefficients, can also perform my_model.coef_norm() to get the normalized coefficients
+>>>
+>>> my_model.null_deviance()                
+# get the null deviance from the training set metrics
+>>>
+>>> my_model.residual_deviance()            
+# get the residual deviance from the training set metrics
+>>>
+>>> my_model.null_deviance(valid=True)      
+# get the null deviance from the validation set metrics (similar for residual deviance)
+>>>
+>>> # now generate a new metrics object for the test hold-out data:
+>>>
+>>> my_metrics = my_model.model_performance(test_data=test) # create the new test set metrics
+>>>
+>>> my_metrics.null_degrees_of_freedom()   
+ # returns the test null dof
+>>>
+>>> my_metrics.residual_deviance()          
+# returns the test res. deviance
+>>>
+>>> my_metrics.aic()                       
+ # returns the test aic
+\end{lstlisting}
+
+As you can see, the new model metrics object generated by calling \texttt{model\_performance} on the model object supports all of the metric accessor methods as a model. For a complete list of the available metrics for various model categories, please refer to the "Metrics in H2O" section of this document.
 
 \waterExampleInPython
 To create an H2OFrame object from a python tuple:
