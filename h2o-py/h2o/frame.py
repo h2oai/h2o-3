@@ -143,7 +143,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: Part of the H2OFrame constructor.
     """
     # perform the parse setup
-    setup = h2o.parse_setup(text_key, column_names=header)
+    setup = h2o.parse_setup(text_key, col_names=header)
     if check_header is not None: setup["check_header"] = check_header
     parse = h2o._parse(setup)
     self._update_post_parse(parse)
