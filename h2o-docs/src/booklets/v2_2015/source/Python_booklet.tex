@@ -1,4 +1,5 @@
 \input{common/conf_top.tex}
+
 %\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
@@ -118,13 +119,13 @@ H2OFrame data model
 
 \waterExampleInPython
 Customarily, we import and start H2O as follows:
-\lstinputlisting[style=python]{python/start_h2o.py}
+\lstinputlisting[style=python, firstline=1, lastline=31]{python/start_h2o.txt}
 
 \subsection{Object Creation}
 
 \waterExampleInPython
 To create an H2OFrame object from a python tuple:
-\lstinputlisting[style=python]{python/h2oframe_from_tuple.py}
+\lstinputlisting[style=python, firstline=33, lastline=45]{python/start_h2o.txt}
 
 \waterExampleInPython
 To create an H2OFrame object from a python list:
@@ -133,6 +134,7 @@ To create an H2OFrame object from a python list:
 \waterExampleInPython
 To create an H2OFrame object from a python dict (or collections.OrderedDict):
 \lstinputlisting[style=python]{python/h2oframe_from_dict.py}
+
 
 \subsection{Viewing Data}
 df (just looking at the data frame)
@@ -227,7 +229,6 @@ POJO, Scoring, Fitting into Python pipeline using Py4J
 Hadoop, Spark
 
 \section{Where to go from here}
-
 
 \newpage
 \section{References}
