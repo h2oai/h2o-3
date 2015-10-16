@@ -12,7 +12,7 @@ package hex.genmodel.easy.exception;
  *
  * This can definitely happen as a result of the user providing bad input.
  */
-public class PredictUnknownCategoricalLevelException extends AbstractPredictException {
+public class PredictUnknownCategoricalLevelException extends PredictException {
   public final String columnName;
   public final String unknownLevel;
 

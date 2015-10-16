@@ -2,7 +2,7 @@ package hex;
 
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
-import hex.genmodel.easy.exception.AbstractPredictException;
+import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
 
@@ -1162,10 +1162,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           continue;
         }
 
-        try { p = epmw.predictClustering(rowData); } catch (AbstractPredictException e) { }
-        try { if (p==null) p = epmw.predictRegression(rowData); } catch (AbstractPredictException e) { }
-        try { if (p==null) p = epmw.predictBinomial(rowData); } catch (AbstractPredictException e) { }
-        try { if (p==null) p = epmw.predictMultinomial(rowData); } catch (AbstractPredictException e) { }
+        try { p = epmw.predictClustering(rowData); } catch (PredictException e) { }
+        try { if (p==null) p = epmw.predictRegression(rowData); } catch (PredictException e) { }
+        try { if (p==null) p = epmw.predictBinomial(rowData); } catch (PredictException e) { }
+        try { if (p==null) p = epmw.predictMultinomial(rowData); } catch (PredictException e) { }
         if  (p==null) continue;
         int oldmiss=miss;
         for (int col = 0; col < pvecs.length; col++) { // Compare predictions
