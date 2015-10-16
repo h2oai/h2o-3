@@ -45,17 +45,43 @@ def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names
     path : str
       A path specifying the location of the data to upload.
     destination_frame : str, optional
-      The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+      The unique hex key assigned to the imported file. If none is given, a key will
+      automatically be generated.
     header : int, optional
      -1 means the first line is data, 0 means guess, 1 means first line is header.
     sep : str, optional
-      The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+      The field separator character. Values on each line of the file are separated by
+      this character. If sep = "", the parser will automatically detect the separator.
     col_names : list, optional
       A list of column names for the file.
     col_types : list or dict, optional
-      A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
+      A list of types or a dictionary of column names to types to specify whether columns
+      should be forced to a certain type upon import parsing. If a list, the types for
+      elements that are None will be guessed. The possible types a column may have are:
+          "unknown" - this will force the column to be parsed as all NA
+          "uuid"    - the values in the column must be true UUID or will be parsed as NA
+          "string"  - force the column to be parsed as a string
+          "numeric" - force the column to be parsed as numeric. H2O will handle the
+                      compression of the numeric data in the optimal manner.
+          "enum"    - force the column to be parsed as a categorical column.
+          "time"    - force the column to be parsed as a time column. H2O will attempt to
+                      parse the following list of date time formats.
+                        date:
+                          "yyyy-MM-dd"
+                          "yyyy MM dd"
+                          "dd-MMM-yy"
+                          "dd MMM yy"
+                        time:
+                          "HH:mm:ss"
+                          "HH:mm:ss:SSS"
+                          "HH:mm:ss:SSSnnnnnn"
+                          "HH.mm.ss"
+                          "HH.mm.ss.SSS"
+                          "HH.mm.ss.SSSnnnnnn"
+                      Times can also contain "AM" or "PM".
     na_strings : list or dict, optional
-      A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
+      A list of strings, or a list of lists of strings (one list per column), or a
+      dictionary of column names to strings which are to be interpreted as missing values.
 
   Returns
   -------
@@ -98,7 +124,28 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     col_types : list or dict, optional
       A list of types or a dictionary of column names to types to specify whether columns
       should be forced to a certain type upon import parsing. If a list, the types for
-      elements that are None will be guessed.
+      elements that are None will be guessed. The possible types a column may have are:
+          "unknown" - this will force the column to be parsed as all NA
+          "uuid"    - the values in the column must be true UUID or will be parsed as NA
+          "string"  - force the column to be parsed as a string
+          "numeric" - force the column to be parsed as numeric. H2O will handle the
+                      compression of the numeric data in the optimal manner.
+          "enum"    - force the column to be parsed as a categorical column.
+          "time"    - force the column to be parsed as a time column. H2O will attempt to
+                      parse the following list of date time formats.
+                        date:
+                          "yyyy-MM-dd"
+                          "yyyy MM dd"
+                          "dd-MMM-yy"
+                          "dd MMM yy"
+                        time:
+                          "HH:mm:ss"
+                          "HH:mm:ss:SSS"
+                          "HH:mm:ss:SSSnnnnnn"
+                          "HH.mm.ss"
+                          "HH.mm.ss.SSS"
+                          "HH.mm.ss.SSSnnnnnn"
+                      Times can also contain "AM" or "PM".
     na_strings : list or dict, optional
       A list of strings, or a list of lists of strings (one list per column), or a
       dictionary of column names to strings which are to be interpreted as missing values.
@@ -112,7 +159,8 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
 
   return H2OFrame(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
 
-def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
+
+def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", col_names=None, col_types=None, na_strings=None):
   """
 
   During parse setup, the H2O cluster will make several guesses about the attributes of
@@ -138,10 +186,30 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
     col_names : list, optional
       A list of column names for the file.
     col_types : list or dict, optional
-      A list of types or a dictionary of column names to types to specify whether
-      columns should be forced to a certain type upon import parsing. If a list, the
-      types for elements that are None will be guessed.
-    na_strings : list or dict, optional
+      A list of types or a dictionary of column names to types to specify whether columns
+      should be forced to a certain type upon import parsing. If a list, the types for
+      elements that are None will be guessed. The possible types a column may have are:
+          "unknown" - this will force the column to be parsed as all NA
+          "uuid"    - the values in the column must be true UUID or will be parsed as NA
+          "string"  - force the column to be parsed as a string
+          "numeric" - force the column to be parsed as numeric. H2O will handle the
+                      compression of the numeric data in the optimal manner.
+          "enum"    - force the column to be parsed as a categorical column.
+          "time"    - force the column to be parsed as a time column. H2O will attempt to
+                      parse the following list of date time formats.
+                        date:
+                          "yyyy-MM-dd"
+                          "yyyy MM dd"
+                          "dd-MMM-yy"
+                          "dd MMM yy"
+                        time:
+                          "HH:mm:ss"
+                          "HH:mm:ss:SSS"
+                          "HH:mm:ss:SSSnnnnnn"
+                          "HH.mm.ss"
+                          "HH.mm.ss.SSS"
+                          "HH.mm.ss.SSSnnnnnn"
+                      Times can also contain "AM" or "PM".
       A list of strings, or a list of lists of strings (one list per column), or a
       dictionary of column names to strings which are to be interpreted as missing values.
 
@@ -161,28 +229,28 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if separator:
     if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
     j["separator"] = ord(separator)
-  if column_names:
-    if not isinstance(column_names, list): raise ValueError("col_names should be a list")
-    if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
-    j["column_names"] = column_names
-  if column_types:
-    if isinstance(column_types, dict):
+  if col_names:
+    if not isinstance(col_names, list): raise ValueError("col_names should be a list")
+    if len(col_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
+    j["column_names"] = col_names
+  if col_types:
+    if isinstance(col_types, dict):
       #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
       if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
         j["column_names"] = _gen_header(j["number_columns"])
-      if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
+      if not set(col_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
       idx = 0
       column_types_list = []
       for name in j["column_names"]:
-        if name in column_types:
-          column_types_list.append(column_types[name])
+        if name in col_types:
+          column_types_list.append(col_types[name])
         else:
           column_types_list.append(j["column_types"][idx])
         idx += 1
       column_types = column_types_list
-    elif isinstance(column_types, list):
-      if len(column_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
-      column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(column_types))]
+    elif isinstance(col_types, list):
+      if len(col_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
+      column_types = [col_types[i] if col_types[i] else j["column_types"][i] for i in range(len(col_types))]
     else: #not dictionary or list
       raise ValueError("col_types should be a list of types or a dictionary of column names to types")
     j["column_types"] = column_types
@@ -1881,6 +1949,7 @@ class H2ODisplay:
       return True
     except ValueError:
       return False
+
 
 def can_use_pandas():
   try:
