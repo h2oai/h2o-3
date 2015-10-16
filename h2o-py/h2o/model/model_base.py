@@ -152,25 +152,25 @@ class ModelBase(object):
     """
     Normalization/Standardization offsets for numeric predictors
     """
-    self._model_json['output']['normsub']
+    return self._model_json['output']['normsub']
 
   def respmul(self):
     """
     Normalization/Standardization multipliers for numeric response
     """
-    self._model_json['output']['normrespmul']
+    return self._model_json['output']['normrespmul']
 
   def respsub(self):
     """
     Normalization/Standardization offsets for numeric response
     """
-    self._model_json['output']['normrespsub']
+    return self._model_json['output']['normrespsub']
 
   def catoffsets(self):
     """
     Categorical offsets for one-hot encoding
     """
-    self._model_json['output']['catoffsets']
+    return self._model_json['output']['catoffsets']
 
   def model_performance(self, test_data=None, train=False, valid=False):
     """
