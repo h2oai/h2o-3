@@ -5,7 +5,7 @@ import h2o, tests
 def javapredict_gbm_xlarge():
 
     hdfs_name_node = tests.hadoop_namenode()
-    hdfs_file_name = "/datasets/z_repro.csv.gz"
+    hdfs_file_name = "/datasets/z_repro.csv"
     url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_file_name)
 
     params = {'ntrees':22, 'max_depth':37, 'min_rows':1, 'sample_rate':0.1} # 651MB pojo
