@@ -34,7 +34,6 @@ acs_model
 ## Embedding of ZCTAs into archetypes (X)
 zcta_arch_x <- h2o.getFrame(acs_model@model$representation_name)
 head(zcta_arch_x)
-# EDIT: Rename output parameters to acs_model@model$representation_name
 
 ## Archetype to full feature mapping (Y)
 arch_feat_y <- acs_model@model$archetypes
@@ -70,5 +69,5 @@ print("Performance comparison:")
 data.frame(original  = c(orig_time[3], gbm_orig@model$training_metric@metrics$MSE, gbm_orig@model$validation_metric@metrics$MSE),
            reduced   = c(mod_time[3], gbm_mod@model$training_metric@metrics$MSE, gbm_mod@model$validation_metric@metrics$MSE),
            row.names = c("runtime", "train_mse", "test_mse"))
-# EDIT: Examine validation (test) error
+# EDIT: Examine validation (test) error (should be better due to overfitting)
 # EDIT: Try original GBM with categorical column excluded

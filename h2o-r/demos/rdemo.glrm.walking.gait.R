@@ -12,39 +12,40 @@ gait.hex <- h2o.importFile(path = pathToData, destination_frame = "gait.hex")
 dim(gait.hex)
 summary(gait.hex)
 
+print("Plot first row on x- vs. y-coordinate locations")
+gait.row <- as.matrix(gait.hex[1,2:ncol(gait.hex)])
+x_coords <- seq(1, ncol(gait.row), by = 3)
+y_coords <- seq(2, ncol(gait.row), by = 3)
+feat_nams <- sapply(colnames(gait.row), function(nam) { substr(nam, 1, nchar(nam)-2) })
+feat_nams <- as.character(feat_nams[x_coords])
+plot(gait.row[x_coords], gait.row[y_coords], xlab = "X-Coordinate", ylab = "Y-Coordinate", main = paste("Location of Body Parts at Time", time.df[1]), col = "blue", pch = 19, lty = "solid")
+text(gait.row[x_coords], gait.row[y_coords], labels = feat_nams, cex = 0.7, pos = 3)
+
 #---------------------------------------#
 #          Matrix Decomposition         #
 #---------------------------------------#
 ## Basic GLRM using quadratic loss and no regularization (PCA)
-gait.glrm <- h2o.glrm(training_frame = gait.hex, x = 2:ncol(gait.hex), k = 5, init = "PlusPlus", loss = "Quadratic",
+gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 5, loss = "Quadratic", 
                       regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 gait.glrm
-# EDIT: Rename x parameter to cols so less confusing
-# EDIT: Include number of numeric and categorical entries in model output
 
 ## Decompose training frame into XY with rank k
 print("Archetype to feature mapping (Y):")
 gait.y <- gait.glrm@model$archetypes
 gait.y
 
-# print("Plot first archetype on z-coordinate features")
-# feat_cols <- seq(3, ncol(gait.y), by = 3)
-# plot(1:length(feat_cols), gait.y[1,feat_cols], xlab = "Feature", ylab = "Archetypal Weight", main = "First Archetype's Z-Coordinate Feature Weights", col = "blue", pch = 19, lty = "solid")
-# text(1:length(feat_cols), gait.y[1,feat_cols], labels = colnames(gait.y[1,feat_cols]), cex = 0.7, pos = 3)
-# abline(0, 0, lty = "dashed")
-
 print("Plot archetypes on x- vs. y-coordinate features")
 gait.y.mat <- as.matrix(gait.y)
 x_coords <- seq(1, ncol(gait.y), by = 3)
 y_coords <- seq(2, ncol(gait.y), by = 3)
-feat_nams <- sapply(colnames(gait.y[,x_coords]), function(nam) { substr(nam, 1, nchar(nam)-1) })
+feat_nams <- sapply(colnames(gait.y), function(nam) { substr(nam, 1, nchar(nam)-1) })
+feat_nams <- as.character(feat_nams[x_coords])
 for(k in 1:5) {
   plot(gait.y.mat[k,x_coords], gait.y.mat[k,y_coords], xlab = "X-Coordinate Weight", ylab = "Y-Coordinate Weight", main = paste("Feature Weights of Archetype", k), col = "blue", pch = 19, lty = "solid")
   text(gait.y.mat[k,x_coords], gait.y.mat[k,y_coords], labels = feat_nams, cex = 0.7, pos = 3)
   cat("Press [Enter] to continue")
   line <- readline()
 }
-# EDIT: Can also do this with original dataset (with one time slice and one row)
 
 print("Projection into archetype space (X):")
 gait.x <- h2o.getFrame(gait.glrm@model$representation_name)
@@ -64,8 +65,8 @@ head(gait.pred)
 print(paste0("Plot original and reconstructed L.Acromium.X over time range [", time.df[1], ",", time.df[2], "]"))
 lacro.df <- as.data.frame(gait.hex$L.Acromium.X[1:150])
 lacro.pred.df <- as.data.frame(gait.pred$reconstr_L.Acromium.X[1:150])
-matplot(time.df, cbind(lacro.df, lacro.pred.df), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = 1:2)
-legend("topright", legend = c("Original", "Reconstructed"), col = 1:2, pch = 1)
+matplot(time.df, cbind(lacro.df, lacro.pred.df), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = c(1,4))
+legend("topright", legend = c("Original", "Reconstructed"), col = c(1,4), pch = 1)
 
 #---------------------------------------#
 #        Imputing Missing Values        #
@@ -78,7 +79,7 @@ dim(gait.miss)
 summary(gait.miss)
 
 ## Basic GLRM using quadratic loss and no regularization (PCA)
-gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, x = 2:ncol(gait.miss), k = 5, init = "SVD",
+gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, cols = 2:ncol(gait.miss), k = 5, init = "SVD", svd_method = "GramSVD",
                       loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 1000, min_step_size = 1e-7)
 gait.glrm2
 # EDIT: Why is the fit so bad compared to the full dataset model? Check for bugs in algorithm
@@ -94,7 +95,7 @@ lacro.pred.df2 <- as.data.frame(gait.pred2$reconstr_L.Acromium.X[1:150])
 matplot(time.df, cbind(lacro.df2, lacro.pred.df2), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = c(1,4))
 legend("topright", legend = c("Original", "Imputed"), col = c(1,4), pch = 1)
 
-## Plot X's where training data contains missing values
+## Mark points where training data contains missing values
 lacro.miss.df2 <- as.data.frame(gait.miss$L.Acromium.X[1:150])
 idx_miss <- which(is.na(lacro.miss.df2))
 points(time.df[idx_miss], lacro.df2[idx_miss,1], col = 2, pch = 4, lty = 2)
