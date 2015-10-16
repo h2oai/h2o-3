@@ -96,7 +96,7 @@ h2o.kmeans <- function(training_frame, x, k,
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
       init <- as.h2o(init)
     } else {
-      .eval.frame(init)
+      .eager.frame(init)
     }
     parms[["user_points"]] <- init
     # Set k

@@ -63,7 +63,7 @@ h2o.prcomp <- function(training_frame, x, k,
              })
 
   ## -- Force evaluate temporary ASTs -- ##
-  .eval.frame(training_frame)
+  .eager.frame(training_frame)
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame

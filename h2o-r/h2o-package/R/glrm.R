@@ -117,12 +117,9 @@ h2o.glrm <- function(training_frame, x, k, model_id,
                stop("argument \"training_frame\" must be a valid Frame or key")
              })
 
-  ## -- Force evaluate temporary ASTs -- ##
-  .eval.frame(training_frame)
-
   # Gather user input
   parms <- list()
-  parms$training_frame <- training_frame
+  parms$training_frame <- .eager.frame(training_frame)
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
   if(!missing(k))
@@ -173,7 +170,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
       if( !is.data.frame(user_y) && !is.matrix(user_y) ) user_y <- t(as.data.frame(user_y))
       user_y <- as.h2o(user_y)
     } else {
-      .eval.frame(user_y)
+      .eager.frame(user_y)
     }
     parms[["user_y"]] <- user_y
     
@@ -196,7 +193,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
       if( !is.data.frame(user_x) && !is.matrix(user_x) ) user_x <- t(as.data.frame(user_x))
       user_x <- as.h2o(user_x)
     } else {
-      .eval.frame(user_x)
+      .eager.frame(user_x)
     }
     parms[["user_x"]] <- user_x
   # } else if( is.null(user_x) ) {
