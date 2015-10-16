@@ -34,12 +34,13 @@ gait.y
 # abline(0, 0, lty = "dashed")
 
 print("Plot archetypes on x- vs. y-coordinate features")
+gait.y.mat <- as.matrix(gait.y)
 x_coords <- seq(1, ncol(gait.y), by = 3)
 y_coords <- seq(2, ncol(gait.y), by = 3)
-feat_nams <- colnames(gait.y[,x_coords])
+feat_nams <- sapply(colnames(gait.y[,x_coords]), function(nam) { substr(nam, 1, nchar(nam)-1) })
 for(k in 1:5) {
-  plot(gait.y[k,x_coords], gait.y[k,y_coords], xlab = "X-Coordinate Weight", ylab = "Y-Coordinate Weight", main = paste("Feature Weights of Archetype", k, sep = ""), col = "blue", pch = 19, lty = "solid")
-  text(gait.y[k,x_coords], gait.y[1,y_coords], labels = feat_nams, cex = 0.7, pos = 3)
+  plot(gait.y.mat[k,x_coords], gait.y.mat[k,y_coords], xlab = "X-Coordinate Weight", ylab = "Y-Coordinate Weight", main = paste("Feature Weights of Archetype", k), col = "blue", pch = 19, lty = "solid")
+  text(gait.y.mat[k,x_coords], gait.y.mat[k,y_coords], labels = feat_nams, cex = 0.7, pos = 3)
   cat("Press [Enter] to continue")
   line <- readline()
 }
@@ -73,11 +74,12 @@ print("Importing walking gait dataset with missing values into H2O...")
 gait.miss <- h2o.importFile(path = pathToMissingData, destination_frame = "gait.miss")
 
 ## Grab a summary of imported frame
+dim(gait.miss)
 summary(gait.miss)
 
 ## Basic GLRM using quadratic loss and no regularization (PCA)
-gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, x = 2:ncol(gait.miss), k = 15, init = "PlusPlus",
-                      loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 500, min_step_size = 1e-7)
+gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, x = 2:ncol(gait.miss), k = 5, init = "SVD",
+                      loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 1000, min_step_size = 1e-7)
 gait.glrm2
 # EDIT: Why is the fit so bad compared to the full dataset model? Check for bugs in algorithm
 # Try SVD initialize and add some L2 regularization as well. Want training error to be smaller than in full dataset model.
@@ -89,6 +91,10 @@ head(gait.pred2)
 print(paste0("Plot original and imputed L.Acromium.X over time range [", time.df[1], ",", time.df[2], "]"))
 lacro.df2 <- as.data.frame(gait.hex$L.Acromium.X[1:150])
 lacro.pred.df2 <- as.data.frame(gait.pred2$reconstr_L.Acromium.X[1:150])
-matplot(time.df, cbind(lacro.df2, lacro.pred.df2), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = 1:2)
-legend("topright", legend = c("Original", "Imputed"), col = 1:2, pch = 1)
-# EDIT: Plot X's where NA's were in gait.miss dataset
+matplot(time.df, cbind(lacro.df2, lacro.pred.df2), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = c(1,4))
+legend("topright", legend = c("Original", "Imputed"), col = c(1,4), pch = 1)
+
+## Plot X's where training data contains missing values
+lacro.miss.df2 <- as.data.frame(gait.miss$L.Acromium.X[1:150])
+idx_miss <- which(is.na(lacro.miss.df2))
+points(time.df[idx_miss], lacro.df2[idx_miss,1], col = 2, pch = 4, lty = 2)
