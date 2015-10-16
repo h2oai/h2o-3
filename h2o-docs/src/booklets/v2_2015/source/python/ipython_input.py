@@ -36,3 +36,16 @@ df.tail(5)
 df.columns
 
 df.describe()
+
+df['C1']  # TODO: Fix to be 'A' once column name fix is in
+
+df[1] # TODO: Fix once column name fix is in
+
+df[['C1','C2']] # TODO: Fix once column name fix is in
+
+df[0:2] # TODO: Fix once column name fix is in
+
+df[2:7, :] # TODO same fix as above
+
+df2[ df2["B"] == "a", :]
+
