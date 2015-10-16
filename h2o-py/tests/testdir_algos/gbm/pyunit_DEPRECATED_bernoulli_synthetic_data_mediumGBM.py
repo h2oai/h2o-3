@@ -52,11 +52,23 @@ def bernoulli_synthetic_data_mediumGBM():
     auc_sci = roc_auc_score(y_test, gbm_sci.predict_proba(X_test)[:,1])
 
     # Compare this result to H2O
-    train_h2o = H2OFrame(np.column_stack((y_train, X_train)).tolist())
-    test_h2o = H2OFrame(np.column_stack((y_test, X_test)).tolist())
+    xtrain = np.transpose(X_train).tolist()
+    ytrain = y_train.tolist()
+    xtest = np.transpose(X_test).tolist()
+    ytest = y_test.tolist()
+    train_h2o = H2OFrame([ytrain]+xtrain)
+    test_h2o = H2OFrame([ytest]+xtest)
 
-    gbm_h2o = h2o.gbm(x=train_h2o[1:], y=train_h2o["C1"].asfactor(), distribution=distribution, ntrees=ntrees,
-                      min_rows=min_rows, max_depth=max_depth, learn_rate=learn_rate, nbins=nbins)
+    train_h2o["C1"] = train_h2o["C1"].asfactor()
+    test_h2o["C1"] = test_h2o["C1"].asfactor()
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    gbm_h2o = H2OGradientBoostingEstimator(distribution=distribution,
+                                           ntrees=ntrees,
+                                           min_rows=min_rows,
+                                           max_depth=max_depth,
+                                           learn_rate=learn_rate,
+                                           nbins=nbins)
+    gbm_h2o.train(X=range(1,train_h2o.ncol), y="C1", training_frame=train_h2o)
     gbm_perf = gbm_h2o.model_performance(test_h2o)
     auc_h2o = gbm_perf.auc()
 

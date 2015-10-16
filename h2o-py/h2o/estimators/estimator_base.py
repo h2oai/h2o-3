@@ -80,7 +80,8 @@ class H2OEstimator(ModelBase):
     if vframe is not None: kwargs["validation_frame"] = vframe
     if isinstance(y, int): y = tframe.names[y]
     if y is not None: kwargs['response_column'] = y
-    if isinstance(x, (list,tuple)) and isinstance(x[0], int):
+    if not isinstance(x, (list,tuple)): x=[x]
+    if isinstance(x[0], int):
       x = [tframe.names[i] for i in x]
     offset = kwargs["offset_column"]
     folds  = kwargs["fold_column"]
