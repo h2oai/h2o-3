@@ -47,6 +47,5 @@ class H2OKMeansEstimator(H2OEstimator):
     :return: An instance of H2OClusteringModel.
     """
     super(H2OKMeansEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["algo"] = "kmeans"
+    self._parms = locals()
+    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}

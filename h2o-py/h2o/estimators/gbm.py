@@ -69,6 +69,5 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
                score_each_iteration=None, checkpoint=None):
     super(H2OGradientBoostingEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["algo"] = "gbm"
+    self._parms = locals()
+    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}

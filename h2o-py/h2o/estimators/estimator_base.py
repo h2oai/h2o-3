@@ -53,13 +53,14 @@ class H2OEstimator(ModelBase):
         H2OFrame with validation data to be scored on while training.
     """
     algo_params = locals()
-    self.parms.update({k:v for k, v in algo_params.iteritems() if k not in ["self","params", "algo_params"] })
+    parms = self._parms.copy()
+    parms.update({k:v for k, v in algo_params.iteritems() if k not in ["self","params", "algo_params", "parms"] })
     y = algo_params["y"]
     tframe = algo_params["training_frame"]
     if tframe is None: raise ValueError("Missing training_frame")
     if y is not None:
       self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
-    self.build_model(self.parms)
+    self.build_model(parms)
 
   def build_model(self, algo_params):
     if algo_params["training_frame"] is None: raise ValueError("Missing training_frame")
@@ -67,21 +68,27 @@ class H2OEstimator(ModelBase):
     y = algo_params.pop("y",None)
     training_frame = algo_params.pop("training_frame")
     validation_frame = algo_params.pop("validation_frame",None)
-    algo  = algo_params.pop("algo")
     is_auto_encoder = algo_params is not None and "autoencoder" in algo_params and algo_params["autoencoder"]
+    algo = self._compute_algo()
     is_unsupervised = is_auto_encoder or algo == "pca" or algo == "kmeans"
     if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
     if not is_unsupervised and y is None: raise ValueError("Missing response")
-    self._model_build(x, y, training_frame, validation_frame, algo, algo_params)
+    self._model_build(x, y, training_frame, validation_frame, algo_params)
 
-  def _model_build(self, x, y, tframe, vframe, algo, kwargs):
+  def _model_build(self, x, y, tframe, vframe, kwargs):
     kwargs['training_frame'] = tframe
     if vframe is not None: kwargs["validation_frame"] = vframe
-    if y is not None: kwargs['response_column'] = y = tframe[y].names[0]
-    ignored_columns = list(set(tframe.names) - set(tframe[x].names + [y]))
+    if isinstance(y, int): y = tframe.names[y]
+    if y is not None: kwargs['response_column'] = y
+    if isinstance(x, (list,tuple)) and isinstance(x[0], int):
+      x = [tframe.names[i] for i in x]
+    offset = kwargs["offset_column"]
+    folds  = kwargs["fold_column"]
+    weights= kwargs["weights_column"]
+    ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
     kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
-
+    algo = self._compute_algo()
     ##### POLL MODEL FOR COMPLETION #####
     model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")).poll()
     #####################################
@@ -96,6 +103,7 @@ class H2OEstimator(ModelBase):
     m._id = model_id
     m._model_json = model_json
     m._metrics_class = metrics_class
+    m._parms = self._parms
 
     if model_id is not None and model_json is not None and metrics_class is not None:
       # build Metric objects out of each metrics
@@ -112,6 +120,17 @@ class H2OEstimator(ModelBase):
       for p in m._model_json["parameters"]: m.parms[p["label"]]=p
     H2OEstimator.mixin(self,model_class)
     self.__dict__.update(m.__dict__.copy())
+
+  def _compute_algo(self):
+    name = self.__class__.__name__
+    if name == "H2ODeepLearningEstimator":       return "deeplearning"
+    if name == "H2OAutoEncoderEstimator":        return "autoencoder"
+    if name == "H2OGradientBoostingEstimator":   return "gbm"
+    if name == "H2OGeneralizedLinearEstimator":  return "glm"
+    if name == "H2OGeneralizedLowRankEstimator": return "glrm"
+    if name == "H2OKMeansEstimator":             return "kmeans"
+    if name == "H2ONaiveBayesEstimator":         return "naivebayes"
+    if name == "H2ORandomForestEstimator":       return "drf"
 
   @staticmethod
   def mixin(obj,cls):
@@ -167,14 +186,12 @@ class H2OEstimator(ModelBase):
     -------
       A dict of parameters
     """
-    algo = self.parms.pop("algo")
     out = dict()
     for key,value in self.parms.iteritems():
       if deep and isinstance(value, H2OEstimator):
         deep_items = value.get_params().items()
         out.update((key + '__' + k, val) for k, val in deep_items)
       out[key] = value
-    self.parms["algo"] = algo
     return out
 
   def set_params(self, **parms):

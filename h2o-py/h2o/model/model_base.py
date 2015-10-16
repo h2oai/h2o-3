@@ -16,7 +16,8 @@ class ModelBase(object):
     self._metrics_class = None
     self._is_xvalidated = False
     self._xval_keys = None
-    self.parms = {}
+    self._parms = {}   # internal, for object recycle
+    self.parms = {}    # external
     self._estimator_type = None
 
   @property

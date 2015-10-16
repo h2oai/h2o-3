@@ -40,6 +40,5 @@ class H2ONaiveBayesEstimator(H2OEstimator):
       Returns instance of H2ONaiveBayesEstimator
     """
     super(H2ONaiveBayesEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["algo"] = "naivebayes"
+    self._parms = locals()
+    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}

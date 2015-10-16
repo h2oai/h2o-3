@@ -61,6 +61,5 @@ class H2ORandomForestEstimator(H2OEstimator):
       Whether to keep the predictions of the cross-validation models
     """
     super(H2ORandomForestEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["algo"] = "drf"
+    self._parms = locals()
+    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}

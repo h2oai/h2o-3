@@ -105,6 +105,5 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       confusion matrices.
     """
     super(H2OGeneralizedLinearEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k: v for k, v in self.parms.iteritems() if k != "self"}
-    self.parms["algo"] = "glm"
+    self._parms = locals()
+    self._parms = {k: v for k, v in self._parms.iteritems() if k != "self"}

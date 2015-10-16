@@ -190,10 +190,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
       >>> model.train(X=range(4), y=4, training_frame=fr)
     """
     super(H2ODeepLearningEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["algo"] = "deeplearning"
-    self.parms["autoencoder"] = isinstance(self, H2OAutoEncoderEstimator)
+    self._parms = locals()
+    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+    self._parms["autoencoder"] = isinstance(self, H2OAutoEncoderEstimator)
 
 
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):

@@ -114,8 +114,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
       A new H2OGeneralizedLowRankEstimator instance.
     """
     super(H2OGeneralizedLowRankEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["algo"]="glrm"
-    self.parms['_rest_version']=99
-
+    self._parms = locals()
+    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+    self._parms['_rest_version']=99
