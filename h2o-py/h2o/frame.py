@@ -1552,14 +1552,12 @@ def _handle_python_lists(python_obj):
   lol = _is_list_of_lists(python_obj)  # do we have a list of lists: [[...], ..., [...]] ?
   if lol:
     _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
-    # have list of lists, each list is a row
-    # length of the longest list is the number of columns
-    cols = max([len(l) for l in python_obj])
 
   # create the header
   header = _gen_header(cols)
   # shape up the data for csv.DictWriter
-  data_to_write = [dict(zip(header, row)) for row in python_obj] if lol else [dict(zip(header, python_obj))]
+  rows = map(list, itertools.izip_longest(*python_obj))
+  data_to_write = [dict(zip(header,row)) for row in rows]
   return header, data_to_write
 def _is_list(l)    : return isinstance(l, (tuple, list))
 def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,basestring) for i in l])
