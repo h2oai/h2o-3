@@ -93,9 +93,9 @@
 
 
 .h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
-  .eager.frame(params$training_frame)
+  .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) )
-    .eager.frame(params$validation_frame)
+    .eval.frame(params$validation_frame)
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
   h2o.getFutureModel(job)
 }
