@@ -474,16 +474,45 @@ Display the columns:
 
 \waterExampleInPython
 Describes shows compression information, distribution (in multi-machine clusters), and summary statistic of your data:
+\small
 \lstinputlisting[style=python, firstline=129, lastline=157]{python/ipython_output.txt}
+\normalsize
 
 TODO setting column types after load
 
 
 \subsection{Selection}
-column, by name and index, multi-column by name and indexes
-row, by index, slicing
-boolean indexing
-setting data, adding columns, setting individual entries
+\waterExampleInPython
+Selecting a single column by name, which yields an H2OFrame:
+TODO change once fix is available for column names
+\lstinputlisting[style=python, firstline=159, lastline=171]{python/ipython_output.txt}
+
+\waterExampleInPython
+Selecting a single column by index, which yields an H2OFrame:
+TODO change once fix is available for column names
+\lstinputlisting[style=python, firstline=173, lastline=185]{python/ipython_output.txt}
+
+\waterExampleInPython
+Selecting multiple columns by name, which yields an H2OFrame:
+TODO change once fix is available for column names
+\lstinputlisting[style=python, firstline=187, lastline=199]{python/ipython_output.txt}
+
+\waterExampleInPython
+Selecting multiple columns by index, which yields an H2OFrame:
+TODO change once fix is available for column names
+\lstinputlisting[style=python, firstline=201, lastline=213]{python/ipython_output.txt}
+
+\waterExampleInPython
+Selecting multiple rows by slicing, which yields and H2OFrame.
+H2OFrame selection is default on columns, so to slice by rows
+and get all columns one needs to be explicit about selection all columns:
+\lstinputlisting[style=python, firstline=215, lastline=222]{python/ipython_output.txt}
+
+\waterExampleInPython
+Boolean masking can be used to subselect rows based on a criteria:
+\lstinputlisting[style=python, firstline=224, lastline=228]{python/ipython_output.txt}
+
+ adding columns, setting individual entries
 
 \subsection{Missing data}
 how does h2o denote missing data, how does it know what is missing on disk
