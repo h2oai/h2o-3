@@ -1,11 +1,19 @@
 package hex.genmodel.easy;
 
+import java.util.HashMap;
+
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
-import hex.genmodel.easy.exception.*;
-import hex.genmodel.easy.prediction.*;
-
-import java.util.HashMap;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
+import hex.genmodel.easy.exception.PredictUnknownTypeException;
+import hex.genmodel.easy.exception.PredictWrongModelCategoryException;
+import hex.genmodel.easy.prediction.AbstractPrediction;
+import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import hex.genmodel.easy.prediction.ClusteringModelPrediction;
+import hex.genmodel.easy.prediction.MultinomialModelPrediction;
+import hex.genmodel.easy.prediction.RegressionModelPrediction;
 
 /**
  * An easy-to-use prediction wrapper for generated models.
@@ -16,7 +24,7 @@ import java.util.HashMap;
  * <p></p>
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/easy/EasyPredictModelWrapper.java" target="_blank">here on github</a>.
  */
-public class EasyPredictModelWrapper {
+public class EasyPredictModelWrapper implements java.io.Serializable {
   // All private members are read-only after the constructor.
   final private GenModel m;
   final private HashMap<String, Integer> modelColumnNameToIndexMap;
