@@ -1391,8 +1391,9 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   pca_method : str
     A character string that indicates how PCA should be calculated.
     Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package,
-    "Power": computation of the SVD using the power iteration method, "GLRM": fit a generalized low rank model with an l2 loss function
-    (no regularization) and solve for the SVD using local matrix algebra.
+    "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random 
+    subspace, "GLRM": fit a generalized low rank model with an l2 loss function (no regularization) and solve for the SVD using 
+    local matrix algebra.
 
   :return: a new dim reduction model
   """

@@ -28,7 +28,7 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true)  // TODO: pull out of categorical class
     public DataInfo.TransformType transform;
 
-    @API(help = "Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable)", values = { "GramSVD", "Power", "GLRM" })   // TODO: pull out of categorical class
+    @API(help = "Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized", "GLRM" })   // TODO: pull out of categorical class
     public PCAParameters.Method pca_method;
 
     @API(help = "Rank of matrix approximation", required = true, direction = API.Direction.INOUT, gridable = true)
