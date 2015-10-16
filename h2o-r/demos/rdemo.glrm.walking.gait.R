@@ -18,14 +18,14 @@ x_coords <- seq(1, ncol(gait.row), by = 3)
 y_coords <- seq(2, ncol(gait.row), by = 3)
 feat_nams <- sapply(colnames(gait.row), function(nam) { substr(nam, 1, nchar(nam)-2) })
 feat_nams <- as.character(feat_nams[x_coords])
-plot(gait.row[x_coords], gait.row[y_coords], xlab = "X-Coordinate", ylab = "Y-Coordinate", main = paste("Location of Body Parts at Time", time.df[1]), col = "blue", pch = 19, lty = "solid")
+plot(gait.row[x_coords], gait.row[y_coords], xlab = "X-Coordinate", ylab = "Y-Coordinate", main = paste("Location of Body Parts at Time 0"), col = "blue", pch = 19, lty = "solid")
 text(gait.row[x_coords], gait.row[y_coords], labels = feat_nams, cex = 0.7, pos = 3)
 
 #---------------------------------------#
 #          Matrix Decomposition         #
 #---------------------------------------#
 ## Basic GLRM using quadratic loss and no regularization (PCA)
-gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 5, loss = "Quadratic", 
+gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 10, loss = "Quadratic", 
                       regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 gait.glrm
 
@@ -40,7 +40,7 @@ x_coords <- seq(1, ncol(gait.y), by = 3)
 y_coords <- seq(2, ncol(gait.y), by = 3)
 feat_nams <- sapply(colnames(gait.y), function(nam) { substr(nam, 1, nchar(nam)-1) })
 feat_nams <- as.character(feat_nams[x_coords])
-for(k in 1:5) {
+for(k in 1:10) {
   plot(gait.y.mat[k,x_coords], gait.y.mat[k,y_coords], xlab = "X-Coordinate Weight", ylab = "Y-Coordinate Weight", main = paste("Feature Weights of Archetype", k), col = "blue", pch = 19, lty = "solid")
   text(gait.y.mat[k,x_coords], gait.y.mat[k,y_coords], labels = feat_nams, cex = 0.7, pos = 3)
   cat("Press [Enter] to continue")
@@ -79,11 +79,9 @@ dim(gait.miss)
 summary(gait.miss)
 
 ## Basic GLRM using quadratic loss and no regularization (PCA)
-gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, cols = 2:ncol(gait.miss), k = 5, init = "SVD", svd_method = "GramSVD",
-                      loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 1000, min_step_size = 1e-7)
+gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, cols = 2:ncol(gait.miss), k = 10, init = "SVD", svd_method = "GramSVD",
+                      loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 2500, min_step_size = 1e-7)
 gait.glrm2
-# EDIT: Why is the fit so bad compared to the full dataset model? Check for bugs in algorithm
-# Try SVD initialize and add some L2 regularization as well. Want training error to be smaller than in full dataset model.
 
 print("Impute missing data from X and Y")
 gait.pred2 <- predict(gait.glrm2, gait.miss)
