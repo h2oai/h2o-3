@@ -136,6 +136,36 @@ class ModelBase(object):
                        "was requested.".format(num_bias_vectors, vector_id))
     return h2o.get_frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
 
+  def normmul(self):
+    """
+    Normalization/Standardization multipliers for numeric predictors
+    """
+    return self._model_json['output']['normmul']
+
+  def normsub(self):
+    """
+    Normalization/Standardization offsets for numeric predictors
+    """
+    return self._model_json['output']['normsub']
+
+  def respmul(self):
+    """
+    Normalization/Standardization multipliers for numeric response
+    """
+    return self._model_json['output']['normrespmul']
+
+  def respsub(self):
+    """
+    Normalization/Standardization offsets for numeric response
+    """
+    return self._model_json['output']['normrespsub']
+
+  def catoffsets(self):
+    """
+    Categorical offsets for one-hot encoding
+    """
+    return self._model_json['output']['catoffsets']
+
   def model_performance(self, test_data=None, train=False, valid=False):
     """
     Generate model metrics for this model on test_data.
