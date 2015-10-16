@@ -107,7 +107,7 @@ public class TestNG extends TestNGUtil {
 		String invalidMessage = null;
 		String notImplMessage = null;
 
-		//redirectStandardStreams();
+		redirectStandardStreams();
 
 		switch (algorithm) {
 			case FunctionUtils.drf:
