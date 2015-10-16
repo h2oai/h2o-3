@@ -3,10 +3,8 @@ package water.api;
 import water.Iced;
 
 public class RapidsV99 extends RequestSchema<Iced, RapidsV99> {
-
   // Input fields
   @API(help="An Abstract Syntax Tree.", direction=API.Direction.INPUT) String ast;
-  @API(help="A pointer to a Frame"    , direction=API.Direction.INPUT) KeyV3 ast_key;
 
   // Output.  Only one of these 5 results is returned; the rest are null - and
   // this is how the caller tells about which result is valid.

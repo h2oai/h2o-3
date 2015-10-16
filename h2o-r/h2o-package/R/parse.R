@@ -53,7 +53,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 
   # Return a new Frame object
   x <- .newFrame("Parse",id=hex,-1,-1)
-  .fetch.data(x,1) # Fill in nrow and ncol
+  .fetch.data(x,1L) # Fill in nrow and ncol
   x
 }
 

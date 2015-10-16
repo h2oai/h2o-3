@@ -39,7 +39,7 @@
 #' @export
 h2o.ls <- function() {
   .h2o.gc()
-  .fetch.data(.newExpr("ls"))
+  .fetch.data(.newExpr("ls"),10000L)
 }
 
 #'
@@ -88,27 +88,6 @@ h2o.rm <- function(ids) {
 
   for(i in seq_len(length(ids)))
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
-}
-
-#'
-#' Rename an H2O object.
-#'
-#' Makes a copy of the data frame and gives it the desired the key.
-#'
-#' @param data An H2O Frame object
-#' @param key The hex key to be associated with the H2O parsed data object
-#'
-#' @export
-h2o.assign <- function(data, key) {
-  .key.validate(key)
-  id <- attr(.eager.impl(data), "id")
-  if( key == id ) stop("Destination key must differ from input frame ", key)
-  print(paste0("ASSIGN ",key," = EXPR: ",id))
-  stop("untested")
-  .newExpr("=", key, id, "[]", "[]")
-  #res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
-  #if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-  #.newFrame("h2o.assign",key,)
 }
 
 #'

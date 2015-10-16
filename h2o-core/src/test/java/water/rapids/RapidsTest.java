@@ -91,19 +91,19 @@ public class RapidsTest extends TestUtil {
   @Test public void testRowAssign() {
     String tree;
     // Assign column 3 over column 0
-    tree = "(= a.hex (cols a.hex [3]) 0 [0:150])";
+    tree = "(:= a.hex (cols a.hex [3]) 0 [0:150])";
     checkTree(tree);
 
     // Assign 17 over column 0
-    tree = "(= a.hex 17 [0] [0:150])";
+    tree = "(:= a.hex 17 [0] [0:150])";
     checkTree(tree);
 
     // Assign 17 over column 0, row 5
-    tree = "(= a.hex 17 [0] [5])";
+    tree = "(:= a.hex 17 [0] [5])";
     checkTree(tree);
 
     // Append 17
-    tree = "(= a.hex 17 [4] [0:150])";
+    tree = "(:= a.hex 17 [4] [0:150])";
     checkTree(tree);
   }
 
@@ -369,30 +369,30 @@ public class RapidsTest extends TestUtil {
 
       exec_str("(setTimeZone \"Etc/UTC\")", null);
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) [22] [0:9999]) 22 \"Day\")", "crimes.hex");
+      crimes = exec_str("(colnames= (:= crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) [22] [0:9999]) 22 \"Day\")", "crimes.hex");
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) [23] [0:9999]) 23 \"Month\")", "crimes.hex");
+      crimes = exec_str("(colnames= (:= crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) [23] [0:9999]) 23 \"Month\")", "crimes.hex");
       
       Keyed.remove(Key.make("nary_op_30"));
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) #1900)) #1900)) [17] [0:9999]) 17 \"Year\")", "crimes.hex");
+      crimes = exec_str("(colnames= (:= crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) #1900)) #1900)) [17] [0:9999]) 17 \"Year\")", "crimes.hex");
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_10 (week nary_op_5)) [24] [0:9999]) 24 \"WeekNum\")", "crimes.hex");
+      crimes = exec_str("(colnames= (:= crimes.hex (tmp= unary_op_10 (week nary_op_5)) [24] [0:9999]) 24 \"WeekNum\")", "crimes.hex");
 
       Keyed.remove(Key.make("binary_op_32"));
       Keyed.remove(Key.make("binary_op_31"));
       Keyed.remove(Key.make("unary_op_8"));
       checkSaneFrame();
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) [25] [0:9999]) 25 \"WeekDay\")", "crimes.hex");
+      crimes = exec_str("(colnames= (:= crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) [25] [0:9999]) 25 \"WeekDay\")", "crimes.hex");
       Keyed.remove(Key.make("nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip"));
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_12 (hour nary_op_5)) [26] [0:9999]) 26 \"HourOfDay\")", "crimes.hex");
+      crimes = exec_str("(colnames= (:= crimes.hex (tmp= unary_op_12 (hour nary_op_5)) [26] [0:9999]) 26 \"HourOfDay\")", "crimes.hex");
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= nary_op_16 (ifelse (tmp= binary_op_15 (| (tmp= binary_op_13 (== unary_op_11 \"Sun\")) (tmp= binary_op_14 (== unary_op_11 \"Sat\")))) 1 0)) [27] [0:9999]) 27 \"Weekend\")", "crimes.hex");
+      crimes = exec_str("(colnames= (:= crimes.hex (tmp= nary_op_16 (ifelse (tmp= binary_op_15 (| (tmp= binary_op_13 (== unary_op_11 \"Sun\")) (tmp= binary_op_14 (== unary_op_11 \"Sat\")))) 1 0)) [27] [0:9999]) 27 \"Weekend\")", "crimes.hex");
 
       // Season is incorrectly assigned in the original chicago demo; picks up the Weekend flag
-      crimes = exec_str("(colnames= (= crimes.hex nary_op_16 [28] [0:9999]) 28 \"Season\")", "crimes.hex");
+      crimes = exec_str("(colnames= (:= crimes.hex nary_op_16 [28] [0:9999]) 28 \"Season\")", "crimes.hex");
 
       // Standard "head of 10 rows" pattern for printing
       Frame subset_33 = exec_str("(rows crimes.hex [0:10])", "subset_33");

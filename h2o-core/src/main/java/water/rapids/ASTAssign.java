@@ -3,27 +3,17 @@ package water.rapids;
 import water.*;
 import water.fvec.*;
 
-/** Assign into a row slice */
+/** Assign into a row slice.  The destination must already exist, and is updated in-place */
 class ASTAssign extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"dst", "src", "col_expr", "row_expr", "colNames"}; }
-  @Override int nargs() { return -1; } // (= dst src col_expr row_expr {"colname"})
-  @Override
-  public String str() { return "=" ; }
+  @Override public String[] args() { return new String[]{"dst", "src", "col_expr", "row_expr"}; }
+  @Override int nargs() { return 5; } // (:= dst src col_expr row_expr)
+  @Override public String str() { return ":=" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
     ASTNumList cols = check(dst.numCols(), asts[3], dst);
 
-    // Check for append; add a col of NAs if appending
-    if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {
-      String newColName =  asts.length==6?asts[5].exec(env).getStr():Frame.defaultColName(dst.numCols());
-      dst = new Frame(dst._names.clone(),dst.vecs().clone());
-      dst.add(newColName, dst.anyVec().makeCon(Double.NaN));
-      // DKV update on dst happens in RapidsHandler
-    } else {
-      if( asts.length!=5 ) throw new IllegalArgumentException("assign requires args (= dst src col_expr row_expr)");
-    }
+    if( asts.length!=5 ) throw new IllegalArgumentException("assign requires args (:= dst src col_expr row_expr)");
 
     // Slice out cols for mutation
     Frame slice = new ASTColSlice().apply(env,stk,new AST[]{null,new ASTFrame(dst),cols}).getFrame();
@@ -216,6 +206,28 @@ class ASTAssign extends ASTPrim {
   }
 }
 
+class ASTAppend extends ASTPrim {
+  @Override public String[] args() { return new String[]{"dst", "src", "colName"}; }
+  @Override int nargs() { return 1+3; } // (append dst src "colName")
+  @Override public String str() { return "append"; }
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame dst = stk.track(asts[1].exec(env)).getFrame();
+    Val vsrc  = stk.track(asts[2].exec(env));
+    String newColName =  asts[3].exec(env).getStr();
+
+    Vec vec = dst.anyVec();
+    switch( vsrc.type() ) {
+    case Val.NUM: vec = vec.makeCon(vsrc.getNum()); break;
+    case Val.STR: throw H2O.unimpl();
+    case Val.FRM: vec = vsrc.getFrame().anyVec();   break;
+    default:  throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+    }
+    dst = new Frame(dst._names.clone(),dst.vecs().clone());
+    dst.add(newColName, vec);
+    return new ValFrame(dst);
+  }
+}
+
 /** Assign a temp.  All such assignments are final (cannot change), but the
  *  temp can be deleted.  Temp is returned for immediate use, and also set in
  *  the DKV.  Must be globally unique in the DKV.  */
@@ -228,6 +240,7 @@ class ASTTmpAssign extends ASTPrim {
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     String id = ((ASTId)asts[1])._id;
     Frame src = stk.track(asts[2].exec(env)).getFrame();
+    // TODO: COW optimization
     Frame dst = src.deepCopy(id);  // Stomp temp down
     return env.addGlobals(dst);
   }

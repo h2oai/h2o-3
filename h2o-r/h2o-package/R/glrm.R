@@ -119,7 +119,7 @@ h2o.glrm <- function(training_frame, x, k, model_id,
 
   # Gather user input
   parms <- list()
-  parms$training_frame <- .eager.frame(training_frame)
+  parms$training_frame <- training_frame
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
   if(!missing(k))
@@ -169,8 +169,6 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) ) {
       if( !is.data.frame(user_y) && !is.matrix(user_y) ) user_y <- t(as.data.frame(user_y))
       user_y <- as.h2o(user_y)
-    } else {
-      .eager.frame(user_y)
     }
     parms[["user_y"]] <- user_y
     
@@ -192,8 +190,6 @@ h2o.glrm <- function(training_frame, x, k, model_id,
     if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) ) {
       if( !is.data.frame(user_x) && !is.matrix(user_x) ) user_x <- t(as.data.frame(user_x))
       user_x <- as.h2o(user_x)
-    } else {
-      .eager.frame(user_x)
     }
     parms[["user_x"]] <- user_x
   # } else if( is.null(user_x) ) {

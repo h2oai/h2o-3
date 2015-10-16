@@ -172,7 +172,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if (!missing(nfolds) && nfolds > 1)
     parms$nfolds <- nfolds
   if(!missing(beta_constraints))
-    parms$beta_constraints <- .eager.frame(beta_constraints)
+    parms$beta_constraints <- beta_constraints
   m <- .h2o.modelJob('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
