@@ -159,7 +159,7 @@ class H2OConnection(object):
         if not cld['cloud_healthy']:
           raise ValueError("Cluster reports unhealthy status", cld)
         if cld['cloud_size'] >= size and cld['consensus']:
-          if print_dots: print " Connection sucessful!"
+          if print_dots: print " Connection successful!"
           return cld
       except EnvironmentError:
         pass
