@@ -429,7 +429,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Average change in objective function this iteration
     public double _avg_change_obj;
-    public double[/*iterations*/] _history_avg_change_obj = new double[0];
+    public double[/*iterations*/] _history_objective = new double[0];
 
     // Mapping from lower dimensional k-space to training features (Y)
     public TwoDimTable _archetypes;

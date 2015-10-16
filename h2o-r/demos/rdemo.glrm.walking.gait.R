@@ -29,6 +29,10 @@ gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 10
                       regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 gait.glrm
 
+print("Plot objective function value each iteration")
+gait.score <- gait.glrm@model$scoring_history
+plot(gait.score$iteration, gait.score$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
+
 ## Decompose training frame into XY with rank k
 print("Archetype to feature mapping (Y):")
 gait.y <- gait.glrm@model$archetypes
@@ -80,8 +84,12 @@ summary(gait.miss)
 
 ## Basic GLRM using quadratic loss and no regularization (PCA)
 gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, cols = 2:ncol(gait.miss), k = 10, init = "SVD", svd_method = "GramSVD",
-                      loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 2500, min_step_size = 1e-7)
+                      loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 2500, min_step_size = 1e-6)
 gait.glrm2
+
+print("Plot objective function value each iteration")
+gait.score2 <- gait.glrm2@model$scoring_history
+plot(gait.score2$iteration, gait.score2$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
 
 print("Impute missing data from X and Y")
 gait.pred2 <- predict(gait.glrm2, gait.miss)

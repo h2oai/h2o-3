@@ -657,7 +657,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // Add to scoring history
           model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._training_time_ms.length+1, System.currentTimeMillis());
           model._output._history_step_size = ArrayUtils.copyAndFillOf(model._output._history_step_size, model._output._history_step_size.length+1, step);
-          model._output._history_avg_change_obj = ArrayUtils.copyAndFillOf(model._output._history_avg_change_obj, model._output._history_avg_change_obj.length+1, model._output._avg_change_obj);
+          model._output._history_objective = ArrayUtils.copyAndFillOf(model._output._history_objective, model._output._history_objective.length+1, model._output._objective);
           model._output._scoring_history = createScoringHistoryTable(model._output);
           model.update(self()); // Update model in K/V store
         }
@@ -766,7 +766,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
       colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Step Size"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Avg. Change in Objective"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Objective"); colTypes.add("double"); colFormat.add("%.5f");
 
       final int rows = output._training_time_ms.length;
       TwoDimTable table = new TwoDimTable(
@@ -785,7 +785,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[row] - _start_time, true));
         table.set(row, col++, row);
         table.set(row, col++, output._history_step_size[row]);
-        table.set(row, col++, output._history_avg_change_obj[row]);
+        table.set(row, col++, output._history_objective[row]);
       }
       return table;
     }

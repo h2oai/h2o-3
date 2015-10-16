@@ -12,24 +12,30 @@ acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 1
 ## Save and drop zip code column from training frame
 acs_zcta_col <- acs_orig$ZCTA5
 acs_full <- acs_orig[,-which(colnames(acs_orig) == "ZCTA5")]
+
+## Grab a summary of ACS frame
 dim(acs_full)
 summary(acs_full)
 # EDIT: Rename columns to meaningful descriptors using metadata file
 
 print("Importing WHD 2014-2015 labor violations dataset into H2O...")
 whd_zcta <- h2o.uploadFile(pathToWHDData, col.types = c(rep("enum", 7), rep("numeric", 97)))
+
+## Grab a summary of WHD frame
 dim(whd_zcta)
 summary(whd_zcta)
 # EDIT: Script for what dataset represents and what it means as a low-rank model
 # EDIT: Might try recoding violations to Bad (R, W, RW) vs. Not Bad (N/A)
 
 print("Run GLRM to reduce ZCTA demographics to k = 5 archetypes")
-acs_model <- h2o.glrm(training_frame = acs_full, k = 5, transform = "STANDARDIZE", 
+acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZE", 
                       loss = "Quadratic", regularization_x = "Quadratic", 
                       regularization_y = "L1", max_iterations = 100, gamma_x = 0.25, gamma_y = 0.5)
 acs_model
-# EDIT: Demonstrate setting loss by individual column (manual override of defaults)
-# EDIT: Need history of objective values for each iteration
+
+print("Plot objective function value each iteration")
+acs_model.score <- acs_model@model$scoring_history
+plot(acs_model.score$iteration, acs_model.score$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
 
 ## Embedding of ZCTAs into archetypes (X)
 zcta_arch_x <- h2o.getFrame(acs_model@model$representation_name)
