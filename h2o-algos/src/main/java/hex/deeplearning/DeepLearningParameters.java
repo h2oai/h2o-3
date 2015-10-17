@@ -895,8 +895,9 @@ public class DeepLearningParameters extends Model.Parameters {
         }
       }
       if (fromParms._reproducible) {
-        Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
-                + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
+        if (!fromParms._quiet_mode)
+          Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
+                  + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
         toParms._force_load_balance = true;
         toParms._single_node_mode = false;
         toParms._train_samples_per_iteration = -1;

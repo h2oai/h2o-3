@@ -141,8 +141,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   public void modifyParmsForCrossValidationSplits(int i, int N, Key<Model> model_id) {
     super.modifyParmsForCrossValidationSplits(i, N, model_id);
     if (_parms._overwrite_with_best_model) {
-      warn("_overwrite_with_best_model",
-              "Disabling overwrite_with_best_model for cross-validation split " + (i+1) + "/" + N + ": No early stopping.");
+      if (!_parms._quiet_mode)
+        warn("_overwrite_with_best_model",
+                "Disabling overwrite_with_best_model for cross-validation split " + (i+1) + "/" + N + ": No early stopping.");
       _parms._overwrite_with_best_model = false;
     }
   }
@@ -151,7 +152,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   public void modifyParmsForCrossValidationMainModel(int N) {
     super.modifyParmsForCrossValidationMainModel(N);
     if (_parms._overwrite_with_best_model) {
-      warn("_overwrite_with_best_model", "Disabling overwrite_with_best_model for cross-validation main model: No early stopping.");
+      if (!_parms._quiet_mode)
+        warn("_overwrite_with_best_model", "Disabling overwrite_with_best_model for cross-validation main model: No early stopping.");
       _parms._overwrite_with_best_model = false;
     }
   }
@@ -367,7 +369,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           mp._shuffle_training_data = true;
         }
 
-        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
+//        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           if (!mp._quiet_mode)
@@ -376,6 +378,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
         // put the initial version of the model into DKV
         model.update(self());
+        model._timeLastIterationEnter = System.currentTimeMillis();
         Log.info("Starting to train the Deep Learning model.");
         new ProgressUpdate("Training...").fork(_progressKey);
 
@@ -514,7 +517,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
         // estimate the time for communication (network) and training (compute)
         model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 1e5 /* add 100ms for multi-node MR overhead */) + network_queue_length * microseconds_collective[1];
-        double time_per_row_us  = flops_overhead_per_row * model_size / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
+        double time_per_row_us  = (flops_overhead_per_row * model_size + 100 * model.model_info().units[0]) / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
 
         // compute the optimal number of training rows per iteration
         // fraction := time_comm_us / (time_comm_us + tspi * time_per_row_us)  ==>  tspi = (time_comm_us/fraction - time_comm_us)/time_per_row_us
@@ -529,7 +532,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           tspi = Math.min(tspi, 10*(int)(1e6/time_per_row_us)); //in single-node mode, only run for at most 10 seconds
         }
         tspi = Math.max(1, tspi); //at least 1 row
-        tspi = Math.min(100000, tspi); //at most 100k rows for initial guess - can always relax later on
+        tspi = Math.min(100000*H2O.CLOUD.size(), tspi); //at most 100k rows per node for initial guess - can always relax later on
 
         if (!mp._quiet_mode) {
           Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
