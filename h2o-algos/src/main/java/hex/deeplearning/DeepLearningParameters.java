@@ -78,7 +78,7 @@ public class DeepLearningParameters extends Model.Parameters {
    */
   public long _train_samples_per_iteration = -2;
 
-  public double _target_ratio_comm_to_comp = 0.02;
+  public double _target_ratio_comm_to_comp = 0.05;
 
   /**
    * The random seed controls sampling and initialization. Reproducible

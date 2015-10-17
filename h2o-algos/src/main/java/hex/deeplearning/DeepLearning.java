@@ -505,7 +505,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         int network_queue_length = mp._single_node_mode || H2O.CLOUD.size() == 1? 1 : 2*(int)Math.floor(Math.log(H2O.CLOUD.size())/Math.log(2));
 
         // heuristics
-        double flops_overhead_per_row = 30;
+        double flops_overhead_per_row = 50;
         if (mp._activation == DeepLearningParameters.Activation.Maxout || mp._activation == DeepLearningParameters.Activation.MaxoutWithDropout) {
           flops_overhead_per_row *= 8;
         } else if (mp._activation == DeepLearningParameters.Activation.Tanh || mp._activation == DeepLearningParameters.Activation.TanhWithDropout) {
@@ -517,7 +517,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
         // estimate the time for communication (network) and training (compute)
         model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 1e5 /* add 100ms for multi-node MR overhead */) + network_queue_length * microseconds_collective[1];
-        double time_per_row_us  = (flops_overhead_per_row * model_size + 100 * model.model_info().units[0]) / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
+        double time_per_row_us  = (flops_overhead_per_row * model_size + 10000 * model.model_info().units[0]) / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
 
         // compute the optimal number of training rows per iteration
         // fraction := time_comm_us / (time_comm_us + tspi * time_per_row_us)  ==>  tspi = (time_comm_us/fraction - time_comm_us)/time_per_row_us

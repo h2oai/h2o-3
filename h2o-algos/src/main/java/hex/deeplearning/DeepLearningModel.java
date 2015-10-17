@@ -428,6 +428,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       _output._scoring_history = createScoringHistoryTable(errors);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
+    start_time = System.currentTimeMillis();
     makeWeightsBiases(destKey);
     assert _key.equals(destKey);
     boolean fail = false;
