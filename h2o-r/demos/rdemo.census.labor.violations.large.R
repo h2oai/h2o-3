@@ -3,11 +3,13 @@ h2o.init()
 
 ## Find and import data into H2O
 locate <- h2o:::.h2o.locate
+pathToACSNames  <- locate("bigdata/laptop/census/ACS_13_5YR_DP02_colnames.csv")
 pathToACSData   <- locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
 pathToWHDData   <- locate("bigdata/laptop/census/whd_zcta_cleaned.zip")
 
 print("Importing ACS 2013 5-year DP02 demographic dataset into H2O...")
-acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 149)))
+acs_names <- h2o.uploadFile(pathToACSNames)
+acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 149)), col.names = acs_names)
 
 ## Save and drop zip code column from training frame
 acs_zcta_col <- acs_orig$ZCTA5
@@ -16,7 +18,6 @@ acs_full <- acs_orig[,-which(colnames(acs_orig) == "ZCTA5")]
 ## Grab a summary of ACS frame
 dim(acs_full)
 summary(acs_full)
-# EDIT: Rename columns to meaningful descriptors using metadata file
 
 print("Importing WHD 2014-2015 labor violations dataset into H2O...")
 whd_zcta <- h2o.uploadFile(pathToWHDData, col.types = c(rep("enum", 7), rep("numeric", 97)))
@@ -25,9 +26,8 @@ whd_zcta <- h2o.uploadFile(pathToWHDData, col.types = c(rep("enum", 7), rep("num
 dim(whd_zcta)
 summary(whd_zcta)
 # EDIT: Script for what dataset represents and what it means as a low-rank model
-# EDIT: Might try recoding violations to Bad (R, W, RW) vs. Not Bad (N/A)
 
-print("Run GLRM to reduce ZCTA demographics to k = 5 archetypes")
+print("Run GLRM to reduce ZCTA demographics to k = 10 archetypes")
 acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZE", 
                       loss = "Quadratic", regularization_x = "Quadratic", 
                       regularization_y = "L1", max_iterations = 100, gamma_x = 0.25, gamma_y = 0.5)
