@@ -1,38 +1,12 @@
 package hex.deeplearning;
 
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import hex.AUC2;
-import hex.DataInfo;
-import hex.Distribution;
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
-import hex.ModelMetricsAutoEncoder;
-import hex.ModelMetricsBinomial;
-import hex.ModelMetricsMultinomial;
-import hex.ModelMetricsRegression;
-import hex.ModelMetricsSupervised;
-import hex.ScoreKeeper;
-import hex.VarImp;
+import hex.*;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
-import water.AutoBuffer;
-import water.DKV;
-import water.H2O;
-import water.H2ONode;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.MRTask;
-import water.Scope;
-import water.Value;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import water.*;
 import water.api.ModelSchema;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -42,13 +16,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.Log;
-import water.util.PrettyPrint;
-import water.util.SBPrintStream;
-import water.util.Timer;
-import water.util.TwoDimTable;
+import water.util.*;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearning.makeDataInfo;
@@ -187,7 +159,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     ScoreKeeper scored_valid = new ScoreKeeper();
     public AUC2 training_AUC;
     public AUC2 validation_AUC;
-    public long timeForScoring;
+    public long scoring_time;
 
     DeepLearningScoring deep_clone() {
       AutoBuffer ab = new AutoBuffer();
@@ -274,7 +246,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     int row = 0;
     long scoring_time = 0;
     for (final DeepLearningScoring e : errors) {
-      scoring_time += e.timeForScoring;
+      scoring_time += e.scoring_time;
       int col = 0;
       assert (row < table.getRowDim());
       assert (col < table.getColDim());
@@ -588,12 +560,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
 
       _timeLastScoreEnd = System.currentTimeMillis();
-      err.timeForScoring = _timeLastScoreEnd - _timeLastScoreStart;
+      err.scoring_time = _timeLastScoreEnd - _timeLastScoreStart;
       if (iteration==1) { //hack to fix the fact that run_time was recorded BEFORE scoring in first iteration..
-        run_time += err.timeForScoring;
-        err.training_time_ms += err.timeForScoring;
+        run_time += err.scoring_time;
+        err.training_time_ms = run_time;
       }
-      scoring_time += err.timeForScoring;
+      scoring_time += err.scoring_time;
       // enlarge the error array by one, push latest score back
       if (errors == null) {
         errors = new DeepLearningScoring[]{err};
@@ -643,7 +615,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       // print the freshly scored model to ASCII
       if (keep_running && printme)
         Log.info(toString());
-      if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.timeForScoring, true));
+      if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
     }
     final long sinceLastPrint = now -_timeLastPrintStart;
     progressUpdate(progressKey, job_key, iteration, keep_running, now, sinceLastPrint);
