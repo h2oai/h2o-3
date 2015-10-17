@@ -22,6 +22,9 @@
 #' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration.
 #'        Special values are: \bold{0} one epoch; \bold{-1} all available data (e.g., replicated
 #'        training data); or \bold{-2} auto-tuning (default)
+#' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation.
+#'        Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning).
+#'        Higher values can lead to faster convergence.
 #' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running
 #'        single threaded
 #' @param adaptive_rate \code{Logical}. Adaptive learning rate (ADAELTA)
@@ -128,6 +131,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              hidden= c(200, 200),
                              epochs = 10.0,
                              train_samples_per_iteration = -2,
+                             target_ratio_comm_to_comp = 0.05,
                              seed,
                              adaptive_rate = TRUE,
                              rho = 0.99,
@@ -229,6 +233,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$epochs <- epochs
   if(!missing(train_samples_per_iteration))
     parms$train_samples_per_iteration <- train_samples_per_iteration
+  if(!missing(target_ratio_comm_to_comp))
+    parms$target_ratio_comm_to_comp <- target_ratio_comm_to_comp
   if(!missing(seed))
     parms$seed <- seed
   if(!missing(adaptive_rate))
