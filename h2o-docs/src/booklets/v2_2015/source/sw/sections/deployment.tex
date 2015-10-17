@@ -28,7 +28,7 @@ Sparkling Water supports deployments to the following Spark cluster types:
 \end{itemize}
 
 \subsection{Local cluster}
-Local cluster is identified by the following master URLs - \texttt{local}, \texttt{local[K]}, \texttt{local[*]}. In this case, the cluster is composed of a single JVM and is created during application submission.
+The local cluster is identified by the following master URLs - \texttt{local}, \texttt{local[K]}, or \texttt{local[*]}. In this case, the cluster is composed of a single JVM and is created during application submission.
 
 For example, the following command will run the ChicagoCrimeApp application inside a single JVM with a heap size of 5g:
 \begin{lstlisting}[style=Bash]
@@ -42,7 +42,7 @@ $SPARK_HOME/bin/spark-submit \
 
 
 \subsection{On Standalone Cluster}
-For AWS deployments or local private clusters, the standalone cluster deployment\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/spark-standalone.html}} is typical. Additionally, a Spark standalone cluster is also provided by Hadoop distributions like CDH or HDP. The cluster is identified by the URL \texttt{spark://IP:PORT}.
+For AWS deployments or local private clusters, the standalone cluster deployment\footnote{Refer to Spark documentation~\url{http://spark.apache.org/docs/latest/spark-standalone.html}} is typical. Additionally, a Spark standalone cluster is also provided by Hadoop distributions like CDH or HDP. The cluster is identified by the URL \texttt{spark://IP:PORT}.
 
 The following command deploys the ChicagoCrimeApp on a standalone cluster where the master node is exposed on IP mr-0xd10-precise1.0xdata.loc and port 7077:
 
@@ -58,7 +58,7 @@ $SPARK_HOME/bin/spark-submit \
 In this case, the standalone Spark cluster must be configured to provide the requested 5g of memory per executor node. 
 
 \subsection{On YARN Cluster}
-Because it provides effective resource management and control, most production environments use YARN cluster deployment.\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/running-on-yarn.html}} 
+Because it provides effective resource management and control, most production environments use YARN for cluster deployment.\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/running-on-yarn.html}} 
 In this case, the environment must contain the shell variable~\texttt{HADOOP\_CONF\_DIR} or \texttt{YARN\_CONF\_DIR}.
 
 \begin{lstlisting}[style=Bash]
