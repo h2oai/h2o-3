@@ -120,6 +120,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private volatile DeepLearningModelInfo model_info;
 
   public long run_time;
+  public long scoring_time;
   private long start_time;
 
   public long actual_train_samples_per_iteration;
@@ -271,14 +272,16 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             colFormat.toArray(s),
             "");
     int row = 0;
+    long scoring_time = 0;
     for (final DeepLearningScoring e : errors) {
+      scoring_time += e.scoring_time;
       int col = 0;
       assert (row < table.getRowDim());
       assert (col < table.getColDim());
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(start_time + e.training_time_ms));
       table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
-      table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%.3f", e.training_samples / (e.training_time_ms / 1e3)) + " rows/sec"));
+      table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%.3f", e.training_samples / ((e.training_time_ms - scoring_time)/ 1e3)) + " rows/sec"));
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
@@ -375,6 +378,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     actual_best_model_key = cp.actual_best_model_key;
     start_time = cp.start_time;
     run_time = cp.run_time;
+    scoring_time = cp.scoring_time;
     training_rows = cp.training_rows; //copy the value to display the right number on the model page before training has started
     validation_rows = cp.validation_rows; //copy the value to display the right number on the model page before training has started
     _bestError = cp._bestError;
@@ -390,12 +394,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output._names = dataInfo._adaptedFrame.names();
     _output._domains = dataInfo._adaptedFrame.domains();
-
-    // set proper timing
-    _timeLastScoreEnter = System.currentTimeMillis();
-    _timeLastScoreStart = 0;
-    _timeLastScoreEnd = 0;
-    _timeLastPrintStart = 0;
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
 
@@ -429,9 +427,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     makeWeightsBiases(destKey);
-    run_time = 0;
-    start_time = System.currentTimeMillis();
-    _timeLastScoreEnter = start_time;
     assert _key.equals(destKey);
     boolean fail = false;
     long byte_size = 0;
@@ -444,10 +439,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       throw new IllegalArgumentException(technote(5, "Model is too large"));
   }
 
-  public long _timeLastScoreEnter; //not transient: needed for HTML display page
-  transient private long _timeLastScoreStart;
-  transient private long _timeLastScoreEnd;
-  transient private long _timeLastPrintStart;
+  public long _timeLastIterationEnter;
+  public long _timeLastScoreStart; //start actual scoring
+  private long _timeLastScoreEnd;  //finished actual scoring
+  private long _timeLastPrintStart;
 
   /**
    * Score this DeepLearning model
@@ -461,17 +456,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration) {
     final long now = System.currentTimeMillis();
     epoch_counter = (double)model_info().get_processed_total()/training_rows;
-    final double time_last_iter_millis = Math.max(5,now-_timeLastScoreEnter);
+    final double time_last_iter_millis = _timeLastIterationEnter == 0 ? 0 : now - _timeLastIterationEnter;
     run_time += time_last_iter_millis;
-
-    // First update Job progress based on the number of trained samples for the last iteration
-    // and update the progress message
-    Job.Progress prog = DKV.getGet(progressKey);
-    float progress = prog == null ? 0 : prog.progress();
-    String msg = "Map/Reduce Iteration " + String.format("%,d",iteration) + ": Training at " + String.format("%,d", model_info().get_processed_total() * 1000 / run_time) + " samples/s..."
-        + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
-    ((Job)DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
-    if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
+    _timeLastIterationEnter = now;
 
     boolean keep_running;
     // Auto-tuning
@@ -501,19 +488,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
     }
 
-    _timeLastScoreEnter = now;
     keep_running = (epoch_counter < get_params()._epochs) && !stopped_early;
     final long sinceLastScore = now -_timeLastScoreStart;
-    final long sinceLastPrint = now -_timeLastPrintStart;
-    if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
-      _timeLastPrintStart = now;
-      if (!get_params()._quiet_mode) {
-        Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
-            + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-            + " Speed: " + String.format("%,d", 1000 * model_info().get_processed_total() / run_time) + " samples/sec.\n");
-        Log.info(msg);
-      }
-    }
 
     // this is potentially slow - only do every so often
     if( !keep_running ||
@@ -609,7 +585,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
 
       _timeLastScoreEnd = System.currentTimeMillis();
-      err.scoring_time = System.currentTimeMillis() - now;
+      err.scoring_time = _timeLastScoreEnd - _timeLastScoreStart;
+      scoring_time += err.scoring_time;
       // enlarge the error array by one, push latest score back
       if (errors == null) {
         errors = new DeepLearningScoring[]{err};
@@ -661,6 +638,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         Log.info(toString());
       if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
     }
+    final long sinceLastPrint = now -_timeLastPrintStart;
+    progressUpdate(progressKey, job_key, iteration, keep_running, now, sinceLastPrint);
     if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
         || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
       Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
@@ -670,6 +649,26 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     update(job_key);
     return keep_running;
   }
+
+  private void progressUpdate(Key progressKey, Key job_key, int iteration, boolean keep_running, long now, long sinceLastPrint) {
+    Job.Progress prog = DKV.getGet(progressKey);
+    double progress = prog == null ? 0 : prog.progress();
+    String msg = "Map/Reduce Iterations: " + String.format("%,d", iteration) + ". Speed: " + String.format("%,d", (int)(model_info().get_processed_total() * 1000. / (run_time-scoring_time))) + " samples/sec."
+            + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
+    ((Job) DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
+    if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
+
+    if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
+      _timeLastPrintStart = now;
+      if (!get_params()._quiet_mode) {
+        Log.info(
+                "Training time: " + PrettyPrint.msecs(run_time, true) + " (scoring: " + PrettyPrint.msecs(scoring_time, true) + "). "
+                + "Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs).\n");
+        Log.info(msg);
+      }
+    }
+  }
+
   /** Make either a prediction or a reconstruction.
    * @param orig Test dataset
    * @param adaptedFr Test dataset, adapted to the model

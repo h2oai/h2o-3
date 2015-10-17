@@ -357,23 +357,25 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         model.actual_train_samples_per_iteration = computeTrainSamplesPerIteration(mp, train.numRows(), model);
         // Determine whether shuffling is enforced
         if(mp._replicate_training_data && (model.actual_train_samples_per_iteration == train.numRows()*(mp._single_node_mode ?1:H2O.CLOUD.size())) && !mp._shuffle_training_data && H2O.CLOUD.size() > 1 && !mp._reproducible) {
-          Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
+          if (!mp._quiet_mode)
+            Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
         if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == train.numRows() && train.anyVec().nChunks()==1) {
-          Log.info("Enabling training data shuffling to avoid training rows in the same order over and over (no Hogwild since there's only 1 chunk).");
+          if (!mp._quiet_mode)
+            Log.info("Enabling training data shuffling to avoid training rows in the same order over and over (no Hogwild since there's only 1 chunk).");
           mp._shuffle_training_data = true;
         }
 
         if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
-          Log.info("Scoring the null model of the autoencoder.");
+          if (!mp._quiet_mode)
+            Log.info("Scoring the null model of the autoencoder.");
           model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0); //get the null model reconstruction error
         }
         // put the initial version of the model into DKV
         model.update(self());
-        model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
         Log.info("Starting to train the Deep Learning model.");
         new ProgressUpdate("Training...").fork(_progressKey);
 
@@ -391,9 +393,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         if (isRunning() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
-            if (!_parms._quiet_mode) {
+            if (!_parms._quiet_mode)
               Log.info("Setting the model to be the best model so far (based on scoring history).");
-            }
             DeepLearningModelInfo mi = best_model.model_info().deep_clone();
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
             mi.set_processed_global(model.model_info().get_processed_global());
@@ -410,7 +411,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           if (isCancelledOrCrashed()) {
             Log.info("Deep Learning model training was interrupted.");
           } else {
-            Log.info("Finished training the Deep Learning model (" + iteration + " Map/Reduce iterations)");
+            Log.info("Finished training the Deep Learning model (" + (iteration-1) + " Map/Reduce iterations)");
             Log.info(model);
           }
           Log.info("==============================================================================================================================================================================");
@@ -441,13 +442,16 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     private Frame reBalance(final Frame fr, boolean local, final String name) {
       int chunks = (int)Math.min( 4 * H2O.NUMCPUS * (local ? 1 : H2O.CLOUD.size()), fr.numRows());
       if (fr.anyVec().nChunks() > chunks && !_parms._reproducible) {
-        Log.info("Dataset already contains " + fr.anyVec().nChunks() + " chunks. No need to rebalance.");
+        if (!_parms._quiet_mode)
+          Log.info("Dataset already contains " + fr.anyVec().nChunks() + " chunks. No need to rebalance.");
         return fr;
       } else if (_parms._reproducible) {
-        Log.warn("Reproducibility enforced - using only 1 thread - can be slow.");
+        if (!_parms._quiet_mode)
+          Log.warn("Reproducibility enforced - using only 1 thread - can be slow.");
         chunks = 1;
       }
-      if (!_parms._quiet_mode) Log.info("ReBalancing dataset into (at least) " + chunks + " chunks.");
+      if (!_parms._quiet_mode)
+        Log.info("ReBalancing dataset into (at least) " + chunks + " chunks.");
       Key newKey = Key.make(name + ".chunks" + chunks);
       RebalanceDataSet rb = new RebalanceDataSet(fr, newKey, chunks);
       H2O.submitTask(rb);
@@ -509,7 +513,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : mp._target_ratio_comm_to_comp; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
 
         // estimate the time for communication (network) and training (compute)
-        model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 0) + network_queue_length * microseconds_collective[1];
+        model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 1e5 /* add 100ms for multi-node MR overhead */) + network_queue_length * microseconds_collective[1];
         double time_per_row_us  = flops_overhead_per_row * model_size / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
 
         // compute the optimal number of training rows per iteration
