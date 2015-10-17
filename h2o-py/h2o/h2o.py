@@ -624,7 +624,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   port : int
     A port, default is 54321
   size : int
-    THe expected number of h2o instances (ignored if start_h2o is True)
+    The expected number of h2o instances (ignored if start_h2o is True)
   start_h2o : bool
     A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
   enable_assertions : bool
@@ -1616,7 +1616,7 @@ def network_test():
   res["table"].show()
 
 
-def locate(path):
+def _locate(path):
   """
   Search for a relative path and turn it into an absolute path.
   This is handy when hunting for data files to be passed into h2o and used by import file.
@@ -1798,17 +1798,28 @@ class H2ODisplay:
     table= "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
     table_rows=[]
     if header is not None:
-      table_rows.append(H2ODisplay._html_row(header))
+      table_rows.append(H2ODisplay._html_row(header, bold=True))
     for row in rows:
       table_rows.append(H2ODisplay._html_row(row))
     return table.format("\n".join(table_rows))
 
   @staticmethod
-  def _html_row(row):
+  def _html_row(row, bold=False):
     res = "<tr>{}</tr>"
-    entry = "<td>{}</td>"
-    entries = "\n".join([entry.format(str(r)) for r in row])
+    entry = "<td><b>{}</b></td>"if bold else "<td>{}</td>"
+    #format full floating point numbers to only 1 decimal place
+    entries = "\n".join([entry.format(str(r))
+                         if len(str(r)) < 10 or not H2ODisplay._is_number(str(r))
+                         else entry.format("{0:.1f}".format(float(str(r)))) for r in row])
     return res.format(entries)
+
+  @staticmethod
+  def _is_number(s):
+    try:
+      float(s)
+      return True
+    except ValueError:
+      return False
 
 def can_use_pandas():
   try:

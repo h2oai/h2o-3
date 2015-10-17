@@ -4,11 +4,9 @@ import os
 def ipy_notebook_exec(path,save_and_norun=False):
     notebook = json.load(open(path))
     program = ''
-    program += "import tests\n" # add the test utilities
     for block in ipy_code_blocks(notebook):
         for line in ipy_valid_lines(block):
             if "h2o.init" not in line:
-                if "h2o.locate(" in line: line = line.replace("h2o.locate(","tests.locate(") # use test utilities locate instead
                 program += line if '\n' in line else line + '\n'
     if save_and_norun:
         with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:

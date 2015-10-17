@@ -2,11 +2,224 @@
 
 ##H2O
 
-###Slater (3.2.0.5) - 09/24/15
+###Slotnick (3.4.0.1)
+
+####New Features
+The following changes represent features that have been added since the previous release:
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a17dcc0637a04fc7e63c020bd0a3f2bba7b6f674): PUBDEV-1247: Added stochastic GBM parameters (`sample_rate` and `col_sample_rate`) to R/Py APIs
+
+
+#####Hadoop
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ba2755313d22f3812742786269ababc72257a179): Added support for H2O with HDP2.3
+
+#####Python
+
+- [PUBDEV-2098](https://0xdata.atlassian.net/browse/PUBDEV-2098): Scoring history in Python is now visualized ([GitHub commit](https://github.com/h2oai/h2o-3/commit/77b27109c84c4739f9f1b7a3078f8992beefc813))
+
+
+#####R
+
+>This software release introduces changes to the R API that may cause previously written R scripts to be inoperable. For more information, refer to the following [link](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/RChanges.md). 
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a989234a0ec9d6ded30441a2c6d2672ef5731379): Added `h2o.getTypes()` to the R wrapper
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c630e40f5ba577e912aaf44d3c7f7fb10f1693dd): Added ability to set `col.types` with a named list 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/875418caebf8f12aca1675f124c2d5135670642a): Added `h2o.getId()` to get the back-end distributed key/value store ID from a Frame
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9420547451c5ef6dcb04b8803d0a400c720445a4): Added column types to H2O frame in R, which allows R to set the correct column types when `as.data.frame()` is used on an H2O frame
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9e08405307b6499dbf09d264ab2ee8798b496a5d): Added `@export` for exported R functions
+
+#####System
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/de0b19c71a18f09eeace304773adebb51772e311): Added string length util for Enum columns
+- [[GitHub commit](https://github.com/h2oai/h2o-3/commit/7b8e39e8a6624d2512620d9e230ff91dd9c7e240): Added pass-through version of `toCategoricalVec()`, `toNumericVec()`, and `toStringVec()` to `Vec.java` for code simplicity and backwards compatibility
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/20ccac7947232fbb68e318e013c0ac2a96870284): Added string column handling to `StrSplit()`
+
 
 ####Enhancements
 
 The following changes are improvements to existing features (which includes changed default values):
+
+#####Algorithms
+
+- [PUBDEV-1247](https://0xdata.atlassian.net/browse/PUBDEV-1247): Implemented Stochastic GBM
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/5ada6c5f654e75c2275e1fc5027a306c44793ea3): Parallelized split finding for GBM/DRF (useful for large numbers of columns and nbins).
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/66230ffcf7276c83aa8db52cb9656efba06ec45a): Added improvements to speed up DRF (up to 35% faster) and stochastic GBM (up to 5x faster)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f48b52cf0a8f74a57c60a9cafd979ff28cd4a4c0): Added some straight-forward optimizations for GBM histogram building
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/5ccc4699f3c71dccb64f7c11fac5a91ddff514ba): GLRM is now deterministic between one vs. many chunks
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ae79aec8a84d0b7bdabb60f15e8138218e5e227e): Input parameters are now immutable
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c6ad99d06a337f7535720852213e4d55fa116e8a): PUBDEV-2135: Cleaned up N-fold CV model parameter sanity checking and error message propagation; now checks all N-fold model parameters upfront and lets the main model carry the message to the user
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/756ed15a8a8e34e4383cba1a6580c24806603c49): PUBDEV-2130: N-fold CV models are no longer deleted when the main model is deleted
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c7339d0597f690aef491b343797368c27645bb64): PUBDEV-2107: The title in `plot.H2OBinomialMetrics` is now editable 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/61d125c4b1a457fc95c5daf2a2423b3934a1d6eb): Parse Python lambda (bytecode -> ast -> rapids)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/2534dc6d4bb2c534cd0122e317317ad0459e4d3e): PUBDEV-1847: Cleaned up/refactored GBM/DRF
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ee3d12d04e2f23569e456436f880fb2e28223e62): Updated MeanSquare to Quadratic for DL
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fe94591e6ef84e1f2b051d18beece2b10006de7a): PUBDEV-2133: Speed up Enum mapping between train/test from O(N^2) to O(N*log(N))
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/60e8de2600d28fd8d7475ea9ae8b114913510ef9): Added GLRM scoring history with step size and average change in objective function value 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f7369945a480a3c29677ce7baa97c56166c4e0f2): SVD now outputs the V matrix as a frame with a frame key, rather than a double array in the API 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fc4aaaceb9e5c5b42f0c269b316b4d3f6f827a18): Modified k-means++ initialization in GLRM to set X to inverse of cluster distance with sum normalized to one, for each observation in training data
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/aad59cf147c887c4f709406393e8a242a49bc531): Increased GBM worker thread priority to avoid deadlock with high parallel GBM job counts
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e2be556f7ca9a10fae88747259f83f839e80d99b): Added input parameter `svd_method` to GLRM
+
+#####Python
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6877f2c69f42abc779df4bb98fc8b5d000a0bd88): `head` and `tail` no longer download the entire dataset
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1fd6ae0a988ca421dedf6338a895b53f9220d030): Truncated DF in `head` and `tail` before calling `/DownloadDataset`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/54279fbf168abc8dc45b080d47eebc6ea56e616d): `head()` and `tail()` now default to pretty printing in Python
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/56f1c364897c25b082f800fce9549160661fed03): Moved setup functionality from parse to parse setup; `col_types` and `na_strings` can now be dictionaries
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/adf612fd1f5c764a05231d6b8023c83ba9ffe0f5): Updated `H2OColSelect` to supply extra argument
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9e5595ea79b9d4f3eb81dffc457c97180e6f078a): PUBDEV-2174: Relative tolerance is now used for floating point comparison
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/d930dd90c2d77a903cb79e6f107f6cbe6823b94f): Added more cloud health output to `run.py`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/16dce03a13af46fae2fa912e79cd5fb073ca8477): When Pandas frames are returned, they are now wrapped to display nicely in iPython
+ 
+
+
+#####R
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fc8c337bad6178783286a262d0a18a246811e6fc): Changed `T`/`F` to `TRUE`/`FALSE`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/0a2f64f526b35456614188806e38ed2c54ed8b5c): `xml2` package is now required for `rversions` package
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/d3956c45a6de6e845ed9791f295195778902116e): Package dependencies are taken into account when installing R packages
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/4c18d351207f2441e80a74e55df205edcaacbfcd): Metrics are now always computer if a dataset is provided (R `h2o.performance` call)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ff1f925b27a951608d5bbd66ee9487772e529b38): Column names are now fetched from H2O
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/42c2bb48b3534ebb43a992b37ed3c683050e4aab): PUBDEV-2150: Time columns in H2O are now imported as Date columns in R
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9420547451c5ef6dcb04b8803d0a400c720445a4): `h2o.ls()` now returns `data.frame`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/69bd25b93763f7326d93447986a597cd283b4217): `h2o.ls()` now returns the whole frame
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a9326cd564b522dcb20aed91663f4390c8c218ef): Removed unnamed additional parameters (ellipses) in R algos
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c271c2e193c9e7581ee999db48fa9798997a66ee): Added `as.character`to Rapids implementation
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e6df880496a67449693a25ab739682319ca2e6ab): Updated `plot.H2OModel` in R
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/808a64152e04ad9cc5a351001844a0a1fdfc907f): Updated scoring history plot in R for `training_frame` only
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/58c30eb4c94c06a78cd6a04a52cb84ebd97c1533): Instead of `:` and `assign`, `attr` is now used 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f3275a89227884e23cfabc535073dc08b8e7634d): Raw strings are now used as accessors
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1b319d837e0f18474419efe981e559a51606febb): `name.Frame` and `dimnames.Frame` are now visible
+
+
+#####System
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/70d91bed44172257d6d804572c985ec1ec67201e): Changed parse setup guess when encountering large NA counts to not favor numeric over dates or UUIDs
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e0ed51ce8a7cc52ef522a15915f7444635ee2b5d): Refactored vector type conversion methods into a class called VecUtils
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/836c32ebd5a00b0c255ac3bdb418af2b5d4da81a): Cleaned up ASTStrList to handle frames with more than one vector during column conversion; checks types before converting; added several new column type conversions
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/678fa6af2b20105e17cacbe9c38bec4266b89246): If the job is cancelled, scoring is now canceled
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ad2548754ad909edb0f4b01c61c09708d8ba3ee6): Refactored `doAll_numericResult() -> doAll(nout, type, frame)` where all output vecs are of the given type
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/5206760f20fa2394d16e30e4c025c6a3f4a62c44): Improved hash function
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/55874fa3e7c9ffbbdfb1cbb26d132304bf81deed): The output of `_train.get()` is now passed to a Frame
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/805f7a6cb58ac81720f65c0e895fab4433bb2972): Refactored binary/col ops for aesthetics and maintainability
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/7f1912e2e590e0011ac19ccd4910ce0216f0f8a2): Added correct types for new Vecs; `CategoricalWrappedVec` now exports a utility for enum conversions instead of a constructor
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f4fdf57c5a15ee36fc8ce8a0c3102a6a9500bd9f): Mean/sigma values are now printed to the logs after parsing
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/4885b259b80e2001104de670c7fce1bcee149a17): PUBDEV-2174: Added some optimizations for some chunks (mostly integers) in RollupStats
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bcec3daaf504c392555a9d8b5f171cfa396be981): PUBDEV-2174: Added instantiations of Rollups for dense numeric chunks
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/5c30f2375b40f5443ed71ed75e56e654c8cdddf4): PUBDEV-2174: Implemented single-pass variance/stddev calculation for rollups
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/70d547db554b48a9f1a4915b556746fbe2ae0854): PUBDEV-2174: Added `hasNA()` for chunks
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/655d36ddfb194606d251149021bddbd93ffa35d6): Reordered args in sub/gsub (`astid` > `astparameter`, `add string` -> `numeric`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f73199ab30c04c40aafa855b90cc1de2cce892d4): Ensured all chunks get closed
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9ae1d15a567cd92dfcef39adeddef8b10a7f3ced): `NewChunk.addString()` now accepts a Java string or BufferedString, eliminating needless conversion to a BufferedString before inserting into the NewChunk buffer. Improves efficiency of several ASTStrOps as well as converting Categorical columns to String columns.
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/68f7e5122364b938b560e68e0aac573c3ed198bd): Renamed enums to categoricals system-wide
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/cd456388d1815cf08292459d44013d5e20436b49): Renamed `ValueString` -> `BufferedString`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/5efb27dc1f50d5cad14fe86166060452bf16582f): Removed redundant frame creation; added Java comments to each string utility; changed RAPIDS name of `gsub` -> `replaceall` and `sub` -> `replacefirst`; added nchar utility to the R client; updated comments in Python and R client
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/06cf75e3786a14fb7cf846c9e34744b1cfead194): All NA chunks are now handled in string ops
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/2e87a2634fc48daf6996f9befb3c3d95e9d467cf): Added ability for string utils to handle NA chunks
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/7eba6217d3fe6f04a605b273a866d4e084a46208): Added the ability to handle duplicate rows to merge
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9e0c9fb38d885c54d811091448d134d09e08aaf3): `countMatches` utilities now only work on string columns
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e5cc404eec3e4a9e6ee9edf9e985cf487d4f91bd): Changed names of `SubStr` and `GSubStr` to `ReplaceFirst` and `ReplaceAll`; both methods now only accept string columns as input
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b71043473c652d0f457bdd00f4d1192090cbf210): Changed `toUpper` and `toLower` to only work on string columns; includes an optimzied version of each method as well as a UTF-safe version
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ab44f73178cfb711da8f5b65ee1b5c67e27213d4): CStrChunks now track whether they are pure ASCII to allow StringUtilities to use optimized versions of the utilities that operate directly on the string buffer
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bd7ba53f1a360a3b35b5b1e7b93306927a907ff1): Moved frame function to ArrayUtils
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1afa2701f352f03140a64d4a001e21fef2ead7a8): Removed categorical versions of `trim()` and `length()`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c92390122601d3abb2ff42b2fab85a9d49595025): Changed the merge defaults to match the implementation
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/5291941a8d132b60f3a22e04c0d21b6c4bd7d7d9): Merge no longer uses a `by` argument
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b318faf497c8989d900fa7f26a0c75a7ffe270cc): Added `trim` and `length` functionality for string columns
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/26421b79453623c961cc4f73ff48fd1cca95ceaa): HEXDEV-442: Improved POJO handling
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/146b656c3e94fd025cee0988abd8d0948e7ae94d): Config files are now transferred using a hexstring to avoid issues with Hadoop XML parsing
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6c8ddf330ae739117ab4302eb83f682f342e2a5e): HEXDEV-445: Added `isNA` check 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b340b63b221a765e9d2fb4b82283da92d997e3d7): Means, mults, modes, and size now do bulk rollups
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/823209767da4c162ad99047195d702769e7d37a8): Increased priority of model builder Driver classes to prevent deadlock when bulk-launching parallel unrelated model builds
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/207dee8a52d3fa7936eba9440ec8aed182c34e55): Renamed Currents to Rapids
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b5e21d2f40a544303ef4acbe3f64f20d47d9d864): CRAN-based R clients are now set to opt-out by default
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/76d7a3307f7636660ca226ec65ce90fd7153257d): Assembly states are now saved in the DKV
+
+
+
+####Bug Fixes
+
+The following changes are to resolve incorrect software behavior: 
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e14e50d85922913ff5c6f0cb5a7c0806787d7be8): Fixed GLM with nfolds
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/463ac6aee7d656a61b45b29d517054e39300c126): Updated GLM InitTsk to run at +1 priority level to avoid deadlock when launching hundreds of GLMs in parallel
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/129c9fd062d1ba2b3a20c9d6ebe54d1a6d94b730): Column names (feature names) are now named correctly for the exported weight matrix connecting the input to the first hidden layer
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fa14eb4b07c320fb627476928a795693b0f4f6b9): Changed `isEnum` to `isCategorical`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/d8c287caa43aa005648c4f9b3c88aca7a09710d7): Cleaned up DRF and GBM; fixed checkpoint restart logic for trees and changed which parameters are configurable
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b3cbbf316e9b34e4da838fae902d1754d0bcd96b): Fixed incorrect logistic and hinge loss functions and apply to binary numeric columns in {0,1} only 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/dd67ef00b135c6d50f5fba28c3fde477f031a1eb): Fixed a bug where Poisson loss function was calculated incorrectly for values of 0
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c244867c3e4eb7813070c804882a88ab47c90f43): Fixed DL POJO for large input columns
+
+#####Python
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/85cf09508d1737ab9b3ad8381216e339b769b283): Fixed null/npe in H2O's fit for sklearn (Windows only)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ceb69702040279ff95e00dd4d5d179a30ddfcd67): `get_params` now keeps "algo" out of params
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/74969ec78970de85c8780380d6ae90d911bedcaa): Improved compatibility with sklearn by using "train" as a model build verb and reserving "fit" for sklearn; if "fit" method is attempted, a warning displays
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/05d2179e751b530561f2c36c3c65c98a28d73d21): Fixed accessor in Python model predict
+
+#####R
+
+- [PUBDEV-2198](https://0xdata.atlassian.net/browse/PUBDEV-2198): `h2o.table` ran slower than `h2o.groupby` by magnitudes
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9cf2639f71e26d48aa2fdc1725ee61889a619239): Fixed location of datafile for for R example code
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bfe6ae201eee39b0ad32867a6322eaf6e23d4cb6): Fixed `length(column.names)==number_columns` check
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/573b25e3aaa2e7ea79d0713a93c4687d76fb0991): Parse types  can be specified by column index or column name, but not both
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/0cb8b8dd69de20619318f1dd1bf9ff0c7a7f5481): Added connection (close HTTP header) to improve jetty connection pool behavior
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/3b9cc9b42c781d07e0cf9b455008690502b9a495): Added a sensible min on N
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/60ff4973c68eff876b63c286e04b0b2f3c166825): Added Windows binaries to R package repo
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ac3a755e8c4161bb6e696815a5f04774f3969e1e): Fixed `h2o.weights` to show frame as output
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/20827d5161b675628c543200304530c26860bfea): Fixed type conversion for time columns when ingested by `as.data.frame()`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/4c1e9e0098ca94b09e1f2fcb1cc96610c27daa30): Fixed `h2o.merge` R interface
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/cb8e2b5667021e452bdb69fe630c53270ad2062b): `head` and `tail` now always return `data.frame` 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e703181d0b545dc0be152bcac1d9e32f68f03f1a): Fixed a bug in GLRM init in R
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/613bd6ab537f09e24cb287addd0989178ee14134): Fixed bug in `h2o.summary` (constant categorical columns)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/42f4635f6c5b17937b1eb58a46c505507979b89c): Fixed bug in `plot.H2OModel`
+
+
+
+#####System
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/44994ee4998543ccf13c38e44017adee307db4da): Fixed `VecUtils.copyOver()` to accept a column type for the resulting copy
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a1f06c4ed21cbec4ac1c5f250f7cf5470758484a): Fixed `Vec.preWriting` so that it does not use an anonymous inner task which causes the entire Vec header to be passed
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bcec96c0fc088c5be2a923654a9581055f2ad969): Fixed parse to mark categorical references in ParseWriter as transient (enums must be node-shared during the entire multiple parse task)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c5d5f166fce56fddd808fa6b1267b9c13d83063f): PUBDEV-2182: Fixed DL checkpoint restart with given validation set after R (currents) behavior changed; now the validation set key no longer necessarily matches the file name
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/0f690db79d2df914d6ad2de2ca2feac6dc2ba48c): Fixed makeCon memory leak when `redistribute=T`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b5dcd34febf1c289e1a86276b06122e6ddcbd3ec): PUBDEV-2174: Fixed sigma calculation for sparse chunks
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6c9fc7dac6c150b27989c5f4044ebd1df7c6e83e): Restored pre-existing string manipulation utilities for categorical columns
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a8b7cf2d80458116c8c2d5e8491285f197706859): Fixed syncRPackages task so it doesn't run during the normal build process
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ea3a86251e3ad99a1d1a04b60ead0f21925f7674): Fixed intermittent failures caused by different default timezone settings on different machines; sets needed timezone before starting test
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fa3cad682e33aed6b4b8c7d7982bd13f600eb08f): Fixed error message for `countmatches`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/02b09902d096a082296d76f097cbccfe3ac72dd5): PUBDEV-1443: Fixed size computation in merge
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b89399d88d1b10a67b9411897ed6dfbc68cb76bf): Fixed `h2o.tabulate()` to work in multi-node mode
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/8b1c75a85eadbc32aa9c2b4d4545252e468f79fc): Fixed integer overflow in printout of CM to TwoDimTable
+
+---
+
+###Slater (3.2.0.7) - 10/09/15
+
+####Bug Fixes
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bc6f15ab71f5d41553bbe566bcc0585ef2a2bdf1): Fix Java 6 compatibility
+
+	The Java 7 API call
+`_rawChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);`
+has been replaced by the Java 6 API call
+`_rawChannel.socket().setTcpNoDelay(true);`
+
+  The Java 7 API call 
+`sock.getRemoteAddress())`
+has been replaced by
+`sock.socket().getRemoteSocketAddress()`
+
+---
+
+###Slater (3.2.0.5) - 09/24/15
+
+####Enhancements
 
 #####Algorithms
 

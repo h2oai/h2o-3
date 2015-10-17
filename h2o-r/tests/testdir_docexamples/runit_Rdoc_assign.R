@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 test.h2o.assign.golden <- function() {
 
 
-prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+prosPath <- locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath)
 prostate.qs <- quantile(prostate.hex$PSA)
 PSA.outliers <- prostate.hex[prostate.hex$PSA <= prostate.qs[2] | prostate.hex$PSA >= prostate.qs[10],]

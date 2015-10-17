@@ -163,11 +163,12 @@ function(args) {
         argsplit <- strsplit(args[i], ":")[[1]]
         H2O.IP   <<- argsplit[1]
         H2O.PORT <<- as.numeric(argsplit[2])
-      } else if (s == "--onJenkHadoop") {
-        ON.JENKINS.HADOOP <<- TRUE
+      } else if (s == "--hadoopNamenode") {
         i <- i + 1
         if (i > length(args)) usage()
-        H2O.INTERNAL.HDFS.NAME.NODE <<- args[i]
+        HADOOP.NAMENODE <<- args[i]
+      } else if (s == "--onHadoop") {
+        ON.HADOOP <<- TRUE
       } else {
         unknownArg(s)
       }
@@ -180,11 +181,14 @@ function() {
   print("")
   print("Usage for:  R -f runit.R --args [...options...]")
   print("")
-  print("    --usecloud       connect to h2o on specified ip and port, where ip and port are specified as follows:")
-  print("                     IP:PORT")
+  print("    --usecloud        connect to h2o on specified ip and port, where ip and port are specified as follows:")
+  print("                      IP:PORT")
   print("")
-  print("    --onJenkHadoop   signal to runit that it will be run on h2o-hadoop cluster with the specified hdfs name")
-  print("                     node.")
+  print("    --onHadoop        Indication that tests will be run on h2o multinode hadoop clusters.")
+  print("                      `locate` and `sandbox` runit test utilities use this indication in order to")
+  print("                      behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
+  print("    --hadoopNamenode  Specifies that the runit tests have access to this hadoop namenode.")
+  print("                      `hadoop.namenode` runit test utility returns this value.")
   print("")
   q("no",1,FALSE) #exit with nonzero exit code
 }
@@ -313,9 +317,3 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
   genDummyCols(df.clone, use_all_factor_levels)
 }
 
-#' HDFS helper
-is.running.internal.to.h2o <- function() {
-    url <- sprintf("http://%s:50070", H2O.INTERNAL.HDFS.NAME.NODE);
-    internal <- url.exists(url, timeout = 5)
-    return(internal)
-}

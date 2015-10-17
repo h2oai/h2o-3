@@ -51,10 +51,10 @@ test <- function() {
 	print("poisson")
 	#expect_equal(hh@model$init_f,gg$initF)
 	#expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,gg$train.error)
-	expect_equal(hh@model$init_f,-2.738746687)
-	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,0.4799194689)
+	expect_equal(hh@model$init_f,-2.40404516)
+	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,0.610489769)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
-	
+
 	
 }
 doTest("GBM residual deviance Test: GBM deviance for poisson/gamma/tweedie distributions", test)

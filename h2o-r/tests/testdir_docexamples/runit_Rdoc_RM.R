@@ -3,7 +3,7 @@ source('../h2o-runit.R')
 
 test.rdocRM.golden <- function() {
 
-prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+prosPath <- locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath)
 s <- as.h2o(runif(nrow(prostate.hex)))
 prostate.hex <- prostate.hex[s <= 0.8,]

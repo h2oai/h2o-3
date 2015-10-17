@@ -47,6 +47,7 @@
 #' @param weights_column Specify the weights column.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -58,6 +59,7 @@
 #' dependent <- "runoffnew"
 #' h2o.gbm(y = dependent, x = independent, training_frame = australia.hex,
 #'         ntrees = 3, max_depth = 3, min_rows = 2)
+#' }
 #' @export
 h2o.gbm <- function(x, y, training_frame,
                     model_id,

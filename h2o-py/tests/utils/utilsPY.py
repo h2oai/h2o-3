@@ -125,6 +125,8 @@ def javapredict(algo, equality, train, test, x, y, **kwargs):
         model = h2o.random_forest(x=train[x], y=train[y], **kwargs)
     elif algo == "deeplearning":
         model = h2o.deeplearning(x=train[x], y=train[y], **kwargs)
+    elif algo == "glm":
+        model = h2o.glm(x=train[x], y=train[y], **kwargs)
     else:
         raise(ValueError, "algo {0} is not supported".format(algo))
     print model
@@ -165,28 +167,28 @@ def javapredict(algo, equality, train, test, x, y, **kwargs):
     print "Input CSV to PredictCsv saved in {0}".format(in_csv)
 
     print "Compiling Java Pojo"
-    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx4g", "-J-XX:MaxPermSize=256m", java_file]
+    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
     subprocess.check_call(javac_cmd)
 
     print "Running PredictCsv Java Program"
     out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
     cp_sep = ";" if sys.platform == "win32" else ":"
-    java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx4g", "-XX:MaxPermSize=256m",
+    java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
                 "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", model._id,
                 "--input", in_csv, "--output", out_pojo_csv]
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
     print "Java output: {0}".format(o)
     assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
-    predictions2 = h2o.import_file(path=out_pojo_csv)
+    predictions2 = h2o.upload_file(path=out_pojo_csv)
     print "Pojo predictions saved in {0}".format(out_pojo_csv)
 
     print "Comparing predictions between H2O and Java POJO"
     # Dimensions
     hr, hc = predictions.dim
     pr, pc = predictions2.dim
-    assert hr == pr, "Exepcted the same number of rows, but got {0} and {1}".format(hr, pr)
-    assert hc == pc, "Exepcted the same number of cols, but got {0} and {1}".format(hc, pc)
+    assert hr == pr, "Expected the same number of rows, but got {0} and {1}".format(hr, pr)
+    assert hc == pc, "Expected the same number of cols, but got {0} and {1}".format(hc, pc)
 
     # Value
     for r in range(hr):

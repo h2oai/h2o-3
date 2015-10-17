@@ -4,7 +4,7 @@ source('../h2o-runit.R')
 
 test.rdocsummary.golden <- function() {
 
-prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+prosPath <- locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath)
 summary(prostate.hex)
 summary(prostate.hex$GLEASON)

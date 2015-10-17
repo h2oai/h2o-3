@@ -4,6 +4,9 @@ h2oEnsemble 0.0.9 (In progress)
 ----------------
 * TO DO: Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
+* TO DO: Update the `runtime` list to include times for `cv` and `baselearning`.  These were dropped in version 0.0.5.
+* TO DO: Added new function `h2o.recombine` which allows the user to easily re-fit the metalearner using a new metalearning algorithm.
+* TO DO: Added new functions, `h2o.saveEnsemble` and `h2o.loadEnsemble`, for easy saving and loading of ensemble models to disk.
 
 
 h2oEnsemble 0.0.8 (2015-10-07)
@@ -27,7 +30,7 @@ h2oEnsemble 0.0.5 (2015-08-10)
 * Added full support for `h2o.*` metalearning functions (data is no longer pulled into R). Previously, we pulled the `Z` matrix into R memory in order to be able to make use of SuperLearner-based metalearning functions, but this is no longer the default functionality.  We still pull the `Z` matrix into R memory if a SL-based metalearner is specified, however.  Using SL-based metalearners is suboptimal from a memory management perspective and may be deprecated in the future.  
 * Re-wrote the backend of `h2o.ensemble` such the `Z` matrix of cv-pred values from the base learners to stay entirely within the H2O cluster using the recently updated cross-validation capabilities of the h2o base learner functions.
 * Updated many of the wrapper functions to include newly implemented arguments.
-* Updated bug in example code for `h2o.enemble` that used predicted labels instead of predicted value for h2o metalearners.  This made it look like h2o metalearners were suboptimal when they were not.
+* Updated bug in example code for `h2o.ensemble` that used predicted labels instead of predicted value for h2o metalearners.  This made it look like h2o metalearners were suboptimal when they were not.
 * New distribution families (gamma, tweedie, poisson) are now supported when all base learners and metalearners can utilize the distribution (functionality currently untested).
 * The example for the `h2o.ensemble` function was updated.
 

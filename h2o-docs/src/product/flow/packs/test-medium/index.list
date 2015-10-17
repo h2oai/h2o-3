@@ -9,7 +9,6 @@ dl_airlines_gram_std.flow
 dl_arcene.flow
 dl_arcene_arcene_train_test.flow
 dl_covtype-20k.flow
-dl_covtype-altered.flow
 dl_glm_test_arcene.flow
 gbm_airlines.flow
 gbm_airlines_AirlinesTrainMM.flow
@@ -18,7 +17,6 @@ gbm_airlines_gram_std.flow
 gbm_arcene_train_test.flow
 gbm_chicagoCensus.flow
 gbm_covtype-20k.flow
-gbm_covtype-altered.flow
 glm_airline.flow
 glm_airline_allyears2k.flow
 glm_airline_gram_std.flow

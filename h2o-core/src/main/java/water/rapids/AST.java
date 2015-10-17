@@ -191,6 +191,7 @@ abstract public class AST extends Iced<AST> {
 
     // Complex data mungers
     init(new ASTAssign());
+    init(new ASTAppend());
     init(new ASTCut());
     init(new ASTDdply());
     init(new ASTGroup());

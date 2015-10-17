@@ -17,8 +17,8 @@ options(echo=FALSE)
 #'
 H2O.IP                      <<- "127.0.0.1"
 H2O.PORT                    <<- 54321
-ON.JENKINS.HADOOP           <<- FALSE
-H2O.INTERNAL.HDFS.NAME.NODE <<- NULL
+ON.HADOOP                   <<- FALSE
+HADOOP.NAMENODE             <<- NULL
 SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
 
@@ -44,11 +44,13 @@ function() {
     default.packages()
     Log.info("Loaded default packages. Additional required packages must be loaded explicitly.\n")
 
-    Log.info(paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT,"\n"))
-    h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE)
+    test.ip <- get.test.ip()
+    test.port <- get.test.port()
+    Log.info(paste0("Connect to h2o on IP: ",test.ip,", PORT: ",test.port,"\n"))
+    h2o.init(ip = test.ip, port = test.port, startH2O = FALSE)
 
     setupRandomSeed()
-    Log.info(paste0("[SEED] : ",SEED))
+    Log.info(paste0("[SEED] : ",get.test.seed()))
 
     sb <- sandbox(create=TRUE)
     Log.info(paste0("Created sandbox for test ",testName," in directory ",sb,".\n"))
@@ -68,17 +70,40 @@ function() {
 #' ----------------- Testing infrastructure -----------------
 #'
 #'
+get.test.ip       <- function() return(H2O.IP)
+get.test.port     <- function() return(H2O.PORT)
+hadoop.namenode   <- function() return(HADOOP.NAMENODE)
+test.is.on.hadoop <- function() return(ON.HADOOP)
+get.test.seed     <- function() return(SEED)
+get.project.root  <- function() return(PROJECT.ROOT)
+
+setupRandomSeed <- function() {
+    maxInt <- .Machine$integer.max
+    SEED <<- sample(maxInt, 1)
+    set.seed(SEED)
+}
+
+#' Hadoop helpers
+hadoop.namenode.is.accessible <- function() {
+    url <- sprintf("http://%s:50070", hadoop.namenode());
+    internal <- url.exists(url, timeout = 5)
+    return(internal)
+}
 
 #' Locate a file given the pattern <bucket>/<path/to/file>
 #' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
 locate<-
 function(pathStub, root.parent = NULL) {
-  if (ON.JENKINS.HADOOP) {
-    # HACK: jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
-    # in a h2o-hadoop cluster scenario, the other machines don't have this link. We need to reference the actual path,
-    # which is /home/0xdiag/ on ALL jenkins machines. If ON.JENKINS.HADOOP is set by the run.py, pathStub MUST be
-    # relative to /home/0xdiag/
-    return(paste0("/home/0xdiag/",pathStub))
+  if (test.is.on.hadoop()) {
+    # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
+    # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
+    # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
+    # machines store smalldata and bigdata in /home/0xdiag/. If ON.HADOOP is set by the run.py, the pathStub arg MUST
+    # be an immediate subdirectory of /home/0xdiag/. Moreover, the only guaranteed subdirectories of /home/0xdiag/ are
+    # smalldata and bigdata.
+    path <- normalizePath(paste0("/home/0xdiag/",pathStub))
+    if (!file.exists(path)) stop(paste("Could not find the dataset: ", path, sep = ""))
+    return(path)
   }
   pathStub <- clean(pathStub)
   bucket <- pathStub[1]
@@ -131,7 +156,7 @@ function(cur.dir, root, root.parent = NULL) {
     if (parent.name == root) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
 
     # the root is h2o-dev, check the children here (and fail if `root` not found)
-    if (parent.name == PROJECT.ROOT || parent.name == "workspace") {
+    if (parent.name == get.project.root() || parent.name == "workspace") {
       if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
       else stop(paste("Could not find the dataset bucket: ", root, sep = "" ))
     }
@@ -150,7 +175,8 @@ function(cur.dir, root, root.parent = NULL) {
       return(path.compute(parent.dir, root, root.parent)) }
 
     # fail if reach h2o-dev
-    if (parent.name == PROJECT.ROOT) stop("Reached the root h2o-dev. Didn't find the bucket with the root.parent")
+    if (parent.name == get.project.root()) {
+        stop(paste0("Reached the root ", get.project.root(), ". Didn't find the bucket with the root.parent")) }
   }
   return(path.compute(parent.dir, root, root.parent))
 }
@@ -181,13 +207,6 @@ function() {
   if (Sys.info()['sysname'] == "Windows") {
     options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))) }
   invisible(lapply(to_require,function(x){require(x,character.only=TRUE,quietly=TRUE,warn.conflicts=FALSE)}))
-}
-
-setupRandomSeed<-
-function() {
-    maxInt <- .Machine$integer.max
-    SEED <<- sample(maxInt, 1)
-    set.seed(SEED)
 }
 
 h2oRunitSetup()

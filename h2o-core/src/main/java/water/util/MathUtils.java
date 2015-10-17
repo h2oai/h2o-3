@@ -403,7 +403,7 @@ public class MathUtils {
               ncs[i].addNum(a[i]);
           }
         }
-      }.doAll_numericResult(input.numCols(), input).outputFrame();
+      }.doAll(input.numCols(), Vec.T_NUM, input).outputFrame();
     }
 
     /**
@@ -440,7 +440,7 @@ public class MathUtils {
 
           }
         }
-      }.doAll_numericResult(height * width, input).outputFrame();
+      }.doAll(height * width, Vec.T_NUM, input).outputFrame();
     }
 
     /**
@@ -480,7 +480,7 @@ public class MathUtils {
                   ncs[i*(width*depth) + j*depth + k].addNum(a[i][j][k]);
           }
         }
-      }.doAll_numericResult(height*width*depth, input).outputFrame();
+      }.doAll(height*width*depth, Vec.T_NUM, input).outputFrame();
     }
   }
 

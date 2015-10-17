@@ -66,6 +66,7 @@
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}},
 #'          \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
+#' \donttest{
 #' h2o.init()
 #'
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
@@ -79,16 +80,16 @@
 #' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
 #'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
-#' \donttest{
-#'  # GLM variable importance
-#'  # Also see:
-#'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-#'  data.hex = h2o.importFile(
-#'    path = "https://raw.github.com/h2oai/h2o/master/smalldata/bank-additional-full.csv",
-#'    destination_frame = "data.hex")
-#'  myX = 1:20
-#'  myY="y"
-#'  my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
+#'
+#' # GLM variable importance
+#' # Also see:
+#' #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
+#' data.hex = h2o.importFile(
+#'   path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
+#'   destination_frame = "data.hex")
+#' myX = 1:20
+#' myY="y"
+#' my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
 #'                  lambda_search=TRUE)
 #' }
 #' @export
@@ -170,10 +171,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
   if (!missing(nfolds) && nfolds > 1)
     parms$nfolds <- nfolds
-  if(!missing(beta_constraints)){
-    .eval.frame(beta_constraints)
+  if(!missing(beta_constraints))
     parms$beta_constraints <- beta_constraints
-  }
   m <- .h2o.modelJob('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]

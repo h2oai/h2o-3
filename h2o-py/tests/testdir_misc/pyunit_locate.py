@@ -4,11 +4,11 @@ import h2o, tests
 
 def test_locate():
 
-    iris_path = h2o.locate("smalldata/iris/iris.csv")
+    iris_path = tests.locate("smalldata/iris/iris.csv")
 
     try:
         tests.locate("smalldata/iris/afilethatdoesnotexist.csv")
-        assert False, "Expected h2o.locate to raise a ValueError"
+        assert False, "Expected tests.locate to raise a ValueError"
     except ValueError:
         assert True
 

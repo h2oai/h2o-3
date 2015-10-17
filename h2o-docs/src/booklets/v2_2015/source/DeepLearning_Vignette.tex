@@ -14,17 +14,17 @@
 \input{common/conf_top.tex}
 %\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
-
 \input{common/conf_titles.tex}
-%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
-
 
 \begin{document}
-\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
-%\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
+
+%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+\input{common/conf_listings_colorized.tex}  %Use this for online version
+
 
 \thispagestyle{empty} %removes page number
 \newgeometry{bmargin=0cm, hmargin=0cm}
+
 
 \begin{center}
 \textsc{\Large\bf{Deep Learning with H2O}}
@@ -160,8 +160,6 @@ In the model, the weighted combination $\alpha = \sum_{i=1}^{n} w_i x_i + b$ of 
 
 Multi-layer, feedforward neural networks consist of many layers of interconnected neuron units (as shown in the following image), starting with an input layer to match the feature space, followed by multiple layers of nonlinearity, and ending with a linear regression or classification layer to match the output space. The inputs and outputs of the model's units follow the basic logic of the single neuron described above. 
 
-\newpage
-
 \begin{figure}[ht]
 \centering
 \includegraphics[scale=0.5]{net.png}
@@ -179,9 +177,9 @@ This basic framework of multi-layer neural networks can be used to accomplish De
 \section{H2O's Deep Learning Architecture} 
 
 H2O follows the model of multi-layer, feedforward neural networks for predictive modeling. This section provides a more detailed description of H2O's Deep Learning features, parameter configurations, and computational implementation.
-
-\subsection{Summary of Features} 
-H2O's Deep Learning functionalities include:
+\newpage
+\subsection{Summary of Features} \nowidow[3]
+H2O's Deep Learning functionalities include: 
 
 \begin{itemize}
 
@@ -227,7 +225,6 @@ The training protocol described below follows many of the ideas and advances dis
 
 Various Deep Learning architectures employ a combination of unsupervised pre-training followed by supervised training, but H2O uses a purely supervised training protocol. The default initialization scheme is the uniform adaptive option, which is an optimized initialization based on the size of the network. Deep Learning can also be started using a random initialization drawn from either a uniform or normal distribution, optionally specifying a scaling parameter.
 
-\newpage
 
 \subsubsection{Activation and Loss Functions} \label{sssec:ActivationLoss}
 The choices for the nonlinear activation function $f$ described in the introduction are summarized in Table 1 below. $x_i$ and $w_i$ represent the firing neuron's input values and their weights, respectively; $\alpha$ denotes the weighted combination $\alpha = \sum_i w_i x_i+b$.
@@ -523,6 +520,7 @@ Rectified linear activation is popular with image processing and has previously 
 To perform the trial run in R, use the following: 
 \lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
 
+\newpage
 \waterExampleInPython
 To perform the trial run in Python, use the following: 
 \lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
@@ -537,7 +535,7 @@ If the value specified for \texttt{nfolds} is a positive integer, N-fold cross-v
 To save the predicted values generated during cross-validation, set the\\ \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  
 
 Advanced users can also specify a \texttt{fold\_column} that specifies the holdout fold associated with each row. By default, the holdout \texttt{fold\_assignment} is random, but other schemes such as round-robin assignment using the modulo operator are also supported. An example for generic N-fold cross-validation is provided below.  
-\newpage
+
 \waterExampleInR
 To run the cross-validation example in R, use the following: 
 \lstinputlisting[style=R]{deeplearning/deeplearning_crossval.R}
@@ -557,6 +555,7 @@ An equivalent \texttt{model\_performance} method is available in Python.  Utilit
 To view the model results in R, use the following: 
 \lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
 
+\newpage
 \waterExampleInPython
 To view the model results in Python, use the following: 
 \lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
@@ -571,7 +570,6 @@ If the parameter \texttt{overwrite\_with\_best\_model} is enabled, these scoring
 
 Once we have a satisfactory model (as determined by the validation or cross-validation metrics), use the \texttt{h2o.predict()} command to compute and store predictions on new data for additional refinements in the interactive data science process.
 
-\newpage
 \waterExampleInR
 To view the predictions in R, use the following: 
 \lstinputlisting[style=R]{deeplearning/deeplearning_predict.R}
@@ -637,7 +635,7 @@ To run a grid search in R, use the following:
 
 \normalsize
 \noindent
-
+\newpage
 \waterExampleInR
 To view the results of the grid search in R, use the following: 
 \lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch_result.R}
@@ -670,7 +668,7 @@ Checkpointing can also be used to reload existing models that were saved to disk
 To save a model in R, use the following: 
 \medskip
 \lstinputlisting[style=R]{deeplearning/deeplearning_savemodel.R}
-
+\newpage
 \waterExampleInPython
 To save a model in Python, use the following: 
 \medskip
@@ -721,10 +719,10 @@ An in-depth study of the computational performance characteristics of H2O Deep L
 The parallel scalability of H2O for the MNIST dataset on 1 to 63 compute nodes is shown in the figure below.
 \begin{figure}[h!]
 \centering
-\includegraphics[scale=0.9]{scalability_new.png}
+\includegraphics[scale=0.6]{scalability_new.png}
 \end{figure}
-\bigskip
-\bigskip
+
+\newpage
 \section{Deep Autoencoders}
 \label{sec:DeepAutoencoders}  
 This section describes the use of deep autoencoders for Deep Learning. 
@@ -733,12 +731,14 @@ Previous sections discussed purely supervised Deep Learning tasks. However, Deep
 
 Based on the diagram of a three-layer neural network with one hidden layer below, if our input data is treated as labeled with the same input values, then the network is forced to learn the identity via a nonlinear, reduced representation of the original data. 
 
-This type of algorithm, called a deep autoencoder, has been used extensively for unsupervised, layer-wise pre-training of supervised Deep Learning tasks. Here we discuss the autoencoder's ability to discover anomalies in data. 
-
 \begin{figure}[h!]
 \centering
-\includegraphics[scale=0.7]{autoencoder.png}
+\includegraphics[scale=0.6]{autoencoder.png}
 \end{figure}
+
+This type of algorithm, called a deep autoencoder, has been used extensively for unsupervised, layer-wise pre-training of supervised Deep Learning tasks. Here we discuss the autoencoder's ability to discover anomalies in data. 
+
+
 
 \subsection{Use Case: Anomaly Detection} %%TODO: do we still want to use this example?
 For the deep autoencoder model described above,  if enough training data that resembles some underlying pattern is provided, the network will train itself to easily learn the identity when confronted with that pattern. However, if an anomalous test point does not match the learned pattern, the autoencoder will likely have a high error rate in reconstructing this data, indicating anomalous data.

@@ -6,6 +6,7 @@ import org.apache.commons.math3.util.FastMath;
 import water.*;
 import water.fvec.*;
 import water.util.MathUtils;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -33,7 +34,7 @@ abstract class ASTUniOp extends ASTPrim {
                 nc.addNum(op(c.atd(i)));
             }
           }
-        }.doAll_numericResult(fr.numCols(),fr).outputFrame());
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
       case Val.ROW:
         ValRow v = (ValRow)val;
         double[] ds = new double[v._ds.length];
@@ -106,7 +107,7 @@ class ASTIsNA  extends ASTPrim {
                 nc.addNum(c.isNA(i) ? 1 : 0);
             }
           }
-        }.doAll_numericResult(fr.numCols(),fr).outputFrame());
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
     case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
     default: throw H2O.unimpl("is.na unimpl: " + val.getClass());
     }
@@ -143,7 +144,7 @@ class ASTStratifiedSplit extends ASTPrim {
     final double testFrac = asts[2].exec(env).getNum();
     long seed = (long)asts[3].exec(env).getNum();
     seed = seed == -1 ? new Random().nextLong() : seed;
-    final long[] classes = new Vec.CollectDomain().doAll(y).domain();
+    final long[] classes = new VecUtils.CollectDomain().doAll(y).domain();
     final int nClass = y.isNumeric() ? classes.length : y.domain().length;
     final long[] seeds = new long[nClass]; // seed for each regular fold column (one per class)
     for( int i=0;i<nClass;++i)
@@ -162,7 +163,7 @@ class ASTStratifiedSplit extends ASTPrim {
           }
         }
       }
-    }.doAll_numericResult(1,new Frame(y)).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
+    }.doAll(1, Vec.T_NUM, new Frame(y)).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
   }
 }
 
@@ -289,7 +290,7 @@ class ASTSetDomain extends ASTPrim {
     if( !v.isCategorical() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
     if( _domains!=null && _domains.length != v.domain().length) {
       // in this case we want to recollect the domain and check that number of levels matches _domains
-      Vec.CollectDomainFast t = new Vec.CollectDomainFast((int)v.max());
+      VecUtils.CollectDomainFast t = new VecUtils.CollectDomainFast((int)v.max());
       t.doAll(v);
       final long[] dom = t.domain();
       if( dom.length != _domains.length)

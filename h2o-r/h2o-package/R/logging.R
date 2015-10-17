@@ -40,12 +40,14 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
 #' @seealso \code{\link{h2o.stopLogging}, \link{h2o.clearLog},
 #'          \link{h2o.openLog}}
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' h2o.startLogging()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
 #' h2o.stopLogging()
+#' }
 #' @export
 h2o.startLogging <- function(file) {
   if (missing(file)) {
@@ -67,12 +69,14 @@ h2o.startLogging <- function(file) {
 #' @seealso \code{\link{h2o.startLogging}, \link{h2o.clearLog},
 #'          \link{h2o.openLog}}
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' h2o.startLogging()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
 #' h2o.stopLogging()
+#' }
 #' @export
 h2o.stopLogging <- function() {
   assign("IS_LOGGING", FALSE, envir = .pkg.env)
@@ -87,6 +91,7 @@ h2o.stopLogging <- function() {
 #' @seealso \code{\link{h2o.startLogging}, \link{h2o.stopLogging},
 #'          \link{h2o.openLog}}
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' h2o.startLogging()
@@ -94,6 +99,7 @@ h2o.stopLogging <- function() {
 #' australia.hex = h2o.importFile(path = ausPath)
 #' h2o.stopLogging()
 #' h2o.clearLog()
+#' }
 #' @export
 h2o.clearLog <- function() {
   file.remove(.h2o.getLogFileName())

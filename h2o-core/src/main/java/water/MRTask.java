@@ -362,6 +362,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  blocking. */
   public final T doAll( Vec... vecs ) { return doAll(null,vecs); }
   public final T doAll(byte[] types, Vec... vecs ) { return doAll(types,new Frame(vecs), false); }
+  public final T doAll(byte type, Vec... vecs ) { return doAll(new byte[]{type},new Frame(vecs), false); }
   public final T doAll( Vec vec, boolean run_local ) { return doAll(null,vec, run_local); }
   public final T doAll(byte[] types, Vec vec, boolean run_local ) { return doAll(types,new Frame(vec), run_local); }
 
@@ -370,14 +371,15 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public final T doAll( Frame fr, boolean run_local) { return doAll(null,fr, run_local); }
   public final T doAll( Frame fr ) { return doAll(null,fr, false); }
   public final T doAll( byte[] types, Frame fr) {return doAll(types,fr,false);}
+  public final T doAll( byte type, Frame fr) {return doAll(new byte[]{type},fr,false);}
   public final T doAll( byte[] types, Frame fr, boolean run_local) {
     dfork(types,fr, run_local);
     return getResult();
   }
-  // Default output type is all numbers
-  public final T doAll_numericResult( int nouts, Frame fr) {
+  // Output is several vecs of the same type
+  public final T doAll( int nouts, byte type, Frame fr) {
     byte[] types = new byte[nouts];
-    Arrays.fill(types , Vec.T_NUM);
+    Arrays.fill(types, type);
     return doAll(types,fr,false);
   }
 

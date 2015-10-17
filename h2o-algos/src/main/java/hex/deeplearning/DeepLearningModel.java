@@ -699,7 +699,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
               recon[c].addNum(p[c]);
           }
         }
-      }.doAll_numericResult(len,adaptedFr).outputFrame();
+      }.doAll(len, Vec.T_NUM, adaptedFr).outputFrame();
 
       Frame of = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), names, f.vecs());
       DKV.put(of);
@@ -845,7 +845,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             mse[i].addNum(out[i]);
         }
       }
-    }.doAll_numericResult(outputcols, adaptFrm).outputFrame();
+    }.doAll(outputcols, Vec.T_NUM, adaptFrm).outputFrame();
 
     String[] names;
     if (reconstruction_error_per_feature) {

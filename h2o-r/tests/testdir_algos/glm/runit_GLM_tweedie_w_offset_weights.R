@@ -1,4 +1,3 @@
-
 ### This tests tweedie distribution,tweedie with offsets,  and tweedie with weights in glm ######
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
@@ -17,21 +16,19 @@ test <- function() {
                 tweedie_link_power = 0,lambda = 0,alpha = 0,training_frame = dh)
 
 	# From glm in R
-	#dd = as.data.frame(dh)
-	#(gg_no_weights<-glm(ClaimNb~.-Exposure-IDpol,family=tweedie(var.power=1.05,link.power=0), data = dd)) #deviance(gg) = 241268.2585101248 ; gg$null.deviance = 246200.2912844299
-	#(gg_with_weights<-glm(ClaimNb~.-Exposure-IDpol,family=tweedie(var.power=1.05,link.power=0),
-	#					data = dd,weights=Exposure)) #deviance(gg) = 142814.2349666518; gg$null.deviance = 147048.37352688
+        dd = as.data.frame(dh)
+        gg_no_weights   <- glm(ClaimNb~.-Exposure-IDpol, family=tweedie(var.power=1.05,link.power=0), data = dd)
+        gg_with_weights <- glm(ClaimNb~.-Exposure-IDpol, family=tweedie(var.power=1.05,link.power=0), data = dd,weights=Exposure)
 	
-	print("Check deviance and predictions")
-	expect_equal(147048.37352688, hh_with_weights@model$training_metrics@metrics$null_deviance)
-	expect_equal(142814.2349666518,hh_with_weights@model$training_metrics@metrics$residual_deviance)
+	expect_equal(gg_with_weights$null.deviance, hh_with_weights@model$training_metrics@metrics$null_deviance)
+	expect_equal(deviance(gg_with_weights),hh_with_weights@model$training_metrics@metrics$residual_deviance)
 
-	expect_equal(246200.2912844299, hh_no_weights@model$training_metrics@metrics$null_deviance)
-	expect_equal(241268.2585101248,hh_no_weights@model$training_metrics@metrics$residual_deviance)
+	expect_equal(gg_no_weights$null.deviance, hh_no_weights@model$training_metrics@metrics$null_deviance)
+	expect_equal(deviance(gg_no_weights),hh_no_weights@model$training_metrics@metrics$residual_deviance)
 
 	ph = as.data.frame(h2o.predict(hh_with_weights,newdata = dh)) 
-	#pr = predict(gg_with_offset,newdata = dd,type = "response") # mean(pr) = 0.06598871946540595
-	expect_equal(mean(ph[,1]),0.06598871946540595,tolerance=1e-8)
+	pr = predict(gg_with_weights,newdata = dd,type = "response") 
+	expect_equal(mean(ph[,1]),mean(pr),tolerance=1e-5)
 
 	print("parse data")
 	library(MASS) 

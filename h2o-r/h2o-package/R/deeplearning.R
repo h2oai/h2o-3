@@ -106,6 +106,7 @@
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
@@ -113,6 +114,7 @@
 #'
 #' # now make a prediction
 #' predictions <- h2o.predict(iris.dl, iris.hex)
+#' }
 #'
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
@@ -365,7 +367,7 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' }
 #' @export
 h2o.anomaly <- function(object, data, per_feature=FALSE) {
-  url <- paste0('Predictions/models/', object@model_id, '/frames/',attr(.eval.frame(data), "id"))
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
   res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE, reconstruction_error_per_feature=per_feature)
   key <- res$model_metrics[[1L]]$predictions$frame_id$name
   h2o.getFrame(key)
@@ -398,7 +400,7 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 #' @export
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', attr(.eval.frame(data), "id"))
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
   res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name
 
