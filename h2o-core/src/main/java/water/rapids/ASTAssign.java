@@ -238,10 +238,12 @@ class ASTTmpAssign extends ASTPrim {
   @Override
   public String str() { return "tmp=" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    String id = ((ASTId)asts[1])._id;
+    Key id = Key.make(((ASTId)asts[1])._id);
     Frame src = stk.track(asts[2].exec(env)).getFrame();
     // TODO: COW optimization
-    Frame dst = src.deepCopy(id);  // Stomp temp down
+    Frame dst = src.deepCopy(null);  // Make nameless copy
+    Keyed.remove(id);  // Remove anything under prior name (probably pretty heavily shared with src)
+    DKV.put(new Frame(id,dst._names,dst.vecs()));
     return env.addGlobals(dst);
   }
 }

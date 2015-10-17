@@ -27,7 +27,7 @@ class ASTColSlice extends ASTPrim {
     Frame fr2 = new Frame();
     if( cols.length==0 ) {        // Empty inclusion list?
     } else if( cols[0] >= 0 ) { // Positive (inclusion) list
-      if( cols[cols.length-1] > fr.numCols() )
+      if( cols[cols.length-1] >= fr.numCols() )
         throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
       for( int col : cols )
         fr2.add(fr.names()[col],fr.vecs()[col]);

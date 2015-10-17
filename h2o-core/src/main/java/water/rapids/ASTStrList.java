@@ -44,11 +44,9 @@ public class ASTStrList extends ASTParameter {
 
 /** Assign column names */
 class ASTColNames extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "cols", "names"}; }
+  @Override public String[] args() { return new String[]{"ary", "cols", "names"}; }
   @Override int nargs() { return 1+3; } // (colnames frame [#cols] ["names"])
-  @Override
-  public String str() { return "colnames="; }
+  @Override public String str() { return "colnames="; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( asts[2] instanceof ASTNumList ) {

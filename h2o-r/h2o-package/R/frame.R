@@ -187,6 +187,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   attr(.eval.driver(x),"data")      # Cache and return scalar
 }
 .eval.driver <- function(x) {
+print(sys.calls())
   # Build the AST; this will assign a name as needed
   exec_str <- .eval.impl(x)
   # Execute the AST on H2O
@@ -1389,11 +1390,11 @@ str.Frame <- function(object, ..., cols=FALSE) {
       idx <- match(col, colnames(data))
       if( any(is.na(idx)) ) { # Any unknown names?
         if( length(col) > 1 ) stop("unknown column names")
-        else { print("TODO: SPECIFIC COLUMN APPEND VS ASSIGNMENT-PAST-END"); idx <- ncol(data)+1; name <- col } # Append 1 unknown column
+        else { idx <- ncol(data)+1; name <- col } # Append 1 unknown column
       }
     } else idx <- col
     if( is.null(value) ) return(`[.Frame`(data,row=-idx)) # Assign a null: delete by selecting inverse columns
-    if( idx==ncol(data)+1 && is.na(name) ) { print("TODO: NAMELESS COLUMN APPEND"); name <- paste0("C",idx) }
+    if( idx==ncol(data)+1 && is.na(name) ) name <- paste0("C",idx)
     cols <- .row.col.selector(idx, envir=parent.frame())
   }
 
