@@ -141,7 +141,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Aug. 2015). \t
 \section{Overview}
 
 A GBM is an ensemble of either regression or classification tree models.
-Both are forward-learning ensemble methods that obtain predictive results through gradually improved estimations.
+Both are forward-learning ensemble methods that obtain predictive results using gradually improved estimations.
 
 Boosting is a flexible nonlinear regression procedure that helps improve the accuracy of trees. Weak classification algorithms are sequentially applied to the incrementally changed data to create a series of decision trees, producing an ensemble of weak prediction models. 
 
@@ -154,7 +154,7 @@ H2O's GBM functionalities include:
 \begin{itemize}
 \item supervised learning for regression and classification tasks
 \item distributed and parallelized computation on either a single node or a multi-node cluster
-\item fast and memory-efficient Java implementations of the underlying algorithms
+\item fast and memory-efficient Java implementations of the algorithms
 \item the ability to run H2O from R, Python, Scala, or the intuitive web UI (Flow)
 \item grid search for hyperparameter optimization and model selection
 \item model export in plain Java code for deployment in production environments
@@ -162,7 +162,9 @@ H2O's GBM functionalities include:
 \end{itemize}
 
 
-Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
+Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. 
+
+Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
 
 
 \subsection{Theory and Framework}
