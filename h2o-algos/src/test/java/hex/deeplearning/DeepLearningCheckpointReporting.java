@@ -79,7 +79,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         for (int i=0; i<table.getRowDim(); ++i) {
 
-          // Check that timestamp is correct, and growing monotonously
+          // Check that timestamp is correct, and growing monotonically
           String timestamp = (String)table.get(i,0);
           long timeStampLong = fmt.parseMillis(timestamp);
           Assert.assertTrue("Timestamp must be later than outside timer start", timeStampLong >= start);
@@ -87,7 +87,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
           Assert.assertTrue("Timestamp must increase", timeStampLong >= priorTimeStampLong);
           priorTimeStampLong = timeStampLong;
 
-          // Check that duration is growing monotonously
+          // Check that duration is growing monotonically
           String duration = (String)table.get(i,1);
           duration = duration.substring(0, duration.length()-4); //"x.xxxx sec"
           double durationDouble = Double.parseDouble(duration);
@@ -139,7 +139,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       Scope.exit();
-      frame.remove();
+      if (frame!=null) frame.remove();
     }
   }
 }
