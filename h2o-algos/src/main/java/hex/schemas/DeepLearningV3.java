@@ -539,7 +539,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //    @API(help = "Mini-batch size (use 1 for stochastic gradient descent)", level = API.Level.expert, direction=API.Direction.INOUT)
 //    public int mini_batch_size;
 
-    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean elastic_averaging;
 
     @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
