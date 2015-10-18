@@ -634,6 +634,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     Job.Progress prog = DKV.getGet(progressKey);
     double progress = prog == null ? 0 : prog.progress();
     int speed = (int)(model_info().get_processed_total() * 1000. / (run_time-scoring_time));
+    if (speed < 0) speed=0;
     assert(speed >= 0);
     String msg = "Map/Reduce Iterations: " + String.format("%,d", iteration) + ". Speed: " + String.format("%,d", speed) + " samples/sec."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (run_time * (1. - progress) / progress), true));
