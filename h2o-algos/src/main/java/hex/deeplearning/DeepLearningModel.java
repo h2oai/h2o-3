@@ -149,6 +149,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public static class DeepLearningScoring extends Iced {
     public double epoch_counter;
     public double training_samples;
+    public long time_stamp;
     public long training_time_ms;
     boolean validation;
     public long score_training_samples;
@@ -251,7 +252,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       assert (row < table.getRowDim());
       assert (col < table.getColDim());
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-      table.set(row, col++, fmt.print(time_of_start + e.training_time_ms));
+      table.set(row, col++, fmt.print(e.time_stamp));
       table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
       int speed = (int)(e.training_samples / ((e.training_time_ms - scoring_time)/ 1e3));
 //      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + e.training_samples + "/((" + e.training_time_ms + "-" + scoring_time + ")/1e3)";
@@ -396,6 +397,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       errors = new DeepLearningScoring[1];
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
+      errors[0].time_stamp = System.currentTimeMillis();
       _output.errors = last_scored();
       _output._scoring_history = createScoringHistoryTable(errors);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
@@ -430,10 +432,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    */
   boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration) {
     final long now = System.currentTimeMillis();
-    total_run_time = now - time_of_start;
     final double time_since_last_iter = now - _timeLastIterationEnter;
+    total_run_time +=  time_since_last_iter;
     _timeLastIterationEnter = now;
     epoch_counter = (double)model_info().get_processed_total()/training_rows;
+
 
     boolean keep_running;
     // Auto-tuning
@@ -479,6 +482,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       _timeLastScoreStart = System.currentTimeMillis();
       model_info().computeStats(); //might not be necessary, but is done to be certain that numbers are good
       DeepLearningScoring err = new DeepLearningScoring();
+      err.time_stamp = _timeLastScoreStart;
       err.training_time_ms = total_run_time;
       err.epoch_counter = epoch_counter;
       err.training_samples = (double)model_info().get_processed_total();
@@ -620,18 +624,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       stopped_early = true;
       keep_running = false;
     }
-    if (iteration==1) { //hack to fix the fact that run_time was recorded BEFORE scoring in first iteration..
-      long firstScoring = System.currentTimeMillis()-_timeLastIterationEnter;
-      total_run_time += firstScoring;
-      last_scored().training_time_ms = total_run_time;
-    }
     progressUpdate(progressKey, job_key, iteration, keep_running);
     update(job_key);
     return keep_running;
   }
 
   private void progressUpdate(Key progressKey, Key job_key, int iteration, boolean keep_running) {
-    long timeSinceEntering = System.currentTimeMillis() - _timeLastIterationEnter;
+    long now = System.currentTimeMillis();
+    long timeSinceEntering = now - _timeLastIterationEnter;
     Job.Progress prog = DKV.getGet(progressKey);
     double progress = prog == null ? 0 : prog.progress();
     int speed = (int)(model_info().get_processed_total() * 1000. / ((total_run_time + timeSinceEntering) - total_scoring_time));
@@ -640,9 +640,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (total_run_time * (1. - progress) / progress), true));
     ((Job) DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
-    long sinceLastPrint = System.currentTimeMillis() -_timeLastPrintStart;
+    long sinceLastPrint = now -_timeLastPrintStart;
     if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
-      _timeLastPrintStart = System.currentTimeMillis();
+      _timeLastPrintStart = now;
       if (!get_params()._quiet_mode) {
         Log.info(
                 "Training time: " + PrettyPrint.msecs((total_run_time + timeSinceEntering), true) + " (scoring: " + PrettyPrint.msecs(total_scoring_time, true) + "). "

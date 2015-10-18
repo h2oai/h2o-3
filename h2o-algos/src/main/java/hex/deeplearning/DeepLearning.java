@@ -247,7 +247,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           assert (actualNewP != oldP);
           DeepLearningParameters.Sanity.update(actualNewP, newP, nclasses());
 
-          Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
+          Log.info("Continuing training after " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
           cp.update(self());
         } finally {
           if (cp != null) cp.unlock(self());
@@ -378,6 +378,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
         // put the initial version of the model into DKV
         model.update(self());
+        model._timeLastIterationEnter = System.currentTimeMillis();
         Log.info("Starting to train the Deep Learning model.");
         new ProgressUpdate("Training...").fork(_progressKey);
 
