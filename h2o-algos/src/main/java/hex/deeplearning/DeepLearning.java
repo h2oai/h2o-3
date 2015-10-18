@@ -378,7 +378,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
         // put the initial version of the model into DKV
         model.update(self());
-        model._timeLastIterationEnter = System.currentTimeMillis();
         Log.info("Starting to train the Deep Learning model.");
         new ProgressUpdate("Training...").fork(_progressKey);
 
