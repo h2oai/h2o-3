@@ -7,9 +7,9 @@
 
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_jira")
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-source('../h2o-runit.R')
+
 
 test.colapply <- function() {
   Log.info('Uploading hepatitis data from jira web to H2O...')

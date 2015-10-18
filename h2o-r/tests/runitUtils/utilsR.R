@@ -4,6 +4,114 @@
 #'
 #'
 
+#' Hadoop helper
+hadoop.namenode.is.accessible <- function() {
+    url <- sprintf("http://%s:50070", hadoop.namenode());
+    internal <- url.exists(url, timeout = 5)
+    return(internal)
+}
+
+#' Locate a file given the pattern <bucket>/<path/to/file>
+#' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
+locate<-
+function(pathStub, root.parent = NULL) {
+  if (test.is.on.hadoop()) {
+    # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
+    # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
+    # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
+    # machines store smalldata and bigdata in /home/0xdiag/. If ON.HADOOP is set by the run.py, the pathStub arg MUST
+    # be an immediate subdirectory of /home/0xdiag/. Moreover, the only guaranteed subdirectories of /home/0xdiag/ are
+    # smalldata and bigdata.
+    path <- normalizePath(paste0("/home/0xdiag/",pathStub))
+    if (!file.exists(path)) stop(paste("Could not find the dataset: ", path, sep = ""))
+    return(path)
+  }
+  pathStub <- clean(pathStub)
+  bucket <- pathStub[1]
+  offset <- pathStub[-1]
+  cur.dir <- getwd()
+
+  #recursively ascend until `bucket` is found
+  bucket.abspath <- path.compute(cur.dir, bucket, root.parent)
+  if (length(offset) != 0) return(paste(c(bucket.abspath, offset), collapse = "/", sep = "/"))
+  else return(bucket.abspath)
+}
+
+#' Clean a path up: change \ -> /; remove starting './'; split
+clean<-
+function(p) {
+  if (.Platform$file.sep == "/") {
+    p <- gsub("[\\]", .Platform$file.sep, p)
+    p <- unlist(strsplit(p, .Platform$file.sep))
+  } else {
+    p <- gsub("/", "\\\\", p)  # is this right?
+    p <- unlist(strsplit(p, "\\\\"))
+  }
+  p
+}
+
+#' Compute a path distance.
+#'
+#' We are looking for a directory `root`. Recursively ascend the directory structure until the root is found.
+#' If not found, produce an error.
+#'
+#' @param cur.dir: the current directory
+#' @param root: the directory that is being searched for
+#' @param root.parent: if not null, then the `root` must have `root.parent` as immediate parent
+#' @return: Return the absolute path to the root.
+path.compute<-
+function(cur.dir, root, root.parent = NULL) {
+  parent.dir  <- dirname(cur.dir)
+  parent.name <- basename(parent.dir)
+
+  # root.parent is null
+  if (is.null(root.parent)) {
+
+    # first check if cur.dir is root
+    if (basename(cur.dir) == root) return(normalizePath(cur.dir))
+
+    # next check if root is in cur.dir somewhere
+    if (root %in% dir(cur.dir)) return(normalizePath(paste(cur.dir, .Platform$file.sep, root, sep = "")))
+
+    # the root is the parent
+    if (parent.name == root) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
+
+    # the root is h2o-dev, check the children here (and fail if `root` not found)
+    if (parent.name == get.project.root() || parent.name == "workspace") {
+      if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
+      else stop(paste("Could not find the dataset bucket: ", root, sep = "" ))
+    }
+  # root.parent is not null
+  } else {
+
+    # first check if cur.dir is root
+    if (basename(cur.dir) == root && parent.name == root.parent) return(normalizePath(cur.dir))
+
+    # next check if root is in cur.dir somewhere (if so, then cur.dir is the parent!)
+    if (root %in% dir(cur.dir) && root.parent == basename(cur.dir)) {
+      return(normalizePath(paste(cur.dir, .Platform$file.sep, root, sep = ""))) }
+
+    # the root is the parent
+    if (parent.name == root && basename(dirname(parent.dir)) == root.parent) {
+      return(path.compute(parent.dir, root, root.parent)) }
+
+    # fail if reach h2o-dev
+    if (parent.name == get.project.root()) {
+        stop(paste0("Reached the root ", get.project.root(), ". Didn't find the bucket with the root.parent")) }
+  }
+  return(path.compute(parent.dir, root, root.parent))
+}
+
+#' Load a handful of packages automatically. Runit tests that require additional packages must be loaded explicitly
+default.packages <-
+function() {
+  to_require <- c("jsonlite", "RCurl", "RUnit", "R.utils", "testthat", "ade4", "glmnet", "gbm", "ROCR", "e1071",
+                  "tools", "statmod", "fpc", "cluster")
+  if (Sys.info()['sysname'] == "Windows") {
+    options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))) }
+  invisible(lapply(to_require,function(x){require(x,character.only=TRUE,quietly=TRUE,warn.conflicts=FALSE)}))
+}
+
 read.zip<-
 function(zipfile, exdir,header=T) {
   zipdir <- exdir
@@ -152,55 +260,6 @@ safeSystem <- function(x) {
   }
 }
 
-parseArgs<-
-function(args) {
-  i <- 1
-  while (i <= length(args)) {
-      s <- args[i]
-      if (s == "--usecloud") {
-        i <- i + 1
-        if (i > length(args)) usage()
-        argsplit <- strsplit(args[i], ":")[[1]]
-        H2O.IP   <<- argsplit[1]
-        H2O.PORT <<- as.numeric(argsplit[2])
-      } else if (s == "--hadoopNamenode") {
-        i <- i + 1
-        if (i > length(args)) usage()
-        HADOOP.NAMENODE <<- args[i]
-      } else if (s == "--onHadoop") {
-        ON.HADOOP <<- TRUE
-      } else {
-        unknownArg(s)
-      }
-      i <- i + 1
-  }
-}
-
-usage<-
-function() {
-  print("")
-  print("Usage for:  R -f runit.R --args [...options...]")
-  print("")
-  print("    --usecloud        connect to h2o on specified ip and port, where ip and port are specified as follows:")
-  print("                      IP:PORT")
-  print("")
-  print("    --onHadoop        Indication that tests will be run on h2o multinode hadoop clusters.")
-  print("                      `locate` and `sandbox` runit test utilities use this indication in order to")
-  print("                      behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
-  print("    --hadoopNamenode  Specifies that the runit tests have access to this hadoop namenode.")
-  print("                      `hadoop.namenode` runit test utility returns this value.")
-  print("")
-  q("no",1,FALSE) #exit with nonzero exit code
-}
-
-unknownArg<-
-function(arg) {
-  print("")
-  print(paste0("ERROR: Unknown argument: ",arg))
-  print("")
-  usage()
-}
-
 withWarnings <- function(expr) {
     myWarnings <- NULL
     wHandler <- function(w) {
@@ -210,16 +269,6 @@ withWarnings <- function(expr) {
     val <- withCallingHandlers(expr, warning = wHandler)
     list(value = val, warnings = myWarnings)
     for(w in myWarnings) WARN(w)
-}
-
-doTest<-
-function(testDesc, test) {
-    h2o.removeAll()
-    Log.info("======================== Begin Test ===========================\n")
-    conn <- h2o.getConnection()
-    conn@mutable$session_id <- .init.session_id()
-    tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
-    PASS()
 }
 
 cleanSummary <- function(mysum, alphabetical = FALSE) {
@@ -315,5 +364,15 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
       df.clone <- df.clone[,!is_const]
   }
   genDummyCols(df.clone, use_all_factor_levels)
+}
+
+doTest<-
+function(testDesc, test) {
+    h2o.removeAll()
+    Log.info("======================== Begin Test ===========================\n")
+    conn <- h2o.getConnection()
+    conn@mutable$session_id <- .init.session_id()
+    tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
+    PASS()
 }
 

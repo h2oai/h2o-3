@@ -2,8 +2,8 @@
 ## PUBDEV 1422
 ## Numeric Column Bugs out
 ################################################################################
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.cant.assign.to.new.col <- function() {
   Log.info("Works fine on this dataset... Uploading pros...")

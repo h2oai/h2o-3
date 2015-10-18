@@ -3,8 +3,8 @@
 # Description: Build an H2O model, save it, then load it again in H2O and verify no information was lost
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.save_load_dlmodel <- function() {
   temp_dir = sandbox()
