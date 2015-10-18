@@ -694,6 +694,7 @@ def shutdown(conn=None, prompt=True):
 def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=None,model_id=None,
                  overwrite_with_best_model=None,validation_frame=None,checkpoint=None,autoencoder=None,
                  use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
+                 target_ratio_comm_to_comp=None,
                  seed=None,adaptive_rate=None,rho=None,epsilon=None,rate=None,rate_annealing=None,rate_decay=None,
                  momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
                  input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
@@ -741,6 +742,9 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   train_samples_per_iteration : int
     Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
     or -2 auto-tuning (default)
+  target_ratio_comm_to_comp : float
+    Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning).
+    Higher values can lead to faster convergence.
   seed : int
     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
   adaptive_rate : bool
@@ -863,6 +867,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
 
 def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=None,checkpoint=None,
                 use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
+                target_ratio_comm_to_comp=None,
                 seed=None,adaptive_rate=None,rho=None,epsilon=None,rate=None,rate_annealing=None,rate_decay=None,
                 momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
                 input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
@@ -900,6 +905,9 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     train_samples_per_iteration : int
       Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data
       (e.g., replicated training data); or -2 auto-tuning (default)
+    target_ratio_comm_to_comp : float
+      Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning).
+      Higher values can lead to faster convergence.
     seed : int
       Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
     adaptive_rate : bool
