@@ -3,6 +3,7 @@ package water.rapids;
 import water.H2ONode;
 import water.RPC;
 import water.fvec.Frame;
+import water.util.Log;
 
 public class Merge {
 
@@ -47,10 +48,12 @@ public class Merge {
         //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
         H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
         H2ONode rightNode = MoveByFirstByte.ownerOfMSB(rightMSB);
+        //if (leftMSB!=73 || rightMSB!=73) continue;
+        //Log.info("Calling BinaryMerge for " + leftMSB + " " + rightMSB);
         BinaryMerge bm = new RPC<>(rightNode,
                 new BinaryMerge(leftFrame, rightFrame,
                         leftMSB, rightMSB,
-                        leftNode.index(), //convention - right frame is local, but left frame is potentially remote
+                        //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
                         leftIndex._bytesUsed,   // field sizes for each column in the key
                         rightIndex._bytesUsed
                 )

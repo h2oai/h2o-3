@@ -7,7 +7,7 @@ import water.DKV;
 import water.DTask;
 import water.H2O;
 import water.fvec.Frame;
-import static water.rapids.SingleThreadRadixOrder.getMSBHeaderKey;
+import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -27,36 +27,36 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   long _leftN, _rightN;
   long _leftBatchSize, _rightBatchSize;
 
-  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftNodeIdx, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
-    SingleThreadRadixOrder.MSBHeader leftMSBHeader = DKV.getGet(getMSBHeaderKey(leftFrame._key, leftMSB));
-    SingleThreadRadixOrder.MSBHeader rightMSBHeader = DKV.getGet(getMSBHeaderKey(rightFrame._key, rightMSB));
-    if (leftMSBHeader == null || rightMSBHeader == null) return;
-    _leftBatchSize = leftMSBHeader._batchSize;
-    _rightBatchSize = rightMSBHeader._batchSize;
+  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
+    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(leftFrame._key, leftMSB));
+    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(rightFrame._key, rightMSB));
+    if (leftSortedOXHeader == null || rightSortedOXHeader == null) return;
+    _leftBatchSize = leftSortedOXHeader._batchSize;
+    _rightBatchSize = rightSortedOXHeader._batchSize;
 
     // get left batches
-    _leftKey = new byte[leftMSBHeader._nBatch][];
-    _leftOrder = new long[leftMSBHeader._nBatch][];
-    for (int b=0;b<leftMSBHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getOXbatchKey(leftFrame._key, leftMSB, leftNodeIdx, b));
+    _leftKey = new byte[leftSortedOXHeader._nBatch][];
+    _leftOrder = new long[leftSortedOXHeader._nBatch][];
+    for (int b=0; b<leftSortedOXHeader._nBatch; ++b) {
+      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(leftFrame._key, leftMSB, b));
       _leftKey[b] = oxLeft._x;
       _leftOrder[b] = oxLeft._o;
     }
-    _leftN = leftMSBHeader._numRows;
+    _leftN = leftSortedOXHeader._numRows;
 
     // get right batches
-    _rightKey = new byte[rightMSBHeader._nBatch][];
-    _rightOrder = new long[rightMSBHeader._nBatch][];
-    for (int b=0;b<rightMSBHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getOXbatchKey(rightFrame._key, rightMSB, H2O.SELF.index(), b));
+    _rightKey = new byte[rightSortedOXHeader._nBatch][];
+    _rightOrder = new long[rightSortedOXHeader._nBatch][];
+    for (int b=0; b<rightSortedOXHeader._nBatch; ++b) {
+      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(rightFrame._key, rightMSB, b));
       _rightKey[b] = oxRight._x;
       _rightOrder[b] = oxRight._o;
     }
-    _rightN = rightMSBHeader._numRows;
+    _rightN = rightSortedOXHeader._numRows;
 
     _retFirst = new long[(int)_leftN];
     _retLen = new long[(int)_leftN];
-    _leftNodeIdx = leftNodeIdx;
+    //_leftNodeIdx = leftNodeIdx;
     _leftFieldSizes = leftFieldSizes;
     _rightFieldSizes = rightFieldSizes;
     _leftKeyNCol = _leftFieldSizes.length;

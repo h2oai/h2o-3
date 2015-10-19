@@ -33,7 +33,7 @@ public class MungingTest extends TestUtil {
     }
     @Test public void run2() throws Exception {
         System.out.println("Running run2 ...");
-        NFSFileVec nfs = NFSFileVec.make(find_test_file("/Users/arno/devtestdata/step1.csv"));
+        NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1.csv"));
         Frame frame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
         System.out.println("Loaded file, now calling Query ...");
         new RadixOrder(frame, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
@@ -44,13 +44,18 @@ public class MungingTest extends TestUtil {
     @Test public void run3() throws Exception {
       System.out.println("Running run3 ...");
 
-      NFSFileVec nfs = NFSFileVec.make(find_test_file("/Users/arno/devtestdata/step1_subset.csv"));
+      NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1_subset.csv"));
       Frame leftFrame = ParseDataset.parse(Key.make(), nfs._key);
 
-      nfs = NFSFileVec.make(find_test_file("/Users/arno/devtestdata/fullsize.csv"));
+      nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/fullsize.csv"));
       Frame rightFrame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
 
       System.out.println("Loaded two files, now calling order ...");
+
+      // TO DO: this would be nice to see in chunk summary ...
+      // for (int i=0; i<rightFrame.anyVec().nChunks(); i++) {
+      //   Log.info("Chunk " + i + " is on node " + rightFrame.anyVec().chunkKey(i).home_node().index());
+      // }
 
       new Merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1});  // 0==id, 1==date  (no dups)
       new Merge(leftFrame, rightFrame, new int[] {0}, new int[] {0});      // 0==id           (many dups)
