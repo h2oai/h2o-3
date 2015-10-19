@@ -395,7 +395,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
       splits = c(splits, tmp_slice)
     } else {
       destination_frame_id = destination_frames[i]
-      tmp_slice_2 = h2o.assign(tmp_slice, destination_frame_id)
+      tmp_slice2 = h2o.assign(tmp_slice, destination_frame_id)
       splits = c(splits, tmp_slice2)
     }
     
