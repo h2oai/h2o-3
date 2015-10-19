@@ -323,6 +323,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #'        contained in each split. Must total up to less than 1.
 #' @param destination_frames An array of frame IDs equal to the number of ratios
 #'        specified plus one.
+#' @param seed Random seed.
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -334,18 +335,72 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' summary(iris.split[[1]])
 #' }
 #' @export
-h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
-  params <- list()
-  params$dataset <- attr(.eval.frame(chk.Frame(data)), "id")
-  params$ratios <- .collapse(ratios)
-  if (!missing(destination_frames))
-    params$destination_frames <- .collapse.char(destination_frames)
-
-  res <- .h2o.__remoteSend(method="POST", "SplitFrame", .params = params)
-  job_key <- res$key$name
-  .h2o.__waitOnJob(job_key)
-
-  splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
+h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
+  chk.Frame(data)
+  
+  if (! is.numeric(ratios)) stop("ratios must be of type numeric")
+  if (length(ratios) < 1) stop("ratios must have length of at least 1")
+  
+  if (! missing(destination_frames)) {
+    if (! is.character(destination_frames)) stop("destination_frames must be of type character")
+    if ((length(ratios) + 1) != length(destination_frames)) {
+      stop("The number of provided destination_frames must be one more than the number of provided ratios")
+    }
+  }
+  
+  if (! is.numeric(seed)) stop("seed must be an integer")
+  
+  num_slices = length(ratios) + 1
+  
+  i = 1
+  last_boundary = 0
+  while (i < num_slices) {
+    boundary = ratios[i]
+    if (boundary <= 0) {
+      stop("Ratio must be greater than 0")
+    }
+    if (boundary >= 1) {
+      stop("Ratio must be less than 1")
+    }    
+    if (last_boundary >= boundary) {
+      stop("Ratios must be in increasing order")
+    }
+    
+    last_boundary = boundary
+    i = i + 1
+  }
+  
+  splits = list()
+  tmp_runif = h2o.runif(data, seed)
+  
+  i = 1
+  while (i <= num_slices) {
+    if (i == 1) {
+      # lower_boundary is 0.0
+      upper_boundary = ratios[i]
+      tmp_slice = data[tmp_runif <= upper_boundary,]
+    } else if (i == num_slices) {
+      lower_boundary = ratios[i-1]
+      # upper_boundary is 1.0
+      tmp_slice = data[tmp_runif > lower_boundary,]
+    } else {
+      lower_boundary = ratios[i-1]
+      upper_boundary = ratios[i]
+      tmp_slice = data[((tmp_runif > lower_boundary) & (tmp_runif <= upper_boundary)),]
+    }
+    
+    if (missing(destination_frames)) {
+      splits = c(splits, tmp_slice)
+    } else {
+      destination_frame_id = destination_frames[i]
+      tmp_slice_2 = h2o.assign(tmp_slice, destination_frame_id)
+      splits = c(splits, tmp_slice2)
+    }
+    
+    i = i + 1
+  }
+  
+  return(splits)
 }
 
 #'
