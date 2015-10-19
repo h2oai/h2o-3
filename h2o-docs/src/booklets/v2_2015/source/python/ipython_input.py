@@ -97,3 +97,16 @@ df10 = h2o.H2OFrame( { 'A': ['Hello', 'World', 'Welcome', 'To', 'H2O', 'World'],
                        'n': [0,1,2,3,4,5]} )
 df11 = h2o.H2OFrame(zip(np.random.randint(0, 10, size=100)), column_names=['n'])
 df11.merge(df10)
+
+# in grouping section of doc now
+df12 = h2o.H2OFrame({'A' : ['foo', 'bar', 'foo', 'bar',
+                                                          'foo', 'bar', 'foo', 'foo'],
+                                                   'B' : ['one', 'one', 'two', 'three',
+                                                          'two', 'two', 'one', 'three'],
+                                                   'C' : np.random.randn(8),
+                                                   'D' : np.random.randn(8)})
+df12
+df12.group_by('A').sum().frame
+df13 = df12.group_by(['A','B']).sum().frame
+df13
+df12.merge(df13)

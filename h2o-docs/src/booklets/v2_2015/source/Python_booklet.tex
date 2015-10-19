@@ -566,8 +566,18 @@ H2O supports merging two frames together by matching on columns names:
 \lstinputlisting[style=python, firstline=434, lastline=457]{python/ipython_output.txt}
 
 \subsection{Grouping}
-operations on groups
+By "group by" we are referring to the process involving one or more steps: splitting the
+data into groups based on some criteria, applying a function to each group independently,
+and combining the results into an H2OFrame.
 
+Grouping and then applying a function to the results:
+\lstinputlisting[style=python, firstline=459, lastline=485]{python/ipython_output.txt}
+
+Grouping by multiple columns and then applying a function:
+\lstinputlisting[style=python, firstline=487, lastline=497]{python/ipython_output.txt}
+
+Joining the results back into the original H2OFrame:
+\lstinputlisting[style=python, firstline=499, lastline=509]{python/ipython_output.txt}
 
 \subsection{Categoricals}
 what are they
