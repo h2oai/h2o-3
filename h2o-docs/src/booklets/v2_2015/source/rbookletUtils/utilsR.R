@@ -38,7 +38,7 @@ function(storyName, paragraphs) {
     story_file <- paste(results.dir(), paste0(test.name(),".",storyName,".code"), sep=.Platform$file.sep)
     writeLines(story, story_file)
 
-    eval(parse(text = story))
+    source(story_file)
     h2o.removeAll()
 }
 
