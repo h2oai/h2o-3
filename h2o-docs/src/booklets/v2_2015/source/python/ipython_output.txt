@@ -291,3 +291,168 @@ Out[62]: nan
 
 In [64]: df4["A"].mean(na_rm=True)
 Out[64]: 2.0
+
+In [5]: df5 = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+
+Parse Progress: [##################################################] 100%
+Uploaded py70e769fb-4a6f-43b5-8c58-7953c9651f48 into cluster with 100 rows and 4 cols
+
+In [6]: df5.apply(lambda x: x.mean(na_rm=True))
+Out[6]: H2OFrame with 1 rows and 4 columns:
+          A         B         C        D
+0  0.020849 -0.052978 -0.037272 -0.01664
+
+In [26]: df5.apply(lambda row: sum(row), axis=1)
+Out[26]: H2OFrame with 100 rows and 1 columns:
+         C1
+0  0.906854
+1  0.790760
+2 -0.217604
+3 -0.978141
+4  2.180175
+5 -2.420732
+6  0.875716
+7 -1.077747
+8  2.321706
+9 -0.700436
+
+In [49]: df6 = h2o.H2OFrame(zip(np.random.randint(0, 7, size=100)))
+
+Parse Progress: [##################################################] 100%
+Uploaded py5b584604-73ff-4037-9618-c53122cd0343 into cluster with 100 rows and 1 cols
+
+In [50]: df6.hist(plot=False)
+
+Parse Progress: [##################################################] 100%
+Uploaded py8a993d29-e354-44cf-b10e-d97aa6fdfd74 into cluster with 8 rows and 1 cols
+Out[50]: H2OFrame with 8 rows and 5 columns:
+   breaks  counts  mids_true   mids   density
+0    0.75     NaN        NaN    NaN  0.000000
+1    1.50      10        0.0  1.125  0.116667
+2    2.25       6        0.5  1.875  0.070000
+3    3.00      17        1.0  2.625  0.198333
+4    3.75       0        0.0  3.375  0.000000
+5    4.50      16        1.5  4.125  0.186667
+6    5.25      19        2.0  4.875  0.221667
+7    6.00      32        2.5  5.625  0.373333
+
+In [62]: df7 = h2o.H2OFrame( zip(['Hello', 'World', 'Welcome', 'To', 'H2O', 'World']))
+
+Parse Progress: [##################################################] 100%
+Uploaded py95985523-6984-4f61-bd9e-c436aa8c8004 into cluster with 6 rows and 1 cols
+
+In [63]: df7
+Out[63]: H2OFrame with 6 rows and 1 columns:
+        C1
+0    Hello
+1    World
+2  Welcome
+3       To
+4      H2O
+5    World
+
+In [65]: df7.countmatches('l')
+Out[65]: H2OFrame with 6 rows and 1 columns:
+   C1
+0   2
+1   1
+2   1
+3   0
+4   0
+5   1
+
+In [89]: df7.sub('o','0')
+Out[89]: H2OFrame with 6 rows and 1 columns:
+        C1
+0    Hell0
+1    W0rld
+2  Welc0me
+3       T0
+4      H2O
+5    W0rld
+
+In [86]: df7.strsplit('(l)+')
+Out[86]: H2OFrame with 6 rows and 2 columns:
+    C1    C2
+0   He     o
+1  Wor     d
+2   We  come
+3   To   NaN
+4  H2O   NaN
+5  Wor     d
+
+In [98]: df8 = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+
+Parse Progress: [##################################################] 100%
+Uploaded py9607f2cc-087a-4d99-ba9f-917ca852c1f2 into cluster with 100 rows and 4 cols
+
+In [99]: df9 = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+
+Parse Progress: [##################################################] 100%
+Uploaded pycb8b3aba-77d6-4383-88dd-4729f1f2c314 into cluster with 100 rows and 4 cols
+
+In [100]: df8.rbind(df9)
+Out[100]: H2OFrame with 200 rows and 4 columns:
+          A         B         C         D
+0 -0.095807  0.944757  0.160959  0.271681
+1 -0.950010  0.669040  0.664983  1.535805
+2  0.172176  0.657167  0.970337 -0.419208
+3  0.589829 -0.516749 -1.598524 -1.346773
+4  1.044948 -0.281243 -0.411052  0.959717
+5  0.498329  0.170340  0.124479 -0.170742
+6  1.422841 -0.409794 -0.525356  2.155962
+7  0.944803  1.192007 -1.075689  0.017082
+8 -0.539276  0.777582 -1.090965 -2.237239
+9  0.346192 -0.456974 -1.220243 -0.456305
+
+In [101]: df8.cbind(df9)
+Out[101]: H2OFrame with 100 rows and 8 columns:
+          A         B         C         D        A0        B0        C0  \
+0 -0.095807  0.944757  0.160959  0.271681 -0.355513  1.661173 -2.320991
+1 -0.950010  0.669040  0.664983  1.535805 -0.630551 -1.784821  0.327148
+2  0.172176  0.657167  0.970337 -0.419208 -1.413497 -0.514158  0.648712
+3  0.589829 -0.516749 -1.598524 -1.346773  0.711947  1.092067  0.055353
+4  1.044948 -0.281243 -0.411052  0.959717 -0.009625 -0.475370  0.419500
+5  0.498329  0.170340  0.124479 -0.170742 -0.722201 -0.792381 -0.916781
+6  1.422841 -0.409794 -0.525356  2.155962 -0.841334 -0.190591  0.134349
+7  0.944803  1.192007 -1.075689  0.017082  0.167853  0.542551  0.523705
+8 -0.539276  0.777582 -1.090965 -2.237239 -0.693241  0.242438 -0.561852
+9  0.346192 -0.456974 -1.220243 -0.456305 -0.315549  1.103036  1.386821
+
+         D0
+0 -0.859716
+1  1.272964
+2 -1.255545
+3  0.628271
+4 -0.518302
+5 -2.092787
+6  0.628162
+7  1.419030
+8  1.446025
+9 -0.053331
+
+In [108]: df10 = h2o.H2OFrame( { 'A': ['Hello', 'World', 'Welcome', 'To', 'H2O', 'World'],
+   .....:                        'n': [0,1,2,3,4,5]} )
+
+Parse Progress: [##################################################] 100%
+Uploaded py57e84cb6-ce29-4d13-afe4-4333b2186c72 into cluster with 6 rows and 2 cols
+
+In [109]: df11 = h2o.H2OFrame(zip(np.random.randint(0, 10, size=100)), column_names=['n'])
+
+Parse Progress: [##################################################] 100%
+Uploaded py090fa929-b434-43c0-81bd-b9c61b553a31 into cluster with 100 rows and 1 cols
+
+In [112]: df11.merge(df10)
+Out[112]: H2OFrame with 100 rows and 2 columns:
+   n      A
+0  7    NaN
+1  3     To
+2  0  Hello
+3  9    NaN
+4  9    NaN
+5  3     To
+6  4    H2O
+7  4    H2O
+8  5  World
+9  4    H2O
+
