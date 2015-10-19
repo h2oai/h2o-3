@@ -507,3 +507,35 @@ Out[129]: H2OFrame with 8 rows and 6 columns:
 5  bar    two  0.758202  0.521504  0.758202  0.521504
 6  foo    one  0.098259 -1.391587  1.682168 -1.833366
 7  foo  three  0.412450 -0.050374  0.412450 -0.050374
+
+In [140]: df14 = h2o.H2OFrame({'D': ['18OCT2015:11:00:00','19OCT2015:12:00:00','20OCT2015:13:00:00']},
+   .....:                     column_types=['time'])
+
+Parse Progress: [##################################################] 100%
+Uploaded py60bef051-8017-49cf-af57-2ed6d68db6d0 into cluster with 3 rows and 1 cols
+
+In [141]: df14.types
+Out[141]: {u'D': u'time'}
+
+In [142]: df14['D'].day()
+Out[142]: H2OFrame with 3 rows and 1 columns:
+    D
+0  18
+1  19
+2  20
+
+In [143]: df14['D'].dayOfWeek()
+Out[143]: H2OFrame with 3 rows and 1 columns:
+     D
+0  Sun
+1  Mon
+2  Tue
+
+In [145]: df12.types
+Out[145]: {u'A': u'Enum', u'B': u'Enum', u'C': u'Numeric', u'D': u'Numeric'}
+
+In [148]: df12.anyfactor()
+Out[148]: True
+
+In [149]: df12["A"].levels()
+Out[149]: ['bar', 'foo']

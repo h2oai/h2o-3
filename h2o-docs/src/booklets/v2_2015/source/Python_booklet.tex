@@ -579,10 +579,32 @@ Grouping by multiple columns and then applying a function:
 Joining the results back into the original H2OFrame:
 \lstinputlisting[style=python, firstline=499, lastline=509]{python/ipython_output.txt}
 
+\subsection{Date and Times}
+H2O has powerful features for ingesting and feature engineering from time data.  Internally H2O
+stores time information as an integer of the number of milliseconds since the epoch.
+
+To ingest time data natively, use one of the support time input formats:
+\lstinputlisting[style=python, firstline=511, lastline=518]{python/ipython_output.txt}
+
+To determine the day of the month:
+\lstinputlisting[style=python, firstline=520, lastline=525]{python/ipython_output.txt}
+
+Getting the day of the week:
+\lstinputlisting[style=python, firstline=527, lastline=532]{python/ipython_output.txt}
+
 \subsection{Categoricals}
-what are they
-how does h2o handle them
-determine levels
+H2O handles categorical/enumerated/factor values in an H2OFrame.  These are important as categorical
+columns have specific treatments in each of the machine learning algorithms.
+
+Using `df12' from above, H2O import columns A and B as categorical/enumerated/factor types:
+\lstinputlisting[style=python, firstline=534, lastline=535]{python/ipython_output.txt}
+
+Determine if any column is a categorical/enumerated/factor type:
+\lstinputlisting[style=python, firstline=537, lastline=538]{python/ipython_output.txt}
+
+See the categorical levels in a single column:
+\lstinputlisting[style=python, firstline=540, lastline=541]{python/ipython_output.txt}
+
 interactions
 
 \subsection{Loading and Saving Data}
