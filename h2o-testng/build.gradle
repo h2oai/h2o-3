@@ -1,6 +1,7 @@
 description = "H2O Test Integration - TestNG"
 
 dependencies {
+	compile 'net.sf.opencsv:opencsv:2.3'
 	compile 'mysql:mysql-connector-java:5.1.16'
     testCompile 'org.testng:testng:6.8'
     compile project(":h2o-core")

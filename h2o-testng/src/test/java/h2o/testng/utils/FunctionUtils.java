@@ -22,6 +22,8 @@ import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -32,6 +34,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
 
+import au.com.bytecode.opencsv.CSVReader;
 import water.Key;
 import water.Scope;
 import water.TestNGUtil;
@@ -40,8 +43,6 @@ import water.fvec.Frame;
 import water.parser.ParseDataset;
 
 public class FunctionUtils {
-
-	private final static String regexToSplitTestcase = ",";
 
 	public final static String glm = "glm";
 	public final static String gbm = "gbm";
@@ -272,8 +273,8 @@ public class FunctionUtils {
 					isTunedValue = true;
 				}
 
-				DeepLearningParameters.Activation dlActivation =
-						(DeepLearningParameters.Activation) DeepLearningConfig.activationOptionsParams.getValue(rawInput);
+				DeepLearningParameters.Activation dlActivation = (DeepLearningParameters.Activation) DeepLearningConfig.activationOptionsParams
+						.getValue(rawInput);
 
 				if (dlActivation != null) {
 					System.out.println("Set _activation: " + dlActivation);
@@ -282,8 +283,8 @@ public class FunctionUtils {
 					isTunedValue = true;
 				}
 
-				DeepLearningParameters.Loss dlLoss =
-						(DeepLearningParameters.Loss) DeepLearningConfig.lossOptionsParams.getValue(rawInput);
+				DeepLearningParameters.Loss dlLoss = (DeepLearningParameters.Loss) DeepLearningConfig.lossOptionsParams
+						.getValue(rawInput);
 
 				if (dlLoss != null) {
 					System.out.println("Set _activation: " + dlLoss);
@@ -291,9 +292,8 @@ public class FunctionUtils {
 
 				}
 
-				DeepLearningParameters.InitialWeightDistribution dlInitialWeightDistribution =
-						(DeepLearningParameters.InitialWeightDistribution) DeepLearningConfig.
-								initialWeightDistributionOptionsParams.getValueKey(rawInput,"_initial_weight_distribution");
+				DeepLearningParameters.InitialWeightDistribution dlInitialWeightDistribution = (DeepLearningParameters.InitialWeightDistribution) DeepLearningConfig.initialWeightDistributionOptionsParams
+						.getValueKey(rawInput, "_initial_weight_distribution");
 
 				if (dlInitialWeightDistribution != null) {
 					System.out.println("Set _initial_weight_distribution: " + dlInitialWeightDistribution);
@@ -302,9 +302,8 @@ public class FunctionUtils {
 					isTunedValue = true;
 				}
 
-				DeepLearningParameters.MissingValuesHandling dlMissingValuesHandling =
-						(DeepLearningParameters.MissingValuesHandling) DeepLearningConfig.
-								missingValuesHandlingOptionsParams.getValueKey(rawInput, "_missing_values_handling");
+				DeepLearningParameters.MissingValuesHandling dlMissingValuesHandling = (DeepLearningParameters.MissingValuesHandling) DeepLearningConfig.missingValuesHandlingOptionsParams
+						.getValueKey(rawInput, "_missing_values_handling");
 
 				if (dlMissingValuesHandling != null) {
 					System.out.println("Set _missing_values_handling: " + dlMissingValuesHandling);
@@ -388,9 +387,8 @@ public class FunctionUtils {
 	 * @param exception
 	 * @param rawInput
 	 */
-	// TODO: remove algorithm parameter when all algos is validated error message
 	private static void handleTestcaseFailed(boolean isNegativeTestcase, Throwable exception,
-			HashMap<String, String> rawInput, String algorithm) {
+			HashMap<String, String> rawInput) {
 
 		System.out.println("Testcase failed");
 		exception.printStackTrace();
@@ -400,11 +398,7 @@ public class FunctionUtils {
 			System.out.println("Error message in testcase: " + rawInput.get(CommonHeaders.error_message));
 			System.out.println("Error message in program: " + exception.getMessage());
 
-			// TODO: remove it when GLM is validated error message
-			if (algorithm.equals(FunctionUtils.glm)) {
-				System.out.println("Not yet implement the feature error message validation in GLM algorithm");
-			}
-			else if (StringUtils.isEmpty(rawInput.get(CommonHeaders.error_message))
+			if (StringUtils.isEmpty(rawInput.get(CommonHeaders.error_message))
 					|| !exception.getMessage().contains(rawInput.get(CommonHeaders.error_message))) {
 				Assert.fail("Error message do not match with testcase", exception);
 			}
@@ -533,11 +527,11 @@ public class FunctionUtils {
 		}
 		catch (Exception ex) {
 
-			handleTestcaseFailed(isNegativeTestcase, ex, rawInput, algorithm);
+			handleTestcaseFailed(isNegativeTestcase, ex, rawInput);
 		}
 		catch (AssertionError ae) {
 
-			handleTestcaseFailed(isNegativeTestcase, ae, rawInput, algorithm);
+			handleTestcaseFailed(isNegativeTestcase, ae, rawInput);
 		}
 		finally {
 			if (drfJob != null) {
@@ -732,8 +726,11 @@ public class FunctionUtils {
 	private static Object[][] readTestcaseFile(HashMap<String, Dataset> dataSetCharacteristic,
 			List<String> listHeaders, String fileName, int indexRowHeader, String algorithm, boolean isNegativeTestcase) {
 
+		System.out.println("Read testcase: " + fileName);
+
 		Object[][] result = null;
-		List<String> lines = null;
+		CSVReader csvReader = null;
+		List<String[]> contents = null;
 		String[] hearderRow = null;
 
 		if (StringUtils.isEmpty(fileName)) {
@@ -741,9 +738,9 @@ public class FunctionUtils {
 			return null;
 		}
 
+		// read data from file
 		try {
-			// read data from file
-			lines = Files.readAllLines(TestNGUtil.find_test_file_static(fileName).toPath(), Charset.defaultCharset());
+			csvReader = new CSVReader(new FileReader(TestNGUtil.find_test_file_static(fileName)));
 		}
 		catch (Exception ignore) {
 			System.out.println("Cannot open file: " + fileName);
@@ -751,21 +748,39 @@ public class FunctionUtils {
 			return null;
 		}
 
-		// remove headers
-		lines.removeAll(lines.subList(0, indexRowHeader - 1));
+		// read all content from CSV file
+		try {
+			contents = csvReader.readAll();
+		}
+		catch (IOException e) {
+			System.out.println("Cannot read content from CSV file");
+			e.printStackTrace();
+			return null;
+		}
+		finally {
+			try {
+				csvReader.close();
+			}
+			catch (IOException e) {
+				System.out.println("Cannot close CSV file");
+				e.printStackTrace();
+			}
+		}
 
-		hearderRow = lines.remove(0).split(regexToSplitTestcase, -1);
+		// remove headers
+		contents.removeAll(contents.subList(0, indexRowHeader - 1));
+
+		hearderRow = contents.remove(0);
 
 		if (!validateTestcaseFile(listHeaders, fileName, hearderRow)) {
 			System.out.println("Testcase file is wrong format");
 			return null;
 		}
 
-		result = new Object[lines.size()][9];
+		result = new Object[contents.size()][9];
 		int r = 0;
-		for (String line : lines) {
-			String[] variables = line.trim().split(regexToSplitTestcase, -1);
-			HashMap<String, String> rawInput = parseToHashMap(listHeaders, hearderRow, variables);
+		for (String[] line : contents) {
+			HashMap<String, String> rawInput = parseToHashMap(listHeaders, hearderRow, line);
 
 			result[r][0] = rawInput.get(CommonHeaders.testcase_id);
 			result[r][1] = rawInput.get(CommonHeaders.test_description);

@@ -80,7 +80,9 @@ public class GLMConfig {
 					"_intercept",
 					"_prior",
 					"_max_active_predictors",
-					"_ignored_columns"
+					"_ignored_columns",
+					
+					CommonHeaders.error_message
 			)
 	);
 	

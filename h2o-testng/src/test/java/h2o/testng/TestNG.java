@@ -23,6 +23,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import water.H2O;
 import water.TestNGUtil;
 
 public class TestNG extends TestNGUtil {
@@ -159,9 +160,11 @@ public class TestNG extends TestNGUtil {
 			throw ae;
 		}
 		finally {
+			System.out.println("Total nodes: " + H2O.CLOUD.size());
+			System.out.println("Total cores: " + H2O.NUMCPUS);
+			System.out.println("Total time: " + (rt.getTimeRecording()) + "millis");
 			// TODO: get memory by H2O's API
-			System.out.println("Total Memory used in testcase:" + (rt.getUsedMemory() / RecordingTestcase.MB) + "MB");
-			System.out.println("Total Time used in testcase:" + (rt.getTimeRecording()) + "millis");
+			System.out.println("Total memory used in testcase:" + (rt.getUsedMemory() / RecordingTestcase.MB) + "MB");
 
 			resetStandardStreams();
 

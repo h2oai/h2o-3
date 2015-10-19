@@ -69,8 +69,8 @@ public class MySQL {
 		final String tuned_or_defaults = rawInput.get(MySQL.tuned_or_defaults);
 		// TODO verify it
 		int totalHosts = 0;
-		int cpusPerHost = 0;
-		int totalNodes = 0;
+		int cpusPerHost = H2O.NUMCPUS;
+		int totalNodes = H2O.CLOUD.size();
 
 		if (mse_result == null || mse_result.toLowerCase().equals("na") || mse_result.toLowerCase().equals("nan")) {
 			mse_result = "NULL";
