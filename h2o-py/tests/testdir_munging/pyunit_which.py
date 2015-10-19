@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def pyunit_which():
 
-    iris = h2o.import_file(tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
     setosa = h2o.which(iris[4]=="Iris-setosa")
     versicolor = h2o.which(iris[4]=="Iris-versicolor")
     virginica = h2o.which(iris[4]=="Iris-virginica")
@@ -14,4 +14,4 @@ def pyunit_which():
     assert sum(range(100,150)) == virginica.sum()
 
 
-pyunit_test = pyunit_which
+pyunit_which()

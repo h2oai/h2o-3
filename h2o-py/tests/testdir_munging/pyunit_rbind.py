@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def rbind_check():
     # Connect to a pre-existing cluster
     
 
-    frame = h2o.import_file(path=tests.locate("smalldata/junit/cars.csv"))
+    frame = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars.csv"))
     row_orig = frame.nrow
 
     frame_2 = frame.rbind(frame)
@@ -17,7 +17,7 @@ def rbind_check():
     row_3 = frame_3.nrow
     assert 4*row_orig == row_3, "Expected 4*{0} rows, but got {1}".format(4*row_orig, row_3)
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
     try:
         frame_fail = frame.rbind(iris)
         frame_fail.show()
@@ -26,4 +26,4 @@ def rbind_check():
         pass
 
 
-pyunit_test = rbind_check
+rbind_check()

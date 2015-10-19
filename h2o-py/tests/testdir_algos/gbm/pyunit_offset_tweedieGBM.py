@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def offset_tweedie():
     # Connect to a pre-existing cluster
     
 
-    insurance = h2o.import_file(tests.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/insurance.csv"))
 
     insurance["offset"] = insurance["Holders"].log()
 
@@ -30,4 +30,4 @@ def offset_tweedie():
         format(392.4651, predictions.max())
 
 
-pyunit_test = offset_tweedie
+offset_tweedie()

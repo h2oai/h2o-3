@@ -1,11 +1,11 @@
 
 
-import h2o, tests
+
 
 def trim_check():
     # Connect to a pre-existing cluster
     # testing on a string column
-    frame = h2o.import_file(path=tests.locate("smalldata/junit/cars_trim.csv"), col_types=["string","numeric","numeric","numeric","numeric","numeric","numeric","numeric"])
+    frame = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_trim.csv"), col_types=["string","numeric","numeric","numeric","numeric","numeric","numeric","numeric"])
 
     # single column (frame)
     trimmed_frame = frame["name"].trim()
@@ -21,4 +21,4 @@ def trim_check():
     assert trimmed_vec[2,0] == "AMC Ambassador SST",      "Expected 'AMC Ambassador SST', but got {}".format(trimmed_frame[2,0])
 
 
-pyunit_test = trim_check
+trim_check()

@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def rf_mean_residual_deviance():
 
-    cars =  h2o.import_file(path=tests.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars[0].runif()
     train = cars[s > 0.2]
     valid = cars[s <= 0.2]
@@ -24,4 +24,4 @@ def rf_mean_residual_deviance():
                                              "{0}".format(type(rf_mrd['xval']))
 
 
-pyunit_test = rf_mean_residual_deviance
+rf_mean_residual_deviance()

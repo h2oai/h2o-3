@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 import random
 
 def cv_carsDL():
 
     # read in the dataset and construct training set (and validation set)
-    cars =  h2o.import_file(path=tests.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial
@@ -34,7 +34,7 @@ def cv_carsDL():
     dl1 = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     dl2 = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     try:
-        tests.check_models(dl1, dl2, True)
+        pyunit_utils.check_models(dl1, dl2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
@@ -109,4 +109,4 @@ def cv_carsDL():
     #     assert True
 
 
-pyunit_test = cv_carsDL
+cv_carsDL()

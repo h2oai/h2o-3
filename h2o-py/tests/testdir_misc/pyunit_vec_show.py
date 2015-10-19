@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def vec_show():
     
     
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     print "iris:"
     iris.show()
 
@@ -24,4 +24,4 @@ def vec_show():
     iris[2].show()
 
 
-pyunit_test = vec_show
+vec_show()

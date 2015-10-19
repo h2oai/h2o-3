@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def benign():
     
     
 
-    training_data = h2o.import_file(tests.locate("smalldata/logreg/benign.csv"))
+    training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
 
     Y = 3
     X = range(3) + range(4,11)
@@ -22,5 +22,5 @@ def benign():
     assert in_names == out_names[1:]
 
 
-pyunit_test = benign
+benign()
 

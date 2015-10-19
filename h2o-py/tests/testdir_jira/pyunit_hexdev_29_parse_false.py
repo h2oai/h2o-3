@@ -5,12 +5,12 @@
 ################################################################################
 
 
-import h2o, tests
+
 
 
 def parse_false():
 
-    fraw = h2o.import_file(tests.locate("smalldata/jira/hexdev_29.csv"), parse=False)
+    fraw = h2o.import_file(pyunit_utils.locate("smalldata/jira/hexdev_29.csv"), parse=False)
     assert isinstance(fraw, list)
 
     fhex = h2o.parse_raw(h2o.parse_setup(fraw))
@@ -18,4 +18,4 @@ def parse_false():
     assert fhex.__class__.__name__ == "H2OFrame"
 
 
-pyunit_test = parse_false
+parse_false()

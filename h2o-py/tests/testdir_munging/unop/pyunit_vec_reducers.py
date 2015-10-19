@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import numpy as np
 import random
 
@@ -52,4 +52,4 @@ def frame_reducers():
         "numpy".format(h2o_val,num_val)
 
 
-pyunit_test = frame_reducers
+frame_reducers()

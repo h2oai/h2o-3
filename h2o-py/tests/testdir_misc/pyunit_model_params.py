@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def pyunit_model_params():
 
-  pros = h2o.import_file(tests.locate("smalldata/prostate/prostate.csv"))
+  pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
 
   m = h2o.kmeans(pros,k=4)
   print m.params
@@ -12,4 +12,4 @@ def pyunit_model_params():
 
 
 
-pyunit_test = pyunit_model_params
+pyunit_model_params()

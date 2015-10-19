@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def test_any_all():
 
-    foo = h2o.import_file(tests.locate("smalldata/iris/iris.csv"))
+    foo = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     foo["C6"] = foo["C1"] > 0.0
     any = foo[:,"C6"].any()
@@ -17,4 +17,4 @@ def test_any_all():
     assert any and not all, "expected any to be True and all to be False but but got {0} and {1}".format(any, all)
 
 
-pyunit_test = test_any_all
+test_any_all()

@@ -4,17 +4,17 @@
 
 
 
-import h2o, tests
+
 
 def hdfs_kmeans_converge():
     
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    hadoop_namenode_is_accessible = tests.hadoop_namenode_is_accessible()
+    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
 
     if hadoop_namenode_is_accessible:
-        hdfs_name_node = tests.hadoop_namenode()
+        hdfs_name_node = pyunit_utils.hadoop_namenode()
         hdfs_cross_file = "/datasets/runit/BigCross.data"
 
         print "Import BigCross.data from HDFS"
@@ -47,4 +47,4 @@ def hdfs_kmeans_converge():
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 
-pyunit_test = hdfs_kmeans_converge
+hdfs_kmeans_converge()

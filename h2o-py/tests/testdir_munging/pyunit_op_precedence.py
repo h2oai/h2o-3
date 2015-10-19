@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 import numpy as np
 
@@ -29,27 +29,27 @@ def op_precedence():
 
     print "Check A + B * C"
     S1 = A + B * C
-    tests.np_comparison_check(S1, s1, 10)
+    pyunit_utils.np_comparison_check(S1, s1, 10)
 
     print "Check A - B - C"
     S2 = A - B - C
-    tests.np_comparison_check(S2, s2, 10)
+    pyunit_utils.np_comparison_check(S2, s2, 10)
 
     print "Check A ^ 2 ^ 3"
     S3 = A ** 1 ** 2
-    tests.np_comparison_check(S3, s3, 10)
+    pyunit_utils.np_comparison_check(S3, s3, 10)
 
     print "Check A == B & C"
     S4 = A == B & C
-    tests.np_comparison_check(S4, s4, 10)
+    pyunit_utils.np_comparison_check(S4, s4, 10)
 
     print "Check A == B + C"
     S5 = A == B + C
-    tests.np_comparison_check(S5, s5, 10)
+    pyunit_utils.np_comparison_check(S5, s5, 10)
 
     print "Check A | B & C"
     S6 = A | B & C
-    tests.np_comparison_check(S6, s6, 10)
+    pyunit_utils.np_comparison_check(S6, s6, 10)
 
 
-pyunit_test = op_precedence
+op_precedence()

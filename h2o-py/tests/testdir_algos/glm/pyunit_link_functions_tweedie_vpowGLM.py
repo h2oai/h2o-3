@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 def link_functions_tweedie_vpow():
     
     
 
     # Load example data from HDtweedie, y = aggregate claim loss
-    hdf = h2o.upload_file(tests.locate("smalldata/glm_test/auto.csv"))
+    hdf = h2o.upload_file(pyunit_utils.locate("smalldata/glm_test/auto.csv"))
     y = "y"
     x = list(set(hdf.names) - set(["y"]))
 
@@ -35,5 +35,5 @@ def link_functions_tweedie_vpow():
                                                                    "{1}".format(h2ofit.null_deviance(), r_null[ridx])
 
 
-pyunit_test = link_functions_tweedie_vpow
+link_functions_tweedie_vpow()
 

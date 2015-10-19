@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 
 def init_err_casesKmeans():
@@ -8,7 +8,7 @@ def init_err_casesKmeans():
       # connect to localhost:54321
 
     # Log.info("Importing benign.csv data...\n")
-    benign_h2o = h2o.import_file(path=tests.locate("smalldata/logreg/benign.csv"))
+    benign_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/benign.csv"))
     #benign_h2o.summary()
     numcol = benign_h2o.ncol
     numrow = benign_h2o.nrow
@@ -78,4 +78,4 @@ def init_err_casesKmeans():
     h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame(start))
   
 
-pyunit_test = init_err_casesKmeans
+init_err_casesKmeans()

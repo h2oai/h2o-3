@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 
 def get_set_list_timezones():
@@ -24,4 +24,4 @@ def get_set_list_timezones():
     h2o.set_timezone(origTZ)
 
 
-pyunit_test = get_set_list_timezones
+get_set_list_timezones()

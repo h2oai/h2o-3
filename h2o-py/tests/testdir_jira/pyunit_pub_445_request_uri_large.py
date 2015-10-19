@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 def pub_445_long_request_uri():
     
     
 
-    mnistTrain = h2o.import_file(path=tests.locate("bigdata/laptop/mnist/train.csv.gz"))
-    mnistTest = h2o.import_file(path=tests.locate("bigdata/laptop/mnist/train.csv.gz"))
+    mnistTrain = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
+    mnistTest = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
 
     mnistTrain.set_name(col=784, name="label")
     mnistTest.set_name(col=784, name="label")
@@ -16,4 +16,4 @@ def pub_445_long_request_uri():
                      validation_y=mnistTest["label"], ntrees=100, max_depth=10)
 
 
-pyunit_test = pub_445_long_request_uri
+pub_445_long_request_uri()

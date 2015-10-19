@@ -1,10 +1,8 @@
-
-
-import h2o, tests, random
+import random
 
 def glrm_iris():
     print "Importing iris_wheader.csv data..."
-    irisH2O = h2o.upload_file(tests.locate("smalldata/iris/iris_wheader.csv"))
+    irisH2O = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     irisH2O.describe()
     
     for trans in ["NONE", "DEMEAN", "DESCALE", "STANDARDIZE"]:
@@ -22,4 +20,4 @@ def glrm_iris():
         h2o.remove(glrm_h2o._model_json['output']['loading_key']['name'])
 
 
-pyunit_test = glrm_iris
+glrm_iris()

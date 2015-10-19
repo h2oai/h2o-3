@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 def asfactor_basic():
   
   
 
   #Log.info("Printing out the head of the cars datasets")
-  h2oframe =  h2o.import_file(path=tests.locate("smalldata/junit/cars.csv"))
+  h2oframe =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars.csv"))
   h2oframe.show()
 
   h2oframe['cylinders'].show()
@@ -29,4 +29,4 @@ def asfactor_basic():
   assert bar, "expected the bar H2OVec to be a factor"
 
 
-pyunit_test = asfactor_basic
+asfactor_basic()

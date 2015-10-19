@@ -1,9 +1,9 @@
-import h2o, tests
+
 import numpy as np
 
 def pyunit_types():
 
-  pros = h2o.import_file(tests.locate("smalldata/prostate/prostate.csv"))
+  pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
   types = pros.types
   print types
 
@@ -23,4 +23,4 @@ def pyunit_types():
                                                 "C4": "Numeric"}, df.types)
 
 
-pyunit_test = pyunit_types
+pyunit_types()

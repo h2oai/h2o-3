@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def glm_solvers():
 
-    training_data = h2o.import_file(tests.locate("smalldata/junit/cars_20mpg.csv"))
+    training_data = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     predictors = ["displacement","power","weight","acceleration","year"]
 
     for solver in ["AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"]:
@@ -22,5 +22,5 @@ def glm_solvers():
                             Lambda=[1e-5], solver=solver)
 
 
-pyunit_test = glm_solvers
+glm_solvers()
 

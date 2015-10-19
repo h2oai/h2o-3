@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 
 def svd_1_golden():
     
 
     print "Importing USArrests.csv data..."
-    arrestsH2O = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
 
     print "Compare with SVD"
     fitH2O = h2o.svd(x=arrestsH2O[0:4], nv=4, transform="NONE", max_iterations=2000)
@@ -46,4 +46,4 @@ def svd_1_golden():
         for r, h in zip(rl, hl): assert abs(abs(r) - abs(float(h))) < 1e-5, "H2O got {0}, but R got {1}".format(h, r)
 
 
-pyunit_test = svd_1_golden
+svd_1_golden()

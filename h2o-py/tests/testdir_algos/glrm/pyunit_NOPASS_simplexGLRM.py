@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import numpy as np
 
 def glrm_simplex():
@@ -54,4 +54,4 @@ def glrm_simplex():
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
     
 
-pyunit_test = glrm_simplex
+glrm_simplex()

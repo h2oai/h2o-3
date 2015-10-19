@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def insert_missing():
     # Connect to a pre-existing cluster
@@ -24,4 +24,4 @@ def insert_missing():
 
 
 
-pyunit_test = insert_missing
+insert_missing()

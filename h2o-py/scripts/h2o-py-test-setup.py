@@ -1,5 +1,4 @@
 import sys, os
-import imp
 from time import gmtime, strftime
 
 _H2O_IP_                      = "127.0.0.1"
@@ -93,23 +92,26 @@ def unknownArg(arg):
     print("")
     usage()
 
+def set_pkg_attrs(pkg):
+    setattr(pkg, '__on_hadoop__', _ON_HADOOP_)
+    setattr(pkg, '__hadoop_namenode__', _HADOOP_NAMENODE_)
+
 def h2o_test_setup(sys_args):
     h2o_py_dir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),".."))
     h2o_docs_dir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..","h2o-docs"))
 
     parse_args(sys_args)
 
-    if _IS_IPYNB_:
-        try:
-            imp.find_module('h2o')
-            import h2o
-        except ImportError:
-            print "The h2o module has not been installed on this system. Cannot execute the H2O ipynb without it!"
+    sys.path.insert(1, h2o_py_dir)
+    import h2o
+    from tests import pyunit_utils, pydemo_utils
+
+    set_pkg_attrs(pyunit_utils)
+
+    if _IS_PYUNIT_ or _IS_IPYNB_:
+        pass
     elif _IS_PYDEMO_:
         raise(NotImplementedError, "pydemos are not supported at this time")
-    elif _IS_PYUNIT_:
-        sys.path.insert(1, h2o_py_dir)
-        import h2o
     elif _IS_PYBOOKLET_:
         raise(NotImplementedError, "pybooklets are not supported at this time")
     else:
@@ -132,16 +134,8 @@ def h2o_test_setup(sys_args):
 
     h2o.remove_all()
 
-    if _IS_IPYNB_:
-        sys.path.insert(1, h2o_py_dir)
-        from tests import pydemo_utils
-        pydemo_utils.ipy_notebook_exec(_TEST_NAME_)
-    elif _IS_PYUNIT_:
-        with open (_TEST_NAME_, "r") as t: pyunit = t.read()
-        pyunit_c = compile(pyunit, '<string>', 'exec')
-        p = {}
-        exec pyunit_c in p
-        p["pyunit_test"]()
+    if _IS_IPYNB_:    pydemo_utils.ipy_notebook_exec(_TEST_NAME_)
+    elif _IS_PYUNIT_: pyunit_utils.pyunit_exec(_TEST_NAME_, h2o_py_dir)
 
 if __name__ == "__main__":
     h2o_test_setup(sys.argv)

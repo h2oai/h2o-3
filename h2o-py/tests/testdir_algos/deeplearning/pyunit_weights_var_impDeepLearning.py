@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 import copy
 
@@ -112,4 +112,4 @@ def weights_vi():
                                                   "dataset: ('p1', 'p3', 'p2'), but got: {0}".format(varimp_combined)
 
 
-pyunit_test = weights_vi
+weights_vi()

@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def table_check():
     # Connect to a pre-existing cluster
     
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     # single column (frame)
     table1 = iris["C5"].table()
@@ -19,4 +19,4 @@ def table_check():
     print table2
 
 
-pyunit_test = table_check
+table_check()

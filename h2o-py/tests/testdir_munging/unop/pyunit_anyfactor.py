@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def anyfactor():
     
     
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     # frame (positive example)
     assert iris.anyfactor(), "Expected true, but got false. Column 5 is a factor."
@@ -21,4 +21,4 @@ def anyfactor():
     assert not iris[0].anyfactor(), "Expected false, but got true. Columns 1 is numeric."
 
 
-pyunit_test = anyfactor
+anyfactor()

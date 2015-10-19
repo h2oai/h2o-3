@@ -1,11 +1,11 @@
 import os
-import h2o,tests
+
 import random
 
 def milsong_checkpoint():
 
-    milsong_train = h2o.upload_file(tests.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
-    milsong_valid = h2o.upload_file(tests.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
+    milsong_train = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
+    milsong_valid = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
 
     # build first model
     ntrees1 = random.sample(range(50,100),1)[0]
@@ -45,4 +45,4 @@ def milsong_checkpoint():
     assert model2.mse(valid=True)==model3.mse(valid=True), "Expected Model 2 MSE: {0} to be the same as Model 4 MSE: {1}".format(model2.mse(valid=True), model3.mse(valid=True))
 
 
-pyunit_test = milsong_checkpoint
+milsong_checkpoint()

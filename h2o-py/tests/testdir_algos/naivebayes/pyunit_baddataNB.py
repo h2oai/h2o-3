@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 import string
 
@@ -48,4 +48,4 @@ def nb_baddata():
                                                            "".format(len(model._model_json['output']['pcond']))
 
 
-pyunit_test = nb_baddata
+nb_baddata()

@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 import numpy as np
 from sklearn import ensemble
@@ -16,13 +16,13 @@ def smallcatRF():
     
 
     #Log.info("Importing alphabet_cattest.csv data...\n")
-    alphabet = h2o.import_file(path=tests.locate("smalldata/gbm_test/alphabet_cattest.csv"))
+    alphabet = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"))
     alphabet["y"] = alphabet["y"].asfactor()
     #Log.info("Summary of alphabet_cattest.csv from H2O:\n")
     #alphabet.summary()
 
     # Prepare data for scikit use
-    trainData = np.loadtxt(tests.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1,
+    trainData = np.loadtxt(pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1,
                            converters={0:lambda s: ord(s.split("\"")[1])})
     trainDataResponse = trainData[:,1]
     trainDataFeatures = trainData[:,0]
@@ -47,4 +47,4 @@ def smallcatRF():
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
 
-pyunit_test = smallcatRF
+smallcatRF()

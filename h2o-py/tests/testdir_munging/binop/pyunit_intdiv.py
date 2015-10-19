@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def intdiv():
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     iris = iris[:,0:4]
     rows, cols = iris.dim
 
@@ -56,5 +56,5 @@ def intdiv():
       pass
 
 
-pyunit_test = intdiv
+intdiv()
 

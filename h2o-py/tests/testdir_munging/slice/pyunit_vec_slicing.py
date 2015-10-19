@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def vec_slicing():
     
     
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     iris.show()
 
     ###################################################################
@@ -21,4 +21,4 @@ def vec_slicing():
     assert abs(res[0,0] - 3.0) < 1e-10 and abs(res[1,0] - 3.0) < 1e-10 and abs(res[5,0] - 3.5) < 1e-10, "incorrect values"
 
 
-pyunit_test = vec_slicing
+vec_slicing()

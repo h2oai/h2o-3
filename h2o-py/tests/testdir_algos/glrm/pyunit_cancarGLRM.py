@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def glrm_cancar():
     print "Importing cancar.csv data..."
-    cancarH2O = h2o.upload_file(tests.locate("smalldata/glrm_test/cancar.csv"))
+    cancarH2O = h2o.upload_file(pyunit_utils.locate("smalldata/glrm_test/cancar.csv"))
     cancarH2O.describe()
     
     print "Building GLRM model with init = PlusPlus:\n"
@@ -16,4 +16,4 @@ def glrm_cancar():
     glrm_svd.show()
 
 
-pyunit_test = glrm_cancar
+glrm_cancar()

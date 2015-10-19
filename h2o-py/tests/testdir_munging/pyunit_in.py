@@ -1,9 +1,9 @@
 
 
-import h2o, tests
+
 
 def test_in():
-    iris = h2o.import_file(tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     assert 5.1 in iris[0], "expected 5.1 to be in the first column, but it wasn't"
     assert 1.7 in iris, "expected 1.7 to be in the dataset, but it wasn't"
@@ -13,4 +13,4 @@ def test_in():
     h2o.remove(iris)
 
 
-pyunit_test = test_in
+test_in()

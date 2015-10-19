@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def center_scale():
     
     
 
-    iris =  h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))[0:4]
+    iris =  h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))[0:4]
 
     # frame (default args)
     foo = iris.scale()
@@ -37,4 +37,4 @@ def center_scale():
     foo = iris[3].scale(center=False, scale=False)
 
 
-pyunit_test = center_scale
+center_scale()

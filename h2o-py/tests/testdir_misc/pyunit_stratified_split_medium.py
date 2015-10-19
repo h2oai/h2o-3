@@ -1,10 +1,10 @@
 
 
 
-import h2o,tests
+
 
 def stratified_split():
-  fr = h2o.import_file(tests.locate("bigdata/laptop/covtype/covtype.data"))
+  fr = h2o.import_file(pyunit_utils.locate("bigdata/laptop/covtype/covtype.data"))
   stratified = fr[54].stratified_split()
   train = fr[stratified=="train"]
   test  = fr[stratified=="test"]
@@ -13,4 +13,4 @@ def stratified_split():
   print (test[54].table()["Count"] / test[54].table()["Count"].sum()).show()
 
 
-pyunit_test = stratified_split
+stratified_split()

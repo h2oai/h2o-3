@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def ozoneKM():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 
-  train = h2o.import_file(path=tests.locate("smalldata/glm_test/ozone.csv"))
+  train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
 
   # See that the data is ready
   print train.describe()
@@ -24,4 +24,4 @@ def ozoneKM():
   my_pred.describe()
 
 
-pyunit_test = ozoneKM
+ozoneKM()

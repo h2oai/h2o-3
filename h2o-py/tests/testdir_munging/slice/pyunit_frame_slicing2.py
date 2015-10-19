@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def expr_slicing():
     
     
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     iris.show()
 
     ###################################################################
@@ -37,4 +37,4 @@ def expr_slicing():
            abs(res6[3,3] - 0.4) < 1e-10, "incorrect values"
 
 
-pyunit_test = expr_slicing
+expr_slicing()

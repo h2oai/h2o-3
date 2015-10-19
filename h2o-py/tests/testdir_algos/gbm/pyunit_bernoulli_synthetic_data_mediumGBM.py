@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 from h2o import H2OFrame
 
 import numpy as np
@@ -65,4 +65,4 @@ def bernoulli_synthetic_data_mediumGBM():
                                "scickit auc: {1}".format(auc_h2o, auc_sci)
 
 
-pyunit_test = bernoulli_synthetic_data_mediumGBM
+bernoulli_synthetic_data_mediumGBM()

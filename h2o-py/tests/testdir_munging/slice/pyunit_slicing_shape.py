@@ -1,14 +1,14 @@
 # Check that slicings give the correct shape
 
 
-import h2o, tests
+
 import random
 
 def slicing_shape():
     # Connect to a pre-existing cluster
     
 
-    prostate = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     rows, cols = prostate.dim
 
     #foo = prostate[0:0] # TODO: empty frame allowed?
@@ -40,4 +40,4 @@ def slicing_shape():
            assert c == ncols, "incorrect number of cols. correct: {0}, computed: {1}".format(ncols, c)
 
 
-pyunit_test = slicing_shape
+slicing_shape()

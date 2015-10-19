@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def strsplit_check():
     # Connect to a pre-existing cluster
     
 
-    frame = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    frame = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     # single column (frame)
     result = frame["C5"].strsplit("-")
@@ -23,4 +23,4 @@ def strsplit_check():
                                "{3}".format(result[0,0], result[0,1], result[0,2], result[0,3])
 
 
-pyunit_test = strsplit_check
+strsplit_check()

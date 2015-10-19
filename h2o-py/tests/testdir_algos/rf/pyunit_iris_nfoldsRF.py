@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def iris_nfolds():
     
     
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     model = h2o.random_forest(y=iris[4], x=iris[0:4], ntrees=50, nfolds=5)
     model.show()
@@ -19,4 +19,4 @@ def iris_nfolds():
         assert False, "expected an error"
 
 
-pyunit_test = iris_nfolds
+iris_nfolds()

@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 def link_correct_default():
 	
 	
 
 	print("Reading in original prostate data.")
-	h2o_data = h2o.upload_file(path=tests.locate("smalldata/prostate/prostate.csv.zip"))
+	h2o_data = h2o.upload_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
 
 	print("Compare models with link unspecified and canonical link specified.")
 	print("GAUSSIAN: ")
@@ -35,4 +35,4 @@ def link_correct_default():
 		   h2o_model_unspecified._model_json['output']['coefficients_table'].cell_values, "coefficient should be equal"
 
 
-pyunit_test = link_correct_default
+link_correct_default()

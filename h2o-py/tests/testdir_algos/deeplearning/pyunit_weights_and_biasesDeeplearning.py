@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 def weights_and_biases():
     
 
     print "Test checks if Deep Learning weights and biases are accessible from R"
 
-    covtype = h2o.upload_file(tests.locate("smalldata/covtype/covtype.20k.data"))
+    covtype = h2o.upload_file(pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
     covtype[54] = covtype[54].asfactor()
     dlmodel = h2o.deeplearning(x=covtype[0:54], y=covtype[54], hidden=[17,191], epochs=1, training_frame=covtype,
                                balance_classes=False, reproducible=True, seed=1234, export_weights_and_biases=True)
@@ -52,4 +52,4 @@ def weights_and_biases():
     assert b3r == 7, "wrong dimensionality! expected {0}, but got {1}.".format(7, b3r)
 
 
-pyunit_test = weights_and_biases
+weights_and_biases()

@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def glrm_arrests():
     print "Importing USArrests.csv data..."
-    arrestsH2O = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
     arrestsH2O.describe()
     
     print "H2O initial Y matrix:\n"
@@ -20,4 +20,4 @@ def glrm_arrests():
     glrm_h2o.show()
 
 
-pyunit_test = glrm_arrests
+glrm_arrests()

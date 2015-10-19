@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 import copy
 
@@ -58,4 +58,4 @@ def weights_check():
     # TODO: negative weights???
 
 
-pyunit_test = weights_check
+weights_check()

@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def pyunit_pop():
 
-  pros = h2o.import_file(tests.locate("smalldata/prostate/prostate.csv"))
+  pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
   nc = pros.ncol
   popped_col = pros.pop(pros.names[0])
 
@@ -15,4 +15,4 @@ def pyunit_pop():
   assert pros.ncol==nc-1
 
 
-pyunit_test = pyunit_pop
+pyunit_pop()

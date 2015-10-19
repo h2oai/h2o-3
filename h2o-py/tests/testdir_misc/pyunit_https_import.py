@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def https_import():
     
@@ -11,4 +11,4 @@ def https_import():
     aa.show()
 
 
-pyunit_test = https_import
+https_import()

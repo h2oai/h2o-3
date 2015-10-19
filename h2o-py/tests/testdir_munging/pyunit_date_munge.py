@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def refine_date_col(data, col, pattern):
   data[col]         = data[col].as_date(pattern)
@@ -19,7 +19,7 @@ def refine_date_col(data, col, pattern):
 
 
 def date_munge():
-  crimes_path = tests.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
+  crimes_path = pyunit_utils.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
   crimes = h2o.import_file(path=crimes_path)
   crimes.describe()
 
@@ -28,4 +28,4 @@ def date_munge():
   crimes.describe()
 
 
-pyunit_test = date_munge
+date_munge()

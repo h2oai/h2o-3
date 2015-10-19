@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import numpy as np
 import random
 import math
@@ -35,33 +35,33 @@ def expr_math_ops():
     np_data3 = np_data3 * 1.5
     np_data4 = np_data4 - 1.5
 
-    tests.np_comparison_check(h2o_data1.cos(), np.cos(np_data1), 10)
-    tests.np_comparison_check(h2o_data1.sin(), np.sin(np_data1), 10)
-    tests.np_comparison_check(h2o_data1.tan(), np.tan(np_data1), 10)
-    tests.np_comparison_check(h2o_data2.acos(), np.arccos(np_data2), 10)
-    tests.np_comparison_check(h2o_data2.asin(), np.arcsin(np_data2), 10)
-    tests.np_comparison_check(h2o_data1.atan(), np.arctan(np_data1), 10)
-    tests.np_comparison_check(h2o_data1.cosh(), np.cosh(np_data1), 10)
-    tests.np_comparison_check(h2o_data1.sinh(), np.sinh(np_data1), 10)
-    tests.np_comparison_check(h2o_data1.tanh(), np.tanh(np_data1), 10)
-    tests.np_comparison_check(h2o_data3.acosh(), np.arccosh(np_data3), 10)
-    tests.np_comparison_check(h2o_data1.asinh(), np.arcsinh(np_data1), 10)
-    tests.np_comparison_check(h2o_data2.atanh(), np.arctanh(np_data2), 10)
-    tests.np_comparison_check((h2o_data2/math.pi).cospi(), np.cos(np_data2), 10)
-    tests.np_comparison_check((h2o_data2/math.pi).sinpi(), np.sin(np_data2), 10)
-    tests.np_comparison_check((h2o_data2/math.pi).tanpi(), np.tan(np_data2), 10)
-    tests.np_comparison_check(h2o_data4.abs(), np.fabs(np_data4), 10)
-    tests.np_comparison_check(h2o_data2.sign(), np.sign(np_data2), 10)
-    tests.np_comparison_check(h2o_data3.sqrt(), np.sqrt(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.trunc(), np.trunc(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.ceil(), np.ceil(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.floor(), np.floor(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.log(), np.log(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.log10(), np.log10(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.log1p(), np.log1p(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.log2(), np.log2(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.exp(), np.exp(np_data3), 10)
-    tests.np_comparison_check(h2o_data3.expm1(), np.expm1(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data1.cos(), np.cos(np_data1), 10)
+    pyunit_utils.np_comparison_check(h2o_data1.sin(), np.sin(np_data1), 10)
+    pyunit_utils.np_comparison_check(h2o_data1.tan(), np.tan(np_data1), 10)
+    pyunit_utils.np_comparison_check(h2o_data2.acos(), np.arccos(np_data2), 10)
+    pyunit_utils.np_comparison_check(h2o_data2.asin(), np.arcsin(np_data2), 10)
+    pyunit_utils.np_comparison_check(h2o_data1.atan(), np.arctan(np_data1), 10)
+    pyunit_utils.np_comparison_check(h2o_data1.cosh(), np.cosh(np_data1), 10)
+    pyunit_utils.np_comparison_check(h2o_data1.sinh(), np.sinh(np_data1), 10)
+    pyunit_utils.np_comparison_check(h2o_data1.tanh(), np.tanh(np_data1), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.acosh(), np.arccosh(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data1.asinh(), np.arcsinh(np_data1), 10)
+    pyunit_utils.np_comparison_check(h2o_data2.atanh(), np.arctanh(np_data2), 10)
+    pyunit_utils.np_comparison_check((h2o_data2/math.pi).cospi(), np.cos(np_data2), 10)
+    pyunit_utils.np_comparison_check((h2o_data2/math.pi).sinpi(), np.sin(np_data2), 10)
+    pyunit_utils.np_comparison_check((h2o_data2/math.pi).tanpi(), np.tan(np_data2), 10)
+    pyunit_utils.np_comparison_check(h2o_data4.abs(), np.fabs(np_data4), 10)
+    pyunit_utils.np_comparison_check(h2o_data2.sign(), np.sign(np_data2), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.sqrt(), np.sqrt(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.trunc(), np.trunc(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.ceil(), np.ceil(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.floor(), np.floor(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.log(), np.log(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.log10(), np.log10(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.log1p(), np.log1p(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.log2(), np.log2(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.exp(), np.exp(np_data3), 10)
+    pyunit_utils.np_comparison_check(h2o_data3.expm1(), np.expm1(np_data3), 10)
     h2o_val = h2o_data3.gamma()[5,5]
     num_val = math.gamma(h2o_data3[5,5])
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
@@ -86,4 +86,4 @@ def expr_math_ops():
         "math".format(h2o_val,num_val)
 
 
-pyunit_test = expr_math_ops
+expr_math_ops()

@@ -1,9 +1,9 @@
-import h2o, tests
+
 import random
 
 def cars_checkpoint():
 
-    cars = h2o.upload_file(tests.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars.runif()
     train = cars[s > .2]
     valid = cars[s <= .2]
@@ -145,4 +145,4 @@ def cars_checkpoint():
         #assert model3.r2(valid=True)!=model4.r2(valid=True), "Expected Model 3 R2: {0} to be different from Model 4 R2: {1}".format(model3.r2(valid=True), model4.r2(valid=True))
 
 
-pyunit_test = cars_checkpoint
+cars_checkpoint()

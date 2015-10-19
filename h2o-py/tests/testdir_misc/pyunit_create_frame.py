@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 
 def create_frame_test():
@@ -16,4 +16,4 @@ def create_frame_test():
                                                     "cols.".format(r,c,frame.nrow,frame.ncol)
 
 
-pyunit_test = create_frame_test
+create_frame_test()

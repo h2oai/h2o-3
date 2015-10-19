@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 import numpy as np
 
@@ -22,4 +22,4 @@ def mmult():
                                                   "equal quantile values between h2o and numpy".format(h2o_val,np_val)
 
 
-pyunit_test = mmult
+mmult()

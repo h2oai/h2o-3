@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def nb_iris():
     
 
     print "Importing iris_wheader.csv data...\n"
-    iris = h2o.upload_file(tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     iris.describe()
 
     laplace_range = [0, 1, 0.25]
@@ -16,4 +16,4 @@ def nb_iris():
         iris_nbayes.show()
 
 
-pyunit_test = nb_iris
+nb_iris()

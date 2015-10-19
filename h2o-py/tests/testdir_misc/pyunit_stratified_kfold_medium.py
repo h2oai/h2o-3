@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def stratified_kfold():
 
   NFOLDS=5
 
-  fr = h2o.import_file(tests.locate("bigdata/laptop/covtype/covtype.data"))
+  fr = h2o.import_file(pyunit_utils.locate("bigdata/laptop/covtype/covtype.data"))
 
   stratified = fr[54].stratified_kfold_column(n_folds=NFOLDS)
   stratified.show()
@@ -31,4 +31,4 @@ def stratified_kfold():
 
 
 
-pyunit_test = stratified_kfold
+stratified_kfold()

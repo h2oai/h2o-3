@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def confusion_matrices_check():
     
@@ -23,4 +23,4 @@ def confusion_matrices_check():
                                         "{3}. Should sum to 20.".format(tps, fps, tns, fns)
 
 
-pyunit_test = confusion_matrices_check
+confusion_matrices_check()

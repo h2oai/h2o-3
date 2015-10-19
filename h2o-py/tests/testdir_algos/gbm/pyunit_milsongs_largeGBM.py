@@ -1,11 +1,11 @@
 import os
-import h2o, tests
+
 import random
 
 def milsong_checkpoint():
 
-    milsong_train = h2o.upload_file(tests.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
-    milsong_valid = h2o.upload_file(tests.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
+    milsong_train = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
+    milsong_valid = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
     distribution = "gaussian"
 
     # build first model
@@ -43,4 +43,4 @@ def milsong_checkpoint():
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
 
-pyunit_test = milsong_checkpoint
+milsong_checkpoint()

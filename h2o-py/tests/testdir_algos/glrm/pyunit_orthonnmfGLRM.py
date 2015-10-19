@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import numpy as np
 
 def glrm_orthonnmf():
@@ -90,4 +90,4 @@ def glrm_orthonnmf():
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
 
 
-pyunit_test = glrm_orthonnmf
+glrm_orthonnmf()

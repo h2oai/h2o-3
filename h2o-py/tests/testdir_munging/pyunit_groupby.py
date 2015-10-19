@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import pandas as pd
 import numpy as np
 
@@ -8,8 +8,8 @@ def group_by():
     # Connect to a pre-existing cluster
     
 
-    h2o_iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
-    pd_iris = pd.read_csv(tests.locate("smalldata/iris/iris_wheader.csv"))
+    h2o_iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
+    pd_iris = pd.read_csv(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
     na_handling = ["ignore","rm","all"]
     col_names = h2o_iris.col_names[0:4]
@@ -30,4 +30,4 @@ def group_by():
         .sum(  na=na)
       print grouped.get_frame()
 
-pyunit_test = group_by
+group_by()

@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 ######################################################
 #
@@ -11,7 +11,7 @@ def irisGBM():
     # connect to localhost:54321
 
   # Import training data
-  train = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+  train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
   train.describe()
 
   # Run GBM
@@ -30,4 +30,4 @@ def irisGBM():
   my_gbm_metrics  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
 
-pyunit_test = irisGBM
+irisGBM()

@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def cumsumminprodmax():
     # TODO PUBDEV-1748
@@ -34,4 +34,4 @@ def cumsumminprodmax():
     h2o.remove(foo)
 
 
-pyunit_test = cumsumminprodmax
+cumsumminprodmax()

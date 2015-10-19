@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 import numpy as np
 
@@ -23,4 +23,4 @@ def quantile():
         "and numpy".format(h2o_val,np_val)
 
 
-pyunit_test = quantile
+quantile()

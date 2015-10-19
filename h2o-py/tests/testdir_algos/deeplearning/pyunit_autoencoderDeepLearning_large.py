@@ -1,6 +1,6 @@
 import os, sys
 
-import h2o, tests
+
 
 def deeplearning_autoencoder():
     
@@ -8,10 +8,10 @@ def deeplearning_autoencoder():
     resp = 784
     nfeatures = 20 # number of features (smallest hidden layer)
 
-    train_hex = h2o.upload_file(tests.locate("bigdata/laptop/mnist/train.csv.gz"))
+    train_hex = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
     train_hex[resp] = train_hex[resp].asfactor()
 
-    test_hex = h2o.upload_file(tests.locate("bigdata/laptop/mnist/test.csv.gz"))
+    test_hex = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))
     test_hex[resp] = test_hex[resp].asfactor()
 
     # split data into two parts
@@ -59,5 +59,5 @@ def deeplearning_autoencoder():
     assert abs(cm.cell_values[10][10] - 0.081) < 0.001, "Error. Expected 0.081, but got {0}".format(cm.cell_values[10][10])
 
 
-pyunit_test = deeplearning_autoencoder
+deeplearning_autoencoder()
 

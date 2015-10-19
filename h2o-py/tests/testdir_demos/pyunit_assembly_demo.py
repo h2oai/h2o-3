@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 from h2o import H2OAssembly
 from h2o.transforms.preprocessing import *
 from h2o import H2OFrame
 
 def assembly_demo():
-  fr = h2o.import_file(tests.locate("smalldata/iris/iris_wheader.csv"), col_types=["numeric","numeric","numeric","numeric","string"])  # import data
+  fr = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"), col_types=["numeric","numeric","numeric","numeric","string"])  # import data
   assembly = H2OAssembly(steps=[("col_select",      H2OColSelect(["sepal_len", "petal_len", "class"])),                                # col selection
                                 ("cos_sep_len",     H2OColOp(op=H2OFrame.cos, col="sepal_len", inplace=True)),                         # math operation
                                 ("str_cnt_species", H2OColOp(op=H2OFrame.countmatches, col="class", inplace=False, pattern="s"))])     # string operation
@@ -31,4 +31,4 @@ def assembly_demo():
 
 
 
-pyunit_test = assembly_demo
+assembly_demo()

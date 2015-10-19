@@ -1,11 +1,11 @@
 
 
-import h2o, tests
+
 
 def checkpoint_new_category_in_response():
 
-    sv = h2o.upload_file(tests.locate("smalldata/iris/setosa_versicolor.csv"))
-    iris = h2o.upload_file(tests.locate("smalldata/iris/iris.csv"))
+    sv = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))
+    iris = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     m1 = h2o.gbm(x=sv[[0,1,2,3]], y=sv[4], ntrees=100)
 
@@ -18,4 +18,4 @@ def checkpoint_new_category_in_response():
         pass
 
 
-pyunit_test = checkpoint_new_category_in_response
+checkpoint_new_category_in_response()

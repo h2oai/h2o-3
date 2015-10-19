@@ -1,11 +1,11 @@
 
 
-import h2o, tests
+
 
 
 def pyunit_as_data_frame():
 
-  smallbike = h2o.import_file(tests.locate("smalldata/jira/citibike_head.csv"))
+  smallbike = h2o.import_file(pyunit_utils.locate("smalldata/jira/citibike_head.csv"))
 
   ##use_pandas = False
   small_bike_list = smallbike.as_data_frame(use_pandas=False)
@@ -32,4 +32,4 @@ def pyunit_as_data_frame():
   assert head_small_bike_pandas.loc[4][0] == tail_small_bike_pandas.loc[0][0]
 
 
-pyunit_test = pyunit_as_data_frame
+pyunit_as_data_frame()

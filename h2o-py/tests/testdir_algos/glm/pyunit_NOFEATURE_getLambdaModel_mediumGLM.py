@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 
 def getLambdaModel():
@@ -8,7 +8,7 @@ def getLambdaModel():
 	
 
 	print("Read data")
-	prostate = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
+	prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
 	myX = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
 	myY = "CAPSULE"
@@ -36,6 +36,6 @@ def getLambdaModel():
 		assert m1==m2, "expected models to be equal"
 
 
-pyunit_test = getLambdaModel
+getLambdaModel()
 
 

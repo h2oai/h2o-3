@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def javapredict_drf_xlarge():
 
-    hdfs_name_node = tests.hadoop_namenode()
+    hdfs_name_node = pyunit_utils.hadoop_namenode()
     hdfs_file_name = "/datasets/z_repro.csv"
     url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_file_name)
 
@@ -17,7 +17,7 @@ def javapredict_drf_xlarge():
     x = range(1,train.ncol)
     y = 0
 
-    tests.javapredict("random_forest", "numeric", train, test, x, y, **params)
+    pyunit_utils.javapredict("random_forest", "numeric", train, test, x, y, **params)
 
 
-pyunit_test = javapredict_drf_xlarge
+javapredict_drf_xlarge()

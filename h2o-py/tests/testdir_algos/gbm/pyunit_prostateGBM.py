@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 ######################################################
 #
@@ -10,7 +10,7 @@ def prostateGBM():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 
-  df = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
+  df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
   df.describe()
 
   # Remove ID from training frame
@@ -44,4 +44,4 @@ def prostateGBM():
   my_gbm_metrics  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
 
-pyunit_test = prostateGBM
+prostateGBM()

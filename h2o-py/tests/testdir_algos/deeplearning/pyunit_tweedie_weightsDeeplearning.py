@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def tweedie_weights():
 
-    data = h2o.import_file(tests.locate("smalldata/glm_test/cancar_logIn.csv"))
+    data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/cancar_logIn.csv"))
     data["C1M3"] = (data["Class"] == 1 and data["Merit"] == 3).asfactor()
     data["C3M3"] = (data["Class"] == 3 and data["Merit"] == 3).asfactor()
     data["C4M3"] = (data["Class"] == 4 and data["Merit"] == 3).asfactor()
@@ -31,4 +31,4 @@ def tweedie_weights():
                           score_validation_samples = 0,weights_column = "Insured",training_frame = cancar)
 
 
-pyunit_test = tweedie_weights
+tweedie_weights()

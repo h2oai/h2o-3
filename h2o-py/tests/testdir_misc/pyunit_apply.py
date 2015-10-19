@@ -1,9 +1,9 @@
 
 
-import h2o,tests
+
 
 def pyunit_apply():
-  fr = h2o.import_file(tests.locate("smalldata/logreg/prostate.csv"))
+  fr = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
   fr.apply(lambda x: x["PSA"], axis=1).show()
   print
@@ -43,4 +43,4 @@ def pyunit_apply():
   fr.apply(lambda row: h2o.ifelse(row[0] < 5, 3, (row[2] - 1).expm1()), axis=1)
 
 
-pyunit_test = pyunit_apply
+pyunit_apply()

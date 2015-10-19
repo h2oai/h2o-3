@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def binop_div():
     
     
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     rows, cols = iris.dim
     iris.show()
 
@@ -67,5 +67,5 @@ def binop_div():
     #  pass
 
 
-pyunit_test = binop_div
+binop_div()
 

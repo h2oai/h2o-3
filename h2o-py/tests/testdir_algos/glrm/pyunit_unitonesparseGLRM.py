@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import numpy as np
 
 def glrm_unitonesparse():
@@ -55,4 +55,4 @@ def glrm_unitonesparse():
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
     
 
-pyunit_test = glrm_unitonesparse
+glrm_unitonesparse()

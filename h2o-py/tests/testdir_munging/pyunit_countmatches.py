@@ -1,11 +1,11 @@
 
 
-import h2o, tests
+
 
 def countmatches_check():
     # Connect to a pre-existing cluster
 
-    frame = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"), col_types=["numeric","numeric","numeric","numeric","string"])
+    frame = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"), col_types=["numeric","numeric","numeric","numeric","string"])
 
     # single column (frame)
     result = frame["C5"].countmatches("o")
@@ -30,4 +30,4 @@ def countmatches_check():
 
 
 
-pyunit_test = countmatches_check
+countmatches_check()

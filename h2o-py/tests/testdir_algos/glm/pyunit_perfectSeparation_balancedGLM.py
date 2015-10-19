@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def perfectSeparation_balanced():
 
@@ -8,7 +8,7 @@ def perfectSeparation_balanced():
     
 
     print("Read in synthetic balanced dataset")
-    data = h2o.import_file(path=tests.locate("smalldata/synthetic_perfect_separation/balanced.csv"))
+    data = h2o.import_file(path=pyunit_utils.locate("smalldata/synthetic_perfect_separation/balanced.csv"))
 
     print("Fit model on dataset")
     model = h2o.glm(x=data[["x1", "x2"]], y=data["y"], family="binomial", lambda_search=True,alpha=[0.5], Lambda=[1e-8])
@@ -20,4 +20,4 @@ def perfectSeparation_balanced():
         assert c < 50, "coefficient is too large"
 
 
-pyunit_test = perfectSeparation_balanced
+perfectSeparation_balanced()

@@ -1,11 +1,11 @@
 
 
-import h2o, tests
+
 import numpy as np
 
 def glrm_set_loss_by_col():
     print "Importing USArrests.csv data..."
-    arrestsH2O = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
     arrestsPy = np.array(h2o.as_list(arrestsH2O))
     arrestsH2O.describe()
     
@@ -32,4 +32,4 @@ def glrm_set_loss_by_col():
     assert abs(glrm_obj - obj_val) < 1e-6, "Final objective was " + str(glrm_obj) + " but should equal " + str(obj_val)
 
 
-pyunit_test = glrm_set_loss_by_col
+glrm_set_loss_by_col()

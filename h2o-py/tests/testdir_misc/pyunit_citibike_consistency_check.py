@@ -1,25 +1,25 @@
 # Check to make sure the small and large citibike demos have not diverged
 import os
-import h2o, tests
 
 def consistency_check():
 
     try:
-        small = tests.locate("h2o-py/demos/citi_bike_small.ipynb")
+        small = pyunit_utils.locate("h2o-py/demos/citi_bike_small.ipynb")
     except ValueError:
-        small = tests.locate("h2o-py/demos/citi_bike_small_NOPASS.ipynb")
+        small = pyunit_utils.locate("h2o-py/demos/citi_bike_small_NOPASS.ipynb")
 
     try:
-        large = tests.locate("h2o-py/demos/citi_bike_large.ipynb")
+        large = pyunit_utils.locate("h2o-py/demos/citi_bike_large.ipynb")
     except ValueError:
-        large = tests.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
+        large = pyunit_utils.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
 
-    results_dir = tests.locate("results")
+    results_dir = pyunit_utils.locate("results")
     s = os.path.join(results_dir, os.path.basename(small).split('.')[0]+".py")
     l = os.path.join(results_dir, os.path.basename(large).split('.')[0]+".py")
 
-    tests.ipy_notebook_exec(small, save_and_norun = s)
-    tests.ipy_notebook_exec(large, save_and_norun = l)
+    from tests import pydemo_utils
+    pydemo_utils.ipy_notebook_exec(small, save_and_norun = s)
+    pydemo_utils.ipy_notebook_exec(large, save_and_norun = l)
 
     small_list = list(open(s, 'r'))
     large_list = list(open(l, 'r'))
@@ -32,4 +32,4 @@ def consistency_check():
                 "Citibike large: {1}".format(s,l)
 
 
-pyunit_test = consistency_check
+consistency_check()

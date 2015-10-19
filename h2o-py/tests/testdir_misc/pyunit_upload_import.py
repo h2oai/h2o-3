@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def upload_import_small():
     # Connect to a pre-existing cluster
@@ -10,8 +10,8 @@ def upload_import_small():
                         "smalldata/prostate/prostate_woheader.csv.gz"]
 
     for dataset in various_datasets:
-        uploaded_frame = h2o.upload_file(tests.locate(dataset))
-        imported_frame = h2o.import_file(tests.locate(dataset))
+        uploaded_frame = h2o.upload_file(pyunit_utils.locate(dataset))
+        imported_frame = h2o.import_file(pyunit_utils.locate(dataset))
 
         rows_u, cols_u = uploaded_frame.dim
         rows_i, cols_i = imported_frame.dim
@@ -23,4 +23,4 @@ def upload_import_small():
                                  "{1}.".format(cols_u, cols_i)
 
 
-pyunit_test = upload_import_small
+upload_import_small()

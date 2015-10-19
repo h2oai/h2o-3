@@ -1,4 +1,4 @@
-import h2o, tests
+
 import os
 
 def download_all_logs():
@@ -26,4 +26,4 @@ def download_all_logs():
     os.remove(log_location)
 
 
-pyunit_test = download_all_logs
+download_all_logs()

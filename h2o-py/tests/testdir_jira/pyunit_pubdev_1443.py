@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def pubdev_1443():
     col = []
@@ -20,4 +20,4 @@ def pubdev_1443():
     assert threes == 10000, "Expected 10000 3's, but got {0}".format(threes)
 
 
-pyunit_test = pubdev_1443
+pubdev_1443()

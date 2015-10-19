@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def grid_wineGBM():
     
     
 
-    wine = h2o.import_file(path=tests.locate("smalldata/gbm_test/wine.data"))
+    wine = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/wine.data"))
     #wine.summary()
     x_cols = range(2,14) + [0]
     wine_grid = h2o.gbm(y=wine[1],
@@ -18,4 +18,4 @@ def grid_wineGBM():
     wine_grid.show()
 
 
-pyunit_test = grid_wineGBM
+grid_wineGBM()

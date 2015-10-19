@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import numpy as np
 import random
 
@@ -17,4 +17,4 @@ def test_prod():
                                             "equal quantile values between h2o and numpy".format(h2o_prod,np_prod)
     h2o.remove(h2o_data)
 
-pyunit_test = test_prod
+test_prod()

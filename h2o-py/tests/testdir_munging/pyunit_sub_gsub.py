@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def sub_gsub_check():
     # Connect to a pre-existing cluster
     
 
-    frame = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"), col_types=["numeric","numeric","numeric","numeric","string"])
+    frame = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"), col_types=["numeric","numeric","numeric","numeric","string"])
 
     # single column (frame)
     frame["C5"] = frame["C5"].gsub("s", "z")
@@ -25,4 +25,4 @@ def sub_gsub_check():
     assert vec[3,0] == "Iriz-zetoza", "Expected 'Iriz-zetoza', but got {0}".format(vec[3,0])
 
 
-pyunit_test = sub_gsub_check
+sub_gsub_check()

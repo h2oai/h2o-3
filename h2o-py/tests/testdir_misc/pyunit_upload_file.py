@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 
 def upload_file():
     
 
-    a = h2o.upload_file(tests.locate("smalldata/logreg/prostate.csv"))
+    a = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     print a.describe()
 
     from h2o import H2OFrame
@@ -71,4 +71,4 @@ def upload_file():
     # py_numpy_ary_to_h2o.describe()
 
 
-pyunit_test = upload_file
+upload_file()

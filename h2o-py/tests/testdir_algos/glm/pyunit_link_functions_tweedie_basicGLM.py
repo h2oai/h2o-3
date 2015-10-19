@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 def link_functions_tweedie_basic():
     
     
 
     print "Read in prostate data."
-    hdf = h2o.upload_file(tests.locate("smalldata/prostate/prostate_complete.csv.zip"))
+    hdf = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip"))
 
     print "Testing for family: TWEEDIE"
     print "Set variables for h2o."
@@ -25,5 +25,5 @@ def link_functions_tweedie_basic():
 
 
 
-pyunit_test = link_functions_tweedie_basic
+link_functions_tweedie_basic()
 

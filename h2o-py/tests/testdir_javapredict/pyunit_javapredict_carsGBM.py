@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 
 def javapredict_cars():
@@ -10,12 +10,12 @@ def javapredict_cars():
     print "Parameter list:"
     for k,v in zip(params.keys(), params.values()): print "{0}, {1}".format(k,v)
 
-    train = h2o.import_file(tests.locate("smalldata/junit/cars_nice_header.csv"))
-    test = h2o.import_file(tests.locate("smalldata/junit/cars_nice_header.csv"))
+    train = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_nice_header.csv"))
+    test = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_nice_header.csv"))
     x = ["name","economy", "displacement","power","weight","acceleration","year"]
     y = "cylinders"
 
-    tests.javapredict("gbm", "numeric", train, test, x, y, **params)
+    pyunit_utils.javapredict("gbm", "numeric", train, test, x, y, **params)
 
 
-pyunit_test = javapredict_cars
+javapredict_cars()

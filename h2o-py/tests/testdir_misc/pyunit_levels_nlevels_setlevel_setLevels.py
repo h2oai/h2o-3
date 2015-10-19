@@ -1,11 +1,11 @@
 
 
-import h2o, tests
+
 
 
 def levels_nlevels_setlevel_setLevels_test():
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     # frame (default)
     levels = iris.levels()
@@ -47,7 +47,7 @@ def levels_nlevels_setlevel_setLevels_test():
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     ################### reimport, set new domains, rerun tests ###################################
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
     iris[4] = iris[4].set_levels(levels=["a", "b", "c"])
 
     # frame (default)
@@ -94,4 +94,4 @@ def levels_nlevels_setlevel_setLevels_test():
     assert one_column_frame[0,0] == 'c'
 
 
-pyunit_test = levels_nlevels_setlevel_setLevels_test
+levels_nlevels_setlevel_setLevels_test()

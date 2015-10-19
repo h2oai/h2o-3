@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def checkpoint_new_category_in_predictor():
 
-    sv1 = h2o.upload_file(tests.locate("smalldata/iris/setosa_versicolor.csv"))
-    sv2 = h2o.upload_file(tests.locate("smalldata/iris/setosa_versicolor.csv"))
-    vir = h2o.upload_file(tests.locate("smalldata/iris/virginica.csv"))
+    sv1 = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))
+    sv2 = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))
+    vir = h2o.upload_file(pyunit_utils.locate("smalldata/iris/virginica.csv"))
 
     m1 = h2o.deeplearning(x=sv1[[0,1,2,4]], y=sv1[3], epochs=100)
 
@@ -24,4 +24,4 @@ def checkpoint_new_category_in_predictor():
     predictions = m2.predict(vir)
 
 
-pyunit_test = checkpoint_new_category_in_predictor
+checkpoint_new_category_in_predictor()

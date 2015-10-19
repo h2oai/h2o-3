@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 def domain_check():
     
 
-    air_train = h2o.import_file(path=tests.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_train = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
     air_train.show()
-    air_test = h2o.import_file(path=tests.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTest.csv.zip"))
     air_test.show()
 
     actual_domain = [u'YES',u'NO']
@@ -84,4 +84,4 @@ def domain_check():
                             "The difference is {2}".format(actual_domain, computed_domain, domain_diff)
 
 
-pyunit_test = domain_check
+domain_check()

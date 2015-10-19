@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def score_history_test():
     
     
 
-    air_train = h2o.import_file(path=tests.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_train = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
     gbm_mult = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth","fMonth"]],
                        y=air_train["fDayOfWeek"].asfactor(),
@@ -15,4 +15,4 @@ def score_history_test():
     print score_history
 
 
-pyunit_test = score_history_test
+score_history_test()

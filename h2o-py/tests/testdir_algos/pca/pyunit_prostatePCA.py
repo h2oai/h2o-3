@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def pca_prostate():
 
 
     print "Importing prostate.csv data...\n"
-    prostate = h2o.upload_file(tests.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
     print "Converting CAPSULE, RACE, DPROS and DCAPS columns to factors"
     prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
@@ -23,4 +23,4 @@ def pca_prostate():
     pred.head()
 
 
-pyunit_test = pca_prostate
+pca_prostate()

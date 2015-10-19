@@ -1,13 +1,13 @@
 
 
-import h2o, tests
+
 
 def bigcatGBM():
   
   
   
   #Log.info("Importing bigcat_5000x2.csv data...\n")
-  bigcat = h2o.import_file(path=tests.locate("smalldata/gbm_test/bigcat_5000x2.csv"))
+  bigcat = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/bigcat_5000x2.csv"))
   bigcat["y"] = bigcat["y"].asfactor()
   #Log.info("Summary of bigcat_5000x2.csv from H2O:\n")
   #bigcat.summary()
@@ -24,4 +24,4 @@ def bigcatGBM():
   test_auc = performance.auc()
 
 
-pyunit_test = bigcatGBM
+bigcatGBM()

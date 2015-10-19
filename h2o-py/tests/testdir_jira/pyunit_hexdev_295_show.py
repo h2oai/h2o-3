@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 
 def show_jira():
     
@@ -10,4 +10,4 @@ def show_jira():
     h2o_data.show()
 
 
-pyunit_test = show_jira
+show_jira()

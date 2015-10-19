@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def pca_arrests():
     
 
     print "Importing USArrests.csv data..."
-    arrestsH2O = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
     arrestsH2O.describe()
 
     for i in range(4):
@@ -16,4 +16,4 @@ def pca_arrests():
         # TODO: pca_h2o.show()
 
 
-pyunit_test = pca_arrests
+pca_arrests()

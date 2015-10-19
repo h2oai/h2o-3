@@ -6,7 +6,7 @@
 ################################################################################
 
 
-import h2o, tests
+
 
 def additional_parameters():
 
@@ -15,7 +15,7 @@ def additional_parameters():
     c_names = ["a", "b", "c"]
     c_types = ["enum", "enum", "string"]
 
-    fhex = h2o.import_file(tests.locate("smalldata/jira/hexdev_29.csv"),
+    fhex = h2o.import_file(pyunit_utils.locate("smalldata/jira/hexdev_29.csv"),
                            destination_frame=dest_frame,
                            col_names=c_names,
                            col_types=c_types)
@@ -32,7 +32,7 @@ def additional_parameters():
     c_names = ["a", "b", "c"]
     c_types = {"c":"string", "a":"string"}
 
-    fhex = h2o.import_file(tests.locate("smalldata/jira/hexdev_29.csv"),
+    fhex = h2o.import_file(pyunit_utils.locate("smalldata/jira/hexdev_29.csv"),
                            destination_frame=dest_frame,
                            col_names=c_names,
                            col_types=c_types)
@@ -47,4 +47,4 @@ def additional_parameters():
         assert col_summary[i]["type"] == c_types[name]
 
 
-pyunit_test = additional_parameters
+additional_parameters()

@@ -1,10 +1,10 @@
 
 
-import h2o, tests
+
 
 def pubdev_2041():
 
-    iris = h2o.import_file(tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     s = iris.runif(seed=12345)
     train1 = iris[s >= 0.5]
@@ -16,4 +16,4 @@ def pubdev_2041():
     m2 = h2o.deeplearning(x=train2[0:4], y=train2[4], epochs=200, checkpoint=m1.model_id)
 
 
-pyunit_test = pubdev_2041
+pubdev_2041()

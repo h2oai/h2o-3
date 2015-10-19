@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 
 def all_confusion_matrix_funcs():
@@ -12,10 +12,10 @@ def all_confusion_matrix_funcs():
     valid = [True, False]
 
     print "PARSING TRAINING DATA"
-    air_train = h2o.import_file(path=tests.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_train = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
     print "PARSING TESTING DATA"
-    air_test = h2o.import_file(path=tests.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
     print
     print "RUNNING FIRST GBM: "
@@ -130,4 +130,4 @@ def all_confusion_matrix_funcs():
         format(air_test.nrow, cm_count)
 
 
-pyunit_test = all_confusion_matrix_funcs
+all_confusion_matrix_funcs()

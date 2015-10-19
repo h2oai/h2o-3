@@ -1,6 +1,6 @@
 
 
-import h2o, tests
+
 import random
 
 def grid_lambda_search():
@@ -8,7 +8,7 @@ def grid_lambda_search():
   
 
   # Log.info("Importing prostate.csv data...\n")
-  prostate = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
   #prostate.summary()
 
@@ -52,4 +52,4 @@ def grid_lambda_search():
   assert len(params_best.lambda_all()) <= 20, "expected 20 or fewer lambdas"
 
 
-pyunit_test = grid_lambda_search
+grid_lambda_search()

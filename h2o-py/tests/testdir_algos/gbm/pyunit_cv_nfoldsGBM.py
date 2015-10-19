@@ -1,12 +1,12 @@
 
 
-import h2o, tests
+
 
 def cv_nfoldsGBM():
   
   
 
-  prostate = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
   prostate[1] = prostate[1].asfactor()
   prostate.summary()
 
@@ -21,4 +21,4 @@ def cv_nfoldsGBM():
     assert False, "expected an error"
 
 
-pyunit_test = cv_nfoldsGBM
+cv_nfoldsGBM()
