@@ -38,8 +38,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     Create a new H2OFrame object by passing a file path or a list of H2OVecs.
 
-    If `remote_fname` is not None, then a REST call will be made to import the
-    data specified at the location `remote_fname`.  This path is relative to the
+    If `file_path` is not None, then a REST call will be made to import the
+    data specified at the location `file_path`.  This path is relative to the
     H2O cluster, NOT the local Python process
 
     If `python_obj` is not None, then an attempt to upload the python object to H2O
@@ -50,11 +50,26 @@ class H2OFrame(H2OFrameWeakRefMixin):
     this object.
 
     :param python_obj: A "native" python object - list, dict, tuple.
-    :param remote_fname: A remote path to a data source. Data is cluster-local.
+    :param file_path: A remote path to a data source. Data is cluster-local.
     :param vecs: A list of H2OVec objects.
     :param text_key: A raw key resulting from an upload_file.
     :return: An instance of an H2OFrame object.
     """
+
+    # CNC notes
+    # Too many variables here; in particular, drop "keep" and "computed".
+    # From R: 
+    # "ast" - True; computed temp; has ID, finalizer will remove
+    #       - False; computed non-temp; has user ID, user must explicitly remove
+    #       - list of Exprs; further: ID is one of
+    #       -  - None: Expr is lazy, never evaluated
+    #       -  - ""; Expr has been executed once, but no temp ID was made
+    #       -  - String: this Expr is mid-execution, with the given temp ID.  Once execution has completed the ast field will be set to TRUE
+    # "id"  - See above; sometimes None, "", or a "py_tmp" string, or a user string
+    # "op"  - base opcode string
+    # "nrow", "ncol", "col_names", "types" - cached bits.  May exist with no "data", or if lazy still
+    # "data"- cached data bits for a 2-d Frame, or the full scalar result 
+
     H2OFrameWeakRefMixin.__init__(self)
     self._id        = _py_tmp_key()  # gets overwritten if a parse happens
     self._keep      = False
@@ -1465,7 +1480,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
 
 # private static methods
-def _py_tmp_key(): return unicode("py" + str(uuid.uuid4()))
+_id_ctr = 0
+def _py_tmp_key(): 
+  global _id_ctr   
+  _id_ctr=_id_ctr+1 
+  return "py_" + str(_id_ctr)
 def _gen_header(cols): return ["C" + str(c) for c in range(1, cols + 1, 1)]
 def _check_lists_of_lists(python_obj):
   # all items in the list must be a list too

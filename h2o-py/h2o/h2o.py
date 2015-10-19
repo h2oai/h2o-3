@@ -419,7 +419,7 @@ def removeFrameShallow(key):
   rapids("(removeframe '"+key+"')")
   return None
 
-def rapids(expr, id=None):
+def rapids(expr):
   """
   Fire off a Rapids expression.
 
@@ -431,7 +431,7 @@ def rapids(expr, id=None):
 
   :return: The JSON response of the Rapids execution
   """
-  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99) if id is None else H2OConnection.post_json("Rapids", ast=urllib.quote(expr), id=id, _rest_version=99)
+  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
 
 def ls():
   """
