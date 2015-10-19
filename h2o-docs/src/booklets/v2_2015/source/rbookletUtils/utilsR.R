@@ -18,6 +18,8 @@ function(codeExamples, directory) {
 
 checkStory <-
 function(storyName, paragraphs) {
+    h2o.removeAll()
+
     h2o.logAndEcho("------------------------------------------------------------")
     h2o.logAndEcho("")
     h2o.logAndEcho(paste0("CHECKING: ",storyName))
@@ -39,7 +41,6 @@ function(storyName, paragraphs) {
     writeLines(story, story_file)
 
     source(story_file)
-    h2o.removeAll()
 }
 
 doBooklet <-

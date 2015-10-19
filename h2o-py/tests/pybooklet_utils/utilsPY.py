@@ -15,6 +15,8 @@ def check_code_examples_in_dir(approved_py_code_examples, directory):
     return True
 
 def check_story(story_name, paragraphs):
+    h2o.remove_all()
+
     h2o.log_and_echo("------------------------------------------------------------")
     h2o.log_and_echo("")
     h2o.log_and_echo("CHECKING: {0}".format(story_name))
