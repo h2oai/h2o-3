@@ -68,6 +68,8 @@ def is_pybooklet(file_name):
     if re.match("^pybooklet.*\.py$", file_name): return True
     return False
 
+def is_gradle_build_python_test(file_name):
+    return file_name in ["generate_rest_api_docs.py", "generate_java_bindings.py"]
 
 def is_javascript_test_file(file_name):
     """
@@ -592,6 +594,8 @@ class Test:
             cmd = self._pyunit_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
         elif (is_pybooklet(self.test_name)):
             cmd = self._pybooklet_cmd(self.test_name, self.ip, self.port)
+        elif (is_gradle_build_python_test(self.test_name)):
+            cmd = ["python", self.test_name, "--usecloud", self.ip + ":" + str(self.port)]
         elif (is_javascript_test_file(self.test_name)): cmd = self._javascript_cmd(self.test_name, self.ip, self.port)
         else:
             print("")
