@@ -130,8 +130,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    if isinstance(python_obj, (dict, collections.OrderedDict)):
-      csv_writer.writeheader()                     # write the header
+    #csv_writer.writeheader()                     # write the header
+    if not kwargs['column_names']: kwargs['column_names'] = header
     csv_writer.writerows(data_to_write)            # write the data
     tmp_file.close()                               # close the streams
     self._upload_raw_data(tmp_path, **kwargs)      # actually upload the data to H2O
