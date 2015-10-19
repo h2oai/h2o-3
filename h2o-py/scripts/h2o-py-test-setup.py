@@ -92,9 +92,13 @@ def unknownArg(arg):
     print("")
     usage()
 
-def set_pkg_attrs(pkg):
+def set_pyunit_pkg_attrs(pkg):
     setattr(pkg, '__on_hadoop__', _ON_HADOOP_)
     setattr(pkg, '__hadoop_namenode__', _HADOOP_NAMENODE_)
+
+def set_pybooklet_pkg_attrs(pkg):
+    setattr(pkg, '__test_name__', _TEST_NAME_)
+    setattr(pkg, '__results_dir__', _RESULTS_DIR_)
 
 def h2o_test_setup(sys_args):
     h2o_py_dir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),".."))
@@ -104,16 +108,15 @@ def h2o_test_setup(sys_args):
 
     sys.path.insert(1, h2o_py_dir)
     import h2o
-    from tests import pyunit_utils, pydemo_utils
+    from tests import pyunit_utils, pydemo_utils, pybooklet_utils
 
-    set_pkg_attrs(pyunit_utils)
+    set_pyunit_pkg_attrs(pyunit_utils)
+    set_pybooklet_pkg_attrs(pybooklet_utils)
 
-    if _IS_PYUNIT_ or _IS_IPYNB_:
+    if _IS_PYUNIT_ or _IS_IPYNB_ or _IS_PYBOOKLET_:
         pass
     elif _IS_PYDEMO_:
         raise(NotImplementedError, "pydemos are not supported at this time")
-    elif _IS_PYBOOKLET_:
-        raise(NotImplementedError, "pybooklets are not supported at this time")
     else:
         raise(EnvironmentError, "Unrecognized test type. Must be of type ipynb, pydemo, pyunit, or pybooklet, but got: "
                                 "{0}".format(_TEST_NAME_))
@@ -134,8 +137,9 @@ def h2o_test_setup(sys_args):
 
     h2o.remove_all()
 
-    if _IS_IPYNB_:    pydemo_utils.ipy_notebook_exec(_TEST_NAME_)
-    elif _IS_PYUNIT_: pyunit_utils.pyunit_exec(_TEST_NAME_, h2o_py_dir)
+    if _IS_IPYNB_:       pydemo_utils.ipy_notebook_exec(_TEST_NAME_)
+    elif _IS_PYUNIT_:    pyunit_utils.pyunit_exec(_TEST_NAME_, h2o_py_dir)
+    elif _IS_PYBOOKLET_: pybooklet_utils.pybooklet_exec(_TEST_NAME_, h2o_py_dir)
 
 if __name__ == "__main__":
     h2o_test_setup(sys.argv)

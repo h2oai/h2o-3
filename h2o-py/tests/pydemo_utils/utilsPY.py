@@ -1,5 +1,4 @@
 import json
-import os
 
 def ipy_notebook_exec(path, save_and_norun=None):
     notebook = json.load(open(path))
