@@ -122,3 +122,8 @@ df12.types
 df12.anyfactor()
 df12["A"].levels()
 
+df12.interaction(['A','B'], pairwise=False, max_factors=3, min_occurrence=1)
+bb_df = df12.interaction(['B','B'], pairwise=False, max_factors=2, min_occurrence=1)
+bb_df
+df15 = df12.cbind(bb_df)
+df15

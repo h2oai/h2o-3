@@ -605,7 +605,15 @@ Determine if any column is a categorical/enumerated/factor type:
 See the categorical levels in a single column:
 \lstinputlisting[style=python, firstline=540, lastline=541]{python/ipython_output.txt}
 
-interactions
+H2O can create categorical interaction features:
+\lstinputlisting[style=python, firstline=543, lastline=555]{python/ipython_output.txt}
+
+To keep the most common categories and set remaining categories to a common `Other' category
+create an interaction of a categorical column with itself:
+\lstinputlisting[style=python, firstline=557, lastline=571]{python/ipython_output.txt}
+
+These can then be added as a new column on the original dataframe:
+\lstinputlisting[style=python, firstline=573, lastline=585]{python/ipython_output.txt}
 
 \subsection{Loading and Saving Data}
 File types supported
