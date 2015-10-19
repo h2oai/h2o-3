@@ -96,7 +96,6 @@ Printed in the United States of America.
 \section{Preface}
 What is this book all about:
 Plan for the book, small explanatory examples through out
-Larger example at end of each section putting it all together, Citibike
 What is H2O, install H2O for Python, load data, data preparation,
 modeling data (ML), evaluating models, making predictions, moving to production.
 
@@ -512,18 +511,44 @@ and get all columns one needs to be explicit about selection all columns:
 Boolean masking can be used to subselect rows based on a criteria:
 \lstinputlisting[style=python, firstline=224, lastline=228]{python/ipython_output.txt}
 
- adding columns, setting individual entries
 
 \subsection{Missing data}
-how does h2o denote missing data, how does it know what is missing on disk
-setting missing data (can we do something like this: df[df["A"].isna(), "A"] = 5)
-find all rows where A is na and set the column A for those rows to 5
+The H2O parser accounts for many different representations of missing data, including `' (blank),
+`NA', None (Python).  They are all displayed as NaN in Python.
+
+\waterExampleInPython
+Creating an H2OFrame from Python with missing elements:
+\lstinputlisting[style=python, firstline=230, lastline=246]{python/ipython_output.txt}
+
+\waterExampleInPython
+Determine which rows have missing data for a given column (`1' indicates missing):
+\lstinputlisting[style=python, firstline=248, lastline=255]{python/ipython_output.txt}
+
+\waterExampleInPython
+Changing all missing values in a column to a different value:
+\lstinputlisting[style=python, firstline=259, lastline=266]{python/ipython_output.txt}
+
+\waterExampleInPython
+Determine all locations where data is missing in an H2OFrame:
+\lstinputlisting[style=python, firstline=268, lastline=275]{python/ipython_output.txt}
 
 \subsection{Operations}
+\waterExampleInPython
+Performing a descriptive statistic on an entire H2OFrame, in general missing data is exclude
+and the operation is only performed on the columns of the appropriate data type:
+\lstinputlisting[style=python, firstline=277, lastline=287]{python/ipython_output.txt}
+
+\waterExampleInPython
+Performing a descriptive statistic on a single column of an H2OFrame, in general missing data is
+not excluded:
+\lstinputlisting[style=python, firstline=289, lastline=293]{python/ipython_output.txt}
+
 stats
 apply
 histograms (and other plots)
 string methods
+setting individual entries
+
 
 \subsection{Merging}
 row bind
@@ -548,13 +573,6 @@ Also from local computer (upload), from URI, from Python local
 
 \subsection{Gotchas}
 
-\subsection{Use Case}
-Citibike
-Getting the data
-Relatively small , but easily downloaded.  Everything you see here works with much larger data.
-Tell about the example, what is our goal
-Show data prep steps for it
-
 \section{Machine Learning}
 
 \subsection{Modeling}
@@ -578,12 +596,9 @@ Differences in regression, bionomial, and multinomial predictions
 
 \subsection{Gotchas}
 
-\subsection{Use Case}
-
 \section{Transitioning to Production}
 POJO, Scoring, Fitting into Python pipeline using Py4J
 
-\subsection{Use Case}
 
 \section{H2O Python in Enterprise Environments}
 Hadoop, Spark
