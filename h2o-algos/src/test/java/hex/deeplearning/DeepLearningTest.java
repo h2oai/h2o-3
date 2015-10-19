@@ -584,7 +584,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel [] models = new DeepLearningModel[N];
     dl = new DeepLearningParameters();
     Scope.enter();
-    boolean covtype = new Random().nextBoolean();
+    boolean covtype = true; //new Random().nextBoolean();
     if (covtype) {
       frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
       Vec resp = frTrain.lastVec().toCategoricalVec();
@@ -613,16 +613,16 @@ public class DeepLearningTest extends TestUtil {
         dl._quiet_mode = false;
         dl._max_w2 = 10;
         dl._l1 = 1e-5;
-        dl._reproducible = true;
+        dl._reproducible = false;
         dl._replicate_training_data = false; //every node only has a piece of the data
         dl._force_load_balance = true; //use multi-node
 
-        dl._epochs = 1;
-        dl._train_samples_per_iteration = frTrain.numRows()/100; //100 M/R steps
+        dl._epochs = 10;
+        dl._train_samples_per_iteration = frTrain.numRows()/100; //100 M/R steps per epoch
 
         dl._elastic_averaging = i==1;
         dl._elastic_averaging_moving_rate = 0.999;
-        dl._elastic_averaging_regularization = 1e-3;
+        dl._elastic_averaging_regularization = 1e-4;
 
         // Invoke DL and block till the end
         DeepLearning job = null;

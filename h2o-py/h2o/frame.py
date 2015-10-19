@@ -67,10 +67,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self._ast       = None
     self._data      = None  # any cached data
 
+    kwargs = {k:v for k, v in locals().items() if k in ["destination_frame", "header", "separator", "column_names", "column_types", "na_strings"]}
     if expr is not None:         self._ast = expr
-    elif python_obj is not None: self._upload_python_object(python_obj)
-    elif file_path is not None:  self._import_parse(file_path, destination_frame, header, separator, column_names, column_types, na_strings)
-    elif raw_id is not None:     self._handle_text_key(raw_id)
+    elif python_obj is not None: self._upload_python_object(python_obj, **kwargs)
+    elif file_path is not None:  self._import_parse(file_path, **kwargs)
+    elif raw_id is not None:     self._handle_text_key(raw_id, **kwargs)
     else: pass
 
   @staticmethod
@@ -89,21 +90,22 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
   def __str__(self): return self._id
 
-  def _import_parse(self, file_path, destination_frame, header, separator, column_names, column_types, na_strings):
+  def _import_parse(self, file_path, **kwargs):
     rawkey = h2o.lazy_import(file_path)
-    setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
+    setup = h2o.parse_setup(rawkey, **kwargs)
     parse = h2o._parse(setup)
     self._update_post_parse(parse)
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
 
-  def _upload_python_object(self, python_obj):
+  def _upload_python_object(self, python_obj, **kwargs):
     """
     Properly handle native python data types. For a discussion of the rules and
     permissible data types please refer to the main documentation for H2OFrame.
 
     :param python_obj: A tuple, list, dict, collections.OrderedDict
+    :param kwargs: Optional arguments for input into parse_setup(), such as column_names and column_types
     :return: None
     """
     # [] and () cases -- folded together since H2OFrame is mutable
@@ -140,6 +142,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     Handle result of upload_file
 
     :param test_key: A key pointing to raw text to be parsed
+    :param kwargs: Additional optional arguments for h2o.parse_setup(), such as column_names and column_types.
     :return: Part of the H2OFrame constructor.
     """
     # perform the parse setup
@@ -154,7 +157,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     fui = {"file": os.path.abspath(tmp_file_path)}                            # file upload info is the normalized path to a local file
     dest_key = _py_tmp_key()                                                  # create a random name for the data
     h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)  # do the POST -- blocking, and "fast" (does not real data upload)
-    self._handle_text_key(dest_key, 1)                                        # actually parse the data and setup self._vecs
+    self._handle_text_key(dest_key, header)                                   # actually parse the data and setup self._vecs
 
   def __iter__(self):
     """

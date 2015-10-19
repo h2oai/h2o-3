@@ -21,7 +21,7 @@ df
 df2 = h2o.H2OFrame({'A': [1, 2, 3],
                     'B': ['a', 'a', 'b'],
                     'C': ['hello', 'all', 'world'],
-                    'D': ['12/1/2015 00:21:25', '12/2/2015 01:21:25', '12/3/2015 02:21:25']},
+                    'D': ['12MAR2015:11:00:00', '13MAR2015:12:00:00', '14MAR2015:13:00:00']},
                    column_types=['numeric', 'enum', 'string', 'time'])
 
 df2
@@ -29,7 +29,7 @@ df2
 df2.types
 
 import numpy as np
-df = h2o.H2OFrame(np.random.randn(100,4).tolist(), columns=list('ABCD'))
+df = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
 df.head()
 df.tail(5)
 
@@ -37,15 +37,39 @@ df.columns
 
 df.describe()
 
-df['C1']  # TODO: Fix to be 'A' once column name fix is in
+df['A']
 
-df[1] # TODO: Fix once column name fix is in
+df[1]
 
-df[['C1','C2']] # TODO: Fix once column name fix is in
+df[['B','C']]
 
-df[0:2] # TODO: Fix once column name fix is in
+df[0:2]
 
-df[2:7, :] # TODO same fix as above
+df[2:7, :]
 
 df2[ df2["B"] == "a", :]
 
+df3 = h2o.H2OFrame({'A': [1, 2, 3,None,''],
+                    'B': ['a', 'a', 'b', 'NA', 'NA'],
+                    'C': ['hello', 'all', 'world', None, None],
+                    'D': ['12MAR2015:11:00:00',None,'13MAR2015:12:00:00',None,'14MAR2015:13:00:00']},
+                   column_types=['numeric', 'enum', 'string', 'time'])
+
+df3
+
+df3["A"].isna()
+
+df3[ df3["A"].isna(), "A"] = 5
+df3
+
+df4 = h2o.H2OFrame({'A': [1, 2, 3,None,''],
+                    'B': ['a', 'a', 'b', 'NA', 'NA'],
+                    'C': ['hello', 'all', 'world', None, None],
+                    'D': ['12MAR2015:11:00:00',None,'13MAR2015:12:00:00',None,'14MAR2015:13:00:00']},
+                   column_types=['numeric', 'enum', 'string', 'time'])
+
+df4.mean()
+
+df4["A"].mean()  # check if this behaviour or the one above is a bug
+
+df4["A"].mean(na_rm=True)
