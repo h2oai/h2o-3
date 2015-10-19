@@ -34,7 +34,7 @@ function() {
     checkCodeExamplesInDir(approvedRCodeExamples, h2o:::.h2o.locate("DeepLearning_Vignette_code_examples"))
 
     story1 <- approvedRCodeExamples
-    checkStory(story1)
+    checkStory("story1",story1)
 }
 
 doBooklet("Deeplearning Vignette Booklet", deeplearningBooklet)

@@ -17,7 +17,13 @@ function(codeExamples, directory) {
 }
 
 checkStory <-
-function(paragraphs) {
+function(storyName, paragraphs) {
+    h2o.logAndEcho("------------------------------------------------------------")
+    h2o.logAndEcho("")
+    h2o.logAndEcho(paste0("CHECKING: ",storyName))
+    h2o.logAndEcho("")
+    h2o.logAndEcho("------------------------------------------------------------")
+
     # 1. Combine the related, individual code paragraphs into a single, coherent R story
     story <- c()
     for (p in paragraphs) story <- c(story, readLines(p, warn=FALSE))
@@ -29,10 +35,11 @@ function(paragraphs) {
     if (length(remove_lines) > 0) story <- story[-remove_lines]
 
     # write the story that will executed to the results directory for future reference
-    story_file <- paste(results.dir(), paste0(test.name(),".code"), sep=.Platform$file.sep)
+    story_file <- paste(results.dir(), paste0(test.name(),".",storyName,".code"), sep=.Platform$file.sep)
     writeLines(story, story_file)
 
     eval(parse(text = story))
+    h2o.removeAll()
 }
 
 doBooklet <-
