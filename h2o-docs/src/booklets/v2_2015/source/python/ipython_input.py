@@ -85,7 +85,7 @@ df6.hist(plot=False)
 df7 = h2o.H2OFrame( zip(['Hello', 'World', 'Welcome', 'To', 'H2O', 'World']))
 df7
 df7.countmatches('l')
-df7.sub('o','0')
+df7.sub('o','0')  #TODO in place, not quite right it seems
 df7.strsplit('(l)+')
 
 df8 = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
@@ -97,3 +97,33 @@ df10 = h2o.H2OFrame( { 'A': ['Hello', 'World', 'Welcome', 'To', 'H2O', 'World'],
                        'n': [0,1,2,3,4,5]} )
 df11 = h2o.H2OFrame(zip(np.random.randint(0, 10, size=100)), column_names=['n'])
 df11.merge(df10)
+
+# in grouping section of doc now
+df12 = h2o.H2OFrame({'A' : ['foo', 'bar', 'foo', 'bar',
+                                                          'foo', 'bar', 'foo', 'foo'],
+                                                   'B' : ['one', 'one', 'two', 'three',
+                                                          'two', 'two', 'one', 'three'],
+                                                   'C' : np.random.randn(8),
+                                                   'D' : np.random.randn(8)})
+df12
+df12.group_by('A').sum().frame
+df13 = df12.group_by(['A','B']).sum().frame
+df13
+df12.merge(df13)
+
+df14 = h2o.H2OFrame({'D': ['18OCT2015:11:00:00','19OCT2015:12:00:00','20OCT2015:13:00:00']},
+                    column_types=['time'])
+df14.types
+df14['D'].day()
+df14['D'].dayOfWeek()
+
+#Categorical section
+df12.types
+df12.anyfactor()
+df12["A"].levels()
+
+df12.interaction(['A','B'], pairwise=False, max_factors=3, min_occurrence=1)
+bb_df = df12.interaction(['B','B'], pairwise=False, max_factors=2, min_occurrence=1)
+bb_df
+df15 = df12.cbind(bb_df)
+df15

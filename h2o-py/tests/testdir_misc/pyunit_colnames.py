@@ -29,5 +29,14 @@ def col_names_check():
                       " for column types but got {}".format({"C3": "Numeric", "C2": "Numeric", "C1": "Numeric",
                                                              "C4": "Numeric"}, df.types)
 
+  df = h2o.H2OFrame({'B': ['a', 'a', 'b', 'NA', 'NA']})
+  df.head()
+  assert df.col_names == ["B"], "Expected {} for column names but got {}".format(["B"], df.col_names)
+
+  df = h2o.H2OFrame({'B': ['a', 'a', 'b', 'NA', 'NA']}, column_names=["X"])
+  df.head()
+  assert df.col_names == ["X"], "Expected {} for column names but got {}".format(["X"], df.col_names)
+
+
 if __name__ == "__main__":
   tests.run_test(sys.argv, col_names_check)

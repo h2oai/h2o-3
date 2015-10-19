@@ -456,3 +456,130 @@ Out[112]: H2OFrame with 100 rows and 2 columns:
 8  5  World
 9  4    H2O
 
+In [123]: df12 = h2o.H2OFrame({'A' : ['foo', 'bar', 'foo', 'bar',
+   .....:                             'foo', 'bar', 'foo', 'foo'],
+   .....:                      'B' : ['one', 'one', 'two', 'three',
+   .....:                             'two', 'two', 'one', 'three'],
+   .....:                      'C' : np.random.randn(8),
+   .....:                      'D' : np.random.randn(8)})
+
+Parse Progress: [##################################################] 100%
+Uploaded pyd297bab5-4e4e-4a89-9b85-f8fecf37f264 into cluster with 8 rows and 4 cols
+
+In [124]: df12
+Out[124]: H2OFrame with 8 rows and 4 columns:
+     A         C      B         D
+0  foo  1.583908    one -0.441779
+1  bar  1.055763    one  1.733467
+2  foo -1.200572    two  0.970428
+3  bar -1.066722  three -0.311055
+4  foo -0.023385    two  0.077905
+5  bar  0.758202    two  0.521504
+6  foo  0.098259    one -1.391587
+7  foo  0.412450  three -0.050374
+
+In [125]: df12.group_by('A').sum().frame
+Out[125]: H2OFrame with 2 rows and 4 columns:
+     A     sum_C  sum_B     sum_D
+0  bar  0.747244      3  1.943915
+1  foo  0.870661      5 -0.835406
+
+In [127]: df13 = df12.group_by(['A','B']).sum().frame
+
+In [128]: df13
+Out[128]: H2OFrame with 6 rows and 4 columns:
+     A      B     sum_C     sum_D
+0  bar    one  1.055763  1.733467
+1  bar    two  0.758202  0.521504
+2  foo  three  0.412450 -0.050374
+3  foo    one  1.682168 -1.833366
+4  foo    two -1.223957  1.048333
+5  bar  three -1.066722 -0.311055
+
+In [129]: df12.merge(df13)
+Out[129]: H2OFrame with 8 rows and 6 columns:
+     A      B         C         D     sum_C     sum_D
+0  foo    one  1.583908 -0.441779  1.682168 -1.833366
+1  bar    one  1.055763  1.733467  1.055763  1.733467
+2  foo    two -1.200572  0.970428 -1.223957  1.048333
+3  bar  three -1.066722 -0.311055 -1.066722 -0.311055
+4  foo    two -0.023385  0.077905 -1.223957  1.048333
+5  bar    two  0.758202  0.521504  0.758202  0.521504
+6  foo    one  0.098259 -1.391587  1.682168 -1.833366
+7  foo  three  0.412450 -0.050374  0.412450 -0.050374
+
+In [140]: df14 = h2o.H2OFrame({'D': ['18OCT2015:11:00:00','19OCT2015:12:00:00','20OCT2015:13:00:00']},
+   .....:                     column_types=['time'])
+
+Parse Progress: [##################################################] 100%
+Uploaded py60bef051-8017-49cf-af57-2ed6d68db6d0 into cluster with 3 rows and 1 cols
+
+In [141]: df14.types
+Out[141]: {u'D': u'time'}
+
+In [142]: df14['D'].day()
+Out[142]: H2OFrame with 3 rows and 1 columns:
+    D
+0  18
+1  19
+2  20
+
+In [143]: df14['D'].dayOfWeek()
+Out[143]: H2OFrame with 3 rows and 1 columns:
+     D
+0  Sun
+1  Mon
+2  Tue
+
+In [145]: df12.types
+Out[145]: {u'A': u'Enum', u'B': u'Enum', u'C': u'Numeric', u'D': u'Numeric'}
+
+In [148]: df12.anyfactor()
+Out[148]: True
+
+In [149]: df12["A"].levels()
+Out[149]: ['bar', 'foo']
+
+In [163]: df12.interaction(['A','B'], pairwise=False, max_factors=3, min_occurrence=1)
+
+Interactions Progress: [##################################################] 100%
+Out[163]: H2OFrame with 8 rows and 1 columns:
+       A_B
+0  foo_one
+1  bar_one
+2  foo_two
+3    other
+4  foo_two
+5    other
+6  foo_one
+7    other
+
+In [168]: bb_df = df12.interaction(['B','B'], pairwise=False, max_factors=2, min_occurrence=1)
+
+Interactions Progress: [##################################################] 100%
+
+In [169]: bb_df
+Out[169]: H2OFrame with 8 rows and 1 columns:
+     B_B
+0    one
+1    one
+2    two
+3  other
+4    two
+5    two
+6    one
+7  other
+
+In [170]: df15 = df12.cbind(bb_df)
+
+In [171]: df15
+Out[171]: H2OFrame with 8 rows and 5 columns:
+     A      B         C         D    B_B
+0  foo    one  1.583908 -0.441779    one
+1  bar    one  1.055763  1.733467    one
+2  foo    two -1.200572  0.970428    two
+3  bar  three -1.066722 -0.311055  other
+4  foo    two -0.023385  0.077905    two
+5  bar    two  0.758202  0.521504    two
+6  foo    one  0.098259 -1.391587    one
+7  foo  three  0.412450 -0.050374  other
