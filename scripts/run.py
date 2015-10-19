@@ -69,6 +69,9 @@ def is_pybooklet(file_name):
     return False
 
 def is_gradle_build_python_test(file_name):
+    """
+    Return True if file_name matches a regexp for on of the python test run during gradle build.  False otherwise.
+    """
     return file_name in ["generate_rest_api_docs.py", "generate_java_bindings.py"]
 
 def is_javascript_test_file(file_name):
@@ -586,14 +589,9 @@ class Test:
 
         if   (is_rdemo(self.test_name) or is_runit(self.test_name) or is_rbooklet(self.test_name)):
             cmd = self._rtest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
-        elif (is_ipython_notebook(self.test_name)):
-            cmd = self._ipython_notebook_cmd(self.test_name, self.ip, self.port)
-        elif (is_pydemo(self.test_name)):
-            cmd = self._pydemo_cmd(self.test_name, self.ip, self.port)
-        elif (is_pyunit(self.test_name)):
-            cmd = self._pyunit_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
-        elif (is_pybooklet(self.test_name)):
-            cmd = self._pybooklet_cmd(self.test_name, self.ip, self.port)
+        elif (is_ipython_notebook(self.test_name) or is_pydemo(self.test_name) or is_pyunit(self.test_name) or
+                  is_pybooklet(self.test_name)):
+            cmd = self._pytest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
         elif (is_gradle_build_python_test(self.test_name)):
             cmd = ["python", self.test_name, "--usecloud", self.ip + ":" + str(self.port)]
         elif (is_javascript_test_file(self.test_name)): cmd = self._javascript_cmd(self.test_name, self.ip, self.port)
@@ -756,8 +754,8 @@ class Test:
         return (os.path.join(self.output_dir, self.output_file_name))
 
     def _rtest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
-        cmd = ["R", "-f", g_r_test_setup, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir",
-                g_output_dir, "--testName", test_name]
+        cmd = ["R", "-f", g_r_test_setup, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
+               "--testName", test_name]
         if is_runit(test_name):
             if on_hadoop:         cmd = cmd + ["--onHadoop"]
             if hadoop_namenode:   cmd = cmd + ["--hadoopNamenode", hadoop_namenode]
@@ -766,20 +764,17 @@ class Test:
         else:                     cmd = cmd + ["--rBooklet"]
         return cmd
 
-    def _ipython_notebook_cmd(self, test_name, ip, port):
-        return ["python", g_ipynb_runner, "--usecloud", ip + ":" + str(port), "--ipynb", test_name]
-
-    def _pydemo_cmd(self, test_name, ip, port):
-        return ["python", test_name, "--usecloud", ip + ":" + str(port)]
-
-    def _pyunit_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
-        cmd = ["python", test_name, "--usecloud", ip + ":" + str(port)]
-        if on_hadoop: cmd = cmd + ["--onHadoop"]
-        if hadoop_namenode: cmd = cmd + ["--hadoopNamenode", hadoop_namenode]
+    def _pytest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
+        cmd = ["python", g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
+               "--testName", test_name]
+        if is_pyunit(test_name):
+            if on_hadoop:         cmd = cmd + ["--onHadoop"]
+            if hadoop_namenode:   cmd = cmd + ["--hadoopNamenode", hadoop_namenode]
+            cmd = cmd + ["--pyUnit"]
+        elif is_ipython_notebook(test_name): cmd = cmd + ["--ipynb"]
+        elif is_pydemo(test_name):           cmd = cmd + ["--pyDemo"]
+        else:                                cmd = cmd + ["--pyBooklet"]
         return cmd
-
-    def _pybooklet_cmd(self, test_name, ip, port):
-        return ["python", test_name, "--usecloud", ip + ":" + str(port)]
 
     def _javascript_cmd(self, test_name, ip, port):
         return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to), "--packs",
@@ -1659,6 +1654,8 @@ g_on_hadoop = False
 g_hadoop_namenode = None
 g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                 "../h2o-r/scripts/h2o-r-test-setup.R"))
+g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               "../h2o-py/scripts/h2o-py-test-setup.py"))
 g_ipynb_runner = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                "notebook_runner.py"))
 
@@ -1852,6 +1849,7 @@ def parse_args(argv):
     global g_on_hadoop
     global g_hadoop_namenode
     global g_r_test_setup
+    global g_py_test_setup
 
     i = 1
     while (i < len(argv)):

@@ -1,14 +1,9 @@
-import sys, os
-sys.path.insert(1, "../../../")
 import h2o, tests
-
 import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
 def bernoulliGBM():
-  
-  
 
   #Log.info("Importing prostate.csv data...\n")
   prostate_train = h2o.import_file(path=tests.locate("smalldata/logreg/prostate_train.csv"))
@@ -63,5 +58,5 @@ def bernoulliGBM():
   #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
   assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, bernoulliGBM)
+
+pyunit_test = bernoulliGBM

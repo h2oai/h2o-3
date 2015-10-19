@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def ascharacter():
@@ -10,5 +10,5 @@ def ascharacter():
     assert h2oframe["cylinders"].isfactor(), "expected the column be a factor"
     assert not h2oframe["cylinders"].isstring(), "expected the column to not be a string"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, ascharacter)
+
+pyunit_test = ascharacter

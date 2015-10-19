@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def convergeKmeans():
@@ -40,5 +40,5 @@ def convergeKmeans():
                                                                                        all_fit2.centers())]) / ncent
   assert avg_change < 1e-6 or all_fit._model_json['output']['iterations'] == miters
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, convergeKmeans)
+
+pyunit_test = convergeKmeans

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def binop_plus():
@@ -102,5 +102,5 @@ def binop_plus():
 
     ###################################################################
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, binop_plus)
+
+pyunit_test = binop_plus

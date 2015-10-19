@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 import string
@@ -86,5 +86,5 @@ def baddataKmeans():
   for c in range(len(centers)):
     assert len(centers[c]) == 5, "expected center to be 5 "+str(len(centers[c]))
 
-if __name__ == "__main__":
-   tests.run_test(sys.argv, baddataKmeans)
+
+pyunit_test = baddataKmeans

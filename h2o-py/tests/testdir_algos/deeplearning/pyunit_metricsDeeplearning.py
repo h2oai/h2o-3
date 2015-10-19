@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1,"../../../")
+
+
 import h2o, tests
 
 
@@ -38,5 +38,5 @@ def deep_learning_metrics_test():
     dl.model_performance(test).show()
 
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, deep_learning_metrics_test)
+
+pyunit_test = deep_learning_metrics_test

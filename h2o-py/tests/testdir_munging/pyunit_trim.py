@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def trim_check():
@@ -20,5 +20,5 @@ def trim_check():
     assert trimmed_vec[1,0] == "AMC Ambassador DPL",      "Expected 'AMC Ambassador DPL', but got {}".format(trimmed_frame[1,0])
     assert trimmed_vec[2,0] == "AMC Ambassador SST",      "Expected 'AMC Ambassador SST', but got {}".format(trimmed_frame[2,0])
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, trim_check)
+
+pyunit_test = trim_check

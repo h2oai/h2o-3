@@ -1,5 +1,4 @@
-import sys, os
-sys.path.insert(1, "../../")
+import os
 import h2o, tests
 
 def pubdev_1431():
@@ -20,5 +19,5 @@ def pubdev_1431():
     else:
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_1431)
+
+pyunit_test = pubdev_1431

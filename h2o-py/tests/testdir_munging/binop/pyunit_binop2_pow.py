@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def binop_pow():
@@ -99,5 +99,5 @@ def binop_pow():
 
     ###################################################################
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, binop_pow)
+
+pyunit_test = binop_pow

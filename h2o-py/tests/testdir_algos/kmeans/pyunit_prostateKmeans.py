@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 import numpy as np
@@ -26,5 +26,5 @@ def prostateKmeans():
     prostate_km_sci.fit(prostate_sci)
     print prostate_km_sci.cluster_centers_
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, prostateKmeans)
+
+pyunit_test = prostateKmeans

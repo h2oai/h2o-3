@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 
@@ -40,5 +40,5 @@ def minmax_basic():
     assert h2o_min == mn, "Expected the same min value. H2O got {0}, but python got {1}".format(h2o_min, mn)
     assert h2o_max == mx, "Expected the same max value. H2O got {0}, but python got {1}".format(h2o_max, mx)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, minmax_basic)
+
+pyunit_test = minmax_basic

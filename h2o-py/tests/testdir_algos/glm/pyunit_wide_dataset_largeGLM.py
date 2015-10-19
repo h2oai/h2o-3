@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 
@@ -29,5 +29,5 @@ def wide_dataset_large():
     print("Check that prediction AUC better than guessing (0.5).")
     assert performance.auc() > 0.5, "predictions should be better then pure chance"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, wide_dataset_large)
+
+pyunit_test = wide_dataset_large

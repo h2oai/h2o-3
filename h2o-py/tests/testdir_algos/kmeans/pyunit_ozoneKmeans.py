@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def ozoneKM():
@@ -23,5 +23,5 @@ def ozoneKM():
   my_pred = my_km.predict(train)
   my_pred.describe()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, ozoneKM)
+
+pyunit_test = ozoneKM

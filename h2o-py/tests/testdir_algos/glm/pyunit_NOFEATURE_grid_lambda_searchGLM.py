@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 
@@ -51,5 +51,5 @@ def grid_lambda_search():
   assert params_bestlambda.lambda_best() == params_best.lambda_best(), "expected lambdas to be equal"
   assert len(params_best.lambda_all()) <= 20, "expected 20 or fewer lambdas"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, grid_lambda_search)
+
+pyunit_test = grid_lambda_search

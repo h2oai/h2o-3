@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 import copy
@@ -111,5 +111,5 @@ def weights_vi():
     assert varimp_combined == ('p1', 'p3', 'p2'), "Expected the following relative variable importance on the combined " \
                                                   "dataset: ('p1', 'p3', 'p2'), but got: {0}".format(varimp_combined)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, weights_vi)
+
+pyunit_test = weights_vi

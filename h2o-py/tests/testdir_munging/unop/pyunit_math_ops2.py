@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 import random
@@ -85,5 +85,5 @@ def expr_math_ops():
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal trigamma values between h2o and " \
         "math".format(h2o_val,num_val)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, expr_math_ops)
+
+pyunit_test = expr_math_ops

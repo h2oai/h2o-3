@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def pyunit_which():
@@ -13,5 +13,5 @@ def pyunit_which():
     assert sum(range(50,100)) == versicolor.sum()
     assert sum(range(100,150)) == virginica.sum()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pyunit_which)
+
+pyunit_test = pyunit_which

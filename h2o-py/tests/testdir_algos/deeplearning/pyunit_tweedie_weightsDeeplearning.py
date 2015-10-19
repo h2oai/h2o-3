@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def tweedie_weights():
@@ -30,5 +30,5 @@ def tweedie_weights():
                           force_load_balance = False, seed = 2353123,tweedie_power = 1.5,score_training_samples = 0,
                           score_validation_samples = 0,weights_column = "Insured",training_frame = cancar)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, tweedie_weights)
+
+pyunit_test = tweedie_weights

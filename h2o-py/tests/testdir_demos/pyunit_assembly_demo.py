@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 from h2o import H2OAssembly
 from h2o.transforms.preprocessing import *
@@ -30,5 +30,5 @@ def assembly_demo():
   #   // Use prediction!
 
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, assembly_demo)
+
+pyunit_test = assembly_demo

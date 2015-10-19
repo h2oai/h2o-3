@@ -2,6 +2,7 @@ import imp
 import random
 import re
 import subprocess
+import json
 from subprocess import STDOUT,PIPE
 import sys, os
 sys.path.insert(1, "../../")
@@ -201,3 +202,40 @@ def javapredict(algo, equality, train, test, x, y, **kwargs):
             assert hp == pp, "Expected predictions to be the same for row {0}, but got {1} and {2}".format(r,hp, pp)
         else:
             raise(ValueError, "equality type {0} is not supported".format(equality))
+
+def locate(path):
+    """
+    Search for a relative path and turn it into an absolute path.
+    This is handy when hunting for data files to be passed into h2o and used by import file.
+    Note: This function is for unit testing purposes only.
+
+    Parameters
+    ----------
+    path : str
+      Path to search for
+
+    :return: Absolute path if it is found.  None otherwise.
+    """
+    #if (_ON_HADOOP_):
+    #    # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
+    #    # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
+    #    # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
+    #    # machines store smalldata and bigdata in /home/0xdiag/. If ON.HADOOP is set by the run.py, the path arg MUST
+    #    # be an immediate subdirectory of /home/0xdiag/. Moreover, the only guaranteed subdirectories of /home/0xdiag/ are
+    #    # smalldata and bigdata.
+    #    p = os.path.realpath(os.path.join("/home/0xdiag/",path))
+    #    if not os.path.exists(p): raise ValueError("File not found: " + path)
+    #    return p
+    #else:
+    tmp_dir = os.path.realpath(os.getcwd())
+    possible_result = os.path.join(tmp_dir, path)
+    while (True):
+        if (os.path.exists(possible_result)):
+            return possible_result
+
+        next_tmp_dir = os.path.dirname(tmp_dir)
+        if (next_tmp_dir == tmp_dir):
+            raise ValueError("File not found: " + path)
+
+        tmp_dir = next_tmp_dir
+        possible_result = os.path.join(tmp_dir, path)

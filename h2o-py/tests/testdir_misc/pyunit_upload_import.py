@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def upload_import_small():
@@ -22,5 +22,5 @@ def upload_import_small():
         assert cols_u == cols_i, "Expected same number of cols regardless of method. upload: {0}, import: " \
                                  "{1}.".format(cols_u, cols_i)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, upload_import_small)
+
+pyunit_test = upload_import_small

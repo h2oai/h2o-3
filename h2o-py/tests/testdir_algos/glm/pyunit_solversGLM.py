@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def glm_solvers():
@@ -21,6 +21,6 @@ def glm_solvers():
             model = h2o.glm(x=training_data[predictors], y=training_data[response_col], family=family, alpha=[0],
                             Lambda=[1e-5], solver=solver)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, glm_solvers)
+
+pyunit_test = glm_solvers
 

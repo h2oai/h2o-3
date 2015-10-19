@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def sub_gsub_check():
@@ -24,5 +24,5 @@ def sub_gsub_check():
     vec = vec.gsub("s", "z")
     assert vec[3,0] == "Iriz-zetoza", "Expected 'Iriz-zetoza', but got {0}".format(vec[3,0])
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, sub_gsub_check)
+
+pyunit_test = sub_gsub_check

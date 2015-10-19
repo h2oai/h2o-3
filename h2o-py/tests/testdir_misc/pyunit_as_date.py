@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def test_as_data():
@@ -68,5 +68,5 @@ def test_as_data():
   hdf9 = hdf9.as_date("%Y%m%d")
   hdf10 = hdf10.as_date("%Y_%m_%d")
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, test_as_data)
+
+pyunit_test = test_as_data

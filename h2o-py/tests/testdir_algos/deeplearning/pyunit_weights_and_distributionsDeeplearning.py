@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def weights_and_distributions():
@@ -25,5 +25,5 @@ def weights_and_distributions():
     dl = h2o.deeplearning(x=htable[0:3],y=htable["medskad"],training_frame=htable,distribution="tweedie",weights_column="antskad")
     predictions = dl.predict(htable)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, weights_and_distributions)
+
+pyunit_test = weights_and_distributions

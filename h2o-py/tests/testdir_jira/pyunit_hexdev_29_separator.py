@@ -3,8 +3,7 @@
 ## Verifying that Python can support user-specified separator characters.
 ##
 ################################################################################
-import sys, os, urllib
-sys.path.insert(1, "../../")
+import urllib
 import h2o, tests
 
 
@@ -31,5 +30,5 @@ def separator():
     else:
         assert False
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, separator)
+
+pyunit_test = separator

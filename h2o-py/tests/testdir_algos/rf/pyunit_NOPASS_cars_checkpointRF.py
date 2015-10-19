@@ -1,5 +1,3 @@
-import sys, shutil
-sys.path.insert(1, "../../../")
 import h2o, tests
 import random
 
@@ -146,5 +144,5 @@ def cars_checkpoint():
         assert model2.r2(valid=True)==model4.r2(valid=True), "Expected Model 2 R2: {0} to be the same as Model 4 R2: {1}".format(model2.r2(valid=True), model4.r2(valid=True))
         #assert model3.r2(valid=True)!=model4.r2(valid=True), "Expected Model 3 R2: {0} to be different from Model 4 R2: {1}".format(model3.r2(valid=True), model4.r2(valid=True))
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, cars_checkpoint)
+
+pyunit_test = cars_checkpoint

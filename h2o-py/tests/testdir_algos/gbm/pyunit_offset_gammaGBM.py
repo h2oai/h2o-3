@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def offset_gamma():
@@ -29,5 +29,5 @@ def offset_gamma():
     assert abs(392.6667 - predictions.max()) < 0.1, "expected prediction max to be {0}, but got {1}". \
         format(392.6667, predictions.max())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_gamma)
+
+pyunit_test = offset_gamma

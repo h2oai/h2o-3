@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1,"../../../")
+
+
 import h2o, tests
 
 def glm_mean_residual_deviance():
@@ -23,5 +23,5 @@ def glm_mean_residual_deviance():
     assert isinstance(glm_mrd['xval'],float), "Expected cross-validation mean residual deviance to be a float, but got " \
                                              "{0}".format(type(glm_mrd['xval']))
 
-if __name__ == '__main__':
-    tests.run_test(sys.argv, glm_mean_residual_deviance)
+
+pyunit_test = glm_mean_residual_deviance

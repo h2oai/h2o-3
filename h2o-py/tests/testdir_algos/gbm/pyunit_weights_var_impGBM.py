@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 
@@ -114,5 +114,5 @@ def weights_var_imp():
     print "\n\nChecking that doubling some weights is equivalent to doubling those observations:"
     check_same(h2o_data_doubled, h2o_data_doubled_weights, 1)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, weights_var_imp)
+
+pyunit_test = weights_var_imp

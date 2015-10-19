@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import pandas as pd
 import zipfile
@@ -46,6 +46,6 @@ def link_functions_poisson():
     sm_deviance_id = sm_model_id.deviance / sm_model_id.null_deviance
     assert h2o_deviance_id - sm_deviance_id < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, link_functions_poisson)
+
+pyunit_test = link_functions_poisson
 

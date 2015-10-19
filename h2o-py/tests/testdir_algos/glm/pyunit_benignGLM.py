@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def benign():
@@ -21,6 +21,6 @@ def benign():
     out_names = [model._model_json['output']['coefficients_table'].cell_values[c][0] for c in range(len(X)+1)]    
     assert in_names == out_names[1:]
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, benign)
+
+pyunit_test = benign
 

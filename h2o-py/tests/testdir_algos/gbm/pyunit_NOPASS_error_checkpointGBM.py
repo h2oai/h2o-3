@@ -1,5 +1,3 @@
-import sys, shutil
-sys.path.insert(1, "../../../")
 import h2o, tests
 
 def cars_checkpoint():
@@ -60,5 +58,5 @@ def cars_checkpoint():
         assert True
 
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, cars_checkpoint)
+
+pyunit_test = cars_checkpoint

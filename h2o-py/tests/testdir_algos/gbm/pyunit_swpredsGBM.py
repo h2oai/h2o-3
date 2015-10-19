@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def swpredsGBM():
@@ -33,5 +33,5 @@ def swpredsGBM():
   h2o_gbm_perf2 = h2o_gbm_model2.model_performance(swpreds)
   h2o_auc2 = h2o_gbm_perf2.auc()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, swpredsGBM)
+
+pyunit_test = swpredsGBM

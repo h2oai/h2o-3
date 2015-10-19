@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def score_history_test():
@@ -14,5 +14,5 @@ def score_history_test():
     score_history = gbm_mult.score_history()
     print score_history
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, score_history_test)
+
+pyunit_test = score_history_test

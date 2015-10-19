@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def screeplot_test():
@@ -13,5 +13,5 @@ def screeplot_test():
     australia_pca.screeplot(type="barplot", **kwargs)
     australia_pca.screeplot(type="lines", **kwargs)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, screeplot_test)
+
+pyunit_test = screeplot_test

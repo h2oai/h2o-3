@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def offset_1388():
@@ -71,5 +71,5 @@ def offset_1388():
     assert abs(59381.5624028358 - glm_h2o.null_deviance()) < 0.1
     assert abs(float('inf') - glm_h2o.aic()) < 0.1
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_1388)
+
+pyunit_test = offset_1388

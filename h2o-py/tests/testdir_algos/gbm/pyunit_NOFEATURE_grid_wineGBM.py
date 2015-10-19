@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def grid_wineGBM():
@@ -17,5 +17,5 @@ def grid_wineGBM():
                         learn_rate=[0.1,0.2])
     wine_grid.show()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, grid_wineGBM)
+
+pyunit_test = grid_wineGBM

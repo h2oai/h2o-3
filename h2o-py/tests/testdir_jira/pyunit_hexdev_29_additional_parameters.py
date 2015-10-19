@@ -4,8 +4,8 @@
 ## column_names, and column_types and that certain characters are replaced.
 ##
 ################################################################################
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def additional_parameters():
@@ -46,5 +46,5 @@ def additional_parameters():
       if name in c_types:
         assert col_summary[i]["type"] == c_types[name]
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, additional_parameters)
+
+pyunit_test = additional_parameters

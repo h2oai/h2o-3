@@ -1,5 +1,4 @@
-import sys, os
-sys.path.insert(1, "../../")
+import os
 import h2o, tests
 
 def pubdev_1480():
@@ -15,5 +14,5 @@ def pubdev_1480():
     results_dir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results"))
     h2o.download_csv(predictions, os.path.join(results_dir,"predictions.csv"))
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_1480)
+
+pyunit_test = pubdev_1480

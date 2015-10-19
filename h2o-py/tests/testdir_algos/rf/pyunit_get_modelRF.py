@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def iris_get_model():
@@ -14,5 +14,5 @@ def iris_get_model():
     model = h2o.get_model(model._id)
     model.show()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, iris_get_model)
+
+pyunit_test = iris_get_model

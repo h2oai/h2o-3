@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def binop_lte():
@@ -61,5 +61,5 @@ def binop_lte():
     #except EnvironmentError:
     #    pass
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, binop_lte)
+
+pyunit_test = binop_lte

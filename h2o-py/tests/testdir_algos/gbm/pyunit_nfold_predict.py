@@ -1,5 +1,3 @@
-import sys, os
-sys.path.insert(1, "../../../")
 import h2o, tests
 
 def nfold_predict():
@@ -10,5 +8,5 @@ def nfold_predict():
   preds = [model.predict(fr) for model in xval_models]
   (sum(preds)/10).show()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, nfold_predict)
+
+pyunit_test = nfold_predict

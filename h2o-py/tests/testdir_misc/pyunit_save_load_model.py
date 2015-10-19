@@ -1,5 +1,4 @@
-import sys, os
-sys.path.insert(1, "../../")
+import os
 import h2o, tests
 from h2o.model.binomial import H2OBinomialModel
 
@@ -10,7 +9,7 @@ def save_load_model():
     prostate_glm = h2o.glm(y=prostate["CAPSULE"], x=prostate[["AGE","RACE","PSA","DCAPS"]], family = "binomial",
                            alpha = [0.5])
 
-    path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results"))
+    path = tests.locate("results")
 
     assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
     model_path = h2o.save_model(prostate_glm, path=path, force=True)
@@ -20,5 +19,5 @@ def save_load_model():
 
     assert isinstance(the_model, H2OBinomialModel), "Expected and H2OBinomialModel, but got {0}".format(the_model)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, save_load_model)
+
+pyunit_test = save_load_model

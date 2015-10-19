@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def expr_slicing():
@@ -36,5 +36,5 @@ def expr_slicing():
     assert abs(res6[0,0] - 10.8) < 1e-10 and abs(res6[1,1] - 6.8) < 1e-10 and abs(res6[2,2] - 3.0) < 1e-10 and \
            abs(res6[3,3] - 0.4) < 1e-10, "incorrect values"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, expr_slicing)
+
+pyunit_test = expr_slicing

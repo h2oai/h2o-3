@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o,tests
 
 def pyunit_apply():
@@ -42,5 +42,5 @@ def pyunit_apply():
   fr.apply(lambda row: h2o.ifelse(row[0] < 5, (row[2]-3).expm1(), 55), axis=1)
   fr.apply(lambda row: h2o.ifelse(row[0] < 5, 3, (row[2] - 1).expm1()), axis=1)
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, pyunit_apply)
+
+pyunit_test = pyunit_apply

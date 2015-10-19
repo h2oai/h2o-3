@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def impute2():
@@ -78,5 +78,5 @@ def impute2():
     assert imputed1 == 3.5, "Wrong value imputed. Expected imputed value of 3.5, but got {0}".format(imputed1)
     assert imputed2 == 9.5, "Wrong value imputed. Expected imputed value of 9.5, but got {0}".format(imputed2)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, impute2)
+
+pyunit_test = impute2

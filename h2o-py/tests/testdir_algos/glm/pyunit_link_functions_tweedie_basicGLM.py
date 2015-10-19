@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def link_functions_tweedie_basic():
@@ -24,6 +24,6 @@ def link_functions_tweedie_basic():
                                                     "{0}, r: {1}".format(deviance_h2o_tweedie, 0.721452)
 
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, link_functions_tweedie_basic)
+
+pyunit_test = link_functions_tweedie_basic
 

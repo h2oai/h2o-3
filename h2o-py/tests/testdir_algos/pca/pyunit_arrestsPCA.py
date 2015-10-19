@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def pca_arrests():
@@ -15,5 +15,5 @@ def pca_arrests():
         pca_h2o = h2o.prcomp(x=arrestsH2O[0:4], k = i+1)
         # TODO: pca_h2o.show()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pca_arrests)
+
+pyunit_test = pca_arrests

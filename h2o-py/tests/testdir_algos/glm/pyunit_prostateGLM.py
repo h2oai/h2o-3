@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import pandas as pd
 import statsmodels.api as sm
@@ -20,6 +20,6 @@ def prostate():
   print "h2o null deviance {0}".format(h2o_glm.null_deviance())
   assert abs(sm_glm.null_deviance - h2o_glm.null_deviance()) < 1e-5, "Expected null deviances to be the same"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, prostate)
+
+pyunit_test = prostate
 

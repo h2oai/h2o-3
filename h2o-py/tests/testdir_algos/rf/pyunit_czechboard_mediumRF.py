@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def czechboardRF():
@@ -16,5 +16,5 @@ def czechboardRF():
     model = h2o.random_forest(x=board[["C1", "C2"]], y=board["C3"], ntrees=50, max_depth=20, nbins=500)
     model.show()
   
-if __name__ == "__main__":
-  tests.run_test(sys.argv, czechboardRF)
+
+pyunit_test = czechboardRF

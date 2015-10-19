@@ -5,8 +5,8 @@
 # If not a frame, expect NULL
 ##
 
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 
@@ -45,5 +45,5 @@ def dim_checks():
 
   assert h2oColAmpFive.nrow == h2o_rows, "expected the number of rows to remain unchanged"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, dim_checks)
+
+pyunit_test = dim_checks

@@ -2,6 +2,5 @@
 # module tests
 # from (tests)
 
-from h2o_pyunit import *
-from utils import *
-
+from pyunit_utils import *
+from pydemo_utils import *

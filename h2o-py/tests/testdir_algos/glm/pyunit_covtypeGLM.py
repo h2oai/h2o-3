@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 
@@ -33,6 +33,6 @@ def covtype():
   covtype_mod3 = h2o.glm(y=covtype[myY], x=covtype[myX], family="binomial", alpha=[1], Lambda=[1e-4])
   covtype_mod3.show()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, covtype)
+
+pyunit_test = covtype
 

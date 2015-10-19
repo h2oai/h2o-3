@@ -4,8 +4,8 @@
 # If any categorical columns, throw an error
 ##
 
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 
@@ -29,5 +29,5 @@ def var_test():
     var_cov_np = np.cov(iris_np, rowvar=0, ddof=1)
 
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, var_test)
+
+pyunit_test = var_test

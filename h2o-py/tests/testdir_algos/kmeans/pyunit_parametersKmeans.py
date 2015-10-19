@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def parametersKmeans():
@@ -26,5 +26,5 @@ def parametersKmeans():
     centers_again = iris_km_again.centers()
     assert centers == centers_again, "expected centers to be the same"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, parametersKmeans)
+
+pyunit_test = parametersKmeans

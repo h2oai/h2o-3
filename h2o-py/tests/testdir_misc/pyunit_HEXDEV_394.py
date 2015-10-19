@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o,tests
 
 def hexdev_394():
@@ -52,5 +52,5 @@ def hexdev_394():
   print "KEEPING FRAME???"
   print train._keep
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, hexdev_394)
+
+pyunit_test = hexdev_394

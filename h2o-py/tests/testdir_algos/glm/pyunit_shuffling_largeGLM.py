@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def shuffling_large():
@@ -39,5 +39,5 @@ def shuffling_large():
         if isinstance(x[2],float):
             assert abs(x[2] - y[2]) < 5e-10, "coefficients should be equal"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, shuffling_large)
+
+pyunit_test = shuffling_large

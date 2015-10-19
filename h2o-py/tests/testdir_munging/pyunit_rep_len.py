@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def rep_len_check():
@@ -17,5 +17,5 @@ def rep_len_check():
     fr = iris.rep_len(length_out=7)
     assert fr.nrow == 150 and fr.ncol == 7, "Expected an H2OFrame with 150 rows and 7 columns, but got {0} rows and {1} cols".format(fr.nrow, fr.ncol)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, rep_len_check)
+
+pyunit_test = rep_len_check

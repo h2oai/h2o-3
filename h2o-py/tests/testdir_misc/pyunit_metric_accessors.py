@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def metric_accessors():
@@ -609,5 +609,5 @@ def metric_accessors():
     size = km.size(train=True,  valid=False, xval=True)
     size = km.size(train=False, valid=False, xval=False) # default: return training metrics
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, metric_accessors)
+
+pyunit_test = metric_accessors

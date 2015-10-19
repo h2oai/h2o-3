@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def bigcatGBM():
@@ -23,5 +23,5 @@ def bigcatGBM():
   #test_accuracy = performance.accuracy()
   test_auc = performance.auc()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, bigcatGBM)
+
+pyunit_test = bigcatGBM

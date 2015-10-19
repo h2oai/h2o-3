@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 import random
 
@@ -12,5 +12,5 @@ def pyunit_ischaracter_isnumeric():
     iris[4] = iris[4].ascharacter()
     assert iris[4].isstring(), "Expected the last column of iris to be a string"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pyunit_ischaracter_isnumeric)
+
+pyunit_test = pyunit_ischaracter_isnumeric

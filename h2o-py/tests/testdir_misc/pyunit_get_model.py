@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def get_model_test():
@@ -60,5 +60,5 @@ def get_model_test():
         assert p1 == p2, "expected multinomial predictions to be the same for row {0}, but got {1} and {2}" \
                          "".format(r, p1, p2)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, get_model_test)
+
+pyunit_test = get_model_test

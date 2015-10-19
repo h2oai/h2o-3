@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 
@@ -46,5 +46,5 @@ def glrm_arrests_miss():
     for i in range(len(missing_ratios)):
         print "Missing ratio: {0}% --> Training error: {1}\tValidation error: {2}".format(missing_ratios[i]*100, train_err[i], valid_err[i])
     
-if __name__ == "__main__":
-    tests.run_test(sys.argv, glrm_arrests_miss)
+
+pyunit_test = glrm_arrests_miss

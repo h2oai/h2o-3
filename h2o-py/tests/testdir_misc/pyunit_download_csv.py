@@ -1,5 +1,4 @@
-import sys, os
-sys.path.insert(1, "../../")
+import os
 import h2o, tests
 import random
 
@@ -20,5 +19,5 @@ def download_csv():
                                                                                 "be the same, but got {0} and {1}" \
                                                                                 "".format(iris1[rand_row, rand_col],
                                                                                           iris2[rand_row, rand_col])
-if __name__ == "__main__":
-    tests.run_test(sys.argv, download_csv)
+
+pyunit_test = download_csv

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def spaces_in_column_names():
@@ -13,5 +13,5 @@ def spaces_in_column_names():
     gbm = h2o.gbm(x=train_data[X], y=train_data["r e s p o n s e"].asfactor(), ntrees=1, distribution="bernoulli", min_rows=1)
     gbm.show()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, spaces_in_column_names)
+
+pyunit_test = spaces_in_column_names

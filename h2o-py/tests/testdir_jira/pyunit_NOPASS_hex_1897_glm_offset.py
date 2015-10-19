@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def offset_1897():
@@ -39,5 +39,5 @@ def offset_1897():
     print "r residual: {0}".format(2761.76218461138)
     assert abs(2761.76218461138 - prostate_glm_h2o.residual_deviance()) < 0.1
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_1897)
+
+pyunit_test = offset_1897

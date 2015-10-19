@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 
@@ -28,5 +28,5 @@ def expr_as_list():
     frm = h2o.as_list(h2o.H2OFrame(python_obj=[[1,2,3], [4,5,6]]), use_pandas=False)
     assert float(frm[2][1]) == 5, "incorrect values"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, expr_as_list)
+
+pyunit_test = expr_as_list

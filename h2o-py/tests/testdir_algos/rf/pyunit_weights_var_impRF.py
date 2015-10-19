@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 import copy
@@ -93,5 +93,5 @@ def weights_vi():
                                                   "dataset: ('p3', 'p1', 'p2'), but got: {0}".format(varimp_combined)
 
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, weights_vi)
+
+pyunit_test = weights_vi

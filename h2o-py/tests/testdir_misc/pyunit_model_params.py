@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def pyunit_model_params():
@@ -11,5 +11,5 @@ def pyunit_model_params():
   print m.full_parameters
 
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, pyunit_model_params)
+
+pyunit_test = pyunit_model_params

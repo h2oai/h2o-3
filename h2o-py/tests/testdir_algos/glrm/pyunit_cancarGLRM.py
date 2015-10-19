@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def glrm_cancar():
@@ -15,5 +15,5 @@ def glrm_cancar():
     glrm_svd = h2o.glrm(x=cancarH2O, k=4, transform="NONE", init="SVD", loss="Quadratic", regularization_x="None", regularization_y="None", max_iterations=1000)
     glrm_svd.show()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, glrm_cancar)
+
+pyunit_test = glrm_cancar

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def offset_gaussian():
@@ -31,5 +31,5 @@ def offset_gaussian():
     assert abs(207.387 - predictions.max()) < 1e-2, "expected prediction max to be {0}, but got {1}". \
         format(207.387, predictions.max())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_gaussian)
+
+pyunit_test = offset_gaussian

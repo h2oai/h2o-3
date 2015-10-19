@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def table_check():
@@ -18,5 +18,5 @@ def table_check():
     table2 = iris["C1"].table(iris["C5"])
     print table2
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, table_check)
+
+pyunit_test = table_check

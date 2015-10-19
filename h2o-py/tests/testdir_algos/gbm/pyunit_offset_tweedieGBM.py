@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def offset_tweedie():
@@ -29,5 +29,5 @@ def offset_tweedie():
     assert abs(392.4651 - predictions.max()) < 1e-2, "expected prediction max to be {0}, but got {1}". \
         format(392.4651, predictions.max())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_tweedie)
+
+pyunit_test = offset_tweedie

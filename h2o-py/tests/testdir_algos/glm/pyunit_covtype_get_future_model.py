@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 
@@ -33,5 +33,5 @@ def test_get_future_model():
     covtype_h2o3 = h2o.get_future_model(covtype_h2o3)
     print(covtype_h2o3)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, test_get_future_model)
+
+pyunit_test = test_get_future_model

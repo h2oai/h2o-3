@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 
@@ -31,5 +31,5 @@ def glrm_set_loss_by_col():
     glrm_obj = glrm_h2o._model_json['output']['objective']
     assert abs(glrm_obj - obj_val) < 1e-6, "Final objective was " + str(glrm_obj) + " but should equal " + str(obj_val)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, glrm_set_loss_by_col)
+
+pyunit_test = glrm_set_loss_by_col

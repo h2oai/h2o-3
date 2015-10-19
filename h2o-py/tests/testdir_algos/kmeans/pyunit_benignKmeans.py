@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 import numpy as np
@@ -31,5 +31,5 @@ def benignKmeans():
         print "sckit centers"
         print benign_sci_km.cluster_centers_
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, benignKmeans)
+
+pyunit_test = benignKmeans

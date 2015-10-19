@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 import random as rd
@@ -81,5 +81,5 @@ def glrm_set_loss_by_col_rand():
     glrm_h2o = h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all, loss_by_col_idx=loss_idx_all)
     glrm_h2o.show()
     
-if __name__ == "__main__":
-    tests.run_test(sys.argv, glrm_set_loss_by_col_rand)
+
+pyunit_test = glrm_set_loss_by_col_rand

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 import numpy as np
@@ -35,5 +35,5 @@ def smallcatGBM():
   gbm_sci = ensemble.GradientBoostingClassifier(n_estimators=1, max_depth=1, max_features=None)
   gbm_sci.fit(trainDataFeatures[:,np.newaxis],trainDataResponse)
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, smallcatGBM)
+
+pyunit_test = smallcatGBM

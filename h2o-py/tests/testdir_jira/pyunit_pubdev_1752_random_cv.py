@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def pubdev_random_cv():
@@ -19,5 +19,5 @@ def pubdev_random_cv():
     assert mse1 != mse2, "The first model has an MSE of {0} and the second model has an MSE of {1}. Expected the " \
                          "first to be different from the second.".format(mse1, mse2)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_random_cv)
+
+pyunit_test = pubdev_random_cv

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 import random
@@ -41,5 +41,5 @@ def frame_math_ops():
     tests.np_comparison_check(h2o_data1.sin(), np.sin(np_data1), 10)
     tests.np_comparison_check(h2o_data1.tan(), np.tan(np_data1), 10)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, frame_math_ops)
+
+pyunit_test = frame_math_ops

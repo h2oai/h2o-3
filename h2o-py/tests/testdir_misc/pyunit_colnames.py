@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def col_names_check():
@@ -15,5 +15,5 @@ def col_names_check():
     assert iris.col_names == ["C1","C2","C3","C4","C5"], "Expected {0} for column names but got " \
                                                            "{1}".format(["C1","C2","C3","C4","C5"], iris.col_names)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, col_names_check)
+
+pyunit_test = col_names_check

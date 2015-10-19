@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 
@@ -134,5 +134,5 @@ def cv_carsGLM():
     # except EnvironmentError:
     #     assert True
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, cv_carsGLM)
+
+pyunit_test = cv_carsGLM

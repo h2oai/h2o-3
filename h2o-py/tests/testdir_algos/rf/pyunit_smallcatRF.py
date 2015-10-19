@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 import numpy as np
@@ -46,5 +46,5 @@ def smallcatRF():
     #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, smallcatRF)
+
+pyunit_test = smallcatRF

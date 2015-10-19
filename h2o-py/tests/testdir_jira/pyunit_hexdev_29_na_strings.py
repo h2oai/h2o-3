@@ -4,8 +4,7 @@
 ## missing.
 ##
 ################################################################################
-import sys, urllib
-sys.path.insert(1, "../../")
+import urllib
 import h2o, tests
 
 def na_strings():
@@ -56,5 +55,5 @@ def na_strings():
     fhex_na_strings_missing_count = sum([e["missing_count"] for e in fhex__na_strings_col_summary])
     assert fhex_na_strings_missing_count == 2
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, na_strings)
+
+pyunit_test = na_strings

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def offset_bernoulli_cars():
@@ -33,5 +33,5 @@ def offset_bernoulli_cars():
     assert abs(0.8506528 - predictions[:,2].max()) < 1e-6, "expected prediction max to be {0}, but got {1}". \
         format(0.8506528, predictions[:,2].max())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_bernoulli_cars)
+
+pyunit_test = offset_bernoulli_cars

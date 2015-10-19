@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def varimp_test():
@@ -19,5 +19,5 @@ def varimp_test():
     assert len(should_be_list[0]) == 4, "expected varimp entry to contain 4 elements (variable, relative_importance, " \
                                         "scaled_importance, percentage), but it has {0}".format(len(should_be_list[0]))
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, varimp_test)
+
+pyunit_test = varimp_test

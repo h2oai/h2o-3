@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests, random
 
 def glrm_iris():
@@ -21,5 +21,5 @@ def glrm_iris():
         pred_h2o.describe()
         h2o.remove(glrm_h2o._model_json['output']['loading_key']['name'])
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, glrm_iris)
+
+pyunit_test = glrm_iris

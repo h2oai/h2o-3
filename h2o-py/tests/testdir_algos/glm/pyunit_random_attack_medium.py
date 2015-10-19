@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 
@@ -105,5 +105,5 @@ def random_attack():
     for i in range(10):
         attack("gamma", pros_train, pros_valid, random.sample([1,2,3,5,6,7,8],random.randint(1,7)), 4)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, random_attack)
+
+pyunit_test = random_attack

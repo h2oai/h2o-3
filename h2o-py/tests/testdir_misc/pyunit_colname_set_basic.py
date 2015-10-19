@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def colname_set_basic():
@@ -18,5 +18,5 @@ def colname_set_basic():
     assert no_headers.names == headers_and.names, "Expected the same column names but got {0} and {1}".\
         format(no_headers.names, headers_and.names)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, colname_set_basic)
+
+pyunit_test = colname_set_basic

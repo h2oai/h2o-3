@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def bigcatRF():
@@ -22,5 +22,5 @@ def bigcatRF():
     model = h2o.random_forest(x=bigcat[["X"]], y=bigcat["y"], ntrees=1, max_depth=1, nbins=100, nbins_cats=10)
     model.show()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, bigcatRF)
+
+pyunit_test = bigcatRF

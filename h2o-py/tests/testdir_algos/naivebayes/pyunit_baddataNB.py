@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 import string
@@ -47,5 +47,5 @@ def nb_baddata():
     assert len(model._model_json['output']['pcond']) == 8, "Expected 8 predictors, but got {0}" \
                                                            "".format(len(model._model_json['output']['pcond']))
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, nb_baddata)
+
+pyunit_test = nb_baddata

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 
@@ -93,5 +93,5 @@ def levels_nlevels_setlevel_setLevels_test():
     one_column_frame = one_column_frame.set_level(level='c')
     assert one_column_frame[0,0] == 'c'
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, levels_nlevels_setlevel_setLevels_test)
+
+pyunit_test = levels_nlevels_setlevel_setLevels_test

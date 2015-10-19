@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def vec_scaler_comparisons():
@@ -68,5 +68,5 @@ def vec_scaler_comparisons():
     l_rows, l_cols = l.dim
     assert (l_rows + G_rows) == rows and l_cols == G_cols == cols, "expected equal number of rows and cols"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, vec_scaler_comparisons)
+
+pyunit_test = vec_scaler_comparisons

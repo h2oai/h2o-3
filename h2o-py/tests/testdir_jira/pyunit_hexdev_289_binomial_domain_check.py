@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def domain_check():
@@ -83,5 +83,5 @@ def domain_check():
     assert not domain_diff, "There's a difference between the actual ({0}) and the computed ({1}) domains of the " \
                             "The difference is {2}".format(actual_domain, computed_domain, domain_diff)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, domain_check)
+
+pyunit_test = domain_check

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def glrm_benign():
@@ -12,5 +12,5 @@ def glrm_benign():
         glrm_h2o = h2o.glrm(x=benignH2O, k=i, init="SVD", recover_svd=True)
         glrm_h2o.show()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, glrm_benign)
+
+pyunit_test = glrm_benign

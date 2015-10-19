@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def asnumeric():
@@ -22,5 +22,5 @@ def asnumeric():
     h2oframe = h2oframe[h2oframe['cylinders'] == 0]
     assert h2oframe.nrow == rows, "expected the same number of rows as before {0}, but got {1}".format(rows, h2oframe.nrow)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, asnumeric)
+
+pyunit_test = asnumeric

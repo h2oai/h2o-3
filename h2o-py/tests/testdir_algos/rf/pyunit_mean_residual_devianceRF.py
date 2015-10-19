@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1,"../../../")
+
+
 import h2o, tests
 
 def rf_mean_residual_deviance():
@@ -23,5 +23,5 @@ def rf_mean_residual_deviance():
     assert isinstance(rf_mrd['xval'],float), "Expected cross-validation mean residual deviance to be a float, but got " \
                                              "{0}".format(type(rf_mrd['xval']))
 
-if __name__ == '__main__':
-    tests.run_test(sys.argv, rf_mean_residual_deviance)
+
+pyunit_test = rf_mean_residual_deviance

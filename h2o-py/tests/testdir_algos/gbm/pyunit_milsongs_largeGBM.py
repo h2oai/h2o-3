@@ -1,5 +1,4 @@
-import sys, os
-sys.path.insert(1, "../../../")
+import os
 import h2o, tests
 import random
 
@@ -43,5 +42,5 @@ def milsong_checkpoint():
     model3 = h2o.gbm(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees2,max_depth=max_depth2, min_rows=min_rows2,
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, milsong_checkpoint)
+
+pyunit_test = milsong_checkpoint

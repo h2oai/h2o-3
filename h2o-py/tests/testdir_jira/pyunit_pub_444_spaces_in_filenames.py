@@ -1,11 +1,8 @@
-import sys, os
-sys.path.insert(1, "../../")
+import os
 import h2o, tests
 import random
 
 def pub_444_spaces_in_filenames():
-    
-    
 
     # tempdir = "smalldata/jira/"
     # if was okay to write to smalldata, it's okay to write to the current directory
@@ -57,5 +54,5 @@ def pub_444_spaces_in_filenames():
     os.remove(tests.locate(tempdir) + "b a r .csv")
     os.remove(tests.locate(tempdir) + " ba z.csv")
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pub_444_spaces_in_filenames)
+
+pyunit_test = pub_444_spaces_in_filenames

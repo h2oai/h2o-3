@@ -1,6 +1,5 @@
 # Check to make sure the small and large citibike demos have not diverged
-import sys, os
-sys.path.insert(1, "../../")
+import os
 import h2o, tests
 
 def consistency_check():
@@ -15,15 +14,15 @@ def consistency_check():
     except ValueError:
         large = tests.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
 
-    tests.ipy_notebook_exec(small, save_and_norun=True)
-    tests.ipy_notebook_exec(large, save_and_norun=True)
+    results_dir = tests.locate("results")
+    s = os.path.join(results_dir, os.path.basename(small).split('.')[0]+".py")
+    l = os.path.join(results_dir, os.path.basename(large).split('.')[0]+".py")
 
-    s = os.path.basename(small).split('.')[0]+".py"
-    l = os.path.basename(large).split('.')[0]+".py"
+    tests.ipy_notebook_exec(small, save_and_norun = s)
+    tests.ipy_notebook_exec(large, save_and_norun = l)
+
     small_list = list(open(s, 'r'))
     large_list = list(open(l, 'r'))
-    os.remove(tests.locate(s))
-    os.remove(tests.locate(l))
 
     for s, l in zip(small_list, large_list):
         if s != l:
@@ -32,5 +31,5 @@ def consistency_check():
                 "This difference is not allowed between the small and large citibike demos.\nCitibike small: {0}" \
                 "Citibike large: {1}".format(s,l)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, consistency_check)
+
+pyunit_test = consistency_check

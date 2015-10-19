@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 import numpy as np
@@ -38,5 +38,5 @@ def iris_h2o_vs_sciKmeans():
     for hpoint, spoint in zip(hcenter,scenter):
       assert (hpoint- spoint) < 1e-10, "expected centers to be the same"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, iris_h2o_vs_sciKmeans)
+
+pyunit_test = iris_h2o_vs_sciKmeans

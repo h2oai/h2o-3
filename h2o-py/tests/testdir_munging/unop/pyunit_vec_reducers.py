@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 import random
@@ -51,5 +51,5 @@ def frame_reducers():
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal median values between h2o and " \
         "numpy".format(h2o_val,num_val)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, frame_reducers)
+
+pyunit_test = frame_reducers

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 import random
@@ -45,5 +45,5 @@ def expr_reducers():
     tests.np_comparison_check(h2o_data.var(), np.cov(np_data, rowvar=0, ddof=1), 10), \
         "expected equal var values between h2o and numpy"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, expr_reducers)
+
+pyunit_test = expr_reducers

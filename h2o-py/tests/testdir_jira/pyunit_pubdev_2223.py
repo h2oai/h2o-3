@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def pubdev_2223():
@@ -17,5 +17,5 @@ def pubdev_2223():
     print "Normalization/Standardization offsets for numeric response: {0}\n".format(dlmodel.respsub())
     print "Categorical offsets for one-hot encoding: {0}\n".format(dlmodel.catoffsets())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_2223)
+
+pyunit_test = pubdev_2223

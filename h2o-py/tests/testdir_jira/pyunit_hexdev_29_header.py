@@ -4,10 +4,7 @@
 ## of the file as either headers (1), to-be-guessed (0), or data (-1).
 ##
 ################################################################################
-import sys, urllib
-sys.path.insert(1, "../../")
 import h2o, tests
-
 
 def header():
 
@@ -31,5 +28,5 @@ def header():
     assert fhex_header_unknown._nrows == fhex_header_false._nrows or fhex_header_unknown._nrows == fhex_header_true._nrows
     assert fhex_header_unspecified._nrows == fhex_header_false._nrows or fhex_header_unspecified._nrows == fhex_header_true._nrows
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, header)
+
+pyunit_test = header

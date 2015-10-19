@@ -1,7 +1,7 @@
 #Test checks if Deep Learning works fine with a categorical dataset that has many missing values (in both train & test
 # splits)
-import sys
-sys.path.insert(1,"../../../")
+
+
 import h2o, tests
 
 def missing():
@@ -48,5 +48,5 @@ def missing():
 
     assert sum(errors) < 2.2, "Sum of classification errors is too large!"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, missing)
+
+pyunit_test = missing

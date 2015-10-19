@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def pyunit_make_glm_model():
@@ -17,6 +17,6 @@ def pyunit_make_glm_model():
     betas = betas[0:len(betas)-1]+"]"
     res = h2o.H2OConnection.post_json("MakeGLMModel",model=model._id,names=names,beta=betas)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pyunit_make_glm_model)
+
+pyunit_test = pyunit_make_glm_model
 

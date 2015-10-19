@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def cv_nfoldsGBM():
@@ -20,5 +20,5 @@ def cv_nfoldsGBM():
   except EnvironmentError:
     assert False, "expected an error"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, cv_nfoldsGBM)
+
+pyunit_test = cv_nfoldsGBM

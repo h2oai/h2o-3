@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 import random
@@ -78,5 +78,5 @@ def vec_math_ops():
     #     assert h2o_val == num_val, "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal " \
     #                                "values between h2o and numpy".format(h2o_val,num_val)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, vec_math_ops)
+
+pyunit_test = vec_math_ops

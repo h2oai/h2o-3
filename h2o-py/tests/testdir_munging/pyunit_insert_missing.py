@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def insert_missing():
@@ -23,5 +23,5 @@ def insert_missing():
     assert num_nas == h2o_data.nrow*h2o_data.ncol, "Expected all missing values inserted, but got {0}".format(num_nas)
 
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, insert_missing)
+
+pyunit_test = insert_missing

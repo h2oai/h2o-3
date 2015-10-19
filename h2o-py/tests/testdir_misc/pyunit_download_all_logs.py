@@ -1,7 +1,5 @@
-import sys, os
-sys.path.insert(1, "../../")
 import h2o, tests
-import random
+import os
 
 def download_all_logs():
     
@@ -27,5 +25,5 @@ def download_all_logs():
     assert os.path.exists(log_location), "Expected h2o logs to be saved in {0}, but they weren't".format(log_location)
     os.remove(log_location)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, download_all_logs)
+
+pyunit_test = download_all_logs

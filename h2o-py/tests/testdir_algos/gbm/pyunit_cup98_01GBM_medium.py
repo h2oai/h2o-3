@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def cupMediumGBM():
@@ -17,5 +17,5 @@ def cupMediumGBM():
     train_cols.remove(c)
   model = h2o.gbm(x=train[train_cols], y=train["TARGET_B"], distribution = "bernoulli", ntrees = 5)
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, cupMediumGBM)
+
+pyunit_test = cupMediumGBM

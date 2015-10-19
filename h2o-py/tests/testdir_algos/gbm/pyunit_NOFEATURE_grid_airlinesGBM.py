@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def grid_airlinesGBM():
@@ -16,5 +16,5 @@ def grid_airlinesGBM():
                    learn_rate=[0.1,0.2])
     air_grid.show()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, grid_airlinesGBM)
+
+pyunit_test = grid_airlinesGBM

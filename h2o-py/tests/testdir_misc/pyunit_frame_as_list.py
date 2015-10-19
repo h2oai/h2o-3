@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def frame_as_list():
@@ -22,5 +22,5 @@ def frame_as_list():
     assert abs(float(res3[4][0]) - 1987) < 1e-10 and abs(float(res3[4][1]) - 10) < 1e-10 and \
            abs(float(res3[4][2]) - 18) < 1e-10, "incorrect values"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, frame_as_list)
+
+pyunit_test = frame_as_list

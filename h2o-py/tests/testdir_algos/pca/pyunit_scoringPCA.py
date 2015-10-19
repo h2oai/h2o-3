@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def pca_scoring():
@@ -17,5 +17,5 @@ def pca_scoring():
     print "H2O Projection:"
     predH2O.head()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pca_scoring)
+
+pyunit_test = pca_scoring

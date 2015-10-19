@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def asfactor_basic():
@@ -28,5 +28,5 @@ def asfactor_basic():
   bar = h2oframe["cylinders"].isfactor()
   assert bar, "expected the bar H2OVec to be a factor"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, asfactor_basic)
+
+pyunit_test = asfactor_basic

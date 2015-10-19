@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1,"../../../")
+
+
 import h2o, tests
 
 def weights_and_biases():
@@ -51,5 +51,5 @@ def weights_and_biases():
     assert b3c == 1, "wrong dimensionality! expected {0}, but got {1}.".format(1, b3c)
     assert b3r == 7, "wrong dimensionality! expected {0}, but got {1}.".format(7, b3r)
 
-if __name__ == '__main__':
-    tests.run_test(sys.argv, weights_and_biases)
+
+pyunit_test = weights_and_biases

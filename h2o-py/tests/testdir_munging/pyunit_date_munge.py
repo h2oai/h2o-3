@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def refine_date_col(data, col, pattern):
@@ -27,5 +27,5 @@ def date_munge():
   crimes = crimes.drop("Date")
   crimes.describe()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, date_munge)
+
+pyunit_test = date_munge

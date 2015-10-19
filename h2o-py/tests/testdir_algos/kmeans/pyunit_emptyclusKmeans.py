@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 import random
@@ -50,5 +50,5 @@ def emptyclusKmeans():
     print "H2O final centers"
     print km_h2o.centers()
 
-if __name__ == "__main__":
-   tests.run_test(sys.argv, emptyclusKmeans)
+
+pyunit_test = emptyclusKmeans

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def toupper_tolower_check():
@@ -20,5 +20,5 @@ def toupper_tolower_check():
     vec = vec.tolower()
     assert vec[3,0] == "iris-setosa", "Expected 'iris-setosa', but got {0}".format(vec[3,0])
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, toupper_tolower_check)
+
+pyunit_test = toupper_tolower_check

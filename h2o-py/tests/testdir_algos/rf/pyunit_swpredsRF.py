@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def swpredsRF():
@@ -31,5 +31,5 @@ def swpredsRF():
     perf2 = model2.model_performance(swpreds)
     print(perf2.auc())
   
-if __name__ == "__main__":
-  tests.run_test(sys.argv, swpredsRF)
+
+pyunit_test = swpredsRF

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o,tests
 from h2o.assembly import *
 from h2o.transforms.preprocessing import *
@@ -87,5 +87,5 @@ def lending_club_munging_assembly():
   #   BinomialModelPrediction pred = model.predictBinomial(row);
 #   // Use prediction!
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, lending_club_munging_assembly)
+
+pyunit_test = lending_club_munging_assembly

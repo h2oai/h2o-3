@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def directory_import():
@@ -34,5 +34,5 @@ def directory_import():
     assert r1*3 == ra, "Expected 3 times the rows, but got {0} and {1}".format(r1,ra)
     assert c1 == ca, "Expected same number of cols, but got {0} and {1}".format(c1,ca)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, directory_import)
+
+pyunit_test = directory_import

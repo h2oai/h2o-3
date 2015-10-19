@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def distribution_behaviorGBM():
@@ -64,6 +64,6 @@ def distribution_behaviorGBM():
   eco_model = h2o.gbm(x=eco[0:8], y=eco["Method"], distribution="multinomial")
   assert isinstance(eco_model,h2o.model.multinomial.H2OMultinomialModel)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, distribution_behaviorGBM)
+
+pyunit_test = distribution_behaviorGBM
 

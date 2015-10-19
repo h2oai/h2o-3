@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def km_num_iterations():
@@ -12,5 +12,5 @@ def km_num_iterations():
     num_iterations = prostate_km_h2o.num_iterations()
     assert num_iterations <= 4, "Expected 4 iterations, but got {0}".format(num_iterations)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, km_num_iterations)
+
+pyunit_test = km_num_iterations

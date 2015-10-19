@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def offset_poisson():
@@ -32,5 +32,5 @@ def offset_poisson():
     assert abs(398.0608 - predictions.max()) < 1e-2, "expected prediction max to be {0}, but got {1}". \
         format(398.0608, predictions.max())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_poisson)
+
+pyunit_test = offset_poisson

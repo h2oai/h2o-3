@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def center_scale():
@@ -36,5 +36,5 @@ def center_scale():
     # vec (centers=False, scale=False)
     foo = iris[3].scale(center=False, scale=False)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, center_scale)
+
+pyunit_test = center_scale

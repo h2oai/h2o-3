@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def javapredict_smallcat():
@@ -16,5 +16,5 @@ def javapredict_smallcat():
 
     tests.javapredict("random_forest", "numeric", train, test, x, y, **params)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, javapredict_smallcat)
+
+pyunit_test = javapredict_smallcat

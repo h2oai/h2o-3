@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 import random
 
@@ -129,5 +129,5 @@ def all_confusion_matrix_funcs():
     assert cm_count == air_test.nrow, "incorrect confusion matrix elements. Should sum to {0}, but got {1}". \
         format(air_test.nrow, cm_count)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, all_confusion_matrix_funcs)
+
+pyunit_test = all_confusion_matrix_funcs

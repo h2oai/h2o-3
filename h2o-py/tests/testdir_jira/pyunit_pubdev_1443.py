@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def pubdev_1443():
@@ -19,5 +19,5 @@ def pubdev_1443():
     threes = merged[merged['rank'] == 3].nrow
     assert threes == 10000, "Expected 10000 3's, but got {0}".format(threes)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_1443)
+
+pyunit_test = pubdev_1443

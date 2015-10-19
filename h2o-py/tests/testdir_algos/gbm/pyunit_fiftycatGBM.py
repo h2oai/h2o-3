@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def fiftycatGBM():
@@ -36,5 +36,5 @@ def fiftycatGBM():
   test_cm = performance.confusion_matrix()
   test_auc = performance.auc()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, fiftycatGBM)
+
+pyunit_test = fiftycatGBM

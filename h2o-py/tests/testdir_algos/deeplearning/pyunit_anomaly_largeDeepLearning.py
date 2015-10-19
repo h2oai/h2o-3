@@ -1,5 +1,3 @@
-import sys
-sys.path.insert(1,"../../../")
 import h2o, tests
 
 def anomaly():
@@ -37,5 +35,4 @@ def anomaly():
 
     # In python, the visualization could be done with tools like numpy/matplotlib or numpy/PIL
 
-if __name__ == '__main__':
-    tests.run_test(sys.argv, anomaly)
+pyunit_test = anomaly

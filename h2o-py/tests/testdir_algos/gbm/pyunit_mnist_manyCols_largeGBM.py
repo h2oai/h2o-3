@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def mnist_manyCols_largeGBM():
@@ -15,5 +15,5 @@ def mnist_manyCols_largeGBM():
     gbm_mnist = h2o.gbm(x=train[0:784], y=train[784], ntrees=1, max_depth=1, min_rows=10, learn_rate=0.01)
     gbm_mnist.show()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, mnist_manyCols_largeGBM)
+
+pyunit_test = mnist_manyCols_largeGBM

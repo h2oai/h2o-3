@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def runif_check():
@@ -15,5 +15,5 @@ def runif_check():
     print "This demonstrates that seeding runif on identical frames with different chunk distributions provides " \
           "different results. upload_file: {0}, import_frame: {1}.".format(r_u.mean(), r_i.mean())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, runif_check)
+
+pyunit_test = runif_check

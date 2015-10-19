@@ -1,6 +1,6 @@
 
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o,tests
 
 def stratified_split():
@@ -12,5 +12,5 @@ def stratified_split():
   print (train[54].table()["Count"] / train[54].table()["Count"].sum()).show()
   print (test[54].table()["Count"] / test[54].table()["Count"].sum()).show()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, stratified_split)
+
+pyunit_test = stratified_split

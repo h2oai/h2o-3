@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def impute():
@@ -42,5 +42,5 @@ def impute():
     prostate = h2o.upload_file(tests.locate("smalldata/logreg/prostate_missing.csv"))
     prostate.impute("VOL", method = "median")
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, impute)
+
+pyunit_test = impute

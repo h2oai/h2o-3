@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def cbind():
@@ -113,6 +113,6 @@ def cbind():
   hdf_names = xx.cbind(yy).names
   assert hdf_names == ['colgroup', 'colgroup2'], "expected column names to be the same"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, cbind)
+
+pyunit_test = cbind
 

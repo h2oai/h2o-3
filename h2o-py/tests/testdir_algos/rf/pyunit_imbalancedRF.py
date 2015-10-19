@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 
 def imbalanced():
@@ -33,5 +33,5 @@ def imbalanced():
 
     assert class_6_err_imbalanced >= 0.9*class_6_err_balanced, "balance_classes makes it at least 10% worse!"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, imbalanced)
+
+pyunit_test = imbalanced

@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import numpy as np
 
@@ -53,5 +53,5 @@ def glrm_simplex():
     assert abs(glrm_numerr - glrm_obj) < 1e-3, "Numeric error was " + str(glrm_numerr) + " but should equal final objective " + str(glrm_obj)
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
     
-if __name__ == "__main__":
-    tests.run_test(sys.argv, glrm_simplex)
+
+pyunit_test = glrm_simplex

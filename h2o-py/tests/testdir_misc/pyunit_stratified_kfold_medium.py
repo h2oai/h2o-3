@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def stratified_kfold():
@@ -30,5 +30,5 @@ def stratified_kfold():
     print "Stratification variance for class #%s: %s" %(i, (df.ix[i].sub(dist[i]).pow(2).sum()) / (df.shape[0] - 1))
 
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, stratified_kfold)
+
+pyunit_test = stratified_kfold

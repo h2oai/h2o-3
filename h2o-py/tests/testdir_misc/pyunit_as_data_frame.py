@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 
@@ -31,5 +31,5 @@ def pyunit_as_data_frame():
   assert tail_small_bike_pandas.loc[2][3] == small_bike_pandas.loc[6][3]
   assert head_small_bike_pandas.loc[4][0] == tail_small_bike_pandas.loc[0][0]
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, pyunit_as_data_frame)
+
+pyunit_test = pyunit_as_data_frame

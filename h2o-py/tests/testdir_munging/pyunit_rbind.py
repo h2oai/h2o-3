@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../")
+
+
 import h2o, tests
 
 def rbind_check():
@@ -25,5 +25,5 @@ def rbind_check():
     except EnvironmentError:
         pass
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, rbind_check)
+
+pyunit_test = rbind_check

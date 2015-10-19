@@ -1,5 +1,5 @@
-import sys
-sys.path.insert(1, "../../../")
+
+
 import h2o, tests
 import random
 
@@ -77,5 +77,5 @@ def init_err_casesKmeans():
     start[2] = start[0]
     h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame(start))
   
-if __name__ == "__main__":
-  tests.run_test(sys.argv, init_err_casesKmeans)
+
+pyunit_test = init_err_casesKmeans
