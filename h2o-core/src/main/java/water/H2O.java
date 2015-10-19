@@ -976,7 +976,7 @@ final public class H2O {
    *  TaskGetKey} can block an entire node for lack of some small piece of
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
-  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
+  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
     public H2OCountedCompleter(){}
     protected H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
 

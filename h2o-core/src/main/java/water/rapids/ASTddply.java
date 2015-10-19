@@ -253,7 +253,7 @@ public class ASTddply extends ASTOp {
     }
   }
 
-  private static class BuildGroup extends DTask<BuildGroup> implements Freezable {
+  private static class BuildGroup extends DTask<BuildGroup> {
     private final Key _frameKey; // the frame key
     private final Key _key;     // this is the Vec key for the rows for the group...
     private final long[] _rows; // these are the rows numbers for the group
@@ -332,7 +332,7 @@ public class ASTddply extends ASTOp {
     }
   }
 
-  private static class RemoteRapids extends DTask<RemoteRapids> implements Freezable {
+  private static class RemoteRapids extends DTask<RemoteRapids> {
     private final Key _frameKey;   // the group to process...
     private final ASTOp _FUN;      // the ast to execute on the group
     private final AST[] _funArgs;  // any additional arguments to the _FUN
