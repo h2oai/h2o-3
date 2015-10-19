@@ -25,10 +25,10 @@
 #` - TRUE : Node is evaluated, cluster has the ID, and an R GC finalizer will remove this temp ID
 #` - FALSE: Node is evaluated, cluster has the ID, and the user has to explictly remove this permanent ID
 #` - list of Nodes: Then further ID is one of:
-#` - - missing: this Node is lazy and has never been evaluated 
+#` - - missing: this Node is lazy and has never been evaluated
 #` - - NA: this Node has been executed once, but no temp ID was made
 #` - - String: this Node is-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to FALSE
-#` 
+#`
 #` # A number of fields represent cached queries of an evaluated frame.
 #` E$data   <- A cached result; can be a scalar, or a R dataframe result holding
 #`             the first N (typically 10) rows and all cols of the frame
@@ -412,13 +412,10 @@ median.Frame <- h2o.median
 
 #' Range of an H2O Column
 #'
-#' @param x An H2O Frame object.
+#' @param ... An H2O Frame object.
 #' @param na.rm ignore missing values
 #' @export
-range <- function(x,na.rm = TRUE) {
-  if( !is.Frame(x) ) .Primitive("range")(x,na.rm)
-  else .newExpr("range",x,na.rm)
-}
+range.Frame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
 
 #' Cut H2O Numeric Data to Factor
 #'
@@ -1546,7 +1543,7 @@ summary.Frame <- h2o.summary
 #'
 #' @name h2o.mean
 #' @param x An H2O Frame object.
-#' @param ... Further arguments to be passed from or to other methods.
+#' @param ... Ignored
 #' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
 #' @seealso \code{\link[base]{mean}} for the base R implementation.
 #' @examples
@@ -1845,7 +1842,6 @@ as.factor <- function(x) {
   else base::as.factor(x)
 }
 
-
 #' Convert an H2O Frame to a String
 #'
 #' @param x An H2O Frame object
@@ -1853,7 +1849,7 @@ as.factor <- function(x) {
 #' @export
 as.character.Frame <- function(x, ...) {
   if( is.Frame(x) ) .newExpr("as.character",x)
-  else base::as.character(x)
+  else base::as.character(x, ...)
 }
 
 #' Convert H2O Data to Numeric

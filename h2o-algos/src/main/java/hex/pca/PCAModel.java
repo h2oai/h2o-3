@@ -27,7 +27,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public boolean _impute_missing = false;   // Should missing numeric values be imputed with the column mean?
 
     public enum Method {
-      GramSVD, Power, GLRM
+      GramSVD, Power, Randomized, GLRM
     }
   }
 

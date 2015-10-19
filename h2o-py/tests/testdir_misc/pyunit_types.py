@@ -1,6 +1,7 @@
-
-
+import sys
+sys.path.insert(1, "../../")
 import h2o, tests
+import numpy as np
 
 
 def pyunit_types():
@@ -15,5 +16,15 @@ def pyunit_types():
 
   print types2
 
+  df = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list("ABCD"), column_types=["Enum"]*4)
+  assert df.types == {"A": "Enum", "C": "Enum", "B": "Enum", "D": "Enum"}, "Expected {} for column types " \
+                      "but got {}".format({"A": "Enum", "C": "Enum", "B": "Enum", "D": "Enum"}, df.types)
 
-pyunit_test = pyunit_types
+  df = h2o.H2OFrame(np.random.randn(100,4).tolist())
+  assert df.types == {"C3": "Numeric", "C2": "Numeric", "C1": "Numeric", "C4": "Numeric"}, "Expected {}" \
+          " for column types but got {}".format({"C3": "Numeric", "C2": "Numeric", "C1": "Numeric",
+                                                "C4": "Numeric"}, df.types)
+
+
+if __name__ == "__main__":
+  tests.run_test(sys.argv, pyunit_types)
