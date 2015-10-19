@@ -34,7 +34,7 @@ test1 <- function() {
 # Check for 3 parts
 test2 <- function() {
   df <- h2o.uploadFile(h2o:::.h2o.locate("smalldata/jira/pubdev_2020.csv"))
-  splits = h2o.splitFrame(data = df, ratios = c(0.5, 0.75))
+  splits = h2o.splitFrame(data = df, ratios = c(0.5, 0.25))
   stopifnot(nrow(df) == (nrow(splits[[1]]) + nrow(splits[[2]]) + nrow(splits[[3]])))
   if (nrow(splits[[1]]) == 0) stop("Part 1 has no rows")
   if (nrow(splits[[2]]) == 0) stop("Part 2 has no rows")

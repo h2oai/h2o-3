@@ -351,22 +351,24 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
   if (! is.numeric(seed)) stop("seed must be an integer")
   
   num_slices = length(ratios) + 1
+  boundaries = numeric(length(ratios))
   
   i = 1
   last_boundary = 0
   while (i < num_slices) {
-    boundary = ratios[i]
-    if (boundary <= 0) {
+    ratio = ratios[i]
+    if (ratio < 0) {
       stop("Ratio must be greater than 0")
     }
+        
+    boundary = last_boundary + ratio
     if (boundary >= 1) {
-      stop("Ratio must be less than 1")
-    }    
-    if (last_boundary >= boundary) {
-      stop("Ratios must be in increasing order")
+      stop("Ratios must add up to less than 1.0")
     }
     
+    boundaries[i] = boundary    
     last_boundary = boundary
+    
     i = i + 1
   }
   
@@ -377,15 +379,15 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
   while (i <= num_slices) {
     if (i == 1) {
       # lower_boundary is 0.0
-      upper_boundary = ratios[i]
+      upper_boundary = boundaries[i]
       tmp_slice = data[tmp_runif <= upper_boundary,]
     } else if (i == num_slices) {
-      lower_boundary = ratios[i-1]
+      lower_boundary = boundaries[i-1]
       # upper_boundary is 1.0
       tmp_slice = data[tmp_runif > lower_boundary,]
     } else {
-      lower_boundary = ratios[i-1]
-      upper_boundary = ratios[i]
+      lower_boundary = boundaries[i-1]
+      upper_boundary = boundaries[i]
       tmp_slice = data[((tmp_runif > lower_boundary) & (tmp_runif <= upper_boundary)),]
     }
     
