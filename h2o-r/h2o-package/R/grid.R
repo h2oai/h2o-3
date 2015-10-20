@@ -32,8 +32,8 @@
 #' # Get grid summary
 #' summary(grid)
 #' # Fetch grid models
-#' model_ids <- grid@@model_ids
-#' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
+#' model_ids <- grid@model_ids
+#' models <- lapply(model_ids, function(id) h2o.getModel(id))
 #' }
 #' @export
 h2o.grid <- function(algorithm,
