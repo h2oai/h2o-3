@@ -1,10 +1,5 @@
-## Set your working directory
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-
-## Load library and initialize h2o
 library(h2o)
-print("Launching H2O and initializing connection object...")
-conn <- h2o.init(nthreads = -1)
+h2o.init()
 
 ## Function for reading movie names into R
 readMultiChar <- function(fileName, separators) {
@@ -17,9 +12,8 @@ readMultiChar <- function(fileName, separators) {
 }
 
 ## Find and import data into H2O
-locate       <- h2o:::.h2o.locate
-pathToData   <- locate("smalldata/demos/movielens_1m.zip")
-pathToMovies <- locate("smalldata/demos/movies.dat")
+pathToData   <- h2o:::.h2o.locate("smalldata/demos/movielens_1m.zip")
+pathToMovies <- h2o:::.h2o.locate("smalldata/demos/movies.dat")
 # movieInfo    <- readMultiChar(pathToMovies, separators = "::")
 print("Importing MovieLens 1M dataset into H2O...")
 ratings.hex <- h2o.importFile(path = pathToData, header = TRUE, destination_frame = "ratings.hex")
@@ -31,8 +25,8 @@ summary(ratings.hex)
 #          Matrix Decomposition         #
 #---------------------------------------#
 ## Basic GLRM with quadratic loss and regularization
-ratings.glrm <- h2o.glrm(ratings.hex, x = 2:ncol(ratings.hex), k = 15, ignore_const_cols = FALSE, transform = "NONE", 
-                         init = "PlusPlus", loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic", 
+ratings.glrm <- h2o.glrm(ratings.hex, x = 2:ncol(ratings.hex), k = 15, ignore_const_cols = FALSE, transform = "NONE",
+                         init = "PlusPlus", loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic",
                          gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000)
 ratings.glrm
 
@@ -81,9 +75,9 @@ ratings_new.df[idx_known] <- val_known
 ratings_new.hex <- as.h2o(t(data.frame(ratings_new.df)))
 
 ## Run GLRM on new user rating vector with initial Y from previous model
-ratings_new.glrm <- h2o.glrm(ratings_new.hex, k = 15, ignore_const_cols = FALSE, transform = "NONE", 
-                             init = "User", user_y = ratings.y, loss = "Quadratic", 
-                             regularization_x = "Quadratic", regularization_y = "Quadratic", 
+ratings_new.glrm <- h2o.glrm(ratings_new.hex, k = 15, ignore_const_cols = FALSE, transform = "NONE",
+                             init = "User", user_y = ratings.y, loss = "Quadratic",
+                             regularization_x = "Quadratic", regularization_y = "Quadratic",
                              gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000)
 ratings_new.glrm
 

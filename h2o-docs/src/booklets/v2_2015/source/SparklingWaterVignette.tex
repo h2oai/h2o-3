@@ -11,30 +11,41 @@
 
 \input{common/conf_listings.tex}
 
+
+
 \thispagestyle{empty} %removes page number  
 
 \begin{center}
-\textsc{\Large\bf{Sparkling Water}}
+\textsc{\large\bf{Machine Learning with Sparkling Water: H2O + Spark}}
+
+\bigskip
+\line(1,0){250}  %inserts  horizontal line 
 \\
 \bigskip
-\textsc{\small{Michal Malohlava\hspace{40pt} Alex Tellez \hspace{40pt} Jessica Lanford}}
+\textsc{\small{Michal Malohlava\hspace{20pt} Alex Tellez \hspace{20pt} Jessica Lanford}}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
 
 
-{\url{http://h2o.gitbooks.io/sparkling-water-and-h2o/}}
+{\url{http://h2o.ai/resources}}
 
 \bigskip
-August 2015: First Edition 
+\monthname \hspace{1pt}  \the\year: First Edition 
 \\%add front page image here? (wavy lines)
 \bigskip
 \end{center}
 
+\newpage
+\null\vfill %move next text block to lower left of new page
+
+\thispagestyle{empty}%remove pg#
+
+
 {\raggedright\vfill\ 
 
-Sparkling Water\\
-  by Michal Malohlava, Alex Tellez \&\ Jessica Lanford\\
+Machine Learning with Sparkling Water: H2O + Spark\\
+  by Michal Malohlava, Alex Tellez \&\  Jessica Lanford\\
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -43,7 +54,7 @@ Mountain View, CA 94043\\
 \textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-August 2015: First Edition
+\monthname \hspace{1pt}  \the\year: First Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -65,32 +76,27 @@ Printed in the United States of America.
 
 \newpage
 \input{common/what_is_h2o.tex}
-\newpage
 
 %
 % Include introduction for SW
 %
-\include{sw/sections/intro}
+\input{sw/sections/intro}
 
 %
 % SW design
 %
-\newpage
-\include{sw/sections/design}
+\input{sw/sections/design}
 %
 % Exposed public Scala API
 %
-\newpage
-\include{sw/sections/api}
+\input{sw/sections/api}
 
-\newpage
-\include{sw/sections/deployment}
+\input{sw/sections/deployment}
 
-\newpage
 \include{sw/sections/configuration}
 
 %
-% Building standalone applications with Sparklint Water
+% Building standalone applications with Sparkling Water
 %
 \newpage
 \include{sw/sections/apps}

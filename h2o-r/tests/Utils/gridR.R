@@ -36,6 +36,7 @@ makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
                                                             "RectifierWithDropout", "MaxoutWithDropout"),
                                                           sample(2:3,1)) }
     if ( sample(0:1,1) ) { grid_space$epochs <- sample(1:10, sample(2:3,1)) }
+    #if ( sample(0:1,1) ) { grid_space$hidden <- list(rep(sample(10:50,1),sample(2:3,1)), rep(sample(10:50,1),sample(2:3,1)))}
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }
   if ( algo == "kmeans" ) {
