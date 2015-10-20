@@ -25,7 +25,6 @@ whd_zcta <- h2o.uploadFile(pathToWHDData, col.types = c(rep("enum", 7), rep("num
 ## Grab a summary of WHD frame
 dim(whd_zcta)
 summary(whd_zcta)
-# EDIT: Script for what dataset represents and what it means as a low-rank model
 
 print("Run GLRM to reduce ZCTA demographics to k = 10 archetypes")
 acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZE", 
@@ -50,11 +49,11 @@ split <- h2o.runif(whd_zcta)
 train <- whd_zcta[split <= 0.8,]
 test  <- whd_zcta[split > 0.8,]
 
-print("Build a GBM model on original WHD data to predict repeat violators")
+print("Build a DL model on original WHD data to predict repeat violators")
 myY <- "flsa_repeat_violator"
-myX <- setdiff(4:ncol(train), which(colnames(train) == myY))
-orig_time <- system.time(gbm_orig <- h2o.gbm(x = myX, y = myY, training_frame = train, validation_frame = test,
-                                             ntrees = 10, max_depth = 6, distribution = "multinomial"))
+myX <- setdiff(5:ncol(train), which(colnames(train) == myY))
+orig_time <- system.time(dl_orig <- h2o.deeplearning(x = myX, y = myY, training_frame = train, epochs = 0.1,
+                                                     validation_frame = test, distribution = "multinomial"))
 
 print("Replace ZCTA5 column in WHD data with GLRM archetypes")
 zcta_arch_x$zcta5_cd <- acs_zcta_col
@@ -66,14 +65,12 @@ summary(whd_arch)
 train_mod <- whd_arch[split <= 0.8,]
 test_mod  <- whd_arch[split > 0.8,]
 
-print("Build a GBM model on modified WHD data to predict repeat violators")
-myX <- setdiff(4:ncol(train_mod), which(colnames(train_mod) == myY))
-mod_time <- system.time(gbm_mod <- h2o.gbm(x = myX, y = myY, training_frame = train_mod, validation_frame = test_mod,
-                                           ntrees = 10, max_depth = 6, distribution = "multinomial"))
+print("Build a DL model on modified WHD data to predict repeat violators")
+myX <- setdiff(5:ncol(train_mod), which(colnames(train_mod) == myY))
+mod_time <- system.time(dl_mod <- h2o.deeplearning(x = myX, y = myY, training_frame = train_mod, epochs = 0.1,
+                                                   validation_frame = test_mod, distribution = "multinomial"))
 
 print("Performance comparison:")
-data.frame(original  = c(orig_time[3], gbm_orig@model$training_metric@metrics$MSE, gbm_orig@model$validation_metric@metrics$MSE),
-           reduced   = c(mod_time[3], gbm_mod@model$training_metric@metrics$MSE, gbm_mod@model$validation_metric@metrics$MSE),
+data.frame(original = c(orig_time[3], h2o.mse(dl_orig, train = TRUE), h2o.mse(dl_orig, valid = TRUE)),
+           reduced  = c(mod_time[3], h2o.mse(dl_mod, train = TRUE), h2o.mse(dl_mod, valid = TRUE)),
            row.names = c("runtime", "train_mse", "test_mse"))
-# EDIT: Examine validation (test) error (should be better due to overfitting)
-# EDIT: Try original GBM with categorical column excluded
