@@ -6,8 +6,8 @@ test.pub_1235 <- function() {
   crimes <- h2o.importFile(locate("smalldata/chicago/chicagoCrimes10k.csv.zip"))
   print(summary(crimes))
   
-  Log.info("Split frame with ratios = c(0.8,0.2)")
-  crimesSplit <- h2o.splitFrame(crimes, ratios = c(0.8,0.2))
+  Log.info("Split frame with ratios = c(0.8,0.19999999)")
+  crimesSplit <- h2o.splitFrame(crimes, ratios = c(0.8,0.199999999))
   
 }
 

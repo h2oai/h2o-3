@@ -130,8 +130,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    if isinstance(python_obj, (dict, collections.OrderedDict)):
-      csv_writer.writeheader()                     # write the header
+    #csv_writer.writeheader()                     # write the header
+    if not kwargs['column_names']: kwargs['column_names'] = header
     csv_writer.writerows(data_to_write)            # write the data
     tmp_file.close()                               # close the streams
     self._upload_raw_data(tmp_path, **kwargs)      # actually upload the data to H2O
@@ -904,18 +904,71 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if not isinstance(data, H2OFrame): raise ValueError("`data` must be an H2OFrame, but got {0}".format(type(data)))
     return H2OFrame(expr=ExprNode("rbind", self, data))
 
-  def split_frame(self, ratios=[0.75], destination_frames=""):
+  def split_frame(self, ratios=None, destination_frames=None, seed=None):
     """
     Split a frame into distinct subsets of size determined by the given ratios.
     The number of subsets is always 1 more than the number of ratios given.
 
     :param ratios: The fraction of rows for each split.
     :param destination_frames: names of the split frames
+    :param seed: Random seed
     :return: a list of frames
     """
-    j = h2o.H2OConnection.post_json("SplitFrame", dataset=self._id, ratios=ratios, destination_frames=destination_frames)
-    h2o.H2OJob(j, "Split Frame").poll()
-    return [h2o.get_frame(i["name"]) for i in j["destination_frames"]]
+
+    if ratios is None:
+      ratios = [0.75]
+
+    if len(ratios) < 1:
+      raise ValueError("Ratios must have length of at least 1")
+
+    if destination_frames is not None:
+      if (len(ratios)+1) != len(destination_frames):
+        raise ValueError("The number of provided destination_frames must be one more than the number of provided ratios")
+
+    num_slices = len(ratios) + 1
+    boundaries = []
+
+    last_boundary = 0
+    i = 0
+    while i < num_slices-1:
+      ratio = ratios[i]
+      if ratio < 0:
+        raise ValueError("Ratio must be greater than 0")
+      boundary = last_boundary + ratio
+      if boundary >= 1.0:
+        raise ValueError("Ratios must add up to less than 1.0")
+      boundaries.append(boundary)
+      last_boundary = boundary
+      i += 1
+
+    splits = []
+    tmp_runif = self.runif(seed)
+
+    i = 0
+    while i < num_slices:
+      if i == 0:
+        # lower_boundary is 0.0
+        upper_boundary = boundaries[i]
+        tmp_slice = self[(tmp_runif <= upper_boundary), :]
+      elif i == num_slices-1:
+        lower_boundary = boundaries[i-1]
+        # upper_boundary is 1.0
+        tmp_slice = self[(tmp_runif > lower_boundary), :]
+      else:
+        lower_boundary = boundaries[i-1]
+        upper_boundary = boundaries[i]
+        tmp_slice = self[((tmp_runif > lower_boundary) & (tmp_runif <= upper_boundary)), :]
+
+      if destination_frames is None:
+        splits.append(tmp_slice)
+      else:
+        destination_frame_id = destination_frames[i]
+        tmp_slice2 = h2o.assign(tmp_slice, destination_frame_id)
+        splits.append(tmp_slice2)
+
+      i += 1
+
+    return splits
 
   # ddply in h2o
   def ddply(self,cols,fun):

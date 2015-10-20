@@ -1,13 +1,16 @@
+import sys
+sys.path.insert(1, "../../")
+import h2o, tests
 import numpy as np
 
 def col_names_check():
 
-  iris_wheader = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
+  iris_wheader = h2o.import_file(tests.locate("smalldata/iris/iris_wheader.csv"))
   assert iris_wheader.col_names == ["sepal_len","sepal_wid","petal_len","petal_wid","class"], \
       "Expected {0} for column names but got {1}".format(["sepal_len","sepal_wid","petal_len","petal_wid","class"],
                                                          iris_wheader.col_names)
 
-  iris = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
+  iris = h2o.import_file(tests.locate("smalldata/iris/iris.csv"))
   assert iris.col_names == ["C1","C2","C3","C4","C5"], "Expected {0} for column names but got " \
                                                          "{1}".format(["C1","C2","C3","C4","C5"], iris.col_names)
 
@@ -26,4 +29,14 @@ def col_names_check():
                       " for column types but got {}".format({"C3": "Numeric", "C2": "Numeric", "C1": "Numeric",
                                                              "C4": "Numeric"}, df.types)
 
-col_names_check()
+  df = h2o.H2OFrame({'B': ['a', 'a', 'b', 'NA', 'NA']})
+  df.head()
+  assert df.col_names == ["B"], "Expected {} for column names but got {}".format(["B"], df.col_names)
+
+  df = h2o.H2OFrame({'B': ['a', 'a', 'b', 'NA', 'NA']}, column_names=["X"])
+  df.head()
+  assert df.col_names == ["X"], "Expected {} for column names but got {}".format(["X"], df.col_names)
+
+
+if __name__ == "__main__":
+  tests.run_test(sys.argv, col_names_check)
