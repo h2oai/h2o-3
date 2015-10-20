@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -19,4 +23,8 @@ def colname_set_basic():
         format(no_headers.names, headers_and.names)
 
 
-colname_set_basic()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(colname_set_basic)
+else:
+    colname_set_basic()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 import os
 
 from h2o.model.binomial import H2OBinomialModel
@@ -20,4 +24,8 @@ def save_load_model():
     assert isinstance(the_model, H2OBinomialModel), "Expected and H2OBinomialModel, but got {0}".format(the_model)
 
 
-save_load_model()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(save_load_model)
+else:
+    save_load_model()

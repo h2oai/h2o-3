@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -32,4 +36,8 @@ def pyunit_as_data_frame():
   assert head_small_bike_pandas.loc[4][0] == tail_small_bike_pandas.loc[0][0]
 
 
-pyunit_as_data_frame()
+
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(pyunit_as_data_frame)
+else:
+  pyunit_as_data_frame()

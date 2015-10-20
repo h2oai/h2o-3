@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 import os
 
 import random
@@ -20,4 +24,8 @@ def download_csv():
                                                                                 "".format(iris1[rand_row, rand_col],
                                                                                           iris2[rand_row, rand_col])
 
-download_csv()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(download_csv)
+else:
+    download_csv()

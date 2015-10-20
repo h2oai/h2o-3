@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -15,4 +19,8 @@ def download_pojo():
 
 
 
-download_pojo()
+
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(download_pojo)
+else:
+  download_pojo()

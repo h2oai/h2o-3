@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -69,4 +73,8 @@ def test_as_data():
   hdf10 = hdf10.as_date("%Y_%m_%d")
 
 
-test_as_data()
+
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(test_as_data)
+else:
+  test_as_data()

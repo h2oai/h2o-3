@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -35,4 +39,8 @@ def directory_import():
     assert c1 == ca, "Expected same number of cols, but got {0} and {1}".format(c1,ca)
 
 
-directory_import()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(directory_import)
+else:
+    directory_import()

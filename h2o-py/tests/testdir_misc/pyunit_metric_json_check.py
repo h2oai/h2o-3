@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 # The purpose of this test is to detect a change in the _metric_json of MetricsBase objects. Many of the metric
 # accessors require _metric_json to have a particular form.
 
@@ -174,5 +178,7 @@ def metric_json_check():
                                                                             clus_metric_json_keys_desired,
                                                                             clus_metric_diff)
 
-
-metric_json_check()
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(metric_json_check)
+else:
+    metric_json_check()

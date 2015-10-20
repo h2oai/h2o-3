@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -14,4 +18,8 @@ def screeplot_test():
     australia_pca.screeplot(type="lines", **kwargs)
 
 
-screeplot_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(screeplot_test)
+else:
+    screeplot_test()

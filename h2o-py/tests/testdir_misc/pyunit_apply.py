@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -43,4 +47,8 @@ def pyunit_apply():
   fr.apply(lambda row: h2o.ifelse(row[0] < 5, 3, (row[2] - 1).expm1()), axis=1)
 
 
-pyunit_apply()
+
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(pyunit_apply)
+else:
+  pyunit_apply()

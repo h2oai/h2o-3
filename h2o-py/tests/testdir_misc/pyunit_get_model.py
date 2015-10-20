@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -61,4 +65,8 @@ def get_model_test():
                          "".format(r, p1, p2)
 
 
-get_model_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(get_model_test)
+else:
+    get_model_test()
