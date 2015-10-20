@@ -1,6 +1,6 @@
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 
 def colname_set_basic():
     
@@ -8,8 +8,8 @@ def colname_set_basic():
 
     print "Uploading iris data..."
 
-    no_headers = h2o.upload_file(tests.locate("smalldata/iris/iris.csv"))
-    headers_and = h2o.upload_file(tests.locate("smalldata/iris/iris_header.csv"))
+    no_headers = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
+    headers_and = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris_header.csv"))
 
     print no_headers.names
     print headers_and.names
@@ -18,5 +18,5 @@ def colname_set_basic():
     assert no_headers.names == headers_and.names, "Expected the same column names but got {0} and {1}".\
         format(no_headers.names, headers_and.names)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, colname_set_basic)
+
+colname_set_basic()

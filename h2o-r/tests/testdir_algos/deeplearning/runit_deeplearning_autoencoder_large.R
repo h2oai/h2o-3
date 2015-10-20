@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.deeplearning_autoencoder <- function() {
      Log.info("Deep Learning Autoencoder MNIST)")

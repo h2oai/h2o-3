@@ -7,6 +7,7 @@ h2oEnsemble 0.0.9 (In progress)
 * TO DO: Update the `runtime` list to include times for `cv` and `baselearning`.  These were dropped in version 0.0.5.
 * TO DO: Added new function `h2o.recombine` which allows the user to easily re-fit the metalearner using a new metalearning algorithm.
 * TO DO: Added new functions, `h2o.saveEnsemble` and `h2o.loadEnsemble`, for easy saving and loading of ensemble models to disk.
+* Added `target_ratio_comm_to_comp` argument to the `h2o.deeplearning.wrapper` function.
 
 
 h2oEnsemble 0.0.8 (2015-10-07)

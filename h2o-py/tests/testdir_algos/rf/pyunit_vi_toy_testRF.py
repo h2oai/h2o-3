@@ -1,12 +1,12 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def vi_toy_test():
     
     
 
-    toy_data = h2o.import_file(path=tests.locate("smalldata/gbm_test/toy_data_RF.csv"))
+    toy_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/toy_data_RF.csv"))
     #toy_data.summary()
 
     toy_data[6] = toy_data[6].asfactor()
@@ -17,5 +17,5 @@ def vi_toy_test():
     print(ranking)
     assert tuple(ranking) == tuple(["V3","V2","V6","V5","V1","V4"]), "expected specific variable importance ranking"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, vi_toy_test)
+
+vi_toy_test()

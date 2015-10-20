@@ -1,13 +1,13 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def link_functions_tweedie_basic():
     
     
 
     print "Read in prostate data."
-    hdf = h2o.upload_file(tests.locate("smalldata/prostate/prostate_complete.csv.zip"))
+    hdf = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip"))
 
     print "Testing for family: TWEEDIE"
     print "Set variables for h2o."
@@ -24,6 +24,6 @@ def link_functions_tweedie_basic():
                                                     "{0}, r: {1}".format(deviance_h2o_tweedie, 0.721452)
 
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, link_functions_tweedie_basic)
+
+link_functions_tweedie_basic()
 

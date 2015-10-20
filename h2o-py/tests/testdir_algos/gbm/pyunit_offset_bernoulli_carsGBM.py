@@ -1,12 +1,12 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def offset_bernoulli_cars():
     # Connect to a pre-existing cluster
     
 
-    cars = h2o.upload_file(tests.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     cars = cars[cars["economy_20mpg"].isna() == 0]
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
     offset = h2o.H2OFrame(python_obj=[[.5 for x in range(398)]])
@@ -33,5 +33,5 @@ def offset_bernoulli_cars():
     assert abs(0.8506528 - predictions[:,2].max()) < 1e-6, "expected prediction max to be {0}, but got {1}". \
         format(0.8506528, predictions[:,2].max())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_bernoulli_cars)
+
+offset_bernoulli_cars()

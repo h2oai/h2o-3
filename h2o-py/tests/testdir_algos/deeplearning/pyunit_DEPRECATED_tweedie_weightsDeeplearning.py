@@ -1,10 +1,10 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def tweedie_weights():
 
-    data = h2o.import_file(tests.locate("smalldata/glm_test/cancar_logIn.csv"))
+    data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/cancar_logIn.csv"))
     data["C1M3"] = (data["Class"] == 1 and data["Merit"] == 3).asfactor()
     data["C3M3"] = (data["Class"] == 3 and data["Merit"] == 3).asfactor()
     data["C4M3"] = (data["Class"] == 4 and data["Merit"] == 3).asfactor()
@@ -30,5 +30,5 @@ def tweedie_weights():
                           force_load_balance = False, seed = 2353123,tweedie_power = 1.5,score_training_samples = 0,
                           score_validation_samples = 0,weights_column = "Insured",training_frame = cancar)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, tweedie_weights)
+
+tweedie_weights()

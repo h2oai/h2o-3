@@ -1,12 +1,12 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def pca_prostate():
 
 
     print "Importing prostate.csv data...\n"
-    prostate = h2o.upload_file(tests.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
     print "Converting CAPSULE, RACE, DPROS and DCAPS columns to factors"
     prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
@@ -22,5 +22,5 @@ def pca_prostate():
     print "Projection matrix:\n"
     pred.head()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pca_prostate)
+
+pca_prostate()

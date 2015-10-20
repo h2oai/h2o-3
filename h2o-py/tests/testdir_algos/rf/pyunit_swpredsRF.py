@@ -1,6 +1,6 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def swpredsRF():
     # Training set has two predictor columns
@@ -11,7 +11,7 @@ def swpredsRF():
     
 
     #Log.info("Importing swpreds_1000x3.csv data...\n")
-    swpreds = h2o.import_file(path=tests.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
+    swpreds = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
     swpreds["y"] = swpreds["y"].asfactor()
 
     #Log.info("Summary of swpreds_1000x3.csv from H2O:\n")
@@ -31,5 +31,5 @@ def swpredsRF():
     perf2 = model2.model_performance(swpreds)
     print(perf2.auc())
   
-if __name__ == "__main__":
-  tests.run_test(sys.argv, swpredsRF)
+
+swpredsRF()

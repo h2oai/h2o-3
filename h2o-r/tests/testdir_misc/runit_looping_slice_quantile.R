@@ -4,10 +4,8 @@
 
 options(error=traceback, warn=1)
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_misc")
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-TEST_ROOT_DIR <- ".."
-source(sprintf("%s/%s", TEST_ROOT_DIR, "h2o-runit.R"))
 
 
 #----------------------------------------------------------------------

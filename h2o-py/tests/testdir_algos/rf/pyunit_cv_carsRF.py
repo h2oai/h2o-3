@@ -1,13 +1,13 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 import random
 
 
 def cv_carsRF():
 
     # read in the dataset and construct training set (and validation set)
-    cars =  h2o.import_file(path=tests.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial
@@ -31,14 +31,14 @@ def cv_carsRF():
     nfolds = random.randint(3,10)
     rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
     rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
-    tests.check_models(rf1, rf2, True)
+    pyunit_utils.check_models(rf1, rf2, True)
 
     # 2. check that cv metrics are different over repeated "Random" runs
     nfolds = random.randint(3,10)
     rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
     try:
-        tests.check_models(rf1, rf2, True)
+        pyunit_utils.check_models(rf1, rf2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
@@ -73,7 +73,7 @@ def cv_carsRF():
     rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=0, seed=1234)
     # check that this is equivalent to no nfolds
     rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], seed=1234)
-    tests.check_models(rf1, rf2)
+    pyunit_utils.check_models(rf1, rf2)
 
     # 3. cross-validation and regular validation attempted
     rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10),
@@ -111,5 +111,5 @@ def cv_carsRF():
     # except EnvironmentError:
     #     assert True
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, cv_carsRF)
+
+cv_carsRF()

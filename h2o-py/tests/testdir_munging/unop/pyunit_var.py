@@ -4,17 +4,17 @@
 # If any categorical columns, throw an error
 ##
 
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 import numpy as np
 
 def var_test():
     
     
 
-    iris_h2o = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
-    iris_np = np.genfromtxt(tests.locate("smalldata/iris/iris_wheader.csv"),
+    iris_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
+    iris_np = np.genfromtxt(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"),
                             delimiter=',',
                             skip_header=1,
                             usecols=(0, 1, 2, 3))
@@ -29,5 +29,5 @@ def var_test():
     var_cov_np = np.cov(iris_np, rowvar=0, ddof=1)
 
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, var_test)
+
+var_test()

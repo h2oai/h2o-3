@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 require(LiblineaR)
 require(ROCR)
 
@@ -76,7 +76,7 @@ test.LiblineaR.airlines <- function() {
   }
   
   Log.info("Importing Airlines test/train data...\n")
-  exdir         <- locate("Rsandbox_runit_GLM_libR_airlines.R")
+  exdir         <- sandbox()
 #  exdir <- "/Users/spencer/0xdata/h2o-3/h2o-r/tests/testdir_algos/glm/Rsandbox_runit_GLM_libR_airlines.R/"
 #  airlinesTrain <- "/Users/spencer/0xdata/h2o-3/smalldata/airlines/AirlinesTrain.csv.zip"   #locate("smalldata/airlines/AirlinesTrain.csv.zip")
 #  airlinesTest  <- "/Users/spencer/0xdata/h2o-3/smalldata/airlines/AirlinesTest.csv.zip"  #locate("smalldata/airlines/AirlinesTest.csv.zip")

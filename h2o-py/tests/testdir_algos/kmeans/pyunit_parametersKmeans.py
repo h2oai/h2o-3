@@ -1,11 +1,11 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def parametersKmeans():
 
     print "Getting data..."
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     print "Create and and duplicate..."
     iris_km = h2o.kmeans(x=iris[0:4], k=3, seed=1234)
@@ -26,5 +26,5 @@ def parametersKmeans():
     centers_again = iris_km_again.centers()
     assert centers == centers_again, "expected centers to be the same"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, parametersKmeans)
+
+parametersKmeans()

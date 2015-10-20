@@ -3,7 +3,8 @@
 This document describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the [Javadoc](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-genmodel/javadoc/index.html) for more information, including packages. 
 
  >**Note**: POJOs are not supported for source files larger than 1G. For more information, refer to the [FAQ](#POJO_Err) below. 
-
+ 
+ 
 ##What is a POJO? 
 
 H2O allows you to convert the models you have built to a Plain Old Java Object (POJO), which can then be easily deployed within your Java app and scheduled to run on a specified dataset.
@@ -185,6 +186,7 @@ The PredictCsv class is used by the H2O test harness to make predictions on new 
 For more information about in-H2O predictions (as opposed to POJO predictions), see the documentation for the H2O REST API endpoint /3/Predictions.
 
 <a name="POJO_Err"></a>
+
 - **Why did I receive the following error when trying to compile the POJO?**
 
 ```
@@ -209,3 +211,11 @@ java.lang.IllegalArgumentException
 ```
 
 This error is generated when the source file is larger than 1G. 
+
+- **After creating my POJO, I noticed that it does not predict the results consistently; for example, one row contains the same data as another row but results in a different prediction. Why is this?**
+
+A POJO (like any model) is only as good as the data that is fed into it. We strongly recommend munging your data before creating a model or POJO, as this will improve the accuracy. 
+
+For example, if your dataset has many rows where the values are all zeros, the model and resulting POJO will not be as accurate because the NA values reduce the accuracy of the model and the POJO may predict inaccurate results. 
+
+We strongly recommend removing any rows containing all zeros before creating your model or POJO. If your results are inaccurate, munge the dataset to remove the all-zero rows and rerun the model. 

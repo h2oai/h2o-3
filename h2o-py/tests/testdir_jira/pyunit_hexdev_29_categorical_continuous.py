@@ -4,9 +4,6 @@
 ##
 ################################################################################
 
-import sys, os
-sys.path.insert(1, "../../")
-import h2o, tests
 
 def continuous_or_categorical():
   # connect to h2o
@@ -49,5 +46,5 @@ def continuous_or_categorical():
   assert (not df_hex['h2'].isfactor())
   assert (not df_hex['h3'].isfactor())
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, continuous_or_categorical)
+
+continuous_or_categorical()

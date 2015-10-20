@@ -1,6 +1,6 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 import numpy as np
 import random
 
@@ -42,8 +42,8 @@ def expr_reducers():
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sum values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    tests.np_comparison_check(h2o_data.var(), np.cov(np_data, rowvar=0, ddof=1), 10), \
+    pyunit_utils.np_comparison_check(h2o_data.var(), np.cov(np_data, rowvar=0, ddof=1), 10), \
         "expected equal var values between h2o and numpy"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, expr_reducers)
+
+expr_reducers()

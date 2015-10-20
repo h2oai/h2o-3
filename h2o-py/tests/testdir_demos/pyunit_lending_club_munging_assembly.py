@@ -1,12 +1,12 @@
-import sys
-sys.path.insert(1, "../../")
-import h2o,tests
+
+
+
 from h2o.assembly import *
 from h2o.transforms.preprocessing import *
 
 def lending_club_munging_assembly():
 
-  small_test = [tests.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
+  small_test = [pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
 
   # lending-club munging assembly
   print "Import and Parse data"
@@ -87,5 +87,5 @@ def lending_club_munging_assembly():
   #   BinomialModelPrediction pred = model.predictBinomial(row);
 #   // Use prediction!
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, lending_club_munging_assembly)
+
+lending_club_munging_assembly()

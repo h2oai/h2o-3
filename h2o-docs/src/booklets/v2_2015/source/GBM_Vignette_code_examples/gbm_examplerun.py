@@ -1,5 +1,5 @@
 # Load the data and prepare for modeling
-airlines_hex = h2o.import_file(path = "allyears2k_headers.csv")
+airlines_hex = h2o.import_file(path = _locate("smalldata/airlines/allyears2k_headers.zip"))
 
 # Generate random numbers and create training, validation, testing splits
 r = airlines_hex.runif()   # Random UNIForm numbers, one per row

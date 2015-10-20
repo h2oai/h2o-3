@@ -1,13 +1,13 @@
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 
 def offset_1897():
     
 
     print 'Checking binomial models for GLM with and without offset'
     print 'Import prostate dataset into H2O and R...'
-    prostate_hex = h2o.import_file(tests.locate("smalldata/prostate/prostate.csv"))
+    prostate_hex = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
 
     print "Checking binomial model without offset..."
     prostate_glm_h2o = h2o.glm(x=prostate_hex[["RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"]],
@@ -39,5 +39,5 @@ def offset_1897():
     print "r residual: {0}".format(2761.76218461138)
     assert abs(2761.76218461138 - prostate_glm_h2o.residual_deviance()) < 0.1
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_1897)
+
+offset_1897()

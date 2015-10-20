@@ -1,13 +1,13 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 import random
 
 def test_get_future_model():
     
     
 
-    covtype=h2o.upload_file(tests.locate("smalldata/covtype/covtype.altered.gz"))
+    covtype=h2o.upload_file(pyunit_utils.locate("smalldata/covtype/covtype.altered.gz"))
 
     myY=54
     myX=list(set(range(54)) - set([20,28]))   # Cols 21 and 29 are constant, so must be explicitly ignored
@@ -33,5 +33,5 @@ def test_get_future_model():
     covtype_h2o3 = h2o.get_future_model(covtype_h2o3)
     print(covtype_h2o3)
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, test_get_future_model)
+
+test_get_future_model()

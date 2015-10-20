@@ -1,15 +1,15 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 import pandas as pd
 import statsmodels.api as sm
 
 def prostate():
 
-  h2o_data = h2o.upload_file(path=tests.locate("smalldata/logreg/prostate.csv"))
+  h2o_data = h2o.upload_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
   h2o_data.summary()
 
-  sm_data = pd.read_csv(tests.locate("smalldata/logreg/prostate.csv")).as_matrix()
+  sm_data = pd.read_csv(pyunit_utils.locate("smalldata/logreg/prostate.csv")).as_matrix()
   sm_data_response = sm_data[:,1]
   sm_data_features = sm_data[:,2:]
 
@@ -20,6 +20,6 @@ def prostate():
   print "h2o null deviance {0}".format(h2o_glm.null_deviance())
   assert abs(sm_glm.null_deviance - h2o_glm.null_deviance()) < 1e-5, "Expected null deviances to be the same"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, prostate)
+
+prostate()
 

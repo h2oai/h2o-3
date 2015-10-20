@@ -1,8 +1,8 @@
 ###############################################################
 ###### Catch illegal input for GLM w/ Beta Constraints  #######
 ###############################################################
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
   ## Import data

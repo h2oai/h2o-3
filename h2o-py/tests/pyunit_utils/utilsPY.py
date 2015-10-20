@@ -1,8 +1,13 @@
+import sys, os
+sys.path.insert(1, "../../")
+import h2o
+from h2o import H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, H2OClusteringModel, H2OFrame
 import imp
 import random
 import re
 import subprocess
 from subprocess import STDOUT,PIPE
+<<<<<<< HEAD:h2o-py/tests/utils/utilsPY.py
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
@@ -13,6 +18,9 @@ from h2o.model.clustering import H2OClusteringModel
 from h2o.model.dim_reduction import H2ODimReductionModel
 from h2o.model.multinomial import H2OMultinomialModel
 from h2o.model.regression import H2ORegressionModel
+=======
+import urllib2
+>>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4:h2o-py/tests/pyunit_utils/utilsPY.py
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
     """
@@ -207,3 +215,59 @@ def javapredict(algo, equality, train, test, x, y, **kwargs):
             assert hp == pp, "Expected predictions to be the same for row {0}, but got {1} and {2}".format(r,hp, pp)
         else:
             raise(ValueError, "equality type {0} is not supported".format(equality))
+
+def locate(path):
+    """
+    Search for a relative path and turn it into an absolute path.
+    This is handy when hunting for data files to be passed into h2o and used by import file.
+    Note: This function is for unit testing purposes only.
+
+    Parameters
+    ----------
+    path : str
+      Path to search for
+
+    :return: Absolute path if it is found.  None otherwise.
+    """
+    if (test_is_on_hadoop()):
+       # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
+       # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
+       # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
+       # machines store smalldata and bigdata in /home/0xdiag/. If ON.HADOOP is set by the run.py, the path arg MUST
+       # be an immediate subdirectory of /home/0xdiag/. Moreover, the only guaranteed subdirectories of /home/0xdiag/ are
+       # smalldata and bigdata.
+       p = os.path.realpath(os.path.join("/home/0xdiag/",path))
+       if not os.path.exists(p): raise ValueError("File not found: " + path)
+       return p
+    else:
+        tmp_dir = os.path.realpath(os.getcwd())
+        possible_result = os.path.join(tmp_dir, path)
+        while (True):
+            if (os.path.exists(possible_result)):
+                return possible_result
+
+            next_tmp_dir = os.path.dirname(tmp_dir)
+            if (next_tmp_dir == tmp_dir):
+                raise ValueError("File not found: " + path)
+
+            tmp_dir = next_tmp_dir
+            possible_result = os.path.join(tmp_dir, path)
+
+def hadoop_namenode_is_accessible():
+    url = "http://{0}:50070".format(hadoop_namenode())
+    try:
+        urllib2.urlopen(urllib2.Request(url))
+        internal = True
+    except:
+        internal = False
+    return internal
+
+def test_is_on_hadoop(): return sys.modules["tests.pyunit_utils"].__on_hadoop__
+def hadoop_namenode():   return sys.modules["tests.pyunit_utils"].__hadoop_namenode__
+
+def pyunit_exec(test_name):
+    pyunit = "import h2o\nfrom tests import pyunit_utils\n"
+    with open (test_name, "r") as t: pyunit = pyunit + t.read()
+    pyunit_c = compile(pyunit, '<string>', 'exec')
+    p = {}
+    exec pyunit_c in p

@@ -1,13 +1,13 @@
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 
 
 def expr_as_list():
     
     
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
     # multiple rows and columns
     res = 2 - iris
@@ -28,5 +28,5 @@ def expr_as_list():
     frm = h2o.as_list(h2o.H2OFrame(python_obj=[[1,2,3], [4,5,6]]), use_pandas=False)
     assert float(frm[2][1]) == 5, "incorrect values"
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, expr_as_list)
+
+expr_as_list()

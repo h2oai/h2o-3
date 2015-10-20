@@ -4,9 +4,9 @@
 ## column_names, and column_types and that certain characters are replaced.
 ##
 ################################################################################
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 
 def additional_parameters():
 
@@ -15,7 +15,7 @@ def additional_parameters():
     c_names = ["a", "b", "c"]
     c_types = ["enum", "enum", "string"]
 
-    fhex = h2o.import_file(tests.locate("smalldata/jira/hexdev_29.csv"),
+    fhex = h2o.import_file(pyunit_utils.locate("smalldata/jira/hexdev_29.csv"),
                            destination_frame=dest_frame,
                            col_names=c_names,
                            col_types=c_types)
@@ -32,7 +32,7 @@ def additional_parameters():
     c_names = ["a", "b", "c"]
     c_types = {"c":"string", "a":"string"}
 
-    fhex = h2o.import_file(tests.locate("smalldata/jira/hexdev_29.csv"),
+    fhex = h2o.import_file(pyunit_utils.locate("smalldata/jira/hexdev_29.csv"),
                            destination_frame=dest_frame,
                            col_names=c_names,
                            col_types=c_types)
@@ -46,5 +46,5 @@ def additional_parameters():
       if name in c_types:
         assert col_summary[i]["type"] == c_types[name]
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, additional_parameters)
+
+additional_parameters()

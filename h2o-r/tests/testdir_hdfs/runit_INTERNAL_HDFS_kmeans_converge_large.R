@@ -2,8 +2,8 @@
 # Purpose:  This tests convergence of k-means on a large dataset.
 #----------------------------------------------------------------------
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 #----------------------------------------------------------------------
 # Parameters for the test.

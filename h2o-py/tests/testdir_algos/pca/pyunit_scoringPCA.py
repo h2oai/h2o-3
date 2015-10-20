@@ -1,12 +1,12 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def pca_scoring():
 
 
     print "Importing arrests.csv data..."
-    arrestsH2O = h2o.upload_file(tests.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
 
     print "Run PCA with transform = 'DEMEAN'"
     fitH2O = h2o.prcomp(x=arrestsH2O[0:4], k = 4, transform = "DEMEAN")
@@ -17,5 +17,5 @@ def pca_scoring():
     print "H2O Projection:"
     predH2O.head()
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, pca_scoring)
+
+pca_scoring()

@@ -1,10 +1,15 @@
-import sys
-sys.path.insert(1,"../../../")
-import h2o, tests
+
+
+
 
 def checkpoint_new_category_in_response():
 
+<<<<<<< HEAD
   from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+=======
+    sv = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))
+    iris = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
+>>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4
 
   sv = h2o.upload_file(tests.locate("smalldata/iris/setosa_versicolor.csv"))
   iris = h2o.upload_file(tests.locate("smalldata/iris/iris.csv"))
@@ -22,5 +27,10 @@ def checkpoint_new_category_in_response():
   except EnvironmentError:
     pass
 
+<<<<<<< HEAD
 if __name__ == '__main__':
   tests.run_test(sys.argv, checkpoint_new_category_in_response)
+=======
+
+checkpoint_new_category_in_response()
+>>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4

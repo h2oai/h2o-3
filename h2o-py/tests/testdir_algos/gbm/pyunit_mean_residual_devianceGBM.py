@@ -1,10 +1,10 @@
-import sys
-sys.path.insert(1,"../../../")
-import h2o, tests
+
+
+
 
 def gbm_mean_residual_deviance():
 
-    cars =  h2o.import_file(path=tests.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars[0].runif()
     train = cars[s > 0.2]
     valid = cars[s <= 0.2]
@@ -23,5 +23,5 @@ def gbm_mean_residual_deviance():
     assert isinstance(gbm_mrd['xval'],float), "Expected cross-validation mean residual deviance to be a float, but got " \
                                              "{0}".format(type(gbm_mrd['xval']))
 
-if __name__ == '__main__':
-    tests.run_test(sys.argv, gbm_mean_residual_deviance)
+
+gbm_mean_residual_deviance()

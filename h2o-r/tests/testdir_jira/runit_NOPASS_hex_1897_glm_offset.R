@@ -3,8 +3,8 @@
 ## runs glm with and without intecept and create predictions from both models,
 ## compare the two h2o glm models with a glmnet model ran without offset.
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.GLM.offset <- function() {
 

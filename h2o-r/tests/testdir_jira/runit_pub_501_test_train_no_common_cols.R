@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub.501 <- function() {
   Log.info("Importing ecology_model.csv and covtype.20k.data...")

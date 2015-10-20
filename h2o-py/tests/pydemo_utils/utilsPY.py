@@ -1,17 +1,15 @@
 import json
-import os
 
-def ipy_notebook_exec(path,save_and_norun=False):
+def ipy_notebook_exec(path, save_and_norun=None):
     notebook = json.load(open(path))
     program = ''
     for block in ipy_code_blocks(notebook):
         for line in ipy_valid_lines(block):
             if "h2o.init" not in line:
                 program += line if '\n' in line else line + '\n'
-    if save_and_norun:
-        with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
-            f.write(program)
-    else:
+    if not save_and_norun == None:
+        with open(save_and_norun,"w") as f: f.write(program)
+    else :
         d={}
         exec program in d  # safe, but horrible (exec is horrible)
 

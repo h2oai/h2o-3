@@ -503,11 +503,11 @@ The training file is 13MB and the testing file is 2.1MB. The data is downloaded 
 \newpage
 \waterExampleInR
 To run the MNIST example in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_importfile_example.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_importfile_example.R}
 
 \waterExampleInPython
 To run the MNIST example in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_importfile_example.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_importfile_example.py}
 
 \subsection{Performing a Trial Run}
 \label{ssec:TrialRun} 
@@ -518,12 +518,13 @@ Rectified linear activation is popular with image processing and has previously 
 
 \waterExampleInR
 To perform the trial run in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
+To perform the trial run in R, use the following:
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_examplerun.R}
 
 \newpage
 \waterExampleInPython
 To perform the trial run in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_examplerun.py}
 
 \noindent
 The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to (or instead of) using a validation set, another option to estimate generalization error is N-fold cross-validation.  
@@ -538,11 +539,11 @@ Advanced users can also specify a \texttt{fold\_column} that specifies the holdo
 
 \waterExampleInR
 To run the cross-validation example in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_crossval.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_crossval.R}
 
 \waterExampleInPython
 To run the cross-validation example in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_crossval.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_crossval.py}
 
 \newpage
 \subsubsection{Extracting and Handling the Results} 
@@ -553,12 +554,12 @@ An equivalent \texttt{model\_performance} method is available in Python.  Utilit
 
 \waterExampleInR
 To view the model results in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.R}
 
 \newpage
 \waterExampleInPython
 To view the model results in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.py}
 
 
 \noindent
@@ -572,11 +573,11 @@ Once we have a satisfactory model (as determined by the validation or cross-vali
 
 \waterExampleInR
 To view the predictions in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_predict.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_predict.R}
 
 \waterExampleInPython
 To view the predictions in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_predict.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_predict.py}
 
 \subsection{Web Interface} 
 
@@ -595,11 +596,11 @@ The following code demonstrates training using the \texttt{variable\_importances
 \waterExampleInR
 To generate variable importances in R, use the following: 
 
-\lstinputlisting[style=R]{deeplearning/deeplearning_varimp.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_varimp.R}
 \newpage
 \waterExampleInPython
 To generate variable importances in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_varimp.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_varimp.py}
 
 \subsubsection{Java Model} 
 
@@ -627,22 +628,22 @@ Grid search provides more subtle insights into the model tuning and selection pr
 
 \waterExampleInR
 To run a grid search in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R}
 
 %\medskip
 %\waterExampleInPython
-%\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch.py}
+%\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py}
 
 \normalsize
 \noindent
 \newpage
 \waterExampleInR
 To view the results of the grid search in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch_result.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R}
 
 %\medskip
 %\waterExampleInPython
-%\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch_result.py}
+%\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py}
 
 
 \subsection{Checkpoint Model}
@@ -653,13 +654,13 @@ In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the high
 
 \waterExampleInR
 To restart training in R using a checkpoint model, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_checkpoint.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_checkpoint.R}
 
 \newpage
 \waterExampleInPython
 For the Python example, we will use the original ``trial run'' model previously trained as the checkpoint model.
 \medskip
-\lstinputlisting[style=python]{deeplearning/deeplearning_checkpoint.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_checkpoint.py}
 
 \noindent
 Checkpointing can also be used to reload existing models that were saved to disk in a previous session. For example, we can save and reload a model by running the following commands.
@@ -667,12 +668,12 @@ Checkpointing can also be used to reload existing models that were saved to disk
 \waterExampleInR
 To save a model in R, use the following: 
 \medskip
-\lstinputlisting[style=R]{deeplearning/deeplearning_savemodel.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_savemodel.R}
 \newpage
 \waterExampleInPython
 To save a model in Python, use the following: 
 \medskip
-\lstinputlisting[style=python]{deeplearning/deeplearning_savemodel.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_savemodel.py}
 
 
 \normalsize
@@ -683,11 +684,11 @@ After restarting  H2O, load the saved model by specifying the host and saved mod
 \normalsize
 \waterExampleInR
 To load a saved model in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_loadmodel_checkpoint.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.R}
 
 \waterExampleInPython
 To load a saved model in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_loadmodel_checkpoint.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.py}
 
 
 \noindent
@@ -695,11 +696,11 @@ You can also use the following commands to retrieve a model from its H2O key. Th
 
 \waterExampleInR
 To retrieve a model in R using its key, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_getmodel.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_getmodel.R}
 
 \waterExampleInPython
 To retrieve a model in Python using its key, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_getmodel.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_getmodel.py}
 
 
 
@@ -768,12 +769,12 @@ This framework is used to develop an anomaly detection demonstration using a dee
 %\end{lstlisting}
 \waterExampleInR
 To run the anomaly detection example in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_anomaly.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_anomaly.R}
 
 %\medskip
 \waterExampleInPython
 To run the anomaly detection example in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_anomaly.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_anomaly.py}
 
 \noindent
 

@@ -1,6 +1,6 @@
 ####### This tests deviance for poisson, tweedie and gamma distributions in gbm by comparing results with R ######
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 	

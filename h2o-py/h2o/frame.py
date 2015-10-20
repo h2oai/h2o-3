@@ -200,6 +200,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
   # unops
   def __abs__ (self):        return H2OFrame(expr=ExprNode("abs",self))
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
+  def __invert__(self): return H2OFrame(expr=ExprNode("!!", self))
 
   def mult(self, matrix):
     """

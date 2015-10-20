@@ -2,8 +2,8 @@
 # Purpose:  This test exercises HDFS operations from R.
 #----------------------------------------------------------------------
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 #----------------------------------------------------------------------
 # Parameters for the test.

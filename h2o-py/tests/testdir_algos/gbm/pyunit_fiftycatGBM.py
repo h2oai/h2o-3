@@ -1,6 +1,6 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def fiftycatGBM():
   
@@ -8,7 +8,7 @@ def fiftycatGBM():
 
   # Training set has only 45 categories cat1 through cat45
   #Log.info("Importing 50_cattest_train.csv data...\n")
-  train = h2o.import_file(path=tests.locate("smalldata/gbm_test/50_cattest_train.csv"))
+  train = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/50_cattest_train.csv"))
   train["y"] = train["y"].asfactor()
 
   #Log.info("Summary of 50_cattest_train.csv from H2O:\n")
@@ -21,7 +21,7 @@ def fiftycatGBM():
  
   # Test dataset has all 50 categories cat1 through cat50
   #Log.info("Importing 50_cattest_test.csv data...\n")
-  test = h2o.import_file(path=tests.locate("smalldata/gbm_test/50_cattest_test.csv"))
+  test = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/50_cattest_test.csv"))
   #Log.info("Summary of 50_cattest_test.csv from H2O:\n")
   #test.summary()
   
@@ -36,5 +36,5 @@ def fiftycatGBM():
   test_cm = performance.confusion_matrix()
   test_auc = performance.auc()
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, fiftycatGBM)
+
+fiftycatGBM()

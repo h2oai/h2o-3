@@ -1,13 +1,13 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 
 def cbind():
   # Connect to a pre-existing cluster
   
 
-  hdf = h2o.import_file(path=tests.locate('smalldata/jira/pub-180.csv'))
-  otherhdf = h2o.import_file(path=tests.locate('smalldata/jira/v-11.csv'))
+  hdf = h2o.import_file(path=pyunit_utils.locate('smalldata/jira/pub-180.csv'))
+  otherhdf = h2o.import_file(path=pyunit_utils.locate('smalldata/jira/v-11.csv'))
   rows, cols = hdf.dim
 
   ##################################
@@ -88,7 +88,7 @@ def cbind():
   ###################################
   ##### non-mutating H2OVec.cbind ###
   ###################################
-  hdf = h2o.import_file(path=tests.locate('smalldata/jira/pub-180.csv'))
+  hdf = h2o.import_file(path=pyunit_utils.locate('smalldata/jira/pub-180.csv'))
   rows, cols = hdf.dim
 
   # vec to frame
@@ -113,6 +113,6 @@ def cbind():
   hdf_names = xx.cbind(yy).names
   assert hdf_names == ['colgroup', 'colgroup2'], "expected column names to be the same"
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, cbind)
+
+cbind()
 

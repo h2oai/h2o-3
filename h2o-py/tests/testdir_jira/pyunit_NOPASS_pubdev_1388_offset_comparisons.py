@@ -1,19 +1,19 @@
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 
 def offset_1388():
     
 
     print "Loading datasets..."
-    pros_hex = h2o.import_file(tests.locate("smalldata/prostate/prostate.csv"))
+    pros_hex = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
     pros_hex[1] = pros_hex[1].asfactor()
     pros_hex[3] = pros_hex[3].asfactor()
     pros_hex[4] = pros_hex[4].asfactor()
     pros_hex[5] = pros_hex[5].asfactor()
     pros_hex[8] = pros_hex[8].asfactor()
 
-    cars_hex = h2o.import_file(tests.locate("smalldata/junit/cars.csv"))
+    cars_hex = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars.csv"))
     cars_hex[0] = cars_hex[0].asfactor()
     cars_hex[2] = cars_hex[2].asfactor()
 
@@ -71,5 +71,5 @@ def offset_1388():
     assert abs(59381.5624028358 - glm_h2o.null_deviance()) < 0.1
     assert abs(float('inf') - glm_h2o.aic()) < 0.1
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_1388)
+
+offset_1388()

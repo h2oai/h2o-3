@@ -1,12 +1,12 @@
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 
 def stratified_kfold():
 
   NFOLDS=5
 
-  fr = h2o.import_file(tests.locate("bigdata/laptop/covtype/covtype.data"))
+  fr = h2o.import_file(pyunit_utils.locate("bigdata/laptop/covtype/covtype.data"))
 
   stratified = fr[54].stratified_kfold_column(n_folds=NFOLDS)
   stratified.show()
@@ -30,5 +30,5 @@ def stratified_kfold():
     print "Stratification variance for class #%s: %s" %(i, (df.ix[i].sub(dist[i]).pow(2).sum()) / (df.shape[0] - 1))
 
 
-if __name__ == "__main__":
-  tests.run_test(sys.argv, stratified_kfold)
+
+stratified_kfold()

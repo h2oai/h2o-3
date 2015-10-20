@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 rmVecs <- function() {
   prosPath <- locate("smalldata/logreg/prostate.csv")

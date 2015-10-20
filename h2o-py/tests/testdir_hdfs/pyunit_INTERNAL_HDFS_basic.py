@@ -2,19 +2,19 @@
 # Purpose:  This test exercises HDFS operations from python.
 #----------------------------------------------------------------------
 
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 
 def hdfs_basic():
     
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    hadoop_namenode_is_accessible = tests.hadoop_namenode_is_accessible()
+    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
 
     if hadoop_namenode_is_accessible:
-        hdfs_name_node = tests.hadoop_namenode()
+        hdfs_name_node = pyunit_utils.hadoop_namenode()
         hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
         hdfs_iris_dir  = "/datasets/runit/iris_test_train"
 
@@ -52,5 +52,5 @@ def hdfs_basic():
     else:
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, hdfs_basic)
+
+hdfs_basic()

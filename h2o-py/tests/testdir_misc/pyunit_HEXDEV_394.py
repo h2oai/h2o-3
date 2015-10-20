@@ -1,9 +1,9 @@
-import sys
-sys.path.insert(1, "../../")
-import h2o,tests
+
+
+
 
 def hexdev_394():
-  path = tests.locate("smalldata/covtype/covtype.20k.data")
+  path = pyunit_utils.locate("smalldata/covtype/covtype.20k.data")
   c_types = [None] * 55
   c_types[10] = "enum"
   c_types[11] = "enum"
@@ -52,5 +52,5 @@ def hexdev_394():
   print "KEEPING FRAME???"
   print train._keep
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, hexdev_394)
+
+hexdev_394()

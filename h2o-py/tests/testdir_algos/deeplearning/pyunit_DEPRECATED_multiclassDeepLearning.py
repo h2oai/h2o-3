@@ -1,13 +1,13 @@
 import os, sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
 
 def deeplearning_multi():
     
 
     print("Test checks if Deep Learning works fine with a multiclass training and test dataset")
 
-    prostate = h2o.import_file(tests.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
     prostate[4] = prostate[4].asfactor()
 
@@ -18,5 +18,5 @@ def deeplearning_multi():
                           loss          = 'CrossEntropy')
     hh.show()
 
-if __name__ == '__main__':
-    tests.run_test(sys.argv, deeplearning_multi)
+
+deeplearning_multi()
