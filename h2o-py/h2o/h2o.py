@@ -160,7 +160,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   return H2OFrame(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
 
 
-def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", col_names=None, col_types=None, na_strings=None):
+def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
   """
 
   During parse setup, the H2O cluster will make several guesses about the attributes of
@@ -229,28 +229,28 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if separator:
     if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
     j["separator"] = ord(separator)
-  if col_names:
-    if not isinstance(col_names, list): raise ValueError("col_names should be a list")
-    if len(col_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
-    j["column_names"] = col_names
-  if col_types:
-    if isinstance(col_types, dict):
+  if column_names:
+    if not isinstance(column_names, list): raise ValueError("col_names should be a list")
+    if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
+    j["column_names"] = column_names
+  if column_types:
+    if isinstance(column_types, dict):
       #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
       if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
         j["column_names"] = _gen_header(j["number_columns"])
-      if not set(col_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
+      if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
       idx = 0
       column_types_list = []
       for name in j["column_names"]:
-        if name in col_types:
-          column_types_list.append(col_types[name])
+        if name in column_types:
+          column_types_list.append(column_types[name])
         else:
           column_types_list.append(j["column_types"][idx])
         idx += 1
       column_types = column_types_list
-    elif isinstance(col_types, list):
-      if len(col_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
-      column_types = [col_types[i] if col_types[i] else j["column_types"][i] for i in range(len(col_types))]
+    elif isinstance(column_types, list):
+      if len(column_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
+      column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(col_types))]
     else: #not dictionary or list
       raise ValueError("col_types should be a list of types or a dictionary of column names to types")
     j["column_types"] = column_types
@@ -1523,8 +1523,8 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   pca_method : str
     A character string that indicates how PCA should be calculated.
     Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package,
-    "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random 
-    subspace, "GLRM": fit a generalized low rank model with an l2 loss function (no regularization) and solve for the SVD using 
+    "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random
+    subspace, "GLRM": fit a generalized low rank model with an l2 loss function (no regularization) and solve for the SVD using
     local matrix algebra.
 
   :return: a new dim reduction model
