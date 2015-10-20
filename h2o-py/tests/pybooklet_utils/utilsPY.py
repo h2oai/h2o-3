@@ -35,20 +35,19 @@ def check_story(story_name, paragraphs):
     for idx, l in enumerate(story):
         if "h2o.init" in l: remove_lines.append(idx)
     story = [i for j, i in enumerate(story) if j not in remove_lines]
-    print story
 
     # write the story that will be executed to the results directory for future reference
     story_file = os.path.join(results_dir(), test_name()+"."+story_name+".code")
     with open(story_file, 'w') as f: f.writelines(story)
 
+    # run it
     with open(story_file, "r") as s: booklet = s.read()
     booklet_c = compile(booklet, '<string>', 'exec')
     p = {}
     exec booklet_c in p
 
-def pybooklet_exec(test_name, h2o_py_dir):
-    pyunit = "import sys\nsys.path.insert(1, \"{0}\")\nimport h2o\nfrom tests import pybooklet_utils\n" \
-             "".format(h2o_py_dir)
+def pybooklet_exec(test_name):
+    pyunit = "import h2o\nfrom tests import pybooklet_utils\n"
     with open(test_name, "r") as t: pyunit = pyunit + t.read()
     pyunit_c = compile(pyunit, '<string>', 'exec')
     p = {}

@@ -138,8 +138,8 @@ def h2o_test_setup(sys_args):
     h2o.remove_all()
 
     if _IS_IPYNB_:       pydemo_utils.ipy_notebook_exec(_TEST_NAME_)
-    elif _IS_PYUNIT_:    pyunit_utils.pyunit_exec(_TEST_NAME_, h2o_py_dir)
-    elif _IS_PYBOOKLET_: pybooklet_utils.pybooklet_exec(_TEST_NAME_, h2o_py_dir)
+    elif _IS_PYUNIT_:    pyunit_utils.pyunit_exec(_TEST_NAME_)
+    elif _IS_PYBOOKLET_: pybooklet_utils.pybooklet_exec(_TEST_NAME_)
 
 if __name__ == "__main__":
     h2o_test_setup(sys.argv)

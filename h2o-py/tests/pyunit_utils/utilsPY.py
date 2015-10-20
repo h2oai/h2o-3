@@ -252,8 +252,8 @@ def hadoop_namenode_is_accessible():
 def test_is_on_hadoop(): return sys.modules["tests.pyunit_utils"].__on_hadoop__
 def hadoop_namenode():   return sys.modules["tests.pyunit_utils"].__hadoop_namenode__
 
-def pyunit_exec(test_name, h2o_py_dir):
-    pyunit = "import sys\nsys.path.insert(1, \"{0}\")\nimport h2o\nfrom tests import pyunit_utils\n".format(h2o_py_dir)
+def pyunit_exec(test_name):
+    pyunit = "import h2o\nfrom tests import pyunit_utils\n"
     with open (test_name, "r") as t: pyunit = pyunit + t.read()
     pyunit_c = compile(pyunit, '<string>', 'exec')
     p = {}
