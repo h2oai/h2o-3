@@ -376,6 +376,16 @@ java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:Rese
 
 ---
 
+**After creating my POJO, I noticed that it does not predict the results consistently; for example, one row contains the same data as another row but results in a different prediction. Why is this?**
+
+A POJO (like any model) is only as good as the data that is fed into it. We strongly recommend munging your data before creating a model or POJO, as this will improve the accuracy. 
+
+For example, if your dataset has many rows where the values are all zeros, the model and resulting POJO will not be as accurate because the NA values reduce the accuracy of the model and the POJO may predict inaccurate results. 
+
+We strongly recommend removing any rows containing all zeros before creating your model or POJO. If your results are inaccurate, munge the dataset to remove the all-zero rows and rerun the model. 
+
+---
+
 **How do I predict using multiple response variables?**
 
 Currently, H2O does not support multiple response variables. To predict different response variables, build multiple models. 
