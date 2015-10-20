@@ -1,6 +1,6 @@
 # Check for 2 parts
 test1 <- function() {
-  df <- h2o.uploadFile(h2o:::.h2o.locate("smalldata/jira/pubdev_2020.csv"))
+  df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
   splits = h2o.splitFrame(data = df, ratios = 0.75)
   stopifnot(nrow(df) == (nrow(splits[[1]]) + nrow(splits[[2]])))
   
