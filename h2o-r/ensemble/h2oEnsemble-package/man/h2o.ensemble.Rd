@@ -185,9 +185,15 @@ data.frame(learner, auc)
 # computed automatically, as in the other H2O algos.
 
 # Here is an example of how to generate a custom learner library:
-h2o.randomForest.1 <- function(..., ntrees = 1000, nbins = 100, seed = 1) h2o.randomForest.wrapper(..., ntrees = ntrees, nbins = nbins, seed = seed)
-h2o.deeplearning.1 <- function(..., hidden = c(500,500), activation = "Rectifier", seed = 1)  h2o.deeplearning.wrapper(..., hidden = hidden, activation = activation, seed = seed)
-h2o.deeplearning.2 <- function(..., hidden = c(200,200,200), activation = "Tanh", seed = 1)  h2o.deeplearning.wrapper(..., hidden = hidden, activation = activation, seed = seed)
+h2o.randomForest.1 <- function(..., ntrees = 1000, nbins = 100, seed = 1) {
+h2o.randomForest.wrapper(..., ntrees = ntrees, nbins = nbins, seed = seed)
+}
+h2o.deeplearning.1 <- function(..., hidden = c(500,500), activation = "Rectifier", seed = 1) {
+  h2o.deeplearning.wrapper(..., hidden = hidden, activation = activation, seed = seed)
+}
+h2o.deeplearning.2 <- function(..., hidden = c(200,200,200), activation = "Tanh", seed = 1) {
+h2o.deeplearning.wrapper(..., hidden = hidden, activation = activation, seed = seed)
+}
 learner <- c("h2o.randomForest.1", "h2o.deeplearning.1", "h2o.deeplearning.2")
 
 }
