@@ -432,33 +432,33 @@ resulting output.  Remember that this operations all happen distributed and in
 parallel in H2O and can work on very large datasets.
 
 Customarily, we import and start H2O as follows:
-\lstinputlisting[style=python, firstline=1, lastline=31]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=1, lastline=31]{python/ipython_dataprep_output.txt}
 
 To create an H2OFrame object from a python tuple:
-\lstinputlisting[style=python, firstline=33, lastline=45]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=33, lastline=45]{python/ipython_dataprep_output.txt}
 
 To create an H2OFrame object from a python list:
-\lstinputlisting[style=python, firstline=47, lastline=59]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=47, lastline=59]{python/ipython_dataprep_output.txt}
 
 To create an H2OFrame object from a python dict (or collections.OrderedDict):
-\lstinputlisting[style=python, firstline=61, lastline=73]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=61, lastline=73]{python/ipython_dataprep_output.txt}
 
 To create an H2OFrame object from a python dict, specifying the column types:
-\lstinputlisting[style=python, firstline=75, lastline=89]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=75, lastline=89]{python/ipython_dataprep_output.txt}
 
 Having specified column types:
-\lstinputlisting[style=python, firstline=91, lastline=92]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=91, lastline=92]{python/ipython_dataprep_output.txt}
 
 \subsection{Viewing Data}
 See the top and bottom of an H2OFrame:
-\lstinputlisting[style=python, firstline=94, lastline=124]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=94, lastline=124]{python/ipython_dataprep_output.txt}
 
 Display the columns:
-\lstinputlisting[style=python, firstline=126, lastline=127]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=126, lastline=127]{python/ipython_dataprep_output.txt}
 
 Describes shows compression information, distribution (in multi-machine clusters), and summary statistic of your data:
 \small
-\lstinputlisting[style=python, firstline=129, lastline=157]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=129, lastline=157]{python/ipython_dataprep_output.txt}
 \normalsize
 
 TODO setting column types after load
@@ -467,27 +467,27 @@ TODO setting column types after load
 \subsection{Selection}
 Selecting a single column by name, which yields an H2OFrame:
 TODO change once fix is available for column names
-\lstinputlisting[style=python, firstline=159, lastline=171]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=159, lastline=171]{python/ipython_dataprep_output.txt}
 
 Selecting a single column by index, which yields an H2OFrame:
 TODO change once fix is available for column names
-\lstinputlisting[style=python, firstline=173, lastline=185]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=173, lastline=185]{python/ipython_dataprep_output.txt}
 
 Selecting multiple columns by name, which yields an H2OFrame:
 TODO change once fix is available for column names
-\lstinputlisting[style=python, firstline=187, lastline=199]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=187, lastline=199]{python/ipython_dataprep_output.txt}
 
 Selecting multiple columns by index, which yields an H2OFrame:
 TODO change once fix is available for column names
-\lstinputlisting[style=python, firstline=201, lastline=213]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=201, lastline=213]{python/ipython_dataprep_output.txt}
 
 Selecting multiple rows by slicing, which yields and H2OFrame.
 H2OFrame selection is default on columns, so to slice by rows
 and get all columns one needs to be explicit about selection all columns:
-\lstinputlisting[style=python, firstline=215, lastline=222]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=215, lastline=222]{python/ipython_dataprep_output.txt}
 
 Boolean masking can be used to subselect rows based on a criteria:
-\lstinputlisting[style=python, firstline=224, lastline=228]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=224, lastline=228]{python/ipython_dataprep_output.txt}
 
 
 \subsection{Missing data}
@@ -495,68 +495,68 @@ The H2O parser accounts for many different representations of missing data, incl
 `NA', None (Python).  They are all displayed as NaN in Python.
 
 Creating an H2OFrame from Python with missing elements:
-\lstinputlisting[style=python, firstline=230, lastline=246]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=230, lastline=246]{python/ipython_dataprep_output.txt}
 
 Determine which rows have missing data for a given column (`1' indicates missing):
-\lstinputlisting[style=python, firstline=248, lastline=255]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=248, lastline=255]{python/ipython_dataprep_output.txt}
 
 Changing all missing values in a column to a different value:
-\lstinputlisting[style=python, firstline=259, lastline=266]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=259, lastline=266]{python/ipython_dataprep_output.txt}
 
 Determine all locations where data is missing in an H2OFrame:
-\lstinputlisting[style=python, firstline=268, lastline=275]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=268, lastline=275]{python/ipython_dataprep_output.txt}
 
 \subsection{Operations}
 Performing a descriptive statistic on an entire H2OFrame, in general missing data is exclude
 and the operation is only performed on the columns of the appropriate data type:
-\lstinputlisting[style=python, firstline=277, lastline=287]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=277, lastline=287]{python/ipython_dataprep_output.txt}
 
 Performing a descriptive statistic on a single column of an H2OFrame, in general missing data is
 not excluded:
-\lstinputlisting[style=python, firstline=289, lastline=293]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=289, lastline=293]{python/ipython_dataprep_output.txt}
 
 Note that in both examples above a native Python object is returned (list and float respectfully
 in these examples).
 
 Applying functions to each column of the data;
 in this case an H2OFrame is returned containing the means of each column:
-\lstinputlisting[style=python, firstline=297, lastline=303]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=297, lastline=303]{python/ipython_dataprep_output.txt}
 
 Applying functions to each row of the data,
 in this case an H2OFrame is returned containing the sum of all columns:
-\lstinputlisting[style=python, firstline=305, lastline=317]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=305, lastline=317]{python/ipython_dataprep_output.txt}
 
 H2O provides many methods for histogramming and descretizing data.
 Here is an example of using the hist method on a single data frame:
-\lstinputlisting[style=python, firstline=321, lastline=337]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=321, lastline=337]{python/ipython_dataprep_output.txt}
 
 H2O is equipped with a set of string processing methods in the H2OFrame class
 that make it easy to operate on each element in an H2OFrame.  Some code snippets are below.
 
 To determine the number of times a string is contained in each element:
-\lstinputlisting[style=python, firstline=339, lastline=362]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=339, lastline=362]{python/ipython_dataprep_output.txt}
 
 Replace all instances of `o' (lower case letter) with `0' (zero) and return a new H2OFrame:
-\lstinputlisting[style=python, firstline=364, lastline=372]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=364, lastline=372]{python/ipython_dataprep_output.txt}
 
 For substitution in place (that is without creating a new H2OFrame) use `gsub'.
 
 Split strings based on a regular expression:
-\lstinputlisting[style=python, firstline=374, lastline=382]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=374, lastline=382]{python/ipython_dataprep_output.txt}
 
 
 \subsection{Merging}
 To combine two H2OFrames together, by appending one as rows to the other, and returning a new H2OFrame:
-\lstinputlisting[style=python, firstline=384, lastline=406]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=384, lastline=406]{python/ipython_dataprep_output.txt}
 
 For row binding the columns names and column types must match between the two H2OFrames.
 
 To combine two H2OFrames together, by appending one as coluns to the other,
 and returning a new H2OFrame:
-\lstinputlisting[style=python, firstline=408, lastline=432]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=408, lastline=432]{python/ipython_dataprep_output.txt}
 
 H2O supports merging two frames together by matching on columns names:
-\lstinputlisting[style=python, firstline=434, lastline=457]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=434, lastline=457]{python/ipython_dataprep_output.txt}
 
 \subsection{Grouping}
 By "group by" we are referring to the process involving one or more steps: splitting the
@@ -564,49 +564,49 @@ data into groups based on some criteria, applying a function to each group indep
 and combining the results into an H2OFrame.
 
 Grouping and then applying a function to the results:
-\lstinputlisting[style=python, firstline=459, lastline=485]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=459, lastline=485]{python/ipython_dataprep_output.txt}
 
 Grouping by multiple columns and then applying a function:
-\lstinputlisting[style=python, firstline=487, lastline=497]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=487, lastline=497]{python/ipython_dataprep_output.txt}
 
 Joining the results back into the original H2OFrame:
-\lstinputlisting[style=python, firstline=499, lastline=509]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=499, lastline=509]{python/ipython_dataprep_output.txt}
 
 \subsection{Date and Times}
 H2O has powerful features for ingesting and feature engineering from time data.  Internally H2O
 stores time information as an integer of the number of milliseconds since the epoch.
 
 To ingest time data natively, use one of the support time input formats:
-\lstinputlisting[style=python, firstline=511, lastline=518]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=511, lastline=518]{python/ipython_dataprep_output.txt}
 
 To determine the day of the month:
-\lstinputlisting[style=python, firstline=520, lastline=525]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=520, lastline=525]{python/ipython_dataprep_output.txt}
 
 Getting the day of the week:
-\lstinputlisting[style=python, firstline=527, lastline=532]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=527, lastline=532]{python/ipython_dataprep_output.txt}
 
 \subsection{Categoricals}
 H2O handles categorical/enumerated/factor values in an H2OFrame.  These are important as categorical
 columns have specific treatments in each of the machine learning algorithms.
 
 Using `df12' from above, H2O import columns A and B as categorical/enumerated/factor types:
-\lstinputlisting[style=python, firstline=534, lastline=535]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=534, lastline=535]{python/ipython_dataprep_output.txt}
 
 Determine if any column is a categorical/enumerated/factor type:
-\lstinputlisting[style=python, firstline=537, lastline=538]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=537, lastline=538]{python/ipython_dataprep_output.txt}
 
 See the categorical levels in a single column:
-\lstinputlisting[style=python, firstline=540, lastline=541]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=540, lastline=541]{python/ipython_dataprep_output.txt}
 
 H2O can create categorical interaction features:
-\lstinputlisting[style=python, firstline=543, lastline=555]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=543, lastline=555]{python/ipython_dataprep_output.txt}
 
 To keep the most common categories and set remaining categories to a common `Other' category
 create an interaction of a categorical column with itself:
-\lstinputlisting[style=python, firstline=557, lastline=571]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=557, lastline=571]{python/ipython_dataprep_output.txt}
 
 These can then be added as a new column on the original dataframe:
-\lstinputlisting[style=python, firstline=573, lastline=585]{python/ipython_output.txt}
+\lstinputlisting[style=python, firstline=573, lastline=585]{python/ipython_dataprep_output.txt}
 
 \subsection{Loading and Saving Data}
 File types supported
