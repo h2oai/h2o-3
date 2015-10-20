@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -11,4 +15,8 @@ def https_import():
     aa.show()
 
 
-https_import()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(https_import)
+else:
+    https_import()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -16,4 +20,8 @@ def pub_445_long_request_uri():
                      validation_y=mnistTest["label"], ntrees=100, max_depth=10)
 
 
-pub_445_long_request_uri()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pub_445_long_request_uri)
+else:
+    pub_445_long_request_uri()

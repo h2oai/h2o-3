@@ -1,11 +1,10 @@
 import sys
-sys.path.insert(1, "../../")
+sys.path.insert(1,"../../")
 import h2o
-import tests
-
+from tests import pyunit_utils
 
 def test1():
-    df = h2o.upload_file(tests.locate("smalldata/jira/pubdev_2020.csv"))
+    df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.75])
     assert df.nrow == splits[0].nrow + splits[1].nrow
 
@@ -28,7 +27,7 @@ def test1():
 
 
 def test2():
-    df = h2o.upload_file(tests.locate("smalldata/jira/pubdev_2020.csv"))
+    df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.5, 0.25])
     assert df.nrow == splits[0].nrow + splits[1].nrow + splits[2].nrow
     assert splits[0].nrow > 0
@@ -37,7 +36,7 @@ def test2():
 
 
 def test3():
-    df = h2o.upload_file(tests.locate("smalldata/jira/pubdev_2020.csv"))
+    df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.8], seed=2015)
     part1 = splits[1]
     value = part1[0, "C1"]
@@ -47,13 +46,13 @@ def test3():
     value = part1[2, "C3"]
     assert value == 22
 
-    df = h2o.upload_file(tests.locate("smalldata/jira/pubdev_2020.csv"))
+    df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.8], seed=2016)
     part1 = splits[1]
     value = part1[0, "C1"]
     assert value == 17
 
-    df = h2o.upload_file(tests.locate("smalldata/jira/pubdev_2020.csv"))
+    df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.8], seed=2016)
     part1 = splits[1]
     value = part1[0, "C1"]
@@ -61,7 +60,7 @@ def test3():
 
 
 def test4():
-    df = h2o.upload_file(tests.locate("smalldata/jira/pubdev_2020.csv"))
+    df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.8], destination_frames=["myf0", "myf1"])
     part0 = splits[0]
     assert part0._id == "myf0"
@@ -75,6 +74,7 @@ def pubdev_2020():
     test3()
     test4()
 
-
 if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_2020)
+    pyunit_utils.standalone_test(pubdev_2020)
+else:
+    pubdev_2020()

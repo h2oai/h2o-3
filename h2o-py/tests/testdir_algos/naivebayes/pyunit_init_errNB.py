@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -31,4 +35,8 @@ def nb_init_err():
         pass
 
 
-nb_init_err()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(nb_init_err)
+else:
+    nb_init_err()

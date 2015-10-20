@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -44,4 +48,8 @@ def tweedie_offset():
     assert abs(397.3-predictions[0].max()) < 40, "Expected max of predictions to be 397.3, but got " \
                                                           "{0}".format(predictions[0].max())
 
-tweedie_offset()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(tweedie_offset)
+else:
+    tweedie_offset()

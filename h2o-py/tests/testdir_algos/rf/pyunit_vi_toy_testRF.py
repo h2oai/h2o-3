@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -18,4 +22,8 @@ def vi_toy_test():
     assert tuple(ranking) == tuple(["V3","V2","V6","V5","V1","V4"]), "expected specific variable importance ranking"
 
 
-vi_toy_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(vi_toy_test)
+else:
+    vi_toy_test()

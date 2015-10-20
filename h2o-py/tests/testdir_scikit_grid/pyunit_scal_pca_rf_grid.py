@@ -1,4 +1,7 @@
-
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -43,4 +46,8 @@ def scale_pca_rf_pipe():
   print random_search.best_estimator_
 
 
-scale_pca_rf_pipe()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(scale_pca_rf_pipe)
+else:
+    scale_pca_rf_pipe()

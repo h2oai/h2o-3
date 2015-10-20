@@ -1,9 +1,16 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import sys, os
 sys.path.insert(1,"../../../")
 import h2o, tests
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 =======
+=======
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+>>>>>>> d4ce8c93ff1691521387bb6b5767f34548251eb4
 
 >>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4
 
@@ -41,8 +48,16 @@ def deeplearning_multi():
   hh.show()
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 if __name__ == '__main__':
   tests.run_test(sys.argv, deeplearning_multi)
 =======
 deeplearning_multi()
 >>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4
+=======
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(deeplearning_multi)
+else:
+    deeplearning_multi()
+>>>>>>> d4ce8c93ff1691521387bb6b5767f34548251eb4

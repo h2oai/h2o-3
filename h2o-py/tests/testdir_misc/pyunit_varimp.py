@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -20,4 +24,8 @@ def varimp_test():
                                         "scaled_importance, percentage), but it has {0}".format(len(should_be_list[0]))
 
 
-varimp_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(varimp_test)
+else:
+    varimp_test()

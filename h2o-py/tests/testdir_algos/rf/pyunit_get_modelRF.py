@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -15,4 +19,8 @@ def iris_get_model():
     model.show()
 
 
-iris_get_model()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(iris_get_model)
+else:
+    iris_get_model()

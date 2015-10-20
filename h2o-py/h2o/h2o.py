@@ -2046,7 +2046,9 @@ def import_frame():
   path : str
     A path specifying the location of the data to import.
 
-  :return: A new H2OFrame
+  Returns
+  -------
+    A new H2OFrame
   """
 
 @h2o_deprecated()
@@ -2059,5 +2061,7 @@ def parse():
   setup : dict
     The result of calling parse_setup.
 
-  :return: A new H2OFrame
+  Returns
+  -------
+    A new H2OFrame
   """

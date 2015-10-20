@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -34,4 +38,8 @@ def offset_bernoulli_cars():
         format(0.8506528, predictions[:,2].max())
 
 
-offset_bernoulli_cars()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(offset_bernoulli_cars)
+else:
+    offset_bernoulli_cars()

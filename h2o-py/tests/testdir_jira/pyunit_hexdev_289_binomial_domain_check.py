@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -84,4 +88,8 @@ def domain_check():
                             "The difference is {2}".format(actual_domain, computed_domain, domain_diff)
 
 
-domain_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(domain_check)
+else:
+    domain_check()

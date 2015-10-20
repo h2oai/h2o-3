@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 #Test checks if Deep Learning works fine with a categorical dataset that has many missing values (in both train & test
 # splits)
 
@@ -49,4 +53,8 @@ def missing():
     assert sum(errors) < 2.2, "Sum of classification errors is too large!"
 
 
-missing()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(missing)
+else:
+    missing()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -71,4 +75,8 @@ def upload_file():
     # py_numpy_ary_to_h2o.describe()
 
 
-upload_file()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(upload_file)
+else:
+    upload_file()

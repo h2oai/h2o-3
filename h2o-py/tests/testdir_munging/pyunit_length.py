@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -29,4 +33,8 @@ def length_check():
     assert length_vec[2,0] == 4, "Expected 4, but got {}".format(length_vec[2,0])
 
 
-length_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(length_check)
+else:
+    length_check()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 import os
 
@@ -26,4 +30,7 @@ def download_all_logs():
     os.remove(log_location)
 
 
-download_all_logs()
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(download_all_logs)
+else:
+    download_all_logs()

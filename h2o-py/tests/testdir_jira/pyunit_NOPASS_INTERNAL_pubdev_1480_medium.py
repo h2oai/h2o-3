@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 import os
 
 
@@ -15,4 +19,8 @@ def pubdev_1480():
     h2o.download_csv(predictions, os.path.join(results_dir,"predictions.csv"))
 
 
-pubdev_1480()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pubdev_1480)
+else:
+    pubdev_1480()

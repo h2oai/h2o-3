@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -14,4 +18,8 @@ def spaces_in_column_names():
     gbm.show()
 
 
-spaces_in_column_names()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(spaces_in_column_names)
+else:
+    spaces_in_column_names()

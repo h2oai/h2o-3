@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -40,4 +44,8 @@ def offset_1897():
     assert abs(2761.76218461138 - prostate_glm_h2o.residual_deviance()) < 0.1
 
 
-offset_1897()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(offset_1897)
+else:
+    offset_1897()

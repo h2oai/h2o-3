@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 def nfold_predict():
@@ -9,4 +13,8 @@ def nfold_predict():
   (sum(preds)/10).show()
 
 
-nfold_predict()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(nfold_predict)
+else:
+    nfold_predict()

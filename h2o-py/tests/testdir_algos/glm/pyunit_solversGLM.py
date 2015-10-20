@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -22,5 +26,9 @@ def glm_solvers():
                             Lambda=[1e-5], solver=solver)
 
 
-glm_solvers()
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(glm_solvers)
+else:
+    glm_solvers()

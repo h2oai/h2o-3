@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -18,4 +22,8 @@ def pca_scoring():
     predH2O.head()
 
 
-pca_scoring()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pca_scoring)
+else:
+    pca_scoring()

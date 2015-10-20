@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 import numpy as np
 
@@ -23,4 +27,8 @@ def pyunit_types():
                                                 "C4": "Numeric"}, df.types)
 
 
-pyunit_types()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pyunit_types)
+else:
+    pyunit_types()

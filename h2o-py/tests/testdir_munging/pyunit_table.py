@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -19,4 +23,8 @@ def table_check():
     print table2
 
 
-table_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(table_check)
+else:
+    table_check()

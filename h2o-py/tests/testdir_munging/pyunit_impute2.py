@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -79,4 +83,8 @@ def impute2():
     assert imputed2 == 9.5, "Wrong value imputed. Expected imputed value of 9.5, but got {0}".format(imputed2)
 
 
-impute2()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(impute2)
+else:
+    impute2()

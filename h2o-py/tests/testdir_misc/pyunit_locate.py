@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -13,4 +17,8 @@ def test_locate():
         assert True
 
 
-test_locate()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(test_locate)
+else:
+    test_locate()

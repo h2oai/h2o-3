@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -32,4 +36,8 @@ def offset_gaussian():
         format(207.387, predictions.max())
 
 
-offset_gaussian()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(offset_gaussian)
+else:
+    offset_gaussian()

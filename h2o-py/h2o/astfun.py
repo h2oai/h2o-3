@@ -20,7 +20,7 @@ BYTECODE_INSTRS = {
   "CALL_FUNCTION"      : "",  # some function call, have nargs in ops list...
 }
 
-def is_bytecode_instruction(instr): return BYTECODE_INSTRS.has_key(instr)
+def is_bytecode_instruction(instr): return instr in BYTECODE_INSTRS
 def is_comp(instr):                 return "COMPARE" in instr
 def is_binary(instr):               return "BINARY" in instr
 def is_unary(instr):                return "UNARY" in instr

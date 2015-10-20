@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -86,4 +90,8 @@ def expr_math_ops():
         "math".format(h2o_val,num_val)
 
 
-expr_math_ops()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(expr_math_ops)
+else:
+    expr_math_ops()

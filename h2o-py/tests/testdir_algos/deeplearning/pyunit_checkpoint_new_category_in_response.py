@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -18,6 +22,7 @@ def checkpoint_new_category_in_response():
   m1.train(X=[0,1,2,3], y=4, training_frame=sv)
 
 
+<<<<<<< HEAD
   # attempt to continue building model, but with an expanded categorical response domain.
   # this should fail
   try:
@@ -34,3 +39,10 @@ if __name__ == '__main__':
 
 checkpoint_new_category_in_response()
 >>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4
+=======
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(checkpoint_new_category_in_response)
+else:
+    checkpoint_new_category_in_response()
+>>>>>>> d4ce8c93ff1691521387bb6b5767f34548251eb4

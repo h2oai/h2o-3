@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -24,4 +28,8 @@ def get_set_list_timezones():
     h2o.set_timezone(origTZ)
 
 
-get_set_list_timezones()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(get_set_list_timezones)
+else:
+    get_set_list_timezones()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -23,4 +27,8 @@ def frame_as_list():
            abs(float(res3[4][2]) - 18) < 1e-10, "incorrect values"
 
 
-frame_as_list()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(frame_as_list)
+else:
+    frame_as_list()

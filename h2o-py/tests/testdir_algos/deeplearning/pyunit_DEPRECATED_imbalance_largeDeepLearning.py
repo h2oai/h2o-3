@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -40,4 +44,8 @@ def imbalance():
     assert class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!"
 
 
-imbalance()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(imbalance)
+else:
+    imbalance()

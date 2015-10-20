@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 import numpy as np
 from sklearn import ensemble
@@ -59,4 +63,8 @@ def bernoulliGBM():
   assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
 
-bernoulliGBM()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(bernoulliGBM)
+else:
+    bernoulliGBM()

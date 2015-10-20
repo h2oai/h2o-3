@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -20,4 +24,8 @@ def javapredict_drf_xlarge():
     pyunit_utils.javapredict("random_forest", "numeric", train, test, x, y, **params)
 
 
-javapredict_drf_xlarge()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(javapredict_drf_xlarge)
+else:
+    javapredict_drf_xlarge()

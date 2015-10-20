@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -40,4 +44,8 @@ def shuffling_large():
             assert abs(x[2] - y[2]) < 5e-10, "coefficients should be equal"
 
 
-shuffling_large()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(shuffling_large)
+else:
+    shuffling_large()

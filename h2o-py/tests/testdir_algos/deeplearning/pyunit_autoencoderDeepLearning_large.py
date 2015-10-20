@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 import os, sys
 <<<<<<< HEAD
 sys.path.insert(1,"../../../")
@@ -76,6 +80,14 @@ if __name__ == '__main__':
   tests.run_test(sys.argv, deeplearning_autoencoder)
 =======
 
+<<<<<<< HEAD
 deeplearning_autoencoder()
 >>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4
+=======
+>>>>>>> d4ce8c93ff1691521387bb6b5767f34548251eb4
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(deeplearning_autoencoder)
+else:
+    deeplearning_autoencoder()

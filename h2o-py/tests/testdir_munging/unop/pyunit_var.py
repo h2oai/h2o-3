@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 ##
 # Test out the var() functionality
 # If NAs in the frame, they are skipped in calculation unless na.rm = F
@@ -30,4 +34,8 @@ def var_test():
 
 
 
-var_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(var_test)
+else:
+    var_test()

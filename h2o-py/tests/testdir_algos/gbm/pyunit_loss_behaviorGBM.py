@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -56,5 +60,9 @@ def distribution_behaviorGBM():
   eco_model = h2o.gbm(x=eco[0:8], y=eco["Method"], distribution="multinomial")
 
 
-distribution_behaviorGBM()
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(distribution_behaviorGBM())
+else:
+    distribution_behaviorGBM()

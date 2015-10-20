@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -39,5 +43,9 @@ def covtype_get_model():
     covtype_mod3.show()
   
 
-covtype_get_model()
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(covtype_get_model)
+else:
+    covtype_get_model()

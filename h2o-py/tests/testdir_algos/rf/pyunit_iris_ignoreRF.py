@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -13,5 +17,9 @@ def iris_ignore():
       model.show()
 
 
-iris_ignore()
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(iris_ignore)
+else:
+    iris_ignore()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -88,4 +92,8 @@ def lending_club_munging_assembly():
 #   // Use prediction!
 
 
-lending_club_munging_assembly()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(lending_club_munging_assembly)
+else:
+    lending_club_munging_assembly()

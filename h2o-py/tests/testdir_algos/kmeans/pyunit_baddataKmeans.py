@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -87,4 +91,8 @@ def baddataKmeans():
     assert len(centers[c]) == 5, "expected center to be 5 "+str(len(centers[c]))
 
 
-baddataKmeans()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(baddataKmeans)
+else:
+    baddataKmeans()

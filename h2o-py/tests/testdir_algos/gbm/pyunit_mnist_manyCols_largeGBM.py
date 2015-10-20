@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -16,4 +20,8 @@ def mnist_manyCols_largeGBM():
     gbm_mnist.show()
 
 
-mnist_manyCols_largeGBM()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(mnist_manyCols_largeGBM)
+else:
+    mnist_manyCols_largeGBM()

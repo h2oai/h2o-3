@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -14,4 +18,8 @@ def pubdev_1839():
                    family="poisson")
 
 
-pubdev_1839()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pubdev_1839)
+else:
+    pubdev_1839()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -15,4 +19,8 @@ def score_history_test():
     print score_history
 
 
-score_history_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(score_history_test)
+else:
+    score_history_test()

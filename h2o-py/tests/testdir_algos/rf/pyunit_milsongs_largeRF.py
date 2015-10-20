@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 import os
 
 import random
@@ -45,4 +49,8 @@ def milsong_checkpoint():
     assert model2.mse(valid=True)==model3.mse(valid=True), "Expected Model 2 MSE: {0} to be the same as Model 4 MSE: {1}".format(model2.mse(valid=True), model3.mse(valid=True))
 
 
-milsong_checkpoint()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(milsong_checkpoint)
+else:
+    milsong_checkpoint()

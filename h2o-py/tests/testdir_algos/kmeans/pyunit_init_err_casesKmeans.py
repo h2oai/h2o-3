@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -78,4 +82,8 @@ def init_err_casesKmeans():
     h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame(start))
   
 
-init_err_casesKmeans()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(init_err_casesKmeans)
+else:
+    init_err_casesKmeans()

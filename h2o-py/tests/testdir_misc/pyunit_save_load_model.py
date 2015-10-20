@@ -1,9 +1,16 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import sys, os
 sys.path.insert(1, "../../")
 import h2o, tests
 from h2o.estimators.estimator_base import H2OEstimator
 =======
+=======
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+>>>>>>> d4ce8c93ff1691521387bb6b5767f34548251eb4
 import os
 
 from h2o.model.binomial import H2OBinomialModel
@@ -27,4 +34,8 @@ def save_load_model():
     assert isinstance(the_model, H2OEstimator), "Expected and H2OBinomialModel, but got {0}".format(the_model)
 
 
-save_load_model()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(save_load_model)
+else:
+    save_load_model()

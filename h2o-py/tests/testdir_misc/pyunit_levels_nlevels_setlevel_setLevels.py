@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -94,4 +98,8 @@ def levels_nlevels_setlevel_setLevels_test():
     assert one_column_frame[0,0] == 'c'
 
 
-levels_nlevels_setlevel_setLevels_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(levels_nlevels_setlevel_setLevels_test)
+else:
+    levels_nlevels_setlevel_setLevels_test()

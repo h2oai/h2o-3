@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 ################################################################################
 ##
 ## Verifying that Python can support user-specified handling of the first line
@@ -29,4 +33,8 @@ def header():
     assert fhex_header_unspecified._nrows == fhex_header_false._nrows or fhex_header_unspecified._nrows == fhex_header_true._nrows
 
 
-header()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(header)
+else:
+    header()

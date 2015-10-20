@@ -258,12 +258,30 @@ def hadoop_namenode_is_accessible():
         internal = False
     return internal
 
-def test_is_on_hadoop(): return sys.modules["tests.pyunit_utils"].__on_hadoop__
-def hadoop_namenode():   return sys.modules["tests.pyunit_utils"].__hadoop_namenode__
+def test_is_on_hadoop():
+    if hasattr(sys.modules["tests.pyunit_utils"], '__on_hadoop__'):
+        return sys.modules["tests.pyunit_utils"].__on_hadoop__
+    return False
+
+def hadoop_namenode():
+    if hasattr(sys.modules["tests.pyunit_utils"], '__hadoop_namenode__'):
+        return sys.modules["tests.pyunit_utils"].__hadoop_namenode__
+    return None
 
 def pyunit_exec(test_name):
-    pyunit = "import h2o\nfrom tests import pyunit_utils\n"
-    with open (test_name, "r") as t: pyunit = pyunit + t.read()
+    with open (test_name, "r") as t: pyunit = t.read()
     pyunit_c = compile(pyunit, '<string>', 'exec')
     p = {}
     exec pyunit_c in p
+
+def standalone_test(test):
+    h2o.init(strict_version_check=False)
+
+    h2o.remove_all()
+
+    h2o.log_and_echo("------------------------------------------------------------")
+    h2o.log_and_echo("")
+    h2o.log_and_echo("STARTING TEST")
+    h2o.log_and_echo("")
+    h2o.log_and_echo("------------------------------------------------------------")
+    test()

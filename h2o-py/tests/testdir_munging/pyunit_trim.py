@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -21,4 +25,8 @@ def trim_check():
     assert trimmed_vec[2,0] == "AMC Ambassador SST",      "Expected 'AMC Ambassador SST', but got {}".format(trimmed_frame[2,0])
 
 
-trim_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(trim_check)
+else:
+    trim_check()
