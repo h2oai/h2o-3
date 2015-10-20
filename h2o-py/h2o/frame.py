@@ -39,9 +39,9 @@ class H2OFrame(H2OFrameWeakRefMixin):
     #       -  - None: Expr is lazy, never evaluated
     #       -  - ""; Expr has been executed once, but no temp ID was made
     #       -  - String: this Expr is mid-execution, with the given temp ID.  Once execution has completed the ast field will be set to TRUE
-    assert ((isinstance(xid,str) and len(xid)>0 and isinstance(ast,bool) ) or # Has ID and AST is either true or false
-      # No id, or id is a string, and ast is a list of H2OFrames to execute
-      ((isinstance(xid,str) or (xid is None)) and (isinstance(ast,list) and all(isinstance(expr, H2OFrame) for expr in ast))))
+    assert ((isinstance(xid,(str,unicode)) and len(xid)>0 and isinstance(ast,bool) ) or # Has ID and AST is either true or false
+    # No id, or id is a string, and ast is a list of H2OFrames to execute
+            ((isinstance(xid,str,unicode) or (xid is None)) and (isinstance(ast,list) and all(isinstance(expr, H2OFrame) for expr in ast))))
     self._ast       = ast
     self._id        = xid  # "id"  - See above; sometimes None, "", or a "py_tmp" string, or a user string
     # Cached small result; typically known and returned in all REST calls
@@ -68,7 +68,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(nrows), thousands_sep.format(ncols))
     else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(nrows), thousands_sep.format(ncols)))
-    res
+    return res
 
   # Init a H2OFrame by importing a primitive Python `list` or `dict` object
   # For more information on the structure of the input for the various native python
@@ -274,8 +274,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :return: The number of rows in this dataset.
     """
-    self._eager()
-    return self._nrows
+    return self._nrows if self._nrows else self._eager()._nrows
 
   @property
   def ncol(self):
@@ -284,8 +283,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
     :return: The number of columns in this H2OFrame.
     """
-    self._eager()
-    return self._ncols
+    return self._ncols if self._ncols else self._eager()._ncols
 
   def filterNACols(self, frac=0.2):
     """
@@ -598,18 +596,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
     """
     return self.isstring()
 
-  def remove_vecs(self, cols):
-    """
-    :param cols: Drop these columns.
-    :return: A frame with the columns dropped.
-    """
-    self._eager()
-    is_char = all([isinstance(i,basestring) for i in cols])
-    if is_char:
-      cols = [self._find_idx(col) for col in cols]
-    cols = sorted(cols)
-    return H2OFrame(expr=ExprNode("removeVecs",self,cols))._frame()
-
   def kfold_column(self, n_folds=3, seed=-1):
     """
     Build a fold assignments column for cross-validation. This call will produce a column
@@ -815,7 +801,9 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def __float__(self): return self._scalar()
 
   def __del__(self):
-    raise ValueError("unimpl: destructor")
+    if( isinstance(self._ast,bool) and self._ast ):
+      print("Removing "+self._id)
+      H2OConnection.delete("DKV/"+self._id)
 
   def drop(self, i):
     """

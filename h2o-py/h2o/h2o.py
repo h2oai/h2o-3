@@ -402,22 +402,6 @@ def remove_all():
   """
   H2OConnection.delete("DKV")
 
-def removeFrameShallow(key):
-  """
-  Do a shallow DKV remove of the frame (does not remove any internal Vecs).
-  This is a "soft" delete. Just removes the top level pointer, but all big data remains!
-
-  Parameters
-  ----------
-
-  key : str
-    A Frame Key to be removed
-
-  :return: None
-  """
-  rapids("(removeframe '"+key+"')")
-  return None
-
 def rapids(expr):
   """
   Fire off a Rapids expression.
