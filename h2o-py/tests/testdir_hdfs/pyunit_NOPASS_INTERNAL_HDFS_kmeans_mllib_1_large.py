@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 #----------------------------------------------------------------------
 # Purpose:  This test compares k-means centers between H2O and MLlib.
 #----------------------------------------------------------------------
@@ -54,4 +58,8 @@ def kmeans_mllib():
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 
-kmeans_mllib()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(kmeans_mllib)
+else:
+    kmeans_mllib()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -46,4 +50,8 @@ def svd_1_golden():
         for r, h in zip(rl, hl): assert abs(abs(r) - abs(float(h))) < 1e-5, "H2O got {0}, but R got {1}".format(h, r)
 
 
-svd_1_golden()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(svd_1_golden)
+else:
+    svd_1_golden()

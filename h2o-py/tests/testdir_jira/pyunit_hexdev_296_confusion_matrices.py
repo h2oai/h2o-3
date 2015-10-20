@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -23,4 +27,8 @@ def confusion_matrices_check():
                                         "{3}. Should sum to 20.".format(tps, fps, tns, fns)
 
 
-confusion_matrices_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(confusion_matrices_check)
+else:
+    confusion_matrices_check()

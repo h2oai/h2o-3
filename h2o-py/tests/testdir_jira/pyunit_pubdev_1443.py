@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -20,4 +24,8 @@ def pubdev_1443():
     assert threes == 10000, "Expected 10000 3's, but got {0}".format(threes)
 
 
-pubdev_1443()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pubdev_1443)
+else:
+    pubdev_1443()

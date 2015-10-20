@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -16,4 +20,8 @@ def pubdev_2041():
     m2 = h2o.deeplearning(x=train2[0:4], y=train2[4], epochs=200, checkpoint=m1.model_id)
 
 
-pubdev_2041()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pubdev_2041)
+else:
+    pubdev_2041()

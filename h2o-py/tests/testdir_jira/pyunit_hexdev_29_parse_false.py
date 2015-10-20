@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 ################################################################################
 ##
 ## Verifying that Python can support importing without parsing.
@@ -18,4 +22,8 @@ def parse_false():
     assert fhex.__class__.__name__ == "H2OFrame"
 
 
-parse_false()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(parse_false)
+else:
+    parse_false()

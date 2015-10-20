@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -56,4 +60,8 @@ def pubdev_1829():
     assert model2.logloss(valid=True)==model4.logloss(valid=True), "Expected Model 2 Log Loss: {0} to be the same as Model 4 Log Loss: {1}".format(model2.logloss(valid=True), model4.logloss(valid=True))
 
 
-pubdev_1829()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pubdev_1829)
+else:
+    pubdev_1829()

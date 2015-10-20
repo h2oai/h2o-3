@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -19,4 +23,8 @@ def pubdev_1421():
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 
-pubdev_1421()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pubdev_1421)
+else:
+    pubdev_1421()

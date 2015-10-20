@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 import os
 
 import random
@@ -55,4 +59,8 @@ def pub_444_spaces_in_filenames():
     os.remove(pyunit_utils.locate(tempdir) + " ba z.csv")
 
 
-pub_444_spaces_in_filenames()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pub_444_spaces_in_filenames)
+else:
+    pub_444_spaces_in_filenames()

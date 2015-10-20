@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 #----------------------------------------------------------------------
 # Purpose:  This test exercises HDFS operations from python.
 #----------------------------------------------------------------------
@@ -53,4 +57,8 @@ def hdfs_basic():
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 
-hdfs_basic()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(hdfs_basic)
+else:
+    hdfs_basic()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 ################################################################################
 ##
 ## Verifying that Python can define features as categorical or continuous
@@ -47,4 +51,8 @@ def continuous_or_categorical():
   assert (not df_hex['h3'].isfactor())
 
 
-continuous_or_categorical()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(continuous_or_categorical)
+else:
+    continuous_or_categorical()
