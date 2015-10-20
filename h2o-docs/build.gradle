@@ -105,15 +105,15 @@ def counterToBooklet(int counter) {
 //
 task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3", "compile_5_3"])
 
-task cleanBooklets << {
-    ant.delete() { fileset(dir: file(bookletPath), includes: '*.out')     }
-    ant.delete() { fileset(dir: file(bookletPath), includes: '*.pdf')     }
-    ant.delete() { fileset(dir: file(bookletPath), includes: '*.blg')     }
-    ant.delete() { fileset(dir: file(bookletPath), includes: '*.log')     }
-    ant.delete() { fileset(dir: file(bookletPath), includes: '*.aux')     }
-    ant.delete() { fileset(dir: file(bookletPath), includes: '*.toc')     }
-    ant.delete() { fileset(dir: file(bookletPath), includes: '*.synctex') }
-    ant.delete() { fileset(dir: file(bookletPath), includes: 'generated_buildinfo.tex') }
+task cleanBooklets(type: Delete) {
+    delete fileTree(dir: file(bookletPath), include: '*.out'),
+            fileTree(dir: file(bookletPath), include: '*.pdf'),
+            fileTree(dir: file(bookletPath), include: '*.blg'),
+            fileTree(dir: file(bookletPath), include: '*.log'),
+            fileTree(dir: file(bookletPath), include: '*.aux'),
+            fileTree(dir: file(bookletPath), include: '*.toc'),
+            fileTree(dir: file(bookletPath), include: '*.synctex'),
+            fileTree(dir: file(bookletPath), include: 'generated_buildinfo.tex')
 }
 
 task booklets(dependsOn: compileBooklets)
