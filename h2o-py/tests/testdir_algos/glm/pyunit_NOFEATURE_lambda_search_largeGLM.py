@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -37,4 +41,8 @@ def lambda_search():
     assert best_model.model() == prostate_search.model(), "expected models to be equal"
   
 
-lambda_search()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(lambda_search)
+else:
+    lambda_search()

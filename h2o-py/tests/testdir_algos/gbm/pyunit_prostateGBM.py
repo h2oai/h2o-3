@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -44,4 +48,8 @@ def prostateGBM():
   my_gbm_metrics  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
 
-prostateGBM()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(prostateGBM)
+else:
+    prostateGBM()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -35,4 +39,8 @@ def link_correct_default():
 		   h2o_model_unspecified._model_json['output']['coefficients_table'].cell_values, "coefficient should be equal"
 
 
-link_correct_default()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(link_correct_default)
+else:
+	link_correct_default()

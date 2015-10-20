@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -34,4 +38,8 @@ def imbalancedGBM():
     assert class_6_err_imbalanced >= 0.90*class_6_err_balanced, "balance_classes makes it at least 10% worse!"
 
 
-imbalancedGBM()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(imbalancedGBM)
+else:
+    imbalancedGBM()

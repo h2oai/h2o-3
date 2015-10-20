@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -106,4 +110,8 @@ def random_attack():
         attack("gamma", pros_train, pros_valid, random.sample([1,2,3,5,6,7,8],random.randint(1,7)), 4)
 
 
-random_attack()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(random_attack)
+else:
+    random_attack()

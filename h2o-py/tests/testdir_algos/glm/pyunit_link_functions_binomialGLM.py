@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -33,4 +37,8 @@ def link_functions_binomial():
   assert h2o_deviance - sm_deviance < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 
-link_functions_binomial()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(link_functions_binomial)
+else:
+    link_functions_binomial()

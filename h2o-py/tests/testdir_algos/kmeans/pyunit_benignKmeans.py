@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -32,4 +36,8 @@ def benignKmeans():
         print benign_sci_km.cluster_centers_
 
 
-benignKmeans()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(benignKmeans)
+else:
+    benignKmeans()

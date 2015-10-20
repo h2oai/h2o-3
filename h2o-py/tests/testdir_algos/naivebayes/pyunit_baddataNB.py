@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -48,4 +52,8 @@ def nb_baddata():
                                                            "".format(len(model._model_json['output']['pcond']))
 
 
-nb_baddata()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(nb_baddata)
+else:
+    nb_baddata()

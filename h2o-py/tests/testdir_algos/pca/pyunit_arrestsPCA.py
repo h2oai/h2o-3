@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -16,4 +20,8 @@ def pca_arrests():
         # TODO: pca_h2o.show()
 
 
-pca_arrests()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pca_arrests)
+else:
+    pca_arrests()

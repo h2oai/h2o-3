@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 import os
 
 import random
@@ -43,4 +47,8 @@ def milsong_checkpoint():
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
 
-milsong_checkpoint()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(milsong_checkpoint)
+else:
+    milsong_checkpoint()

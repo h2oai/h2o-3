@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -34,4 +38,8 @@ def swpredsGBM():
   h2o_auc2 = h2o_gbm_perf2.auc()
 
 
-swpredsGBM()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(swpredsGBM)
+else:
+    swpredsGBM()

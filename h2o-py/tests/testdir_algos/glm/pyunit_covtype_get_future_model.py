@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -34,4 +38,8 @@ def test_get_future_model():
     print(covtype_h2o3)
 
 
-test_get_future_model()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(test_get_future_model)
+else:
+    test_get_future_model()

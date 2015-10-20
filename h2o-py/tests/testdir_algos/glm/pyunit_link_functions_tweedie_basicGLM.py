@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -25,5 +29,9 @@ def link_functions_tweedie_basic():
 
 
 
-link_functions_tweedie_basic()
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(link_functions_tweedie_basic)
+else:
+    link_functions_tweedie_basic()

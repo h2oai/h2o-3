@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -65,4 +69,8 @@ def bernoulli_synthetic_data_mediumGBM():
                                "scickit auc: {1}".format(auc_h2o, auc_sci)
 
 
-bernoulli_synthetic_data_mediumGBM()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(bernoulli_synthetic_data_mediumGBM)
+else:
+    bernoulli_synthetic_data_mediumGBM()

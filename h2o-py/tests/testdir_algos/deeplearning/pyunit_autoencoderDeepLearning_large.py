@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 import os, sys
 
 
@@ -59,5 +63,9 @@ def deeplearning_autoencoder():
     assert abs(cm.cell_values[10][10] - 0.081) < 0.001, "Error. Expected 0.081, but got {0}".format(cm.cell_values[10][10])
 
 
-deeplearning_autoencoder()
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(deeplearning_autoencoder)
+else:
+    deeplearning_autoencoder()

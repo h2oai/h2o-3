@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -20,4 +24,8 @@ def perfectSeparation_balanced():
         assert c < 50, "coefficient is too large"
 
 
-perfectSeparation_balanced()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(perfectSeparation_balanced)
+else:
+    perfectSeparation_balanced()

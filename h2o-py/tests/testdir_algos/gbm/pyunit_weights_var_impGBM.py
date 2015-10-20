@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -115,4 +119,8 @@ def weights_var_imp():
     check_same(h2o_data_doubled, h2o_data_doubled_weights, 1)
 
 
-weights_var_imp()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(weights_var_imp)
+else:
+    weights_var_imp()

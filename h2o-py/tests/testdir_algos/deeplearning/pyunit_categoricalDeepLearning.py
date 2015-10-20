@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 def deeplearning_multi():
@@ -23,4 +27,8 @@ def deeplearning_multi():
                           use_all_factor_levels = False)
     hh.show()
 
-deeplearning_multi()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(deeplearning_multi)
+else:
+    deeplearning_multi()

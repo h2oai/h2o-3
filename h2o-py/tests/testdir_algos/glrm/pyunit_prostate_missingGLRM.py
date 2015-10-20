@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -53,4 +57,8 @@ def glrm_prostate_miss():
         print "Missing ratio: {0}% --> Training categorical error: {1}\tValidation categorical error: {2}".format(missing_ratios[i]*100, train_caterr[i], valid_caterr[i])
     
 
-glrm_prostate_miss()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(glrm_prostate_miss)
+else:
+    glrm_prostate_miss()

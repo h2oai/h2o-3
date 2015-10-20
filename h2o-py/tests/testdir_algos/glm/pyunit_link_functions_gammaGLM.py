@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -44,6 +48,9 @@ def link_functions_gamma():
 	assert h2o_deviance_log - sm_deviance_log < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 
-link_functions_gamma()
 
 
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(link_functions_gamma)
+else:
+	link_functions_gamma()

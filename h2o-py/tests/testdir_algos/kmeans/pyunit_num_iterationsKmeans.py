@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -13,4 +17,8 @@ def km_num_iterations():
     assert num_iterations <= 4, "Expected 4 iterations, but got {0}".format(num_iterations)
 
 
-km_num_iterations()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(km_num_iterations)
+else:
+    km_num_iterations()

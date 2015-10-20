@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -13,4 +17,8 @@ def glrm_benign():
         glrm_h2o.show()
 
 
-glrm_benign()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(glrm_benign)
+else:
+    glrm_benign()

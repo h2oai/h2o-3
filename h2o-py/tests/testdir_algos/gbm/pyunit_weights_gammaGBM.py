@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -22,4 +26,8 @@ def weights_gamma():
     assert abs(8121.98-ph[0].mean()) < 1e-4*8121.98
 
 
-weights_gamma()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(weights_gamma)
+else:
+    weights_gamma()
