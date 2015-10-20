@@ -131,13 +131,14 @@ class H2OFrame(H2OFrameWeakRefMixin):
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()               # write the header
+    #csv_writer.writeheader()               # write the header
+    if not kwargs['column_names']: kwargs['column_names'] = header
     csv_writer.writerows(data_to_write)    # write the data
     tmp_file.close()                       # close the streams
-    self._upload_raw_data(tmp_path,header) # actually upload the data to H2O
+    self._upload_raw_data(tmp_path, **kwargs) # actually upload the data to H2O
     os.remove(tmp_path)                    # delete the tmp file
 
-  def _handle_text_key(self, text_key, check_header=None, header=None):
+  def _handle_text_key(self, text_key, **kwargs):
     """
     Handle result of upload_file
 
@@ -146,18 +147,17 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: Part of the H2OFrame constructor.
     """
     # perform the parse setup
-    setup = h2o.parse_setup(text_key, col_names=header)
-    if check_header is not None: setup["check_header"] = check_header
+    setup = h2o.parse_setup(text_key, **kwargs)
     parse = h2o._parse(setup)
     self._update_post_parse(parse)
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
 
-  def _upload_raw_data(self, tmp_file_path, header=None):
+  def _upload_raw_data(self, tmp_file_path, **kwargs):
     fui = {"file": os.path.abspath(tmp_file_path)}                            # file upload info is the normalized path to a local file
     dest_key = _py_tmp_key()                                                  # create a random name for the data
     h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)  # do the POST -- blocking, and "fast" (does not real data upload)
-    self._handle_text_key(dest_key, header)                                   # actually parse the data and setup self._vecs
+    self._handle_text_key(dest_key, **kwargs)                                   # actually parse the data and setup self._vecs
 
   def __iter__(self):
     """
