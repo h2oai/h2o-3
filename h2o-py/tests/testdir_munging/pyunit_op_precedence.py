@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -52,4 +56,8 @@ def op_precedence():
     pyunit_utils.np_comparison_check(S6, s6, 10)
 
 
-op_precedence()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(op_precedence)
+else:
+    op_precedence()

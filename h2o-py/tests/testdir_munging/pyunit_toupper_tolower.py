@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -21,4 +25,8 @@ def toupper_tolower_check():
     assert vec[3,0] == "iris-setosa", "Expected 'iris-setosa', but got {0}".format(vec[3,0])
 
 
-toupper_tolower_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(toupper_tolower_check)
+else:
+    toupper_tolower_check()

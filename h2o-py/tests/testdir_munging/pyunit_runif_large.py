@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -16,4 +20,8 @@ def runif_check():
           "different results. upload_file: {0}, import_frame: {1}.".format(r_u.mean(), r_i.mean())
 
 
-runif_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(runif_check)
+else:
+    runif_check()

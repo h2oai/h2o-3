@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -37,4 +41,8 @@ def frame_slicing():
     assert abs(res5[0,0] - 6) < 1e-10 and abs(res5[1,1] - 0) < 1e-10 and abs(res5[2,2] - 61) < 1e-10, "incorrect values"
 
 
-frame_slicing()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(frame_slicing)
+else:
+    frame_slicing()

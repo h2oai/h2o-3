@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -21,4 +25,8 @@ def vec_slicing():
     assert abs(res[0,0] - 3.0) < 1e-10 and abs(res[1,0] - 3.0) < 1e-10 and abs(res[5,0] - 3.5) < 1e-10, "incorrect values"
 
 
-vec_slicing()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(vec_slicing)
+else:
+    vec_slicing()

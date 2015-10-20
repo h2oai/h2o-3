@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -17,4 +21,8 @@ def test_any_all():
     assert any and not all, "expected any to be True and all to be False but but got {0} and {1}".format(any, all)
 
 
-test_any_all()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(test_any_all)
+else:
+    test_any_all()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -41,4 +45,8 @@ def minmax_basic():
     assert h2o_max == mx, "Expected the same max value. H2O got {0}, but python got {1}".format(h2o_max, mx)
 
 
-minmax_basic()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(minmax_basic)
+else:
+    minmax_basic()

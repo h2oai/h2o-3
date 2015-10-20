@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -25,4 +29,8 @@ def sub_gsub_check():
     assert vec[3,0] == "Iriz-zetoza", "Expected 'Iriz-zetoza', but got {0}".format(vec[3,0])
 
 
-sub_gsub_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(sub_gsub_check)
+else:
+    sub_gsub_check()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 ##
 # Test out the dim functionality
 # If data frame, get back a vector of two numbers: [1] nrows ncols
@@ -46,4 +50,8 @@ def dim_checks():
   assert h2oColAmpFive.nrow == h2o_rows, "expected the number of rows to remain unchanged"
 
 
-dim_checks()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(dim_checks)
+else:
+    dim_checks()

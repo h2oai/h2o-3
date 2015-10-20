@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 ##
 # Test out the sdev() functionality
 # If NAs in the frame, they are skipped in calculation unless na.rm = F
@@ -27,4 +31,8 @@ def sdev():
   iris_h2o[0:2].sd()
   
 
-sdev()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(sdev)
+else:
+    sdev()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -23,4 +27,8 @@ def asnumeric():
     assert h2oframe.nrow == rows, "expected the same number of rows as before {0}, but got {1}".format(rows, h2oframe.nrow)
 
 
-asnumeric()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(asnumeric)
+else:
+    asnumeric()

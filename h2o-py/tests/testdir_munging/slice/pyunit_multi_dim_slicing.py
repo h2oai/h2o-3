@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -54,4 +58,8 @@ def multi_dim_slicing():
     assert pros[2,2] == 1, "Incorrect slicing result"
 
 
-multi_dim_slicing()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(multi_dim_slicing)
+else:
+    multi_dim_slicing()

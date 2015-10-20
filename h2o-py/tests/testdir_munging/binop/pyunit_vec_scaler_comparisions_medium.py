@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -69,4 +73,8 @@ def vec_scaler_comparisons():
     assert (l_rows + G_rows) == rows and l_cols == G_cols == cols, "expected equal number of rows and cols"
 
 
-vec_scaler_comparisons()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(vec_scaler_comparisons)
+else:
+    vec_scaler_comparisons()

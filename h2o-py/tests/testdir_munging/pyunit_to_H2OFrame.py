@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -167,4 +171,8 @@ def to_H2OFrame():
     # # check_dims_values_jagged() TODO
 
 
-to_H2OFrame()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(to_H2OFrame)
+else:
+    to_H2OFrame()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -17,4 +21,8 @@ def frame_as_list():
   (airlines["CRSArrTime"] % 100).show()
 
 
-frame_as_list()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(frame_as_list)
+else:
+    frame_as_list()

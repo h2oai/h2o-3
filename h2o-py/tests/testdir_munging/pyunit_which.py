@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -14,4 +18,8 @@ def pyunit_which():
     assert sum(range(100,150)) == virginica.sum()
 
 
-pyunit_which()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pyunit_which)
+else:
+    pyunit_which()

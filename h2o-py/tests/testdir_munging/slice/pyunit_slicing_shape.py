@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 # Check that slicings give the correct shape
 
 
@@ -40,4 +44,8 @@ def slicing_shape():
            assert c == ncols, "incorrect number of cols. correct: {0}, computed: {1}".format(ncols, c)
 
 
-slicing_shape()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(slicing_shape)
+else:
+    slicing_shape()

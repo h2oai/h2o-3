@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -43,4 +47,8 @@ def impute():
     prostate.impute("VOL", method = "median")
 
 
-impute()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(impute)
+else:
+    impute()
