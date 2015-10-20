@@ -187,7 +187,6 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   attr(.eval.driver(x),"data")      # Cache and return scalar
 }
 .eval.driver <- function(x) {
-print(sys.calls())
   # Build the AST; this will assign a name as needed
   exec_str <- .eval.impl(x)
   # Execute the AST on H2O

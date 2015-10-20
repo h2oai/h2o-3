@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref,inspect,ast
+import h2o
 from astfun import _bytecode_decompile_lambda
-from expr import h2o,ExprNode
 import gc
 from group_by import GroupBy
-
 
 # TODO: Automatically convert column names into Frame properties!
 
@@ -28,91 +27,57 @@ class H2OFrameWeakRefMixin:
 
 class H2OFrame(H2OFrameWeakRefMixin):
 
-  # Magical count-of-5:   (get 2 more when looking at it in debug mode)
-  #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
-  MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
-  COUNTING = True
-  dropped_instances = []  # keep track of dropped instances while not counting
-
-  def __init__(self, python_obj=None, file_path=None, raw_id=None, expr=None, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
+  def __init__(self,op,xid=None,ast=False,nrows=None,ncols=None):
     """
-    Create a new H2OFrame object by passing a file path or a list of H2OVecs.
-
-    If `file_path` is not None, then a REST call will be made to import the
-    data specified at the location `file_path`.  This path is relative to the
-    H2O cluster, NOT the local Python process
-
-    If `python_obj` is not None, then an attempt to upload the python object to H2O
-    will be made. A valid python object has type `list`, or `dict`.
-
-    For more information on the structure of the input for the various native python
-    data types ("native" meaning non-H2O), please see the general documentation for
-    this object.
-
-    :param python_obj: A "native" python object - list, dict, tuple.
-    :param file_path: A remote path to a data source. Data is cluster-local.
-    :param vecs: A list of H2OVec objects.
-    :param text_key: A raw key resulting from an upload_file.
     :return: An instance of an H2OFrame object.
     """
-
-    # CNC notes
-    # Too many variables here; in particular, drop "keep" and "computed".
-    # From R: 
+    H2OFrameWeakRefMixin.__init__(self)
+    self._op        = op  # Base opcode string
     # "ast" - True; computed temp; has ID, finalizer will remove
     #       - False; computed non-temp; has user ID, user must explicitly remove
     #       - list of Exprs; further: ID is one of
     #       -  - None: Expr is lazy, never evaluated
     #       -  - ""; Expr has been executed once, but no temp ID was made
     #       -  - String: this Expr is mid-execution, with the given temp ID.  Once execution has completed the ast field will be set to TRUE
-    # "id"  - See above; sometimes None, "", or a "py_tmp" string, or a user string
-    # "op"  - base opcode string
-    # "nrow", "ncol", "col_names", "types" - cached bits.  May exist with no "data", or if lazy still
-    # "data"- cached data bits for a 2-d Frame, or the full scalar result 
-
-    H2OFrameWeakRefMixin.__init__(self)
-    self._id        = _py_tmp_key()  # gets overwritten if a parse happens
-    self._keep      = False
-    self._nrows     = None
-    self._ncols     = None
+    assert ((isinstance(xid,str) and len(xid)>0 and isinstance(ast,bool) ) or # Has ID and AST is either true or false
+      # No id, or id is a string, and ast is a list of H2OFrames to execute
+      ((isinstance(xid,str) or (xid is None)) and (isinstance(ast,list) and all(isinstance(expr, H2OFrame) for expr in ast))))
+    self._ast       = ast
+    self._id        = xid  # "id"  - See above; sometimes None, "", or a "py_tmp" string, or a user string
+    # Cached small result; typically known and returned in all REST calls
+    self._nrows     = nrows
+    self._ncols     = ncols
+    # Cached info of the evaluated result; can be large if e.g. the column count is large
     self._col_names = None
     self._types     = None
-    self._computed  = False
-    self._ast       = None
-    self._data      = None  # any cached data
+    self._data      = None  # any cached data, including scalars or prefixes of data frames
 
-    if expr is not None:         self._ast = expr
-    elif python_obj is not None: self._upload_python_object(python_obj)
-    elif file_path is not None:  self._import_parse(file_path, destination_frame, header, separator, column_names, column_types, na_strings)
-    elif raw_id is not None:     self._handle_text_key(raw_id)
-    else: pass
 
+  # Init a H2OFrame by parsing a CSV at file_path.  This path is relative to
+  # the H2O cluster, NOT the local Python process
+  #    :param file_path: A remote path to a data source. Data is cluster-local.
   @staticmethod
-  def get_frame(frame_id):
-    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(frame_id))["frames"][0]
-    fr = H2OFrame()
-    fr._nrows = res["rows"]
-    fr._ncols = res["total_column_count"]
-    fr._id = res["frame_id"]["name"]
-    fr._computed = True
-    fr._keep = True
-    fr._col_names = [c["label"] for c in res["columns"]]
-    types = [c["type"] for c in res["columns"]]
-    fr._types = dict(zip(fr._col_names,types))
-    return fr
-
-  def __str__(self): return self._id
-
-  def _import_parse(self, file_path, destination_frame, header, separator, column_names, column_types, na_strings):
+  def read_csv(file_path, destination_frame, header=(-1,0,1), separator="", column_names=None, column_types=None, na_strings=None):
     rawkey = h2o.lazy_import(file_path)
     setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
     parse = h2o._parse(setup)
-    self._update_post_parse(parse)
+    destination_frame = parse["destination_frame"]["name"]
+    res = H2OFrame.get_frame(destination_frame)
+    nrows = res._nrows
+    ncols = res._ncols
     thousands_sep = h2o.H2ODisplay.THOUSANDS
-    if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
-    else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
+    if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,thousands_sep.format(nrows), thousands_sep.format(ncols))
+    else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(file_path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(nrows), thousands_sep.format(ncols)))
+    res
 
-  def _upload_python_object(self, python_obj):
+  # Init a H2OFrame by importing a primitive Python `list` or `dict` object
+  # For more information on the structure of the input for the various native python
+  # data types ("native" meaning non-H2O), please see the general documentation for
+  # this object.
+  #
+  # :param python_obj: A "native" python object - list, dict, tuple.
+  @staticmethod
+  def fromPython(python_obj):
     """
     Properly handle native python data types. For a discussion of the rules and
     permissible data types please refer to the main documentation for H2OFrame.
@@ -146,14 +111,16 @@ class H2OFrame(H2OFrameWeakRefMixin):
     csv_writer.writeheader()             # write the header
     csv_writer.writerows(data_to_write)  # write the data
     tmp_file.close()                     # close the streams
-    self._upload_raw_data(tmp_path)      # actually upload the data to H2O
+    res = read_csv(tmp_path, _py_tmp_key())
     os.remove(tmp_path)                  # delete the tmp file
+    res
 
-  def _handle_text_key(self, text_key, check_header=None):
+  @staticmethod
+  def fromRawText(self, text_key, check_header=None):
     """
     Handle result of upload_file
 
-    :param test_key: A key pointing to raw text to be parsed
+    :param text_key: A key pointing to raw text to be parsed
     :return: Part of the H2OFrame constructor.
     """
     # perform the parse setup
@@ -164,11 +131,19 @@ class H2OFrame(H2OFrameWeakRefMixin):
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
 
-  def _upload_raw_data(self, tmp_file_path):
-    fui = {"file": os.path.abspath(tmp_file_path)}                            # file upload info is the normalized path to a local file
-    dest_key = _py_tmp_key()                                                  # create a random name for the data
-    h2o.H2OConnection.post_json("PostFile", fui, destination_frame=dest_key)  # do the POST -- blocking, and "fast" (does not real data upload)
-    self._handle_text_key(dest_key, 1)                                        # actually parse the data and setup self._vecs
+
+  @staticmethod
+  def get_frame(frame_id):
+    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(frame_id))["frames"][0]
+    fr = H2OFrame("Frame",res["frame_id"]["name"],False,res["rows"],res["total_column_count"])
+    fr._col_names = [c["label"] for c in res["columns"]]
+    types = [c["type"] for c in res["columns"]]
+    fr._types = dict(zip(fr._col_names,types))
+    return fr
+
+  def __str__(self): 
+    raise ValueError("unimpl: __str__")
+    #return self._id
 
   def __iter__(self):
     """
@@ -840,23 +815,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def __float__(self): return self._scalar()
 
   def __del__(self):
-    if not H2OFrame.COUNTING:
-      H2OFrame.dropped_instances.append(self._id)
-      return
-    if not self._keep and self._computed: h2o.remove(self)
-
-  @staticmethod
-  def del_dropped():
-    live_frames = list(H2OFrame.get_instance_ids())
-    dead_frames = H2OFrame.dropped_instances
-    for fr in dead_frames:
-      if fr not in live_frames:
-        h2o.remove(fr)
-    H2OFrame.dropped_instances = []
-
-  def keep(self):
-    self._keep = True
-    return self
+    raise ValueError("unimpl: destructor")
 
   def drop(self, i):
     """
@@ -1434,6 +1393,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
           self._update()   # fill out _nrows, _ncols, _col_names, _computed
       return sb
 
+  # Magical count-of-5:   (get 2 more when looking at it in debug mode)
+  #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
+  MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
+
   def _do_it(self,sb):
     # this method is only ever called from ExprNode._do_it
     # it's the "long" way 'round the mutual recursion from ExprNode to H2OFrame
@@ -1455,7 +1418,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
       if self.dim == [1,1]:
         sb += [str(self._scalar()), " "]   # inline 1x1 H2OFrame here
       else:                 sb += [self._id+" "]
-    else:              sb += self._eager(True) if (len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT) else self._eager(False)
+    else:              sb += self._eager(len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT)
 
   def _update(self):
     res = h2o.frame(self._id)["frames"][0]  # TODO: exclude here?
@@ -1465,15 +1428,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
     self._types = dict(zip(self._col_names, [c["type"] for c in res["columns"]]))
     self._computed=True
     self._ast=None
-
-  def _update_post_parse(self, parse):
-    self._id = parse["destination_frame"]["name"]
-    self._computed=True
-    self._nrows = int(H2OFrame(expr=ExprNode("nrow", self))._scalar())
-    self._ncols = parse["number_columns"]
-    self._col_names = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,self._ncols+1)]
-    self._types = dict(zip(self._col_names,parse["column_types"]))
-    self._keep = True
 
   #### DO NOT ADD ANY MEMBER METHODS HERE ####
 
