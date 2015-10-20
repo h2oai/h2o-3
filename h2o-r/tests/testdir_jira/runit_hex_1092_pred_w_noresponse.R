@@ -1,8 +1,3 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-#setwd("/Users/tomk/0xdata/ws/h2o-3/h2o-r/tests/testdir_jira")
-source('../h2o-runit.R')
-options(echo=TRUE)
-
 test.predict.withoutresponse <- function(h) {
 
 	ir = h2o.uploadFile(normalizePath(locate("smalldata/iris/iris.csv")),destination_frame="ir")

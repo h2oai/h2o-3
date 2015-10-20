@@ -2,14 +2,6 @@
 # Test for HEX-1799
 # h2o.glm with nfolds >= 2 should have model parameters that match the main glm model.
 ######################################################################################
-
-
-options(echo=TRUE)
-
-
-heading("BEGIN TEST")
-
-
 hex_1799_test <-
 function() {
 
