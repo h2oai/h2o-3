@@ -1,13 +1,11 @@
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
-from h2o import H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, H2OClusteringModel, H2OFrame
 import imp
 import random
 import re
 import subprocess
 from subprocess import STDOUT,PIPE
-<<<<<<< HEAD:h2o-py/tests/utils/utilsPY.py
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
@@ -18,9 +16,7 @@ from h2o.model.clustering import H2OClusteringModel
 from h2o.model.dim_reduction import H2ODimReductionModel
 from h2o.model.multinomial import H2OMultinomialModel
 from h2o.model.regression import H2ORegressionModel
-=======
 import urllib2
->>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4:h2o-py/tests/pyunit_utils/utilsPY.py
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
     """
