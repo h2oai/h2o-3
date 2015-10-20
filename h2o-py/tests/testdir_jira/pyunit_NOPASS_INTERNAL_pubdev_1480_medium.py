@@ -11,7 +11,7 @@ def pubdev_1480():
 
     predictions = model.predict(test)
 
-    results_dir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results"))
+    results_dir = pyunit_utils.locate("results")
     h2o.download_csv(predictions, os.path.join(results_dir,"predictions.csv"))
 
 

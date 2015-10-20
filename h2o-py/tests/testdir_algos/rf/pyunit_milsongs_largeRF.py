@@ -18,7 +18,7 @@ def milsong_checkpoint():
                                validation_x=milsong_valid[1:],validation_y=milsong_valid[0],seed=1234)
 
     # save the model, then load the model
-    path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..","results"))
+    path = pyunit_utils.locate("results")
 
     assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
     model_path = h2o.save_model(model1, path=path, force=True)
