@@ -22,12 +22,47 @@ class H2OEstimator(ModelBase):
   """H2O Estimators
 
   H2O Estimators implement the following methods for model construction:
+    * start - Top-level user-facing API for asynchronous model build
+    * join  - Top-level user-facing API for blocking on async model build
     * train - Top-level user-facing API for model building.
     * fit - Used by scikit-learn.
 
   Because H2OEstimator instances are instances of ModelBase, these objects can use the
   H2O model API.
   """
+
+  def start(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
+    """Asynchronous model build by specifying the predictor columns, response column, and any
+    additional frame-specific values.
+
+    To block for results, call join.
+
+    Parameters
+    ----------
+      x : list
+        A list of column names or indices indicating the predictor columns.
+      y : str
+        An index or a column name indicating the response column.
+      training_frame : H2OFrame
+        The H2OFrame having the columns indicated by x and y (as well as any
+        additional columns specified by fold, offset, and weights).
+      offset_column : str, optional
+        The name or index of the column in training_frame that holds the offsets.
+      fold_column : str, optional
+        The name or index of the column in training_frame that holds the per-row fold
+        assignments.
+      weights_column : str, optional
+        The name or index of the column in training_frame that holds the per-row weights.
+      validation_frame : H2OFrame, optional
+        H2OFrame with validation data to be scored on while training.
+    """
+    self._future=True
+    self.train(x,y,training_frame,offset_column,fold_column,weights_column,validation_frame,params)
+
+  def join(self):
+    self._future=False
+    self._job.poll()
+    self._job=None
 
   def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     """Train the H2O model by specifying the predictor columns, response column, and any
@@ -90,10 +125,14 @@ class H2OEstimator(ModelBase):
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
     kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
     algo = self._compute_algo()
-    ##### POLL MODEL FOR COMPLETION #####
-    model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")).poll()
-    #####################################
 
+    model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build"))
+
+    if self._future:
+      self._job = model
+      return
+
+    model.poll()
     if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
     else:                                model_json = H2OConnection.get_json("Models/"+model.dest_key)["models"][0]
     self._resolve_model(model.dest_key,model_json)

@@ -19,6 +19,8 @@ class ModelBase(object):
     self._parms = {}   # internal, for object recycle
     self.parms = {}    # external
     self._estimator_type = None
+    self._future = False  # used by __repr__/show to query job state
+    self._job = None      # used when _future is True
 
   @property
   def model_id(self):
@@ -210,7 +212,6 @@ class ModelBase(object):
       return s
     else: print "No score history for this model"
 
-
   def summary(self):
     """
     Print a detailed summary of the model.
@@ -221,13 +222,15 @@ class ModelBase(object):
     if model["model_summary"]:
       model["model_summary"].show()  # H2OTwoDimTable object
 
-
   def show(self):
     """
     Print innards of model, without regards to type
 
     :return: None
     """
+    if self._future:
+      self._job.poll_once()
+      return
     if self._model_json is None:
       print "No model trained yet"
       return

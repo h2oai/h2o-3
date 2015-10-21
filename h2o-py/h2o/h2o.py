@@ -372,7 +372,7 @@ def which(condition):
 
   :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
   """
-  return H2OFrame(expr=ExprNode("h2o.which",condition))._frame()
+  return (H2OFrame(expr=ExprNode("h2o.which",condition)) - 1)._scalar()
 
 
 def ifelse(test,yes,no):
