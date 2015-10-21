@@ -33,8 +33,8 @@ acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZ
 acs_model
 
 print("Plot objective function value each iteration")
-acs_model.score <- acs_model@model$scoring_history
-plot(acs_model.score$iteration, acs_model.score$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
+acs_model_score <- acs_model@model$scoring_history
+plot(acs_model_score$iteration, acs_model_score$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
 
 ## Embedding of ZCTAs into archetypes (X)
 zcta_arch_x <- h2o.getFrame(acs_model@model$representation_name)
@@ -52,8 +52,9 @@ test  <- whd_zcta[split > 0.8,]
 print("Build a DL model on original WHD data to predict repeat violators")
 myY <- "flsa_repeat_violator"
 myX <- setdiff(5:ncol(train), which(colnames(train) == myY))
-orig_time <- system.time(dl_orig <- h2o.deeplearning(x = myX, y = myY, training_frame = train, epochs = 0.1,
-                                                     validation_frame = test, distribution = "multinomial"))
+orig_time <- system.time(dl_orig <- h2o.deeplearning(x = myX, y = myY, training_frame = train, 
+                                                     validation_frame = test, distribution = "multinomial",
+                                                     epochs = 0.1, hidden = c(50,50,50)))
 
 print("Replace ZCTA5 column in WHD data with GLRM archetypes")
 zcta_arch_x$zcta5_cd <- acs_zcta_col
@@ -67,10 +68,11 @@ test_mod  <- whd_arch[split > 0.8,]
 
 print("Build a DL model on modified WHD data to predict repeat violators")
 myX <- setdiff(5:ncol(train_mod), which(colnames(train_mod) == myY))
-mod_time <- system.time(dl_mod <- h2o.deeplearning(x = myX, y = myY, training_frame = train_mod, epochs = 0.1,
-                                                   validation_frame = test_mod, distribution = "multinomial"))
+mod_time <- system.time(dl_mod <- h2o.deeplearning(x = myX, y = myY, training_frame = train_mod, 
+                                                   validation_frame = test_mod, distribution = "multinomial",
+                                                   epochs = 0.1, hidden = c(50,50,50)))
 
 print("Performance comparison:")
-data.frame(original = c(orig_time[3], h2o.mse(dl_orig, train = TRUE), h2o.mse(dl_orig, valid = TRUE)),
-           reduced  = c(mod_time[3], h2o.mse(dl_mod, train = TRUE), h2o.mse(dl_mod, valid = TRUE)),
-           row.names = c("runtime", "train_mse", "test_mse"))
+data.frame(original = c(orig_time[3], h2o.logloss(dl_orig, train = TRUE), h2o.logloss(dl_orig, valid = TRUE)),
+           reduced  = c(mod_time[3], h2o.logloss(dl_mod, train = TRUE), h2o.logloss(dl_mod, valid = TRUE)),
+           row.names = c("runtime", "train_logloss", "test_logloss"))
