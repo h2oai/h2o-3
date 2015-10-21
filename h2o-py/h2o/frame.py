@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
 import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref,inspect,ast
+import tabulate
 import h2o
 from astfun import _bytecode_decompile_lambda
 import gc
@@ -45,21 +46,248 @@ class H2OFrame(H2OFrameWeakRefMixin):
             ((isinstance(xid,str,unicode) or (xid is None)) and (isinstance(ast,list) and all(isinstance(expr, H2OFrame) for expr in ast))))
     self._ast       = ast
     self._id        = xid  # "id"  - See above; sometimes None, "", or a "py_tmp" string, or a user string
-    # Cached small result; typically known and returned in all REST calls
-    # Calling _eager() is guaranteed to set these
+    # Cached small result; typically known and returned in all REST calls.
+    # Calling _eager() is guaranteed to set these.
     self._nrows     = nrows
     self._ncols     = ncols
     # Cached info of the evaluated result; this can be large if e.g. the column
-    # count is large and so the cache is lazily filled it.
-    # The _data field holds all of any scalar result (including strings and
-    # numerics), or a prefix of a data frame.  For scalar results, calling
-    # _eager() is guaranteed to set _data.  For data frames, _data holds a
-    # list-of-lists.  The first list is the column names and the remaining
-    # lists are row data as printable strings starting from row 0.  Calling
-    # _fetch_rows(N) will guarantee at least N rows are cached.
+    # count is large and so the cache is lazily filled it.  The _data field
+    # holds all of any scalar result (including strings and numerics), or a
+    # dictionary of Vecs; each Vec holds a fixed set of locally cached rows.
+    # Calling _fetch_rows(N) will guarantee at least N rows are cached.
     self._data      = None  # any cached data, including scalars or prefixes of data frames
-    self._types     = None  # for data frames only, a dict mapping col_names to types
 
+
+  def _fill_rows(self,raw_json):
+    # Fill in the cache for column names and data and types from a raw JSON
+    # /Frames response.  Remove a few redundant fields.  'string_data' and
+    # 'data' are mutually exclusive; move 'string_data', if any, over 'data'.
+    # Returns the self Frame.
+    if self._data:
+      raise NotImplementedError # Merge
+    else:
+      self._data = collections.OrderedDict()
+      for c in raw_json["columns"]:
+        c.pop('__meta')              # Redundant description ColV3
+        c.pop('domain_cardinality')  # Same as len(c['domain'])
+        sdata = c.pop('string_data')
+        if sdata: c['data'] = sdata  # Only use data field; may contain either [str] or [real]
+        self._data[c.pop('label')] = c # Label used as the Key
+      return self
+
+  def _fetch_rows(self,off,nrows):
+    # Return the data cache, guaranteeing it covers the requested range of
+    # rows.  If called with a large off or nrows, this will load large data and
+    # possibly cause an OOM death.
+    if isinstance(self._ast,list):
+      raise NotImplementedError # Force evaluation
+    if self._data:
+      last = off+nrows
+      col = self._data.itervalues().next() # Get a sample column
+      if last <= len(col['data']): # Cache covers the desired range of rows
+        return self._data
+    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(frame_id)+"?row_offset="+str(off)+"&row_count="+str(nrows))["frames"][0]
+    return self._fill_rows(res)._data
+
+
+  @staticmethod
+  def get_frame(frame_id):
+    """
+    Create an H2OFrame mapped to an existing id in the cluster, and cache "rows" rows
+    :return: Created H2OFrame
+    """
+    rows = 10     # Default fetch only 10 rows to match head()
+    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(frame_id)+"?row_count="+str(rows))["frames"][0]
+    fr = H2OFrame("Frame",res["frame_id"]["name"],False,res["rows"],res["total_column_count"])
+    return fr._fill_rows(res)
+
+  @property
+  def col_names(self):
+    """
+    :return: A list of column names.
+    """
+    return self._fetch_rows(0,0).keys()
+
+
+  @property
+  def columns(self):
+    """
+    :return: A list of column names.
+    """
+    return self.col_names
+
+  @property
+  def names(self):
+    """
+    :return: A list of column names.
+    """
+    return self.col_names
+
+  def name(self,i):
+    """
+    Note: does work O(ncols) to return O(1) data.
+    :return: The name for column i
+    """
+    return self.col_names[i]
+
+  @property
+  def nrow(self):
+    """
+    :return: The number of rows
+    """
+    return self._nrows or self._eager()._nrows
+
+  @property
+  def ncol(self):
+    """
+    :return: The number of columns
+    """
+    return self._ncols or self._eager()._ncols
+
+  @property
+  def dim(self):
+    """
+    :return: A list [nrow, ncol].
+    """
+    return [self.nrow, self.ncol]
+
+  @property
+  def shape(self):
+    """
+    :return: A tuple (nrow, ncol)
+    """
+    return (self.nrow, self.ncol)
+
+  @property
+  def types(self):
+    """
+    :return: A dictionary of {col_name,type} pairs
+    """
+    return self._types or self._eager()._types
+
+  @property
+  def frame_id(self):
+    """
+    :return: Get the frame name
+    """
+    return self._id or self._eager()._id
+
+  def __str__(self): 
+    """
+    Pretty tabulated string of all the cached data, and column names
+    """
+    if not isinstance(self._data,dict):  return str(self._data) # Scalars print normally
+    d = collections.OrderedDict()
+    for k,v in self._data.iteritems():
+      d[k] = v['data'] 
+    return tabulate.tabulate(d,headers="keys")
+
+  def __iter__(self):
+    """
+    Allows for list comprehensions
+    :return: An iterator over the columns
+    """
+    return (self[i] for i in range(self.ncol))
+
+  def __repr__(self):
+    """
+    String representation of all the fields; hopefully possible to
+    directly invert back to a H2OFrame from the string
+    """
+    return "H2OFrame(op=%r,id=%r,ast=%r,nrows=%r,ncols=%r,data=%r)" % (self._op,self._id,self._ast,self._nrows,self._ncols,self._data)
+
+  def show(self):
+    """
+    Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
+    If called from IPython, return an html'ized result
+    Else return a tabulate'd result
+
+    :return: None
+    """
+    H2OFrame._do_show(self.nrow,self.ncol,self.head(rows=10,cols=sys.maxint),use_pandas)
+
+  @staticmethod
+  def _do_show(nrow,ncol,data,use_pandas):
+    print "H2OFrame with {} rows and {} columns: ".format(nrow, ncol)
+    if h2o.H2ODisplay._in_ipy():
+      import IPython.display
+      IPython.display.display(data)
+    else:
+      h2o.H2ODisplay(data[1:],data[0])
+
+  def head(self,rows=10,cols=200):
+    """
+    Analogous to R's `head` call on a data.frame. Return a digestible chunk of the H2OFrame starting from the beginning.
+    :param rows: Number of rows starting from the topmost
+    :param cols: Number of columns starting from the leftmost
+    :return: A local python object (a list of lists of strings, each list is a row, first list is col_names)
+    """
+    nrows = min(self.nrow, rows)
+    ncols = min(self.ncol, cols)
+    x = self._fetch_rows(0,nrows)
+    if ncols == self.ncol: return x
+    raise ValueError("unimpl: trim cols")
+
+  def tail(self, rows=10, cols=200):
+    """
+    Analogous to R's `tail` call on a data.frame. Return a digestible chunk of the H2OFrame starting from the end.
+    :param rows: Number of rows starting from the bottommost
+    :param cols: Number of columns starting from the leftmost
+    :return: A local python object (a list of lists of strings, each list is a row, first list is col_names)
+    """
+    nrows = min(self.nrow, rows)
+    ncols = min(self.ncol, cols)
+    start_idx = self.nrow - nrows
+    x = self._fetch_rows(start_idx,nrows)
+    if ncols == self.ncol: return x
+    raise ValueError("unimpl: trim cols")
+
+  def describe(self):
+    """
+    Generate an in-depth description of this H2OFrame.
+
+    The description is a tabular print of the type, min, max, sigma, number of zeros,
+    and number of missing elements for each H2OVec in this H2OFrame.
+
+    :return: None (print to stdout)
+    """
+    self._eager()
+    thousands_sep = h2o.H2ODisplay.THOUSANDS
+    print "Rows:", thousands_sep.format(self._nrows), "Cols:", thousands_sep.format(self._ncols)
+    chunk_dist_sum = h2o.frame(self._id)["frames"][0]
+    dist_summary = chunk_dist_sum["distribution_summary"]
+    chunk_summary = chunk_dist_sum["chunk_summary"]
+    chunk_summary.show()
+    dist_summary.show()
+    self.summary()
+
+  def summary(self):
+    """
+    Generate summary of the frame on a per-Vec basis.
+
+    :return: None
+    """
+    self._eager()
+    fr_sum =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(self._id) + "/summary")["frames"][0]
+    type = ["type"]
+    mins = ["mins"]
+    mean = ["mean"]
+    maxs = ["maxs"]
+    sigma= ["sigma"]
+    zeros= ["zero_count"]
+    miss = ["missing_count"]
+    for v in fr_sum["columns"]:
+      type.append(v["type"])
+      mins.append(v["mins"][0] if v is not None else v["mins"])
+      mean.append(v["mean"])
+      maxs.append(v["maxs"][0] if v is not None else v["maxs"])
+      sigma.append(v["sigma"])
+      zeros.append(v["zero_count"])
+      miss.append(v["missing_count"])
+
+    table = [type,mins,maxs,mean,sigma,zeros,miss]
+    headers = self._col_names
+    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
   # Init a H2OFrame by parsing a CSV at file_path.  This path is relative to
   # the H2O cluster, NOT the local Python process
@@ -137,221 +365,6 @@ class H2OFrame(H2OFrameWeakRefMixin):
     thousands_sep = h2o.H2ODisplay.THOUSANDS
     print "Uploaded {} into cluster with {} rows and {} cols".format(text_key, thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
 
-
-  @staticmethod
-  def get_frame(frame_id, rows=10):
-    """
-    Create an H2OFrame mapped to an existing id in the cluster, and cache "rows" rows
-    :return: Created H2OFrame
-    """
-    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(frame_id)+"?row_count="+str(rows))["frames"][0]
-    fr = H2OFrame("Frame",res["frame_id"]["name"],False,res["rows"],res["total_column_count"])
-    nrow = res["row_count"] # Returned row count (probably smaller than "rows"
-    # Fill in the cache for column names and data and types
-    data = [c["data"] or c["string_data"] for c in res["columns"]]
-    trans = zip(*data) # Data comes in columns, need it in rows; transpose
-    col_names = [c["label"] for c in res["columns"]]
-    fr._data = [col_names]+trans
-    types = [c["type"] for c in res["columns"]]
-    fr._types = dict(zip(col_names,types))
-    return fr
-
-  def _fetch_rows(self,off,nrows):
-    # Return a list-of-lists, first list is the column names, and the remaining
-    # lists are rows, starting at the 'off' row.  At attempt is made load the
-    # data from the _data cache, and if required to pull data from the cluster
-    # the pulled data is cached.
-    if self._data:
-      if off==0 and len(self._data)-1 >= nrows: return self._data[:nrows+1]
-    print(off)
-    print(nrows)
-    print(self._data)
-    raise ValueError("unimpl")
-
-  @property
-  def col_names(self):
-    """
-    :return: A list of column names.
-    """
-    return self._colnames() or self._fetch_rows(0,0)._colnames()
-
-  def _colnames(self): return self._data and self._data[0]
-
-  @property
-  def columns(self):
-    """
-    :return: A list of column names.
-    """
-    return self.col_names
-
-  @property
-  def names(self):
-    """
-    :return: A list of column names.
-    """
-    return self.col_names
-
-  def name(self,i):
-    """
-    :return: The name for column i
-    """
-    return self.col_names[i]
-
-  @property
-  def nrow(self):
-    """
-    :return: The number of rows
-    """
-    return self._nrows or self._eager()._nrows
-
-  @property
-  def ncol(self):
-    """
-    :return: The number of columns
-    """
-    return self._ncols or self._eager()._ncols
-
-  @property
-  def dim(self):
-    """
-    :return: A list [nrow, ncol].
-    """
-    return [self.nrow, self.ncol]
-
-  @property
-  def shape(self):
-    """
-    :return: A tuple (nrow, ncol)
-    """
-    return (self.nrow, self.ncol)
-
-  @property
-  def types(self):
-    """
-    :return: A dictionary of {col_name,type} pairs
-    """
-    return self._types or self._eager()._types
-
-  @property
-  def frame_id(self):
-    """
-    :return: Get the frame name
-    """
-    return self._id or self._eager()._id
-
-  def __str__(self): 
-    raise ValueError("unimpl: __str__")
-    #return self._id
-
-  def __iter__(self):
-    """
-    Allows for list comprehensions
-    :return: An iterator over the columns
-    """
-    return (self[i] for i in range(self.ncol))
-
-  def __repr__(self):
-    if sys.gettrace() is None:
-      self.show()
-      return ""
-
-  def show(self, use_pandas=True):
-    """
-    Used by the H2OFrame.__repr__ method to display a snippet of the data frame.
-    :param use_pandas: Display a pandas style data frame (better for pretty printing wide datasets)
-    :return: None
-    """
-    H2OFrame._do_show(self.nrow,self.ncol,self.head(rows=10,cols=sys.maxint),use_pandas)
-
-  @staticmethod
-  def _do_show(nrow,ncol,data,use_pandas):
-    # Display a 2-D list-of-lists, probably trimmed down from the full size dataset.
-    # Each list is a row, and the first list is column headers.
-    print "H2OFrame with {} rows and {} columns: ".format(nrow, ncol)
-    if use_pandas:
-      import pandas
-      pandas.options.display.max_rows=20
-      if h2o.H2ODisplay._in_ipy():
-        from IPython.display import display
-        display(data)
-      else:
-        print data
-    else:
-      h2o.H2ODisplay(data[1:],data[0])
-
-  def head(self,rows=10,cols=200):
-    """
-    Analogous to R's `head` call on a data.frame. Return a digestible chunk of the H2OFrame starting from the beginning.
-    :param rows: Number of rows starting from the topmost
-    :param cols: Number of columns starting from the leftmost
-    :return: A local python object (a list of lists of strings, each list is a row, first list is col_names)
-    """
-    nrows = min(self.nrow, rows)
-    ncols = min(self.ncol, cols)
-    x = self._fetch_rows(0,nrows)
-    if ncols == self.ncol: return x
-    raise ValueError("unimpl: trim cols")
-
-  def tail(self, rows=10, cols=200):
-    """
-    Analogous to R's `tail` call on a data.frame. Return a digestible chunk of the H2OFrame starting from the end.
-    :param rows: Number of rows starting from the bottommost
-    :param cols: Number of columns starting from the leftmost
-    :return: A local python object (a list of lists of strings, each list is a row, first list is col_names)
-    """
-    nrows = min(self.nrow, rows)
-    ncols = min(self.ncol, cols)
-    start_idx = self.nrow - nrows
-    x = self._fetch_rows(start_idx,nrows)
-    if ncols == self.ncol: return x
-    raise ValueError("unimpl: trim cols")
-
-  def describe(self):
-    """
-    Generate an in-depth description of this H2OFrame.
-
-    The description is a tabular print of the type, min, max, sigma, number of zeros,
-    and number of missing elements for each H2OVec in this H2OFrame.
-
-    :return: None (print to stdout)
-    """
-    self._eager()
-    thousands_sep = h2o.H2ODisplay.THOUSANDS
-    print "Rows:", thousands_sep.format(self._nrows), "Cols:", thousands_sep.format(self._ncols)
-    chunk_dist_sum = h2o.frame(self._id)["frames"][0]
-    dist_summary = chunk_dist_sum["distribution_summary"]
-    chunk_summary = chunk_dist_sum["chunk_summary"]
-    chunk_summary.show()
-    dist_summary.show()
-    self.summary()
-
-  def summary(self):
-    """
-    Generate summary of the frame on a per-Vec basis.
-
-    :return: None
-    """
-    self._eager()
-    fr_sum =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(self._id) + "/summary")["frames"][0]
-    type = ["type"]
-    mins = ["mins"]
-    mean = ["mean"]
-    maxs = ["maxs"]
-    sigma= ["sigma"]
-    zeros= ["zero_count"]
-    miss = ["missing_count"]
-    for v in fr_sum["columns"]:
-      type.append(v["type"])
-      mins.append(v["mins"][0] if v is not None else v["mins"])
-      mean.append(v["mean"])
-      maxs.append(v["maxs"][0] if v is not None else v["maxs"])
-      sigma.append(v["sigma"])
-      zeros.append(v["zero_count"])
-      miss.append(v["missing_count"])
-
-    table = [type,mins,maxs,mean,sigma,zeros,miss]
-    headers = self._col_names
-    h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
 
   def logical_negation(self): H2OFrame(expr=ExprNode("not", self))
 
