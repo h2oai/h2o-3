@@ -4,4 +4,5 @@ import h2o
 h2o.init()
 x = h2o.H2OFrame.read_csv("smalldata/iris/iris_wheader.csv","iris")
 print(x)
+x.summary()
 h2o.remove(x)
