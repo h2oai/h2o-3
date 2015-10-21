@@ -16,7 +16,7 @@ def deeplearning_vignette():
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_anomaly.py")]
 
     pybooklet_utils.check_code_examples_in_dir(approved_py_code_examples,
-                                               pyunit_utils.locate("Deeplearning_Vignette_code_examples"))
+                                               pyunit_utils.locate("DeepLearning_Vignette_code_examples"))
 
     story1 = approved_py_code_examples
     pybooklet_utils.check_story("story1",story1)
