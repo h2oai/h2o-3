@@ -3,17 +3,20 @@ package water.rapids;
 // Since we have a single key field in H2O (different to data.table), bmerge() becomes a lot simpler (no
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
 
-import water.DKV;
-import water.DTask;
-import water.H2O;
+import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BinaryMerge extends DTask<BinaryMerge> {
-  long _retFirst[];  // The row number of the first right table's index key that matches
-  long _retLen[];    // How many rows does it match to?
+  long _retFirst[/*n2GB*/][];  // The row number of the first right table's index key that matches
+  long _retLen[/*n2GB*/][];    // How many rows does it match to?
   byte _leftKey[/*n2GB*/][/*i mod 2GB * _keySize*/];
   byte _rightKey[][];
   long _leftOrder[/*n2GB*/][/*i mod 2GB * _keySize*/];
@@ -26,10 +29,13 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   int _leftNodeIdx;
   long _leftN, _rightN;
   long _leftBatchSize, _rightBatchSize;
+  Frame _leftFrame, _rightFrame;
 
   BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
-    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(leftFrame._key, leftMSB));
-    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(rightFrame._key, rightMSB));
+    _leftFrame = leftFrame;
+    _rightFrame = rightFrame;
+    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_leftFrame._key, leftMSB));
+    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_rightFrame._key, rightMSB));
     if (leftSortedOXHeader == null || rightSortedOXHeader == null) return;
     _leftBatchSize = leftSortedOXHeader._batchSize;
     _rightBatchSize = rightSortedOXHeader._batchSize;
@@ -37,10 +43,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // get left batches
     _leftKey = new byte[leftSortedOXHeader._nBatch][];
     _leftOrder = new long[leftSortedOXHeader._nBatch][];
+    _retFirst = new long[leftSortedOXHeader._nBatch][];
+    _retLen = new long[leftSortedOXHeader._nBatch][];
     for (int b=0; b<leftSortedOXHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(leftFrame._key, leftMSB, b));
+      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(_leftFrame._key, leftMSB, b));
       _leftKey[b] = oxLeft._x;
       _leftOrder[b] = oxLeft._o;
+      _retFirst[b] = new long[oxLeft._o.length];
+      _retLen[b] = new long[oxLeft._o.length];
     }
     _leftN = leftSortedOXHeader._numRows;
 
@@ -48,14 +58,12 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightKey = new byte[rightSortedOXHeader._nBatch][];
     _rightOrder = new long[rightSortedOXHeader._nBatch][];
     for (int b=0; b<rightSortedOXHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(rightFrame._key, rightMSB, b));
+      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(_rightFrame._key, rightMSB, b));
       _rightKey[b] = oxRight._x;
       _rightOrder[b] = oxRight._o;
     }
     _rightN = rightSortedOXHeader._numRows;
 
-    _retFirst = new long[(int)_leftN];
-    _retLen = new long[(int)_leftN];
     //_leftNodeIdx = leftNodeIdx;
     _leftFieldSizes = leftFieldSizes;
     _rightFieldSizes = rightFieldSizes;
@@ -152,12 +160,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     if (len > 0) {
       if (len > 1) _allLen1 = false;
       for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
-        _retFirst[(int) j] = rLow + 1;
-        _retLen[(int) j] = len;
+        int jb = (int)(j/_leftBatchSize);
+        int jo = (int)(j%_leftBatchSize);
+        _retFirst[jb][jo] = rLow + 1;
+        _retLen[jb][jo] = len;
         StringBuilder sb = new StringBuilder();
-        sb.append("Left row " + _leftOrder[(int)(j/_leftBatchSize)][(int)(j%_leftBatchSize)] + " matches to " + _retLen[(int)j] + " right rows: ");
-        long a = _retFirst[(int) j];
-        for (int i=0; i<_retLen[(int)j]; ++i) {
+        sb.append("Left row " + _leftOrder[jb][jo] + " matches to " + _retLen[jb][jo] + " right rows: ");
+        long a = _retFirst[jb][jo];
+        for (int i=0; i<_retLen[jb][jo]; ++i) {
           long loc = a+i;
           sb.append(_rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)] + " ");
         }
@@ -170,5 +180,58 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       bmerge_r(lLowIn, lLow + 1, rLowIn, rLow+1);
     if (lUpp < lUppIn && rUpp < rUppIn)
       bmerge_r(lUpp-1, lUppIn, rUpp-1, rUppIn);
+
+    // Collect all matches
+    // Create the final frame (part) for this MSB
+    List<Long>[/*node*/] perNodeRows = new ArrayList[H2O.CLOUD.size()]; //TODO: find an Iced datatype (not sure we have an IcedArrayList right now)
+    List<Long>[/*node*/] perNodeRowFrom = new ArrayList[H2O.CLOUD.size()];
+    for (int i=0; i<H2O.CLOUD.size(); ++i) {
+      perNodeRows[i] = new ArrayList<>(); //TODO: initial size
+      perNodeRowFrom[i] = new ArrayList<>();
+    }
+
+    long rows = 0; {
+    final boolean outerJoin = true; // TODO: add the option to do inner join (NOT adding 1 here)
+    for (int jb=0; jb<_leftBatchSize; ++jb) {
+      for (int jo=0; jo<_retLen[jb].length; ++jo) {
+        long cnt = _retLen[jb][jo];
+        if (cnt == 0 && outerJoin) cnt = 1;
+        rows+=cnt;
+
+        long a = _retFirst[jb][jo];
+        for (int r=0; r<_retLen[jb][jo]; ++r) {
+          long loc = a+r;
+          long row = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];
+
+          // all local operations to find the owning node for the rows needed
+          int chkIdx = _rightFrame.anyVec().elem2ChunkIdx(row); //binary search in espc
+          H2ONode node = _rightFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
+          perNodeRows[node.index()].add(row);
+          perNodeRowFrom[node.index()].add(jb*_leftBatchSize + jo);
+        }
+      }
+    }
+
+    // Fill the output columns coming from the right frame
+    Vec[] vecs = new Vec[_rightFrame.numCols()];
+    for (int i=0; i<vecs.length; ++i) {
+      vecs[i] = Vec.makeCon(0, rows);
+    }
+    String[] names = _rightFrame.names().clone();
+    Frame fr = new Frame(Key.make(_rightFrame._key.toString() + "_joined_with_" + _leftFrame._key.toString() + " on_some_columns_right_half"), names, vecs);
+
+    // Fill up work for remote nodes to fill for me
+    for (cols) {
+      for (H2ONode node : H2O.CLOUD._memary) {
+        // ask for help to populate rows
+        new DTask() {
+          // tell remote node to fill up Chunk[/*batch*/][/*rows*/]
+          void compute2() {
+
+          }
+        }
+      }
+    }
+
   }
 }
