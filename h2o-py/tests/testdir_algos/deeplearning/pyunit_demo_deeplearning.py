@@ -29,4 +29,6 @@ def deeplearning_demo():
   dl.show()
 
 if __name__ == "__main__":
-  tests.run_test(sys.argv, deeplearning_demo)
+  pyunit_utils.standalone_test(deeplearning_demo)
+else:
+  deeplearning_demo()
