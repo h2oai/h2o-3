@@ -1,9 +1,7 @@
-import sys
-sys.path.insert(1,"../../../")
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-
-
 
 
 def deeplearning_mean_residual_deviance():

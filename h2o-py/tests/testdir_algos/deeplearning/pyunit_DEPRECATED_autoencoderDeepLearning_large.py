@@ -1,6 +1,7 @@
-import os, sys
-sys.path.insert(1,"../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
+import h2o
+from tests import pyunit_utils
 
 
 def deeplearning_autoencoder():
@@ -9,10 +10,10 @@ def deeplearning_autoencoder():
     resp = 784
     nfeatures = 20 # number of features (smallest hidden layer)
 
-    train_hex = h2o.upload_file(tests.locate("bigdata/laptop/mnist/train.csv.gz"))
+    train_hex = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
     train_hex[resp] = train_hex[resp].asfactor()
 
-    test_hex = h2o.upload_file(tests.locate("bigdata/laptop/mnist/test.csv.gz"))
+    test_hex = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))
     test_hex[resp] = test_hex[resp].asfactor()
 
     # split data into two parts
@@ -59,6 +60,9 @@ def deeplearning_autoencoder():
     # 10% error +/- 0.001
     assert abs(cm.cell_values[10][10] - 0.081) < 0.001, "Error. Expected 0.081, but got {0}".format(cm.cell_values[10][10])
 
-if __name__ == '__main__':
-    tests.run_test(sys.argv, deeplearning_autoencoder)
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(deeplearning_autoencoder)
+else:
+  deeplearning_autoencoder()
+
 

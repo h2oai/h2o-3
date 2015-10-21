@@ -1,11 +1,7 @@
-import sys
-sys.path.insert(1,"../../../")
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-#Test checks if Deep Learning works fine with a categorical dataset that has many missing values (in both train & test
-# splits)
-
-
 
 
 def missing():

@@ -8,8 +8,6 @@ from sklearn.metrics import roc_auc_score
 
 def bernoulliGBM():
 
-
-
   #Log.info("Importing prostate.csv data...\n")
   prostate_train = h2o.import_file(path=tests.locate("smalldata/logreg/prostate_train.csv"))
 

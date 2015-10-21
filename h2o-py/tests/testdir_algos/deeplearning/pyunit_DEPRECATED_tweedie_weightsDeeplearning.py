@@ -1,9 +1,7 @@
-import sys
-sys.path.insert(1,"../../../")
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-
-
 
 
 def tweedie_weights():
@@ -33,7 +31,6 @@ def tweedie_weights():
                           train_samples_per_iteration = -1,reproducible = True,activation = "Tanh",balance_classes = False,
                           force_load_balance = False, seed = 2353123,tweedie_power = 1.5,score_training_samples = 0,
                           score_validation_samples = 0,weights_column = "Insured",training_frame = cancar)
-
 
 
 if __name__ == "__main__":
