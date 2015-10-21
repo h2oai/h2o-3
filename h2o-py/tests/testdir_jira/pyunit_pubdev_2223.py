@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -18,4 +22,8 @@ def pubdev_2223():
     print "Categorical offsets for one-hot encoding: {0}\n".format(dlmodel.catoffsets())
 
 
-pubdev_2223()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pubdev_2223)
+else:
+    pubdev_2223()

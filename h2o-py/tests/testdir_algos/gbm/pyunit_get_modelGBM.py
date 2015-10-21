@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -17,4 +21,8 @@ def get_modelGBM():
   model.show()
 
 
-get_modelGBM()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(get_modelGBM)
+else:
+    get_modelGBM()

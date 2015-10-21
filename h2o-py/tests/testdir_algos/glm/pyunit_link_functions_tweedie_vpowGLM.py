@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -35,5 +39,9 @@ def link_functions_tweedie_vpow():
                                                                    "{1}".format(h2ofit.null_deviance(), r_null[ridx])
 
 
-link_functions_tweedie_vpow()
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(link_functions_tweedie_vpow)
+else:
+    link_functions_tweedie_vpow()

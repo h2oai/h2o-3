@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -57,4 +61,8 @@ def interaction_check():
     #TODO: allow factors to be list of lists
 
 
-interaction_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(interaction_check)
+else:
+    interaction_check()

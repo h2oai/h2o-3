@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -58,4 +62,8 @@ def weights_check():
     # TODO: negative weights???
 
 
-weights_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(weights_check)
+else:
+    weights_check()

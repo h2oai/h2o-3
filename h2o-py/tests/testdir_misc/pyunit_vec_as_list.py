@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -22,4 +26,8 @@ def vec_as_list():
            abs(float(res3[10][0]) - -1.1) < 1e-10, "incorrect values"
 
 
-vec_as_list()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(vec_as_list)
+else:
+    vec_as_list()

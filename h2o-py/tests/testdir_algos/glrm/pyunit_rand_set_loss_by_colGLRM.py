@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -82,4 +86,8 @@ def glrm_set_loss_by_col_rand():
     glrm_h2o.show()
     
 
-glrm_set_loss_by_col_rand()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(glrm_set_loss_by_col_rand)
+else:
+    glrm_set_loss_by_col_rand()

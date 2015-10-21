@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 ################################################################################
 ##
 ## Verifying that Python can support user-specified strings to be treated as
@@ -56,4 +60,8 @@ def na_strings():
     assert fhex_na_strings_missing_count == 2
 
 
-na_strings()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(na_strings)
+else:
+    na_strings()

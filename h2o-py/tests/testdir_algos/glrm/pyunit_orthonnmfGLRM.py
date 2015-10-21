@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -90,4 +94,8 @@ def glrm_orthonnmf():
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
 
 
-glrm_orthonnmf()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(glrm_orthonnmf)
+else:
+    glrm_orthonnmf()

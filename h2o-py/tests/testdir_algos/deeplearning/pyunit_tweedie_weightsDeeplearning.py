@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -31,4 +35,8 @@ def tweedie_weights():
                           score_validation_samples = 0,weights_column = "Insured",training_frame = cancar)
 
 
-tweedie_weights()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(tweedie_weights)
+else:
+    tweedie_weights()

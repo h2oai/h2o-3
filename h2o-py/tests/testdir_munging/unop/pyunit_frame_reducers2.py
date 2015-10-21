@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -46,4 +50,8 @@ def expr_reducers():
         "expected equal var values between h2o and numpy"
 
 
-expr_reducers()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(expr_reducers)
+else:
+    expr_reducers()

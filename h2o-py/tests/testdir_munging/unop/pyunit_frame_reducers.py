@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -30,4 +34,8 @@ def frame_reducers():
     #pyunit_utils.np_comparison_check(h2o.var(h2o_data), np.cov(np_data, rowvar=0, ddof=1), 10)
 
 
-frame_reducers()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(frame_reducers)
+else:
+    frame_reducers()

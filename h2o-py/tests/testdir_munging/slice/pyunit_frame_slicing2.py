@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -37,4 +41,8 @@ def expr_slicing():
            abs(res6[3,3] - 0.4) < 1e-10, "incorrect values"
 
 
-expr_slicing()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(expr_slicing)
+else:
+    expr_slicing()

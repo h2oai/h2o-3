@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 import numpy as np
 
 def col_names_check():
@@ -34,4 +38,8 @@ def col_names_check():
   df.head()
   assert df.col_names == ["X"], "Expected {} for column names but got {}".format(["X"], df.col_names)
 
-col_names_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(col_names_check)
+else:
+    col_names_check()

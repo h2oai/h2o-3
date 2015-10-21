@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -20,4 +24,8 @@ def insert_missing():
   data.show()
 
 
-insert_missing()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(insert_missing)
+else:
+    insert_missing()

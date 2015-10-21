@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -38,4 +42,8 @@ def offsets_and_distributions():
     predictions = dl.predict(insurance)
 
 
-offsets_and_distributions()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(offsets_and_distributions)
+else:
+    offsets_and_distributions()

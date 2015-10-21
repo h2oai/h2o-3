@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -47,4 +51,8 @@ def smallcatRF():
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
 
-smallcatRF()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(smallcatRF)
+else:
+    smallcatRF()

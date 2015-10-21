@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -17,4 +21,8 @@ def test_prod():
                                             "equal quantile values between h2o and numpy".format(h2o_prod,np_prod)
     h2o.remove(h2o_data)
 
-test_prod()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(test_prod)
+else:
+    test_prod()

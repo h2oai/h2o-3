@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -30,4 +34,8 @@ def countmatches_check():
 
 
 
-countmatches_check()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(countmatches_check)
+else:
+    countmatches_check()

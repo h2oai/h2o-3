@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 def anomaly():
@@ -35,4 +39,8 @@ def anomaly():
 
     # In python, the visualization could be done with tools like numpy/matplotlib or numpy/PIL
 
-anomaly()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(anomaly)
+else:
+    anomaly()

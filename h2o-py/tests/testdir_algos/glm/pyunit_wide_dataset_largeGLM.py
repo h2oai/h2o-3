@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -30,4 +34,8 @@ def wide_dataset_large():
     assert performance.auc() > 0.5, "predictions should be better then pure chance"
 
 
-wide_dataset_large()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(wide_dataset_large)
+else:
+    wide_dataset_large()

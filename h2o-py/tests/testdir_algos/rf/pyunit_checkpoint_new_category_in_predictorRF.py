@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -21,4 +25,8 @@ def checkpoint_new_category_in_predictor():
         pass
 
 
-checkpoint_new_category_in_predictor()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(checkpoint_new_category_in_predictor)
+else:
+    checkpoint_new_category_in_predictor()

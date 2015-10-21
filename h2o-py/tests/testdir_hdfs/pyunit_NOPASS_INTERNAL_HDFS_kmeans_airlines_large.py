@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 #----------------------------------------------------------------------
 # Purpose:  This test runs k-means on the full airlines dataset.
 #----------------------------------------------------------------------
@@ -32,4 +36,8 @@ def hdfs_kmeans_airlines():
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 
-hdfs_kmeans_airlines()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(hdfs_kmeans_airlines)
+else:
+    hdfs_kmeans_airlines()

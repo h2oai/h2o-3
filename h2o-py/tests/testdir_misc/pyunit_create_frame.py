@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -16,4 +20,8 @@ def create_frame_test():
                                                     "cols.".format(r,c,frame.nrow,frame.ncol)
 
 
-create_frame_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(create_frame_test)
+else:
+    create_frame_test()

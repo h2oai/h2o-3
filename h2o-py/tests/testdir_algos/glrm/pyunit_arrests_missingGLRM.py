@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -47,4 +51,8 @@ def glrm_arrests_miss():
         print "Missing ratio: {0}% --> Training error: {1}\tValidation error: {2}".format(missing_ratios[i]*100, train_err[i], valid_err[i])
     
 
-glrm_arrests_miss()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(glrm_arrests_miss)
+else:
+    glrm_arrests_miss()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -26,4 +30,8 @@ def weights_and_distributions():
     predictions = dl.predict(htable)
 
 
-weights_and_distributions()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(weights_and_distributions)
+else:
+    weights_and_distributions()

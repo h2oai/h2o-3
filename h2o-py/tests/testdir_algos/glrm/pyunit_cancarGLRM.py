@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -16,4 +20,8 @@ def glrm_cancar():
     glrm_svd.show()
 
 
-glrm_cancar()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(glrm_cancar)
+else:
+    glrm_cancar()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -32,4 +36,8 @@ def plot_test():
     perf.plot(type="roc", **kwargs)
 
 
-plot_test()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(plot_test)
+else:
+    plot_test()

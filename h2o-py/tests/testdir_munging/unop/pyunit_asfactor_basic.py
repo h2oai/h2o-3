@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -29,4 +33,8 @@ def asfactor_basic():
   assert bar, "expected the bar H2OVec to be a factor"
 
 
-asfactor_basic()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(asfactor_basic)
+else:
+  asfactor_basic()

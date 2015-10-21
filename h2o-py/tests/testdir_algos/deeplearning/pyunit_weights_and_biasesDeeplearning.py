@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -52,4 +56,8 @@ def weights_and_biases():
     assert b3r == 7, "wrong dimensionality! expected {0}, but got {1}.".format(7, b3r)
 
 
-weights_and_biases()
+
+if __name__ == "__main__":
+      pyunit_utils.standalone_test(weights_and_biases)
+else:
+    weights_and_biases()

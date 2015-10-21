@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -15,4 +19,8 @@ def pyunit_pop():
   assert pros.ncol==nc-1
 
 
-pyunit_pop()
+
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(pyunit_pop)
+else:
+  pyunit_pop()

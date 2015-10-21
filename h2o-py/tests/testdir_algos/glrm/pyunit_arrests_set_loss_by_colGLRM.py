@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -32,4 +36,8 @@ def glrm_set_loss_by_col():
     assert abs(glrm_obj - obj_val) < 1e-6, "Final objective was " + str(glrm_obj) + " but should equal " + str(obj_val)
 
 
-glrm_set_loss_by_col()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(glrm_set_loss_by_col)
+else:
+    glrm_set_loss_by_col()

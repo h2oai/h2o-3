@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -22,4 +26,8 @@ def bmp_unicode_chars():
 
 
 
-bmp_unicode_chars()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(bmp_unicode_chars)
+else:
+    bmp_unicode_chars()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -30,4 +34,8 @@ def offset_tweedie():
         format(392.4651, predictions.max())
 
 
-offset_tweedie()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(offset_tweedie)
+else:
+    offset_tweedie()

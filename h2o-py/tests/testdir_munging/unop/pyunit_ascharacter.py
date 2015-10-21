@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -11,4 +15,8 @@ def ascharacter():
     assert not h2oframe["cylinders"].isstring(), "expected the column to not be a string"
 
 
-ascharacter()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(ascharacter)
+else:
+    ascharacter()

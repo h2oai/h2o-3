@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 ################################################################################
 ##
 ## Verifying that Python can support additional parameters of destination_frame,
@@ -47,4 +51,8 @@ def additional_parameters():
         assert col_summary[i]["type"] == c_types[name]
 
 
-additional_parameters()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(additional_parameters)
+else:
+    additional_parameters()

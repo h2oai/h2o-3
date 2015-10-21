@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -69,5 +73,9 @@ def quantile_1_golden():
             "and numpy".format(h2o_val,np_val)
 
 
-quantile_1_golden()
 
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(quantile_1_golden)
+else:
+    quantile_1_golden()

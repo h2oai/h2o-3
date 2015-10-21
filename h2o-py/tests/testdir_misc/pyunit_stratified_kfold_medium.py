@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -31,4 +35,8 @@ def stratified_kfold():
 
 
 
-stratified_kfold()
+
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(stratified_kfold)
+else:
+  stratified_kfold()

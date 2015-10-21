@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -41,4 +45,8 @@ def convergeKmeans():
   assert avg_change < 1e-6 or all_fit._model_json['output']['iterations'] == miters
 
 
-convergeKmeans()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(convergeKmeans)
+else:
+    convergeKmeans()

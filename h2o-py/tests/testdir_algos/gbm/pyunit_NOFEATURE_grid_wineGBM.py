@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -18,4 +22,8 @@ def grid_wineGBM():
     wine_grid.show()
 
 
-grid_wineGBM()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(grid_wineGBM)
+else:
+    grid_wineGBM()

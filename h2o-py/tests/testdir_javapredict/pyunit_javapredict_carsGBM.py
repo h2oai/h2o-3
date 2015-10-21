@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -18,4 +22,8 @@ def javapredict_cars():
     pyunit_utils.javapredict("gbm", "numeric", train, test, x, y, **params)
 
 
-javapredict_cars()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(javapredict_cars)
+else:
+    javapredict_cars()

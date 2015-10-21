@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -17,4 +21,8 @@ def javapredict_iris_drf():
     pyunit_utils.javapredict("random_forest", "class", train, test, x, y, **params)
 
 
-javapredict_iris_drf()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(javapredict_iris_drf)
+else:
+    javapredict_iris_drf()

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -81,4 +85,8 @@ def binop_neq():
     #    pass
 
 
-binop_neq()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(binop_neq)
+else:
+    binop_neq()

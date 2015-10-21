@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -14,4 +18,8 @@ def pubdev_1696():
         assert True
 
 
-pubdev_1696()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pubdev_1696)
+else:
+    pubdev_1696()

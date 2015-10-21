@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -23,4 +27,8 @@ def pca_prostate():
     pred.head()
 
 
-pca_prostate()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(pca_prostate)
+else:
+    pca_prostate()

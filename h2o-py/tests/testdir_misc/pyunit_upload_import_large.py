@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -19,4 +23,8 @@ def upload_import():
                              "{1}.".format(cols_u, cols_i)
 
 
-upload_import()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(upload_import)
+else:
+    upload_import()

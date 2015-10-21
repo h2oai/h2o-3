@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -47,4 +51,8 @@ def random_attack():
         attack(ozone, random.sample([0,1,2,3],random.randint(1,4)))
 
 
-random_attack()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(random_attack)
+else:
+    random_attack()

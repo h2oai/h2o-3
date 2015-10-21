@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -39,4 +43,8 @@ def iris_h2o_vs_sciKmeans():
       assert (hpoint- spoint) < 1e-10, "expected centers to be the same"
 
 
-iris_h2o_vs_sciKmeans()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(iris_h2o_vs_sciKmeans)
+else:
+    iris_h2o_vs_sciKmeans()

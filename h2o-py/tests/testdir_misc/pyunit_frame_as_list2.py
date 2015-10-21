@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -29,4 +33,8 @@ def expr_as_list():
     assert float(frm[2][1]) == 5, "incorrect values"
 
 
-expr_as_list()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(expr_as_list)
+else:
+    expr_as_list()

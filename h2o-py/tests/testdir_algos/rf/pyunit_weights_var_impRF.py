@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 
 
@@ -94,4 +98,8 @@ def weights_vi():
 
 
 
-weights_vi()
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(weights_vi)
+else:
+    weights_vi()
