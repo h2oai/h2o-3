@@ -96,12 +96,11 @@ gait.pred2 <- predict(gait.glrm2, gait.miss)
 head(gait.pred2)
 
 print(paste0("Plot original and imputed L.Acromium.X over time range [", time.df[1], ",", time.df[2], "]"))
-lacro.df2 <- as.data.frame(gait.hex$L.Acromium.X[1:150])
 lacro.pred.df2 <- as.data.frame(gait.pred2$reconstr_L.Acromium.X[1:150])
-matplot(time.df, cbind(lacro.df2, lacro.pred.df2), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = c(1,4))
+matplot(time.df, cbind(lacro.df, lacro.pred.df2), xlab = "Time", ylab = "X-Coordinate of Left Acromium", main = "Position of Left Acromium over Time", type = "l", lty = 1, col = c(1,4))
 legend("topright", legend = c("Original", "Imputed"), col = c(1,4), pch = 1)
 
 ## Mark points where training data contains missing values
-lacro.miss.df2 <- as.data.frame(gait.miss$L.Acromium.X[1:150])
-idx_miss <- which(is.na(lacro.miss.df2))
-points(time.df[idx_miss], lacro.df2[idx_miss,1], col = 2, pch = 4, lty = 2)
+lacro.miss.df <- as.data.frame(gait.miss$L.Acromium.X[1:150])
+idx_miss <- which(is.na(lacro.miss.df))
+points(time.df[idx_miss], lacro.df[idx_miss,1], col = 2, pch = 4, lty = 2)
