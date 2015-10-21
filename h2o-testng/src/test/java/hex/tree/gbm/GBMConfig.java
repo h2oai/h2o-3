@@ -39,9 +39,10 @@ public class GBMConfig {
 			new Param("_r2_stopping", "double"),
 			new Param("_build_tree_one_node", "boolean"),
 			new Param("_class_sampling_factors", "float[]"),
+			new Param("_sample_rate", "float"),
+			new Param("_col_sample_rate", "float"),
 	}; 
 	
-	//TODO: Family have no binomial attribute
 	public final static OptionsGroupParam familyParams = new OptionsGroupParam(
 			new String[] {CommonHeaders.family_auto, CommonHeaders.family_gaussian, CommonHeaders.family_binomial, CommonHeaders.family_multinomial, CommonHeaders.family_poisson, CommonHeaders.family_gamma, CommonHeaders.family_tweedie},
 			new Object[] {Family.AUTO, Family.gaussian, Family.bernoulli, Family.multinomial, Family.poisson, Family.gamma, Family.tweedie});
@@ -74,6 +75,8 @@ public class GBMConfig {
 					"_r2_stopping",
 					"_build_tree_one_node",
 					"_class_sampling_factors",
+					"_sample_rate",
+					"_col_sample_rate",
 					
 					CommonHeaders.error_message
 			)
