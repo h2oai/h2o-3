@@ -1923,15 +1923,6 @@ h2o.sdev <- function(object) {
   as.numeric(object@model$importance[1,])
 }
 
-# Handles ellipses
-.model.ellipses <- function(dots) {
-  lapply(names(dots), function(type) {
-    stop(paste0('\n  unexpected argument "',
-                type,'", is this legacy code? Try ?h2o.shim'), call. = FALSE)
-  })
-}
-
-
 # extract "bite size" pieces from a model
 .model.parts <- function(object) {
   o  <- object

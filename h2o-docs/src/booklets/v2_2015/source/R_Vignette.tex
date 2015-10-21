@@ -4,8 +4,8 @@
 \input{common/conf_titles.tex}
 \begin{document}
 
-\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
-%\input{common/conf_listings_colorized.tex}  %Use this for online version
+%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+\input{common/conf_listings_colorized.tex}  %Use this for online version
 
 
 \thispagestyle{empty} %removes page number
@@ -26,7 +26,7 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: Third Edition 
+\monthname \hspace{1pt}  \the\year: Fourth Edition 
 
 \bigskip
 \end{center}
@@ -58,7 +58,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-September 2015: Third Edition
+\monthname \hspace{1pt}  \the\year: Fourth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -330,6 +330,7 @@ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 {\textbf{Note}}: If you would like to try out H2O on an EC2 cluster, {\url{http://play.h2o.ai}} is the easiest way to get started. H2O Play provides access to a temporary cluster managed by H2O. 
 %TODO
 
+\begin{minipage}{\textwidth}
 \subsection{Checking Cluster Status}
 
 To check the status and health of the H2O cluster, use {\texttt{h2o.clusterInfo()}}.
@@ -338,6 +339,7 @@ To check the status and health of the H2O cluster, use {\texttt{h2o.clusterInfo(
 > h2o.init()
 > h2o.clusterInfo()
 \end{lstlisting}
+\end{minipage}
 
 \begin{minipage}{\textwidth}
 
@@ -1268,8 +1270,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{lgamma}}: Display the natural logarithm of the absolute value of the gamma function.  
 {\texttt{digamma}}: Display the first derivative of the logarithm of the gamma function.  
 {\texttt{trigamma}}: Display the second derivative of the logarithm of the gamma function. 
-\medskip
-\emph{Math2 (H2O)}\par
+\newpage\emph{Math2 (H2O)}\par
 {\texttt{round}}: Round the values to the specified number of decimal places. The default is 0.  
 {\texttt{signif}}: Round the values to the specified number of significant digits. 
 
@@ -1442,7 +1443,31 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}}, {\texttt
 
 
 
-\newpage
+\section{References}
+
+\bibliographystyle{plainnat}  
+
+\nobibliography{bibliography}
+
+\bibentry{h2osite}
+
+\bibentry{h2odocs}
+
+\bibentry{h2ogithubrepo}
+
+\bibentry{h2odatasets}
+
+\bibentry{h2ojira}
+
+\bibentry{rdocs}
+
+\bibentry{rlanguage}
+
+\bibentry{stream}
+
+\bibentry{rensemble}
+
+\bibentry{h2o_R_package}
 
 \newpage
 
@@ -1473,31 +1498,5 @@ Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brin
 
 Patrick is a former math and data hacker at H2O.ai who has made a career out of creating and delivering software and training for data scientists, particularly those who love R.  Patrick received an M.S. in Statistics from the University of Washington and a B.S. in Statistics from Carnegie Mellon University.
 
-\newpage
-\section{References}
-
-\bibliographystyle{plainnat}  
-
-\nobibliography{bibliography}
-
-\bibentry{h2osite}
-%
-\bibentry{h2odocs}
-%
-\bibentry{h2ogithubrepo}
-%
-\bibentry{h2odatasets}
-%
-\bibentry{h2ojira}
-%
-\bibentry{rdocs}
-%
-\bibentry{rlanguage}
-%
-\bibentry{stream}
-%
-\bibentry{rensemble}
-
-\bibentry{h2o_R_package}
 
 \end{document}

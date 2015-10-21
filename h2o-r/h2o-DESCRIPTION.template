@@ -55,5 +55,4 @@ Collate:
          'word2vec.R'
          'locate.R'
          'grid.R'
-         'shim.R'
          'zzz.R'
