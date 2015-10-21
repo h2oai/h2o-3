@@ -853,11 +853,11 @@ public class DeepLearningTest extends TestUtil {
     Scope.enter();
     try {
       first1kSVM = parse_test_file("/users/arno/first1k.svm");
-      Scope.track(first1kSVM.replace(first1kSVM.find("C1"), first1kSVM.vec("C1")).toCategoricalVec()._key);
+      Scope.track(first1kSVM.replace(0, first1kSVM.vec(0).toCategoricalVec())._key);
       DKV.put(first1kSVM);
 
       second1kSVM = parse_test_file("/users/arno/second1k.svm");
-      Scope.track(second1kSVM.replace(second1kSVM.find("C1"), second1kSVM.vec("C1")).toCategoricalVec()._key);
+      Scope.track(second1kSVM.replace(0, second1kSVM.vec(0).toCategoricalVec())._key);
       DKV.put(second1kSVM);
 
       third1kSVM = parse_test_file("/users/arno/third1k.svm");
@@ -907,9 +907,11 @@ public class DeepLearningTest extends TestUtil {
       dl._valid = second1kSVM._key;
       dl._response_column = "C1";
       dl._epochs = 10; //default
-      dl._ignore_const_cols = true; //default
+      dl._reproducible = true; //default
+      dl._seed = 1234;
+      dl._ignore_const_cols = false; //default
       dl._sparse = true; //non-default, much faster here for sparse data
-      dl._hidden = new int[]{20, 20, 20};
+      dl._hidden = new int[]{10, 10};
 
       // Invoke DL and block till the end
       DeepLearning job = null;
