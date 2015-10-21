@@ -84,7 +84,7 @@ summary(gait.miss)
 
 ## Basic GLRM using quadratic loss and no regularization (PCA)
 gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, cols = 2:ncol(gait.miss), k = 10, init = "SVD", svd_method = "GramSVD",
-                      loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 2500, min_step_size = 1e-6)
+                      loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 2000, min_step_size = 1e-6)
 gait.glrm2
 
 print("Plot objective function value each iteration")
