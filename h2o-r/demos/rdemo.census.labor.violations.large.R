@@ -3,13 +3,11 @@ h2o.init()
 
 ## Find and import data into H2O
 locate <- h2o:::.h2o.locate
-pathToACSNames  <- locate("bigdata/laptop/census/ACS_13_5YR_DP02_colnames.csv")
 pathToACSData   <- locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
 pathToWHDData   <- locate("bigdata/laptop/census/whd_zcta_cleaned.zip")
 
 print("Importing ACS 2013 5-year DP02 demographic dataset into H2O...")
-acs_names <- h2o.uploadFile(pathToACSNames)
-acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 149)), col.names = acs_names)
+acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 149)))
 
 ## Save and drop zip code column from training frame
 acs_zcta_col <- acs_orig$ZCTA5
