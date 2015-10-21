@@ -179,7 +179,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
     if not isinstance(self._data,dict):  return str(self._data) # Scalars print normally
     d = collections.OrderedDict()
     for k,v in self._data.iteritems():
-      d[k] = v['data'] 
+      x = d[k] = v['data']
+      domain = v['domain']
+      if domain:
+        d[k] = [domain[int(idx)] for idx in x]
     return tabulate.tabulate(d,headers="keys")
 
   def __iter__(self):
