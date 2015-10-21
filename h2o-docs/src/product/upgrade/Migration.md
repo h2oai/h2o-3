@@ -21,16 +21,27 @@ Overall, H2O 3.0 is more stable, elegant, and simplified, with additional capabi
 
 ##Algorithm Changes
 
-Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy. Currently available model types include Gradient Boosting Machine, Deep Learning, Generalized Linear Model, K-means, Distributed Random Forest, and Naïve Bayes. 
+Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy. Currently available model types include:
+
+###Supervised 
+
+- **Generalized Linear Model (GLM)**: Binomial classification, regression (including logistic regression)
+- **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
+- **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
+- **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
+
+###Unsupervised
+
+- K-means
+- Principal Component Analysis
+- Autoencoder 
 
 There are a few algorithms that are still being refined to provide these same benefits and will be available in a future version of H2O. 
 
 Currently, the following algorithms and associated capabilities are still in development: 
 
-- Cross-validation 
-- Grid search
-- Principal Component Analysis (PCA) 
-- Cox Proportional Hazards (Cox PH)
+- Naïve Bayes
+- GLRM
 
 Check back for updates, as these algorithms will be re-introduced in an improved form in a future version of H2O. 
 
