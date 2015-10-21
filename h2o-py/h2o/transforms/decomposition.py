@@ -52,11 +52,10 @@ class H2OPCA(H2OEstimator):
       A new instance of H2OPCA.
     """
     super(H2OPCA, self).__init__()
-    self.parms = locals()
-    self.parms = {k: v for k, v in self.parms.iteritems() if k != "self"}
-    self.parms["pca_method"] = "GramSVD" if isinstance(pca_method, tuple) else pca_method
-    self.parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
-    self.parms["algo"] = "pca"
+    self._parms = locals()
+    self._parms = {k: v for k, v in self._parms.iteritems() if k != "self"}
+    self._parms["pca_method"] = "GramSVD" if isinstance(pca_method, tuple) else pca_method
+    self._parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
 
   def fit(self, X,y=None,  **params):
     return super(H2OPCA, self).fit(X)
