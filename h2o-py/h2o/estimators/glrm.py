@@ -117,3 +117,156 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
     self._parms['_rest_version']=99
+
+  @property
+  def max_iterations(self):
+    return self.parms["max_iterations"]
+
+  @max_iterations.setter
+  def max_iterations(self, value):
+    self.parms["max_iterations"] = value
+
+  @property
+  def transform(self):
+    return self.parms["transform"]
+
+  @transform.setter
+  def transform(self, value):
+    self.parms["transform"] = value
+
+  @property
+  def seed(self):
+    return self.parms["seed"]
+
+  @seed.setter
+  def seed(self, value):
+    self.parms["seed"] = value
+
+  @property
+  def ignore_const_cols(self):
+    return self.parms["ignore_const_cols"]
+
+  @ignore_const_cols.setter
+  def ignore_const_cols(self, value):
+    self.parms["ignore_const_cols"] = value
+
+  @property
+  def loss(self):
+    return self.parms["loss"]
+
+  @loss.setter
+  def loss(self, value):
+    self.parms["loss"] = value
+
+  @property
+  def multi_loss(self):
+    return self.parms["multi_loss"]
+
+  @multi_loss.setter
+  def multi_loss(self, value):
+    self.parms["multi_loss"] = value
+
+  @property
+  def loss_by_col(self):
+    return self.parms["loss_by_col"]
+
+  @loss_by_col.setter
+  def loss_by_col(self, value):
+    self.parms["loss_by_col"] = value
+
+  @property
+  def loss_by_col_idx(self):
+    return self.parms["loss_by_col_idx"]
+
+  @loss_by_col_idx.setter
+  def loss_by_col_idx(self, value):
+    self.parms["loss_by_col_idx"] = value
+
+  @property
+  def regularization_x(self):
+    return self.parms["regularization_x"]
+
+  @regularization_x.setter
+  def regularization_x(self, value):
+    self.parms["regularization_x"] = value
+
+  @property
+  def regularization_y(self):
+    return self.parms["regularization_y"]
+
+  @regularization_y.setter
+  def regularization_y(self, value):
+    self.parms["regularization_y"] = value
+
+  @property
+  def gamma_x(self):
+    return self.parms["gamma_x"]
+
+  @gamma_x.setter
+  def gamma_x(self, value):
+    self.parms["gamma_x"] = value
+
+  @property
+  def gamma_y(self):
+    return self.parms["gamma_y"]
+
+  @gamma_y.setter
+  def gamma_y(self, value):
+    self.parms["gamma_y"] = value
+
+  @property
+  def init_step_size(self):
+    return self.parms["init_step_size"]
+
+  @init_step_size.setter
+  def init_step_size(self, value):
+    self.parms["init_step_size"] = value
+
+  @property
+  def min_step_size(self):
+    return self.parms["min_step_size"]
+
+  @min_step_size.setter
+  def min_step_size(self, value):
+    self.parms["min_step_size"] = value
+
+  @property
+  def init(self):
+    return self.parms["init"]
+
+  @init.setter
+  def init(self, value):
+    self.parms["init"] = value
+
+  @property
+  def svd_method(self):
+    return self.parms["svd_method"]
+
+  @svd_method.setter
+  def svd_method(self, value):
+    self.parms["svd_method"] = value
+
+  @property
+  def user_x(self):
+    return self.parms["user_x"]
+
+  @user_x.setter
+  def user_x(self, value):
+    self.parms["user_x"] = value
+
+  @property
+  def user_y(self):
+    return self.parms["user_y"]
+
+  @user_y.setter
+  def user_y(self, value):
+    self.parms["user_y"] = value
+
+  @property
+  def recover_svd(self):
+    return self.parms["recover_svd"]
+
+  @recover_svd.setter
+  def recover_svd(self, value):
+    self.parms["recover_svd"] = value
+

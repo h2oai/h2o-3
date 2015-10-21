@@ -49,3 +49,108 @@ class H2OKMeansEstimator(H2OEstimator):
     super(H2OKMeansEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+
+  @property
+  def k(self):
+    return self.parms["k"]
+
+  @k.setter
+  def k(self, value):
+    self.parms["k"] = value
+
+  @property
+  def max_iterations(self):
+    return self.parms["max_iterations"]
+
+  @max_iterations.setter
+  def max_iterations(self, value):
+    self.parms["max_iterations"] = value
+
+  @property
+  def standardize(self):
+    return self.parms["standardize"]
+
+  @standardize.setter
+  def standardize(self, value):
+    self.parms["standardize"] = value
+
+  @property
+  def init(self):
+    return self.parms["init"]
+
+  @init.setter
+  def init(self, value):
+    self.parms["init"] = value
+
+  @property
+  def seed(self):
+    return self.parms["seed"]
+
+  @seed.setter
+  def seed(self, value):
+    self.parms["seed"] = value
+
+  @property
+  def nfolds(self):
+    return self.parms["nfolds"]
+
+  @nfolds.setter
+  def nfolds(self, value):
+    self.parms["nfolds"] = value
+
+  @property
+  def fold_assignment(self):
+    return self.parms["fold_assignment"]
+
+  @fold_assignment.setter
+  def fold_assignment(self, value):
+    self.parms["fold_assignment"] = value
+
+  @property
+  def user_points(self):
+    return self.parms["user_points"]
+
+  @user_points.setter
+  def user_points(self, value):
+    self.parms["user_points"] = value
+
+  @property
+  def ignored_columns(self):
+    return self.parms["ignored_columns"]
+
+  @ignored_columns.setter
+  def ignored_columns(self, value):
+    self.parms["ignored_columns"] = value
+
+  @property
+  def score_each_iteration(self):
+    return self.parms["score_each_iteration"]
+
+  @score_each_iteration.setter
+  def score_each_iteration(self, value):
+    self.parms["score_each_iteration"] = value
+
+  @property
+  def keep_cross_validation_predictions(self):
+    return self.parms["keep_cross_validation_predictions"]
+
+  @keep_cross_validation_predictions.setter
+  def keep_cross_validation_predictions(self, value):
+    self.parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def ignore_const_cols(self):
+    return self.parms["ignore_const_cols"]
+
+  @ignore_const_cols.setter
+  def ignore_const_cols(self, value):
+    self.parms["ignore_const_cols"] = value
+
+  @property
+  def checkpoint(self):
+    return self.parms["checkpoint"]
+
+  @checkpoint.setter
+  def checkpoint(self, value):
+    self.parms["checkpoint"] = value
+

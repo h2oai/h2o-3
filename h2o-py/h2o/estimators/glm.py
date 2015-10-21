@@ -107,3 +107,172 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     super(H2OGeneralizedLinearEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k: v for k, v in self._parms.iteritems() if k != "self"}
+
+  @property
+  def max_iterations(self):
+    return self.parms["max_iterations"]
+
+  @max_iterations.setter
+  def max_iterations(self, value):
+    self.parms["max_iterations"] = value
+
+  @property
+  def beta_epsilon(self):
+    return self.parms["beta_epsilon"]
+
+  @beta_epsilon.setter
+  def beta_epsilon(self, value):
+    self.parms["beta_epsilon"] = value
+
+  @property
+  def solver(self):
+    return self.parms["solver"]
+
+  @solver.setter
+  def solver(self, value):
+    self.parms["solver"] = value
+
+  @property
+  def standardize(self):
+    return self.parms["standardize"]
+
+  @standardize.setter
+  def standardize(self, value):
+    self.parms["standardize"] = value
+
+  @property
+  def family(self):
+    return self.parms["family"]
+
+  @family.setter
+  def family(self, value):
+    self.parms["family"] = value
+
+  @property
+  def link(self):
+    return self.parms["link"]
+
+  @link.setter
+  def link(self, value):
+    self.parms["link"] = value
+
+  @property
+  def tweedie_variance_power(self):
+    return self.parms["tweedie_variance_power"]
+
+  @tweedie_variance_power.setter
+  def tweedie_variance_power(self, value):
+    self.parms["tweedie_variance_power"] = value
+
+  @property
+  def tweedie_link_power(self):
+    return self.parms["tweedie_link_power"]
+
+  @tweedie_link_power.setter
+  def tweedie_link_power(self, value):
+    self.parms["tweedie_link_power"] = value
+
+  @property
+  def alpha(self):
+    return self.parms["alpha"]
+
+  @alpha.setter
+  def alpha(self, value):
+    self.parms["alpha"] = value
+
+  @property
+  def prior(self):
+    return self.parms["prior"]
+
+  @prior.setter
+  def prior(self, value):
+    self.parms["prior"] = value
+
+  @property
+  def lambda_search(self):
+    return self.parms["lambda_search"]
+
+  @lambda_search.setter
+  def lambda_search(self, value):
+    self.parms["lambda_search"] = value
+
+  @property
+  def nlambdas(self):
+    return self.parms["nlambdas"]
+
+  @nlambdas.setter
+  def nlambdas(self, value):
+    self.parms["nlambdas"] = value
+
+  @property
+  def lambda_min_ratio(self):
+    return self.parms["lambda_min_ratio"]
+
+  @lambda_min_ratio.setter
+  def lambda_min_ratio(self, value):
+    self.parms["lambda_min_ratio"] = value
+
+  @property
+  def beta_constraints(self):
+    return self.parms["beta_constraints"]
+
+  @beta_constraints.setter
+  def beta_constraints(self, value):
+    self.parms["beta_constraints"] = value
+
+  @property
+  def nfolds(self):
+    return self.parms["nfolds"]
+
+  @nfolds.setter
+  def nfolds(self, value):
+    self.parms["nfolds"] = value
+
+  @property
+  def fold_assignment(self):
+    return self.parms["fold_assignment"]
+
+  @fold_assignment.setter
+  def fold_assignment(self, value):
+    self.parms["fold_assignment"] = value
+
+  @property
+  def keep_cross_validation_predictions(self):
+    return self.parms["keep_cross_validation_predictions"]
+
+  @keep_cross_validation_predictions.setter
+  def keep_cross_validation_predictions(self, value):
+    self.parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def intercept(self):
+    return self.parms["intercept"]
+
+  @intercept.setter
+  def intercept(self, value):
+    self.parms["intercept"] = value
+
+  @property
+  def Lambda(self):
+    return self.parms["Lambda"]
+
+  @Lambda.setter
+  def Lambda(self, value):
+    self.parms["Lambda"] = value
+
+  @property
+  def max_active_predictors(self):
+    return self.parms["max_active_predictors"]
+
+  @max_active_predictors.setter
+  def max_active_predictors(self, value):
+    self.parms["max_active_predictors"] = value
+
+  @property
+  def checkpoint(self):
+    return self.parms["checkpoint"]
+
+  @checkpoint.setter
+  def checkpoint(self, value):
+    self.parms["checkpoint"] = value
+

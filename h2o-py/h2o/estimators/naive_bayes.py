@@ -2,10 +2,10 @@ from .estimator_base import *
 
 
 class H2ONaiveBayesEstimator(H2OEstimator):
-  def __init__(self, laplace=None, threshold=None, eps=None, compute_metrics=None,
-               balance_classes=None,max_after_balance_size=None, nfolds=None,
-               fold_assignment=None, keep_cross_validation_predictions=None,
-               checkpoint=None):
+  def __init__(self,model_id=None, laplace=None, threshold=None, eps=None,
+               compute_metrics=None, balance_classes=None,
+               max_after_balance_size=None, nfolds=None, fold_assignment=None,
+               keep_cross_validation_predictions=None, checkpoint=None):
     """
     The naive Bayes classifier assumes independence between predictor variables
     conditional on the response, and a Gaussian distribution of numeric predictors with
@@ -42,3 +42,84 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     super(H2ONaiveBayesEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+
+  @property
+  def laplace(self):
+    return self.parms["laplace"]
+
+  @laplace.setter
+  def laplace(self, value):
+    self.parms["laplace"] = value
+
+  @property
+  def threshold(self):
+    return self.parms["threshold"]
+
+  @threshold.setter
+  def threshold(self, value):
+    self.parms["threshold"] = value
+
+  @property
+  def eps(self):
+    return self.parms["eps"]
+
+  @eps.setter
+  def eps(self, value):
+    self.parms["eps"] = value
+
+  @property
+  def compute_metrics(self):
+    return self.parms["compute_metrics"]
+
+  @compute_metrics.setter
+  def compute_metrics(self, value):
+    self.parms["compute_metrics"] = value
+
+  @property
+  def balance_classes(self):
+    return self.parms["balance_classes"]
+
+  @balance_classes.setter
+  def balance_classes(self, value):
+    self.parms["balance_classes"] = value
+
+  @property
+  def max_after_balance_size(self):
+    return self.parms["max_after_balance_size"]
+
+  @max_after_balance_size.setter
+  def max_after_balance_size(self, value):
+    self.parms["max_after_balance_size"] = value
+
+  @property
+  def nfolds(self):
+    return self.parms["nfolds"]
+
+  @nfolds.setter
+  def nfolds(self, value):
+    self.parms["nfolds"] = value
+
+  @property
+  def fold_assignment(self):
+    return self.parms["fold_assignment"]
+
+  @fold_assignment.setter
+  def fold_assignment(self, value):
+    self.parms["fold_assignment"] = value
+
+  @property
+  def keep_cross_validation_predictions(self):
+    return self.parms["keep_cross_validation_predictions"]
+
+  @keep_cross_validation_predictions.setter
+  def keep_cross_validation_predictions(self, value):
+    self.parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def checkpoint(self):
+    return self.parms["checkpoint"]
+
+  @checkpoint.setter
+  def checkpoint(self, value):
+    self.parms["checkpoint"] = value
+

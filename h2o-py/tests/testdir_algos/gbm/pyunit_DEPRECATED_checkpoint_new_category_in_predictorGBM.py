@@ -4,8 +4,6 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
 def checkpoint_new_category_in_predictor():
 
     sv1 = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))

@@ -1,12 +1,14 @@
-import sys
-sys.path.insert(1,"../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
+import h2o
+from tests import pyunit_utils
+
 
 def checkpoint_new_category_in_predictor():
 
-  sv1 = h2o.upload_file(tests.locate("smalldata/iris/setosa_versicolor.csv"))
-  sv2 = h2o.upload_file(tests.locate("smalldata/iris/setosa_versicolor.csv"))
-  vir = h2o.upload_file(tests.locate("smalldata/iris/virginica.csv"))
+  sv1 = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))
+  sv2 = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))
+  vir = h2o.upload_file(pyunit_utils.locate("smalldata/iris/virginica.csv"))
 
   from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
@@ -28,5 +30,7 @@ def checkpoint_new_category_in_predictor():
   # attempt to predict on new model, but with observations that have expanded categorical predictor domain.
   predictions = m2.predict(vir)
 
-if __name__ == '__main__':
-  tests.run_test(sys.argv, checkpoint_new_category_in_predictor)
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(checkpoint_new_category_in_predictor)
+else:
+  checkpoint_new_category_in_predictor()

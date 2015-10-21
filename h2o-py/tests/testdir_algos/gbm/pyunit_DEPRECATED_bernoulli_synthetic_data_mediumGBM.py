@@ -1,19 +1,15 @@
-import sys
-sys.path.insert(1,"../../../")
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-
-
-
 from h2o import H2OFrame
-
 import numpy as np
 import numpy.random
 import scipy.stats
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
-def bernoulli_synthetic_data_mediumGBM():
+def bernoulli_synthetic_data_gbm_medium():
     
     
 
@@ -83,6 +79,6 @@ def bernoulli_synthetic_data_mediumGBM():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(bernoulli_synthetic_data_mediumGBM)
+    pyunit_utils.standalone_test(bernoulli_synthetic_data_gbm_medium)
 else:
-    bernoulli_synthetic_data_mediumGBM()
+  bernoulli_synthetic_data_gbm_medium()

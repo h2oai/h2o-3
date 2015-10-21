@@ -1,11 +1,12 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
+import h2o
+from tests import pyunit_utils
 
 
-def bigcatGBM():
+def bigcat_gbm():
   #Log.info("Importing bigcat_5000x2.csv data...\n")
-  bigcat = h2o.import_file(path=tests.locate("smalldata/gbm_test/bigcat_5000x2.csv"))
+  bigcat = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/bigcat_5000x2.csv"))
   bigcat["y"] = bigcat["y"].asfactor()
   #Log.info("Summary of bigcat_5000x2.csv from H2O:\n")
   #bigcat.summary()
@@ -26,4 +27,6 @@ def bigcatGBM():
   test_auc = performance.auc()
 
 if __name__ == "__main__":
-  tests.run_test(sys.argv, bigcatGBM)
+  pyunit_utils.standalone_test(bigcat_gbm)
+else:
+  bigcat_gbm()

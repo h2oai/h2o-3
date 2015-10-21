@@ -1,6 +1,7 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
+import h2o
+from tests import pyunit_utils
 from h2o import H2OFrame
 import numpy as np
 import scipy.stats
@@ -8,7 +9,7 @@ from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
 
-def bernoulli_synthetic_data_mediumGBM():
+def bernoulli_synthetic_data_gbm_medium():
 
   # Generate training dataset (adaptation of http://www.stat.missouri.edu/~speckman/stat461/boost.R)
   train_rows = 10000
@@ -61,5 +62,8 @@ def bernoulli_synthetic_data_mediumGBM():
   assert abs(auc_h2o - auc_sci) < 1e-2, "h2o (auc) performance degradation, with respect to scikit. h2o auc: {0} " \
                                         "scickit auc: {1}".format(auc_h2o, auc_sci)
 
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, bernoulli_synthetic_data_mediumGBM)
+  pyunit_utils.standalone_test(bernoulli_synthetic_data_gbm_medium)
+else:
+  bernoulli_synthetic_data_gbm_medium()
