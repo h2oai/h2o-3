@@ -1,7 +1,10 @@
+import sys, os
+sys.path.insert(1, os.path.join("..",".."))
+import h2o
+from tests import pyunit_utils
+
 
 def anomaly():
-
-
   print "Deep Learning Anomaly Detection MNIST"
 
   train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
@@ -18,7 +21,7 @@ def anomaly():
   # train unsupervised Deep Learning autoencoder model on train_hex
   from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
   ae_model = H2OAutoEncoderEstimator(activation="Tanh", hidden=[2], l1=1e-5, ignore_const_cols=False, epochs=1)
-  ae_model.train(X=predictors,training_frame=train)
+  ae_model.train(x=predictors,training_frame=train)
 
   # 2) DETECT OUTLIERS
   # anomaly app computes the per-row reconstruction error for the test data set
@@ -35,4 +38,7 @@ def anomaly():
 
   # In python, the visualization could be done with tools like numpy/matplotlib or numpy/PIL
 
-anomaly()
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(anomaly)
+else:
+  anomaly()

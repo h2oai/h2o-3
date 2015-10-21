@@ -20,7 +20,7 @@ def deeplearning_demo():
   # Run DeepLearning
   from h2o.estimators.deeplearning import H2ODeepLearningEstimator
   dl = H2ODeepLearningEstimator(loss="CrossEntropy", epochs=1000, hidden=[20,20,20])
-  dl.train(X=range(1,train_data.ncol),
+  dl.train(x=range(1,train_data.ncol),
            y="Angaus",
            training_frame=train_data,
            validation_frame=test_data)

@@ -72,7 +72,7 @@ def bernoulli_synthetic_data_mediumGBM():
                                            max_depth=max_depth,
                                            learn_rate=learn_rate,
                                            nbins=nbins)
-    gbm_h2o.train(X=range(1,train_h2o.ncol), y="C1", training_frame=train_h2o)
+    gbm_h2o.train(x=range(1,train_h2o.ncol), y="C1", training_frame=train_h2o)
     gbm_perf = gbm_h2o.model_performance(test_h2o)
     auc_h2o = gbm_perf.auc()
 

@@ -29,18 +29,18 @@ class H2OEstimator(ModelBase):
   H2O model API.
   """
 
-  def train(self,X,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
+  def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     """Train the H2O model by specifying the predictor columns, response column, and any
     additional frame-specific values.
 
     Parameters
     ----------
-      X : list
+      x : list
         A list of column names or indices indicating the predictor columns.
       y : str
         An index or a column name indicating the response column.
       training_frame : H2OFrame
-        The H2OFrame having the columns indicated by X and y (as well as any
+        The H2OFrame having the columns indicated by x and y (as well as any
         additional columns specified by fold, offset, and weights).
       offset_column : str, optional
         The name or index of the column in training_frame that holds the offsets.
@@ -64,7 +64,7 @@ class H2OEstimator(ModelBase):
 
   def build_model(self, algo_params):
     if algo_params["training_frame"] is None: raise ValueError("Missing training_frame")
-    x = algo_params.pop("X")
+    x = algo_params.pop("x")
     y = algo_params.pop("y",None)
     training_frame = algo_params.pop("training_frame")
     validation_frame = algo_params.pop("validation_frame",None)

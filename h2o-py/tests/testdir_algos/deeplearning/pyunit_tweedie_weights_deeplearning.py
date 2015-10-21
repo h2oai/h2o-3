@@ -1,10 +1,12 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..",".."))
+import h2o
+from tests import pyunit_utils
+
 
 def tweedie_weights():
 
-  data = h2o.import_file(tests.locate("smalldata/glm_test/cancar_logIn.csv"))
+  data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/cancar_logIn.csv"))
   data["C1M3"] = (data["Class"] == 1 and data["Merit"] == 3).asfactor()
   data["C3M3"] = (data["Class"] == 3 and data["Merit"] == 3).asfactor()
   data["C4M3"] = (data["Class"] == 4 and data["Merit"] == 3).asfactor()
@@ -26,12 +28,14 @@ def tweedie_weights():
                                 tweedie_power=1.5,score_training_samples=0,
                                 score_validation_samples=0)
 
-  dl.train(X=myX,y="Loss", training_frame=cancar)
+  dl.train(x=myX,y="Loss", training_frame=cancar)
 
   mean_residual_deviance = dl.mean_residual_deviance()
 
   # With weights
-  dl.train(X=myX, y="Loss", training_frame=cancar, weights_column="Insured")
+  dl.train(x=myX, y="Loss", training_frame=cancar, weights_column="Insured")
 
 if __name__ == "__main__":
-  tests.run_test(sys.argv, tweedie_weights)
+  pyunit_utils.standalone_test(tweedie_weights)
+else:
+  tweedie_weights()

@@ -33,7 +33,7 @@ class H2OBinomialModel(ModelBase):
     >>> fr = ml.H2OFrame(rows)
     >>> fr[4] = fr[4].asfactor()
     >>> model = H2OGradientBoostingEstimator(ntrees=10, max_depth=10, nfolds=4)
-    >>> model.train(X=range(4), y=4, training_frame=fr)
+    >>> model.train(x=range(4), y=4, training_frame=fr)
     >>> model.F1(train=True)
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)

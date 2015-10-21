@@ -1,11 +1,13 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..",".."))
+import h2o
+from tests import pyunit_utils
+
 
 def offsets_and_distributions():
 
   # cars
-  cars = h2o.upload_file(tests.locate("smalldata/junit/cars_20mpg.csv"))
+  cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
   cars = cars[cars["economy_20mpg"].isna() == 0]
   cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
   offset = h2o.H2OFrame(python_obj=[[.5] for x in range(398)])
@@ -13,7 +15,7 @@ def offsets_and_distributions():
   cars = cars.cbind(offset)
 
   # insurance
-  insurance = h2o.import_file(tests.locate("smalldata/glm_test/insurance.csv"))
+  insurance = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/insurance.csv"))
   insurance["offset"] = insurance["Holders"].log()
 
   # bernoulli - offset not supported
@@ -25,23 +27,25 @@ def offsets_and_distributions():
 
   # gamma
   dl = H2ODeepLearningEstimator(distribution="gamma")
-  dl.train(X=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # gaussian
   dl = H2ODeepLearningEstimator(distribution="gaussian")
-  dl.train(X=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # poisson
   dl = H2ODeepLearningEstimator(distribution="poisson")
-  dl.train(X=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # tweedie
   dl = H2ODeepLearningEstimator(distribution="tweedie")
-  dl.train(X=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
 if __name__ == "__main__":
-  tests.run_test(sys.argv, offsets_and_distributions)
+  pyunit_utils.standalone_test(offsets_and_distributions)
+else:
+  offsets_and_distributions()

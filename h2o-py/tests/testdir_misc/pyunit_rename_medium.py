@@ -13,7 +13,7 @@ def rename_things():
   print h2o.ls()
   from h2o.estimators.gbm import H2OGradientBoostingEstimator
   m = H2OGradientBoostingEstimator(ntrees=5, max_depth=2)
-  m.train(X=fr.names[2:], y=fr.names[1], training_frame=fr)
+  m.train(x=fr.names[2:], y=fr.names[1], training_frame=fr)
   print m.model_id
   m.model_id = "my_gbm_model_wwwww"
   print h2o.ls()

@@ -1,6 +1,7 @@
-import sys
-sys.path.insert(1,"../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..",".."))
+import h2o
+from tests import pyunit_utils
 
 
 def imbalance():
@@ -15,14 +16,14 @@ def imbalance():
                                            loss="CrossEntropy", hidden=[200,200], epochs=1,
                                            balance_classes=False,reproducible=True,
                                            seed=1234)
-  hh_imbalanced.train(X=range(54),y=54, training_frame=covtype)
+  hh_imbalanced.train(x=range(54),y=54, training_frame=covtype)
   print hh_imbalanced
 
   hh_balanced = H2ODeepLearningEstimator(l1=1e-5, activation="Rectifier",
                                          loss="CrossEntropy", hidden=[200,200], epochs=1,
                                          balance_classes=True,reproducible=True,
                                          seed=1234)
-  hh_balanced.train(X=range(54),y=54,training_frame=covtype)
+  hh_balanced.train(x=range(54),y=54,training_frame=covtype)
   print hh_balanced
 
   #compare overall logloss
@@ -45,5 +46,7 @@ def imbalance():
 
   assert class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!"
 
-if __name__ == '__main__':
-  tests.run_test(sys.argv, imbalance)
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(imbalance)
+else:
+  imbalance()

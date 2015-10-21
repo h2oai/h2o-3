@@ -16,7 +16,7 @@ def bigcatGBM():
                                        ntrees=1,
                                        max_depth=1,
                                        nbins=100)
-  model.train(X="X",y="y", training_frame=bigcat)
+  model.train(x="X",y="y", training_frame=bigcat)
   model.show()
   performance = model.model_performance(bigcat)
   performance.show()

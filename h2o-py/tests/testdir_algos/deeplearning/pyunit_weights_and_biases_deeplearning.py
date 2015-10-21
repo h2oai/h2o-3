@@ -1,13 +1,15 @@
-import sys
-sys.path.insert(1,"../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..",".."))
+import h2o
+from tests import pyunit_utils
+
 
 def weights_and_biases():
 
 
   print "Test checks if Deep Learning weights and biases are accessible from R"
 
-  covtype = h2o.upload_file(tests.locate("smalldata/covtype/covtype.20k.data"))
+  covtype = h2o.upload_file(pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
   covtype[54] = covtype[54].asfactor()
 
   from h2o.estimators.deeplearning import H2ODeepLearningEstimator
@@ -17,7 +19,7 @@ def weights_and_biases():
                                      reproducible=True,
                                      seed=1234,
                                      export_weights_and_biases=True)
-  dlmodel.train(X=range(54),y=54,training_frame=covtype)
+  dlmodel.train(x=range(54),y=54,training_frame=covtype)
   print dlmodel
 
   weights1 = dlmodel.weights(0)
@@ -58,5 +60,7 @@ def weights_and_biases():
   assert b3c == 1, "wrong dimensionality! expected {0}, but got {1}.".format(1, b3c)
   assert b3r == 7, "wrong dimensionality! expected {0}, but got {1}.".format(7, b3r)
 
-if __name__ == '__main__':
-  tests.run_test(sys.argv, weights_and_biases)
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(weights_and_biases)
+else:
+  weights_and_biases()

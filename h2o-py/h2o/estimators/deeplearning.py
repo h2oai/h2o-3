@@ -187,7 +187,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
       >>> fr = ml.H2OFrame(rows)
       >>> fr[4] = fr[4].asfactor()
       >>> model = H2ODeepLearningEstimator()
-      >>> model.train(X=range(4), y=4, training_frame=fr)
+      >>> model.train(x=range(4), y=4, training_frame=fr)
     """
     super(H2ODeepLearningEstimator, self).__init__()
     self._parms = locals()
@@ -206,6 +206,6 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     >>> fr = ml.H2OFrame(rows)
     >>> fr[4] = fr[4].asfactor()
     >>> model = H2OAutoEncoderEstimator()
-    >>> model.train(X=range(4), training_frame=fr)
+    >>> model.train(x=range(4), training_frame=fr)
   """
   pass

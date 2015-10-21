@@ -1,13 +1,12 @@
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+import sys, os
+sys.path.insert(1, os.path.join("..",".."))
+import h2o
+from tests import pyunit_utils
 import random
 import copy
 
 
 def weights_vi():
-
-
   random.seed(1234)
 
   ###### create synthetic dataset1 with 3 predictors: p1 predicts response ~90% of the time, p2 ~70%, p3 ~50%
@@ -42,7 +41,7 @@ def weights_vi():
                                             hidden=[1],
                                             seed=1234,
                                             activation="Tanh")
-  model_dataset1.train(X=["p1","p2","p3"], y="response", training_frame=dataset1_h2o)
+  model_dataset1.train(x=["p1","p2","p3"], y="response", training_frame=dataset1_h2o)
   varimp_dataset1 = tuple([p[0] for p in model_dataset1.varimp(return_list=True)])
   assert sorted(varimp_dataset1) == ['p1', 'p2', 'p3'], "Expected the following relative variable importance on dataset1: " \
                                                         "('p1', 'p2', 'p3'), but got: {0}".format(varimp_dataset1)
@@ -52,7 +51,7 @@ def weights_vi():
                                             hidden=[1],
                                             seed=1234,
                                             activation="Tanh")
-  model_dataset2.train(X=["p1","p2","p3"],y="response",training_frame=dataset2_h2o)
+  model_dataset2.train(x=["p1","p2","p3"],y="response",training_frame=dataset2_h2o)
   varimp_dataset2 = tuple([p[0] for p in model_dataset2.varimp(return_list=True)])
   assert sorted(varimp_dataset1) == ['p1', 'p2', 'p3'], "Expected the following relative variable importance on dataset2: " \
                                                         "('p3', 'p1', 'p2'), but got: {0}".format(varimp_dataset2)
@@ -75,7 +74,7 @@ def weights_vi():
                                                     hidden=[1],
                                                     seed=1234,
                                                     activation="Tanh")
-  model_combined_dataset.train(X=["p1","p2","p3"],
+  model_combined_dataset.train(x=["p1","p2","p3"],
                                y="response",
                                weights_column="weights",
                                training_frame=combined_dataset_h2o)
@@ -103,7 +102,7 @@ def weights_vi():
                                                     hidden=[1],
                                                     seed=1234,
                                                     activation="Tanh")
-  model_combined_dataset.train(X=["p1","p2","p3"],
+  model_combined_dataset.train(x=["p1","p2","p3"],
                                y="response",
                                weights_column="weights",
                                training_frame=combined_dataset_h2o)
@@ -113,4 +112,6 @@ def weights_vi():
                                                         "dataset: ('p1', 'p3', 'p2'), but got: {0}".format(varimp_combined)
 
 if __name__ == "__main__":
-  tests.run_test(sys.argv, weights_vi)
+  pyunit_utils.standalone_test(weights_vi)
+else:
+  weights_vi()
