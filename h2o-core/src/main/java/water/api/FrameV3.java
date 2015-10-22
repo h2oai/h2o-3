@@ -143,7 +143,6 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     ColV3(String name, Vec vec, long off, int len, boolean force_summary) {
       label=name;
 
-      if (force_summary) {
         missing_count = vec.naCnt();
         zero_count = vec.length() - vec.nzCnt() - missing_count;
         positive_infinity_count = vec.pinfs();
@@ -153,6 +152,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
         mean = vec.mean();
         sigma = vec.sigma();
 
+      if (force_summary) {
         // Histogram data is only computed on-demand.  By default here we do NOT
         // compute it, but will return any prior computed & cached histogram.
         histogram_bins = vec.lazy_bins();

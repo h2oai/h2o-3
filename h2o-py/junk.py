@@ -5,4 +5,15 @@ h2o.init()
 x = h2o.H2OFrame.read_csv("smalldata/iris/iris_wheader.csv","iris")
 print(x)
 x.summary()
-h2o.remove(x)
+print(x[1])
+print(x['sepal_len']+1)
+
+x['C6'] = x['sepal_len'] > 0.0
+xany = x[:,"C6"].any()
+xall = x[:,"C6"].all()
+print(xany,xall)
+
+x['C6'] = x['sepal_len'] > 5.0
+xany = x[:,"C6"].any()
+xall = x[:,"C6"].all()
+print(xany,xall)
