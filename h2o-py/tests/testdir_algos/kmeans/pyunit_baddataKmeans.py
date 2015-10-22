@@ -29,9 +29,8 @@ def baddataKmeans():
   km_model.train(x=range(cols), training_frame=frame)
 
   centers = km_model.centers()
-  assert len(centers) == 5, "expected 5 centers"
-  for c in range(len(centers)):
-    assert len(centers[c]) == 10, "expected center to be 10 dimensional"
+  assert len(centers[0]) == 5, "expected 5 centers"
+  assert len(centers) == 10, "expected center to be 10 dimensional"
 
   # Columns with constant value will be automatically dropped
   #Log.info("Training data with 1 col of all 5's: drop automatically")
@@ -43,9 +42,8 @@ def baddataKmeans():
   km_model.train(x = range(cols), training_frame=frame)
 
   centers = km_model.centers()
-  assert len(centers) == 5, "expected 5 centers"
-  for c in range(len(centers)):
-    assert len(centers[c]) == 9, "expected center to be 9 "
+  assert len(centers[0]) == 5, "expected 5 centers"
+  assert len(centers) == 9, "expected center to be 9-dimensional"
   # TODO: expect_warning(km_model = h2o.kmeans(x=frame, k=5))
 
   # Log.info("Training data with 1 col of all None's, 1 col of all zeroes: drop automatically")
@@ -58,9 +56,8 @@ def baddataKmeans():
   km_model.train(x=range(cols), training_frame=frame)
 
   centers = km_model.centers()
-  assert len(centers) == 5, "expected 5 centers"
-  for c in range(len(centers)):
-    assert len(centers[c]) == 8, "expected center to be 9 "
+  assert len(centers[0]) == 5, "expected 5 centers"
+  assert len(centers) == 8, "expected center to be 8-dim "
   # TODO: expect_warning(km_model = h2o.kmeans(x=frame, k=5))
 
   # Log.info("Training data with all None's")
@@ -80,9 +77,8 @@ def baddataKmeans():
   km_model = H2OKMeansEstimator(k=5)
   km_model.train(x=range(cols), training_frame=frame)
   centers = km_model.centers()
-  assert len(centers) == 5, "expected 5 centers"
-  for c in range(len(centers)):
-    assert len(centers[c]) == 10, "expected center to be 10 "+str(len(centers[c]))
+  assert len(centers[0]) == 5, "expected 5 centers"
+  assert len(centers) == 10, "expected center to be 10 "+str(len(centers))
 
   # Log.info("Importing iris.csv data...\n")
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
@@ -90,9 +86,8 @@ def baddataKmeans():
   km_model = H2OKMeansEstimator(k=5)
   km_model.train(x=range(iris.ncol), training_frame=iris)
   centers = km_model.centers()
-  assert len(centers) == 5, "expected 5 centers"
-  for c in range(len(centers)):
-    assert len(centers[c]) == 5, "expected center to be 5 "+str(len(centers[c]))
+  assert len(centers[0]) == 5, "expected 5 centers"
+  assert len(centers) == 5, "expected center to be 5 "+str(len(centers))
 
 
 

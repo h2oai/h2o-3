@@ -112,7 +112,7 @@ class H2OEstimator(ModelBase):
     validation_frame = algo_params.pop("validation_frame",None)
     is_auto_encoder = algo_params is not None and "autoencoder" in algo_params and algo_params["autoencoder"]
     algo = self._compute_algo()
-    is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans"
+    is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
     if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
     if not is_unsupervised and y is None: raise ValueError("Missing response")
     self._model_build(x, y, training_frame, validation_frame, algo_params)

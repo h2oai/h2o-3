@@ -31,22 +31,22 @@ def cv_carsRF():
 
     print "Response column: {0}".format(response_col)
 
-    # ## cross-validation
-    # # 1. check that cv metrics are the same over repeated seeded "Modulo" runs
-    # nfolds = random.randint(3,10)
-    # rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
-    # rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
-    # pyunit_utils.check_models(rf1, rf2, True)
-    #
-    # # 2. check that cv metrics are different over repeated "Random" runs
-    # nfolds = random.randint(3,10)
-    # rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
-    # rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
-    # try:
-    #     pyunit_utils.check_models(rf1, rf2, True)
-    #     assert False, "Expected models to be different over repeated Random runs"
-    # except AssertionError:
-    #     assert True
+    ## cross-validation
+    # 1. check that cv metrics are the same over repeated seeded "Modulo" runs
+    nfolds = random.randint(3,10)
+    rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
+    rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Modulo", seed=1234)
+    pyunit_utils.check_models(rf1, rf2, True)
+
+    # 2. check that cv metrics are different over repeated "Random" runs
+    nfolds = random.randint(3,10)
+    rf1 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
+    rf2 = h2o.random_forest(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
+    try:
+        pyunit_utils.check_models(rf1, rf2, True)
+        assert False, "Expected models to be different over repeated Random runs"
+    except AssertionError:
+        assert True
 
     # 3. folds_column
     num_folds = random.randint(2,5)

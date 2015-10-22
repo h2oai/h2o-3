@@ -34,8 +34,11 @@ def emptyclusKmeans():
     for i in random.sample(range(0,ncent-1), nempty):
         initial_centers[i] = [100*i for z in range(1,len(initial_centers[0])+1)]
 
-    initial_centers_h2o = h2o.H2OFrame(initial_centers)
     initial_centers_sci = np.asarray(initial_centers)
+    initial_centers = [list(x) for x in zip(*initial_centers)]
+
+    initial_centers_h2o = h2o.H2OFrame(initial_centers)
+
 
     #Log.info("Initial cluster centers:")
     print "H2O initial centers:"

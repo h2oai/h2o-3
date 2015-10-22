@@ -795,7 +795,8 @@ class H2OFrame(H2OFrameWeakRefMixin):
       return df
     else:
       cr = csv.reader(response)
-      return [[''] if row == [] else row for row in cr]
+      t_col_list = [[''] if row == [] else row for row in cr]
+      return [list(x) for x in zip(*t_col_list)]
 
   # Find a named H2OVec and return the zero-based index for it.  Error if name is missing
   def _find_idx(self,name):

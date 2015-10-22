@@ -103,9 +103,11 @@ def weights_check():
   h2o_data_doubled_weights = h2o_cars_data.cbind(h2o_doubled_weights)
 
   doubled_data = h2o.as_list(h2o_cars_data, use_pandas=False)
+  doubled_data = [list(x) for x in zip(*doubled_data)]
   colnames = doubled_data.pop(0)
-  for idx, w in enumerate(doubled_weights):
-    if w[0] == 2: doubled_data.append(doubled_data[idx])
+  for idx, w in enumerate(doubled_weights[0]):
+    if w == 2: doubled_data.append(doubled_data[idx])
+  doubled_data = [list(x) for x in zip(*doubled_data)]
   h2o_data_doubled = h2o.H2OFrame(python_obj=doubled_data)
   h2o_data_doubled.set_names(colnames)
 

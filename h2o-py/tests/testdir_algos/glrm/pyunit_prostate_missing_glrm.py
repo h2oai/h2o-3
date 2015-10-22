@@ -40,7 +40,7 @@ def glrm_prostate_miss():
                                                    init="SVD",
                                                    max_iterations=2000,
                                                    min_step_size=1e-6)
-    prostate_glrm.train(x=prostate_miss.names,
+    prostate_glrm.train(x=range(8),
                         training_frame=prostate_miss,
                         validation_frame=prostate_full)
 
