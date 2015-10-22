@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -15,10 +11,10 @@ def get_modelKmeans():
       # connect to localhost:54321
 
     #Log.info("Importing benign.csv data...\n")
-    benign_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/benign.csv"))
+    benign_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/benign.csv"))
     #benign_h2o.summary()
 
-    benign_sci = np.genfromtxt(pyunit_utils.locate("smalldata/logreg/benign.csv"), delimiter=",")
+    benign_sci = np.genfromtxt(h2o.locate("smalldata/logreg/benign.csv"), delimiter=",")
     # Impute missing values with column mean
     imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
     benign_sci = imp.fit_transform(benign_sci)
@@ -35,10 +31,6 @@ def get_modelKmeans():
         print "sckit centers"
         print km_sci.cluster_centers_
 
-
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(get_modelKmeans)
-else:
-    get_modelKmeans()
+   tests.run_test(sys.argv, get_modelKmeans)
+

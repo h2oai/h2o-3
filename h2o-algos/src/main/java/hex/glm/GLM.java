@@ -346,7 +346,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       _tInfos = new GLMTaskInfo[_parms._nfolds + 1];
-      InitTsk itsk = new InitTsk(0, _parms._intercept);
+      InitTsk itsk = new InitTsk(0, _parms._intercept, null);
       H2O.submitTask(itsk).join();
 
       assert itsk._nobs == 0 || itsk._gtNull != null;
@@ -445,7 +445,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private class InitTsk extends H2OCountedCompleter {
     final int _foldId;
     final boolean _intercept;
-    public InitTsk(int foldId, boolean intercept) { super(true); _foldId = foldId; _intercept = intercept; }
     public InitTsk(int foldId, boolean intercept, H2OCountedCompleter cmp) { super(cmp); _foldId = foldId; _intercept = intercept; }
     long _nobs;
     double _ymu;
@@ -721,7 +720,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void doCleanup(){
       updateModelOutput();
-      _parms.read_unlock_frames(GLM.this);
+      try {
+        _parms.read_unlock_frames(GLM.this);
+      }
+      catch (Throwable t) {
+        // nada
+      }
       if( _adapt_keys != null ) // Extra vector keys made during dataset adaptation
         for( Key k : _adapt_keys ) Keyed.remove(k);
       if(_dinfo      != null) _dinfo     .remove();
@@ -756,8 +760,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           return false;
         }
         try {
-          if( !(ex instanceof IllegalArgumentException) ) // e.g. Illegal beta constraints file, got duplicate constraint for predictor
-            doCleanup();
+          doCleanup();
           new RemoveCall(null, _dest).invokeTask();
         } catch(Throwable t) {Log.err(t);}
         failed(ex);
@@ -778,7 +781,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       _parms.read_lock_frames(GLM.this);
       //todo: fill in initialization for n-folds
-      H2O.submitTask(new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]));
+      new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]).fork();
     }
     private class LambdaSearchIteration extends H2O.H2OCallback {
       public LambdaSearchIteration(H2OCountedCompleter cmp){super(cmp); }

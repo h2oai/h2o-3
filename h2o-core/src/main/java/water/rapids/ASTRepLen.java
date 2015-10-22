@@ -56,13 +56,13 @@ class ASTSeq extends ASTPrim {
       if(n < 0)                     throw new IllegalArgumentException("wrong sign in 'by' argument");
       else if(n > Double.MAX_VALUE) throw new IllegalArgumentException("'by' argument is much too small");
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey(),Vec.T_NUM);
+      AppendableVec av = new AppendableVec(Vec.newKey());
       NewChunk nc = new NewChunk(av, 0);
       int len = (int)n + 1;
       for (int r = 0; r < len; r++) nc.addNum(from + r*by);
       // May need to adjust values = by > 0 ? min(values, to) : max(values, to)
       nc.close(0, fs);
-      Vec vec = av.layout_and_close(fs);
+      Vec vec = av.close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }

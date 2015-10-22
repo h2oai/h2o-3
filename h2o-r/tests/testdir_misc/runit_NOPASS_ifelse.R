@@ -3,7 +3,7 @@
 # Description: push a dataset into H2O and convert column using ifelse
 ##
 
-
+source('../h2o-runit.R')
 
 test.ifelse <- function() {
   

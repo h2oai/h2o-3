@@ -1,14 +1,10 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def metric_accessors():
 
-    cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
     r = cars[0].runif()
     train = cars[r > .2]
     valid = cars[r <= .2]
@@ -135,7 +131,7 @@ def metric_accessors():
 
 
     # binomial
-    cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
     r = cars[0].runif()
     train = cars[r > .2]
@@ -439,7 +435,7 @@ def metric_accessors():
 
 
     # multinomial
-    cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
     cars["cylinders"] = cars["cylinders"].asfactor()
     r = cars[0].runif()
     train = cars[r > .2]
@@ -539,7 +535,7 @@ def metric_accessors():
 
 
     # clustering
-    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
     km = h2o.kmeans(x=iris[0:4],
                     nfolds=3,
                     k=3)
@@ -614,6 +610,4 @@ def metric_accessors():
     size = km.size(train=False, valid=False, xval=False) # default: return training metrics
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(metric_accessors)
-else:
-    metric_accessors()
+    tests.run_test(sys.argv, metric_accessors)

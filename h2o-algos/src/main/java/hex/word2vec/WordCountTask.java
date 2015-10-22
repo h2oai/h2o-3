@@ -169,8 +169,8 @@ public class WordCountTask extends MRTask<WordCountTask> {
     Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(2);
 
     //allocate
-    AppendableVec wordAV = new AppendableVec((keys[0]), Vec.T_STR);
-    AppendableVec  cntAV = new AppendableVec((keys[1]), Vec.T_NUM);
+    AppendableVec wordAV = new AppendableVec((keys[0]));
+    AppendableVec cntAV = new AppendableVec((keys[1]));
     NewChunk wordNC = new NewChunk(wordAV, 0);
     NewChunk cntNC = new NewChunk(cntAV, 0);
 
@@ -183,8 +183,8 @@ public class WordCountTask extends MRTask<WordCountTask> {
     //finalize vectors
     wordNC.close(0, fs);
     cntNC.close(0, fs);
-    vecs[0] = wordAV.layout_and_close(fs);
-    vecs[1] = cntAV.layout_and_close(fs);
+    vecs[0] = wordAV.close(fs);
+    vecs[1] = cntAV.close(fs);
     fs.blockForPending();
 
     if(_fr != null && _fr._key != null) _wordCountKey = Key.make("wca_"+_fr._key.toString());

@@ -1,16 +1,12 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def get_model_test():
     
     
 
-    prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
     r = prostate[0].runif()
     train = prostate[r < 0.70]
@@ -44,7 +40,7 @@ def get_model_test():
         assert p1 == p2, "expected binomial predictions to be the same for row {}, but got {} and {}".format(r, p1, p2)
 
     # Clustering
-    benign_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/benign.csv"))
+    benign_h2o = h2o.import_file(path=h2o.locate("smalldata/logreg/benign.csv"))
     km_h2o = h2o.kmeans(x=benign_h2o, k=3)
     benign_km = h2o.get_model(km_h2o._id)
     assert benign_km._model_json['output']['model_category'] == "Clustering"
@@ -64,9 +60,5 @@ def get_model_test():
         assert p1 == p2, "expected multinomial predictions to be the same for row {0}, but got {1} and {2}" \
                          "".format(r, p1, p2)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(get_model_test)
-else:
-    get_model_test()
+    tests.run_test(sys.argv, get_model_test)

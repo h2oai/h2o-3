@@ -22,7 +22,6 @@
 #'        large hyper space
 #' @importFrom jsonlite toJSON
 #' @examples
-#' \donttest{
 #' library(h2o)
 #' library(jsonlite)
 #' h2o.init()
@@ -34,7 +33,6 @@
 #' # Fetch grid models
 #' model_ids <- grid@@model_ids
 #' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
-#' }
 #' @export
 h2o.grid <- function(algorithm,
                      grid_id,
@@ -107,7 +105,6 @@ h2o.grid <- function(algorithm,
 #'
 #' @param grid_id  ID of existing grid object to fetch
 #' @examples
-#' \donttest{
 #' library(h2o)
 #' library(jsonlite)
 #' h2o.init()
@@ -120,7 +117,6 @@ h2o.grid <- function(algorithm,
 #' # Fetch grid models
 #' model_ids <- grid@@model_ids
 #' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
-#' }
 #' @export
 h2o.getGrid <- function(grid_id) {
   json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id))

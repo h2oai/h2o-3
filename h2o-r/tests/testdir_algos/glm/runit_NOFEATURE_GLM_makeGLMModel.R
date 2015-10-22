@@ -1,6 +1,6 @@
 ### This tests offsets in glm ######
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test <- function(h) {
     prostate_h2o <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))

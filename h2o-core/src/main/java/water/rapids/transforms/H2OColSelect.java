@@ -9,8 +9,8 @@ import water.rapids.*;
 public class H2OColSelect extends Transform<H2OColSelect> {
   private final String[] _cols;
 
-  public H2OColSelect(String name, String ast, boolean inplace, String[] newNames) {  // not a public constructor -- used by the REST api only; must be public for stupid java.lang.reflect
-    super(name,ast,inplace,newNames);
+  public H2OColSelect(String name, String ast, boolean inplace) {  // not a public constructor -- used by the REST api only; must be public for stupid java.lang.reflect
+    super(name,ast,inplace);
     ASTParameter cols = ((ASTParameter)_ast._asts[2]);
     if( cols instanceof ASTStrList ) _cols = ((ASTStrList)cols)._strs;
     else                             _cols = new String[]{cols._v.getStr()};

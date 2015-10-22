@@ -188,7 +188,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               (long) start_column.min() + 1;
       o.max_time = (long) stop_column.max();
 
-      final int n_time = new VecUtils.CollectDomain().doAll(stop_column).domain().length;
+      final int n_time = new Vec.CollectDomain().doAll(stop_column).domain().length;
       o.time         = MemoryManager.malloc8(n_time);
       o.n_risk       = MemoryManager.malloc8d(n_time);
       o.n_event      = MemoryManager.malloc8d(n_time);

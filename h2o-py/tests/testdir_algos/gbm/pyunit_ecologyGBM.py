@@ -1,8 +1,6 @@
-import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
+import sys, os
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 import numpy as np
 from sklearn import ensemble
@@ -13,7 +11,7 @@ def ecologyGBM():
     
 
     #Log.info("Importing ecology_model.csv data...\n")
-    ecology_train = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
+    ecology_train = h2o.import_file(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
     #Log.info("Summary of the ecology data from h2o: \n")
     #ecology.summary()
 
@@ -42,7 +40,7 @@ def ecologyGBM():
     learn_rate = 0.1
 
     # Prepare data for scikit use
-    trainData = np.genfromtxt(pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"),
+    trainData = np.genfromtxt(h2o.locate("smalldata/gbm_test/ecology_model.csv"),
                               delimiter=',',
                               dtype=None,
                               names=("Site","Angaus","SegSumT","SegTSeas","SegLowFlow","DSDist","DSMaxSlope","USAvgT",
@@ -67,10 +65,10 @@ def ecologyGBM():
 
     # Evaluate the trained models on test data
     # Load the test data (h2o)
-    ecology_test = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_eval.csv"))
+    ecology_test = h2o.import_file(path=h2o.locate("smalldata/gbm_test/ecology_eval.csv"))
 
     # Load the test data (scikit)
-    testData = np.genfromtxt(pyunit_utils.locate("smalldata/gbm_test/ecology_eval.csv"),
+    testData = np.genfromtxt(h2o.locate("smalldata/gbm_test/ecology_eval.csv"),
                               delimiter=',',
                               dtype=None,
                               names=("Angaus","SegSumT","SegTSeas","SegLowFlow","DSDist","DSMaxSlope","USAvgT",
@@ -94,10 +92,6 @@ def ecologyGBM():
     #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
-
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(ecologyGBM)
-else:
-    ecologyGBM()
+    tests.run_test(sys.argv, ecologyGBM)
+

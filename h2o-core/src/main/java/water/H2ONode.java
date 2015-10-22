@@ -1,29 +1,21 @@
 package water;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import water.RPC.RPCCall;
 import water.UDP.udp;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.Log;
 import water.util.UnsafeUtils;
+
+import java.io.IOException;
+import java.net.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.SocketChannel;
+import java.util.*;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A <code>Node</code> in an <code>H2O</code> Cloud.
@@ -317,7 +309,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
             sock.configureBlocking(blocking);
             assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
             _rawChannel = sock;
-            _rawChannel.socket().setTcpNoDelay(true);
+            _rawChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
             ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
             bb.put((byte) 1);
             bb.putChar((char) H2O.H2O_PORT);

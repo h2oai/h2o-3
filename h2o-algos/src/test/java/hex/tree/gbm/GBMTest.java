@@ -11,9 +11,8 @@ import water.util.Log;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import water.util.MathUtils;
-import water.util.Pair;
 
-import java.util.*;
+import java.util.Arrays;
 
 public class GBMTest extends TestUtil {
 
@@ -141,7 +140,7 @@ public class GBMTest extends TestUtil {
               int prep(Frame fr) {
                 fr.remove("ID").remove(); // Remove not-predictive ID
                 int ci = fr.find("RACE"); // Change RACE to categorical
-                Scope.track(fr.replace(ci,fr.vecs()[ci].toCategoricalVec())._key);
+                Scope.track(fr.replace(ci,fr.vecs()[ci].toCategorical())._key);
                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
               }
             }, false, Distribution.Family.bernoulli);
@@ -158,7 +157,7 @@ public class GBMTest extends TestUtil {
       int idx = prep.prep(fr); // hack frame per-test
       if (family == Distribution.Family.bernoulli || family == Distribution.Family.multinomial) {
         if (!fr.vecs()[idx].isCategorical()) {
-          Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec())._key);
+          Scope.track(fr.replace(idx, fr.vecs()[idx].toCategorical())._key);
         }
       }
       DKV.put(fr);             // Update frame after hacking it
@@ -217,7 +216,7 @@ public class GBMTest extends TestUtil {
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");    // Convert response to categorical
-      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec())._key);
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategorical())._key);
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -259,7 +258,7 @@ public class GBMTest extends TestUtil {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");
-      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec())._key);   // Convert response 'Angaus' to categorical
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategorical())._key);   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -343,7 +342,7 @@ public class GBMTest extends TestUtil {
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       fr.remove("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
-      Scope.track(fr.replace(ci, fr.vecs()[ci].toCategoricalVec())._key);   // Convert response 'Angaus' to categorical
+      Scope.track(fr.replace(ci, fr.vecs()[ci].toCategorical())._key);   // Convert response 'Angaus' to categorical
       DKV.put(fr);                       // Update after hacking
       parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -436,8 +435,8 @@ public class GBMTest extends TestUtil {
       vfr = inF2.subframe(cols);
       inF1.remove(cols).remove(); // Toss all the rest away
       inF2.remove(cols).remove();
-      tfr.replace(0, tfr.vec("DOB").toCategoricalVec());     // Convert 'DOB' to categorical
-      vfr.replace(0, vfr.vec("DOB").toCategoricalVec());
+      tfr.replace(0, tfr.vec("DOB").toCategorical());     // Convert 'DOB' to categorical
+      vfr.replace(0, vfr.vec("DOB").toCategorical());
       DKV.put(tfr);
       DKV.put(vfr);
 
@@ -496,11 +495,11 @@ public class GBMTest extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
-      Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec())._key);   // Convert response 'C785' to categorical
+      Scope.track(tfr.replace(784, tfr.vecs()[784].toCategorical())._key);   // Convert response 'C785' to categorical
       DKV.put(tfr);
 
       vfr = parse_test_file("bigdata/laptop/mnist/test.csv.gz");
-      Scope.track(vfr.replace(784, vfr.vecs()[784].toCategoricalVec())._key);   // Convert response 'C785' to categorical
+      Scope.track(vfr.replace(784, vfr.vecs()[784].toCategorical())._key);   // Convert response 'C785' to categorical
       DKV.put(vfr);
 
       // Same parms for all
@@ -546,7 +545,7 @@ public class GBMTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategorical())._key);
 //      DKV.put(tfr);
 
       for (int i=0; i<N; ++i) {
@@ -595,7 +594,7 @@ public class GBMTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategorical())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
@@ -633,7 +632,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21979375165014595, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21979375165014595, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -653,7 +652,7 @@ public class GBMTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategorical())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
@@ -704,7 +703,7 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       tfr = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
-      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec())._key);
+      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategorical())._key);
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -745,8 +744,8 @@ public class GBMTest extends TestUtil {
       tfr = parse_test_file("./bigdata/covktr.csv");
       vfr = parse_test_file("./bigdata/covkts.csv");
       int idx = tfr.find("V55");
-      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toCategoricalVec())._key);
-      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toCategoricalVec())._key);
+      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toCategorical())._key);
+      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toCategorical())._key);
       DKV.put(tfr);
       DKV.put(vfr);
 
@@ -1283,7 +1282,7 @@ public class GBMTest extends TestUtil {
       tfr.remove("name").remove(); // Remove unique id
       tfr.remove("economy").remove();
       old = tfr.remove("economy_20mpg");
-      tfr.add("economy_20mpg", old.toCategoricalVec()); // response to last column
+      tfr.add("economy_20mpg", old.toCategorical()); // response to last column
       DKV.put(tfr);
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -1394,8 +1393,8 @@ public class GBMTest extends TestUtil {
         for (String s : new String[]{
                 "Merit", "Class"
         }) {
-          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec())._key);
-          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toCategoricalVec())._key);
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategorical())._key);
+          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toCategorical())._key);
         }
         DKV.put(tfr);
         DKV.put(vfr);
@@ -1430,135 +1429,44 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Ignore
   @Test
   public void testStochasticGBM() {
     Frame tfr = null, vfr = null;
     GBMModel gbm = null;
-    float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
-    float[] col_sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
 
-    Map<Double, Pair<Float,Float>> hm = new TreeMap<>();
-    for (float sample_rate : sample_rates) {
-      for (float col_sample_rate : col_sample_rates) {
-        Scope.enter();
-        try {
-          tfr = parse_test_file("./smalldata/gbm_test/ecology_model.csv");
-          DKV.put(tfr);
-          GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-          parms._train = tfr._key;
-          parms._response_column = "Angaus"; //regression
-          parms._seed = 234;
-          parms._min_rows = 2;
-          parms._max_depth = 10;
-          parms._ntrees = 10;
-          parms._col_sample_rate = col_sample_rate;
-          parms._sample_rate = sample_rate;
-
-          // Build a first model; all remaining models should be equal
-          GBM job = new GBM(parms);
-          gbm = job.trainModel().get();
-
-          ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
-          hm.put(mm.mse(), new Pair<>(sample_rate, col_sample_rate));
-
-          job.remove();
-        } finally {
-          if (tfr != null) tfr.remove();
-          if (vfr != null) vfr.remove();
-          if (gbm != null) gbm.delete();
-          Scope.exit();
-        }
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/junit/cars.head10.csv");
+      for (String s : new String[]{
+              "name",
+      }) {
+        tfr.remove(s).remove();
       }
-    }
-    double fullDataMSE = hm.entrySet().iterator().next().getKey();
-    Iterator<Map.Entry<Double, Pair<Float, Float>>> it;
-    int i=0;
-    Pair<Float, Float> last = null;
-    // iterator over results (min to max MSE) - best to worst
-    for (it=hm.entrySet().iterator(); it.hasNext(); ++i) {
-      Map.Entry<Double, Pair<Float,Float>> n = it.next();
-      if (i>0) Assert.assertTrue(n.getKey() > fullDataMSE); //any sampling should make training set MSE worse
-      Log.info( "MSE: " + n.getKey() + ", "
-              + ", row sample: " + ((Pair)n.getValue()).getKey()
-              + ", col sample: " + ((Pair)n.getValue()).getValue());
-      last=n.getValue();
-    }
-    // worst training MSE should belong to the most sampled case
-    Assert.assertTrue(last.getKey()==sample_rates[0]);
-    Assert.assertTrue(last.getValue()==col_sample_rates[0]);
-  }
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "cylinders"; //regression
+      parms._seed = 234;
+      parms._min_rows = 2;
+      parms._max_depth = 5;
+      parms._ntrees = 5;
+      parms._col_sample_rate = 1f;
+      parms._sample_rate = 0.5f;
 
-  @Test
-  public void testStochasticGBMHoldout() {
-    Frame tfr = null;
-    Key[] ksplits = new Key[0];
-    try{
-      tfr=parse_test_file("./smalldata/gbm_test/ecology_model.csv");
-      SplitFrame sf = new SplitFrame();
-      sf.dataset = tfr;
-      sf.ratios = new double[] { 0.5, 0.5 };
-      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
-      // Invoke the job
-      sf.exec().get();
-      ksplits = sf.destination_frames;
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
 
-      GBMModel gbm = null;
-      float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
-      float[] col_sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
+      ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
+      assertEquals(1.03088, mm.mse(), 1e-4);
 
-      Map<Double, Pair<Float,Float>> hm = new TreeMap<>();
-      for (float sample_rate : sample_rates) {
-        for (float col_sample_rate : col_sample_rates) {
-          Scope.enter();
-          try {
-            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-            parms._train = ksplits[0];
-            parms._valid = ksplits[1];
-            parms._response_column = "Angaus"; //regression
-            parms._seed = 234;
-            parms._min_rows = 1;
-            parms._max_depth = 15;
-            parms._ntrees = 10;
-            parms._col_sample_rate = col_sample_rate;
-            parms._sample_rate = sample_rate;
-
-            // Build a first model; all remaining models should be equal
-            GBM job = new GBM(parms);
-            gbm = job.trainModel().get();
-
-            // too slow, but passes (now)
-//            // Build a POJO, validate same results
-//            Frame pred = gbm.score(tfr);
-//            Assert.assertTrue(gbm.testJavaScoring(tfr,pred,1e-15));
-//            pred.remove();
-
-            ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._validation_metrics;
-            hm.put(mm.mse(), new Pair<>(sample_rate, col_sample_rate));
-
-            job.remove();
-          } finally {
-            if (gbm != null) gbm.delete();
-            Scope.exit();
-          }
-        }
-      }
-      Iterator<Map.Entry<Double, Pair<Float, Float>>> it;
-      Pair<Float, Float> last = null;
-      // iterator over results (min to max MSE) - best to worst
-      for (it=hm.entrySet().iterator(); it.hasNext();) {
-        Map.Entry<Double, Pair<Float,Float>> n = it.next();
-        Log.info( "MSE: " + n.getKey()
-            + ", row sample: " + ((Pair)n.getValue()).getKey()
-            + ", col sample: " + ((Pair)n.getValue()).getValue());
-        last=n.getValue();
-      }
-      // worst validation MSE should belong to the most overfit case (1.0, 1.0)
-      Assert.assertTrue(last.getKey()==sample_rates[sample_rates.length-1]);
-      Assert.assertTrue(last.getValue()==col_sample_rates[col_sample_rates.length-1]);
+      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
-      for (Key k : ksplits)
-        if (k!=null) k.remove();
+      if (vfr != null) vfr.remove();
+      if (gbm != null) gbm.delete();
+      Scope.exit();
     }
   }
 }

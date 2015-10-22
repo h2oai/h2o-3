@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test.pubdev_1996 <- function() {
   Log.info("Importing train and test data...")

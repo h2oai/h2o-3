@@ -32,17 +32,13 @@ class RollupStats extends Iced {
 
   volatile transient ForkJoinTask _tsk;
 
+  volatile long _naCnt;
   // Computed in 1st pass
-  volatile long _naCnt; //count(!isNA(X))
-  double _mean, _sigma; //sum(X) and sum(X^2) for non-NA values
-  long    _rows,        //count(X) for non-NA values
-          _nzCnt,       //count(X!=0)
-          _size,        //byte size
-          _pinfs,       //count(+inf)
-          _ninfs;       //count(-inf)
+  double _mean, _sigma;
+  long _checksum;
+  long _rows, _nzCnt, _size, _pinfs, _ninfs;
   boolean _isInt=true;
   double[] _mins, _maxs;
-  long _checksum;
 
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
@@ -64,12 +60,10 @@ class RollupStats extends Iced {
   private boolean isReady() { return _naCnt>=0; }
 
   private RollupStats(int mode) {
-    _mins = new double[5];
-    _maxs = new double[5];
-    Arrays.fill(_mins, Double.MAX_VALUE);
-    Arrays.fill(_maxs,-Double.MAX_VALUE);
+    _mins = new double[5];  Arrays.fill(_mins, Double.NaN);
+    _maxs = new double[5];  Arrays.fill(_maxs, Double.NaN);
     _pctiles = new double[Vec.PERCENTILES.length];  Arrays.fill(_pctiles, Double.NaN);
-    _mean = _sigma = 0;
+    _mean = _sigma = Double.NaN;
     _size = 0;
     _naCnt = mode;
   }
@@ -79,6 +73,8 @@ class RollupStats extends Iced {
 
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();
+    Arrays.fill(_mins, Double.MAX_VALUE);
+    Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
     BufferedString tmpStr = new BufferedString();
@@ -90,29 +86,20 @@ class RollupStats extends Iced {
 
     // Check for popular easy cases: All Constant
     double min=c.min(), max=c.max();
-    if( min==max  ) {              // All constant or all NaN
+    if( min==max ) {              // All constant, and not NaN
       double d = min;             // It's the min, it's the max, it's the alpha and omega
       _checksum = (c.hasFloat()?Double.doubleToRawLongBits(d):(long)d)*c._len;
-      Arrays.fill(_mins, d);
-      Arrays.fill(_maxs, d);
+      Arrays.fill(_mins,d);
+      Arrays.fill(_maxs,d);
       if( d == Double.POSITIVE_INFINITY) _pinfs++;
       else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
       else {
-        if( d != 0 || Double.isNaN(d)) _nzCnt=c._len;
+        if( d != 0 ) _nzCnt=c._len;
         _mean = d;
         _rows=c._len;
       }
       _isInt = ((long)d) == d;
       _sigma = 0;               // No variance for constants
-      return this;
-    }
-
-    //all const NaNs
-    if ((c instanceof C0DChunk && c.isNA_impl(0))) {
-      _sigma=0; //count of non-NAs * variance of non-NAs
-      _mean = 0; //sum of non-NAs (will get turned into mean)
-      _naCnt=c._len;
-      _nzCnt=c._len;
       return this;
     }
 
@@ -125,11 +112,11 @@ class RollupStats extends Iced {
         if( c.isNA(i) ) nans++;
         else if( c.at8(i)==0 ) zs++;
       int os = c._len-zs-nans;  // Ones
-      _nzCnt += os;
-      _naCnt += nans;
+      _nzCnt = os;
+      _naCnt = nans;
       for( int i=0; i<Math.min(_mins.length,zs); i++ ) { min(0); max(0); }
       for( int i=0; i<Math.min(_mins.length,os); i++ ) { min(1); max(1); }
-      _rows += zs+os;
+      _rows = zs+os;
       _mean = (double)os/_rows;
       _sigma = zs*(0.0-_mean)*(0.0-_mean) + os*(1.0-_mean)*(1.0-_mean);
       return this;
@@ -150,82 +137,83 @@ class RollupStats extends Iced {
       }
 
     } else if( isString ) { // String columns do not compute min/max/mean/sigma
-      for (int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i)) {
-        if (c.isNA(i)) _naCnt++;
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        if( c.isNA(i) ) _naCnt++;
         else {
           _nzCnt++;
           l = c.atStr(tmpStr, i).hashCode();
         }
-        if (l != 0) // ignore 0s in checksum to be consistent with sparse chunks
-          checksum ^= (17 * (start + i)) ^ 23 * l;
+        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start+i)) ^ 23*l;
       }
-    } else {
-      // Work off all numeric rows, or only the nonzeros for sparse
-      if (c instanceof C1Chunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C1Chunk) c, start, checksum);
-      else if (c instanceof C1SChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C1SChunk) c, start, checksum);
-      else if (c instanceof C1NChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C1NChunk) c, start, checksum);
-      else if (c instanceof C2Chunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C2Chunk) c, start, checksum);
-      else if (c instanceof C2SChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C2SChunk) c, start, checksum);
-      else if (c instanceof C4SChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C4SChunk) c, start, checksum);
-      else if (c instanceof C4FChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C4FChunk) c, start, checksum);
-      else if (c instanceof C4Chunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C4Chunk) c, start, checksum);
-      else if (c instanceof C8Chunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C8Chunk) c, start, checksum);
-      else if (c instanceof C8DChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C8DChunk) c, start, checksum);
-      else
-        checksum=new RollupStatsHelpers(this).numericChunkRollup(c, start, checksum);
 
-      // special case for sparse chunks
-      // we need to merge with the mean (0) and variance (0) of the zeros count of 0s of the sparse chunk - which were skipped above
-      // _rows is the count of non-zero rows
-      // _mean is the mean of non-zero rows
-      // _sigma is the mean of non-zero rows
-      // handle the zeros
-      if( c.isSparse() ) {
-        int zeros = c._len - c.sparseLen();
-        if (zeros > 0) {
-          for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
-          double zeromean = 0;
-          double zeroM2 = 0;
-          double delta = _mean - zeromean;
-          _mean = (_mean * _rows + zeromean * zeros) / (_rows + zeros);
-          _sigma += zeroM2 + delta*delta * _rows * zeros / (_rows + zeros); //this is the variance*(N-1), will do sqrt(_sigma/(N-1)) later in postGlobal
-          _rows += zeros;
+    } else {                    // Numeric
+      double sum = 0;
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        double d = c.atd(i);
+        if( Double.isNaN(d) ) _naCnt++;
+        else {                  // All other columns have useful rollups
+          l = c.hasFloat()?Double.doubleToRawLongBits(d):c.at8(i);
+          if( d == Double.POSITIVE_INFINITY ) _pinfs++;
+          else if( d == Double.NEGATIVE_INFINITY ) _ninfs++;
+          else {
+            if( d != 0 ) _nzCnt++;
+            min(d);  max(d);
+            sum += d;
+            _rows++;
+            if( _isInt && ((long)d) != d ) _isInt = false;
+          }
         }
+        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start+i)) ^ 23*l;
       }
+      if(Double.isNaN(_mean)) _mean = sum;
+      else _mean += sum;
     }
     _checksum = checksum;
+
+    // Sparse?  We skipped all the zeros; do them now
+    if( c.isSparse() ) {
+      int zeros = c._len - c.sparseLen();
+      for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
+      _rows += zeros;
+    }
 
     // UUID and String columns do not compute min/max/mean/sigma
     if( isUUID || isString) {
       Arrays.fill(_mins,Double.NaN);
       Arrays.fill(_maxs,Double.NaN);
       _mean = _sigma = Double.NaN;
+    } else if( !Double.isNaN(_mean) && _rows > 0 ) {
+      final double mean = _mean = _mean / _rows;
+      // Handle all zero rows
+      int zeros = c._len - c.sparseLen();
+      double sigma = mean*mean*zeros;
+      // Handle all non-zero rows
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        double d = c.atd(i);
+        if( !Double.isNaN(d) ) {
+          d -= mean;
+          sigma += d*d;
+        }
+      }
+      _sigma = sigma;
     }
     return this;
   }
 
   private void reduce( RollupStats rs ) {
-    for( double d : rs._mins ) if (!Double.isNaN(d)) min(d);
-    for( double d : rs._maxs ) if (!Double.isNaN(d)) max(d);
+    for( double d : rs._mins ) min(d);
+    for( double d : rs._maxs ) max(d);
     _naCnt += rs._naCnt;
     _nzCnt += rs._nzCnt;
     _pinfs += rs._pinfs;
     _ninfs += rs._ninfs;
+    double delta = _mean - rs._mean;
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
     else if(rs._rows != 0){
-      double delta = _mean - rs._mean;
       _mean = (_mean * _rows + rs._mean * rs._rows) / (_rows + rs._rows);
-      _sigma += rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
+      _sigma = _sigma + rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
     }
     _rows += rs._rows;
     _size += rs._size;
@@ -233,19 +221,17 @@ class RollupStats extends Iced {
     _checksum ^= rs._checksum;
   }
 
-  double min( double d ) {
-    assert(!Double.isNaN(d));
+  private void min( double d ) {
+    if( d >= _mins[_mins.length-1] ) return;
     for( int i=0; i<_mins.length; i++ )
       if( d < _mins[i] )
         { double tmp = _mins[i];  _mins[i] = d;  d = tmp; }
-    return _mins[_mins.length-1];
   }
-  double max( double d ) {
-    assert(!Double.isNaN(d));
+  private void max( double d ) {
+    if( d <= _maxs[_maxs.length-1] ) return;
     for( int i=0; i<_maxs.length; i++ )
       if( d > _maxs[i] )
         { double tmp = _maxs[i];  _maxs[i] = d;  d = tmp; }
-    return _maxs[_maxs.length-1];
   }
 
   private static class Roll extends MRTask<Roll> {
@@ -259,7 +245,6 @@ class RollupStats extends Iced {
         _rs = new RollupStats(0);
       else {
         _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1));
-        if (_rs._rows == 1) _rs._sigma = 0;
         if (_rs._rows < 5) for (int i=0; i<5-_rs._rows; i++) {  // Fix PUBDEV-150 for files under 5 rows
           _rs._maxs[4-i] = Double.NaN;
           _rs._mins[4-i] = Double.NaN;
@@ -375,7 +360,7 @@ class RollupStats extends Iced {
     }
     private void installResponse(Value nnn, RollupStats rs) {
       Futures fs = new Futures();
-      Value old = DKV.DputIfMatch(_rsKey, new Value(_rsKey, rs), nnn, fs);
+      Value old = DKV.DputIfMatch(_rsKey,new Value(_rsKey,rs),nnn,fs);
       assert rs.isReady();
       if(old != nnn)
         throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (2)");
@@ -404,7 +389,7 @@ class RollupStats extends Iced {
               // note: if cc == null then onExceptionalCompletion tasks waiting on this may be woken up before exception handling iff exception is thrown.
               Value nnn = makeComputing();
               Futures fs = new Futures();
-              Value oldv = DKV.DputIfMatch(_rsKey, nnn, v, fs);
+              Value oldv = DKV.DputIfMatch(_rsKey,nnn,v,fs);
               fs.blockForPending();
               if(oldv == v){ // got the lock
                 computeHisto(rs, vec, nnn);
@@ -419,7 +404,7 @@ class RollupStats extends Iced {
         } else { // d) => compute the rollups
           final Value nnn = makeComputing();
           Futures fs = new Futures();
-          Value oldv = DKV.DputIfMatch(_rsKey, nnn, v, fs);
+          Value oldv = DKV.DputIfMatch(_rsKey,nnn,v,fs);
           fs.blockForPending();
           if(oldv == v){ // got the lock, compute the rollups
             addToPendingCount(1);
@@ -430,7 +415,7 @@ class RollupStats extends Iced {
                 rs._rs._checksum ^= vec.length();
                 if(_computeHisto)
                   computeHisto(rs._rs, vec, nnn);
-                else installResponse(nnn, rs._rs);
+                else installResponse(nnn,rs._rs);
               }
             },_rsKey).dfork(vec);
             break;
@@ -444,7 +429,7 @@ class RollupStats extends Iced {
       // All NAs or non-math; histogram has zero bins
       if( rs._naCnt == vec.length() || vec.isUUID() ) {
         rs._bins = new long[0];
-        installResponse(nnn, rs);
+        installResponse(nnn,rs);
         return;
       }
       // Constant: use a single bin
@@ -453,7 +438,7 @@ class RollupStats extends Iced {
       assert rows > 0:"rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + rs._naCnt;
       if( span==0 ) {
         rs._bins = new long[]{rows};
-        installResponse(nnn, rs);
+        installResponse(nnn,rs);
         return;
       }
       // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
@@ -500,7 +485,7 @@ class RollupStats extends Iced {
             } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
             // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
           }
-          installResponse(nnn, rs);
+          installResponse(nnn,rs);
         }
       },rs,nbins).dfork(vec); // intentionally using dfork here to increase priority level
     }

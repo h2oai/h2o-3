@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import random
 
 def random_attack():
@@ -39,7 +35,7 @@ def random_attack():
         print "-----------------------"
 
     print "Import and data munging..."
-    pros = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
+    pros = h2o.upload_file(h2o.locate("smalldata/prostate/prostate.csv.zip"))
     pros[1] = pros[1].asfactor()
     pros[4] = pros[4].asfactor()
     pros[5] = pros[5].asfactor()
@@ -49,7 +45,7 @@ def random_attack():
     pros_train = pros[r > .2]
     pros_valid = pros[r <= .2]
 
-    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars.csv"))
+    cars = h2o.upload_file(h2o.locate("smalldata/junit/cars.csv"))
     r = cars[0].runif()
     cars_train = cars[r > .2]
     cars_valid = cars[r <= .2]
@@ -77,9 +73,5 @@ def random_attack():
     for i in range(10):
         attack(cars_train, cars_valid, random.sample([1,3,4,5,6,7],random.randint(1,6)), 2)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(random_attack)
-else:
-    random_attack()
+    tests.run_test(sys.argv, random_attack)

@@ -1,17 +1,13 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 
 def svd_1_golden():
     
 
     print "Importing USArrests.csv data..."
-    arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(h2o.locate("smalldata/pca_test/USArrests.csv"))
 
     print "Compare with SVD"
     fitH2O = h2o.svd(x=arrestsH2O[0:4], nv=4, transform="NONE", max_iterations=2000)
@@ -49,9 +45,5 @@ def svd_1_golden():
     for rl, hl in zip(r_u, h2o_u):
         for r, h in zip(rl, hl): assert abs(abs(r) - abs(float(h))) < 1e-5, "H2O got {0}, but R got {1}".format(h, r)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(svd_1_golden)
-else:
-    svd_1_golden()
+    tests.run_test(sys.argv, svd_1_golden)

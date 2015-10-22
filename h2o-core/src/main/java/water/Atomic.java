@@ -58,8 +58,8 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
       // Attempt atomic update
       Value res = DKV.DputIfMatch(_key,val2,val1,fs);
       if( res == val1 ) {       // Success?
-        fs.blockForPending();   // Block for any pending invalidates on the atomic update
         onSuccess(val1);        // Call user's post-XTN function
+        fs.blockForPending();   // Block for any pending invalidates on the atomic update
         break;
       }
       val1 = res;               // Otherwise try again with the current value

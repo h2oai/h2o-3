@@ -11,9 +11,9 @@
 # Prediction should still go through
 
 
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
-
-
+source('../h2o-runit.R')
 
 
 pub35gbm <- function(){

@@ -1,16 +1,12 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def weights_api():
     
     
 
-    h2o_iris_data = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
+    h2o_iris_data = h2o.import_file(h2o.locate("smalldata/iris/iris.csv"))
     r = h2o_iris_data.runif()
     iris_train = h2o_iris_data[r > 0.2]
     iris_valid = h2o_iris_data[r <= 0.2]
@@ -103,9 +99,5 @@ def weights_api():
         assert True
 
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(weights_api)
-else:
-    weights_api()
+    tests.run_test(sys.argv, weights_api)

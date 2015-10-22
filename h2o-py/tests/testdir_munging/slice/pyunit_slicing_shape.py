@@ -1,18 +1,14 @@
-import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
 # Check that slicings give the correct shape
-
-
-
+import sys
+sys.path.insert(1, "../../../")
+import h2o, tests
 import random
 
 def slicing_shape():
     # Connect to a pre-existing cluster
     
 
-    prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
     rows, cols = prostate.dim
 
     #foo = prostate[0:0] # TODO: empty frame allowed?
@@ -43,9 +39,5 @@ def slicing_shape():
            assert r == nrows, "incorrect number of rows. correct: {0}, computed: {1}".format(nrows, r)
            assert c == ncols, "incorrect number of cols. correct: {0}, computed: {1}".format(ncols, c)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(slicing_shape)
-else:
-    slicing_shape()
+    tests.run_test(sys.argv, slicing_shape)

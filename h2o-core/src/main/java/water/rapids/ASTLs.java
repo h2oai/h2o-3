@@ -25,7 +25,7 @@ class ASTLs extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     ArrayList<String> domain = new ArrayList<>();
     Futures fs = new Futures();
-    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(),Vec.T_CAT);
+    AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
     NewChunk keys = new NewChunk(av,0);
     int r = 0;
     for( Key key : KeySnapshot.globalSnapshot().keys()) {
@@ -35,7 +35,7 @@ class ASTLs extends ASTPrim {
     String[] key_domain = domain.toArray(new String[domain.size()]);
     av.setDomain(key_domain);
     keys.close(fs);
-    Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
+    Vec c0 = av.close(fs);   // c0 is the row index vec
     fs.blockForPending();
     return new ValFrame(new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
   }

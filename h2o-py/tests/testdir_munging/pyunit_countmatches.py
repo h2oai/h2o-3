@@ -1,15 +1,11 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def countmatches_check():
     # Connect to a pre-existing cluster
 
-    frame = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"), col_types=["numeric","numeric","numeric","numeric","string"])
+    frame = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"), col_types=["numeric","numeric","numeric","numeric","string"])
 
     # single column (frame)
     result = frame["C5"].countmatches("o")
@@ -33,9 +29,5 @@ def countmatches_check():
 
 
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(countmatches_check)
-else:
-    countmatches_check()
+    tests.run_test(sys.argv, countmatches_check)

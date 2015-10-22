@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 import numpy as np
 from sklearn import ensemble
@@ -18,13 +14,13 @@ def smallcatGBM():
   
 
   #Log.info("Importing alphabet_cattest.csv data...\n")
-  alphabet = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"))
+  alphabet = h2o.import_file(path=h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"))
   alphabet["y"] = alphabet["y"].asfactor()
   #Log.info("Summary of alphabet_cattest.csv from H2O:\n")
   #alphabet.summary()
 
   # Prepare data for scikit use
-  trainData = np.loadtxt(pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1,
+  trainData = np.loadtxt(h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1,
                          converters={0:lambda s: ord(s.split("\"")[1])})
   trainDataResponse = trainData[:,1]
   trainDataFeatures = trainData[:,0]
@@ -39,9 +35,5 @@ def smallcatGBM():
   gbm_sci = ensemble.GradientBoostingClassifier(n_estimators=1, max_depth=1, max_features=None)
   gbm_sci.fit(trainDataFeatures[:,np.newaxis],trainDataResponse)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(smallcatGBM)
-else:
-    smallcatGBM()
+  tests.run_test(sys.argv, smallcatGBM)

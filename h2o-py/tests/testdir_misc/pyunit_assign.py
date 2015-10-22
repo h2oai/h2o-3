@@ -1,14 +1,10 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def pyunit_assign():
 
-    pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
+    pros = h2o.import_file(h2o.locate("smalldata/prostate/prostate.csv"))
     pq = pros.quantile()
 
     PSA_outliers = pros[pros["PSA"] <= pq[1,1] or pros["PSA"] >= pq[1,9]]
@@ -17,9 +13,5 @@ def pyunit_assign():
     PSA_outliers.head(show=True)
     assert PSA_outliers._id == "PSA.outliers", "Expected frame id to be PSA.outliers, but got {0}".format(PSA_outliers._id)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(pyunit_assign)
-else:
-    pyunit_assign()
+    tests.run_test(sys.argv, pyunit_assign)

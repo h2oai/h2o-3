@@ -3,8 +3,8 @@
 # Description: Select a dataset, select columns, change values in the column, re-assign col
 ##
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 #setupRandomSeed(1689636624)
 

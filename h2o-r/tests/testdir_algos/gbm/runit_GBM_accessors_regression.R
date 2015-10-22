@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test.gbm.regr.accessors <- function() {
   cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))

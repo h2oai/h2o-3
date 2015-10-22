@@ -47,7 +47,7 @@ class ValStr extends Val {
 
 class ValFrame extends Val {
   final Frame _fr;
-  ValFrame(Frame fr) { assert( fr!= null ); _fr = fr; }
+  ValFrame(Frame fr) { _fr = fr; }
   @Override public String toString() { return _fr.toString(); }
   @Override public int type () { return FRM; }
   @Override boolean isFrame() { return true; }

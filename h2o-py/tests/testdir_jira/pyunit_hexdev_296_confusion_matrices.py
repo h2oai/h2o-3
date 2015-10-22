@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def confusion_matrices_check():
     
@@ -26,9 +22,5 @@ def confusion_matrices_check():
     assert tps + tns + fps + fns == 20, "incorrect confusion matrix computation: tps: {0}, fps: {1}, tns: {2}, fns: " \
                                         "{3}. Should sum to 20.".format(tps, fps, tns, fns)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(confusion_matrices_check)
-else:
-    confusion_matrices_check()
+    tests.run_test(sys.argv, confusion_matrices_check)

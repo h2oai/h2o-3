@@ -1,14 +1,10 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 def weights_and_distributions():
 
-    htable  = h2o.upload_file(pyunit_utils.locate("smalldata/gbm_test/moppe.csv"))
+    htable  = h2o.upload_file(h2o.locate("smalldata/gbm_test/moppe.csv"))
     htable["premiekl"] = htable["premiekl"].asfactor()
     htable["moptva"] = htable["moptva"].asfactor()
     htable["zon"] = htable["zon"]
@@ -29,9 +25,5 @@ def weights_and_distributions():
     dl = h2o.deeplearning(x=htable[0:3],y=htable["medskad"],training_frame=htable,distribution="tweedie",weights_column="antskad")
     predictions = dl.predict(htable)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(weights_and_distributions)
-else:
-    weights_and_distributions()
+    tests.run_test(sys.argv, weights_and_distributions)

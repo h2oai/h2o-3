@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test.glrm.arrests_miss <- function() {
   missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
@@ -32,7 +32,7 @@ test.glrm.arrests_miss <- function() {
     expect_equal(validmm$caterr, 0)
     expect_true(validmm$numcnt > trainmm$numcnt)
     expect_equal(validmm$numcnt, totobs)
-    h2o.rm(arrests.glrm@model$representation_name)    # Remove X matrix to free memory
+    h2o.rm(arrests.glrm@model$loading_key$name)    # Remove loading matrix to free memory
     
     # Save relevant information from this run
     misserr <- (validmm$numerr - trainmm$numerr) / (validmm$numcnt - trainmm$numcnt)   # Average squared error over missing entries only

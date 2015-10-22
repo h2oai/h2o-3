@@ -7,7 +7,7 @@ import water.fvec.Frame;
 import water.util.Log;
 
 public class UnlockTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  public UnlockTest() { super(3); }
 
   @Test
   public void run() {

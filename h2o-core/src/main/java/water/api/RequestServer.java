@@ -127,10 +127,10 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Cloud",      "GET", CloudHandler.class,  "status", null, "Determine the status of the nodes in the H2O cloud.");
     register("/3/Cloud",                  "HEAD",CloudHandler.class, "head", null, "Determine the status of the nodes in the H2O cloud.");
     register("/3/Jobs"       ,"GET", JobsHandler.class,   "list", null,   "Get a list of all the H2O Jobs (long-running actions).");
-    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       , null,"Show a time line.");
-    register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       , null,"Report real-time profiling information for all nodes (sorted, aggregated stack traces).");
-    register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       , null,"Report stack traces for all threads on all nodes.");
-    register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       , null,"Run a network test to measure the performance of the cluster interconnect.");
+    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       , null,"Something something something.");
+    register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       , null,"Something something something.");
+    register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       , null,"Something something something.");
+    register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       , null,"Something something something.");
     register("/3/UnlockKeys", "POST", UnlockKeysHandler.class, "unlock", null, "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
     register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    , null,"Shut down the cluster");
 
@@ -297,8 +297,8 @@ public class RequestServer extends NanoHTTPD {
     register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", null, "Execute an Rapids AST.");
     register("/99/Assembly.java/(?<assembly_id>.*)/(?<pojo_name>.*)"   ,"GET"   ,AssemblyHandler.class, "toJava", null, "Generate a Java POJO from the Assembly");
     register("/99/Assembly"                                        ,"POST"  ,AssemblyHandler.class, "fit", null, "Fit an assembly to an input frame");
-    register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download dataset as a CSV.");
-    register("/3/DownloadDataset.bin"                              ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download dataset as a CSV.");
+    register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download something something.");
+    register("/3/DownloadDataset.bin"                              ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", null, "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", null, "Remove all keys from the H2O distributed K/V store.");
     register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", null, "Save a message to the H2O logfile.");
@@ -603,6 +603,9 @@ public class RequestServer extends NanoHTTPD {
         } else {
           return response404(method + " " + uri, type);
         }
+      } else if(route._handler_class ==  water.api.DownloadDataHandler.class) {
+        // DownloadDataHandler will throw H2ONotFoundException if the resource is not found
+        return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         logged = maybeLogRequest(method, uri, route._url_pattern.namedPattern(), parms, header);
@@ -717,6 +720,13 @@ public class RequestServer extends NanoHTTPD {
     default:
       throw H2O.unimpl("Unknown type to wrap(): " + type);
     }
+  }
+
+  private Response wrapDownloadData(String http_code, Schema s) {
+    DownloadDataV3 dd = (DownloadDataV3)s;
+    Response res = new Response(http_code, MIME_DEFAULT_BINARY, dd.csv);
+    res.addHeader("Content-Disposition", "filename=" + dd.filename);
+    return res;
   }
 
 

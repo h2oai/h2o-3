@@ -1,20 +1,17 @@
-import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-import os
-
+import sys, os
+sys.path.insert(1, "../../")
+import h2o, tests
 import random
 
 def download_csv():
     
     
 
-    iris1 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+    iris1 = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     h2o.download_csv(iris1,"iris_delete.csv")
 
-    iris2 = h2o.import_file(path=pyunit_utils.locate("iris_delete.csv"))
+    iris2 = h2o.import_file(path=h2o.locate("iris_delete.csv"))
     os.remove("iris_delete.csv")
 
     rand_row = random.randint(0,iris1.nrow-1)
@@ -23,9 +20,5 @@ def download_csv():
                                                                                 "be the same, but got {0} and {1}" \
                                                                                 "".format(iris1[rand_row, rand_col],
                                                                                           iris2[rand_row, rand_col])
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(download_csv)
-else:
-    download_csv()
+    tests.run_test(sys.argv, download_csv)

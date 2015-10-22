@@ -8,7 +8,7 @@ import water.util.ArrayUtils;
 
 public class ModelAdaptTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
 
   // Private junk model class to test Adaption logic

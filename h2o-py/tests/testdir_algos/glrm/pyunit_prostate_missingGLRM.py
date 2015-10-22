@@ -1,17 +1,13 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import numpy as np
 
 def glrm_prostate_miss():
     missing_ratios = np.arange(0.1, 1, 0.1).tolist()
     
     print "Importing prostate_cat.csv data and saving for validation..."
-    prostate_full = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"), na_strings=["NA"]*8)
+    prostate_full = h2o.upload_file(h2o.locate("smalldata/prostate/prostate_cat.csv"), na_strings=["NA"]*8)
     prostate_full.describe()
     totnas = 0
     for i in range(prostate_full.ncol):
@@ -26,7 +22,7 @@ def glrm_prostate_miss():
     for i in range(len(missing_ratios)):
         ratio = missing_ratios[i]
         print "Importing prostate_cat.csv and inserting {0}% missing entries".format(100*ratio)
-        prostate_miss = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"))
+        prostate_miss = h2o.upload_file(h2o.locate("smalldata/prostate/prostate_cat.csv"))
         prostate_miss = prostate_miss.insert_missing_values(fraction=ratio)
         prostate_miss.describe()
         
@@ -48,7 +44,7 @@ def glrm_prostate_miss():
         valid_numerr[i] = prostate_glrm._model_json['output']['validation_metrics']._metric_json['numerr']
         train_caterr[i] = prostate_glrm._model_json['output']['training_metrics']._metric_json['caterr']
         valid_caterr[i] = prostate_glrm._model_json['output']['validation_metrics']._metric_json['caterr']
-        h2o.remove(prostate_glrm._model_json['output']['representation_name'])
+        h2o.remove(prostate_glrm._model_json['output']['loading_key']['name'])
     
     for i in range(len(missing_ratios)):
         print "Missing ratio: {0}% --> Training numeric error: {1}\tValidation numeric error: {2}".format(missing_ratios[i]*100, train_numerr[i], valid_numerr[i])
@@ -56,9 +52,5 @@ def glrm_prostate_miss():
     for i in range(len(missing_ratios)):
         print "Missing ratio: {0}% --> Training categorical error: {1}\tValidation categorical error: {2}".format(missing_ratios[i]*100, train_caterr[i], valid_caterr[i])
     
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(glrm_prostate_miss)
-else:
-    glrm_prostate_miss()
+    tests.run_test(sys.argv, glrm_prostate_miss)

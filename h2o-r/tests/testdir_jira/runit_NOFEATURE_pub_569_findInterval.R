@@ -2,8 +2,8 @@
 # Exec2 pop assert
 #
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 the_test <- function(){
   df = h2o.importFile(locate('smalldata/jira/pub-569.csv'))

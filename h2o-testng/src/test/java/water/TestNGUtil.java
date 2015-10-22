@@ -61,7 +61,7 @@ public class TestNGUtil extends Iced {
         if( leaked_keys > 0 ) {
             int cnt=0;
             for( Key k : H2O.localKeySet() ) {
-                Value value = Value.STORE_get(k);
+                Value value = H2O.raw_get(k);
                 // Ok to leak VectorGroups and the Jobs list
                 if( value.isVecGroup() || k == Job.LIST ||
                         // Also leave around all attempted Jobs for the Jobs list
@@ -152,12 +152,12 @@ public class TestNGUtil extends Iced {
     public static Vec vec(String[] domain, int ...rows) {
         Key k = Vec.VectorGroup.VG_LEN1.addVec();
         Futures fs = new Futures();
-        AppendableVec avec = new AppendableVec(k, Vec.T_NUM);
+        AppendableVec avec = new AppendableVec(k);
         avec.setDomain(domain);
         NewChunk chunk = new NewChunk(avec, 0);
         for( int r : rows ) chunk.addNum(r);
         chunk.close(0, fs);
-        Vec vec = avec.layout_and_close(fs);
+        Vec vec = avec.close(fs);
         fs.blockForPending();
         return vec;
     }
@@ -172,14 +172,12 @@ public class TestNGUtil extends Iced {
         Futures fs = new Futures();
         Vec[] vecs = new Vec[rows[0].length];
         Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
-        int rowLayout = -1;
         for( int c = 0; c < vecs.length; c++ ) {
-            AppendableVec vec = new AppendableVec(keys[c], Vec.T_NUM);
+            AppendableVec vec = new AppendableVec(keys[c]);
             NewChunk chunk = new NewChunk(vec, 0);
             for (double[] row : rows) chunk.addNum(row[c]);
             chunk.close(0, fs);
-            if( rowLayout == -1 ) rowLayout = vec.compute_rowLayout();
-            vecs[c] = vec.close(rowLayout,fs);
+            vecs[c] = vec.close(fs);
         }
         fs.blockForPending();
         Frame fr = new Frame(key, names, vecs);

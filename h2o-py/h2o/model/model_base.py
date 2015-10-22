@@ -5,7 +5,6 @@ This module implements the base model class.  All model things inherit from this
 import h2o
 from . import H2OFrame
 from . import H2OConnection
-import imp
 
 
 class ModelBase(object):
@@ -32,7 +31,7 @@ class ModelBase(object):
       for p in self._model_json["parameters"]: self._params[p["label"]]=p
 
   @property
-  def model_id(self):
+  def id(self):
     """
     :return: Retrieve this model's identifier.
     """
@@ -142,36 +141,6 @@ class ModelBase(object):
                        "was requested.".format(num_bias_vectors, vector_id))
     return h2o.get_frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
 
-  def normmul(self):
-    """
-    Normalization/Standardization multipliers for numeric predictors
-    """
-    return self._model_json['output']['normmul']
-
-  def normsub(self):
-    """
-    Normalization/Standardization offsets for numeric predictors
-    """
-    return self._model_json['output']['normsub']
-
-  def respmul(self):
-    """
-    Normalization/Standardization multipliers for numeric response
-    """
-    return self._model_json['output']['normrespmul']
-
-  def respsub(self):
-    """
-    Normalization/Standardization offsets for numeric response
-    """
-    return self._model_json['output']['normrespsub']
-
-  def catoffsets(self):
-    """
-    Categorical offsets for one-hot encoding
-    """
-    return self._model_json['output']['catoffsets']
-
   def model_performance(self, test_data=None, train=False, valid=False):
     """
     Generate model metrics for this model on test_data.
@@ -195,7 +164,7 @@ class ModelBase(object):
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None
       for mm in res["model_metrics"]:
-        if not mm["frame"] == None and mm["frame"]["name"] == test_data._id:
+        if mm["frame"]["name"] == test_data._id:
           raw_metrics = mm
           break
       return self._metrics_class(raw_metrics,algo=self._model_json["algo"])
@@ -212,7 +181,7 @@ class ModelBase(object):
         import pandas
         pandas.options.display.max_rows = 20
         return pandas.DataFrame(s.cell_values,columns=s.col_header)
-      return s
+      return model["scoring_history"]
     else: print "No score history for this model"
 
 
@@ -490,74 +459,6 @@ class ModelBase(object):
   # Delete from cluster as model goes out of scope
   # def __del__(self):
   #   h2o.remove(self._id)
-
-
-  def _plot(self, timestep, metric, **kwargs):
-
-    # check for matplotlib. exit if absent
-    try:
-      imp.find_module('matplotlib')
-      import matplotlib
-      if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
-      import matplotlib.pyplot as plt
-    except ImportError:
-      print "matplotlib is required for this function!"
-      return
-
-    scoring_history = self.score_history()
-    # Separate functionality for GLM since its output is different from other algos
-    if self._model_json["algo"] == "glm":
-      # GLM has only one timestep option, which is `iteration`
-      timestep = "iteration"
-      if metric == "AUTO": metric = "log_likelihood"
-      elif metric not in ("log_likelihood", "objective"):
-        raise ValueError("for GLM, metric must be one of: log_likelihood, objective")
-      plt.xlabel(timestep)
-      plt.ylabel(metric)
-      plt.title("Validation Scoring History")
-      plt.plot(scoring_history[timestep], scoring_history[metric])
-
-    elif self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
-      # Set timestep
-      if self._model_json["algo"] in ("gbm", "drf"):
-        if timestep == "AUTO": timestep = "number_of_trees"
-        elif timestep not in ("duration","number_of_trees"):
-          raise ValueError("timestep for gbm or drf must be one of: duration, number_of_trees")
-      else: #self._model_json["algo"] == "deeplearning":
-        # Delete first row of DL scoring history since it contains NAs & NaNs
-        if scoring_history["samples"][0] == 0:
-          scoring_history = scoring_history.ix[1:]
-        if timestep == "AUTO": timestep = "epochs"
-        elif timestep not in ("epochs","samples","duration"):
-          raise ValueError("timestep for deeplearning must be one of: epochs, samples, duration")
-
-      training_metric = "training_{}".format(metric)
-      validation_metric = "validation_{}".format(metric)
-      if timestep == "duration":
-        dur_colname = "duration_{}".format(scoring_history["duration"][1].split()[1])
-        scoring_history[dur_colname] = map(lambda x: str(x).split()[0],scoring_history["duration"])
-        timestep = dur_colname
-      if validation_metric in scoring_history.columns.values: #Training and Validation scoring history
-        ylim = (scoring_history.ix[:,[training_metric, validation_metric]].min().min(), scoring_history.ix[:,[training_metric, validation_metric]].max().max())
-        plt.xlabel(timestep)
-        plt.ylabel(metric)
-        plt.title("Scoring History")
-        plt.ylim(ylim)
-        plt.plot(scoring_history[timestep], scoring_history[training_metric], label = "Training")
-        plt.plot(scoring_history[timestep], scoring_history[validation_metric], color = "orange", label = "Validation")
-        plt.legend()
-      else: #Training scoring history only
-        ylim = (scoring_history[training_metric].min(), scoring_history[training_metric].max())
-        plt.xlabel(timestep)
-        plt.ylabel(training_metric)
-        plt.title("Training Scoring History")
-        plt.ylim(ylim)
-        plt.plot(scoring_history[timestep], scoring_history[training_metric])
-
-    else: # algo is not glm, deeplearning, drf, gbm
-      raise ValueError("Plotting not implemented for this type of model")
-    if "server" not in kwargs.keys() or not kwargs["server"]: plt.show()
-
 
   @staticmethod
   def _has(dictionary, key):

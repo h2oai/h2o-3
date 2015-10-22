@@ -6,7 +6,6 @@ import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OIllegalValueException;
 import water.exceptions.H2OParseException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
@@ -21,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -216,8 +217,8 @@ public final class ParseDataset extends Job<Frame> {
     // Filter down to columns with some categoricals
     int n = 0;
     int[] ecols2 = new int[avs.length];
-    for( int i = 0; i < avs.length; ++i )
-      if( avs[i].get_type()==Vec.T_CAT  ) // Intended type is categorical (even though no domain has been set)?
+    for( int i = 0; i < ecols2.length; ++i )
+      if( avs[i].shouldBeCategorical()  )
         ecols2[n++] = i;
     final int[] ecols = Arrays.copyOf(ecols2, n);
     // If we have any, go gather unified categorical domains
@@ -228,16 +229,14 @@ public final class ParseDataset extends Job<Frame> {
         //Test domains for excessive length.
         List<String> offendingColNames = new ArrayList<>();
         for (int i = 0; i < ecols.length; i++) {
-          if (gcdt.getDomainLength(i) < Categorical.MAX_CATEGORICAL_COUNT) {
-            if( gcdt.getDomainLength(i)==0 ) avs[ecols[i]].setBad(); // The all-NA column
-            else avs[ecols[i]].setDomain(gcdt.getDomain(i));
-          } else
+          if (gcdt.getDomainLength(i) < Categorical.MAX_CATEGORICAL_COUNT)
+            avs[ecols[i]].setDomain(gcdt.getDomain(i));
+          else
             offendingColNames.add(setup._column_names[ecols[i]]);
         }
         if (offendingColNames.size() > 0)
           throw new H2OParseException("Exceeded categorical limit on columns "+ offendingColNames+".   Consider reparsing these columns as a string.");
       }
-      Log.trace("Done collecting categorical domains across nodes.");
 
       job.update(0, "Compressing data.");
       fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
@@ -245,9 +244,8 @@ public final class ParseDataset extends Job<Frame> {
       // Update categoricals to the globally agreed numbering
       Vec[] evecs = new Vec[ecols.length];
       for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
-      Log.trace("Done compressing data.");
 
-      job.update(0, "Unifying categorical domains across nodes.");
+      job.update(0, "Unifying categoricals across nodes.");
       {
         // new CreateParse2GlobalCategoricalMaps(mfpt._cKey).doAll(evecs);
         // Using Dtask since it starts and returns faster than an MRTask
@@ -362,8 +360,7 @@ public final class ParseDataset extends Job<Frame> {
 
     @Override public void map(Chunk [] chks){
       CategoricalUpdateMap temp = DKV.getGet(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + _chunk2ParseNodeMap[chks[0].cidx()]));
-      if ( temp == null || temp.map == null)
-        throw new H2OIllegalValueException("Missing categorical update map",this);
+      //FIXME sanity check
       int[][] _parse2GlobalCatMaps = temp.map;
 
       //update the chunk with the new map
@@ -381,16 +378,16 @@ public final class ParseDataset extends Job<Frame> {
                   +"caused by unrecognized characters in the data.\n The problem categorical value "
                   +"occurred in the " + PrettyPrint.withOrdinalIndicator(i+1)+ " categorical col, "
                   +PrettyPrint.withOrdinalIndicator(chk.start() + j) +" row.");
+              //throw new H2OParseException(H2O.SELF.toString() + ": missing categorical at col:" + i + ", row: " + (chk.start() + j) + ", val = " + old + ", chunk=" + chk.getClass().getSimpleName() + ".", map = " + Arrays.toString(_parse2GlobalCatMaps[i]));
             chk.set(j, _parse2GlobalCatMaps[i][old]);
           }
-          Log.trace("Updated domains for "+PrettyPrint.withOrdinalIndicator(i+1)+ " categorical column.");
         }
         chk.close(cidx, _fs);
       }
     }
     @Override public void postGlobal() {
       for (int i=0; i < H2O.CLOUD.size(); i++)
-        DKV.remove(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + i));
+      DKV.remove(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + i));
     }
   }
   private static class GatherCategoricalDomainsTask extends MRTask<GatherCategoricalDomainsTask> {
@@ -417,7 +414,6 @@ public final class ParseDataset extends Job<Frame> {
         _packedDomains[i] = packDomain(_perColDomains[i]);
         i++;
       }
-      Log.trace("Done locally collecting domains on each node.");
     }
 
     @Override
@@ -491,15 +487,12 @@ public final class ParseDataset extends Job<Frame> {
               }
               _packedDomains[fi]  = Arrays.copyOf(mergedDom, mbi);// reduce size
               UnsafeUtils.set4(_packedDomains[fi], 0, mergeLen);
-              Log.trace("Merged domain length is "+mergeLen+" for the "
-                  +PrettyPrint.withOrdinalIndicator(fi+1)+ " categorical column.");;
               tryComplete();
             }
           });
         }
         for (int i = 0; i < _catColIdxs.length; i++) if (domtasks[i] != null) domtasks[i].join();
       }
-      Log.trace("Done merging domains.");
     }
 
     private byte[] packDomain(BufferedString[] domain) {
@@ -631,45 +624,40 @@ public final class ParseDataset extends Job<Frame> {
 
     @Override public void postGlobal(){
       Log.trace("Begin file parse cleanup.");
-      // Compress nulls out of _dout array
-      int n=0;
-      for( int i=0; i<_dout.length; i++ )
-        if( _dout[i] != null ) _dout[n++] = _dout[i];
-      if( n < _dout.length )  _dout = Arrays.copyOf(_dout,n);
-      // Fast path: only one Vec result, so never needs to have his Chunks renumbered
+      int n = _dout.length-1;
+      while(_dout[n] == null && n != 0)--n;
+      for(int i = 0; i <= n; ++i) {
+        if (_dout[i] == null) {
+          _dout[i] = _dout[n];
+          n--;
+          while (n > i && _dout[n] == null) n--;
+        }
+      }
+      if(n < _dout.length-1)
+        _dout = Arrays.copyOf(_dout,n+1);
       if(_dout.length == 1) {
         _vecs = _dout[0]._vecs;
         return;
       }
-      int nchunks = 0;          // Count chunks across all Vecs
-      int nCols = 0;            // SVMLight special: find max columns
-      for( FVecParseWriter dout : _dout ) {
-        nchunks += dout._vecs[0]._tmp_espc.length;
+      int nCols = 0;
+      for(FVecParseWriter dout:_dout)
         nCols = Math.max(dout._vecs.length,nCols);
+      AppendableVec [] res = new AppendableVec[nCols];
+      int nchunks = 0;
+      for(FVecParseWriter dout:_dout)
+        nchunks += dout.nChunks();
+      long [] espc = MemoryManager.malloc8(nchunks);
+      for(int i = 0; i < res.length; ++i) {
+        res[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), espc, 0);
+        res[i].setTypes(MemoryManager.malloc1(nchunks));
       }
-      // One Big Happy Shared ESPC
-      long[] espc = MemoryManager.malloc8(nchunks);
-      // AppendableVecs that are sized across the sum of all files.
-      // Preallocated a bunch of Keys, but if we didn't get enough (for very
-      // wide SVMLight) we need to get more here.
-      if( nCols > _reservedKeys ) throw H2O.unimpl();
-      AppendableVec[] res = new AppendableVec[nCols];
-      for(int i = 0; i < res.length; ++i)
-        res[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), espc, _parseSetup._column_types[i], 0);
-
-      // Load the global ESPC from the file-local ESPCs
-      for( FVecParseWriter fvpw : _dout ) {
-        AppendableVec[] avs = fvpw._vecs;
-        long[] file_local_espc = avs[0]._tmp_espc;
-        // Quick assert that all partial AVs in each DOUT are sharing a common chunkOff, and common Vec Keys
-        for( int j = 0; j < avs.length; ++j ) {
-          assert res[j]._key.equals(avs[j]._key);
-          assert avs[0]._chunkOff == avs[j]._chunkOff;
-          assert file_local_espc == avs[j]._tmp_espc || Arrays.equals(file_local_espc,avs[j]._tmp_espc);
-        }
-        System.arraycopy(file_local_espc, 0, espc, avs[0]._chunkOff, file_local_espc.length);
+      for(int i = 0; i < _dout.length; ++i)
+        for(int j = 0; j < _dout[i]._vecs.length; ++j)
+          res[j].setSubRange(_dout[i]._vecs[j]);
+      if((res.length + _vecIdStart) < _reservedKeys) {
+        Future f = _vg.tryReturnKeys(_vecIdStart + _reservedKeys, _vecIdStart + res.length);
+        if (f != null) try { f.get(); } catch (InterruptedException e) { } catch (ExecutionException e) {}
       }
-
       _vecs = res;
       Log.trace("Finished file parse cleanup.");
     }
@@ -708,10 +696,10 @@ public final class ParseDataset extends Job<Frame> {
       AppendableVec [] avs = new AppendableVec[localSetup._number_columns];
       long [] espc = MemoryManager.malloc8(nchunks);
       for(int i = 0; i < avs.length; ++i)
-        avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, localSetup._column_types[i], chunkOff);
+        avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, chunkOff);
       return localSetup._parse_type == ParserType.SVMLight
-        ? new SVMLightFVecParseWriter(_vg, _vecIdStart,chunkOff, _parseSetup._chunk_size, avs)
-        : new FVecParseWriter(_vg, chunkOff, categoricals(_cKey, localSetup._number_columns), localSetup._column_types, _parseSetup._chunk_size, avs);
+        ?new SVMLightFVecParseWriter(_vg, _vecIdStart,chunkOff, _parseSetup._chunk_size, avs)
+        :new FVecParseWriter(_vg, chunkOff, categoricals(_cKey, localSetup._number_columns), localSetup._column_types, _parseSetup._chunk_size, avs);
     }
 
     // Called once per file
@@ -851,17 +839,17 @@ public final class ParseDataset extends Job<Frame> {
         if (((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()) return;
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
-          avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _setup._column_types[i], _startChunkIdx);
+          avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
         // Break out the input & output vectors before the parse loop
         FVecParseReader din = new FVecParseReader(in);
         FVecParseWriter dout;
         Parser p;
         switch(_setup._parse_type) {
-        case ARFF:
-        case CSV:
-          Categorical [] categoricals = categoricals(_cKey, _setup._number_columns);
-          p = new CsvParser(_setup, _jobKey);
-          dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of categoricals
+          case ARFF:
+          case CSV:
+            Categorical [] categoricals = categoricals(_cKey, _setup._number_columns);
+            p = new CsvParser(_setup, _jobKey);
+            dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of categoricals
           break;
         case SVMLight:
           p = new SVMLightParser(_setup, _jobKey);
@@ -946,8 +934,8 @@ public final class ParseDataset extends Job<Frame> {
 
     int namelen = 0;
     for (String s : fr.names()) namelen = Math.max(namelen, s.length());
-    String format = " %"+namelen+"s %7s %12.12s %12.12s %12.12s %12.12s %11s %8s %6s";
-    Log.info(String.format(format, "ColV2", "type", "min", "max", "mean", "sigma", "NAs", "constant", "cardinality"));
+    String format = " %"+namelen+"s %7s %12.12s %12.12s %11s %8s %6s";
+    Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "cardinality"));
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     for( int i = 0; i < vecArr.length; i++ ) {
@@ -958,19 +946,12 @@ public final class ParseDataset extends Job<Frame> {
       String typeStr;
       String minStr;
       String maxStr;
-      String meanStr="";
-      String sigmaStr="";
 
       switch( v.get_type() ) {
         case Vec.T_BAD :   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
-        case Vec.T_NUM :  typeStr = "numeric";
-          minStr = String.format("%g", v.min());
-          maxStr = String.format("%g", v.max());
-          meanStr = String.format("%g", v.mean());
-          sigmaStr = String.format("%g", v.sigma());
-          break;
+        case Vec.T_NUM :  typeStr = "numeric";  minStr = String.format("%g", v.min());  maxStr = String.format("%g", v.max());  break;
         case Vec.T_CAT :  typeStr = "factor" ;  minStr = v.factor(0);  maxStr = v.factor(v.cardinality()-1); break;
         case Vec.T_TIME:  typeStr = "time"   ;  minStr = sdf.format(v.min());  maxStr = sdf.format(v.max());  break;
         default: throw H2O.unimpl();
@@ -1008,7 +989,7 @@ public final class ParseDataset extends Job<Frame> {
       if (printLogSeparatorToStdout)
         Log.info("Additional column information only sent to log file...");
 
-      String s = String.format(format, CStr, typeStr, minStr, maxStr, meanStr, sigmaStr, naStr, isConstantStr, numLevelsStr);
+      String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
       Log.info(s,printColumnToStdout);
     }
     Log.info(FrameUtils.chunkSummary(fr).toString());

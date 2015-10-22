@@ -6,7 +6,6 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 public class H2OScaler extends Transform<H2OScaler> {
@@ -14,7 +13,9 @@ public class H2OScaler extends Transform<H2OScaler> {
   double[] means;
   double[] sdevs;
 
-  H2OScaler(String name, String ast, boolean inplace, String[] newNames) { super(name,ast,inplace,newNames); }
+  H2OScaler(String name, String ast, boolean inplace) {
+    super(name,ast,inplace);
+  }
 
   @Override public Transform<H2OScaler> fit(Frame f) {
     means = new double[f.numCols()];
@@ -41,7 +42,7 @@ public class H2OScaler extends Transform<H2OScaler> {
             ncs[col].addNum(in[col]);
         }
       }
-    }.doAll(f.numCols(), Vec.T_NUM, f).outputFrame(f.names(), f.domains());
+    }.doAll(f.numCols(),f).outputFrame(f.names(),f.domains());
   }
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }

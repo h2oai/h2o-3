@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def javapredict_iris_drf():
 
@@ -13,16 +9,12 @@ def javapredict_iris_drf():
     print "Parameter list:"
     for k,v in zip(params.keys(), params.values()): print "{0}, {1}".format(k,v)
 
-    train = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_train.csv"))
-    test = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_train.csv"))
+    train = h2o.import_file(h2o.locate("smalldata/iris/iris_train.csv"))
+    test = h2o.import_file(h2o.locate("smalldata/iris/iris_train.csv"))
     x = ["sepal_len","sepal_wid","petal_len","petal_wid"]
     y = "species"
 
-    pyunit_utils.javapredict("random_forest", "class", train, test, x, y, **params)
-
-
+    tests.javapredict("random_forest", "class", train, test, x, y, **params)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(javapredict_iris_drf)
-else:
-    javapredict_iris_drf()
+    tests.run_test(sys.argv, javapredict_iris_drf)

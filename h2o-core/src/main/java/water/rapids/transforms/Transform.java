@@ -12,27 +12,22 @@ public abstract class Transform<T> extends Iced {
   protected final String _name;
   protected final ASTExec _ast;
   protected final boolean _inplace;
-  protected final String[] _newNames;
   protected final IcedHashMap<String,ASTParameter> _params;
   protected String[] _inNames;
   protected String[] _inTypes;
-  protected String[] _outTypes;
 
-  Transform(String name, String ast, boolean inplace, String[] newNames) {
+  Transform(String name, String ast, boolean inplace) {
     _name=name;
     _ast = (ASTExec)new Exec(ast).parse();
     _inplace = inplace;
-    _newNames = newNames;
     _params = new IcedHashMap<>();
   }
   public String name() { return _name; }
-  protected abstract Transform<T> fit(Frame f);
+  public abstract Transform<T> fit(Frame f);
   public Frame transform(Frame f) {
     _inNames = f.names();
     _inTypes = f.typesStr();
-    Frame ff = transformImpl(f);
-    _outTypes= ff.typesStr();
-    return ff;
+    return transformImpl(f);
   }
   protected abstract Frame transformImpl(Frame f);
   abstract Frame inverseTransform(Frame f);
@@ -47,7 +42,7 @@ public abstract class Transform<T> extends Iced {
     for (String k : _params.keySet()) {
       String v = _params.get(k).toJavaString();
       sb.append(
-              "    _params.put(\""+k+"\", new String[]{"+v.replace("\\","\\\\")+"});\n"
+              "    _params.put(\""+k+"\", new String[]{"+v+"});\n"
       );
     }
     sb.append("  }\n");
@@ -63,10 +58,5 @@ public abstract class Transform<T> extends Iced {
       sb.p(',');
     }
     throw new RuntimeException("Should never be here");
-  }
-
-  protected static String toJavaPrimitive(String vecType) {
-    if( vecType.equals("String") || vecType.equals("Enum") ) return "String";
-    return "double";
   }
 }

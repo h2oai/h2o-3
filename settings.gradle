@@ -15,26 +15,23 @@ include 'h2o-hadoop:h2o-yarn-generic'
 include 'h2o-genmodel'
 include 'h2o-java-rest-bindings'
 
-if (System.getProperty("user.name").equals("jenkins") 
-    || System.getenv("BUILD_HADOOP") != null
-    || System.getenv("H2O_TARGET") != null) {
-
-  // Default hadoop build targets
-  def allTargets = [
-          "cdh5.2", "cdh5.3", "cdh5.4.2",
-          "hdp2.1", "hdp2.2", "hdp2.3",
-          "mapr3.1.1", "mapr4.0.1", "mapr5.0"
-          ]
-  // Compute targets
-  def targets = System.getenv("H2O_TARGET") != null ? System.getenv("H2O_TARGET").split(",").collect { it.trim() } : allTargets
-  // Include selected/all Hadoop targets
-  if (System.getenv("BUILD_HADOOP") != "false") {
-    targets.each { name ->
-      include "h2o-hadoop:h2o-${name}"
-      include "h2o-hadoop:h2o-${name}-assembly"
-
-    }
-  }
+if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HADOOP") != null) {
+    include 'h2o-hadoop:h2o-cdh5.2'
+    include 'h2o-hadoop:h2o-cdh5.2-assembly'
+    include 'h2o-hadoop:h2o-cdh5.3'
+    include 'h2o-hadoop:h2o-cdh5.3-assembly'
+    include 'h2o-hadoop:h2o-cdh5.4.2'
+    include 'h2o-hadoop:h2o-cdh5.4.2-assembly'
+    include 'h2o-hadoop:h2o-hdp2.1'
+    include 'h2o-hadoop:h2o-hdp2.1-assembly'
+    include 'h2o-hadoop:h2o-hdp2.2'
+    include 'h2o-hadoop:h2o-hdp2.2-assembly'
+    include 'h2o-hadoop:h2o-mapr3.1.1'
+    include 'h2o-hadoop:h2o-mapr3.1.1-assembly'
+    include 'h2o-hadoop:h2o-mapr4.0.1'
+    include 'h2o-hadoop:h2o-mapr4.0.1-assembly'
+    include 'h2o-hadoop:h2o-mapr5.0'
+    include 'h2o-hadoop:h2o-mapr5.0-assembly'
 }
 
 include 'h2o-test-integ'

@@ -1,7 +1,7 @@
 ####### This tests offset in deeplearing for gamma by comparing results with expected behavior ######
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test <- function(h) {
 	library(MASS) 

@@ -24,8 +24,6 @@ tasks.withType(org.gradle.api.tasks.compile.JavaCompile) { Task t ->
 // By default convert to Java6 bytecode is disabled, enable only if specified tasks are in
 // execution graph
 project.ext.convertRequired = false
-// Signal that java6 convert is demanded
-project.ext.java6Convert = true
 
 // Convert class files to Java 6 byte code only if given tasks are in execution
 // graph for this project
@@ -47,5 +45,5 @@ public def convertOnlyWhen(String ... taskNames) {
 
 // FIXME: should be installed by a caller not here in plugin definition
 // Install Java6 bytecode converter only if tasks are in execution DAG
-convertOnlyWhen("publish", "build", "install", "uploadArchives", "classes")
+convertOnlyWhen("publish", "build", "install", "uploadArchives")
 

@@ -12,7 +12,7 @@ import water.util.Log;
  *  Only public to expose a few constants to subpackages.  No exposed user
  *  calls. */
 public class TypeMap {
-  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP, KEY;
+  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, KEY;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                               // 1 -
@@ -29,7 +29,6 @@ public class TypeMap {
     water.fvec.C1NChunk.class.getName(),// used as constant in parser
     water.fvec.Frame.class.getName(),   // used in TypeaheadKeys & Exec2
     water.fvec.Vec.VectorGroup.class.getName(), // Used in TestUtil
-    water.fvec.Vec.ESPC.class.getName(), // Used in TestUtil
 
     // Status pages looked at without locking the cloud
     CloudV3.class.getName(),
@@ -80,7 +79,6 @@ public class TypeMap {
     C1NCHUNK     = (short)onIce("water.fvec.C1NChunk"); // Used in water.fvec.FileVec
     FRAME        = (short)onIce("water.fvec.Frame");    // Used in water.Value
     VECGROUP     = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
-    ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
     KEY          = (short)onIce("water.Key");           // Used in water.api
     // Fill in some pre-cooked delegates so seralization has a base-case
     GOLD[ICED ] = Icer.ICER;

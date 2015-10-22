@@ -59,7 +59,7 @@ public class CategoricalWrappedVecTest extends TestUtil {
         toDomain[i] = new String(b);
       }
       long start = System.currentTimeMillis();
-      CategoricalWrappedVec.computeMap(fromDomain, toDomain);
+      new CategoricalWrappedVec(fromDomain, toDomain);
       long duration = System.currentTimeMillis() - start;
       if (N==9999)
         Log.info("Warming up.");
@@ -70,7 +70,7 @@ public class CategoricalWrappedVecTest extends TestUtil {
   }
 
   private static void testModelMapping(String[] modelDomain, String[] colDomain, int[] expectedMapping) {
-    int[] mapping = CategoricalWrappedVec.computeMap(colDomain, modelDomain);
+    int[] mapping = new CategoricalWrappedVec(colDomain, modelDomain)._map;
     Assert.assertArrayEquals("Mapping differs",  expectedMapping, mapping);
   }
 }

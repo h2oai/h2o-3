@@ -44,76 +44,76 @@ task(createBuildInfoTex) << {
     f.write(sb.toString());
 }
 
-def counterToBooklet(int counter) {
-    String[] booklets = [
-            "GLM_Vignette",
-            "GBM_Vignette",
-            "DeepLearning_Vignette",
-            "SparklingWaterVignette",
-            "R_Vignette",
-            "Python_booklet"]
-    return booklets[counter];
+task compileGlm1(type: Exec, dependsOn: createBuildInfoTex) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'GLM_Vignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileGlm1.out")
 }
 
-// Note: The '6' here is the number of items in the list of booklets.
-6.times {
-    counter ->
-        task "compile_${counter}_0"(type: Exec, dependsOn: createBuildInfoTex) {
-            workingDir bookletPath
-            commandLine 'pdflatex', '-halt-on-error', counterToBooklet(counter)
-            standardOutput = new FileOutputStream("$bookletPath/gradle_" + counterToBooklet(counter) + "_" + counter + "_0.out")
-        }
+task compileGlm2(type: Exec, dependsOn: compileGlm1) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'GLM_Vignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileGlm2.out")
 }
 
-6.times {
-    counter ->
-        task "compile_${counter}_1"(type: Exec, dependsOn: "compile_${counter}_0") {
-            workingDir bookletPath
-            commandLine 'bibtex', counterToBooklet(counter)
-            standardOutput = new FileOutputStream("$bookletPath/gradle_" + counterToBooklet(counter) + "_" + counter + "_0.out")
-        }
+task compileDl1(type: Exec, dependsOn: createBuildInfoTex) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'DeepLearning_Vignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileDl1.out")
 }
 
-6.times {
-    counter ->
-        task "compile_${counter}_2"(type: Exec, dependsOn: "compile_${counter}_1") {
-            workingDir bookletPath
-            commandLine 'pdflatex', '-halt-on-error', counterToBooklet(counter)
-            standardOutput = new FileOutputStream("$bookletPath/gradle_" + counterToBooklet(counter) + "_" + counter + "_0.out")
-        }
+task compileDl2(type: Exec, dependsOn: compileDl1) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'DeepLearning_Vignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileDl2.out")
 }
 
-6.times {
-    counter ->
-        task "compile_${counter}_3"(type: Exec, dependsOn: "compile_${counter}_2") {
-            workingDir bookletPath
-            commandLine 'pdflatex', '-halt-on-error', counterToBooklet(counter)
-            standardOutput = new FileOutputStream("$bookletPath/gradle_" + counterToBooklet(counter) + "_" + counter + "_0.out")
-        }
+task compileGbm1(type: Exec, dependsOn: createBuildInfoTex) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'GBM_Vignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileGbm1.out")
 }
 
-// compile_X_Y
-//
-// X is the counter number
-//   See counterToBooklet()
-//
-// Y is the phase
-//   phase 0 pdflatex
-//   phase 1 bibtex
-//   phase 2 pdflatex
-//   phase 3 pdflatex
-//
-task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3", "compile_5_3"])
+task compileGbm2(type: Exec, dependsOn: compileGbm1) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'GBM_Vignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileGbm2.out")
+}
 
-task cleanBooklets(type: Delete) {
-    delete fileTree(dir: file(bookletPath), include: '*.out'),
-            fileTree(dir: file(bookletPath), include: '*.pdf'),
-            fileTree(dir: file(bookletPath), include: '*.blg'),
-            fileTree(dir: file(bookletPath), include: '*.log'),
-            fileTree(dir: file(bookletPath), include: '*.aux'),
-            fileTree(dir: file(bookletPath), include: '*.toc'),
-            fileTree(dir: file(bookletPath), include: '*.synctex'),
-            fileTree(dir: file(bookletPath), include: 'generated_buildinfo.tex')
+task compileR1(type: Exec, dependsOn: createBuildInfoTex) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'R_Vignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileR1.out")
+}
+
+task compileR2(type: Exec, dependsOn: compileR1) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'R_Vignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileR2.out")
+}
+
+task compileSw1(type: Exec, dependsOn: createBuildInfoTex) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'SparklingWaterVignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileSw1.out")
+}
+
+task compileSw2(type: Exec, dependsOn: compileSw1) {
+    workingDir bookletPath
+    commandLine 'pdflatex', '-halt-on-error', 'SparklingWaterVignette.tex'
+    standardOutput = new FileOutputStream("$bookletPath/compileSw2.out")
+}
+
+task compileBooklets(dependsOn: [compileGlm2, compileDl2, compileGbm2, compileR2, compileSw2])
+
+task cleanBooklets << {
+    ant.delete() { fileset(dir: file(bookletPath), includes: '*.pdf')     }
+    ant.delete() { fileset(dir: file(bookletPath), includes: '*.blg')     }
+    ant.delete() { fileset(dir: file(bookletPath), includes: '*.log')     }
+    ant.delete() { fileset(dir: file(bookletPath), includes: '*.aux')     }
+    ant.delete() { fileset(dir: file(bookletPath), includes: '*.toc')     }
+    ant.delete() { fileset(dir: file(bookletPath), includes: '*.synctex') }
+    ant.delete() { fileset(dir: file(bookletPath), includes: 'generated_buildinfo.tex') }
 }
 
 task booklets(dependsOn: compileBooklets)

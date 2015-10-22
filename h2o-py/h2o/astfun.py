@@ -1,5 +1,7 @@
-import expr
-from opcode import *
+import itertools, inspect
+import expr,frame
+from dis import *
+
 
 BYTECODE_INSTRS = {
   "BINARY_SUBSCR"      : "cols",  # column slice; could be row slice?
@@ -27,7 +29,6 @@ def is_unary(instr):                return "UNARY" in instr
 def is_func(instr):                 return "CALL_FUNCTION" == instr
 def is_load_fast(instr):            return "LOAD_FAST" == instr
 def is_load_global(instr):          return "LOAD_GLOBAL" == instr
-def is_return(instr):               return "RETURN_VALUE" == instr
 
 
 class ASTId:
@@ -40,7 +41,7 @@ class ASTId:
     return self.name
 
 
-def _bytecode_decompile_lambda(co):
+def _bytecode_deparse_lambda(co):
   code = co.co_code
   n = len(code)
   i = 0
@@ -68,7 +69,7 @@ def _lambda_bytecode_to_ast(co,ops):
   keys = [o[0] for o in ops]
   result = [ASTId("{")] + [ASTId(arg) for arg in co.co_varnames] + [ASTId(".")]
   instr = keys[s]
-  if is_return(instr):
+  if instr == 'RETURN_VALUE':
     s-=1
     instr = keys[s]
   if is_bytecode_instruction(instr):
@@ -126,8 +127,7 @@ def _func_bc(nargs,idx,ops,keys):
     args.insert(0, arg)
   elif is_load_fast(ops[idx][0]):
     args.insert(0, _load_fast(ops[idx][1][0]))
-    idx-=1
-  return [expr.ExprNode(op,*args),idx]
+  return [expr.ExprNode(op,*args),idx-1]
 
 def _load_fast(x):
   return ASTId(x)

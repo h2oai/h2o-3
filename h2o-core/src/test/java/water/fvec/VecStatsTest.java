@@ -16,14 +16,14 @@ public class VecStatsTest extends TestUtil {
       Futures fs = new Futures();
       Random random = new Random();
       Vec[] vecs = new Vec[1];
-      AppendableVec vec = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+      AppendableVec vec = new AppendableVec(Vec.newKey());
       for( int i = 0; i < 2; i++ ) {
         NewChunk chunk = new NewChunk(vec, i);
         for( int r = 0; r < 1000; r++ )
           chunk.addNum(random.nextInt(1000));
         chunk.close(i, fs);
       }
-      vecs[0] = vec.layout_and_close(fs);
+      vecs[0] = vec.close(fs);
       fs.blockForPending();
       frame = new Frame(Key.make(), null, vecs);
 

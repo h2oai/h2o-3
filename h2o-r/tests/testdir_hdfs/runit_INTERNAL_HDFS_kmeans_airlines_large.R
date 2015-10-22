@@ -2,8 +2,8 @@
 # Purpose:  This test runs k-means on the full airlines dataset.
 #----------------------------------------------------------------------
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -11,10 +11,10 @@
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
+running_inside_h2o = is.running.internal.to.h2o()
 
-if (hadoop_namenode_is_accessible) {
-    hdfs_name_node = hadoop.namenode()
+if (running_inside_h2o) {
+    hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
     hdfs_file = "/datasets/airlines_all.csv"
 } else {
     stop("Not running on H2O internal network.  No access to HDFS.")

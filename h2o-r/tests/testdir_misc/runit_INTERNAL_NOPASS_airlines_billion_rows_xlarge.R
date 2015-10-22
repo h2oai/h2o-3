@@ -1,9 +1,9 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 rtest <- function() {
 
-hdfs_name_node = hadoop.namenode()
+hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
 hdfs_data_file = "/datasets/airlinesbillion.csv"
 #----------------------------------------------------------------------
 # Single file cases.

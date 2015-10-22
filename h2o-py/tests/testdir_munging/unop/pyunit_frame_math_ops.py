@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import numpy as np
 import random
 import math
@@ -40,14 +36,10 @@ def frame_math_ops():
     h2o_transposed = h2o_data1[0:5].transpose()
     r, c = h2o_transposed.dim
     assert r == 5 and c == 10, "Expected 5 rows and 10 columns, but got {0} rows and {1} columns".format(r,c)
-    pyunit_utils.np_comparison_check(h2o_transposed, np.transpose(np_data1[:,0:5]), 10)
-    pyunit_utils.np_comparison_check(h2o_data1.cos(), np.cos(np_data1), 10)
-    pyunit_utils.np_comparison_check(h2o_data1.sin(), np.sin(np_data1), 10)
-    pyunit_utils.np_comparison_check(h2o_data1.tan(), np.tan(np_data1), 10)
-
-
+    tests.np_comparison_check(h2o_transposed, np.transpose(np_data1[:,0:5]), 10)
+    tests.np_comparison_check(h2o_data1.cos(), np.cos(np_data1), 10)
+    tests.np_comparison_check(h2o_data1.sin(), np.sin(np_data1), 10)
+    tests.np_comparison_check(h2o_data1.tan(), np.tan(np_data1), 10)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(frame_math_ops)
-else:
-    frame_math_ops()
+    tests.run_test(sys.argv, frame_math_ops)

@@ -1,4 +1,4 @@
-#R Interface Improvements for H2O
+#R Interface Improvements for H2O (Slater 3.2.0.5) 
 
 Recent improvements in the R wrapper for H2O may cause previously written R scripts to be inoperable. This document describes these changes and provides guidelines on updating scripts for compatibility. 
 

@@ -205,12 +205,11 @@ public class NonBlockingHashMapLong<TypeV>
   // can trigger a table resize.  Several places must have exact agreement on
   // what the reprobe_limit is, so we share it here.
   private static final int reprobe_limit( int len ) {
-    return REPROBE_LIMIT + (len>>8);
+    return REPROBE_LIMIT + (len>>2);
   }
 
   // --- NonBlockingHashMapLong ----------------------------------------------
   // Constructors
-
   /** Create a new NonBlockingHashMapLong with default minimum size (currently set
    *  to 8 K/V pairs or roughly 84 bytes on a standard 32-bit JVM). */
   public NonBlockingHashMapLong( ) { this(MIN_SIZE,true); }
@@ -681,8 +680,8 @@ public class NonBlockingHashMapLong<TypeV>
       return
         // Do the cheap check first: we allow some number of reprobes always
         reprobe_cnt >= REPROBE_LIMIT &&
-        // More expensive check: see if the table is > 1/2 full.
-        _slots.estimate_get() >= reprobe_limit(len)*2;
+        // More expensive check: see if the table is > 1/4 full.
+        _slots.estimate_get() >= reprobe_limit(len);
     }
 
     // --- resize ------------------------------------------------------------

@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test.parse.false <- function() {
     path <- locate("smalldata/jira/hexdev_29.csv")

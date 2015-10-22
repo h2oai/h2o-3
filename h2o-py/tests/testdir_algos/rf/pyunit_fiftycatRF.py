@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 def fiftycatRF():
     
@@ -12,7 +8,7 @@ def fiftycatRF():
 
     # Training set has only 45 categories cat1 through cat45
     #Log.info("Importing 50_cattest_train.csv data...\n")
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/50_cattest_train.csv"))
+    train = h2o.import_file(path=h2o.locate("smalldata/gbm_test/50_cattest_train.csv"))
     train["y"] = train["y"].asfactor()
 
     #Log.info("Summary of 50_cattest_train.csv from H2O:\n")
@@ -24,7 +20,7 @@ def fiftycatRF():
 
     # Test dataset has all 50 categories cat1 through cat50
     #Log.info("Importing 50_cattest_test.csv data...\n")
-    test = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/50_cattest_test.csv"))
+    test = h2o.import_file(path=h2o.locate("smalldata/gbm_test/50_cattest_test.csv"))
 
     #Log.info("Summary of 50_cattest_test.csv from H2O:\n")
     #test.summary()
@@ -41,9 +37,5 @@ def fiftycatRF():
     cm = perf.confusion_matrix()
     print(cm)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(fiftycatRF)
-else:
-    fiftycatRF()
+  tests.run_test(sys.argv, fiftycatRF)

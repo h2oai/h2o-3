@@ -36,8 +36,7 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
                 "svd_method",
 				"user_y",
                 "user_x",
-				"recover_svd",
-                "expand_user_y"
+				"recover_svd"
 		};
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of categorical class
@@ -103,8 +102,5 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
 
     @API(help = "Recover singular values and eigenvectors of XY")
     public boolean recover_svd;
-
-    @API(help = "Expand categorical columns in user-specified initial Y")
-    public boolean expand_user_y;
   }
 }

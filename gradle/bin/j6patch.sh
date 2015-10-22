@@ -15,6 +15,5 @@ FILENAME=$1
 printf "\x00\x00\x00\x32" | dd of=$FILENAME seek=4 bs=1 count=4 conv=notrunc 2> /dev/null
 KLAZZNAME="$(echo $1 | sed -e "s/.class$//")"
 [ $DEBUG ] && echo "Verifying class $KLAZZNAME"
-# Disable Javapp since we are using AnimalSniffer
-#$JAVA_6_HOME/bin/javap $KLAZZNAME > /dev/null  || ( echo "Verification failed: $KLAZZNAME"; exit -1 )
+$JAVA_6_HOME/bin/javap $KLAZZNAME > /dev/null  || ( echo "Verification failed: $KLAZZNAME"; exit -1 )
 

@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 from h2o import H2OFrame
 
 import numpy as np
@@ -68,9 +64,5 @@ def bernoulli_synthetic_data_mediumGBM():
     assert abs(auc_h2o - auc_sci) < 1e-2, "h2o (auc) performance degradation, with respect to scikit. h2o auc: {0} " \
                                "scickit auc: {1}".format(auc_h2o, auc_sci)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(bernoulli_synthetic_data_mediumGBM)
-else:
-    bernoulli_synthetic_data_mediumGBM()
+    tests.run_test(sys.argv, bernoulli_synthetic_data_mediumGBM)

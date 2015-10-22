@@ -2,8 +2,8 @@
 # Purpose:  This test exercises HDFS operations from R.
 #----------------------------------------------------------------------
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -11,10 +11,10 @@
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
+running_inside_h2o = is.running.internal.to.h2o()
 
-if (hadoop_namenode_is_accessible) {
-    hdfs_name_node = hadoop.namenode()
+if (running_inside_h2o) {
+    hdfs_name_node = H2O.INTERNAL.HDFS.NAME.NODE
     hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
     hdfs_iris_dir  = "/datasets/runit/iris_test_train"
 } else {
@@ -34,7 +34,7 @@ check.hdfs_model_export <- function(conn) {
   dl_model <- h2o.deeplearning(x=1:4, y=5, training_frame=iris.hex)
   #hdfs_name_node <- "mr-0x6"
   path <- sprintf("hdfs://%s/tmp/dl_model", hdfs_name_node)
-  exportedModelPath <- h2o.saveModel(dl_model, path = sandbox())
+  exportedModelPath <- h2o.saveModel(dl_model, path = path)
   print ("Model exported")
 
   #----------------------------------------------------------------------
@@ -44,6 +44,7 @@ check.hdfs_model_export <- function(conn) {
 
   print ("Model imported")
 
+  
 }
 
 doTest("HDFS operations", check.hdfs_model_export)

@@ -1,5 +1,13 @@
 package water.api;
 
+import water.*;
+import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2OKeyWrongTypeArgumentException;
+import water.util.Log;
+import water.util.ReflectionUtils;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -7,20 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-
-import water.DKV;
-import water.H2O;
-import water.H2O.H2OCountedCompleter;
-import water.Iced;
-import water.Key;
-import water.Keyed;
-import water.Value;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.exceptions.H2OKeyWrongTypeArgumentException;
-import water.util.Log;
-import water.util.ReflectionUtils;
-import water.util.annotations.IgnoreJRERequirement;
 
 public class Handler extends H2OCountedCompleter {
   protected Handler( ) { super(); }
@@ -81,7 +75,6 @@ public class Handler extends H2OCountedCompleter {
     throw H2O.fail();
   }
 
-  @IgnoreJRERequirement
   protected StringBuffer markdown(Handler handler, int version, StringBuffer docs, String filename) {
     // TODO: version handling
     StringBuffer sb = new StringBuffer();

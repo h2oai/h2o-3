@@ -45,7 +45,7 @@ class ASTTable extends ASTPrim {
   private ValFrame fast_table( Vec v1, int ncols, String colname ) {
     if( ncols != 1 || !v1.isInt() ) return null;
     long spanl = (long)v1.max()-(long)v1.min()+1;
-    if( spanl > 1000000 ) return null; // Cap at decent array size, for performance
+    if( spanl > 100000 ) return null; // Cap at decent array size, for performance
 
     // First fast-pass counting
     final long cnts[] = new FastCnt((long)v1.min(),(int)spanl).doAll(v1)._cnts;
@@ -63,7 +63,7 @@ class ASTTable extends ASTPrim {
             }
           }
         }
-      }.doAll(new byte[]{Vec.T_NUM,Vec.T_NUM}, dataLayoutVec).outputFrame(new String[]{colname, "Count"},
+      }.doAll(2, dataLayoutVec).outputFrame(new String[]{colname, "Count"},
                                             new String[][]{v1.domain(),null});
     dataLayoutVec.remove();
     return new ValFrame(fr);

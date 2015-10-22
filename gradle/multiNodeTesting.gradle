@@ -1,8 +1,5 @@
 // Actually run the tests by building a cluster of free-running JVMs first.
 task testMultiNode(type: Exec) {
     dependsOn jar, testJar
-    if (project.hasProperty("java6Convert")) {
-      environment "TEST_JAVA_HOME", System.getenv("JAVA_6_HOME")
-    }
     commandLine 'bash', './testMultiNode.sh'
 }

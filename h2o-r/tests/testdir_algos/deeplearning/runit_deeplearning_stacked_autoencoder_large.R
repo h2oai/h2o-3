@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 check.deeplearning_stacked_autoencoder <- function() {  
   # this function builds a vector of autoencoder models, one per layer

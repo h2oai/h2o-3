@@ -1,27 +1,15 @@
 from collections import namedtuple
 import uuid, urllib2
-from h2o import H2OConnection, _quoted, get_frame, H2OFrame
+from h2o import H2OConnection, _quoted, get_frame
 
 
 class H2OAssembly:
-  """Extension class of Pipeline implementing additional methods:
+  """
+  Extension class of Pipeline implementing additional methods:
 
     * to_pojo: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
-    * union: Combine two H2OAssembly objects, the resulting row from each H2OAssembly are joined with simple concatenation.
+    * fuse: Combine two H2OAssembly objects, the resulting row from each H2OAssembly are joined with simple concatenation.
   """
-
-  # static properties pointing to H2OFrame methods
-  divide = H2OFrame.__div__
-  plus   = H2OFrame.__add__
-  multiply= H2OFrame.__mul__
-  minus = H2OFrame.__sub__
-  less_than = H2OFrame.__lt__
-  less_than_equal = H2OFrame.__le__
-  equal_equal = H2OFrame.__eq__
-  not_equal = H2OFrame.__ne__
-  greater_than = H2OFrame.__gt__
-  greater_than_equal = H2OFrame.__ge__
-
   def __init__(self, steps):
     """
     Build a new H2OAssembly.
@@ -69,16 +57,8 @@ class H2OAssembly:
     res = []
     for step in self.steps:
       res.append(step[1].to_rest(step[0]))
-    res = "[" + ",".join([_quoted(r.replace('"',"'")) for r in res]) + "]"
+    res = ",".join([_quoted(r.replace('"',"'")) for r in res])
+    res = "[" + res + "]"
     j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr._id, _rest_version=99)
     self.id = j["assembly"]["name"]
     return get_frame(j["result"]["name"])
-
-class H2OCol:
-  """
-  Wrapper class for H2OBinaryOp step's left/right args.
-
-  Use if you want to signal that a column actually comes from the train to be fitted on.
-  """
-  def __init__(self, column):
-    self.col = column

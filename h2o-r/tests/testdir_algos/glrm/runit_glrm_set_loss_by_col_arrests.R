@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test.glrm.check_loss <- function() {
   Log.info("Importing USArrests.csv data...") 
@@ -11,7 +11,7 @@ test.glrm.check_loss <- function() {
   fitH2O <- h2o.glrm(training_frame = arrestsH2O, k = 3, loss = "Quadratic", loss_by_col = c("Absolute", "Huber"), loss_by_col_idx = c(0, 3), regularization_x = "None", regularization_y = "None")
   Log.info(paste("Iterations:", fitH2O@model$iterations, "\tFinal Objective:", fitH2O@model$objective))
   fitY <- as.matrix(fitH2O@model$archetypes)
-  fitX <- h2o.getFrame(fitH2O@model$representation_name)
+  fitX <- h2o.getFrame(fitH2O@model$loading_key$name)
   fitX.mat <- as.matrix(fitX)
   
   Log.info("Check final objective function value")

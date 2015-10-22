@@ -103,7 +103,7 @@ class ASTRowSlice extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.types(), fr).outputFrame(fr.names(),fr.domains());
+      }.doAll(fr.numCols(), fr).outputFrame(fr.names(),fr.domains());
     } else if( (asts[2] instanceof ASTNum) ) {
       long[] rows = new long[]{(long)(((ASTNum)asts[2])._v.getNum())};
       returningFrame = fr.deepSlice(rows,null);
@@ -236,7 +236,7 @@ class ASTRBind extends ASTPrim {
     final Frame frs[] = new Frame[asts.length]; // Input frame
     final byte[] types = fr.types();  // Column types
     final int ncols = fr.numCols();
-    final long[] espc = new long[nchks+1]; // Compute a new layout!
+    final long[] espc = new long[nchks+1];
     int coffset = 0;
 
     for( int i=1; i<asts.length; i++ ) {
@@ -257,7 +257,7 @@ class ASTRBind extends ASTPrim {
 
       // Roll up the ESPC row counts
       long roffset = espc[coffset];
-      long[] espc2 = fr0.anyVec().espc();
+      long[] espc2 = fr0.anyVec().get_espc();
       for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
         espc[coffset + j] = (roffset+espc2[j]);
       coffset += espc2.length-1; // Chunk offset
@@ -294,9 +294,8 @@ class ASTRBind extends ASTPrim {
     // Now make Keys for the new Vecs
     Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
     Vec[] vecs = new Vec[fr.numCols()];
-    int rowLayout = Vec.ESPC.rowLayout(keys[0],espc);
     for( int i=0; i<vecs.length; i++ )
-      vecs[i] = new Vec( keys[i], rowLayout, domains[i], types[i]);
+      vecs[i] = new Vec( keys[i], espc, domains[i], types[i]);
 
 
     // Do the row-binds column-by-column.

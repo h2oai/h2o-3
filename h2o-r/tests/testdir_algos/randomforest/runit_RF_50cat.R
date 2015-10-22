@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test.DRF.groupsplit <- function() {
   # Training set has only 45 categories cat1 through cat45

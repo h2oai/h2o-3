@@ -5,7 +5,7 @@ package water;
  */
 public class IcedUtils {
 
-  /** Deep-copy clone given iced object. */
+  /** Clone given iced object. */
   static public <T extends Iced> T clone(T iced) {
     AutoBuffer ab = new AutoBuffer();
     iced.write(ab);
@@ -14,7 +14,8 @@ public class IcedUtils {
     return (T) TypeMap.newInstance(iced.frozenType()).read(ab);
   }
 
-  /** Deep-copy clone given keyed object and replace its key by given key.
+  /** Clone given keyed object and replace its key by
+   * given key.
    *
    * The call does not save the new object into DKV!
    *
@@ -24,8 +25,23 @@ public class IcedUtils {
    * @return
    */
   static public <T extends Keyed> T clone(T keyed, Key<T> newKey) {
-    T clonedCopy = clone(keyed); // Deep copy clone
+    return clone(keyed, newKey, false);
+  }
+
+  /** Clone given keyed object and replace its key by
+   * given key. Optionally it can save the object
+   * into DKV.
+   *
+   * @param keyed  keyed object to be cloned
+   * @param newKey  key for cloned object.
+   * @param publish  publish object into DKV
+   * @param <T>   the type of the object
+   * @return
+   */
+  static public <T extends Keyed> T clone(T keyed, Key<T> newKey, boolean publish) {
+    T clonedCopy = clone(keyed);
     clonedCopy._key = newKey;
+    if (publish) DKV.put(newKey, clonedCopy);
     return clonedCopy;
   }
 }

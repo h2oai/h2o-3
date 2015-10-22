@@ -904,6 +904,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._checkpoint != null && DKV.get(_parms._checkpoint) == null) {
       error("_checkpoint", "Checkpoint has to point to existing model!");
     }
+
+    assert(_weights != null == hasWeightCol());
+    assert(_parms._weights_column != null == hasWeightCol());
+    assert(_offset != null == hasOffsetCol());
+    assert(_parms._offset_column != null == hasOffsetCol());
+    assert(_fold != null == hasFoldCol());
+    assert(_parms._fold_column != null == hasFoldCol());
   }
 
   public void checkDistributions() {

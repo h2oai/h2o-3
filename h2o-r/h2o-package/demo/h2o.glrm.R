@@ -3,11 +3,11 @@
 # Then, it runs GLRM with k = 5 centers on a subset of characteristics
 # Note: This demo runs H2O on localhost:54321
 library(h2o)
-h2o.init()
+localH2O <- h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 
-gait.hex <- h2o.uploadFile(path = system.file("extdata", "walking.csv", package="h2o"), destination_frame = "gait")
+gait.hex <- h2o.uploadFile(localH2O, path = system.file("extdata", "walking.csv", package="h2o"), destination_frame = "gait")
 summary(gait.hex)
-gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 5, init = "PlusPlus", loss = "Quadratic", 
+gait.glrm <- h2o.glrm(training_frame = gait.hex, x = 2:ncol(gait.hex), k = 5, init = "PlusPlus", loss = "Quadratic", 
                       regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 print(gait.glrm)
 

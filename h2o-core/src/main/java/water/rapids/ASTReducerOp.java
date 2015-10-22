@@ -158,7 +158,7 @@ class ASTMad extends ASTPrim {
         for(int i=0;i<c._len;++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
-    }.doAll(1, Vec.T_NUM, f).outputFrame();
+    }.doAll(1, f).outputFrame();
     if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev.names(),abs_dev.vecs())); }
     double mad = ASTMedian.median(abs_dev,cm);
     DKV.remove(f._key); // drp mapping, keep vec
@@ -290,11 +290,11 @@ class ASTMean extends ASTPrim {
     }
     Futures fs = new Futures();
     Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
+    AppendableVec v = new AppendableVec(key);
     NewChunk chunk = new NewChunk(v, 0);
     for( int i=0;i<fr.numCols();++i ) chunk.addNum((fr.vec(i).isNumeric()||fr.vec(i).naCnt()>0)?fr.vec(i).mean():Double.NaN);
     chunk.close(0,fs);
-    Vec vec = v.layout_and_close(fs);
+    Vec vec = v.close(fs);
     fs.blockForPending();
     Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
     DKV.put(fr2);
@@ -314,11 +314,11 @@ class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package res
     }
     Futures fs = new Futures();
     Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
+    AppendableVec v = new AppendableVec(key);
     NewChunk chunk = new NewChunk(v, 0);
     for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isNumeric()?fr.vec(i).sigma():Double.NaN);
     chunk.close(0,fs);
-    Vec vec = v.layout_and_close(fs);
+    Vec vec = v.close(fs);
     fs.blockForPending();
     Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
     DKV.put(fr2);
@@ -402,7 +402,7 @@ abstract class ASTCumu extends ASTPrim {
     if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
 
     CumuTask t = new CumuTask(f.anyVec().nChunks(),init());
-    t.doAll(new byte[]{Vec.T_NUM},f.anyVec());
+    t.doAll(1,f.anyVec());
     final double[] chkCumu = t._chkCumu;
     Vec cumuVec = t.outputFrame().anyVec();
     new MRTask() {

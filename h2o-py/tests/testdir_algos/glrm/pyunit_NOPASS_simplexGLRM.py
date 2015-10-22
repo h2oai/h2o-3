@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import numpy as np
 
 def glrm_simplex():
@@ -30,7 +26,7 @@ def glrm_simplex():
     glrm_h2o.show()
     
     print "Check that X matrix consists of rows within standard probability simplex"
-    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
+    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['loading_key']['name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
     def is_simplex(a):
         row_sum = sum(a)
@@ -57,9 +53,5 @@ def glrm_simplex():
     assert abs(glrm_numerr - glrm_obj) < 1e-3, "Numeric error was " + str(glrm_numerr) + " but should equal final objective " + str(glrm_obj)
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
     
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(glrm_simplex)
-else:
-    glrm_simplex()
+    tests.run_test(sys.argv, glrm_simplex)

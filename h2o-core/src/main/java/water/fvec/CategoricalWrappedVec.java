@@ -29,21 +29,21 @@ public class CategoricalWrappedVec extends WrappedVec {
   int _p=0;
 
   /** Main constructor: convert from one categorical to another */
-  public CategoricalWrappedVec(Key key, int rowLayout, String[] toDomain, Key masterVecKey) {
-    super(key, rowLayout, masterVecKey);
+  public CategoricalWrappedVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
+    super(key, espc, masterVecKey);
     computeMap(masterVec().domain(),toDomain,masterVec().isBad());
     DKV.put(this);
   }
 
   /** Constructor just to generate the map and domain; used in tests or when
    *  mixing categorical columns */
-  private CategoricalWrappedVec(Key key) { super(key,ESPC.rowLayout(key,new long[]{0}),null,null); }
-  public static int[] computeMap(String[] from, String[] to) {
-    Key key = Vec.newKey();
-    CategoricalWrappedVec tmp = new CategoricalWrappedVec(key);
-    tmp.computeMap(from,to,false);
-    return tmp._map;
+  public CategoricalWrappedVec(String[] from, String[] to) {
+    super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
+    computeMap(from,to,false);
+    DKV.put(this);
   }
+
+  public int[] getDomainMap() { return _map; }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
     return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
@@ -106,7 +106,7 @@ public class CategoricalWrappedVec extends WrappedVec {
     }
 
     // The desired result Vec does not have a domain, hence is a numeric
-    // column.  For classification of numbers, we did an original toCategoricalVec
+    // column.  For classification of numbers, we did an original toCategorical
     // wrapping the numeric values up as Strings for the classes.  Unwind that,
     // converting numeric strings back to their original numbers.
     _map = new int[from.length];
@@ -177,6 +177,5 @@ public class CategoricalWrappedVec extends WrappedVec {
     }
     @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }
     @Override public Chunk read_impl(AutoBuffer bb)       { throw water.H2O.fail(); }
-    @Override public boolean hasNA() { return false; }
   }
 }

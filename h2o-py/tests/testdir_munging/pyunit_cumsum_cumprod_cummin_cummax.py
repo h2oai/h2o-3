@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def cumsumminprodmax():
     # TODO PUBDEV-1748
@@ -37,9 +33,5 @@ def cumsumminprodmax():
 
     h2o.remove(foo)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(cumsumminprodmax)
-else:
-    cumsumminprodmax()
+    tests.run_test(sys.argv, cumsumminprodmax)

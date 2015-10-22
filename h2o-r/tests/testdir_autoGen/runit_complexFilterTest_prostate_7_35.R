@@ -3,8 +3,8 @@
 # gitHash: 2581a0dfa12a51892283830529a5126ea49f0cb9
 # SEED: 2481425483200553751
 ##
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 complexFilterTest_prostate_7_35 <- function() {
     Log.info("A munge-task R unit test on data <prostate_7> testing the functional unit <['', '<=']> ")

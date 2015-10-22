@@ -1,12 +1,11 @@
 package water;
 
 import org.junit.*;
-import org.junit.BeforeClass;
 
 import water.fvec.Frame;
 
 public class ConcurrentKeyTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  public ConcurrentKeyTest() { super(2); }
   
   // Test rapid key create/delete during parse
   @Test public void testParse() {

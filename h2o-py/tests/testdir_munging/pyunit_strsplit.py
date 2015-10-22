@@ -1,16 +1,12 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def strsplit_check():
     # Connect to a pre-existing cluster
     
 
-    frame = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+    frame = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # single column (frame)
     result = frame["C5"].strsplit("-")
@@ -26,9 +22,5 @@ def strsplit_check():
            result[0,3] == "a", "Expected 'Iri', '-', 'eto', and 'a', but got {0}, {1}, {2}, and " \
                                "{3}".format(result[0,0], result[0,1], result[0,2], result[0,3])
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(strsplit_check)
-else:
-    strsplit_check()
+    tests.run_test(sys.argv, strsplit_check)

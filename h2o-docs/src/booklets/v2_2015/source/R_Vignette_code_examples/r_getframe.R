@@ -1,1 +1,0 @@
-prostate.hex <- h2o.getFrame(id = "prostate.hex")

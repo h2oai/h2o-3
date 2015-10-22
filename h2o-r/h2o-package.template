@@ -28,15 +28,15 @@ Note that no actual data is stored in the R workspace; and no actual work is car
 If you are using an older version of H2O, use the following porting guide to update your scripts: \href{https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md}{Porting Scripts}
 }
 \author{
-Anqi Fu, Tom Kraljevic and Petr Maj, with contributions from the H2O.ai team
+Anqi Fu, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
 
 Maintainer: Tom Kraljevic <tomk@0xdata.com>
 }
 \references{
 \itemize{
-  \item \href{http://www.h2o.ai}{H2O.ai Homepage}
+  \item \href{http://www.h2o.ai}{0xdata Homepage}
   \item \href{http://docs.h2o.ai}{H2O Documentation}
-  \item \href{https://github.com/h2oai/h2o-dev}{H2O on GitHub}
+  \item \href{https://github.com/h2oai/h2o-dev}{H2O on Github}
   }
 }
 \keyword{ package }

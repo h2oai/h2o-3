@@ -5,9 +5,9 @@
 
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_jira")
 
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
-
+source('../h2o-runit.R')
 
 test.uuid <- function() {
   Log.info('Importing test_uuid.csv to H2O...')

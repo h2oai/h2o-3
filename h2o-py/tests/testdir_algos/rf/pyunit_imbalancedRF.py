@@ -1,16 +1,12 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 def imbalanced():
     
     
 
-    covtype = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
+    covtype = h2o.import_file(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
     covtype[54] = covtype[54].asfactor()
 
     imbalanced = h2o.random_forest(x=covtype[0:54], y=covtype[54], ntrees=10, balance_classes=False, nfolds=3)
@@ -37,9 +33,5 @@ def imbalanced():
 
     assert class_6_err_imbalanced >= 0.9*class_6_err_balanced, "balance_classes makes it at least 10% worse!"
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(imbalanced)
-else:
-    imbalanced()
+  tests.run_test(sys.argv, imbalanced)

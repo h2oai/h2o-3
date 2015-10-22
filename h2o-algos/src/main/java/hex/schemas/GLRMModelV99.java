@@ -27,8 +27,8 @@ public class GLRMModelV99 extends ModelSchema<GLRMModel, GLRMModelV99, GLRMModel
     @API(help = "Eigenvectors of XY matrix")
     public TwoDimTableBase eigenvectors;
 
-    @API(help = "Frame key name for X matrix")
-    public String representation_name;
+    @API(help = "Frame key for X matrix")
+    public KeyV3.FrameKeyV3 loading_key;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

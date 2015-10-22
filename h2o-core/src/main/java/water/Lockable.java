@@ -165,28 +165,21 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // -----------
   /** Atomically set a new version of self and unlock. */
-  public void unlock( Key job_key ) { unlock(job_key,true); }
-  public void unlock( Key job_key, boolean exact ) {
+  public void unlock( Key job_key ) { 
     if( _key != null ) {
       Log.debug("unlock "+_key+" by job "+job_key);
-      new Unlock(job_key,exact).invoke(_key);
+      new Unlock(job_key).invoke(_key); 
     }
   }
 
   // Freshen 'this' and unlock
   private class Unlock extends TAtomic<Lockable> {
     final Key _job_key;         // Job doing the unlocking
-    // Most uses want exact semantics: assert if not locked when unlocking.
-    // Crash-cleanup code sometimes has a hard time knowing if the crash was
-    // before locking or after, so allow a looser version which quietly unlocks
-    // in all situations.
-    final boolean _exact;       // Complain if not locked when unlocking
-    Unlock( Key job_key, boolean exact ) { _job_key = job_key; _exact = exact;}
+    Unlock( Key job_key ) { _job_key = job_key; }
     @Override public Lockable atomic(Lockable old) {
-      assert !_exact || old != null : "Trying to unlock null!";
-      assert !_exact || old.is_locked(_job_key) : "Can't unlock: Not locked!";
-      if( _exact || old.is_locked(_job_key) )
-        set_unlocked(old._lockers,_job_key);
+      assert old != null : "Trying to unlock null!";
+      assert old.is_locked(_job_key) : "Can't unlock: Not locked!";
+      set_unlocked(old._lockers,_job_key);
       return Lockable.this;
     }
   }

@@ -1,8 +1,8 @@
 ###############################################################
 ###### Catch illegal input for GLM w/ Beta Constraints  #######
 ###############################################################
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test <- function() {
   ## Import data
@@ -33,10 +33,9 @@ test <- function() {
   b <-  rbind(bc, b)
   checkException(run_glm(b), "Did not catch fake feature.")
 
-  #CNC - Tomas comments that an empty frame is fine, and should not throw an exception
-  #Log.info("Illegal input case: Empty beta constraints frame.")
-  #empty <- betaConstraints[betaConstraints$lower_bounds == 22,]
-  #checkException(run_glm(empty), "Did not reject empty frame.", silent = T)
+  Log.info("Illegal input case: Empty beta constraints frame.")
+  empty <- betaConstraints[betaConstraints$lower_bounds == 22,]
+  checkException(run_glm(empty), "Did not reject empty frame.", silent = T)
 
   Log.info("Illegal input case: Typo in beta constraint column name.")
   c <- bc

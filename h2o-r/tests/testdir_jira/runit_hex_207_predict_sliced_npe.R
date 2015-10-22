@@ -3,8 +3,8 @@
 # In R, predict fails with NPE when newdata is set to a sliced frame
 ######################################################################
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test.hex.207 <- function() {
   Log.info("Importing ecology_model.csv...")

@@ -1,13 +1,9 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def insert_missing():
-  air_path = [pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip")]
+  air_path = [h2o.locate("smalldata/airlines/allyears2k_headers.zip")]
 
   data = h2o.import_file(path=air_path)
 
@@ -23,9 +19,5 @@ def insert_missing():
 
   data.show()
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(insert_missing)
-else:
-    insert_missing()
+  tests.run_test(sys.argv, insert_missing)

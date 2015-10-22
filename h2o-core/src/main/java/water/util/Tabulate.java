@@ -120,7 +120,7 @@ public class Tabulate extends Job<Tabulate> {
       x = ((Frame)DKV.getGet(in._dest)).anyVec();
       in.remove();
     } else if (x.isInt() && (x.max() - x.min() + 1) <= _nbins_predictor) {
-      x = x.toCategoricalVec();
+      x = x.toCategorical();
     }
     Vec y = _dataset.vec(_response);
     if (y == null)
@@ -135,7 +135,7 @@ public class Tabulate extends Job<Tabulate> {
       y = ((Frame)DKV.getGet(in._dest)).anyVec();
       in.remove();
     } else if (y.isInt() && (y.max() - y.min() + 1) <= _nbins_response) {
-      y = y.toCategoricalVec();
+      y = y.toCategorical();
     }
     if (y!=null && y.cardinality() > 2)
       warn("_response", "Response column has more than two factor levels - mean response depends on lexicographic order of factors!");

@@ -8,7 +8,7 @@ package hex.genmodel.easy.exception;
  *
  * (The only supported value types are String and Double.)
  */
-public class PredictUnknownTypeException extends PredictException {
+public class PredictUnknownTypeException extends AbstractPredictException {
   public PredictUnknownTypeException(String message) {
     super(message);
   }

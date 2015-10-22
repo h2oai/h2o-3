@@ -1,16 +1,12 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 def center_scale():
     
     
 
-    iris =  h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))[0:4]
+    iris =  h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))[0:4]
 
     # frame (default args)
     foo = iris.scale()
@@ -40,9 +36,5 @@ def center_scale():
     # vec (centers=False, scale=False)
     foo = iris[3].scale(center=False, scale=False)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(center_scale)
-else:
-    center_scale()
+    tests.run_test(sys.argv, center_scale)

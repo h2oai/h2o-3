@@ -37,7 +37,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param iteration
    */
   public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, int iteration){
-    super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + inputModel.get_processed_global(), iteration, inputModel.get_params()._sparse);
+    super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + inputModel.get_processed_global(), iteration);
     assert(inputModel.get_processed_local() == 0);
     _training=true;
     _sharedmodel = inputModel;
@@ -92,13 +92,14 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param r Row (must be dense for now)
    */
   @Override public final void processRow(long seed, DataInfo.Row r) {
+    assert !r.isSparse():"Deep learning does not support sparse rows.";
     if (_localmodel.get_params()._reproducible) {
       seed += _localmodel.get_processed_global(); //avoid periodicity
     } else {
       seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
     _localmodel.checkMissingCats(r.binIds);
-    ((Neurons.Input) _neurons[0]).setInput(seed, r.isSparse() ? r.numIds : null, r.numVals, r.nBins, r.binIds);
+    ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
     step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response, r.offset);
   }
 

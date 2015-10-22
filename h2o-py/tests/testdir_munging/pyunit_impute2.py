@@ -1,16 +1,12 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def impute2():
     # Connect to a pre-existing cluster
     
 
-    prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_missing.csv"))
+    prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate_missing.csv"))
     methods = ["mean","median","mode"]
     combine_methods=["interpolate", "average", "low", "high"]
     inplace = [False, True]
@@ -20,7 +16,7 @@ def impute2():
             for combine_method in combine_methods:
               prostate.impute("DPROS", method = method, combine_method = combine_method, inplace = inpl)
 
-#    air = h2o.upload_file(pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
+#    air = h2o.upload_file(h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
 #    for inpl in inplace:
 #        for method in methods:
 #            for combine_method in combine_methods:
@@ -82,9 +78,5 @@ def impute2():
     assert imputed1 == 3.5, "Wrong value imputed. Expected imputed value of 3.5, but got {0}".format(imputed1)
     assert imputed2 == 9.5, "Wrong value imputed. Expected imputed value of 9.5, but got {0}".format(imputed2)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(impute2)
-else:
-    impute2()
+    tests.run_test(sys.argv, impute2)

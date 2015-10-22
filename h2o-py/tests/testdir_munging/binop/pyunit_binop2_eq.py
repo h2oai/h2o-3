@@ -1,16 +1,12 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 def binop_eq():
     
     
 
-    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     rows, cols = iris.dim
     iris.show()
 
@@ -84,9 +80,5 @@ def binop_eq():
     #except EnvironmentError:
     #    pass
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(binop_eq)
-else:
-    binop_eq()
+    tests.run_test(sys.argv, binop_eq)

@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import numpy as np
 import random as rd
 
@@ -15,7 +11,7 @@ def glrm_set_loss_by_col_rand():
     CAT_COLS = [0, 2, 3, 4]
     
     print "Importing prostate_cat.csv data..."
-    prostateH2O = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"), na_strings = ["NA"]*8)
+    prostateH2O = h2o.upload_file(h2o.locate("smalldata/prostate/prostate_cat.csv"), na_strings = ["NA"]*8)
     prostateH2O.describe()
     
     # Fully specify every column's loss function (no need for loss_by_col_idx)
@@ -85,9 +81,5 @@ def glrm_set_loss_by_col_rand():
     glrm_h2o = h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all, loss_by_col_idx=loss_idx_all)
     glrm_h2o.show()
     
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(glrm_set_loss_by_col_rand)
-else:
-    glrm_set_loss_by_col_rand()
+    tests.run_test(sys.argv, glrm_set_loss_by_col_rand)

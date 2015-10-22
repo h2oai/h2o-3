@@ -20,24 +20,12 @@ Sparkling Water is only supported with H2O 3.0. For more information, refer to t
 
 H2O 3.0 will soon provide feature parity with previous versions of H2O. Currently, the following algorithms are supported: 
 
-###Supervised 
-
-- **Generalized Linear Model (GLM)**: Binomial classification, regression (including logistic regression)
-- **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
-- **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
-- **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
-
-###Unsupervised
-
+- Deep Learning (DL)
+- Distributed Random Forest (DRF)
+- Gradient Boosting Machine (GBM)
+- Generalized Linear Model (GLM) 
 - K-means
-- Principal Component Analysis
-- Autoencoder 
-
-
-###Still In Testing
-
 - Naive Bayes
-- GLRM 
 
 ##How to Update R Scripts
 

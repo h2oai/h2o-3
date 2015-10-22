@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 check.naivebayes.grid.cars.negative <- function(conn) {
   train <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))

@@ -325,8 +325,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         for (int j = 0; j < treeKeys[i].length; j++) {
           if (treeKeys[i][j] == null) continue;
           CompressedTree ct = DKV.get(treeKeys[i][j]).get();
-          CompressedTree newCt = IcedUtils.clone(ct, CompressedTree.makeTreeKey(i, j));
-          DKV.put(treeKeys[i][j] = newCt._key,newCt);
+          CompressedTree newCt = IcedUtils.clone(ct, CompressedTree.makeTreeKey(i, j), true);
+          treeKeys[i][j] = newCt._key;
         }
       }
       return newModel;
@@ -413,7 +413,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _subset, _family).dfork(null,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _subset, _family).dfork(0,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;

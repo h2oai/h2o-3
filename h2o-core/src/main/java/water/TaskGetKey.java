@@ -1,5 +1,6 @@
 package water;
 
+import water.DTask;
 import water.nbhm.NonBlockingHashMap;
 
 /**
@@ -50,7 +51,7 @@ public class TaskGetKey extends DTask<TaskGetKey> {
     // Shipping a result?  Track replicas so we can invalidate.  There's a
     // narrow race on a moving K/V mapping tracking this Value just as it gets
     // deleted - in which case, simply retry for another Value.
-    do  _val = Value.STORE_get(k); // The return result
+    do  _val = H2O.get(k);      // The return result
     while( _val != null && !_val.setReplica(sender) );
     tryComplete();
   }

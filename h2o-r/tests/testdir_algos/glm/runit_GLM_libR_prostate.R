@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 library(LiblineaR)
 library(ROCR)
 
@@ -35,13 +35,13 @@ test.LiblineaR <- function() {
                      beta_epsilon   = 1E-2)
     
     h2op         <- predict(h2o.m, testhex)
-    h2opreds     <- as.numeric(as.character(as.data.frame(h2op)[,1]))
-    h2oCM        <- table(testLabels, h2opreds)
+    h2opreds     <- as.data.frame(h2op)
+    h2oCM        <- table(testLabels, h2opreds$predict)
     
     h2oPrecision <- h2oCM[1]/ (h2oCM[1] + h2oCM[3])
     h2oRecall    <- h2oCM[1]/ (h2oCM[1] + h2oCM[2])
     h2oF1        <- 2 * (h2oPrecision * h2oRecall)/ (h2oPrecision + h2oRecall)
-    h2oAUC       <- performance(prediction(h2opreds, testLabels), measure = "auc")@y.values
+    h2oAUC       <- performance(prediction(h2opreds$predict, testLabels), measure = "auc")@y.values
     
     Log.info("                ============= H2O Performance =============\n")
     Log.info(paste("H2O AUC (performance(prediction(predictions,actual))): ", h2oAUC[[1]], "\n", sep = ""))
@@ -91,13 +91,13 @@ test.LiblineaR <- function() {
                      epsilon = 1E-2)
     
     h2op     <- h2o.predict(h2o.m, testhex)
-    h2opreds     <- as.numeric(as.character(as.data.frame(h2op)[,1]))
-    h2oCM    <- table(testLabels, h2opreds)
+    h2opreds <- head(h2op, nrow(h2op))
+    h2oCM    <- table(testLabels, h2opreds$predict)
     
     h2oPrecision <- h2oCM[1]/ (h2oCM[1] + h2oCM[3])
     h2oRecall    <- h2oCM[1]/ (h2oCM[1] + h2oCM[2])
     h2oF1        <- 2 * (h2oPrecision * h2oRecall)/ (h2oPrecision + h2oRecall)
-    h2oAUC       <- performance(prediction(h2opreds, testLabels), measure = "auc")@y.values
+    h2oAUC       <- performance(prediction(h2opreds$predict, testLabels), measure = "auc")@y.values
     
     Log.info("                ============= H2O Performance =============\n")
     Log.info(paste("H2O AUC (performance(prediction(predictions,actual))): ", h2oAUC[[1]], "\n",sep=""))

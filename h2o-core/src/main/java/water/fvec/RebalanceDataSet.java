@@ -26,7 +26,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
   Frame _out;
   final Key _jobKey;
   final transient Vec.VectorGroup _vg;
-  transient long[] _espc;
+  transient long [] _espc;
 
   /**
    * Constructor for make-compatible task.
@@ -39,7 +39,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     _in = srcFrame;
     _jobKey = jobKey;
     _okey = dstKey;
-    _espc = modelFrame.anyVec().espc(); // Get prior layout
+    _espc = modelFrame.anyVec()._espc;
     _vg = modelFrame.anyVec().group();
     _nchunks = modelFrame.anyVec().nChunks();
   }
@@ -78,9 +78,8 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
       }
       assert espc[espc.length - 1] == _in.numRows() : "unexpected number of rows, expected " + _in.numRows() + ", got " + espc[espc.length - 1];
     }
-    final int rowLayout = Vec.ESPC.rowLayout(_vg._key,espc);
     final Vec[] srcVecs = _in.vecs();
-    _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),rowLayout).makeCons(srcVecs.length,0L,_in.domains(),_in.types()));
+    _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),espc).makeCons(srcVecs.length,0L,_in.domains(),_in.types()));
     _out.delete_and_lock(_jobKey);
     new RebalanceTask(this,srcVecs).asyncExec(_out);
   }

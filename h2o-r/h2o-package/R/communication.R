@@ -135,7 +135,6 @@
                                 writefunction = t$update,
                                 headerfunction = h$update,
                                 useragent=R.version.string,
-                                httpheader = c('Connection' = 'close'),
                                 verbose = FALSE,
                                 timeout = timeout_secs,
                                 .opts = opts),
@@ -154,7 +153,7 @@
                             .opts=curlOptions(writefunction = t$update,
                                               headerfunction = h$update,
                                               useragent = R.version.string,
-                                              httpheader = c('Expect' = '', 'Connection' = 'close'),
+                                              httpheader = c('Expect' = ''),
                                               verbose = FALSE,
                                               timeout = timeout_secs,
                                               .opts = opts)),
@@ -172,7 +171,7 @@
                                writefunction = t$update,
                                headerfunction = h$update,
                                useragent = R.version.string,
-                               httpheader = c('Expect' = '', 'Connection' = 'close'),
+                               httpheader = c('Expect' = ''),
                                verbose = FALSE,
                                timeout = timeout_secs,
                                .opts = opts),
@@ -650,13 +649,13 @@ h2o.clusterInfo <- function() {
     healthy = node$healthy
     if (! healthy) {
       ip_port = node$ip_port
-      warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = TRUE)
+      warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = T)
       overallHealthy = FALSE
     }
   }
   if (! overallHealthy) {
     url <- .h2o.calcBaseURL( conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
-    warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = TRUE)
+    warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = T)
   }
 }
 

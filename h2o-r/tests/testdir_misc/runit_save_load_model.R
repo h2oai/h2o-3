@@ -3,11 +3,11 @@
 # Description: Build an H2O model, save it, then load it again in H2O and verify no information was lost
 ##
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test.save_load_dlmodel <- function() {
-  temp_dir = sandbox()
+  temp_dir = tempdir()
 
   # Test saving and loading of Deep Learning model with validation dataset
   Log.info("Importing prostate_train.csv and prostate_test.csv...")
@@ -31,6 +31,7 @@ test.save_load_dlmodel <- function() {
   # FIXME there is no field valid in the model
   ## expect_equal(prostate.dl@valid, prostate.dl2@valid)
 
+  
 }
 
 doTest("R Save and Load Deep Learning Model", test.save_load_dlmodel)

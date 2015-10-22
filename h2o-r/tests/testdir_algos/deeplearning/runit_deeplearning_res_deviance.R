@@ -1,6 +1,6 @@
-####### This tests deviance for poisson, tweedie and gamma distributions in deeplearning by comparing with expected results ######
-
-
+####### This tests deviance for poisson, tweedie and gamma distributions in deeplearing by comparing with expected results ######
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test <- function() {
 	Hexpend =  read.csv(locate("smalldata/glm_test/HealthExpend.csv"))

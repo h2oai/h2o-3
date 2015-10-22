@@ -20,19 +20,18 @@ public class DeepLearningSpiralsTest extends TestUtil {
     Scope.enter();
     NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/two_spiral.csv"));
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);
-    Log.info(frame);
     int resp = frame.names().length-1;
 
+    Key dest = Key.make("spirals2");
 
-    for (boolean sparse : new boolean[]{true, false}) {
+    for (boolean sparse : new boolean[]{false}) {
       for (boolean col_major : new boolean[]{false}) {
         if (!sparse && col_major) continue;
 
-        Key model_id = Key.make();
         // build the model
         {
           DeepLearningParameters p = new DeepLearningParameters();
-          p._seed = 0xbabefff;
+          p._seed = 0xbabe;
           p._epochs = 600;
           p._hidden = new int[]{100};
           p._sparse = sparse;
@@ -47,7 +46,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._train = frame._key;
           p._response_column = frame.names()[resp];
-          Scope.track(frame.replace(resp, frame.vecs()[resp].toCategoricalVec())._key); // Convert response to categorical
+          Scope.track(frame.replace(resp, frame.vecs()[resp].toCategorical())._key); // Convert response to categorical
           DKV.put(frame);
           p._valid = null;
           p._score_interval = 2;
@@ -61,7 +60,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._shuffle_training_data = false;
           p._force_load_balance = false;
           p._replicate_training_data = false;
-          p._model_id = model_id;
+          p._model_id = dest;
           p._adaptive_rate = true;
           p._reproducible = true;
           p._rho = 0.99;
@@ -79,7 +78,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
 
         // score and check result
         {
-          DeepLearningModel mymodel = DKV.getGet(model_id);
+          DeepLearningModel mymodel = DKV.getGet(dest);
           Frame pred = mymodel.score(frame);
           ModelMetricsBinomial mm = ModelMetricsBinomial.getFromDKV(mymodel,frame);
           double error = mm._auc.defaultErr();
@@ -87,7 +86,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
           if (error > 0) {
             Assert.fail("Classification error is not 0, but " + error + ".");
           }
-          Assert.assertTrue(mymodel.testJavaScoring(frame,pred,1e-6));
           pred.delete();
           mymodel.delete();
         }

@@ -11,7 +11,7 @@ package hex.genmodel.easy.exception;
  *
  * Attempting to call the wrong predict method for a model results in this exception.
  */
-public class PredictWrongModelCategoryException extends PredictException {
+public class PredictWrongModelCategoryException extends AbstractPredictException {
   public PredictWrongModelCategoryException(String message) {
     super(message);
   }

@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 # Test naive Bayes on iris_wheader.csv
 test.nbayes.iris <- function() {

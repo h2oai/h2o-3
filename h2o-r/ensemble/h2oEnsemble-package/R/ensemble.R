@@ -13,7 +13,7 @@ h2o.ensemble <- function(x, y, training_frame,
   runtime <- list()
   
   # Training_frame may be a key or an H2O Frame object
-  if ((!inherits(training_frame, "Frame") && !inherits(training_frame, "H2OFrame")))
+  if (!inherits(training_frame, "Frame"))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
                stop("argument \"training_frame\" must be a valid H2O Frame or id")

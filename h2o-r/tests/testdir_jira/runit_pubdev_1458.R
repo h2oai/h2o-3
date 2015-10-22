@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test.pubdev.1458 <- function() {
   Log.info("Importing pub_1458.csv data...")

@@ -1,16 +1,13 @@
 package water.serial;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import hex.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 
-import hex.Model;
-import hex.ModelMetrics;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.CompressedTree;
@@ -19,15 +16,15 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import water.AutoBuffer;
-import water.DKV;
-import water.Iced;
-import water.Key;
-import water.TestUtil;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import water.*;
 import water.fvec.Frame;
 import water.util.FileUtils;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 public class ModelSerializationTest extends TestUtil {
 
@@ -134,7 +131,7 @@ public class ModelSerializationTest extends TestUtil {
     Frame f = parse_test_file(dataset);
     try {
       if (classification && !f.vec(response).isCategorical()) {
-        f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
+        f.replace(f.find(response), f.vec(response).toCategorical()).remove();
         DKV.put(f._key, f);
       }
       GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
@@ -153,7 +150,7 @@ public class ModelSerializationTest extends TestUtil {
     Frame f = parse_test_file(dataset);
     try {
       if (classification && !f.vec(response).isCategorical()) {
-        f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
+        f.replace(f.find(response), f.vec(response).toCategorical()).remove();
         DKV.put(f._key, f);
       }
       DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
@@ -216,9 +213,7 @@ public class ModelSerializationTest extends TestUtil {
   }
   private <M extends Model> M saveAndLoad(M model, boolean deleteModel) throws IOException {
     // Serialize to a file
-    // Cannot use following call since it is available since Java 1.7
-    // File file = Files.createTempDirectory("H2O_ModelSerializationTest").toFile();
-    File file = com.google.common.io.Files.createTempDir();
+    File file = Files.createTempDirectory("H2O_ModelSerializationTest").toFile();
     try {
       // Enable the following URI to save model to HDFS (+disable delete below + configure classpath to H2O assembly)
       // java.net.URI uri = java.net.URI.create("hdfs://mr-0x6/tmp/xo.model");// file.toURI()

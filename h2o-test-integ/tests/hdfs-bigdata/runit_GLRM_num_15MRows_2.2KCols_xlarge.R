@@ -3,10 +3,22 @@
 # Purpose:  This test exercises building a GLRM model on numeric
 #           data with 15M rows and 2.2K cols.
 #----------------------------------------------------------------------
-test <-
-function() {
+
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit-hadoop.R') 
+
+ipPort <- get_args(commandArgs(trailingOnly = TRUE))
+myIP   <- ipPort[[1]]
+myPort <- ipPort[[2]]
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
+
+library(RCurl)
+library(h2o)
+
+heading("BEGIN TEST")
+h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.removeAll()
 
 hdfs_data_file = "/datasets/15Mx2.2k.csv"
 #----------------------------------------------------------------------
@@ -32,7 +44,5 @@ print(myframe.glrm)
 algo_run_time <- as.numeric(aat[3])
 print(paste("Time it took to build model:", algo_run_time))
 
-}
-
-doTest("Test", test)
+PASS_BANNER()
 

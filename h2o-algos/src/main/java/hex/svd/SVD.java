@@ -91,6 +91,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
+    // if (_parms._u_key == null) _parms._u_key = Key.make("SVDUMatrix_" + Key.rand());
+    if (_parms._u_name == null || _parms._u_name.length() == 0)
+      _parms._u_name = "SVDUMatrix_" + Key.rand();
+    if (_parms._v_name == null || _parms._v_name.length() == 0)
+      _parms._v_name = "SVDVMatrix_" + Key.rand();
     if (_parms._max_iterations < 1)
       error("_max_iterations", "max_iterations must be at least 1");
 
@@ -154,7 +159,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     private double computeSigmaU(DataInfo dinfo, SVDModel model, int k, double[][] ivv_sum, Vec[] uvecs) {
       double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
-      CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll(Vec.T_NUM, dinfo._adaptedFrame);
+      CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll(1, dinfo._adaptedFrame);
       model._output._d[k] = ctsk._sval;
       assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;    // Check same number of skipped rows as Gram
       Frame tmp = ctsk.outputFrame();
@@ -173,7 +178,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         update(1, "Initializing random subspace of training data Y");
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
-        rtsk.doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
+        rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
         yqfrm = rtsk.outputFrame(Key.make(), null, null);   // Alternates between Y and Q from Y = QR
 
         // Make input frame [A,Q] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
@@ -235,7 +240,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         update(1, "Initializing random subspace of training data Y");
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
         RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
-        rtsk.doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
+        rtsk.doAll(_parms._nv, dinfo._adaptedFrame);
         ybig = rtsk.outputFrame(Key.make(), null, null);
 
         // Make input frame [A,Q,Y] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
@@ -300,10 +305,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Algorithm 5.1: Direct SVD from Halko et al (http://arxiv.org/pdf/0909.4061.pdf)
     private Frame directSVD(DataInfo dinfo, Frame qfrm, SVDModel model) {
-      String u_name = (_parms._u_name == null || _parms._u_name.length() == 0) ? "SVDUMatrix_" + Key.rand() : _parms._u_name;
-      return directSVD(dinfo, qfrm, model, u_name);
-    }
-    private Frame directSVD(DataInfo dinfo, Frame qfrm, SVDModel model, String u_name) {
       DataInfo qinfo = null;
       Frame u = null;
       final int ncolA = dinfo._adaptedFrame.numCols();
@@ -328,13 +329,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // 3) Form orthonormal matrix U = QV
         update(1, "Forming distributed orthonormal matrix U");
         if (_parms._keep_u) {
-          model._output._u_key = Key.make(u_name);
+          model._output._u_key = Key.make(_parms._u_name);
           double[][] svdJ_u = svdJ.getV().getMatrix(0,atqJ.getColumnDimension()-1,0,_parms._nv-1).getArray();
 
           qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
           DKV.put(qinfo._key, qinfo);
           BMulTask btsk = new BMulTask(self(), qinfo, ArrayUtils.transpose(svdJ_u));
-          btsk.doAll(_parms._nv, Vec.T_NUM, qinfo._adaptedFrame);
+          btsk.doAll(_parms._nv, qinfo._adaptedFrame);
           u = btsk.outputFrame(model._output._u_key, null, null);
         }
 
@@ -387,9 +388,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model._output._catOffsets = dinfo._catOffsets;
         model._output._names_expanded = dinfo.coefNames();
 
-        String u_name = (_parms._u_name == null || _parms._u_name.length() == 0) ? "SVDUMatrix_" + Key.rand() : _parms._u_name;
-        String v_name = (_parms._v_name == null || _parms._v_name.length() == 0) ? "SVDVMatrix_" + Key.rand() : _parms._v_name;
-
         if(_parms._svd_method == SVDParameters.Method.GramSVD) {
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
@@ -422,11 +420,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           // Calculate left singular vectors U = AVD^(-1) if requested
           if(_parms._keep_u) {
-            model._output._u_key = Key.make(u_name);
+            model._output._u_key = Key.make(_parms._u_name);
             double[][] vt = ArrayUtils.transpose(model._output._v);
             for (int k = 0; k < _parms._nv; k++)
               ArrayUtils.div(vt[k], model._output._d[k]);
-            BMulTask tsk = new BMulTask(self(), dinfo, vt).doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
+            BMulTask tsk = new BMulTask(self(), dinfo, vt).doAll(_parms._nv, dinfo._adaptedFrame);
             u = tsk.outputFrame(model._output._u_key, null, null);
           }
         } else if(_parms._svd_method == SVDParameters.Method.Power) {
@@ -453,7 +451,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // 1b) Initialize singular value \sigma_1 and update u_1 <- Av_1
           if (!_parms._only_v) {
             model._output._d = new double[_parms._nv];
-            model._output._u_key = Key.make(u_name);
+            model._output._u_key = Key.make(_parms._u_name);
             uvecs = new Vec[_parms._nv];
             computeSigmaU(dinfo, model, 0, ivv_sum, uvecs);  // Compute first singular value \sigma_1
           }
@@ -492,7 +490,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           if (!_parms._only_v && !_parms._keep_u) {          // Delete U vecs if computed, but user does not want it returned
             for (int i = 0; i < uvecs.length; i++) uvecs[i].remove();
-            model._output._u_key = null;
           } else if (!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
             u = new Frame(model._output._u_key, null, uvecs);
             DKV.put(u._key, u);
@@ -501,12 +498,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
         } else if(_parms._svd_method == SVDParameters.Method.Randomized) {
           qfrm = randSubIter(dinfo, model);
-          u = directSVD(dinfo, qfrm, model, u_name);
+          u = directSVD(dinfo, qfrm, model);
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
 
         if (_parms._save_v_frame) {
-          model._output._v_key = Key.make(v_name);
+          model._output._v_key = Key.make(_parms._v_name);
           ArrayUtils.frame(model._output._v_key, null, model._output._v);
         }
         model._output._model_summary = createModelSummaryTable(model._output);

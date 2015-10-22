@@ -9,8 +9,8 @@
 
 options(echo=FALSE)
 TEST_ROOT_DIR <- ".."
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../h2o-runit.R")
 
 
 #----------------------------------------------------------------------

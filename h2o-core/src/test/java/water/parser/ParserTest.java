@@ -9,7 +9,7 @@ import water.util.Log;
 import java.io.File;
 
 public class ParserTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
@@ -19,7 +19,7 @@ public class ParserTest extends TestUtil {
     long[] espc  = new long[data.length+1];
     for( int i = 0; i < data.length; ++i ) espc[i+1] = espc[i]+data[i].length();
     Key k = Vec.newKey();
-    ByteVec bv = new ByteVec(k,Vec.ESPC.rowLayout(k,espc));
+    ByteVec bv = new ByteVec(k,espc);
     DKV.put(k,bv,fs);
     for( int i = 0; i < data.length; ++i ) {
       Key ck = bv.chunkKey(i);
@@ -779,7 +779,7 @@ public class ParserTest extends TestUtil {
             Frame fr = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
             fr.delete();
           } catch (Throwable t) {
-            throw Log.throwErr(t);
+            Log.throwErr(t);
           }
         }
       }

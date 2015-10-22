@@ -66,7 +66,6 @@
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}},
 #'          \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
-#' \donttest{
 #' h2o.init()
 #'
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
@@ -80,16 +79,16 @@
 #' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
 #'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
-#'
-#' # GLM variable importance
-#' # Also see:
-#' #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-#' data.hex = h2o.importFile(
-#'   path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
-#'   destination_frame = "data.hex")
-#' myX = 1:20
-#' myY="y"
-#' my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
+#' \donttest{
+#'  # GLM variable importance
+#'  # Also see:
+#'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
+#'  data.hex = h2o.importFile(
+#'    path = "https://raw.github.com/h2oai/h2o/master/smalldata/bank-additional-full.csv",
+#'    destination_frame = "data.hex")
+#'  myX = 1:20
+#'  myY="y"
+#'  my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
 #'                  lambda_search=TRUE)
 #' }
 #' @export

@@ -18,7 +18,7 @@ public abstract class FileVec extends ByteVec {
   public int _chunkSize = DFLT_CHUNK_SIZE;
 
   protected FileVec(Key key, long len, byte be) {
-    super(key,-1/*no rowLayout*/);
+    super(key,null);
     _len = len;
     _be = be;
   }

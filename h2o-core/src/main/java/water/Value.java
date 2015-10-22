@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  *  <p>
  *  The H2O {@link DKV} supports the full <em>Java Memory Model</em> coherency
  *  but only with Gets and Puts.  Normal Java updates to the cached POJO are
- *  local-node visible (due to X86 and Java coherency rules) but NOT cluster-wide
+ *  local-node visible (due to X86 &amp; Java coherency rules) but NOT cluster-wide
  *  visible until a Put completes after the update.
  *  <p>
  *  By the same token, updates ot the POJO are not reflected in the serialized
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  *  intact, they <em>must</em> do a final Put after all updates.
  *  <p>
  *  Value objects maintain the needed coherency state, as well as any cached
- *  copies, plus a bunch of utility and convenience functions.
+ *  copies, plus a bunch of utility &amp; convenience functions.
  */
 public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
@@ -267,9 +267,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Check if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype. */
   public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
-  /** Check if the Value's POJO is a {@link water.fvec.Vec.ESPC} subtype.  Does not require the POJO.
-   *  @return True if the Value's POJO is a {@link water.fvec.Vec.ESPC} subtype. */
-  public boolean isESPCGroup() { return _type == TypeMap.ESPCGROUP; }
   /** Check if the Value's POJO is a {@link Lockable} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Lockable} subtype. */
   public boolean isLockable() { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Lockable; }
@@ -304,7 +301,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // passed-in persist bits
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
-    _rwlock = new AtomicInteger(1);
+    _rwlock = new AtomicInteger(0);
     _replicas = null;
   }
   Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
@@ -322,7 +319,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // passed-in persist bits
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
-    _rwlock = new AtomicInteger(1);
+    _rwlock = new AtomicInteger(0);
     _replicas = null;
   }
   /** Standard constructor to build a Value from a POJO and a Key.  */
@@ -335,7 +332,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _max = _mem.length;
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
-    _rwlock = new AtomicInteger(1);
+    _rwlock = new AtomicInteger(0);
     _replicas = null;
   }
 
@@ -355,8 +352,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _max = _mem.length;
     assert _max < MAX : "Value size=0x"+Integer.toHexString(_max)+" during read is larger than "+Integer.toHexString(MAX)+", type: "+TypeMap.className(_type);
     _pojo = null;
-    // On remote nodes _rwlock is initialized to 1 (signaling a remote PUT is
-    // in progress) flips to -1 when the remote PUT is done, or +2 if a notify
+    // On remote nodes _rwlock is initialized to 0 (signaling a remote PUT is
+    // in progress) flips to -1 when the remote PUT is done, or +1 if a notify
     // needs to happen.
     _rwlock = new AtomicInteger(-1); // Set as 'remote put is done'
     _replicas = null;
@@ -415,10 +412,10 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // out invalidates to all the replicas.  PUTs return when all invalidates
   // have reported back.
   //
-  // An initial remote PUT will default the value to 1.  A 2nd PUT attempt will
+  // An initial remote PUT will default the value to 0.  A 2nd PUT attempt will
   // block until the 1st one completes (multiple writes to the same Key from
   // the same JVM block, so there is at most 1 outstanding write to the same
-  // Key from the same JVM).  The 2nd PUT will CAS the value to 2, indicating
+  // Key from the same JVM).  The 2nd PUT will CAS the value to 1, indicating
   // the need for the finishing 1st PUT to call notify().
   //
   // Note that this sequence involves a lot of blocking on repeated writes with
@@ -444,23 +441,18 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     return r;
   }
 
-  // Bump the read lock, once per pending-GET or pending-Invalidate
-  boolean read_lock() {
-    while( true ) {     // Repeat, in case racing GETs are bumping the counter
-      int old = _rwlock.get();
-      if( old == -1 ) return false; // Write-locked; no new replications.  Read fails to read *this* value
-      assert old >= 0;              // Not negative
-      if( RW_CAS(old,old+1,"rlock+") ) return true;
-    }
-  }
-
   /** Atomically insert h2o into the replica list; reports false if the Value
    *  flagged against future replication with a -1.  Also bumps the active
    *  Get count, which remains until the Get completes (we receive an ACKACK). */
   boolean setReplica( H2ONode h2o ) {
     assert _key.home(); // Only the HOME node for a key tracks replicas
     assert h2o != H2O.SELF;     // Do not track self as a replica
-    if( !read_lock() ) return false; // Write-locked; no new replications.  Read fails to read *this* value
+    while( true ) {     // Repeat, in case racing GETs are bumping the counter
+      int old = _rwlock.get();
+      if( old == -1 ) return false; // Write-locked; no new replications.  Read fails to read *this* value
+      assert old >= 0;              // Not negative
+      if( RW_CAS(old,old+1,"rlock+") ) break;
+    }
     // Narrow non-race here.  Here is a time window where the rwlock count went
     // up, but the replica list does not account for the new replica.  However,
     // the rwlock cannot go down until an ACKACK is received, and the ACK
@@ -470,7 +462,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     return true;
   }
 
-  /** Atomically lower active GET and Invalidate count */
+  /** Atomically lower active GET count */
   void lowerActiveGetCount( H2ONode h2o ) {
     assert _key.home();    // Only the HOME node for a key tracks replicas
     assert h2o != H2O.SELF;// Do not track self as a replica
@@ -478,7 +470,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
       int old = _rwlock.get(); // Read the lock-word
       assert old > 0;      // Since lowering, must be at least 1
       assert old != -1;    // Not write-locked, because we are an active reader
-      assert (h2o==null) || (_replicas!=null && _replicas[h2o._unique_idx]==1); // Self-bit is set
+      assert _replicas!=null && _replicas[h2o._unique_idx]==1; // Self-bit is set
       if( RW_CAS(old,old-1,"rlock-") ) {
         if( old-1 == 0 )   // GET count fell to zero?
           synchronized( this ) { notifyAll(); } // Notify any pending blocked PUTs
@@ -493,9 +485,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  Atomically set the rwlock count to -1 locking it from further GETs and
    *  ship out invalidates to caching replicas.  May need to block on active
    *  GETs.  Updates a set of Future invalidates that can be blocked against. */
-  Futures lockAndInvalidate( H2ONode sender, Value newval, Futures fs ) {
+  Futures lockAndInvalidate( H2ONode sender, Futures fs ) {
     assert _key.home(); // Only the HOME node for a key tracks replicas
-    assert newval._rwlock.get() >= 1; // starts read-locked
     // Write-Lock against further GETs
     while( true ) {      // Repeat, in case racing GETs are bumping the counter
       int old = _rwlock.get();
@@ -510,15 +501,12 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
         break;                  // Got the write-lock!
     }
     // We have the set of Nodes with replicas now.  Ship out invalidates.
-    // Bump the newval read-lock by 1 for each pending invalidate
     byte[] r = _replicas;
-    if( r!=null ) { // No replicas, nothing to invalidate
-      int max = r.length;
-      for( int i=0; i<max; i++ )
-        if( r[i]==1 && H2ONode.IDX[i] != sender )
-          TaskInvalidateKey.invalidate(H2ONode.IDX[i],_key,newval,fs);
-    }
-    newval.lowerActiveGetCount(null);  // Remove initial read-lock, accounting for pending inv counts
+    if( r==null ) return fs; // No replicas, nothing to invalidate
+    int max = r.length;
+    for( int i=0; i<max; i++ )
+      if( r[i]==1 && H2ONode.IDX[i] != sender )
+        TaskInvalidateKey.invalidate(H2ONode.IDX[i],_key,fs);
     return fs;
   }
 
@@ -533,7 +521,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // Set the replica bit for the one node we know about, and leave the
     // rest clear.  
     replicas()[h2o._unique_idx]=1;
-    _rwlock.set(1);             // An initial read-lock, so a fast PUT cannot wipe this one out before invalidates have a chance of being counted
+    _rwlock.set(0);             // No GETs are in-flight at this time. 
   }
 
   /** Block this thread until all prior remote PUTs complete - to force
@@ -543,7 +531,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     int x;
     // assert I am waiting on threads with higher priority?
     while( (x=_rwlock.get()) != -1 ) // Spin until rwlock==-1
-      if( x == 2 || RW_CAS(1,2,"remote_need_notify") )
+      if( x == 1 || RW_CAS(0,1,"remote_need_notify") )
         try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
   }
 
@@ -551,33 +539,13 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   void completeRemotePut() {
     assert !_key.home();
     // Attempt an eager blind attempt, assuming no blocked pending notifies
-    if( RW_CAS(1, -1,"remote_complete") ) return;
+    if( RW_CAS(0, -1,"remote_complete") ) return;
     synchronized(this) {
-      boolean res = RW_CAS(2, -1,"remote_do_notify");
+      boolean res = RW_CAS(1, -1,"remote_do_notify");
       assert res;               // Must succeed
       notifyAll();              // Wake up pending blocked PUTs
     }
   }
-
-  // Construct a Value which behaves like a "null" or "deleted" Value, but
-  // allows for counting pending invalidates on the delete operation... and can
-  // thus stall future Puts overriding the deletion until the delete completes.
-  static Value makeNull( Key key ) { assert key.home(); return new Value(key,0,null,(short)0,TCP); }
-  boolean isNull() { assert _type != 0 || _key.home(); return _type == 0; }
-  // Get from the local STORE.  If we fetch out a special Null Value, and it is
-  // unlocked (it will never be write-locked, but may be read-locked if there
-  // are pending invalidates on it), upgrade it in-place to a true null.
-  // Return the not-Null value, or the true null.
-  public static Value STORE_get( Key key ) {
-    Value val = H2O.get(key);
-    if( val == null ) return null; // A true null
-    if( !val.isNull() ) return val; // Not a special Null
-    if( val._rwlock.get()>0 ) return val; // Not yet invalidates all completed
-    // One-shot throwaway attempt at upgrading the special Null to a true null
-    H2O.putIfMatch(key,null,val);
-    return null;
-  }
-
 
   /** Return true if blocking is unnecessary.
    *  Alas, used in TWO places and the blocking API forces them to share here. */
@@ -588,7 +556,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
       return r == 0;
     } else {                    // Called from start_put
       // Remote-key blocking: wait for active-PUT lock to hit -1
-      assert r == 2 || r == -1; // Either waiting (2) or done (-1) but not started(1)
+      assert r == 1 || r == -1; // Either waiting (1) or done (-1) but not started(0)
       return r == -1;           // done!
     }
   }

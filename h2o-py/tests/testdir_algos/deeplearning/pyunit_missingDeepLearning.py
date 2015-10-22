@@ -1,12 +1,8 @@
-import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
 #Test checks if Deep Learning works fine with a categorical dataset that has many missing values (in both train & test
 # splits)
-
-
-
+import sys
+sys.path.insert(1,"../../../")
+import h2o, tests
 
 def missing():
     # Connect to a pre-existing cluster
@@ -16,7 +12,7 @@ def missing():
     errors = [0, 0, 0, 0, 0, 0]
 
     for i in range(len(missing_ratios)):
-        data = h2o.upload_file(pyunit_utils.locate("smalldata/junit/weather.csv"))
+        data = h2o.upload_file(h2o.locate("smalldata/junit/weather.csv"))
         data[15] = data[15].asfactor() #ChangeTempDir
         data[16] = data[16].asfactor() #ChangeTempMag
         data[17] = data[17].asfactor() #ChangeWindDirect
@@ -52,9 +48,5 @@ def missing():
 
     assert sum(errors) < 2.2, "Sum of classification errors is too large!"
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(missing)
-else:
-    missing()
+    tests.run_test(sys.argv, missing)

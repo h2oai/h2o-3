@@ -3,8 +3,8 @@
 # Predict using all models and calculate auc for each model
 # Compare the aucs returned with those calculated by ROCR package
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test.pub.822 <- function() {
 print("Parse header file")

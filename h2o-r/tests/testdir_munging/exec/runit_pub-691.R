@@ -1,6 +1,6 @@
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 # use this for interactive setup
 #       library(h2o)

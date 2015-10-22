@@ -22,9 +22,6 @@
 #' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration.
 #'        Special values are: \bold{0} one epoch; \bold{-1} all available data (e.g., replicated
 #'        training data); or \bold{-2} auto-tuning (default)
-#' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation.
-#'        Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning).
-#'        Higher values can lead to faster convergence.
 #' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running
 #'        single threaded
 #' @param adaptive_rate \code{Logical}. Adaptive learning rate (ADAELTA)
@@ -109,7 +106,6 @@
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
-#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
@@ -117,7 +113,6 @@
 #'
 #' # now make a prediction
 #' predictions <- h2o.predict(iris.dl, iris.hex)
-#' }
 #'
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
@@ -131,7 +126,6 @@ h2o.deeplearning <- function(x, y, training_frame,
                              hidden= c(200, 200),
                              epochs = 10.0,
                              train_samples_per_iteration = -2,
-                             target_ratio_comm_to_comp = 0.05,
                              seed,
                              adaptive_rate = TRUE,
                              rho = 0.99,
@@ -233,8 +227,6 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$epochs <- epochs
   if(!missing(train_samples_per_iteration))
     parms$train_samples_per_iteration <- train_samples_per_iteration
-  if(!missing(target_ratio_comm_to_comp))
-    parms$target_ratio_comm_to_comp <- target_ratio_comm_to_comp
   if(!missing(seed))
     parms$seed <- seed
   if(!missing(adaptive_rate))
@@ -273,7 +265,7 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$initial_weight_scale <- initial_weight_scale
   if(!missing(loss)) {
     if(loss == "MeanSquare") {
-      warning("Loss name 'MeanSquare' is deprecated; please use 'Quadratic' instead.")
+      warn("Loss name 'MeanSquare' is deprecated; please use 'Quadratic' instead.")
       parms$loss <- "Quadratic"
     } else
       parms$loss <- loss

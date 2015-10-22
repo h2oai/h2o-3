@@ -20,6 +20,7 @@ import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
+import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -236,7 +237,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           update(1, "Computing stats from SVD");
           computeStatsFillModel(model, dinfo, svdJ, gram, gtsk._nobs);
 
-        } else if(_parms._pca_method == PCAParameters.Method.Power || _parms._pca_method == PCAParameters.Method.Randomized) {
+        } else if(_parms._pca_method == PCAParameters.Method.Power) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
           parms._valid = _parms._valid;
@@ -248,12 +249,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._nv = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
-
-          // Set method for computing SVD accordingly
-          if(_parms._pca_method == PCAParameters.Method.Power)
-            parms._svd_method = SVDModel.SVDParameters.Method.Power;
-          else if(_parms._pca_method == PCAParameters.Method.Randomized)
-            parms._svd_method = SVDModel.SVDParameters.Method.Randomized;
 
           // Calculate standard deviation, but not projection
           parms._only_v = false;
@@ -304,8 +299,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           } finally {
             if (job != null) job.remove();
             if (glrm != null) {
-              // glrm._parms._representation_key.get().delete();
-              glrm._output._representation_key.get().delete();
+              // glrm._parms._loading_key.get().delete();
+              glrm._output._loading_key.get().delete();
               glrm.remove();
             }
           }

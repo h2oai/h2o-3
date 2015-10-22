@@ -1,7 +1,7 @@
 ####### This tests scale invariance for the response column in all algos  ######
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test <- function() {
 	s=c(1e-2,1e2,1e-4,1e4,1e-8,1e8)

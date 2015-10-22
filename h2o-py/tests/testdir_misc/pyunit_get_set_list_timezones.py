@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 import random
 
 def get_set_list_timezones():
@@ -27,9 +23,5 @@ def get_set_list_timezones():
     print "Setting the timezone back to original: {0}".format(origTZ)
     h2o.set_timezone(origTZ)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(get_set_list_timezones)
-else:
-    get_set_list_timezones()
+    tests.run_test(sys.argv, get_set_list_timezones)

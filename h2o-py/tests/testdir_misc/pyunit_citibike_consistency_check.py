@@ -1,32 +1,29 @@
-import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
 # Check to make sure the small and large citibike demos have not diverged
-import os
+import sys, os
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def consistency_check():
 
     try:
-        small = pyunit_utils.locate("h2o-py/demos/citi_bike_small.ipynb")
+        small = h2o.locate("h2o-py/demos/citi_bike_small.ipynb")
     except ValueError:
-        small = pyunit_utils.locate("h2o-py/demos/citi_bike_small_NOPASS.ipynb")
+        small = h2o.locate("h2o-py/demos/citi_bike_small_NOPASS.ipynb")
 
     try:
-        large = pyunit_utils.locate("h2o-py/demos/citi_bike_large.ipynb")
+        large = h2o.locate("h2o-py/demos/citi_bike_large.ipynb")
     except ValueError:
-        large = pyunit_utils.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
+        large = h2o.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
 
-    results_dir = pyunit_utils.locate("results")
-    s = os.path.join(results_dir, os.path.basename(small).split('.')[0]+".py")
-    l = os.path.join(results_dir, os.path.basename(large).split('.')[0]+".py")
+    tests.ipy_notebook_exec(small, save_and_norun=True)
+    tests.ipy_notebook_exec(large, save_and_norun=True)
 
-    from tests import pydemo_utils
-    pydemo_utils.ipy_notebook_exec(small, save_and_norun = s)
-    pydemo_utils.ipy_notebook_exec(large, save_and_norun = l)
-
+    s = os.path.basename(small).split('.')[0]+".py"
+    l = os.path.basename(large).split('.')[0]+".py"
     small_list = list(open(s, 'r'))
     large_list = list(open(l, 'r'))
+    os.remove(h2o.locate(s))
+    os.remove(h2o.locate(l))
 
     for s, l in zip(small_list, large_list):
         if s != l:
@@ -35,9 +32,5 @@ def consistency_check():
                 "This difference is not allowed between the small and large citibike demos.\nCitibike small: {0}" \
                 "Citibike large: {1}".format(s,l)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(consistency_check)
-else:
-    consistency_check()
+    tests.run_test(sys.argv, consistency_check)

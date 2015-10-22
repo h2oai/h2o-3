@@ -4,9 +4,9 @@
 # Finally it calculates the reconstruction error
 # Note: This demo runs H2O on localhost:54321
 library(h2o)
-h2o.init()
+localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 
-prostate.hex = h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
+prostate.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
 summary(prostate.hex)
 # Set the CAPSULE, DPROS and GLEASON columns to be factor columns.
 prostate.hex$CAPSULE = as.factor(prostate.hex$CAPSULE)

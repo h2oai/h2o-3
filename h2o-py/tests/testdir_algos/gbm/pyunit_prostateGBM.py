@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 ######################################################
 #
@@ -14,7 +10,7 @@ def prostateGBM():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 
-  df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+  df = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
   df.describe()
 
   # Remove ID from training frame
@@ -47,9 +43,5 @@ def prostateGBM():
 
   my_gbm_metrics  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(prostateGBM)
-else:
-    prostateGBM()
+  tests.run_test(sys.argv, prostateGBM)

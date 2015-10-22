@@ -101,11 +101,6 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     strict_version_check = FALSE
   }
 
-  doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_IP")
-  doc_port <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT")
-  if (nchar(doc_ip)) ip <- doc_ip
-  if (nchar(doc_port)) port <- as.numeric(doc_port)
-
   warnNthreads <- FALSE
   tmpConn <- new("H2OConnection", ip = ip, port = port)
   if (!h2o.clusterIsUp(tmpConn)) {
@@ -248,10 +243,8 @@ h2o.shutdown <- function(prompt = TRUE) {
 #'
 #' @seealso \linkS4class{H2OConnection}, \code{\link{h2o.init}}
 #' @examples
-#' \donttest{
 #' h2o.init()
 #' h2o.clusterStatus()
-#' }
 #' @export
 h2o.clusterStatus <- function() {
   conn = h2o.getConnection()
@@ -416,14 +409,8 @@ h2o.clusterStatus <- function() {
   if(assertion) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", name)
-  doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_IP")
-  doc_port <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT")
-  if (nchar(doc_ip)) { ip <- doc_ip
-  } else { ip <- "127.0.0.1" }
-  if (nchar(doc_port)) { port <- doc_port
-  } else { port <- "54321" }
-  args <- c(args, "-ip", ip)
-  args <- c(args, "-port", port)
+  args <- c(args, "-ip", "127.0.0.1")
+  args <- c(args, "-port", "54321")
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(beta) args <- c(args, "-beta")

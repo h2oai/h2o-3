@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test.PCA.australia <- function() {
   Log.info("Importing AustraliaCoast.csv data...\n")

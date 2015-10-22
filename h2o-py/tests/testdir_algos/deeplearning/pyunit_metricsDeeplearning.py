@@ -1,16 +1,12 @@
 import sys
 sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+import h2o, tests
 
 
 def deep_learning_metrics_test():
                    # connect to existing cluster
 
-    df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    df = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
     df.drop("ID")                              # remove ID
     df['CAPSULE'] = df['CAPSULE'].asfactor()   # make CAPSULE categorical
@@ -42,9 +38,5 @@ def deep_learning_metrics_test():
     dl.model_performance(test).show()
 
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(deep_learning_metrics_test)
-else:
-    deep_learning_metrics_test()
+  tests.run_test(sys.argv, deep_learning_metrics_test)

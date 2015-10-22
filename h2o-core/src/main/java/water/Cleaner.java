@@ -250,7 +250,6 @@ class Cleaner extends Thread {
         if( !(ok instanceof Key  ) ) continue; // Ignore tombstones and Primes and null's
         if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
         Value val = (Value)ov;
-        if( val.isNull() ) { Value.STORE_get(val._key); continue; } // Another flavor of NULL
         total += val._max;
         int len = 0;
         byte[] m = val.rawMem();

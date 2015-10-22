@@ -1,14 +1,10 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 def glrm_arrests():
     print "Importing USArrests.csv data..."
-    arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
+    arrestsH2O = h2o.upload_file(h2o.locate("smalldata/pca_test/USArrests.csv"))
     arrestsH2O.describe()
     
     print "H2O initial Y matrix:\n"
@@ -23,9 +19,5 @@ def glrm_arrests():
     glrm_h2o = h2o.glrm(x=arrestsH2O, k=4, transform="DEMEAN", loss="Quadratic", gamma_x=0, gamma_y=0, init="User", user_y=initial_y_h2o, recover_svd=True)
     glrm_h2o.show()
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(glrm_arrests)
-else:
-    glrm_arrests()
+    tests.run_test(sys.argv, glrm_arrests)

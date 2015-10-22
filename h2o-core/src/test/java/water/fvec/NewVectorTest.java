@@ -1,13 +1,12 @@
 package water.fvec;
 
 import static org.junit.Assert.*;
-import org.junit.BeforeClass;
 import org.junit.*;
 
 import water.*;
 
 public class NewVectorTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  public NewVectorTest() { super(3); }
 
   static final double EPSILON = 1e-6;
 
@@ -19,11 +18,11 @@ public class NewVectorTest extends TestUtil {
   private void testImpl( long[] ls, int[] xs, int [] id, Class C, boolean hasFloat ) {
     Vec vec = null;
     try {
-      AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+      AppendableVec av = new AppendableVec(Vec.newKey());
       NewChunk nv = new NewChunk(av,0, ls, xs, id, null);
       Chunk bv = nv.compress();
       Futures fs = new Futures();
-      vec = bv._vec = av.layout_and_close(fs);
+      vec = bv._vec = av.close(fs);
       fs.blockForPending();
       // Compression returns the expected compressed-type:
       assertTrue( "Found chunk class "+bv.getClass()+" but expected "+C, C.isInstance(bv) );
@@ -94,12 +93,12 @@ public class NewVectorTest extends TestUtil {
     Vec vec = null;
     try {
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+      AppendableVec av = new AppendableVec(Vec.newKey());
       long ls[] = new long[]{0,0,0,0}; // A 4-row chunk
       int xs[] = new int[]{0,0,0,0}; // A 4-row chunk
       NewChunk nv = new NewChunk(av,0,ls,xs,null,null);
       nv.close(0,fs);
-      vec = av.layout_and_close(fs);
+      vec = av.close(fs);
       fs.blockForPending();
       assertEquals(nv._len, vec.length());
       // Compression returns the expected constant-compression-type:

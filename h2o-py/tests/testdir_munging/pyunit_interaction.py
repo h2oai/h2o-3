@@ -1,16 +1,12 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def interaction_check():
     # Connect to a pre-existing cluster
     
 
-    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
     # add a couple of factor columns to iris
     iris = iris.cbind(iris[4] == "Iris-setosa")
@@ -60,9 +56,5 @@ def interaction_check():
 
     #TODO: allow factors to be list of lists
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(interaction_check)
-else:
-    interaction_check()
+    tests.run_test(sys.argv, interaction_check)

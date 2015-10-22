@@ -1,7 +1,0 @@
-apply plugin: 'be.insaneprogramming.gradle.animalsniffer'
-animalsniffer {
-    signature = "org.codehaus.mojo.signature:java16:+@signature"
-    ignores = ["sun.misc.Unsafe", "java.lang.Throwable"]
-    annotations = ["water.util.annotations.IgnoreJRERequirement"] 
-}
-

@@ -4,7 +4,6 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.VecUtils;
 
 import java.util.Random;
 
@@ -46,7 +45,7 @@ public class ASTKFold extends ASTPrim {
     // therefore, have a seed per class to be used by the map call
     if( !(y.isCategorical() || (y.isNumeric() && y.isInt())) )
       throw new IllegalArgumentException("stratification only applies to integer and categorical columns. Got: " + y.get_type_str());
-    final long[] classes = new VecUtils.CollectDomain().doAll(y).domain();
+    final long[] classes = new Vec.CollectDomain().doAll(y).domain();
     final int nClass = y.isNumeric() ? classes.length : y.domain().length;
     final long[] seeds = new long[nClass]; // seed for each regular fold column (one per class)
     for( int i=0;i<nClass;++i)

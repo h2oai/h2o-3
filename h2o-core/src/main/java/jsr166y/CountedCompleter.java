@@ -380,58 +380,19 @@ public abstract class CountedCompleter extends ForkJoinTask<Void> {
      * else marks this task as complete.
      */
     public final void tryComplete() {
-        __tryComplete(this);
-//        CountedCompleter a = this, s = a;
-//        for (int c;;) {
-//            if ((c = a.pending) == 0) {
-//                a.onCompletion(s);
-//                if ((a = (s = a).completer) == null) {
-//                    s.quietlyComplete();
-//                    return;
-//                }
-//            }
-//            else if (U.compareAndSwapInt(a, PENDING, c, c - 1))
-//                return;
-//        }
-    }
-
-  /**
-   * H2O Hack to get distributed FJ behavior closer to the behavior on local node.
-   * It allows us to continue in "completion propagation" interrupted by remote task.
-   * Should *not* be called by anyone outside of RPC mechanism.
-   *
-   * In standard FJ, tryComplete is always called by the task itself and the task is thus it's own caller.
-   * Afterwards, the FJ framework will start propagating the completion up the task tree, walking up the list of completers(parents)
-   * each time calling onCompletion of the parent with the current node (the child which triggered the completion) being passed as  the "caller" argument.
-   *
-   * When there is a distributed task in the chain, the sequence is broken as the task is completed on a remote node.
-   * We want to be able to continue the completion chain, i.e. the remote task should now call onCompletion of its parent with itself passed as the caller argument.
-   * We can not call tryComplete on the task, since it has already been called on the remote.
-   * Instead, we explicitly set the caller argument in this overloaded tryComplete calls
-   *
-   * Example:
-   *
-   * new RPC(node,task).addCompletor(f(x) {...})
-   *
-   * When we receive the reponse, we want to pass task as x to f.
-   * We call f.__tryComplete(task)
-   *
-   * @param caller - The child task completing this
-   */
-  public final void __tryComplete(CountedCompleter caller) {
-    CountedCompleter a = this, s = caller;
-    for (int c;;) {
-      if((c = a.pending) == 0) {
-        a.onCompletion(s);
-        if ((a = (s = a).completer) == null) {
-          s.quietlyComplete();
-          return;
+        CountedCompleter a = this, s = a;
+        for (int c;;) {
+            if ((c = a.pending) == 0) {
+                a.onCompletion(s);
+                if ((a = (s = a).completer) == null) {
+                    s.quietlyComplete();
+                    return;
+                }
+            }
+            else if (U.compareAndSwapInt(a, PENDING, c, c - 1))
+                return;
         }
-      }
-      else if (U.compareAndSwapInt(a, PENDING, c, c - 1))
-        return;
     }
-  }
 
     /**
      * Regardless of pending count, invokes {@link #onCompletion},

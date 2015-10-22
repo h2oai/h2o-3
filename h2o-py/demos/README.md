@@ -43,9 +43,9 @@ To access the H2O Web UI, go to [https://localhost:54321](https://localhost:5432
 Open Demos Notebook
 -------------------
 
-Open the prostate_gbm.ipynb file. The notebook contains a demo that starts H2O, imports a prostate dataset into H2O, builds a GBM model, and predicts on the training set with the recently built model. Use Shift+Return to execute each cell and proceed to the next cell in the notebook .
+Open the prostateGBM.ipynb file. The notebook contains a demo that starts H2O, imports a prostate dataset into H2O, builds a GBM model, and predicts on the training set with the recently built model. Use Ctrl+Return to execute each cell in the notebook.
 
-    $ ipython notebook prostate_gbm.ipynb
+    $ ipython notebook prostateGBM.ipynb
 
 All demos are available here:
 

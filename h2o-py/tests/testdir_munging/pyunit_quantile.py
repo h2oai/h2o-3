@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 import random
 import numpy as np
 
@@ -26,9 +22,5 @@ def quantile():
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal quantile values between h2o " \
         "and numpy".format(h2o_val,np_val)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(quantile)
-else:
-    quantile()
+    tests.run_test(sys.argv, quantile)

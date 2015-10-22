@@ -131,24 +131,5 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   public final byte [] getBuffer() {return _buf;}
   public final int getOffset() {return _off;}
   public final int length() {return _len;}
-
-  public static final byte NA  =  0;
-  public static final byte INT =  1;
-  public static final byte REAL=  2;
-  public final byte getNumericType() {
-    int i = 0;
-    int decimalCnt = 0;
-    if (_len == 0) return NA;
-    if (_buf[_off] == '+' || _buf[_off] == '-') i++;
-    while( i < _len) {
-      if (_buf[_off+i] == '.') decimalCnt++;
-      if (_buf[_off+i] < '0' || _buf[_off+i] > '9') return NA;
-      i++;
-    }
-    if (decimalCnt > 0)
-      if (decimalCnt == 1) return REAL;
-      else return NA; //more than one decimal, NaN
-    else return INT;
-  }
 }
 

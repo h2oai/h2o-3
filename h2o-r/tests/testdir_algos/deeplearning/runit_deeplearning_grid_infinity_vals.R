@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test.grid.infinity.values <- function(conn){
   prostate <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))

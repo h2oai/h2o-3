@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import numpy as np
 
 def glrm_orthonnmf():
@@ -28,7 +24,7 @@ def glrm_orthonnmf():
     fit_y = glrm_h2o._model_json['output']['archetypes'].cell_values
     fit_y_np = [[float(s) for s in list(row)[1:]] for row in fit_y]
     fit_y_np = np.array(fit_y_np)
-    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
+    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['loading_key']['name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
     assert np.all(fit_y_np >= 0), "Y must contain only non-negative elements"
     assert np.all(fit_x_np >= 0), "X must contain only non-negative elements"
@@ -63,7 +59,7 @@ def glrm_orthonnmf():
     fit_y = glrm_h2o._model_json['output']['archetypes'].cell_values
     fit_y_np = [[float(s) for s in list(row)[1:]] for row in fit_y]
     fit_y_np = np.array(fit_y_np)
-    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
+    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['loading_key']['name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
     assert np.all(fit_y_np >= 0), "Y must contain only non-negative elements"
     assert np.all(fit_x_np >= 0), "X must contain only non-negative elements"
@@ -93,9 +89,5 @@ def glrm_orthonnmf():
     assert abs(glrm_numerr - glrm_obj) < 1e-3, "Numeric error was " + str(glrm_numerr) + " but should equal final objective " + str(glrm_obj)
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(glrm_orthonnmf)
-else:
-    glrm_orthonnmf()
+    tests.run_test(sys.argv, glrm_orthonnmf)

@@ -339,22 +339,21 @@ class H2OBinomialModel(ModelBase):
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric(metric,thresholds)
     return m.values()[0] if len(m) == 1 else m
 
-  def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
+  def plot(self, type="roc", train=False, valid=False, xval=False, **kwargs):
     """
-    Plots training set (and validation set if available) scoring history for an H2OBinomialModel. The timestep and metric
-    arguments are restricted to what is available in its scoring history.
+    Produce the desired metric plot
+    If all are False (default), then return the training metric value.
 
-    :param timestep: A unit of measurement for the x-axis.
-    :param metric: A unit of measurement for the y-axis.
-    :return: A scoring history plot.
+    :param type: the type of metric plot (currently, only ROC supported)
+    :param train: If train is True, then plot for training data.
+    :param valid: If valid is True, then plot for validation data.
+    :param xval:  If xval is True, then plot for cross validation data.
+    :param show: if False, the plot is not shown. matplotlib show method is blocking.
+    :return: None
     """
-
-    if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
-      if metric == "AUTO": metric = "logloss"
-      elif metric not in ("logloss","AUC","classification_error","MSE"):
-        raise ValueError("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
-
-    self._plot(timestep=timestep, metric=metric, **kwargs)
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    for k,v in zip(tm.keys(),tm.values()):
+      if v is not None: v.plot(type=type, **kwargs)
 
   def roc(self, train=False, valid=False, xval=False):
     """

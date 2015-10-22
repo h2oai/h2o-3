@@ -170,7 +170,7 @@ abstract public class AST extends Iced<AST> {
     // Generic data mungers
     init(new ASTAnyFactor());
     init(new ASTAsFactor());
-    init(new ASTAsCharacter());
+    init(new ASTCharacter());
     init(new ASTAsNumeric());
     init(new ASTCBind());
     init(new ASTColNames());
@@ -229,8 +229,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTStratifiedKFold());
   }
 
-  public static ASTId  newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
-  public static ASTStr newASTStr  (String s) { return new ASTStr(s); }
+  public static ASTId newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
 }
 
 /** A number.  Execution is just to return the constant. */
@@ -274,14 +273,13 @@ class ASTRow extends AST {
 }
 
 /** An ID.  Execution does lookup in the current scope. */
-class ASTId extends ASTParameter {
+class ASTId extends AST {
   final String _id;
   ASTId(Exec e) { _id = e.token(); }
   ASTId(String id) { _id=id; }
   @Override public String str() { return _id; }
   @Override public Val exec(Env env) { return env.lookup(_id); }
   @Override int nargs() { return 1; }
-  @Override public String toJavaString() { return "\"" + str() + "\""; }
 }
 
 /** A primitive operation.  Execution just returns the function.  *Application*

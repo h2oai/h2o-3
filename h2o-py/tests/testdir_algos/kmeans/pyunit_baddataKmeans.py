@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import random
 import string
 
@@ -82,7 +78,7 @@ def baddataKmeans():
     assert len(centers[c]) == 10, "expected center to be 10 "+str(len(centers[c]))
 
   # Log.info("Importing iris.csv data...\n")
-  iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+  iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
 
   km_model = h2o.kmeans(x=iris, k=5)
   centers = km_model.centers()
@@ -90,9 +86,5 @@ def baddataKmeans():
   for c in range(len(centers)):
     assert len(centers[c]) == 5, "expected center to be 5 "+str(len(centers[c]))
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(baddataKmeans)
-else:
-    baddataKmeans()
+   tests.run_test(sys.argv, baddataKmeans)

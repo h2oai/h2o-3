@@ -3,9 +3,9 @@
 # Then, it runs GBM on a subset of the dataset
 # Note: This demo runs H2O on localhost:54321
 library(h2o)
-h2o.init()
+localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 
-prostate.hex = h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
+prostate.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
 summary(prostate.hex)
 prostate.gbm = h2o.gbm(x = setdiff(colnames(prostate.hex), "CAPSULE"), y = "CAPSULE", training_frame = prostate.hex, ntrees = 10, max_depth = 5, learn_rate = 0.1)
 print(prostate.gbm)
@@ -13,7 +13,7 @@ prostate.gbm2 = h2o.gbm(x = c("AGE", "RACE", "PSA", "VOL", "GLEASON"), y = "CAPS
 print(prostate.gbm2)
 
 # This is a demo of H2O's GBM use of default parameters on iris dataset (three classes)
-iris.hex = h2o.uploadFile(path = system.file("extdata", "iris.csv", package="h2o"), destination_frame = "iris.hex")
+iris.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "iris.csv", package="h2o"), destination_frame = "iris.hex")
 summary(iris.hex)
 iris.gbm = h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)
 print(iris.gbm)

@@ -339,9 +339,6 @@ h2o.getFutureModel <- function(object) {
 #'
 #' This method dispatches on the type of H2O model to select the correct
 #' prediction/scoring algorithm.
-#' The order of the rows in the results is the same as the order in which the
-#' data was loaded, even if some rows fail (for example, due to missing
-#' values or unseen factor levels).
 #'
 #' @param object a fitted \linkS4class{H2OModel} object for which prediction is
 #'        desired
@@ -442,7 +439,11 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
   data.id <- if( missingData ) trainingFrame else attr(.eval.frame(data), "id")
-  if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
+  if( !is.null(trainingFrame) && !missingData && data.id == trainingFrame ) {
+    warning("Given data is same as the training data. Returning the training metrics.")
+    return(model@model$training_metrics)
+  }
+  else if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
   else if( missingData &&  valid ) {
     if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
     else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
@@ -1814,20 +1815,20 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     if (is(x, "H2OBinomialModel")) {
       if (metric == "AUTO") {
         metric <- "logloss"
-      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
-        stop("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      } else if (!(metric %in% c("r2","logloss","AUC","classification_error","MSE"))) {
+        stop("metric for H2OBinomialModel must be one of: AUTO, r2, logloss, AUC, classification_error, MSE")
       }
     } else if (is(x, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
-      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
-        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      } else if (!(metric %in% c("r2","logloss","classification_error","MSE"))) {
+        stop("metric for H2OMultinomialModel must be one of: AUTO, r2, logloss, classification_error, MSE")
       }
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
         metric <- "MSE"
-      } else if (!(metric %in% c("MSE","deviance", "r2"))) {
-        stop("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance, r2")
+      } else if (!(metric %in% c("MSE","deviance"))) {
+        stop("metric for H2OMultinomialModel must be one of: MSE, deviance")
       }
     } else {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
@@ -1839,7 +1840,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       } else if (!(timestep %in% c("duration","number_of_trees"))) {
         stop("timestep for gbm or drf must be one of: duration, number_of_trees")
       }
-    } else { # x@algorithm == "deeplearning"
+    } else if (x@algorithm == "deeplearning") {
       # Delete first row of DL scoring history since it contains NAs & NaNs
       if (df$samples[1] == 0) {
         df <- df[-1,]
@@ -1849,6 +1850,8 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       } else if (!(timestep %in% c("epochs","samples","duration"))) {
         stop("timestep for deeplearning must be one of: epochs, samples, duration")
       }
+    } else {
+      stop("Plotting not implemented for this type of model")
     }
     training_metric <- sprintf("training_%s", metric)
     validation_metric <- sprintf("validation_%s", metric)
@@ -1872,8 +1875,6 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
                      main = "Training Scoring History", col = "blue", ylim = ylim)
 
     }
-  } else { # algo is not glm, deeplearning, drf, gbm
-  	stop("Plotting not implemented for this type of model")
   }
 }
 
@@ -1922,6 +1923,15 @@ h2o.sdev <- function(object) {
     stop("object must be a H2O PCA model")
   as.numeric(object@model$importance[1,])
 }
+
+# Handles ellipses
+.model.ellipses <- function(dots) {
+  lapply(names(dots), function(type) {
+    stop(paste0('\n  unexpected argument "',
+                type,'", is this legacy code? Try ?h2o.shim'), call. = FALSE)
+  })
+}
+
 
 # extract "bite size" pieces from a model
 .model.parts <- function(object) {

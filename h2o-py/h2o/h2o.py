@@ -1,6 +1,8 @@
 import warnings
 warnings.simplefilter('always', DeprecationWarning)
 import os
+import itertools
+import functools
 import os.path
 import re
 import urllib
@@ -41,18 +43,19 @@ Parameters
 ----------
   path : str
     A path specifying the location of the data to upload.
-  destination_frame : str, optional
-    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  header : int, optional
-   -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep : str, optional
-    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names : list, optional
-    A list of column names for the file.
-  col_types : list or dict, optional
-    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
-  na_strings : list or dict, optional
-    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
+  destination_frame : H2OFrame
+    The name of the H2O Frame in the H2O Cluster.
+  header :
+   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values.
+
  :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
@@ -69,20 +72,20 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   ----------
   path : str
     A path specifying the location of the data to import.
-  destination_frame : str, optional
-    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  parse : boolean, optional
-    A logical value indicating whether the file should be parsed after import.
-  header : int, optional
-   -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep : str, optional
-    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names : list, optional
-    A list of column names for the file.
-  col_types : list or dict, optional
-    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
-  na_strings : list or dict, optional
-    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
+  destination_frame :
+    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse :
+    (Optional) A logical value indicating whether the file should be parsed after import.
+  header :
+   (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values.
   :return: A new H2OFrame
   """
   if not parse:
@@ -98,20 +101,20 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
   raw_frames : H2OFrame
     A collection of imported file frames
-  destination_frame : str, optional
-    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  parse : boolean, optional
-    A logical value indicating whether the file should be parsed after import.
-  header : int, optional
-   -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep : str, optional
-    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names : list, optional
-    A list of column names for the file.
-  col_types : list or dict, optional
-    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
-  na_strings : list or dict, optional
-    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
+  destination_frame :
+    (Optional) The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
+  parse :
+    (Optional) A logical value indicating whether the file should be parsed after import.
+  header :
+    (Optional) -1 means the first line is data, 0 means guess, 1 means first line is header.
+  sep :
+    (Optional) The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
+  col_names :
+    (Optional) A list of column names for the file.
+  col_types :
+    (Optional) A list of types to specify whether columns should be forced to a certain type upon import parsing.
+  na_strings :
+    (Optional) A list of strings which are to be interpreted as missing values.
   :return: A ParseSetup "object"
   """
 
@@ -119,63 +122,23 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
 
-  if destination_frame: j["destination_frame"] = _quoted(destination_frame).replace("%",".").replace("&",".") # TODO: really should be url encoding...
-  if header != (-1, 0, 1):
-    if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
-    j["check_header"] = header
+  if destination_frame: j["destination_frame"] = destination_frame
+  if not isinstance(header, tuple):
+      if header not in (-1, 0, 1):
+          raise ValueError("header should be -1, 0, or 1")
+      j["check_header"] = header
   if separator:
-    if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
-    j["separator"] = ord(separator)
-  if column_names:
-    if not isinstance(column_names, list): raise ValueError("col_names should be a list")
-    if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
-    j["column_names"] = column_names
-  if column_types:
-    if isinstance(column_types, dict):
-      #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
-      if not j["column_names"]: raise ValueError("column names should be specified")
-      if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
-      idx = 0
-      column_types_list = []
-      for name in j["column_names"]:
-        if name in column_types:
-          column_types_list.append(column_types[name])
-        else:
-          column_types_list.append(j["column_types"][idx])
-        idx += 1
-      column_types = column_types_list
-    elif isinstance(column_types, list):
-      if len(column_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
-      column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(column_types))]
-    else: #not dictionary or list
-      raise ValueError("col_types should be a list of types or a dictionary of column names to types")
-    j["column_types"] = column_types
-  if na_strings:
-    if isinstance(na_strings, dict):
-      #overwrite dictionary to ordered list of lists of na_strings
-      if not j["column_names"]: raise ValueError("column names should be specified")
-      if not set(na_strings.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in na_strings is not a subset of the column names")
-      j["na_strings"] = [[] for _ in range(len(j["column_names"]))]
-      for name, na in na_strings.items():
-        idx = j["column_names"].index(name)
-        if isinstance(na, basestring): na = [na]
-        for n in na: j["na_strings"][idx].append(_quoted(n))
-    elif _is_list_of_lists(na_strings):
-      if len(na_strings) != len(j["column_types"]): raise ValueError("length of na_strings should be equal to the number of columns")
-      j["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in na_strings]
-    elif isinstance(na_strings, list):
-      j["na_strings"] = [[_quoted(na) for na in na_strings]] * len(j["column_types"])
-    else: #not a dictionary or list
-      raise ValueError("na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
-                       "names to strings which are to be interpreted as missing values")
+      if not isinstance(separator, basestring) or len(separator) != 1:
+          raise ValueError("separator should be a single character string")
+      j["separator"] = separator
+  if column_names: j["column_names"] = column_names
+  if column_types: j["column_types"] = column_types
+  if na_strings: j["na_strings"] = na_strings
 
-  #quote column names and column types also when not specified by user
-  if j["column_names"]: j["column_names"] = map(_quoted, j["column_names"])
-  j["column_types"] = map(_quoted, j["column_types"])
   return j
 
 
-def _parse(setup):
+def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   """
   Trigger a parse; blocking; removeFrame just keep the Vecs.
 
@@ -183,26 +146,54 @@ def _parse(setup):
   ----------
   setup : dict
     The result of calling parse_setup.
+  h2o_name : H2OFrame
+    The name of the H2O Frame on the back end.
+  first_line_is_header : int
+    -1 means data, 0 means guess, 1 means header.
 
 :return: A new parsed object
   """
   # Parse parameters (None values provided by setup)
-  p = { "destination_frame" : _py_tmp_key(),
-        "parse_type" : None,
-        "separator" : None,
-        "single_quotes" : None,
-        "check_header"  : None,
-        "number_columns" : None,
-        "chunk_size"    : None,
-        "delete_on_done" : True,
-        "blocking" : False,
-        "column_types" : None
+  p = { 'destination_frame' : h2o_name,
+        'parse_type' : None,
+        'separator' : None,
+        'single_quotes' : None,
+        'check_header'  : None,
+        'number_columns' : None,
+        'chunk_size'    : None,
+        'delete_on_done' : True,
+        'blocking' : False,
         }
 
-  if setup["column_names"]: p["column_names"] = None
-  if setup["na_strings"]: p["na_strings"] = None
+  if setup["destination_frame"]:
+    setup["destination_frame"] = _quoted(setup["destination_frame"])
 
+  if isinstance(first_line_is_header, tuple):
+    first_line_is_header = setup["check_header"]
+
+  if isinstance(setup["separator"], basestring):
+    setup["separator"] = ord(setup["separator"])
+
+  if setup["column_names"]:
+    setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
+    p["column_names"] = None
+
+  if setup["column_types"]:
+    setup["column_types"] = [_quoted(name) for name in setup["column_types"]]
+    p["column_types"] = None
+
+  if setup["na_strings"]:
+    if _is_list_of_lists(setup["na_strings"]): setup["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in setup["na_strings"]]
+    else:
+      setup["na_strings"] = [_quoted(na) for na in setup["na_strings"]] # quote the strings
+      setup["na_strings"] = '\"' + str(list(itertools.repeat(setup["na_strings"], len(setup["column_types"])))) + '\"'
+    p["na_strings"] = None
+
+
+  # update the parse parameters with the parse_setup values
   p.update({k: v for k, v in setup.iteritems() if k in p})
+
+  p["check_header"] = first_line_is_header
 
   # Extract only 'name' from each src in the array of srcs
   p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
@@ -221,27 +212,29 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
 
   setup : dict
     Result of h2o.parse_setup
-  id : str, optional
-    An id for the frame.
-  first_line_is_header : int, optional
+  id : str
+    An optional id for the frame.
+  first_line_is_header : int
     -1,0,1 if the first line is to be used as the header
 
  :return: An H2OFrame object
   """
-  if id: setup["destination_frame"] = _quoted(id).replace("%",".").replace("&",".")
-  if first_line_is_header != (-1, 0, 1):
-    if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
-    setup["check_header"] = first_line_is_header
-  parsed = _parse(setup)
+  id = setup["destination_frame"]
   fr = H2OFrame()
-  fr._update_post_parse(parsed)
+  parsed = parse(setup, id, first_line_is_header)
+  fr._computed = True
+  fr._id = id
+  fr._keep = True
+  fr._nrows = int(H2OFrame(expr=ExprNode("nrow", fr))._scalar())  #parsed['rows']
+  fr._ncols = parsed["number_columns"]
+  fr._col_names = parsed['column_names'] if parsed["column_names"] else ["C" + str(x) for x in range(1,fr._ncols+1)]
   return fr
 
-def _quoted(key):
-  if key is None: return "\"\""
+def _quoted(key, replace=True):
+  if key == None: return "\"\""
   #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
-  # key = key.replace("%", ".")
-  # key = key.replace("&", ".")
+  key = key.replace("%", ".")
+  key = key.replace("&", ".")
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else '"' + key + '"'
   return key
@@ -624,7 +617,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   port : int
     A port, default is 54321
   size : int
-    The expected number of h2o instances (ignored if start_h2o is True)
+    THe expected number of h2o instances (ignored if start_h2o is True)
   start_h2o : bool
     A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
   enable_assertions : bool
@@ -694,7 +687,6 @@ def shutdown(conn=None, prompt=True):
 def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=None,model_id=None,
                  overwrite_with_best_model=None,validation_frame=None,checkpoint=None,autoencoder=None,
                  use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
-                 target_ratio_comm_to_comp=None,
                  seed=None,adaptive_rate=None,rho=None,epsilon=None,rate=None,rate_annealing=None,rate_decay=None,
                  momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
                  input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
@@ -742,9 +734,6 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   train_samples_per_iteration : int
     Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
     or -2 auto-tuning (default)
-  target_ratio_comm_to_comp : float
-    Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning).
-    Higher values can lead to faster convergence.
   seed : int
     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
   adaptive_rate : bool
@@ -867,7 +856,6 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
 
 def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=None,checkpoint=None,
                 use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
-                target_ratio_comm_to_comp=None,
                 seed=None,adaptive_rate=None,rho=None,epsilon=None,rate=None,rate_annealing=None,rate_decay=None,
                 momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
                 input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
@@ -905,9 +893,6 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     train_samples_per_iteration : int
       Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data
       (e.g., replicated training data); or -2 auto-tuning (default)
-    target_ratio_comm_to_comp : float
-      Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning).
-      Higher values can lead to faster convergence.
     seed : int
       Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
     adaptive_rate : bool
@@ -1018,8 +1003,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
 def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,
         distribution=None,tweedie_power=None,ntrees=None,max_depth=None,min_rows=None,
-        learn_rate=None,sample_rate=None,col_sample_rate=None,nbins=None,
-        nbins_top_level=None,nbins_cats=None,validation_frame=None,
+        learn_rate=None,nbins=None,nbins_top_level=None,nbins_cats=None,validation_frame=None,
         balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
         score_each_iteration=None,offset_column=None,weights_column=None,do_future=None,checkpoint=None):
@@ -1050,11 +1034,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   min_rows : int
     Minimum number of rows to assign to terminal nodes.
   learn_rate : float
-    Learning rate (from 0.0 to 1.0)
-  sample_rate : float
-    Row sample rate (from 0.0 to 1.0)
-  col_sample_rate : float
-    Column sample rate (from 0.0 to 1.0)
+    An integer from 0.0 to 1.0
   nbins : int
     For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
   nbins_top_level : int
@@ -1349,9 +1329,8 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   pca_method : str
     A character string that indicates how PCA should be calculated.
     Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package,
-    "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random 
-    subspace, "GLRM": fit a generalized low rank model with an l2 loss function (no regularization) and solve for the SVD using 
-    local matrix algebra.
+    "Power": computation of the SVD using the power iteration method, "GLRM": fit a generalized low rank model with an l2 loss function
+    (no regularization) and solve for the SVD using local matrix algebra.
 
   :return: a new dim reduction model
   """
@@ -1399,7 +1378,7 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
          ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
-         user_y=None,user_x=None,recover_svd=None,expand_user_y=None):
+         user_y=None,user_x=None,recover_svd=None):
   """
   Builds a generalized low rank model of a H2O dataset.
 
@@ -1457,13 +1436,11 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
     "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random subspace.
   user_x : H2OFrame
     (Optional) An H2OFrame object specifying the initial X matrix. Only used when init = "User".
-  user_y : H2OFrame
+  user_y : 
     (Optional) An H2OFrame object specifying the initial Y matrix. Only used when init = "User".
   recover_svd : bool
     A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized
     low rank decomposition.
-  expand_user_y : bool
-	A logical value indicating whether the categorical columns of the initial Y matrix should be one-hot expanded. Only used when init = "User" and user_y is specified.
 
 
   :return: a new dim reduction model
@@ -1627,7 +1604,7 @@ def network_test():
   res["table"].show()
 
 
-def _locate(path):
+def locate(path):
   """
   Search for a relative path and turn it into an absolute path.
   This is handy when hunting for data files to be passed into h2o and used by import file.
@@ -1692,7 +1669,7 @@ def as_list(data, use_pandas=True):
 
   :return: List of list (Rows x Columns).
   """
-  return H2OFrame.as_data_frame(data, use_pandas=use_pandas)
+  return H2OFrame.as_data_frame(data, use_pandas)
 
 
 def set_timezone(tz):
@@ -1809,28 +1786,17 @@ class H2ODisplay:
     table= "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
     table_rows=[]
     if header is not None:
-      table_rows.append(H2ODisplay._html_row(header, bold=True))
+      table_rows.append(H2ODisplay._html_row(header))
     for row in rows:
       table_rows.append(H2ODisplay._html_row(row))
     return table.format("\n".join(table_rows))
 
   @staticmethod
-  def _html_row(row, bold=False):
+  def _html_row(row):
     res = "<tr>{}</tr>"
-    entry = "<td><b>{}</b></td>"if bold else "<td>{}</td>"
-    #format full floating point numbers to only 1 decimal place
-    entries = "\n".join([entry.format(str(r))
-                         if len(str(r)) < 10 or not H2ODisplay._is_number(str(r))
-                         else entry.format("{0:.1f}".format(float(str(r)))) for r in row])
+    entry = "<td>{}</td>"
+    entries = "\n".join([entry.format(str(r)) for r in row])
     return res.format(entries)
-
-  @staticmethod
-  def _is_number(s):
-    try:
-      float(s)
-      return True
-    except ValueError:
-      return False
 
 def can_use_pandas():
   try:
@@ -1844,36 +1810,28 @@ def can_use_pandas():
 
 def h2o_deprecated(newfun=None):
   def o(fun):
+    if newfun is not None: m = "{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__)
+    else:                  m = "{} is deprecated.".format(fun.__name__)
+    @functools.wraps(fun)
     def i(*args, **kwargs):
-      print '\n'
-      if newfun is None: raise DeprecationWarning("{} is deprecated.".format(fun.__name__))
-      warnings.warn("{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__), category=DeprecationWarning, stacklevel=2)
-      return newfun(*args, **kwargs)
+      print
+      print
+      warnings.warn(m, category=DeprecationWarning, stacklevel=2)
+      return fun(*args, **kwargs)
     return i
   return o
 
 @h2o_deprecated(import_file)
-def import_frame():
+def import_frame(path=None):
   """
   Deprecated for import_file.
 
   Parameters
   ----------
   path : str
-    A path specifying the location of the data to import.
+    A path specifiying the location of the data to import.
 
   :return: A new H2OFrame
   """
-
-@h2o_deprecated()
-def parse():
-  """
-  External use of parse is deprecated. parse has been renamed _parse for internal use.
-
-  Parameters
-  ----------
-  setup : dict
-    The result of calling parse_setup.
-
-  :return: A new H2OFrame
-  """
+  warnings.warn("deprecated: Use import_file", DeprecationWarning)
+  return import_file(path)

@@ -1,7 +1,7 @@
 ####### This tests offset in gbm for bernoulli by comparing results with R ######
 
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test <- function() {
     cars = h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))

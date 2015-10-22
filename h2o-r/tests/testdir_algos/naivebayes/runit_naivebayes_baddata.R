@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
 
 test.nbayes.bad_data <- function() {
   rawdata <- matrix(rnorm(1000), nrow = 100, ncol = 10)

@@ -8,7 +8,7 @@
 \begin{document}
 
 %\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
-\input{common/conf_listings_colorized.tex}  %Use this for online version
+\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
 
 \thispagestyle{empty} %removes page number
@@ -16,7 +16,7 @@
 
 
 \begin{center}
-\textsc{\Large\bf{Gradient Boosted Models with H2O}}
+\textsc{\Large\bf{Gradient Boosted Models with H2O's R Package}}
 
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
@@ -35,7 +35,7 @@
 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fourth Edition 
+\monthname \hspace{1pt}  \the\year: Third Edition 
 
 \bigskip
 \end{center}
@@ -56,7 +56,7 @@
 
 {\raggedright 
 
-Gradient Boosted Models with H2O\\
+Gradient Boosted Models with H2O's R Package\\
 
   by Cliff Click, Jessica Lanford, \\
 Michal Malohlava, Viraj Parmar, \\
@@ -69,7 +69,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fourth Edition 
+\monthname \hspace{1pt}  \the\year: Third Edition 
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -141,7 +141,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Aug. 2015). \t
 \section{Overview}
 
 A GBM is an ensemble of either regression or classification tree models.
-Both are forward-learning ensemble methods that obtain predictive results using gradually improved estimations.
+Both are forward-learning ensemble methods that obtain predictive results through gradually improved estimations.
 
 Boosting is a flexible nonlinear regression procedure that helps improve the accuracy of trees. Weak classification algorithms are sequentially applied to the incrementally changed data to create a series of decision trees, producing an ensemble of weak prediction models. 
 
@@ -154,17 +154,15 @@ H2O's GBM functionalities include:
 \begin{itemize}
 \item supervised learning for regression and classification tasks
 \item distributed and parallelized computation on either a single node or a multi-node cluster
-\item fast and memory-efficient Java implementations of the algorithms
+\item fast and memory-efficient Java implementations of the underlying algorithms
 \item the ability to run H2O from R, Python, Scala, or the intuitive web UI (Flow)
 \item grid search for hyperparameter optimization and model selection
 \item model export in plain Java code for deployment in production environments
-\item additional parameters for model tuning (for a complete listing of parameters, refer to the {\textbf{\nameref{ssec:Model Parameters}}} section.)
+\item additional parameters for model tuning (for a complete listing of parameters, refer to the \nameref{ssec:Model Parameters} section.)
 \end{itemize}
 
 
-Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. 
-
-Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
+Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
 
 
 \subsection{Theory and Framework}
@@ -203,7 +201,7 @@ Hastie et al (2010) at {\url{http://statweb.stanford.edu/~tibs/ElemStatLearn/}}.
 \\
 \line(1,0){350}
 
-In the above algorithm for multi-class classification, H2O builds $k$-regression trees: one tree represents each target class. The index, $m$, tracks the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. 
+In the above algorithm for multi-class classification, H2O builds $k$-regression trees: one tree represents each target class. The index, $m$, tracks of the number of weak learners added to the current ensemble. Within this outer loop, there is an inner loop across each of the $K$ classes. 
 
 \begin{minipage}{\textwidth}
 Within this inner loop, the first step is to compute the residuals, $r_{ikm}$, which are actually the gradient values, for each of the $N$ bins in the CART model. A regression tree is then fit to these gradient computations. This fitting process is distributed and parallelized. Details on this framework are available at {\url{http://h2o.ai/blog/2013/10/building-distributed-gbm-h2o/}}.
@@ -279,7 +277,7 @@ since Cost = \#columns $\cdot N \cdot K \cdot 2^{J}$. Lower values generally hav
 performance. 
 
 Models with $4 \leq J \leq 8$ and a larger number of trees $M$ reflect this generalization.
-Grid search models can be used to tune these parameters in the model selection process. For more information, refer to {\textbf{\nameref{ssec:Grid search}}}. 
+Grid search models can be used to tune these parameters in the model selection process. For more information, refer to \nameref{ssec:Grid search}. 
 
 To control the learning rate of the model, specify the \texttt{learn\_rate} constant, which is actually a
 form of regularization. Shrinkage modifies the algorithm's update of $f_{km}(x)$ with the scaled
@@ -300,23 +298,23 @@ Loading a dataset in R or Python for use with H2O is slightly different from the
 \waterExampleInR
 Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
 
-\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_uploadfile_example.R}
+\lstinputlisting[style=R]{gbm/gbm_uploadfile_example.R}
 \medskip
 \waterExampleInPython
 Load the data to your current working directory in Python (do this for any future dataset downloads), and then run the following command.
 
-\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_uploadfile_example.py}
+\lstinputlisting[style=python]{gbm/gbm_uploadfile_example.py}
 
 
 \subsection{Performing a Trial Run}
 Load the Airline dataset into H2O and select the variables to use to predict  the response. The following example models delayed flights based on the departure's scheduled day of the week and day of the month.
 
 \waterExampleInR
-\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_examplerun.R}
+\lstinputlisting[style=R]{gbm/gbm_examplerun.R}
 
 
 \waterExampleInPython
-\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_examplerun.py}
+\lstinputlisting[style=python]{gbm/gbm_examplerun.py}
 
 
 Since it is meant just as a trial run, the model contains only 100 trees. In this trial run, no validation set was
@@ -329,12 +327,12 @@ Now, extract the parameters of the model, examine the scoring process, and make 
 \begin{minipage}{\textwidth}
 
 \waterExampleInR
-\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_extractmodelparams.R}
+\lstinputlisting[style=R]{gbm/gbm_extractmodelparams.R}
 \end{minipage}
 
 \begin{minipage}{\textwidth}
 \waterExampleInPython
-\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_extractmodelparams.py}
+\lstinputlisting[style=python]{gbm/gbm_extractmodelparams.py}
 \end{minipage}
 
 The first command ({\texttt{air.model}}) returns the trained model's training and validation errors.
@@ -343,12 +341,12 @@ new data, which can then be used for further tasks in the interactive modeling p
 
 \begin{minipage}{\textwidth}
 \waterExampleInR
-\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_predict.R}
+\lstinputlisting[style=R]{gbm/gbm_predict.R}
 \end{minipage}
 
 \begin{minipage}{\textwidth}
 \waterExampleInPython
-\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_predict.py}
+\lstinputlisting[style=python]{gbm/gbm_predict.py}
 \end{minipage}
 
 \subsection{Web Interface}
@@ -365,19 +363,13 @@ The GBM algorithm automatically calculates variable importances. The model outpu
 
 To view a visualization of the variable importances using the web interface, click the \textsc{Model} menu, then select \textsc{List All Models}. Click the \textsc{Inspect} button next to the model, then select \textsc{output - Variable Importances}. 
 
-\begin{minipage}{\textwidth}
 \subsection{Supported Output}
 The following algorithm outputs are supported:
-
 \begin{itemize}
 \item {\bf{Regression}}: Mean Squared Error (MSE), with an option to output variable importances or a Plain Old Java Object (POJO) model
-
 \item {\bf{Binary Classification}}: Confusion Matrix or Area Under Curve (AUC), with an option to output variable importances or a Java POJO model
-
 \item {\bf{Classification}}: Confusion Matrix (with an option to output variable importances or a Java POJO model)
 \end{itemize}
-\end{minipage}
-
 
 \subsection{Java Models}
 
@@ -398,18 +390,20 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 
 To enable grid search capabilities for model tuning, specify sets of values for parameter arguments that will configure certain parameters and then observe the changes in the model behavior. The following example represents a grid search:
 
+\begin{minipage}{\textwidth}
 \waterExampleInR
-\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch.R}
+\lstinputlisting[style=R]{gbm/gbm_gridsearch.R}
+\end{minipage}
 
 %is a Python example available?
 
 This example specifies three different tree numbers, three different tree sizes, and two different shrinkage values. This grid search model effectively trains eighteen different models over the possible combinations of these parameters.
 
-Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle insights in the model tuning and selection process, especially during inspection and comparison of the trained models after the grid search process is complete. To decide how and when to choose different parameter configurations in a grid search, refer to {\textbf{\nameref{ssec:Model Parameters}}} for parameter descriptions and suggested values.
+Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle insights in the model tuning and selection process, especially during inspection and comparison of the trained models after the grid search process is complete. To decide how and when to choose different parameter configurations in a grid search, refer to \nameref{ssec:Model Parameters} for parameter descriptions and suggested values.
 
 \begin{minipage}{\textwidth}
 \waterExampleInR
-\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch_result.R} 
+\lstinputlisting[style=R]{gbm/gbm_gridsearch_result.R} 
 \end{minipage}
 
 
@@ -497,7 +491,7 @@ This section describes the functions of the parameters for GBM.
 
 \textbf{Cliff Click}
 
-Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff wrote his first compiler when he was 15 (Pascal to TRS Z-80!), although Cliff`s most famous compiler is the HotSpot Server Compiler (the Sea of Nodes IR). Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
+Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff wrote his first compiler when he was 15 (Pascal to TRS Z-80!), although Cliff’s most famous compiler is the HotSpot Server Compiler (the Sea of Nodes IR). Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
 
 \textbf{Jessica Lanford}
 

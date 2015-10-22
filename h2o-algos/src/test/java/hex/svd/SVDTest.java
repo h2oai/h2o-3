@@ -61,7 +61,13 @@ public class SVDTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -100,7 +106,11 @@ public class SVDTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -146,7 +156,11 @@ public class SVDTest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -197,7 +211,13 @@ public class SVDTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         if (train != null) train.delete();
-        if (model != null) model.delete();
+        if (model != null) {
+          if(model._parms._keep_u)
+            model._output._u_key.get().delete();
+          if (model._parms._save_v_frame)
+            model._output._v_key.get().delete();
+          model.delete();
+        }
       }
     }
   }
@@ -240,7 +260,13 @@ public class SVDTest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -284,7 +310,13 @@ public class SVDTest extends TestUtil {
       throw new RuntimeException(t);
     } finally {
       if (train != null) train.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if(model._parms._keep_u)
+          model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -328,7 +360,13 @@ public class SVDTest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -377,7 +415,13 @@ public class SVDTest extends TestUtil {
       if( fr2 != null ) fr2.delete();
       if( tr  != null ) tr .delete();
       if( te  != null ) te .delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -423,7 +467,13 @@ public class SVDTest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -462,7 +512,13 @@ public class SVDTest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -507,7 +563,13 @@ public class SVDTest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
-      if (model != null) model.delete();
+      if (model != null) {
+        if (model._parms._keep_u)
+          model._output._u_key.get().delete();
+        if (model._parms._save_v_frame)
+          model._output._v_key.get().delete();
+        model.delete();
+      }
     }
   }
 

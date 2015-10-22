@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 def show_jira():
     
@@ -13,9 +9,5 @@ def show_jira():
     h2o_data.set_names(['response', 'predictor'])
     h2o_data.show()
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(show_jira)
-else:
-    show_jira()
+    tests.run_test(sys.argv, show_jira)

@@ -1,5 +1,5 @@
-
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
 
 test.pubdev_1706 <- function() {
   covtype = h2o.importFile(path=locate("smalldata/covtype/covtype.20k.data"))

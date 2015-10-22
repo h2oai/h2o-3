@@ -1,14 +1,10 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 
 def tweedie_offset():
 
-    insurance = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
     insurance["offset"] = insurance["Holders"].log()
     insurance["Group"] = insurance["Group"].asfactor()
     insurance["Age"] = insurance["Age"].asfactor()
@@ -47,9 +43,5 @@ def tweedie_offset():
                                                           "{0}".format(predictions[0].min())
     assert abs(397.3-predictions[0].max()) < 40, "Expected max of predictions to be 397.3, but got " \
                                                           "{0}".format(predictions[0].max())
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(tweedie_offset)
-else:
-    tweedie_offset()
+    tests.run_test(sys.argv, tweedie_offset)

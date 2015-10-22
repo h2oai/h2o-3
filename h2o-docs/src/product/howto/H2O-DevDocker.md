@@ -18,7 +18,6 @@ This walkthrough describes:
   or
 
   * Mac OS X 10.6+
-  * VirtualBox
   * Latest version of Docker is installed and configured
   * Docker daemon is running - enter all commands below in the Docker daemon window
   * Using `User` directory (not `root`)
@@ -51,11 +50,11 @@ mkdir -p /data/h2o-{{branch_name}}
 
 Next, either download or create a Dockerfile, which is a build recipe that builds the container.
 
-Download and use our [Dockerfile template](https://github.com/h2oai/h2o-3/blob/master/Dockerfile) by running:
+Download and use our [Dockerfile template](https://github.com/h2oai/h2o-3/blob/master/docker/Dockerfile) by running:
 
 ```
 cd /data/h2o-{{branch_name}}
-wget https://raw.githubusercontent.com/h2oai/h2o-3/master/Dockerfile
+wget https://raw.githubusercontent.com/h2oai/h2o-3/master/docker/Dockerfile
 ```
 
 The Dockerfile:

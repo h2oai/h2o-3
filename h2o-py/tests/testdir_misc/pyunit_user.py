@@ -1,15 +1,11 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 
 
 def user():
 
-    a = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))[0:4]
+    a = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     a.head()
 
     print a[0].names  # Column header
@@ -40,7 +36,7 @@ def user():
     try:                   print a["Sepal_len"].dim  # Error, mispelt column name
     except Exception: pass  # Expected error
 
-    b = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))[0:4]
+    b = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
     d = c + c + sum(a)
     e = c + a + 1
@@ -68,9 +64,5 @@ def user():
     sliced = a[0:51,0]
     sliced.show()
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(user)
-else:
-    user()
+    tests.run_test(sys.argv, user)

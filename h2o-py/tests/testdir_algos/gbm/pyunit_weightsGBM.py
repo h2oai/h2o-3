@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import random
 import copy
 
@@ -69,7 +65,7 @@ def weights_check():
         assert abs(bin1_auc - bin2_auc) < 3e-4 * bin1_auc, "Expected auc's to be the same, but got {0}, and {1}".format(bin1_auc, bin2_auc)
         assert abs(mul1_mse - mul1_mse) < 1e-6 * mul1_mse, "Expected auc's to be the same, but got {0}, and {1}".format(mul1_mse, mul2_mse)
 
-    h2o_cars_data = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+    h2o_cars_data = h2o.import_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
     h2o_cars_data["economy_20mpg"] = h2o_cars_data["economy_20mpg"].asfactor()
     h2o_cars_data["cylinders"] = h2o_cars_data["cylinders"].asfactor()
 
@@ -124,9 +120,5 @@ def weights_check():
 
     # TODO: negative weights???
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(weights_check)
-else:
-    weights_check()
+    tests.run_test(sys.argv, weights_check)

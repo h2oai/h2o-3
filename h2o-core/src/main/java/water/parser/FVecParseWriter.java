@@ -1,5 +1,7 @@
 package water.parser;
 
+// ------------------------------------------------------------------------
+
 import water.Futures;
 import water.Iced;
 import water.exceptions.H2OParseException;
@@ -11,19 +13,24 @@ import water.fvec.Vec;
  * @author tomasnykodym
  */
 public class FVecParseWriter extends Iced implements StreamParseWriter {
-  protected AppendableVec[] _vecs;
   protected transient NewChunk[] _nvs;
-  protected transient final Categorical [] _categoricals;
-  protected transient final byte[] _ctypes;
+  protected AppendableVec[]_vecs;
+  protected final Categorical [] _categoricals;
+  protected transient byte[] _ctypes;
   long _nLines;
   int _nCols;
   int _col = -1;
   final int _cidx;
   final int _chunkSize;
+  boolean _closedVecs = false;
+  int _nChunks;
   private final Vec.VectorGroup _vg;
 
+  public int nChunks(){return _nChunks;}
+
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec[] avs){
-    _ctypes = ctypes;           // Required not-null
+    if (ctypes != null) _ctypes = ctypes;
+    else _ctypes = new byte[avs.length];
     _vecs = avs;
     _nvs = new NewChunk[avs.length];
     for(int i = 0; i < avs.length; ++i)
@@ -37,14 +44,22 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
 
   @Override public FVecParseWriter reduce(StreamParseWriter sdout){
     FVecParseWriter dout = (FVecParseWriter)sdout;
-    _nCols = Math.max(_nCols,dout._nCols); // SVMLight: max of columns
-    if( _vecs != dout._vecs ) {
-      if( dout._vecs.length > _vecs.length ) { // Swap longer one over the returned value
-        AppendableVec[] tmpv = _vecs;  _vecs = dout._vecs;  dout._vecs = tmpv;
+    if( dout == null ) return this;
+    _nCols = Math.max(_nCols,dout._nCols);
+    _nChunks += dout._nChunks;
+    if( dout!=null && _vecs != dout._vecs) {
+      if(dout._vecs.length > _vecs.length) {
+        AppendableVec [] v = _vecs;
+        _vecs = dout._vecs;
+        for(int i = 1; i < _vecs.length; ++i)
+          _vecs[i]._tmp_espc = _vecs[0]._tmp_espc;
+        dout._vecs = v;
       }
-      for(int i = 0; i < dout._vecs.length; ++i)
+      for(int i = 0; i < dout._vecs.length; ++i) {
         _vecs[i].reduce(dout._vecs[i]);
+      }
     }
+
     return this;
   }
   @Override public FVecParseWriter close(){
@@ -54,17 +69,37 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     return this;
   }
   @Override public FVecParseWriter close(Futures fs){
+    ++_nChunks;
     if( _nvs == null ) return this; // Might call close twice
-    for(int i=0; i < _nvs.length; i++) {
-      _nvs[i].close(_cidx, fs);
-      _nvs[i] = null; // free immediately, don't wait for all columns to close
-    }
+    for(NewChunk nv:_nvs) nv.close(_cidx, fs);
     _nvs = null;  // Free for GC
     return this;
   }
   @Override public FVecParseWriter nextChunk(){
     return  new FVecParseWriter(_vg, _cidx+1, _categoricals, _ctypes, _chunkSize, _vecs);
   }
+
+  /* never called
+  private Vec [] closeVecs(){
+    Futures fs = new Futures();
+    _closedVecs = true;
+    Vec [] res = new Vec[_vecs.length];
+    for(int i = 0; i < _vecs[0]._espc.length; ++i){
+      int j = 0;
+      while(j < _vecs.length && _vecs[j]._espc[i] == 0)++j;
+      if(j == _vecs.length)break;
+      final long clines = _vecs[j]._espc[i];
+      for(AppendableVec v:_vecs) {
+        if(v._espc[i] == 0)v._espc[i] = clines;
+        else assert v._espc[i] == clines:"incompatible number of lines: " +  v._espc[i] +  " != " + clines;
+      }
+    }
+    for(int i = 0; i < _vecs.length; ++i)
+      res[i] = _vecs[i].close(fs);
+    _vecs = null;  // Free for GC
+    fs.blockForPending();
+    return res;
+  } */
 
   @Override public void newLine() {
     if(_col >= 0){
@@ -131,7 +166,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
       int exp = 0;
       long number = (long)d;
       while (number != d) {
-        d *= 10;
+        d = d * 10;
         --exp;
         number = (long)d;
       }

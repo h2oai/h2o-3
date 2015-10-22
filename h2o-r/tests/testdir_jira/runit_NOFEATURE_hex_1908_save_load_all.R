@@ -3,14 +3,16 @@
 # Description: Build GLM model, save model in R, copy model and load in R
 ##
 
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_jira")
 
-
+source('../h2o-runit.R')
 
 test.hex_1908 <- function() {
-
-  temp_subdir1 = sandboxMakeSubDir(dirname="tmp")
+  temp_dir = tempdir()
+  temp_subdir1 = paste(temp_dir, "tmp", sep = .Platform$file.sep)
+  temp_subdir2 = paste(temp_dir, "tmp2", sep = .Platform$file.sep)
+  dir.create(temp_subdir1)
   
   # Test saving and loading of GLM model
   Log.info("Importing airlines.csv...")
@@ -48,8 +50,8 @@ test.hex_1908 <- function() {
   h2o.removeAll(object = conn)
 
   # Proving we can move files from one directory to another and not affect the load of the model
-  temp_subdir2 = sandboxRenameSubDir(temp_subdir1,"tmp2")
   Log.info(paste("Moving models from", temp_subdir1, "to", temp_subdir2))
+  file.rename(temp_subdir1, temp_subdir2)
 
   # Check to make sure predictions made on loaded model is the same as glm.pred
   airlines.hex = h2o.importFile(normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))

@@ -3,9 +3,9 @@
 # Then, it runs K-Means with k = 5 centers on a subset of characteristics
 # Note: This demo runs H2O on localhost:54321
 library(h2o)
-h2o.init()
+localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 
-prostate.hex = h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate")
+prostate.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate")
 summary(prostate.hex)
 prostate.km = h2o.kmeans(prostate.hex, k = 10, x = c("AGE","RACE","GLEASON","CAPSULE","DCAPS"))
 print(prostate.km)

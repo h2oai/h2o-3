@@ -16,18 +16,19 @@ PASS_BANNER <- function() {
 }
 
 get_args <- function(args) {
-  myIP   <- "127.0.0.1"
-  myPort <- 54321
-  i <- 1
-  while (i <= length(args)) {
-    s <- args[i]
-    if (s == "--usecloud") {
-      i <- i + 1
-      argsplit <- strsplit(args[i], ":")[[1]]
-      myIP     <- argsplit[1]
-      myPort   <- as.numeric(argsplit[2])
-    }
-    i <- i + 1
+  fileName <- commandArgs()[grep('*\\.R',unlist(commandArgs()))]
+  if (length(args) > 1) {
+    m <- paste("Usage: R f ", paste(fileName, " --args H2OServer:Port",sep=""),sep="")
+    stop(m);
+  }
+
+  if (length(args) == 0) {
+    myIP   = "127.0.0.1"
+    myPort = 54321
+  } else {
+    argsplit = strsplit(args[1], ":")[[1]]
+    myIP     = argsplit[1]
+    myPort   = as.numeric(argsplit[2])
   }
   return(list(myIP,myPort));
 }

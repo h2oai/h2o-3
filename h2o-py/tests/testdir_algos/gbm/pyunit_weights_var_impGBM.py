@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../../")
+import h2o, tests
 import random
 
 def weights_var_imp():
@@ -73,7 +69,7 @@ def weights_var_imp():
         for bvi1, bvi2 in zip(bin1_vi, bin2_vi): assert bvi1 == bvi1, "Expected vi's (binomial)    to be the same, but got {0}, and {1}".format(bvi1, bvi2)
         for mvi1, mvi2 in zip(mul1_vi, mul2_vi): assert mvi1 == mvi1, "Expected vi's (multinomial) to be the same, but got {0}, and {1}".format(mvi1, mvi2)
 
-    h2o_cars_data = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+    h2o_cars_data = h2o.import_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
     h2o_cars_data["economy_20mpg"] = h2o_cars_data["economy_20mpg"].asfactor()
     h2o_cars_data["cylinders"] = h2o_cars_data["cylinders"].asfactor()
 
@@ -118,9 +114,5 @@ def weights_var_imp():
     print "\n\nChecking that doubling some weights is equivalent to doubling those observations:"
     check_same(h2o_data_doubled, h2o_data_doubled_weights, 1)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(weights_var_imp)
-else:
-    weights_var_imp()
+    tests.run_test(sys.argv, weights_var_imp)

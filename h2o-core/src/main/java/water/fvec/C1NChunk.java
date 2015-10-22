@@ -29,6 +29,6 @@ public class C1NChunk extends Chunk {
   // Leave _vec & _chk2 null, leave _len unknown.
   @Override final public C1NChunk read_impl(AutoBuffer ab) {
     _mem = ab.bufClose(); _start = -1; _cidx = -1; set_len(_mem.length); return this; }
-  @Override public boolean hasFloat() {return false;}
-  @Override public boolean hasNA() { return false; }
+  @Override
+  public boolean hasFloat() {return false;}
 }

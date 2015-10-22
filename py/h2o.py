@@ -1,6 +1,6 @@
 import sys, os, getpass, logging, time, inspect, requests, json
-import h2o_test_utils
-from h2o_test_utils import log, log_rest
+import h2o_util
+from h2o_util import log, log_rest
 import h2o_print as h2p
 
 class H2O(object):
@@ -303,7 +303,7 @@ class H2O(object):
         try:
             rjson = r.json()
         except:
-            print h2o_test_utils.dump_json(r.text)
+            print h2o_util.dump_json(r.text)
             if not isinstance(r, (list, dict)):
                 raise Exception("h2o json responses should always be lists or dicts, see previous for text")
 
@@ -317,7 +317,7 @@ class H2O(object):
         for e in ['error', 'Error', 'errors', 'Errors']:
             # error can be null (python None). This happens in exec2
             if e in rjson and rjson[e]:
-                H2O.verboseprint("rjson:" + h2o_test_utils.dump_json(rjson))
+                H2O.verboseprint("rjson:" + h2o_util.dump_json(rjson))
                 emsg = 'rjson %s in %s: %s' % (e, inspect.stack()[1][3], rjson[e])
                 if ignoreH2oError:
                     # well, we print it..so not totally ignore. test can look at rjson returned
@@ -382,7 +382,7 @@ class H2O(object):
         params_dict = {
             'job_key': job_key
         }
-        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'jobs', H2O.verbose)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'jobs', H2O.verbose)
         result = self.__do_json_request('/3/Jobs', timeout=timeoutSecs, params=params_dict)
         return result
 
@@ -394,7 +394,7 @@ class H2O(object):
     def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, **kwargs):
         params_dict = {
         }
-        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'poll_job', H2O.verbose)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'poll_job', H2O.verbose)
 
         start_time = time.time()
         while True:
@@ -422,7 +422,7 @@ class H2O(object):
             timeout=timeoutSecs,
             params=kwargs
         )
-        H2O.verboseprint("\ncreate_frame result:", h2o_test_utils.dump_json(a))
+        H2O.verboseprint("\ncreate_frame result:", h2o_util.dump_json(a))
         return a
 
 
@@ -435,7 +435,7 @@ class H2O(object):
             postData=kwargs
         )
         job_json = self.poll_job(a["key"]["name"], timeoutSecs=timeoutSecs)
-        H2O.verboseprint("\nsplit_frame result:", h2o_test_utils.dump_json(a))
+        H2O.verboseprint("\nsplit_frame result:", h2o_util.dump_json(a))
         return a
 
     '''
@@ -446,7 +446,7 @@ class H2O(object):
                                    timeout=timeoutSecs,
                                    postData=kwargs
         )
-        H2O.verboseprint("\ninteraction result:", h2o_test_utils.dump_json(a))
+        H2O.verboseprint("\ninteraction result:", h2o_util.dump_json(a))
         return a
 
     ''' 
@@ -458,7 +458,7 @@ class H2O(object):
             timeout=timeoutSecs,
             params={"path": path}
         )
-        H2O.verboseprint("\nimport_files result:", h2o_test_utils.dump_json(a))
+        H2O.verboseprint("\nimport_files result:", h2o_util.dump_json(a))
         return a
 
 
@@ -480,9 +480,9 @@ class H2O(object):
         parse_setup_params = {
             'source_frames': '["' + key + '"]'  # NOTE: quote key names
         }
-        # h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
+        # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
         setup_result = self.__do_json_request(jsonRequest="/3/ParseSetup", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
-        H2O.verboseprint("ParseSetup result:", h2o_test_utils.dump_json(setup_result))
+        H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
         # and then Parse?source_frames=<keys list> and params from the ParseSetup result
@@ -503,10 +503,10 @@ class H2O(object):
             'chunk_size': setup_result['chunk_size'],
         }
         H2O.verboseprint("parse_params: " + repr(parse_params))
-        h2o_test_utils.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
+        h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
 
         parse_result = self.__do_json_request(jsonRequest="/3/Parse", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
-        H2O.verboseprint("Parse result:", h2o_test_utils.dump_json(parse_result))
+        H2O.verboseprint("Parse result:", h2o_util.dump_json(parse_result))
 
         # print("Parse result:", repr(parse_result))
         job_key = parse_result['job']['key']['name']
@@ -538,7 +538,7 @@ class H2O(object):
             'row_offset': 0,
             'row_count': 100
         }
-        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
         
         if key:
             result = self.__do_json_request('/3/Frames/' + key, timeout=timeoutSecs, params=params_dict)
@@ -555,7 +555,7 @@ class H2O(object):
             'row_offset': 0,
             'row_count': 100
         }
-        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'columns', H2O.verbose)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', H2O.verbose)
         
         result = self.__do_json_request('/3/Frames/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
         return result
@@ -569,7 +569,7 @@ class H2O(object):
             'row_offset': 0,
             'row_count': 100
         }
-        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'column', H2O.verbose)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', H2O.verbose)
         
         result = self.__do_json_request('/3/Frames/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
         return result
@@ -583,7 +583,7 @@ class H2O(object):
             'row_offset': 0,
             'row_count': 100
         }
-        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'summary', H2O.verbose)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', H2O.verbose)
         
         result = self.__do_json_request('/3/Frames/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
         return result
@@ -625,7 +625,7 @@ class H2O(object):
     def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
         params_dict = {
         }
-        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'model_builders', H2O.verbose)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', H2O.verbose)
 
         if algo:
             if algo in H2O.experimental_algos:
@@ -792,7 +792,7 @@ class H2O(object):
         params_dict = {
             'find_compatible_frames': False
         }
-        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'models', H2O.verbose)
+        h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', H2O.verbose)
 
         if key:
             result = self.__do_json_request(str(api_version) + '/Models/' + key, timeout=timeoutSecs, params=params_dict)

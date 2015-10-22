@@ -6,10 +6,10 @@
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
 
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 # setwd("/Users/tomk/0xdata/ws/h2o-3/h2o-r/tests/testdir_javapredict")
 TEST_ROOT_DIR <- ".."
-
+source("../h2o-runit.R")
 source("../Utils/shared_javapredict.R")
 options(echo = TRUE)
 

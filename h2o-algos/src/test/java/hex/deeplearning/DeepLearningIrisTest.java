@@ -116,12 +116,12 @@ public class DeepLearningIrisTest extends TestUtil {
                               // of classes is not known unless we visit
                               // all the response data - force that now.
                               String respname = _train.lastVecName();
-                              Vec resp = _train.lastVec().toCategoricalVec();
+                              Vec resp = _train.lastVec().toCategorical();
                               _train.remove(respname).remove();
                               _train.add(respname, resp);
                               DKV.put(_train);
 
-                              Vec vresp = _test.lastVec().toCategoricalVec();
+                              Vec vresp = _test.lastVec().toCategorical();
                               _test.remove(respname).remove();
                               _test.add(respname, vresp);
                               DKV.put(_test);

@@ -1,10 +1,6 @@
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
-
-
-
+sys.path.insert(1, "../../")
+import h2o, tests
 import random
 
 def all_confusion_matrix_funcs():
@@ -16,10 +12,10 @@ def all_confusion_matrix_funcs():
     valid = [True, False]
 
     print "PARSING TRAINING DATA"
-    air_train = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_train = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
     print "PARSING TESTING DATA"
-    air_test = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_file(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
     print
     print "RUNNING FIRST GBM: "
@@ -133,9 +129,5 @@ def all_confusion_matrix_funcs():
     assert cm_count == air_test.nrow, "incorrect confusion matrix elements. Should sum to {0}, but got {1}". \
         format(air_test.nrow, cm_count)
 
-
-
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(all_confusion_matrix_funcs)
-else:
-    all_confusion_matrix_funcs()
+    tests.run_test(sys.argv, all_confusion_matrix_funcs)
