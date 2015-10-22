@@ -35,7 +35,7 @@ def emptyclusKmeans():
     initial_centers[i] = [100*i for z in range(1,len(initial_centers[0])+1)]
 
   initial_centers_sci = np.asarray(initial_centers)
-  initial_centers = [list(x) for x in zip(*initial_centers)]
+  initial_centers = zip(*initial_centers)
 
   initial_centers_h2o = h2o.H2OFrame(initial_centers)
 

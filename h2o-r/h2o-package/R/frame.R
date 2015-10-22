@@ -25,10 +25,10 @@
 #` - TRUE : Node is evaluated, cluster has the ID, and an R GC finalizer will remove this temp ID
 #` - FALSE: Node is evaluated, cluster has the ID, and the user has to explictly remove this permanent ID
 #` - list of Nodes: Then further ID is one of:
-#` - - missing: this Node is lazy and has never been evaluated 
+#` - - missing: this Node is lazy and has never been evaluated
 #` - - NA: this Node has been executed once, but no temp ID was made
 #` - - String: this Node is-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to FALSE
-#` 
+#`
 #` # A number of fields represent cached queries of an evaluated frame.
 #` E$data   <- A cached result; can be a scalar, or a R dataframe result holding
 #`             the first N (typically 10) rows and all cols of the frame
@@ -333,22 +333,22 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' @export
 h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
   chk.Frame(data)
-  
+
   if (! is.numeric(ratios)) stop("ratios must be of type numeric")
   if (length(ratios) < 1) stop("ratios must have length of at least 1")
-  
+
   if (! missing(destination_frames)) {
     if (! is.character(destination_frames)) stop("destination_frames must be of type character")
     if ((length(ratios) + 1) != length(destination_frames)) {
       stop("The number of provided destination_frames must be one more than the number of provided ratios")
     }
   }
-  
+
   if (! is.numeric(seed)) stop("seed must be an integer")
-  
+
   num_slices = length(ratios) + 1
   boundaries = numeric(length(ratios))
-  
+
   i = 1
   last_boundary = 0
   while (i < num_slices) {
@@ -356,21 +356,21 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
     if (ratio < 0) {
       stop("Ratio must be greater than 0")
     }
-        
+
     boundary = last_boundary + ratio
     if (boundary >= 1) {
       stop("Ratios must add up to less than 1.0")
     }
-    
-    boundaries[i] = boundary    
+
+    boundaries[i] = boundary
     last_boundary = boundary
-    
+
     i = i + 1
   }
-  
+
   splits = list()
   tmp_runif = h2o.runif(data, seed)
-  
+
   i = 1
   while (i <= num_slices) {
     if (i == 1) {
@@ -386,7 +386,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
       upper_boundary = boundaries[i]
       tmp_slice = data[((tmp_runif > lower_boundary) & (tmp_runif <= upper_boundary)),]
     }
-    
+
     if (missing(destination_frames)) {
       splits = c(splits, tmp_slice)
     } else {
@@ -394,10 +394,10 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
       tmp_slice2 = h2o.assign(tmp_slice, destination_frame_id)
       splits = c(splits, tmp_slice2)
     }
-    
+
     i = i + 1
   }
-  
+
   return(splits)
 }
 
@@ -464,10 +464,7 @@ median.Frame <- h2o.median
 #' @param x An H2O Frame object.
 #' @param na.rm ignore missing values
 #' @export
-range <- function(x,na.rm = TRUE) {
-  if( !is.Frame(x) ) .Primitive("range")(x,na.rm)
-  else .newExpr("range",x,na.rm)
-}
+range.Frame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
 
 #' Cut H2O Numeric Data to Factor
 #'
