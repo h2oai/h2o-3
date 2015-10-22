@@ -118,19 +118,15 @@ class ASTRowSlice extends ASTPrim {
 }
 
 class ASTFlatten extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (flatten fr)
-  @Override
-  public String str() { return "flatten"; }
+  @Override public String str() { return "flatten"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols()==1 && fr.numRows()==1 ) {
-      if( fr.anyVec().isNumeric() || fr.anyVec().isBad() ) return new ValNum(fr.anyVec().at(0));
-      else if( fr.anyVec().isString() ) return new ValStr(fr.anyVec().atStr(new BufferedString(),0).toString());
-      return new ValStr(fr.domains()[0][(int) fr.anyVec().at8(0)]);
-    }
-    return new ValFrame(fr); // did not flatten
+    if( fr.numCols()!=1 || fr.numRows()!=1 ) return new ValFrame(fr); // did not flatten
+    Vec vec = fr.anyVec();
+    if( vec.isNumeric() || vec.isBad() ) return new ValNum(vec.at(0));
+    return new ValStr( vec.isString() ? vec.atStr(new BufferedString(),0).toString() : vec.factor(vec.at8(0)));
   }
 }
 

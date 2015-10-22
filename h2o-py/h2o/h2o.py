@@ -57,7 +57,7 @@ Parameters
   fui = {"file": os.path.abspath(path)}
   destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
   H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
-  return H2OFrame(raw_id=destination_frame)
+  return H2OFrame.raw_text(raw_id=destination_frame)
 
 
 def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
@@ -87,7 +87,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   if not parse:
       return lazy_import(path)
 
-  return H2OFrame(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
+  return H2OFrame.read_csv(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
 
 def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
   """
@@ -232,9 +232,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
     if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
     setup["check_header"] = first_line_is_header
   parsed = _parse(setup)
-  fr = H2OFrame()
-  fr._update_post_parse(parsed)
-  return fr
+  return H2OFrame.get_frame(parsed["destination_frame"]["name"])
 
 def _quoted(key):
   if key is None: return "\"\""
@@ -252,38 +250,6 @@ def assign(data,id):
   data._keep=True  # named things are always safe
   return data
 
-def which(condition):
-  """
-
-  Parameters
-  ----------
-
-  condition : H2OFrame
-    A conditional statement.
-
-  :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
-  """
-  return H2OFrame(expr=ExprNode("h2o.which",condition))._frame()
-
-def ifelse(test,yes,no):
-  """
-  Semantically equivalent to R's ifelse.
-  Based on the booleans in the test vector, the output has the values of the yes and no
-  vectors interleaved (or merged together).
-
-  Parameters
-  ----------
-
-  test : H2OFrame
-    A "test" H2OFrame
-  yes : H2OFrame
-    A "yes" H2OFrame
-  no : H2OFrame
-    A "no" H2OFrame
-
- :return: An H2OFrame
-  """
-  return H2OFrame(expr=ExprNode("ifelse",test,yes,no))._frame()
 
 def get_future_model(future_model):
   """
@@ -325,7 +291,6 @@ def get_model(model_id):
 def get_frame(frame_id):
   """
   Obtain a handle to the frame in H2O with the frame_id key.
-
   :return: An H2OFrame
   """
   return H2OFrame.get_frame(frame_id)
@@ -419,22 +384,15 @@ def rapids(expr):
 def ls():
   """
   List Keys on an H2O Cluster
-
   :return: Returns a list of keys in the current H2O instance
   """
-  return H2OFrame(expr=ExprNode("ls")).as_data_frame()
+  return H2OFrame(expr.ExprNode("ls")).as_data_frame()
 
 
-def frame(frame_id, exclude=""):
+def frame(frame_id):
   """
   Retrieve metadata for a id that points to a Frame.
-
-  Parameters
-  ----------
-
-  frame_id : str
-    A pointer to a Frame in H2O.
-
+  :param frame_id: A string name of a Frame in H2O.
   :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + urllib.quote(frame_id+exclude))
@@ -442,7 +400,6 @@ def frame(frame_id, exclude=""):
 def frames():
   """
   Retrieve all the Frames.
-
   :return: Meta information on the frames
   """
   return H2OConnection.get_json("Frames")

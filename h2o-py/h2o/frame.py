@@ -572,9 +572,9 @@ class H2OFrame:
   def flatten(self):
     return self._scalar("flatten",self)
 
-  def __getitem__(self, item):  return H2OFrame(self._ex[item])
+  def __getitem__(self, item):  ex = self._ex[item]; return H2OFrame(ex) if isinstance(ex,expr.ExprNode) else ex
   def __setitem__(self, b, c):
-    self._ex = self._ex._setitem(b,c)
+    self._ex = self._ex._setitem(b,c) # Update-in-place
 
   def __int__(self):   return int(self._scalar())
 
@@ -1075,7 +1075,6 @@ class H2OFrame:
   def cut(self, breaks, labels=None, include_lowest=False, right=True, dig_lab=3):
     """
     Cut a numeric vector into factor "buckets". Similar to R's cut method.
-
     :param breaks: The cut points in the numeric vector (must span the range of the col.)
     :param labels: Factor labels, defaults to set notation of intervals defined by breaks.s
     :param include_lowest: By default,  cuts are defined as (lo,hi]. If True, get [lo,hi].
@@ -1084,6 +1083,28 @@ class H2OFrame:
     :return: A factor column.
     """
     return self._newExpr("cut",self,breaks,labels,include_lowest,right,dig_lab)
+
+  def which(self):
+    """
+    Equivalent to [ index for index,value in enumerate(self) if value ]
+    :return: A H2OFrame of 1 column filled with 0-based indices for which the
+    elements are not zero
+    """
+    return self._newExpr("which",self)
+
+  def ifelse(self,yes,no):
+    """Equivalent to [y if t else n for t,y,n in zip(self,yes,no)]
+
+    Based on the booleans in the test vector, the output has the values of the
+    yes and no vectors interleaved (or merged together).  All Frames must have
+    the same row count.  Single column frames are broadened to match wider
+    Frames.  Scalars are allowed, and are also broadened to match wider frames.
+    :param test: Frame of values treated as booleans; may be a single column
+    :param yes: Frame to use if [test] is true ; may be a scalar or single column
+    :param no:  Frame to use if [test] is false; may be a scalar or single column
+    :return: A H2OFrame
+    """
+    return self._newExpr("ifelse",test,yes,no)
 
   def apply(self, fun=None, axis=0):
     """

@@ -256,24 +256,26 @@ class ExprNode:
     :return: An H2OFrame.
     """
     if isinstance(item, (int,basestring,list)): return ExprNode("cols",self,item)  # just columns
-    elif isinstance(item, slice):
-      item = slice(item.start,min(self.ncol,item.stop))
+    if isinstance(item, slice):
+      item = slice(item.start,min(self._ncols,item.stop))
       return ExprNode("cols",self,item)
-    elif isinstance(item, ExprNode): return ExprNode("rows",self,item)  # just rows
-    elif isinstance(item, tuple):
-      rows = item[0]
-      cols = item[1]
-      allrows = False
-      allcols = False
+    if isinstance(item, ExprNode): return ExprNode("rows",self,item)  # just rows
+    if isinstance(item, tuple):
+      rows, cols = item
+      allrows = allcols = False
       if isinstance(cols, slice):  allcols = all([a is None for a in [cols.start,cols.step,cols.stop]])
       if isinstance(rows, slice):  allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
 
-      if allrows and allcols: return self                    # fr[:,:]    -> all rows and columns.. return self
-      if allrows: return ExprNode("cols",self,item[1])  # fr[:,cols] -> really just a column slice
-      if allcols: return ExprNode("rows",self,item[0])  # fr[rows,:] -> really just a row slices
+      if allrows and allcols: return self            # fr[:,:]    -> all rows and columns.. return self
+      if allrows: return ExprNode("cols",self,cols)  # fr[:,cols] -> really just a column slice
+      if allcols: return ExprNode("rows",self,rows)  # fr[rows,:] -> really just a row slices
 
-      res = ExprNode("rows", None, ExprNode("cols",self,item[1]),item[0])
-      return res.flatten() if isinstance(item[0], (basestring,int)) and isinstance(item[1],(basestring,int)) else res
+      res = ExprNode("rows", ExprNode("cols",self,cols),rows)
+      # Pythonic? if the row & col selector turn into ints (or a single col
+      # name), then extract the single element out of the Frame.  Otherwise
+      # return a Frame, EVEN IF the selectors are e.g. slices-of-1-value.
+      return ExprNode("flatten",res)._eager_scalar() if isinstance(rows, int) and isinstance(cols,(basestring,int)) else res
+    raise ValueError("Unexpected __getitem__ selector: "+type(item))
 
   def _setitem(self, b, c):
     """
