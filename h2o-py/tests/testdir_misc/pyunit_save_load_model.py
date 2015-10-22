@@ -1,27 +1,19 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-import sys, os
-sys.path.insert(1, "../../")
-import h2o, tests
 from h2o.estimators.estimator_base import H2OEstimator
-=======
-=======
 import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
->>>>>>> d4ce8c93ff1691521387bb6b5767f34548251eb4
 import os
 
-from h2o.model.binomial import H2OBinomialModel
->>>>>>> 4ce985f40b6c8f18cf4c40ca27ba158ffd1f04f4
 
 def save_load_model():
 
     prostate = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
     prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-    prostate_glm = h2o.glm(y=prostate["CAPSULE"], x=prostate[["AGE","RACE","PSA","DCAPS"]], family = "binomial",
-                           alpha = [0.5])
+    prostate_glm = h2o.glm(y=prostate["CAPSULE"],
+                           x=prostate[["AGE","RACE","PSA","DCAPS"]],
+                           family="binomial",
+                           alpha=[0.5])
 
     path = pyunit_utils.locate("results")
 

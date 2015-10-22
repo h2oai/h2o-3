@@ -17,21 +17,21 @@ def upload_file():
 
 
     # using lists []
-    py_list_to_h2o = H2OFrame(python_obj=[0, 1, 2, 3, 4])
+    py_list_to_h2o = H2OFrame(python_obj=zip(*[[0, 1, 2, 3, 4]]))
 
     print py_list_to_h2o.describe()
 
-    py_list_to_h2o_2 = H2OFrame(python_obj=[[0, 1, 2, 3], [5, 6, "hi", "dog"]])
+    py_list_to_h2o_2 = H2OFrame(python_obj=zip(*[[0, 1, 2, 3], [5, 6, "hi", "dog"]]))
 
     print py_list_to_h2o_2.describe()
 
 
     # using tuples ()
-    py_tuple_to_h2o = H2OFrame(python_obj=(0, 1, 2, 3, 4))
+    py_tuple_to_h2o = H2OFrame(python_obj=zip(*[(0, 1, 2, 3, 4)]))
 
     print py_tuple_to_h2o.describe()
 
-    py_tuple_to_h2o_2 = H2OFrame(python_obj=((0, 1, 2, 3), (5, 6, "hi", "dog")))
+    py_tuple_to_h2o_2 = H2OFrame(python_obj=zip(*((0, 1, 2, 3), (5, 6, "hi", "dog"))))
 
     print py_tuple_to_h2o_2.describe()
 

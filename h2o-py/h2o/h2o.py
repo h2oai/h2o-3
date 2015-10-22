@@ -250,7 +250,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
       column_types = column_types_list
     elif isinstance(column_types, list):
       if len(column_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
-      column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(col_types))]
+      column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(column_types))]
     else: #not dictionary or list
       raise ValueError("col_types should be a list of types or a dictionary of column names to types")
     j["column_types"] = column_types
@@ -372,7 +372,7 @@ def which(condition):
 
   :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
   """
-  return (H2OFrame(expr=ExprNode("h2o.which",condition)) - 1)._scalar()
+  return (H2OFrame(expr=ExprNode("h2o.which",condition)))._scalar()
 
 
 def ifelse(test,yes,no):

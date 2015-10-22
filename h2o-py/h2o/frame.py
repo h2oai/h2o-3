@@ -1243,7 +1243,7 @@ class H2OFrame(H2OFrameWeakRefMixin):
     total = frame["counts"].sum(True)
     densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow)]
     densities.insert(0,0)
-    densities_frame = H2OFrame(python_obj=[[d] for d in densities])
+    densities_frame = H2OFrame(python_obj=zip(*[[d] for d in densities]))
     densities_frame.set_names(["density"])
     frame = frame.cbind(densities_frame)
 
@@ -1609,6 +1609,9 @@ def _handle_python_lists(python_obj):
   lol = _is_list_of_lists(python_obj)  # do we have a list of lists: [[...], ..., [...]] ?
   if lol:
     _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
+  else:
+    cols=1
+    python_obj=[python_obj]
 
   # create the header
   header = _gen_header(cols)

@@ -87,9 +87,9 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
     assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
                                                   "".format(h2o_rows, rows, h2o_cols, cols)
     if isinstance(python_obj, (list, tuple)):
-        for r in range(rows):
-            for c in range(cols):
-                pval = python_obj[r][c] if rows > 1 else python_obj[c]
+        for c in range(cols):
+            for r in range(rows):
+                pval = python_obj[c][r] if cols > 1 else python_obj[r]
                 hval = h2o_frame[r,c]
                 assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
                                      "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
