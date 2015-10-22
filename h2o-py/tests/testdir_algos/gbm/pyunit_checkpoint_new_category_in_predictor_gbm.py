@@ -22,7 +22,7 @@ def checkpoint_new_category_in_predictor():
   # this should fail until we figure out proper behavior
   try:
     m3 = H2OGradientBoostingEstimator(ntrees=200, checkpoint=m1.model_id)
-    m3.train(x=[0,1,2,4], y=3)
+    m3.train(x=[0,1,2,4], y=3, training_frame=vir)
     assert False, "Expected continued model-building to fail with new categories introduced in predictor"
   except EnvironmentError:
     pass

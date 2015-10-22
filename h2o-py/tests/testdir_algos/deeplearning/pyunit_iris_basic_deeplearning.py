@@ -7,7 +7,7 @@ def deeplearning_basic():
 
   from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
-  iris_hex = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+  iris_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
   hh = H2ODeepLearningEstimator(loss="CrossEntropy")
   hh.train(x=range(3), y=4, training_frame=iris_hex)
   hh.show()

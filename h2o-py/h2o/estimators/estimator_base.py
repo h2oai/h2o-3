@@ -57,7 +57,14 @@ class H2OEstimator(ModelBase):
         H2OFrame with validation data to be scored on while training.
     """
     self._future=True
-    self.train(x,y,training_frame,offset_column,fold_column,weights_column,validation_frame,params)
+    self.train(x=x,
+               y=y,
+               training_frame=training_frame,
+               offset_column=offset_column,
+               fold_column=fold_column,
+               weights_column=weights_column,
+               validation_frame=validation_frame,
+               **params)
 
   def join(self):
     self._future=False

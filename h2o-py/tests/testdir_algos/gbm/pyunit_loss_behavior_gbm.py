@@ -28,6 +28,7 @@ def distribution_behavior_gbm():
 
   # 0/1 response: expect bernoulli
   eco_model = H2OGradientBoostingEstimator(distribution="bernoulli")
+  eco["Angaus"] = eco["Angaus"].asfactor()
   eco_model.train(x=range(2,13), y="Angaus", training_frame=eco)
   # 2 level character response: expect bernoulli
   tree = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/test_tree_minmax.csv"))
@@ -43,8 +44,8 @@ def distribution_behavior_gbm():
     assert True
   # more than two character levels for response: expect error
   try:
-    eco_model = H2OGradientBoostingEstimator(distribution="bernoullo")
-    eco_model.train(x=range(8), y="Method")
+    eco_model = H2OGradientBoostingEstimator(distribution="bernoulli")
+    eco_model.train(x=range(8), y="Method", training_frame=eco)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
@@ -56,7 +57,8 @@ def distribution_behavior_gbm():
   cars["cylinders"] = cars["cylinders"].asfactor()
   cars_model = H2OGradientBoostingEstimator(distribution="multinomial")
   cars_model.train(range(3,7), y="cylinders", training_frame=cars)
-  cars_model = h2o.gbm(x=cars[3:7], y=cars["cylinders"].asfactor(), distribution="multinomial")
+  cars_model = H2OGradientBoostingEstimator(distribution="multinomial")
+  cars_model.train(x=range(3,7), y="cylinders", training_frame=cars)
   # more than two character levels for response: expect multinomial
   eco_model = H2OGradientBoostingEstimator(distribution="multinomial")
   eco_model.train(x=range(8), y="Method", training_frame=eco)

@@ -2,11 +2,8 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
-
-
 import random
-import copy
+
 
 def weights_check():
     
@@ -76,7 +73,7 @@ def weights_check():
     # uniform weights same as no weights
     random.seed(2222)
     weight = random.randint(1,10)
-    uniform_weights = [[weight] for r in range(406)]
+    uniform_weights = [[weight]*406]
     h2o_uniform_weights = h2o.H2OFrame(python_obj=uniform_weights)
     h2o_uniform_weights.set_names(["weights"])
     h2o_data_uniform_weights = h2o_cars_data.cbind(h2o_uniform_weights)
@@ -86,7 +83,7 @@ def weights_check():
     check_same(h2o_cars_data, h2o_data_uniform_weights, weight)
 
     # zero weights same as removed observations
-    zero_weights = [[0] if random.randint(0,1) else [1] for r in range(406)]
+    zero_weights = [[0 if random.randint(0,1) else 1 for r in range(406)]]
     h2o_zero_weights = h2o.H2OFrame(python_obj=zero_weights)
     h2o_zero_weights.set_names(["weights"])
     h2o_data_zero_weights = h2o_cars_data.cbind(h2o_zero_weights)
@@ -97,7 +94,7 @@ def weights_check():
     check_same(h2o_data_zeros_removed, h2o_data_zero_weights, 1)
 
     # doubled weights same as doubled observations
-    doubled_weights = [[1] if random.randint(0,1) else [2] for r in range(406)]
+    doubled_weights = [[1 if random.randint(0,1) else 2 for r in range(406)]]
     h2o_doubled_weights = h2o.H2OFrame(python_obj=doubled_weights)
     h2o_doubled_weights.set_names(["weights"])
     h2o_data_doubled_weights = h2o_cars_data.cbind(h2o_doubled_weights)

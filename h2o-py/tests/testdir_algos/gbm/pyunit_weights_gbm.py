@@ -3,8 +3,8 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 import random
-
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
 
 def weights_check():
   def check_same(data1, data2, min_rows_scale):
@@ -23,35 +23,37 @@ def weights_check():
                           training_frame=data2,
                           weights_column="weights")
 
-    gbm1_binomial = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
-                            y=data1["economy_20mpg"],
-                            min_rows=5,
-                            distribution="bernoulli",
-                            ntrees=5,
-                            max_depth=5)
-    gbm2_binomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
-                            y=data2["economy_20mpg"],
-                            weights_column="weights",
-                            training_frame=data2,
-                            min_rows=5*min_rows_scale,
-                            distribution="bernoulli",
-                            ntrees=5,
-                            max_depth=5)
-    gbm1_multinomial = h2o.gbm(x=data1[["displacement", "power", "weight", "acceleration", "year"]],
-                               y=data1["cylinders"],
-                               min_rows=5,
-                               distribution="multinomial",
-                               ntrees=5,
-                               max_depth=5)
-    gbm2_multinomial = h2o.gbm(x=data2[["displacement", "power", "weight", "acceleration", "year", "weights"]],
-                               y=data2["cylinders"],
-                               weights_column="weights",
-                               training_frame=data2,
-                               min_rows=5*min_rows_scale,
-                               distribution="multinomial",
-                               ntrees=5,
-                               max_depth=5)
+    gbm1_binomial = H2OGradientBoostingEstimator(min_rows=5,
+                                                 distribution="bernoulli",
+                                                 ntrees=5,
+                                                 max_depth=5)
+    gbm1_binomial.train(x=["displacement", "power", "weight", "acceleration", "year"],
+                        y="economy_20mpg",
+                        training_frame=data1)
+    gbm2_binomial = H2OGradientBoostingEstimator(min_rows=5*min_rows_scale,
+                                                 distribution="bernoulli",
+                                                 ntrees=5,
+                                                 max_depth=5)
+    gbm2_binomial.train(x=["displacement", "power", "weight", "acceleration", "year", "weights"],
+                        y="economy_20mpg",
+                        training_frame=data2,
+                        weights_column="weights")
 
+    gbm1_multinomial = H2OGradientBoostingEstimator(min_rows=5,
+                                                    distribution="multinomial",
+                                                    ntrees=5,
+                                                    max_depth=5)
+    gbm1_multinomial.train(x=["displacement", "power", "weight", "acceleration", "year"],
+                           y="cylinders",
+                           training_frame=data1)
+
+    gbm2_multinomial = H2OGradientBoostingEstimator(min_rows=5*min_rows_scale,
+                                                    distribution="multinomial",
+                                                    ntrees=5,
+                                                    max_depth=5)
+    gbm2_multinomial.train(x=["displacement", "power", "weight", "acceleration", "year", "weights"],
+                           y="cylinders",
+                           weights_column="weights", training_frame=data2)
     reg1_mse = gbm1_regression.mse()
     reg2_mse = gbm2_regression.mse()
     bin1_auc = gbm1_binomial.auc()
@@ -74,7 +76,7 @@ def weights_check():
   # uniform weights same as no weights
   random.seed(2222)
   weight = random.randint(1,10)
-  uniform_weights = [[weight] for r in range(406)]
+  uniform_weights = [[weight for r in range(406)]]
   h2o_uniform_weights = h2o.H2OFrame(python_obj=uniform_weights)
   h2o_uniform_weights.set_names(["weights"])
   h2o_data_uniform_weights = h2o_cars_data.cbind(h2o_uniform_weights)
@@ -84,7 +86,7 @@ def weights_check():
   check_same(h2o_cars_data, h2o_data_uniform_weights, weight)
 
   # zero weights same as removed observations
-  zero_weights = [[0] if random.randint(0,1) else [1] for r in range(406)]
+  zero_weights = [[0 if random.randint(0,1) else 1 for r in range(406)]]
   h2o_zero_weights = h2o.H2OFrame(python_obj=zero_weights)
   h2o_zero_weights.set_names(["weights"])
   h2o_data_zero_weights = h2o_cars_data.cbind(h2o_zero_weights)
@@ -95,7 +97,7 @@ def weights_check():
   check_same(h2o_data_zeros_removed, h2o_data_zero_weights, 1)
 
   # doubled weights same as doubled observations
-  doubled_weights = [[1] if random.randint(0,1) else [2] for r in range(406)]
+  doubled_weights = [[1 if random.randint(0,1) else 2 for r in range(406)]]
   h2o_doubled_weights = h2o.H2OFrame(python_obj=doubled_weights)
   h2o_doubled_weights.set_names(["weights"])
   h2o_data_doubled_weights = h2o_cars_data.cbind(h2o_doubled_weights)

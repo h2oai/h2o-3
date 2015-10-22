@@ -10,7 +10,7 @@ def frameslice_gbm():
 
   from h2o.estimators.gbm import H2OGradientBoostingEstimator
   model = H2OGradientBoostingEstimator()
-  model.train(x=range(1,8),y=0)
+  model.train(x=range(1,8),y=0, training_frame=prostate)
 
 
 

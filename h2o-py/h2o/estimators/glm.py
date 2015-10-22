@@ -107,6 +107,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     super(H2OGeneralizedLinearEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k: v for k, v in self._parms.iteritems() if k != "self"}
+    self._parms["lambda"] = self._parms.pop("Lambda")
 
   @property
   def max_iterations(self):

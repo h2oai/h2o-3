@@ -25,7 +25,7 @@ def covtype_get_model():
   covtype_mod1.show()
 
   # Elastic: alpha = 0.5, lambda = 1e-4
-  covtype_mod2 = H2OGeneralizedLinearEstimator(family="binomial", alpha=0.5, Lambda=1e4)
+  covtype_mod2 = H2OGeneralizedLinearEstimator(family="binomial", alpha=0.5, Lambda=1e-4)
   covtype_mod2.train(x=X, y=Y, training_frame=covtype)
   covtype_mod2.show()
   covtype_mod2 = h2o.get_model(covtype_mod2.model_id)
