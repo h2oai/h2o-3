@@ -68,6 +68,8 @@
 #'        initial Y. Only used when init = "User". The number of rows must equal k.
 #' @param recover_svd A logical value indicating whether the singular values and eigenvectors
 #'        should be recovered during post-processing of the generalized low rank decomposition.
+#' @param expand_user_y A logical value indicating whether the categorical columns of user_y
+#'        should be one-hot expanded. Only used when init = "User" and user_y is specified.
 #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.prcomp}}
@@ -105,6 +107,7 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
                      user_y = NULL,
                      user_x = NULL,
                      recover_svd = FALSE,
+                     expand_user_y = TRUE,
                      seed)
 {
   # Required args: training_frame
@@ -163,6 +166,8 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     parms$init <- init
   if(!missing(recover_svd))
     parms$recover_svd <- recover_svd
+  if(!missing(expand_user_y))
+    parms$expand_user_y <- expand_user_y
   if(!missing(seed))
     parms$seed <- seed
   

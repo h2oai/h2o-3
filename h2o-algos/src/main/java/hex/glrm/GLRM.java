@@ -116,9 +116,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       Frame user_y = _parms._user_y.get();
       assert null != user_y;
+      int user_y_cols = _parms._expand_user_y ? _train.numCols() : _ncolY;
 
-      if (user_y.numCols() != _train.numCols())
-        error("_user_y", "The user-specified Y must have the same number of columns (" + _train.numCols() + ") as the training observations");
+      // Check dimensions of user-specified initial Y
+      if (user_y.numCols() != user_y_cols)
+        error("_user_y", "The user-specified Y must have the same number of columns (" + user_y_cols + ") as the training observations");
       else if (user_y.numRows() != _parms._k)
         error("_user_y", "The user-specified Y must have k = " + _parms._k + " rows");
       else {
@@ -273,17 +275,25 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
         if (null != _parms._user_y) {   // Set Y = user-specified initial points
           Vec[] yVecs = _parms._user_y.get().vecs();
-          centers = new double[_parms._k][_ncolA];
 
-          // Get the centers and put into array
-          for (int c = 0; c < _ncolA; c++) {
-            for (int r = 0; r < _parms._k; r++)
-              centers[r][c] = yVecs[c].at(r);
+          if(_parms._expand_user_y) {   // Categorical cols must be one-hot expanded
+            // Get the centers and put into array
+            centers = new double[_parms._k][_ncolA];
+            for (int c = 0; c < _ncolA; c++) {
+              for (int r = 0; r < _parms._k; r++)
+                centers[r][c] = yVecs[c].at(r);
+            }
+
+            // Permute cluster columns to align with dinfo and expand out categoricals
+            centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
+            centers_exp = expandCats(centers, tinfo);
+          } else {    // User Y already has categoricals expanded
+            centers_exp = new double[_parms._k][_ncolY];
+            for (int c = 0; c < _ncolY; c++) {
+              for (int r = 0; r < _parms._k; r++)
+                centers_exp[r][c] = yVecs[c].at(r);
+            }
           }
-
-          // Permute cluster columns to align with dinfo and expand out categoricals
-          centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-          centers_exp = expandCats(centers, tinfo);
         } else
           centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
 

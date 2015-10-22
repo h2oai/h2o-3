@@ -44,6 +44,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // public Key<Frame> _representation_key;               // Key to save X matrix
     public String _representation_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
+    public boolean _expand_user_y = true;         // Should categorical columns in _user_y be expanded via one-hot encoding? (for _init = User)
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
     // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
