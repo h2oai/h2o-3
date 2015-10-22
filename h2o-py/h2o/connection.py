@@ -218,8 +218,8 @@ df
                 "-XX:+PrintGCTimeStamps",
                 "-jar", jar_path,
                 "-name", "H2O_started_from_python",
-                "-ip", "127.0.0.1",
-                "-port", "54321",
+                "-ip", self._ip,
+                "-port", self._port,
                 "-ice_root", ice,
                 ]
     if license:
