@@ -1260,9 +1260,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
 
       lower = float(frame[0,"breaks"])
       clist = h2o.as_list(frame["counts"], use_pandas=False)
+      clist = [list(x) for x in zip(*clist)]
       clist.pop(0)
       clist.pop(0)
       mlist = h2o.as_list(frame["mids"], use_pandas=False)
+      mlist = [list(x) for x in zip(*mlist)]
       mlist.pop(0)
       mlist.pop(0)
       counts = [float(c[0]) for c in clist]
