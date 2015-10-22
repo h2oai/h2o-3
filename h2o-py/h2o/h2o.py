@@ -1399,7 +1399,7 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
          ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
-         user_y=None,user_x=None,recover_svd=None):
+         user_y=None,user_x=None,recover_svd=None,expand_user_y=None):
   """
   Builds a generalized low rank model of a H2O dataset.
 
@@ -1462,6 +1462,8 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   recover_svd : bool
     A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized
     low rank decomposition.
+  expand_user_y : bool
+	A logical value indicating whether the categorical columns of the initial Y matrix should be one-hot expanded. Only used when init = "User" and user_y is specified.
 
 
   :return: a new dim reduction model

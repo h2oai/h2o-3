@@ -204,7 +204,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       }
 
       // All guesses failed
-      types[i] = Vec.T_BAD;
+      types[i] = Vec.T_NUM;
     }
     return types;
   }
