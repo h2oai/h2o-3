@@ -35,20 +35,22 @@ public class Exec {
 
   public Exec(String str) { _str = str; }
 
-  public static Val exec( String str ) throws IllegalArgumentException {
+  public static Val exec( String str ) throws IllegalArgumentException { return exec(str,true); }
+  public static Val exec( String str, boolean deepCopy ) throws IllegalArgumentException {
     cluster_init();
     // Parse
     AST ast = new Exec(str).parse();
     // Execute
-    return execute(ast);
+    return execute(ast,deepCopy);
   }
 
-  public static Val execute(AST ast) {
+  public static Val execute(AST ast) { return execute(ast,true); }
+  public static Val execute(AST ast, boolean deepCopy) {
     // Execute
     Env env = new Env();
     Val val = ast.exec(env);
     // Results.  Deep copy returned Vecs.  Always return a key-less Frame
-    if( val.isFrame() ) {
+    if( deepCopy && val.isFrame() ) {
       Frame fr = val.getFrame();
       if( fr._key != null ) val=new ValFrame(fr = new Frame(null,fr.names(),fr.vecs()));
       Vec vecs[] = fr.vecs();

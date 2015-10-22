@@ -137,6 +137,7 @@ public final class ParseSetup extends Iced {
     }
     return types;
   }
+  public void setColumnTypes(String[] strs) { _column_types = strToColumnTypes(strs); }
 
   public Parser parser(Key jobKey) {
     switch(_parse_type) {

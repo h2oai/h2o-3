@@ -303,11 +303,9 @@ class ASTMean extends ASTPrim {
 }
 
 class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package result into Frame
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
-  @Override
-  public String str() { return "sd"; }
+  @Override public String str() { return "sd"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() == 1) {

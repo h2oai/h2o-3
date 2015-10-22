@@ -16,80 +16,60 @@ import java.util.Arrays;
  *  
  */
 class ASTDdply extends ASTPrim {
-  @Override public String[] args() { return new String[]{"ary", "groupByCols", "fun"}; }
+  @Override
+  public String[] args() { return new String[]{"ary", "groupByCols", "fun"}; }
   @Override int nargs() { return 1+3; } // (ddply data [group-by-cols] fcn )
   @Override public String str() { return "ddply"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
-
-    ASTNumList groupby = ASTGroup.check(ncols, asts[2]);
-    int[] gbCols = groupby.expand4();
-
+    ASTNumList groupby = ASTGroup.check(fr, asts[2]);
     AST fun = asts[3].exec(env).getFun();
     ASTFun scope = env._scope;  // Current execution scope; needed to lookup variables
-
+    // Frame of group keys
+    Frame fr_keys = ASTGroup.gbFrame(fr,groupby.expand4());
+    final int ngbCols = fr_keys.numCols(); 
+    
     // Pass 1: Find all the groups (and count rows-per-group)
-    IcedHashMap<ASTGroup.G,String> gss = ASTGroup.doGroups(fr,gbCols,ASTGroup.aggNRows());
-    final ASTGroup.G[] grps = gss.keySet().toArray(new ASTGroup.G[gss.size()]);
-
-    // apply an ORDER by here...
-    final int[] ordCols = new ASTNumList(0,gbCols.length).expand4();
-    Arrays.sort(grps,new java.util.Comparator<ASTGroup.G>() {
-        // Compare 2 groups.  Iterate down _gs, stop when _gs[i] > that._gs[i],
-        // or _gs[i] < that._gs[i].  Order by various columns specified by
-        // _orderByCols.  NaN is treated as least
-        @Override public int compare( ASTGroup.G g1, ASTGroup.G g2 ) {
-          for( int i : ordCols ) {
-            if(  Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i]) ) return -1;
-            if( !Double.isNaN(g1._gs[i]) &&  Double.isNaN(g2._gs[i]) ) return  1;
-            if( g1._gs[i] != g2._gs[i] ) return g1._gs[i] < g2._gs[i] ? -1 : 1;
-          }
-          return 0;
-        }
-        // I do not believe sort() calls equals() at this time, so no need to implement
-        @Override public boolean equals( Object o ) { throw H2O.unimpl(); }
-      });
-
-    // Uniquely number the groups
-    for( int gnum=0; gnum<grps.length; gnum++ ) grps[gnum]._dss[0][0] = gnum;
-
+    IcedHashMap<ASTGroup.GKX,String> gs = ASTGroup.findGroups(fr_keys);
+    final ASTGroup.GK0[] grps = ASTGroup.sortGroups(gs);
+    
     // Pass 2: Build all the groups, building 1 Vec per-group, with exactly the
     // same Chunk layout, except each Chunk will be the filter rows numbers; a
     // list of the Chunk-relative row-numbers for that group in an original
     // data Chunk.  Each Vec will have a *different* number of rows.
-    Vec[] vgrps = new BuildGroup(gbCols,gss).doAll(gss.size(), Vec.T_NUM, fr).close();
-
+    Vec[] vgrps = new BuildGroup(gs).doAll(gs.size(),fr_keys).close();
+    
     // Pass 3: For each group, build a full frame for the group, run the
     // function on it and tear the frame down.
-    final RemoteRapids[] remoteTasks = new RemoteRapids[gss.size()]; // gather up the remote tasks...
+    final RemoteRapids[] remoteTasks = new RemoteRapids[gs.size()]; // gather up the remote tasks...
     Futures fs = new Futures();
     for( int i=0; i<remoteTasks.length; i++ )
       fs.add(RPC.call(vgrps[i]._key.home_node(), remoteTasks[i] = new RemoteRapids(fr, vgrps[i]._key, fun, scope)));
     fs.blockForPending();
-
+    
     // Build the output!
-    final double[] res0 = remoteTasks[0]._result;
-    String[] fcnames = new String[res0.length];
-    for( int i=0; i<res0.length; i++ )
+    final int res_len = remoteTasks[0]._result.length; // Sample output length
+    String[] fcnames = new String[res_len];
+    for( int i=0; i<res_len; i++ )
       fcnames[i] = "ddply_C"+(i+1);
 
     MRTask mrfill = new MRTask() {
       @Override public void map(Chunk[] c, NewChunk[] ncs) {
-        int start=(int)c[0].start();
-        for( int i=0;i<c[0]._len;++i) {
-          ASTGroup.G g = grps[i+start];  // One Group per row
-          int j;
-          for( j=0; j<g._gs.length; j++ ) // The Group Key, as a row
-            ncs[j].addNum(g._gs[j]);
+        final int start = (int)c[0].start();
+        final int len = c[0]._len;
+        for( int i=0; i<len; i++ ) {
+          int gnum = i+start;
+          ASTGroup.GKX gkx = grps[gnum]; // One Group per row
+          gkx.setkey(ncs);      // The Group Key in the first cols
           double[] res = remoteTasks[i+start]._result;
-          for( int a=0; a<res0.length; a++ )
-            ncs[j++].addNum(res[a]);
+          for( int a=0; a<res.length; a++ )
+            ncs[a+ngbCols].addNum(res[a]);
         }
       }
       };
-
-    Frame f = ASTGroup.buildOutput(gbCols, res0.length, fr, fcnames, gss.size(), mrfill);
+    
+    Frame f = ASTGroup.buildOutput(fr_keys, res_len, fr, fcnames, gs.size(), mrfill);
     return new ValFrame(f);
   }
 
@@ -98,14 +78,13 @@ class ASTDdply extends ASTPrim {
   // Chunk layout, except each Chunk will be the filter rows numbers; a list
   // of the Chunk-relative row-numbers for that group in an original data Chunk.
   private static class BuildGroup extends MRTask<BuildGroup> {
-    final IcedHashMap<ASTGroup.G,String> _gss;
-    final int[] _gbCols;
-    BuildGroup( int[] gbCols, IcedHashMap<ASTGroup.G,String> gss ) { _gbCols = gbCols; _gss = gss; }
+    final IcedHashMap<ASTGroup.GKX,String> _gs;
+    BuildGroup( IcedHashMap<ASTGroup.GKX,String> gs ) { _gs = gs; }
     @Override public void map( Chunk[] cs, NewChunk[] ncs ) {
-      ASTGroup.G gWork = new ASTGroup.G(_gbCols.length,null); // Working Group
-      for( int row=0; row<cs[0]._len; row++ ) {
-        gWork.fill(row,cs,_gbCols); // Fill the worker Group for the hashtable lookup
-        int gnum = (int)_gss.getk(gWork)._dss[0][0]; // Existing group number
+      ASTGroup.GKX g = ASTGroup.GKX.init(cs.length);
+      final int len = cs[0]._len;
+      for( int row=0; row<len; row++ ) {
+        int gnum = _gs.getk(g.fill(cs,row,0))._gnum;
         ncs[gnum].addNum(row);  // gather row-numbers per-chunk per-group
       }
     }
@@ -113,9 +92,9 @@ class ASTDdply extends ASTPrim {
     // of rows, and taken together they do NOT make a valid Frame.
     Vec[] close() {
       Futures fs = new Futures();
-      Vec[] vgrps = new Vec[_gss.size()];
+      Vec[] vgrps = new Vec[_gs.size()];
       for( int i = 0; i < vgrps.length; i++ )
-        vgrps[i] = _appendables[i].close(_appendables[i].compute_rowLayout(),fs);
+        vgrps[i] = _appendables[i].close(fs);
       fs.blockForPending();
       return vgrps;
     }
@@ -154,7 +133,7 @@ class ASTDdply extends ASTPrim {
       final Vec[] groupVecs = new Vec[_data.numCols()];
       Futures fs = new Futures();
       for( int i=0; i<_data.numCols(); i++ )
-        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._rowLayout, gvec.domain(), gvec.get_type()), fs);
+        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._espc, gvec.domain(), gvec.get_type()), fs);
       fs.blockForPending();
       // Fill in the chunks
       new MRTask() {

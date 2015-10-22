@@ -30,12 +30,6 @@ public class ASTMerge extends ASTPrim {
   @Override public String str(){ return "merge";}
   @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
 
-  // Size cutoff before switching between a hashed-join vs a sorting join.
-  // Hash tables beyond this count are assumed to be inefficient, and we're
-  // better served by sorting all the join columns and doing a global
-  // merge-join.
-  static final int MAX_HASH_SIZE = 120000000;
-
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
@@ -57,7 +51,7 @@ public class ASTMerge extends ASTPrim {
           throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names[ncols]+
                                              " found types "+lv.get_type_str()+" and "+rv.get_type_str());
         if( lv.isString() )
-          throw new IllegalArgumentException("Cannot merge Strings; flip toCategoricalVec first");
+          throw new IllegalArgumentException("Cannot merge Strings; flip toCategorical first");
         if( lv.isNumeric() && !lv.isInt())  
           throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
         ncols++;
@@ -88,8 +82,11 @@ public class ASTMerge extends ASTPrim {
     int[][] id_maps = new int[ncols][];
     for( int i=0; i<ncols; i++ ) {
       Vec lv = walked.vecs()[i];
-      if( lv.isCategorical() )
-        id_maps[i] = CategoricalWrappedVec.computeMap(hashed.vecs()[i].domain(),lv.domain());
+      if( lv.isCategorical() ) {
+        CategoricalWrappedVec ewv = new CategoricalWrappedVec(hashed.vecs()[i].domain(),lv.domain());
+        id_maps[i] = ewv.getDomainMap();
+        ewv.remove();
+      }
     }
 
     // Build the hashed version of the hashed frame.  Hash and equality are
@@ -118,8 +115,7 @@ public class ASTMerge extends ASTPrim {
       // matching row; append matching column data
       String[]   names  = Arrays.copyOfRange(hashed._names,   ncols,hashed._names   .length);
       String[][] domains= Arrays.copyOfRange(hashed.domains(),ncols,hashed.domains().length);
-      byte[] types = Arrays.copyOfRange(hashed.types(),ncols,hashed.numCols());
-      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(types,walked).outputFrame(names,domains);
+      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(hashed.numCols()-ncols,walked).outputFrame(names,domains);
       return new ValFrame(walked.add(res));
     }
 
@@ -130,10 +126,7 @@ public class ASTMerge extends ASTPrim {
       System.arraycopy(hashed.names(),ncols,names,walked.numCols(),hashed.numCols()-ncols);
       String[][] domains = Arrays.copyOf(walked.domains(),walked.numCols() + hashed.numCols()-ncols);
       System.arraycopy(hashed.domains(),ncols,domains,walked.numCols(),hashed.numCols()-ncols);
-      byte[] types = walked.types();
-      types = Arrays.copyOf(types,types.length+hashed.numCols()-ncols);
-      System.arraycopy(hashed.types(),ncols,types,walked.numCols(),hashed.numCols()-ncols);
-      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(types,walked).outputFrame(names,domains));
+      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(walked.numCols()+hashed.numCols()-ncols,walked).outputFrame(names,domains));
     } 
 
     throw H2O.unimpl();
@@ -233,11 +226,10 @@ public class ASTMerge extends ASTPrim {
       if( rows == null ) return; // Missing: Aborted due to exceeding size
       final int len = chks[0]._len;
       Row row = new Row(_ncols);
-      for( int i=0; i<len; i++ )                    // For all rows
-        if( add(rows,row.fill(chks,_id_maps,i)) ) { // Fill & attempt add row
-          if( rows.size() > MAX_HASH_SIZE ) { abort(); return; }
+      for( int i=0; i<len; i++ )                  // For all rows
+        if( add(rows,row.fill(chks,_id_maps,i)) ) // Fill & attempt add row
           row = new Row(_ncols); // If added, need a new row to fill
-        }
+      if( rows.size() > ASTGroup.MAX_HASH_SIZE ) abort();
     }
     private boolean add( IcedHashMap<Row,String> rows, Row row ) {
       if( rows.putIfAbsent(row,"")==null )

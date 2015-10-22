@@ -712,7 +712,7 @@ public class Vec extends Keyed<Vec> {
    *  shift-and-add math.  For variable-sized chunks this is a binary search,
    *  with a sane API (JDK has an insane API).  Overridden by subclasses that
    *  compute chunks in an alternative way, such as file-backed Vecs. */
-   int elem2ChunkIdx( long i ) {
+   public int elem2ChunkIdx( long i ) {
     if( !(0 <= i && i < length()) ) throw new ArrayIndexOutOfBoundsException("0 <= "+i+" < "+length());
     long[] espc = espc();       // Preload
     int lo=0, hi = nChunks();

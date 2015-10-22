@@ -2104,14 +2104,13 @@ h2o.merge <- function(x, y, all.x = TRUE, all.y = FALSE) .newExpr("merge", x, y,
 #' @param data an H2O Frame object.
 #' @param by a list of column names
 #' @param \dots any supported aggregate function.
-#' @param order.by Takes a vector column names or indices specifiying how to order the group by result.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
 #'        output columns. See \code{Details:} for more help.
 #' @return Returns a new Frame object with columns equivalent to the number of
 #'         groups created
 #' @export
-h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.methods=NULL, col.names=NULL)) {
-  # Build the argument list: (GB data, [group.by] [order.by] {agg col "na"}...)
+h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.names=NULL)) {
+  # Build the argument list: (GB data, [group.by] {agg col "na"}...)
   args <- list(chk.Frame(data))
 
   ### handle the columns
@@ -2128,23 +2127,6 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
   if(group.cols <= 0L || group.cols > ncol(data))
     stop('Column ', group.cols, ' out of range for frame columns ', ncol(data), '.')
   args <- c(args,.row.col.selector(group.cols,envir=parent.frame()))
-
-  ### ORDER BY ###
-  order.by.cols <- NULL
-  if( !is.null(order.by) ) {
-    if(is.character(order.by)) {
-        order.by.cols <- match(order.by, by)
-        if (any(is.na(order.by.cols)))
-          stop('No column named ', order.by, ' in ', by, '.')
-    } else if(is.integer(order.by)) {
-      order.by.cols <- order.by
-    } else if(is.numeric(order.by)) {   # this will happen eg c(1,2,3)
-      order.by.cols <- as.integer(order.by)
-    }
-    if(order.by.cols < 1L || order.by.cols > ncol(data)) stop('Column ', order.by.cols, ' out of range for frame columns ', ncol(data), '.')
-  }
-  args <- c(args,.row.col.selector(order.by.cols,envir=parent.frame()))
-
 
   a <- substitute(list(...))
   a[[1]] <- NULL  # drop the wrapping list()
