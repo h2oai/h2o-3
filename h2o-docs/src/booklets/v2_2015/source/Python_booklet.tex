@@ -613,8 +613,56 @@ Also from local computer (upload), from URI, from Python local
 \section{Machine Learning}
 
 \subsection{Modeling}
-\subsubsection{Unsupervised Learning}
+The following section describes the features and functions of some common models available in H2O.  For more information about running these models in Python using H2O, refer to the documentation on
+the H2O.ai website or to the booklets on specific models.
+
+\begin{minipage}{\textwidth}
+H2O supports the following models:  
+
+
+\begin{frame}%no line table for list of 6+ items
+
+\begin{tabular}{p{5.5cm}p{5.5cm}}
+
+\begin{itemize}
+  \item Deep Learning
+  \item Na\"{i}ve Bayes
+  \item Principal Components Analysis (PCA)
+  \item K-means
+\end{itemize} &
+
+\begin{itemize}
+  \item Generalized Linear Models (GLM) 
+  \item Gradient Boosted Regression (GBM)
+% \item Generalized Low Rank Model (GLRM) Supported?
+  \item Distributed Random Forest (DRF)
+\end{itemize}
+
+\end{tabular}
+
+\end{frame}
+\end{minipage}
+
+The list is growing quickly, so check \url{www.h2o.ai} to see the latest additions. The following list describes some common model types and features. 
+
 \subsubsection{Supervised Learning}
+{\textbf{Generalized Linear Models (GLM)}}: Provides flexible generalization of ordinary linear regression for response variables with error distribution models other than a Gaussian (normal) distribution. GLM unifies various other statistical models, including Poisson, linear, logistic, and others when using $\ell_1$ and $\ell_2$ regularization.
+
+{\textbf{Distributed Random Forest}}: Averages multiple decision trees, each created on different random samples of rows and columns. It is easy to use, non-linear, and provides feedback on the importance of each predictor in the model, making it one of the most robust algorithms for noisy data.
+
+{\textbf{Gradient Boosting (GBM)}}: Produces a prediction model in the form of an ensemble of weak prediction models. It builds the model in a stage-wise fashion and is generalized by allowing an arbitrary differentiable loss function. It is one of the most powerful methods available today.
+
+{\textbf{Deep Learning}}: Models high-level abstractions in data by using non-linear transformations in a layer-by-layer method. Deep learning is an example of supervised learning, which can use unlabeled data that other algorithms cannot.
+
+{\textbf{Na\"{i}ve Bayes}}: Generates a probabilistic classifier that assumes the value of a particular feature is unrelated to the presence or absence of any other feature, given the class variable. It is often used in text categorization.
+
+\subsubsection{Unsupervised Learning}
+{\textbf{K-Means}}: Reveals groups or clusters of data points for segmentation. It clusters observations into $k$-number of points with the nearest mean.
+
+{\textbf{Principal Component Analytis (PCA)}}: The algorithm is carried out on a set of possibly collinear features and performs a transformation to produce a new set of uncorrelated features.
+
+{\textbf{Anomaly Detection}}: Identifies the outliers in your data by invoking the deep learning autoencoder, a powerful pattern recognition model.
+
 \subsubsection{Imputing Missing Data}
 
 \subsection{Model outputs}
