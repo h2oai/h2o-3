@@ -11,22 +11,20 @@ import string
 def baddataKmeans():
 
   # Connect to a pre-existing cluster
-  # connect to localhost:54321
+    # connect to localhost:54321
 
   rows = 100
   cols = 10
-  rawdata = [[random.random() for r in range(rows)] for c in range(cols)]
+  rawdata = [[random.random() for c in range(cols)] for r in range(rows)]
 
   # Row elements that are None will be replaced with mean of column
   #Log.info("Training data with 1 row of all Nones: replace with column mean")
   data = rawdata[:]
-  for col in data: col[24] = None
+  for cidx, cval in enumerate(data[24]):
+    data[24][cidx] = None
   frame = h2o.H2OFrame(data)
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
-
-  km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x=range(cols), training_frame=frame)
+  km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
   assert len(centers) == 5, "expected 5 centers"
@@ -36,11 +34,11 @@ def baddataKmeans():
   # Columns with constant value will be automatically dropped
   #Log.info("Training data with 1 col of all 5's: drop automatically")
   data = rawdata[:]
-  data[4] = [5] * rows
+  for idx, val in enumerate(data):
+    data[idx][4] = 5
   frame = h2o.H2OFrame(data)
 
-  km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x = range(cols), training_frame=frame)
+  km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
   assert len(centers) == 5, "expected 5 centers"
@@ -50,12 +48,12 @@ def baddataKmeans():
 
   # Log.info("Training data with 1 col of all None's, 1 col of all zeroes: drop automatically")
   data = rawdata[:]
-  data[4] = [None] * rows
-  data[7] = [0] * rows
+  for idx, val in enumerate(data):
+    data[idx][4] = None
+    data[idx][7] = 0
   frame = h2o.H2OFrame(data)
 
-  km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x=range(cols), training_frame=frame)
+  km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
   assert len(centers) == 5, "expected 5 centers"
@@ -64,21 +62,20 @@ def baddataKmeans():
   # TODO: expect_warning(km_model = h2o.kmeans(x=frame, k=5))
 
   # Log.info("Training data with all None's")
-  data = [[None for r in range(rows)] for c in range(cols)]
+  data = [[None for c in range(cols)] for r in range(rows)]
   frame = h2o.H2OFrame(data)
 
   try:
-    H2OKMeansEstimator(k=5).train(x=range(cols), training_frame=frame)
+    h2o.kmeans(x=frame, k=5)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
 
   # Log.info("Training data with a categorical column(s)")
-  data = [[random.choice(string.ascii_uppercase) for r in range(rows)] for c in range(cols)]
+  data = [[random.choice(string.ascii_uppercase) for c in range(cols)] for r in range(rows)]
   frame = h2o.H2OFrame(data)
 
-  km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x=range(cols), training_frame=frame)
+  km_model = h2o.kmeans(x=frame, k=5)
   centers = km_model.centers()
   assert len(centers) == 5, "expected 5 centers"
   for c in range(len(centers)):
@@ -87,8 +84,7 @@ def baddataKmeans():
   # Log.info("Importing iris.csv data...\n")
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
-  km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x=range(iris.ncol), training_frame=iris)
+  km_model = h2o.kmeans(x=iris, k=5)
   centers = km_model.centers()
   assert len(centers) == 5, "expected 5 centers"
   for c in range(len(centers)):
@@ -97,6 +93,6 @@ def baddataKmeans():
 
 
 if __name__ == "__main__":
-  pyunit_utils.standalone_test(baddataKmeans)
+    pyunit_utils.standalone_test(baddataKmeans)
 else:
-  baddataKmeans()
+    baddataKmeans()
