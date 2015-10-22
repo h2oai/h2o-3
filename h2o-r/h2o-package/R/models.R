@@ -1810,6 +1810,14 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       stop("for GLM, metric must be one of: log_likelihood, objective")
     }
     graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History")
+  } else if (x@algorithm == "glrm") {
+    timestep <- "iteration"
+    if (metric == "AUTO") {
+      metric <- "objective"
+    } else if (!(metric %in% c("step_size", "objective"))) {
+      stop("for GLRM, metric must be one of: step_size, objective")
+    }
+    graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Objective Function Value per Iteration")
   } else if (x@algorithm %in% c("deeplearning", "drf", "gbm")) {
     if (is(x, "H2OBinomialModel")) {
       if (metric == "AUTO") {
