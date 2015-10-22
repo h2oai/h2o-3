@@ -6,13 +6,11 @@ package water.rapids;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
 import water.util.Log;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class BinaryMerge extends DTask<BinaryMerge> {
   long _retFirst[/*n2GB*/][];  // The row number of the first right table's index key that matches
@@ -33,12 +31,15 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   long _ansN=0;   // the number of rows in the resulting dataset
   final boolean _outerJoin = true; // TODO: add the option to do inner join (currently this flag just used to count a 1 for the NA for nomatch=NA)
   long _perNodeNumRowsToFetch[] = new long[H2O.CLOUD.size()];
+  int _leftMSB, _rightMSB;
 
   BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
     _leftFrame = leftFrame;
     _rightFrame = rightFrame;
-    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_leftFrame._key, leftMSB));
-    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_rightFrame._key, rightMSB));
+    _leftMSB = leftMSB;
+    _rightMSB = rightMSB;
+    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_leftFrame._key, _leftMSB));
+    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_rightFrame._key, _rightMSB));
     if (leftSortedOXHeader == null || rightSortedOXHeader == null) return;
     _leftBatchSize = leftSortedOXHeader._batchSize;
     _rightBatchSize = rightSortedOXHeader._batchSize;
@@ -49,7 +50,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _retFirst = new long[leftSortedOXHeader._nBatch][];
     _retLen = new long[leftSortedOXHeader._nBatch][];
     for (int b=0; b<leftSortedOXHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(_leftFrame._key, leftMSB, b));
+      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(_leftFrame._key, _leftMSB, b));
       _leftKey[b] = oxLeft._x;
       _leftOrder[b] = oxLeft._o;
       _retFirst[b] = new long[oxLeft._o.length];
@@ -61,7 +62,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightKey = new byte[rightSortedOXHeader._nBatch][];
     _rightOrder = new long[rightSortedOXHeader._nBatch][];
     for (int b=0; b<rightSortedOXHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(_rightFrame._key, rightMSB, b));
+      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(_rightFrame._key, _rightMSB, b));
       _rightKey[b] = oxRight._x;
       _rightOrder[b] = oxRight._o;
     }
@@ -237,21 +238,60 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       vecs[i] = Vec.makeCon(0, _ansN);
     }
     String[] names = _rightFrame.names().clone();
-    Frame fr = new Frame(Key.make(_rightFrame._key.toString() + "_joined_with_" + _leftFrame._key.toString() + " on_some_columns_right_half"), names, vecs);
+    Frame fr = new Frame(Key.make(_rightFrame._key.toString() + "_joined_with_" + _leftFrame._key.toString() + " on_some_columns_right_half_forLeftMSB_"+_leftMSB + "_RightMSB_" + _rightMSB), names, vecs);
 
-    // Fill up work for remote nodes to fill for me
-    for (cols) {
-      for (H2ONode node : H2O.CLOUD._memary) {
-        // ask for help to populate rows
-        new DTask() {
-          // tell remote node to fill up Chunk[/*batch*/][/*rows*/]
-          perNodeRows[node] has perNodeRows[node].length batches of row numbers to fetch
-          void compute2() {
-
+    for (H2ONode node : H2O.CLOUD._memary) {
+      for (int b=0; b<perNodeRows[node.index()].length; ++b) {
+        GetRawRemoteRows grrr = new GetRawRemoteRows(_rightFrame, perNodeRows[node.index()][b]);
+        H2O.submitTask(grrr);
+        grrr.join();
+        assert(grrr._rows==null);
+        Chunk[] chk = grrr._chk;
+        for (int col =0; col <chk.length; ++col) {
+          Chunk colForBatch = chk[col];
+          //HACK START
+          Vec.Writer w = fr.vec(col).open();
+          for (int row=0; row<colForBatch.len(); ++row) {
+            double val = colForBatch.atd(row);
+            long actualRowInMSBCombo = perNodeRowFrom[node.index()][b][row];
+            w.set(actualRowInMSBCombo, val); //writes into fr.vec(col)
           }
+          w.close();
+          //HACK END
         }
       }
     }
 
+  }
+
+  class GetRawRemoteRows extends DTask<GetRawRemoteRows> {
+    Chunk[/*col*/] _chk; //null on the way to remote node, non-null on the way back
+    long[/*rows*/] _rows; //which rows to fetch from remote node, non-null on the way to remote, null on the way back
+    Frame _rightFrame;
+    GetRawRemoteRows(Frame rightFrame, long[] rows) {
+      _rows = rows;
+      _rightFrame = rightFrame;
+      _chk  = new Chunk[_rightFrame.numCols()];
+    }
+
+    @Override
+    protected void compute2() {
+      assert(_rows!=null);
+      assert(_chk ==null);
+
+      double[][] rawVals = new double[_rightFrame.numCols()][_rows.length];
+      for (int col=0; col<_rightFrame.numCols(); ++col) {
+        Vec v = _rightFrame.vec(col);
+        for (int row=0; row<_rows.length; ++row) {
+          rawVals[col][row] = v.at(_rows[row]); //local reads, random access //TODO: use chunk accessors by using indirection array
+        }
+        _chk[col] = new NewChunk(rawVals[col]);
+      }
+
+      // tell remote node to fill up Chunk[/*batch*/][/*rows*/]
+//      perNodeRows[node] has perNodeRows[node].length batches of row numbers to fetch
+      _rows=null;
+      assert(_chk !=null);
+    }
   }
 }
