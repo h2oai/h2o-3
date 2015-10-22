@@ -6,6 +6,6 @@ model_chkp <- h2o.deeplearning(
         training_frame = train, 
         validation_frame = test,
         distribution = "multinomial",                               
-        checkpoint = model_grid@model_ids[[1]],
-        hidden = c(100, 300, 100),
+        checkpoint = model@model_id,
+        hidden = c(200,200,200),
         epochs = 20)
