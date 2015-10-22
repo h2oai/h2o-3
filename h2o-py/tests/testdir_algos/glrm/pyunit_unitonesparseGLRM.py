@@ -30,7 +30,7 @@ def glrm_unitonesparse():
     glrm_h2o.show()
 
     print "Check that X matrix consists of rows of basis vectors"
-    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['loading_key']['name'])
+    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
     def is_basis(a):
         zeros = np.where(a == 0)[0].size

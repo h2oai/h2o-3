@@ -30,7 +30,7 @@ def glrm_simplex():
     glrm_h2o.show()
     
     print "Check that X matrix consists of rows within standard probability simplex"
-    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['loading_key']['name'])
+    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
     def is_simplex(a):
         row_sum = sum(a)
