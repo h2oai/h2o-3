@@ -436,6 +436,7 @@ The available options vary depending on the selected model. If an option is only
 - **pca_method**: ([PCA](#PCA)) Select the algorithm to use for computing the principal components: 
 	- *GramSVD*: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
 	- *Power*: Computes the SVD using the power iteration method
+	- *Randomized*: Uses randomized subspace iteration method 
 	- *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
 - **family**: ([GLM](#GLM)) Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
