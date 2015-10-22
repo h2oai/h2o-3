@@ -38,6 +38,22 @@ plot(acs_model_score$iteration, acs_model_score$objective, xlab = "Iteration", y
 zcta_arch_x <- h2o.getFrame(acs_model@model$representation_name)
 head(zcta_arch_x)
 
+print("Plot a few ZCTAs on first few archetypes")
+idx <- (acs_zcta_col == "10065" |   # Manhattan, NY (Upper East Side)
+        acs_zcta_col == "11219" |   # Manhattan, NY (East Harlem)
+        acs_zcta_col == "66753" |   # McCune, KS
+        acs_zcta_col == "84104" |   # Salt Lake City, UT
+        acs_zcta_col == "94086" |   # Sunnyvale, CA
+        acs_zcta_col == "95014")    # Cupertino, CA
+
+city_arch <- as.data.frame(zcta_arch_x[idx,1:2])
+xeps <- (max(city_arch[,1]) - min(city_arch[,1])) / 10
+yeps <- (max(city_arch[,2]) - min(city_arch[,2])) / 10
+xlims <- c(min(city_arch[,1]) - xeps, max(city_arch[,1]) + xeps)
+ylims <- c(min(city_arch[,2]) - yeps, max(city_arch[,2]) + yeps)
+plot(city_arch[,1], city_arch[,2], xlim = xlims, ylim = ylims, xlab = "First Archetype", ylab = "Second Archetype", main = "Archetype Representation of Zip Code Tabulation Areas")
+text(city_arch[,1], city_arch[,2], labels = c("Upper East Side", "East Harlem", "McCune", "Salt Lake City", "Sunnyvale", "Cupertino"), pos = 1)
+
 ## Archetype to full feature mapping (Y)
 arch_feat_y <- acs_model@model$archetypes
 arch_feat_y
@@ -70,7 +86,24 @@ mod_time <- system.time(dl_mod <- h2o.deeplearning(x = myX, y = myY, training_fr
                                                    validation_frame = test_mod, distribution = "multinomial",
                                                    epochs = 0.1, hidden = c(50,50,50)))
 
+print("Replace ZCTA5 column in WHD data with all ACS data")
+colnames(acs_orig)[1] <- "zcta5_cd"
+whd_acs <- h2o.merge(whd_zcta, acs_orig, all.x = TRUE, all.y = FALSE)
+whd_acs$zcta5_cd <- NULL
+summary(whd_acs)
+
+## Split combined WHD-ACS data into test/train with 20/80 ratio
+train_comb <- whd_acs[split <= 0.8,]
+test_comb <- whd_acs[split > 0.8,]
+
+print("Build a DL model on combined WHD-ACS data to predict repeat violators")
+myX <- setdiff(5:ncol(train_comb), which(colnames(train_comb) == myY))
+comb_time <- system.time(dl_comb <- h2o.deeplearning(x = myX, y = myY, training_frame = train_comb,
+                                                     validation_frame = test_comb, distribution = "multinomial",
+                                                     epochs = 0.1, hidden = c(50,50,50)))
+
 print("Performance comparison:")
 data.frame(original = c(orig_time[3], h2o.logloss(dl_orig, train = TRUE), h2o.logloss(dl_orig, valid = TRUE)),
            reduced  = c(mod_time[3], h2o.logloss(dl_mod, train = TRUE), h2o.logloss(dl_mod, valid = TRUE)),
+           combined = c(comb_time[3], h2o.logloss(dl_comb, train = TRUE), h2o.logloss(dl_comb, valid = TRUE)),
            row.names = c("runtime", "train_logloss", "test_logloss"))
