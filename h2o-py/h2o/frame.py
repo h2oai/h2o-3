@@ -32,7 +32,6 @@ class H2OFrame:
     """
     return self._ex._fetch_data(0).keys()
 
-
   @property
   def columns(self):
     """
@@ -198,9 +197,9 @@ class H2OFrame:
     csv_writer.writeheader()             # write the header
     csv_writer.writerows(data_to_write)  # write the data
     tmp_file.close()                     # close the streams
-    res = read_csv(tmp_path, _py_tmp_key())
+    res = H2OFrame.read_csv(tmp_path, _py_tmp_key())
     os.remove(tmp_path)                  # delete the tmp file
-    res
+    return res
 
   @staticmethod
   def fromRawText(self, text_key, check_header=None):
@@ -432,18 +431,23 @@ class H2OFrame:
     """
     return self._scalar("prod.na" if na_rm else "prod",self)
 
-  def any(self,na_rm=False):
+  def any(self):
     """
-    :param na_rm: True or False to remove NAs from computation.
+    :return: True if any element is True or NA in the column.
+    """
+    return bool(self._scalar("any",self))
+
+  def any_na_rm(self):
+    """
     :return: True if any element is True in the column.
     """
-    return self._scalar("any.na" if na_rm else "any",self)
+    return bool(self._scalar("any.na",self))
 
   def all(self):
     """
-    :return: True if every element is True in the column.
+    :return: True if every element is True or NA in the column.
     """
-    return self._scalar("all",self)
+    return bool(self._scalar("all",self))
 
   def isnumeric(self):
     """
@@ -582,26 +586,22 @@ class H2OFrame:
 
   def drop(self, i):
     """
-    Returns a Frame with the column at index i dropped.
-
     :param i: Column to drop
-    :return: Returns an self._newExpr
+    :return: H2OFrame with the column at index i dropped.
     """
-    if isinstance(i, basestring): i = self._find_idx(i)
-    return self._newExpr("cols", self,-(i+1))._frame()
+    if isinstance(i, basestring): i = self.names.index(i)
+    return self._newExpr("cols", self,-(i+1))
 
   def pop(self,i):
     """
-    Pop a colunn out of an self._newExpr.
-
     :param i: The index or name of the column to pop.
-    :return: The column dropped from the frame.
+    :return: The column dropped from the frame; the frame is side-effected to lose the column
     """
-    if isinstance(i, basestring): i=self._find_idx(i)
-    col = self._newExpr("pop",self,i)._frame()
-    if self._keep: col.keep()
-    self._update()
-    return col
+    if isinstance(i, basestring): i=self.names.index(i)
+    # TODO: Need to use a normal __getitem__ to select the column and return it,
+    # but also side-effect in-place the dropped frame (see __setitem__)
+    raise NotImplementedError
+  
 
   def quantile(self, prob=None, combine_method="interpolate"):
     """

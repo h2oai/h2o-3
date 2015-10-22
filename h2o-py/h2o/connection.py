@@ -3,18 +3,7 @@ An H2OConnection represents the latest active handle to a cloud. No more than a 
 H2OConnection object will be active at any one time.
 """
 
-import requests
-import math
-import re
-import os
-import sys
-import string
-import time
-import tempfile
-import tabulate
-import subprocess
-import atexit
-import pkg_resources
+import requests, math, re, os, sys, string, time, tempfile, tabulate, subprocess, atexit, pkg_resources
 from two_dim_table import H2OTwoDimTable
 import h2o
 import h2o_logging

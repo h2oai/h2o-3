@@ -46,17 +46,28 @@ class ExprNode:
     # /Frames response.  Remove a few redundant fields.  'string_data' and
     # 'data' are mutually exclusive; move 'string_data', if any, over 'data'.
     # Returns the self Frame.
+    self._set_rows(raw_json["rows"])
+    self._set_cols(len(raw_json["columns"]))
     if self._data:
+      col = self._data.itervalues().next() # Get a sample column
+      if raw_json["row_offset"]+raw_json["row_count"] <= len(col['data']):
+        return self # Already have the same set of rows
+      print(raw_json)
+      print(self._data)
       raise NotImplementedError # Merge
     else:
-      self._set_rows(raw_json["rows"])
-      self._set_cols(len(raw_json["columns"]))
+      assert self._ncols == len(raw_json["columns"])
       self._data = collections.OrderedDict()
       for c in raw_json["columns"]:
         c.pop('__meta')              # Redundant description ColV3
         c.pop('domain_cardinality')  # Same as len(c['domain'])
         sdata = c.pop('string_data')
         if sdata: c['data'] = sdata  # Only use data field; may contain either [str] or [real]
+        # Data (not string) columns should not have a string in them.  However,
+        # our NaNs are encoded as string literals "NaN" as opposed to the bare
+        # token NaN, so the default python json decoder does not convert them
+        # to math.nan.  Do that now.
+        else: c['data'] = [float('nan') if x=="NaN" else x for x in c['data']]
         self._data[c.pop('label')] = c # Label used as the Key
       return self
 
@@ -175,7 +186,7 @@ class ExprNode:
       x = v['data']          # Data to display
       domain = v['domain']   # Map to cat strings as needed
       if domain:
-        x = [domain[int(idx)] for idx in x]
+        x = ["" if math.isnan(idx) else domain[int(idx)] for idx in x]
       if rollups:            # Rollups, if requested
         mins = v['mins'][0] if v['mins'] else None
         maxs = v['maxs'][0] if v['maxs'] else None
@@ -229,8 +240,13 @@ class ExprNode:
     Everything in summary(), plus the data layout
     :return: None (print to stdout)
     """
+    # Force a fetch of 10 rows; the chunk & distribution summaries are not
+    # cached, so must be pulled.  While we're at it, go ahead and fill in
+    # the default caches if they are not already filled in
+    xid = self._id or self._eager()._id # Force eval as needed
+    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(xid)+"?row_count="+str(10))["frames"][0]
+    self._fill_rows(res)
     print "Rows:{:,}".format(self._nrows), "Cols:{:,}".format(self._ncols)
-    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(self._id)+"?row_count="+str(0))["frames"][0]
     res["chunk_summary"].show()
     res["distribution_summary"].show()
     print("\n")
@@ -259,6 +275,7 @@ class ExprNode:
     if isinstance(item, slice):
       item = slice(item.start,min(self._ncols,item.stop))
       return ExprNode("cols",self,item)
+    if isinstance(item, frame.H2OFrame): item = item._ex
     if isinstance(item, ExprNode): return ExprNode("rows",self,item)  # just rows
     if isinstance(item, tuple):
       rows, cols = item
@@ -275,7 +292,7 @@ class ExprNode:
       # name), then extract the single element out of the Frame.  Otherwise
       # return a Frame, EVEN IF the selectors are e.g. slices-of-1-value.
       return ExprNode("flatten",res)._eager_scalar() if isinstance(rows, int) and isinstance(cols,(basestring,int)) else res
-    raise ValueError("Unexpected __getitem__ selector: "+type(item))
+    raise ValueError("Unexpected __getitem__ selector: "+str(type(item))+" "+str(item.__class__))
 
   def _setitem(self, b, c):
     """

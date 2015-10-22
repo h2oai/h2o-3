@@ -431,17 +431,3 @@ class ASTWhich extends ASTPrim {
   }
 }
 
-class ASTPop extends ASTPrim {
-  @Override public String[] args() { return new String[]{"ary", "colidx"}; }
-  @Override int nargs() { return 1+2; } // (pop fr colidx)
-  @Override
-  public String str() { return "pop"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    int idx = (int)asts[2].exec(env).getNum();
-    String[] name = new String[]{fr.names()[idx]};
-    Vec[] v = new Vec[]{fr.remove(idx)};
-    if( fr._key!=null ) DKV.put(fr);
-    return new ValFrame(new Frame(name,v));
-  }
-}

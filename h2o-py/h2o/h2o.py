@@ -341,23 +341,18 @@ def log_and_echo(message):
   if message is None: message = ""
   H2OConnection.post_json("LogAndEcho", message=message)
 
-def remove(object):
+def remove(x):
   """
   Remove object from H2O. This is a "hard" delete of the object. It removes all subparts.
-
-  Parameters
-  ----------
-
-  object : H2OFrame or str
-    The object pointing to the object to be removed.
-
+  :param x: The object to be removed.
   :return: None
   """
-  if object is None:
+  if x is None:
     raise ValueError("remove with no object is not supported, for your protection")
-
-  if isinstance(object, H2OFrame): H2OConnection.delete("DKV/"+object._id)
-  if isinstance(object, str):      H2OConnection.delete("DKV/"+object)
+  if isinstance(x, H2OFrame): 
+    x = x._ex._id       # String or None
+    if not x: return    # Lazy frame, never evaluated, nothing in cluster
+  if isinstance(x, str): H2OConnection.delete("DKV/"+x)
 
 def remove_all():
   """

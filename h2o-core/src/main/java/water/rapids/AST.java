@@ -78,7 +78,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTNcol  ());
     init(new ASTNot   ());
     init(new ASTNrow  ());
-    init(new ASTPop());
     init(new ASTRound ());
     init(new ASTSgn());
     init(new ASTSignif());
