@@ -271,7 +271,7 @@ class ExprNode:
       if allcols: return ExprNode("rows",self,rows)  # fr[rows,:] -> really just a row slices
 
       res = ExprNode("rows", ExprNode("cols",self,cols),rows)
-      # Pythonic? if the row & col selector turn into ints (or a single col
+      # Pythonic: if the row & col selector turn into ints (or a single col
       # name), then extract the single element out of the Frame.  Otherwise
       # return a Frame, EVEN IF the selectors are e.g. slices-of-1-value.
       return ExprNode("flatten",res)._eager_scalar() if isinstance(rows, int) and isinstance(cols,(basestring,int)) else res
