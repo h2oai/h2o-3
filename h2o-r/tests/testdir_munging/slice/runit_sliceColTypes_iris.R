@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.slice.colTypes <- function() {
   Log.info("Importing iris.csv data...")
@@ -29,7 +29,7 @@ test.slice.colTypes <- function() {
   expect_that(col4_type, equals("double"))
   expect_that(col5_type, equals("integer"))
 
-  testEnd()
+  
 }
 
 doTest("Slice Tests: Check Col Types", test.slice.colTypes)

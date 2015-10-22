@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # Test k-means clustering on prostate.csv
 test.km.prostate <- function() {
@@ -22,7 +22,7 @@ test.km.prostate <- function() {
     prostate.km <- kmeans(prostate.data[,3], centers = i)
   }
 
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Prostate Data", test.km.prostate)

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.pca.grid.quasar <- function() {
   quasar <- h2o.importFile(locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
@@ -36,7 +36,7 @@ check.pca.grid.quasar <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  testEnd()
+  
 }
 
 doTest("PCA Grid Search using quasar dataset", check.pca.grid.quasar)

@@ -7,6 +7,7 @@ from .clustering import H2OClusteringModel
 from .autoencoder import H2OAutoEncoderModel
 from .multinomial import H2OMultinomialModel
 from .regression import H2ORegressionModel
+from .model_builder import build_model
 
 #__all__ = ["H2OFrame",
 #           "H2OConnection",

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # Test k-means clustering on benign.csv
 test.km.benign <- function() {
@@ -17,7 +17,7 @@ test.km.benign <- function() {
     benign.km <- kmeans(benign.data, centers = i)
   }
 
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Benign Data", test.km.benign)

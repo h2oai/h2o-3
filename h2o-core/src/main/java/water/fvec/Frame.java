@@ -3,7 +3,7 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -143,7 +143,7 @@ public class Frame extends Lockable<Frame> {
     catch( NumberFormatException fe ) { }
     return 0;
   }
-  private String uniquify( String name ) {
+  public String uniquify( String name ) {
     String n = name;
     int lastName = 0;
     if( name.length() > 0 && name.charAt(0)=='C' )
@@ -179,8 +179,8 @@ public class Frame extends Lockable<Frame> {
     if( !v0.checkCompatible(vec) ) {
       if(!Vec.VectorGroup.sameGroup(v0,vec))
         Log.err("Unexpected incompatible vector group, " + v0.group() + " != " + vec.group());
-      if(!Arrays.equals(v0._espc, vec._espc))
-        Log.err("Unexpected incompatible espc, " + Arrays.toString(v0._espc) + " != " + Arrays.toString(vec._espc));
+      if(!Arrays.equals(v0.espc(), vec.espc()))
+        Log.err("Unexpected incompatible espc, " + Arrays.toString(v0.espc()) + " != " + Arrays.toString(vec.espc()));
       throw new IllegalArgumentException("Vec " + name + " is not compatible with the rest of the frame");
     }
   }
@@ -205,7 +205,7 @@ public class Frame extends Lockable<Frame> {
     if(_vecs == null) return 0;
     int cols = 0;
     for(int i = 0; i < _vecs.length; i++) {
-      if(_vecs[i].isEnum() && _vecs[i].domain() != null)
+      if(_vecs[i].isCategorical() && _vecs[i].domain() != null)
         cols += _vecs[i].domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
       else cols++;
     }
@@ -373,8 +373,17 @@ public class Frame extends Lockable<Frame> {
     return bs;
   }
 
-  /** All the domains for enum columns; null for non-enum columns.  
-   *  @return the domains for enum columns */
+  /** String name for each Vec type */
+  public String[] typesStr() {  // typesStr not strTypes since shows up in intelliJ next to types
+    Vec[] vecs = vecs();
+    String s[] = new String[vecs.length];
+    for(int i=0;i<vecs.length;++i)
+      s[i] = vecs[i].get_type_str();
+    return s;
+  }
+
+  /** All the domains for categorical columns; null for non-categorical columns.
+   *  @return the domains for categorical columns */
   public String[][] domains() {
     Vec[] vecs = vecs();
     String ds[][] = new String[vecs.length][];
@@ -383,8 +392,8 @@ public class Frame extends Lockable<Frame> {
     return ds;
   }
 
-  /** Number of categorical levels for enum columns; -1 for non-enum columns.
-   * @return the number of levels for enum columns */
+  /** Number of categorical levels for categorical columns; -1 for non-categorical columns.
+   * @return the number of levels for categorical columns */
   public int[] cardinality() {
     Vec[] vecs = vecs();
     int[] card = new int[vecs.length];
@@ -393,13 +402,21 @@ public class Frame extends Lockable<Frame> {
     return card;
   }
 
-  /** Majority class for enum columns; -1 for non-enum columns.
-   * @return the majority class for enum columns */
-  public int[] modes() {
+  private Vec[] bulkRollups() {
+    Futures fs = new Futures();
     Vec[] vecs = vecs();
+    for(Vec v : vecs)  v.startRollupStats(fs);
+    fs.blockForPending();
+    return vecs;
+  }
+
+  /** Majority class for categorical columns; -1 for non-categorical columns.
+   * @return the majority class for categorical columns */
+  public int[] modes() {
+    Vec[] vecs = bulkRollups();
     int[] modes = new int[vecs.length];
     for( int i = 0; i < vecs.length; i++ ) {
-      modes[i] = vecs[i].isEnum() ? vecs[i].mode() : -1;
+      modes[i] = vecs[i].isCategorical() ? vecs[i].mode() : -1;
     }
     return modes;
   }
@@ -407,7 +424,7 @@ public class Frame extends Lockable<Frame> {
   /** All the column means.
    *  @return the mean of each column */
   public double[] means() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     double[] means = new double[vecs.length];
     for( int i = 0; i < vecs.length; i++ )
       means[i] = vecs[i].mean();
@@ -417,7 +434,7 @@ public class Frame extends Lockable<Frame> {
   /** One over the standard deviation of each column.
    *  @return Reciprocal the standard deviation of each column */
   public double[] mults() {
-    Vec[] vecs = vecs();
+    Vec[] vecs = bulkRollups();
     double[] mults = new double[vecs.length];
     for( int i = 0; i < vecs.length; i++ ) {
       double sigma = vecs[i].sigma();
@@ -434,8 +451,8 @@ public class Frame extends Lockable<Frame> {
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
+    Vec[] vecs = bulkRollups();
     long sum=0;
-    Vec[] vecs = vecs();
     for (Vec vec : vecs) sum += vec.byteSize();
     return sum;
   }
@@ -519,7 +536,7 @@ public class Frame extends Lockable<Frame> {
   public Frame prepend( String name, Vec vec ) {
     if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
     if( _vecs.length != 0 ) {
-      if( !anyVec().group().equals(vec.group()) && !Arrays.equals(anyVec()._espc,vec._espc) )
+      if( !anyVec().group().equals(vec.group()) && !Arrays.equals(anyVec().espc(),vec.espc()) )
         throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
       if( numRows() != vec.length() )
         throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
@@ -778,11 +795,11 @@ public class Frame extends Lockable<Frame> {
   // Make NewChunks to for holding data from e.g. Spark.  Once per set of
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
-  static NewChunk[] createNewChunks( String name, int cidx ) {
+  static NewChunk[] createNewChunks( String name, byte type, int cidx ) {
     Frame fr = (Frame)Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for( int i=0; i<nchks.length; i++ )
-      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i]),cidx);
+      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i],type),cidx);
     return nchks;
   }
 
@@ -796,7 +813,6 @@ public class Frame extends Lockable<Frame> {
 
   // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
   // after any number of [create,close]NewChunks.
-  // FIXME: have proper representation of column type
   void finalizePartialFrame( long[] espc, String[][] domains, byte[] types ) {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
@@ -815,7 +831,7 @@ public class Frame extends Lockable<Frame> {
     for( int i=0; i<_keys.length; i++ ) {
       // Insert Vec header
       Vec vec = _vecs[i] = new Vec( _keys[i],
-                                    espc2,
+                                    Vec.ESPC.rowLayout(_keys[i],espc2),
                                     domains!=null ? domains[i] : null,
                                     types[i]);
       // Here we have to save vectors since
@@ -890,10 +906,10 @@ public class Frame extends Lockable<Frame> {
     if (numRows() == 0) {
       return new MRTask() {
         @Override public void map(Chunk[] chks, NewChunk[] nchks) { for (NewChunk nc : nchks) nc.addNA(); }
-      }.doAll(c2.length, this).outputFrame(names(c2), domains(c2));
+      }.doAll(types(c2), this).outputFrame(names(c2), domains(c2));
     }
     if (orows == null)
-      return new DeepSlice(null,c2,vecs()).doAll(c2.length,this).outputFrame(names(c2),domains(c2));
+      return new DeepSlice(null,c2,vecs()).doAll(types(c2),this).outputFrame(names(c2),domains(c2));
     else if (orows instanceof long[]) {
       final long CHK_ROWS=1000000;
       final long[] rows = (long[])orows;
@@ -914,17 +930,17 @@ public class Frame extends Lockable<Frame> {
             }
           }.doAll(v0).getResult()._fr.anyVec();
           Keyed.remove(v0._key);
-          Frame slicedFrame = new DeepSlice(rows, c2, vecs()).doAll(c2.length, this.add("select_vec", v)).outputFrame(names(c2), domains(c2));
+          Frame slicedFrame = new DeepSlice(rows, c2, vecs()).doAll(types(c2), this.add("select_vec", v)).outputFrame(names(c2), domains(c2));
           Keyed.remove(v._key);
           Keyed.remove(this.remove(this.numCols() - 1)._key);
           return slicedFrame;
         } else {
-          return new DeepSlice(rows.length == 0 ? null : rows, c2, vecs()).doAll(c2.length, this).outputFrame(names(c2), domains(c2));
+          return new DeepSlice(rows.length == 0 ? null : rows, c2, vecs()).doAll(types(c2), this).outputFrame(names(c2), domains(c2));
         }
       }
       // Vec'ize the index array
       Futures fs = new Futures();
-      AppendableVec av = new AppendableVec(Vec.newKey());
+      AppendableVec av = new AppendableVec(Vec.newKey(),Vec.T_NUM);
       int r = 0;
       int c = 0;
       while (r < rows.length) {
@@ -935,11 +951,10 @@ public class Frame extends Lockable<Frame> {
         }
         nc.close(c++, fs);
       }
-      Vec c0 = av.close(fs);   // c0 is the row index vec
+      Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
       fs.blockForPending();
       Frame ff = new Frame(new String[]{"rownames"}, new Vec[]{c0});
-      Frame fr2 = new Slice(c2, this).doAll(c2.length,ff)
-              .outputFrame(names(c2), domains(c2));
+      Frame fr2 = new Slice(c2, this).doAll(types(c2),ff).outputFrame(names(c2), domains(c2));
       Keyed.remove(c0._key);
       Keyed.remove(av._key);
       ff.delete();
@@ -957,7 +972,7 @@ public class Frame extends Lockable<Frame> {
     vecs[c2.length] = frows.anyVec();
     names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
-    return new DeepSelect().doAll(c2.length,ff).outputFrame(names(c2),domains(c2));
+    return new DeepSelect().doAll(types(c2),ff).outputFrame(names(c2),domains(c2));
   }
 
   // Slice and return in the form of new chunks.
@@ -971,8 +986,8 @@ public class Frame extends Lockable<Frame> {
       final long  nrow = anyv.length();
       long  r    = ix[0].at8(0);
       int   last_ci = anyv.elem2ChunkIdx(r<nrow?r:0); // memoize the last chunk index
-      long  last_c0 = anyv._espc[last_ci];            // ...         last chunk start
-      long  last_c1 = anyv._espc[last_ci + 1];        // ...         last chunk end
+      long  last_c0 = anyv.espc()[last_ci];            // ...         last chunk start
+      long  last_c1 = anyv.espc()[last_ci + 1];        // ...         last chunk end
       Chunk[] last_cs = new Chunk[vecs.length];       // ...         last chunks
       for (int c = 0; c < _cols.length; c++) {
         vecs[c] = _base.vecs()[_cols[c]];
@@ -987,8 +1002,8 @@ public class Frame extends Lockable<Frame> {
         } else {
           if (r < last_c0 || r >= last_c1) {
             last_ci = anyv.elem2ChunkIdx(r);
-            last_c0 = anyv._espc[last_ci];
-            last_c1 = anyv._espc[last_ci + 1];
+            last_c0 = anyv.espc()[last_ci];
+            last_c1 = anyv.espc()[last_ci + 1];
             for (int c = 0; c < vecs.length; c++)
               last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
           }
@@ -1039,10 +1054,10 @@ public class Frame extends Lockable<Frame> {
         break;
       case Vec.T_STR :
         coltypes[i] = "string"; 
-        ValueString vstr = new ValueString();
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(vstr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        BufferedString tmpStr = new BufferedString();
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
-      case Vec.T_ENUM:
+      case Vec.T_CAT:
         coltypes[i] = "string"; 
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
@@ -1102,7 +1117,8 @@ public class Frame extends Lockable<Frame> {
           }
         }
         // Process this next set of rows
-        // For all cols in the new set
+        // For all cols in the new set;
+        BufferedString tmpStr = new BufferedString();
         for (int i = 0; i < _cols.length; i++) {
           Chunk oc = chks[_cols[i]];
           NewChunk nc = nchks[i];
@@ -1113,7 +1129,7 @@ public class Frame extends Lockable<Frame> {
               else nc.addNum(oc.at8(j), 0);
           } else if (oc._vec.isString()) {
             for (int j = rlo; j < rhi; j++)
-              nc.addStr(oc.atStr(new ValueString(), j));
+              nc.addStr(oc.atStr(tmpStr, j));
           } else {// Slice on double columns
             for (int j = rlo; j < rhi; j++)
               nc.addNum(oc.atd(j));
@@ -1138,13 +1154,12 @@ public class Frame extends Lockable<Frame> {
           for(int row=0;row<cs[0]._len;++row) {
             if( cs[col].isNA(row) ) ncs[col].addNA();
             else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
-            else if( cs[col] instanceof StrWrappedVec.StrWrappedChunk) ncs[col].addStr(cs[col], row);
             else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
             else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
             else ncs[col].addNum(cs[col].atd(row));
           }
       }
-    }.doAll(this.numCols(),this).outputFrame(keyName==null?null:Key.make(keyName),this.names(),this.domains());
+    }.doAll(this.types(),this).outputFrame(keyName==null?null:Key.make(keyName),this.names(),this.domains());
   }
 
   // _vecs put into kv store already
@@ -1152,8 +1167,9 @@ public class Frame extends Lockable<Frame> {
     final Vec[] _vecs;
     DoCopyFrame(Vec[] vecs) {
       _vecs = new Vec[vecs.length];
+      int rowLayout = _vecs[0]._rowLayout;
       for(int i=0;i<vecs.length;++i)
-        _vecs[i] = new Vec(vecs[i].group().addVec(),vecs[i]._espc.clone(), vecs[i].domain(), vecs[i]._type);
+        _vecs[i] = new Vec(vecs[i].group().addVec(),rowLayout, vecs[i].domain(), vecs[i]._type);
     }
     @Override public void map(Chunk[] cs) {
       int i=0;
@@ -1175,13 +1191,14 @@ public class Frame extends Lockable<Frame> {
   private static class DeepSelect extends MRTask<DeepSelect> {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length-1];
+      BufferedString tmpStr = new BufferedString();
       for(int i = 0; i < pred._len; ++i) {
         if( pred.atd(i) != 0 && !pred.isNA(i) ) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
             if( chk.isNA(i) )                   nchks[j].addNA();
             else if( chk instanceof C16Chunk )  nchks[j].addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchks[j].addStr((chk.atStr(new ValueString(), i)));
+            else if( chk instanceof CStrChunk)  nchks[j].addStr(chk.atStr(tmpStr, i));
             else if( chk.hasFloat() )           nchks[j].addNum(chk.atd(i));
             else                                nchks[j].addNum(chk.at8(i),0);
           }
@@ -1203,6 +1220,14 @@ public class Frame extends Lockable<Frame> {
     String [] res = new String[cols.length];
     for(int i = 0; i < cols.length; ++i)
       res[i] = _names[cols[i]];
+    return res;
+  }
+
+  private byte[] types(int [] cols){
+    Vec[] vecs = vecs();
+    byte[] res = new byte[cols.length];
+    for(int i = 0; i < cols.length; ++i)
+      res[i] = vecs[cols[i]]._type;
     return res;
   }
 
@@ -1230,14 +1255,12 @@ public class Frame extends Lockable<Frame> {
   }
 
   private boolean isLastRowOfCurrentNonEmptyChunk(int chunkIdx, long row) {
-    long lastRowOfCurrentChunk = anyVec().get_espc()[chunkIdx + 1] - 1;
-
+    long[] espc = anyVec().espc();
+    long lastRowOfCurrentChunk = espc[chunkIdx + 1] - 1;
     // Assert chunk is non-empty.
-    assert anyVec().get_espc()[chunkIdx + 1] > anyVec().get_espc()[chunkIdx];
-
+    assert espc[chunkIdx + 1] > espc[chunkIdx];
     // Assert row numbering sanity.
     assert row <= lastRowOfCurrentChunk;
-
     return row >= lastRowOfCurrentChunk;
   }
 
@@ -1283,13 +1306,14 @@ public class Frame extends Lockable<Frame> {
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
       Vec vs[] = vecs();
+      BufferedString tmpStr = new BufferedString();
       for( int i = 0; i < vs.length; i++ ) {
         if(i > 0) sb.append(',');
         if(!vs[i].isNA(_row)) {
-          if( vs[i].isEnum() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
+          if( vs[i].isCategorical() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
           else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
           else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(new ValueString(), _row)).append('"');
+          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(tmpStr, _row)).append('"');
           else {
             double d = vs[i].at(_row);
             // R 3.1 unfortunately changed the behavior of read.csv().

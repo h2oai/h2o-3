@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pubdev_673 <- function() {
   default <- c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999)
@@ -17,7 +17,7 @@ test.pubdev_673 <- function() {
   Log.info("H2O Summary:"); print(xh2o.sum)
   # expect_equal(xh2o.sum, xr.sum)
   
-  testEnd()
+  
 }
 
 doTest("PUBDEV-673: H2O summary and quantile of all NA col", test.pubdev_673)

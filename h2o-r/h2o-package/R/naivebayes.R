@@ -14,7 +14,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the
 #'        column index number starting at 0, and increasing from left to right. The response must be a categorical
 #'        variable with at least two levels.
-#' @param training_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
+#' @param training_frame An H2O Frame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param laplace A positive number controlling Laplace smoothing. The default zero disables smoothing.
@@ -29,13 +29,13 @@
 #'        every row in the training dataset that contains at least one NA will be skipped completely.
 #'        If the test dataset has missing values, then those predictors are omitted in the probability
 #'        calculation during prediction.
-#' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels, 
+#' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
-#' \dontrun{
-#'  localH2O <- h2o.init()
+#' \donttest{
+#'  h2o.init()
 #'  votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
-#'  votes.hex <- h2o.uploadFile(localH2O, path = votesPath, header = TRUE)
+#'  votes.hex <- h2o.uploadFile(path = votesPath, header = TRUE)
 #'  h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
 #' }
 #' @export
@@ -46,7 +46,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            eps = 0,
                            compute_metrics = TRUE)
 {
-  # Training_frame may be a key or an Frame object
+  # Training_frame may be a key or an H2O Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
@@ -79,5 +79,5 @@ h2o.naiveBayes <- function(x, y, training_frame,
   parms$eps_prob <- eps
 
   # Error check and build model
-  .h2o.modelJob('naivebayes', parms, do_future=FALSE)
+  .h2o.modelJob('naivebayes', parms)
 }

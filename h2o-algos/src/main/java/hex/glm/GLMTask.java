@@ -669,7 +669,7 @@ public abstract class GLMTask  {
 //    public void map(Chunk [] chks) {
 //      Chunk xOld = chks[0];
 //      Chunk xNew = chks[1];
-//      if(xNew.vec().isEnum()){
+//      if(xNew.vec().isCategorical()){
 //        _xy = MemoryManager.malloc8d(xNew.vec().domain().length);
 //      } else
 //      _xy = new double[1];
@@ -680,7 +680,7 @@ public abstract class GLMTask  {
 //        double w = weights.atd(i);
 //        double e = eta.atd(i);
 //        if(_betaUpdate != null) {
-//          if (xOld.vec().isEnum()) {
+//          if (xOld.vec().isCategorical()) {
 //            int cid = (int) xOld.at8(i);
 //            e = +_betaUpdate[cid];
 //          } else
@@ -689,7 +689,7 @@ public abstract class GLMTask  {
 //        }
 //        int cid = 0;
 //        double x = w;
-//        if(xNew.vec().isEnum()) {
+//        if(xNew.vec().isCategorical()) {
 //          cid = (int) xNew.at8(i);
 //          e -= _beta[cid];
 //        } else {

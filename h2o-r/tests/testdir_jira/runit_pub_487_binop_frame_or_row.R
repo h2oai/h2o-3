@@ -1,7 +1,7 @@
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 # use this for interactive setup
 #      library(h2o)
@@ -41,7 +41,7 @@ test.frame_add <- function() {
     res4 <- a.h2o == b.h2o
       
   
-    testEnd()
+    
 }
 
 doTest("Test frame add.", test.frame_add)

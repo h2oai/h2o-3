@@ -92,13 +92,12 @@
 }
 
 
-.h2o.modelJob <- function( algo, params, do_future, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
+.h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
   .eval.frame(params$training_frame)
-  if( !is.null(params$validation_frame) ) 
+  if( !is.null(params$validation_frame) )
     .eval.frame(params$validation_frame)
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
-  if( do_future )         job
-  else h2o.getFutureModel(job)
+  h2o.getFutureModel(job)
 }
 
 
@@ -148,6 +147,11 @@
   h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
 }
 
+#' Get future model
+#'
+#' @rdname h2o.getFutureModel
+#' @param object H2OModel
+#' @export
 h2o.getFutureModel <- function(object) {
   .h2o.__waitOnJob(object@job_key)
   h2o.getModel(object@model_id)
@@ -208,7 +212,7 @@ h2o.getFutureModel <- function(object) {
 
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
-    if(is.Frame(i))  .eval.frame(i):id
+    if(is.Frame(i))  attr(.eval.frame(i), "id")
     else             i
   })
 
@@ -273,7 +277,7 @@ h2o.getFutureModel <- function(object) {
     }
   }
   if( is.Frame(paramValue) )
-    paramValue <- .eval.frame(paramValue):id
+    paramValue <- attr(.eval.frame(paramValue),"id")
   paramValue
 }
 
@@ -314,7 +318,7 @@ h2o.getFutureModel <- function(object) {
                                       # Force evaluation of frames and fetch frame_id as
                                       # a side effect
                                       if (is.Frame(hv) )
-                                        hv <- .eval.frame(hv):id
+                                        hv <- attr(.eval.frame(hv), "id")
                                       .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
                                 })
           hyper_params[[name]] <<- transf_hyper_vals
@@ -335,13 +339,16 @@ h2o.getFutureModel <- function(object) {
 #'
 #' This method dispatches on the type of H2O model to select the correct
 #' prediction/scoring algorithm.
+#' The order of the rows in the results is the same as the order in which the
+#' data was loaded, even if some rows fail (for example, due to missing
+#' values or unseen factor levels).
 #'
 #' @param object a fitted \linkS4class{H2OModel} object for which prediction is
 #'        desired
-#' @param newdata A \linkS4class{Frame} object in which to look for
+#' @param newdata A Frame object in which to look for
 #'        variables with which to predict.
 #' @param ... additional arguments to pass on.
-#' @return Returns an \linkS4class{Frame} object with probabilites and
+#' @return Returns an H2O Frame object with probabilites and
 #'         default predictions.
 #' @seealso \code{link{h2o.deeplearning}}, \code{link{h2o.gbm}},
 #'          \code{link{h2o.glm}}, \code{link{h2o.randomForest}} for model
@@ -353,7 +360,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   }
 
   # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@model_id, '/frames/',  .eval.frame(newdata):id)
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  attr(.eval.frame(newdata), "id"))
   res <- .h2o.__remoteSend(url, method = "POST")
   res <- res$predictions_frame
   h2o.getFrame(res$name)
@@ -362,8 +369,7 @@ predict.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.predict <- predict.H2OModel
 
-h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
-{
+h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...) {
   output <- data.frame()
 
   if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
@@ -410,7 +416,7 @@ h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deep
 #'
 #'
 #' @param model An \linkS4class{H2OModel} object
-#' @param data An \linkS4class{Frame}. The model will make predictions
+#' @param data An H2O Frame. The model will make predictions
 #'        on this dataset, and subsequently score them. The dataset should
 #'        match the dataset that was used to train the model, in terms of
 #'        column names, types, and dimensions. If data is passed in, then train and valid are ignored.
@@ -420,9 +426,9 @@ h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deep
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.performance(model = prostate.gbm, data=prostate.hex)
@@ -431,16 +437,12 @@ h2o.crossValidateQ <- function(model, nfolds, model.type = c("gbm", "glm", "deep
 h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
-  if(!is.null(data) && !is.Frame(data) ) stop("`data` must be an Frame object")
+  if(!is.null(data) && !is.Frame(data) ) stop("`data` must be an H2O Frame object")
 
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
-  data.id <- if( missingData ) trainingFrame else .eval.frame(data):id
-  if( !is.null(trainingFrame) && !missingData && data.id == trainingFrame ) {
-    warning("Given data is same as the training data. Returning the training metrics.")
-    return(model@model$training_metrics)
-  }
-  else if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
+  data.id <- if( missingData ) trainingFrame else attr(.eval.frame(data), "id")
+  if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
   else if( missingData &&  valid ) {
     if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
     else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
@@ -965,6 +967,7 @@ h2o.weights <- function(object, matrix_id=1, ...){
     warning( paste0("No weights for ", class(o)) )
     return(NULL)
   }
+  h2o.getFrame(sh$name)
 }
 
 #'
@@ -984,6 +987,7 @@ h2o.biases <- function(object, vector_id=1, ...){
     warning( paste0("No biases for ", class(o)) )
     return(NULL)
   }
+  h2o.getFrame(sh$name)
 }
 
 #'
@@ -1195,16 +1199,24 @@ h2o.specificity <- function(object, thresholds){
   h2o.metric(object, thresholds, "tnr")
 }
 
-#
-#
+#' Find the threshold, give the max metric
+#'
+#' @rdname h2o.find_threshold_by_max_metric
+#' @param object H2OBinomialMetrics
+#' @param metric "F1," for example
+#' @export
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
   max_metrics[match(paste0("max ",metric),max_metrics$metric),"threshold"]
 }
 
-#
-# No duplicate thresholds allowed
+#' Find the threshold, give the max metric. No duplicate thresholds allowed
+#'
+#' @rdname h2o.find_row_by_threshold
+#' @param object H2OBinomialMetrics
+#' @param threshold number between 0 and 1
+#' @export
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
@@ -1625,7 +1637,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #'
 #' @param object Either an \linkS4class{H2OModel} object or an
 #'        \linkS4class{H2OModelMetrics} object.
-#' @param newdata An \linkS4class{Frame} object that can be scored on.
+#' @param newdata An H2O Frame object that can be scored on.
 #'        Requires a valid response column.
 #' @param thresholds (Optional) A value or a list of valid values between 0.0 and 1.0.
 #'        This value is only used in the case of
@@ -1670,7 +1682,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
 
   # ok need to score on the newdata
-  url <- paste0("Predictions/models/",object@model_id, "/frames/", .eval.frame(newdata):id)
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", attr(.eval.frame(newdata), "id"))
   res <- .h2o.__remoteSend(url, method="POST")
 
   # Make the correct class of metrics object
@@ -1749,25 +1761,133 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
   m
 })
 
+#' Plot an H2O Model
+#'
+#' Plots training set (and validation set if available) scoring history for an H2O Model
+#'
+#' This method dispatches on the type of H2O model to select the correct
+#' scoring history.  The \code{timestep} and \code{metric} arguments are restricted to what is
+#' available in the scoring history for a particular type of model.
+#'
+#' @param x A fitted \linkS4class{H2OModel} object for which the scoring history plot is desired.
+#' @param timestep A unit of measurement for the x-axis.
+#' @param metric A unit of measurement for the y-axis.
+#' @param ... additional arguments to pass on.
+#' @return Returns a scoring history plot.
+#' @seealso \code{link{h2o.deeplearning}}, \code{link{h2o.gbm}},
+#'          \code{link{h2o.glm}}, \code{link{h2o.randomForest}} for model
+#'          generation in h2o.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' library(mlbench)
+#' h2o.init()
+#'
+#' df <- as.h2o(mlbench::mlbench.friedman1(10000,1))
+#' rng <- h2o.runif(df, seed=1234)
+#' train <- df[rng<0.8,]
+#' valid <- df[rng>=0.8,]
+#'
+#' gbm <- h2o.gbm(x = 1:10, y = "y", training_frame = train, validation_frame = valid,
+#'   ntrees=500, learn_rate=0.01, score_each_iteration = TRUE)
+#' plot(gbm)
+#' plot(gbm, timestep = "duration", metric = "deviance")
+#' plot(gbm, timestep = "number_of_trees", metric = "deviance")
+#' plot(gbm, timestep = "number_of_trees", metric = "MSE")
+#'
+#' }
 #' @export
-plot.H2OModel <- function(x, train=FALSE, valid=FALSE, xval=FALSE, ...) {
-  if( is(x, "H2OBinomialModel") ) {
-    if ( !train && !valid && !xval ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...)
-    } else if ( valid ) { plot.H2OBinomialMetrics(x@model$validation_metrics, ...)
-    } else if ( xval )  { warning(paste("Plotting cross-valiation metrics is currently not supported."))
-    } else if ( train ) { plot.H2OBinomialMetrics(x@model$training_metrics, ...) }
-  } else NULL
+plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
+  df <- as.data.frame(x@model$scoring_history)
+  # Separate functionality for GLM since output is different from other algos
+  if (x@algorithm == "glm") {
+    # H2OBinomialModel and H2ORegressionModel have the same output
+    # Also GLM has only one timestep option, which is `iteration`
+    timestep <- "iteration"
+    if (metric == "AUTO") {
+      metric <- "log_likelihood"
+    } else if (!(metric %in% c("log_likelihood", "objective"))) {
+      stop("for GLM, metric must be one of: log_likelihood, objective")
+    }
+    graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History")
+  } else if (x@algorithm %in% c("deeplearning", "drf", "gbm")) {
+    if (is(x, "H2OBinomialModel")) {
+      if (metric == "AUTO") {
+        metric <- "logloss"
+      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
+        stop("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      }
+    } else if (is(x, "H2OMultinomialModel")) {
+      if (metric == "AUTO") {
+        metric <- "classification_error"
+      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
+        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      }
+    } else if (is(x, "H2ORegressionModel")) {
+      if (metric == "AUTO") {
+        metric <- "MSE"
+      } else if (!(metric %in% c("MSE","deviance", "r2"))) {
+        stop("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance, r2")
+      }
+    } else {
+      stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
+    }
+    # Set timestep
+    if (x@algorithm %in% c("gbm", "drf")) {
+      if (timestep == "AUTO") {
+        timestep <- "number_of_trees"
+      } else if (!(timestep %in% c("duration","number_of_trees"))) {
+        stop("timestep for gbm or drf must be one of: duration, number_of_trees")
+      }
+    } else { # x@algorithm == "deeplearning"
+      # Delete first row of DL scoring history since it contains NAs & NaNs
+      if (df$samples[1] == 0) {
+        df <- df[-1,]
+      }
+      if (timestep == "AUTO") {
+        timestep <- "epochs"
+      } else if (!(timestep %in% c("epochs","samples","duration"))) {
+        stop("timestep for deeplearning must be one of: epochs, samples, duration")
+      }
+    }
+    training_metric <- sprintf("training_%s", metric)
+    validation_metric <- sprintf("validation_%s", metric)
+    if (timestep == "duration") {
+      trim <- function (ss) gsub("^\\s+|\\s+$", "", ss)
+      tt <- trim(df[2, c("duration")])  #base::trimws not implemented for earlier versions of R, so we make our own trim function
+      dur_colname <- sprintf("duration_%s", strsplit(tt, " ")[[1]][2]) #parse units of measurement
+      df[,c(dur_colname)] <- apply(as.matrix(df[,c("duration")]), 1, function(v) as.numeric(strsplit(trim(v), " ")[[1]][1]))
+      timestep <- dur_colname
+    }
+    if (validation_metric %in% names(df)) {  #Training and Validation scoring history
+      ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
+      graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
+                     main = "Scoring History", col = "blue", ylim = ylim)
+      graphics::par(new = TRUE)
+      graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim)
+      graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
+    } else {  #Training scoring history only
+      ylim <- range(c(df[,c(training_metric)]))
+      graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = timestep, ylab = training_metric,
+                     main = "Training Scoring History", col = "blue", ylim = ylim)
+
+    }
+  } else { # algo is not glm, deeplearning, drf, gbm
+  	stop("Plotting not implemented for this type of model")
+  }
 }
 
 #' @export
-plot.H2OBinomialMetrics <- function(x, type = "roc", ...) {
+plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
   if(!type %in% c("roc")) stop("type must be 'roc'")
   if(type == "roc") {
     xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
-    main <- paste(yaxis, "vs", xaxis)
-    if( x@on_train ) main <- paste(main, "(on train)")
-    else             main <- paste(main, "(on valid)")
+    if(missing(main)) {
+      main <- paste(yaxis, "vs", xaxis)
+      if( x@on_train ) main <- paste(main, "(on train)")
+      else             main <- paste(main, "(on valid)")
+    }
     graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
     graphics::abline(0, 1, lty = 2)
   }
@@ -1802,15 +1922,6 @@ h2o.sdev <- function(object) {
     stop("object must be a H2O PCA model")
   as.numeric(object@model$importance[1,])
 }
-
-# Handles ellipses
-.model.ellipses <- function(dots) {
-  lapply(names(dots), function(type) {
-    stop(paste0('\n  unexpected argument "',
-                type,'", is this legacy code? Try ?h2o.shim'), call. = FALSE)
-  })
-}
-
 
 # extract "bite size" pieces from a model
 .model.parts <- function(object) {
@@ -1860,7 +1971,7 @@ h2o.sdev <- function(object) {
 #' Uses histogram of given resolution in X and Y.
 #' Handles numerical/categorical data and missing values. Supports observation weights.
 #'
-#' @param data An \linkS4class{Frame} object.
+#' @param data An H2O Frame object.
 #' @param x predictor column
 #' @param y response column
 #' @param weights_column (optional) observation weights column
@@ -1872,7 +1983,7 @@ h2o.sdev <- function(object) {
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' df <- as.h2o(iris)
 #' h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
 #'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
@@ -1888,7 +1999,7 @@ h2o.tabulate <- function(data, x, y,
   if(!is.numeric(nbins_y)) stop("`nbins_y` must be a positive number")
 
   parms = list()
-  parms$dataset <- data:id
+  parms$dataset <- attr(data, "id")
   parms$predictor <- args$cols[1]
   parms$response <- args$cols[2]
   if( !missing(weights_column) )            parms$weight <- weights_column
@@ -1899,5 +2010,7 @@ h2o.tabulate <- function(data, x, y,
   print(res)
   count_table <- res$count_table
   response_table <- res$response_table
-  list(count_table = count_table, response_table = response_table)
+  out <- list(count_table = count_table, response_table = response_table, cols = args$cols)
+  oldClass(out) <- c("H2OTabulate", "list")
+  out
 }

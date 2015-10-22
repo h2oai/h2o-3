@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.eq2.h2o.assign<-
 function() {
@@ -17,7 +17,7 @@ function() {
     print(h2o.ls())
     keys <- as.vector(h2o.ls()[,1])
     expect_true(any(grepl("slicedIris.hex", keys)))
-    expect_true(grepl("slicedIris.hex", irisSlice:id))
+    expect_true(grepl("slicedIris.hex", attr(irisSlice, "id")))
     h2o.removeAll()
 
     iris.hex <- h2o.importFile(locate("smalldata/iris/iris.csv"), "iris.hex")
@@ -35,7 +35,7 @@ function() {
     Log.info("Check that the dimension of this subsetted iris.hex is 50x4")
     print(dim(iris.hex))
     expect_that(dim(iris.hex), equals(c(50,4)))
-    testEnd()
+    
 }
 
 doTest("Test h2o.assign(data,id)", test.eq2.h2o.assign)

@@ -10,7 +10,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param training_frame An \code{\linkS4class{Frame}} object containing the variables in the model.
+#' @param training_frame An H2O Frame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
@@ -20,40 +20,46 @@
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param learn_rate An \code{integer} from \code{0.0} to \code{1.0}
-#' @param nbins For numerical columns (real/int), build a histogram of this many bins, then split at the best point
-#' @param nbins_cats For categorical columns (enum), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.
-#' @param validation_frame An \code{\link{Frame}} object indicating the validation dataset used to contruct the
-#'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
+#' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
+#' @param sample_rate Row sample rate (from \code{0.0} to \code{1.0})
+#' @param col_sample_rate Column sample rate (from \code{0.0} to \code{1.0})
+#' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
+#' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
+#'        level, then decrease by factor of two per level.
+#' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point.
+#'        Higher values can lead to more overfitting.
+#' @param validation_frame An H2O Frame object indicating the validation dataset used to contruct the
+#'        confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
 #' @param balance_classes logical, indicates whether or not to balance training data class
-#'        counts via over/under-sampling (for imbalanced data)
+#'        counts via over/under-sampling (for imbalanced data).
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
-#'        than 1.0)
-#' @param seed Seed for random numbers (affects sampling when balance_classes=T)
+#'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
+#' @param seed Seed for random numbers (affects sampling).
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "AUTO", "Random" or "Modulo"
+#'        Must be "AUTO", "Random" or "Modulo".
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
-#' @param ... extra arguments to pass on (currently no implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
+#' \donttest{
 #' library(h2o)
-#' localH2O = h2o.init()
+#' h2o.init()
 #'
 #' # Run regression GBM on australia.hex data
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
+#' australia.hex <- h2o.uploadFile(path = ausPath)
 #' independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst",
 #'                  "maxsoilmoist", "Max_czcs")
 #' dependent <- "runoffnew"
 #' h2o.gbm(y = dependent, x = independent, training_frame = australia.hex,
 #'         ntrees = 3, max_depth = 3, min_rows = 2)
+#' }
 #' @export
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
@@ -64,7 +70,10 @@ h2o.gbm <- function(x, y, training_frame,
                     max_depth = 5,
                     min_rows = 10,
                     learn_rate = 0.1,
+                    sample_rate = 1.0,
+                    col_sample_rate = 1.0,
                     nbins = 20,
+                    nbins_top_level,
                     nbins_cats = 1024,
                     validation_frame = NULL,
                     balance_classes = FALSE,
@@ -77,21 +86,13 @@ h2o.gbm <- function(x, y, training_frame,
                     keep_cross_validation_predictions = FALSE,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
-                    weights_column = NULL,
-                    ...)
+                    weights_column = NULL)
 {
   # Required maps for different names params, including deprecated params
   .gbm.map <- c("x" = "ignored_columns",
                 "y" = "response_column")
 
-  # Pass over ellipse parameters
-  do_future <- FALSE
-  if (length(list(...)) > 0) {
-    dots <- list(...) #.model.ellipses( list(...))
-    if( !is.null(dots$future) ) do_future <- TRUE
-  }
-
-  # Training_frame may be a key or an Frame object
+  # Training_frame may be a key or an H2O Frame object
   if (!is.Frame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
@@ -130,8 +131,14 @@ h2o.gbm <- function(x, y, training_frame,
     parms$min_rows <- min_rows
   if (!missing(learn_rate))
     parms$learn_rate <- learn_rate
+  if (!missing(sample_rate))
+    parms$sample_rate <- sample_rate
+  if (!missing(col_sample_rate))
+    parms$col_sample_rate <- col_sample_rate
   if (!missing(nbins))
     parms$nbins <- nbins
+  if (!missing(nbins_top_level))
+    parms$nbins_top_level <- nbins_top_level
   if(!missing(nbins_cats))
     parms$nbins_cats <- nbins_cats
   if (!missing(validation_frame))
@@ -154,6 +161,6 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
 
-  .h2o.modelJob('gbm', parms, do_future)
+  .h2o.modelJob('gbm', parms)
 }
 

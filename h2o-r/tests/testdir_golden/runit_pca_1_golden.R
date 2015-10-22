@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pcavanilla.golden <- function() {
   # Import data: 
@@ -16,7 +16,7 @@ test.pcavanilla.golden <- function() {
   fitR <- prcomp(arrestsR, center = TRUE, scale. = FALSE)
   fitH2O <- h2o.prcomp(arrestsH2O, k = 4, transform = 'DEMEAN', max_iterations = 2000)
   checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
-  testEnd()
+  
 }
 
 doTest("PCA Golden Test: USArrests with Transformed Data", test.pcavanilla.golden)

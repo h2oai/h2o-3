@@ -1,6 +1,6 @@
 ### This tests observation weights in glm ######
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 # TODO: Deduplicate code for lambda=0 and lambda>=0 cases
 
 test_weights_by_row_duplication <- function() {
@@ -129,7 +129,7 @@ test_weights_by_row_duplication <- function() {
   ph2 <- as.data.frame(h2o.predict(object = hh2, newdata = val1))
   expect_equal(ph1, ph2)
 
-  testEnd()
+  
 }
 
 doTest("GLM weight Test: GLM w/ weights test by row duplication", test_weights_by_row_duplication)

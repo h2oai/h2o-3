@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.DRF.Czechboard <- function() {
   # Training set has checkerboard pattern
@@ -16,7 +16,7 @@ test.DRF.Czechboard <- function() {
                                      training_frame = board.hex, ntrees = 50,
                                      max_depth = 20, min_rows = 500)
   print(drfmodel)
-  testEnd()
+  
 }
 
 doTest("DRF Test: Classification with Checkerboard Group Split", test.DRF.Czechboard)

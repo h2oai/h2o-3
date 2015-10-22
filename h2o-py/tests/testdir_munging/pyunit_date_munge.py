@@ -1,6 +1,10 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def refine_date_col(data, col, pattern):
   data[col]         = data[col].as_date(pattern)
@@ -19,7 +23,7 @@ def refine_date_col(data, col, pattern):
 
 
 def date_munge():
-  crimes_path = h2o.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
+  crimes_path = pyunit_utils.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
   crimes = h2o.import_file(path=crimes_path)
   crimes.describe()
 
@@ -27,5 +31,9 @@ def date_munge():
   crimes = crimes.drop("Date")
   crimes.describe()
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, date_munge)
+    pyunit_utils.standalone_test(date_munge)
+else:
+    date_munge()

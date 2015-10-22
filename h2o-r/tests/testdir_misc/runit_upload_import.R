@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.upload.import.small <- function() {
     various_datasets = c("smalldata/iris/iris.csv", "smalldata/iris/iris_wheader.csv", "smalldata/prostate/prostate.csv",
@@ -20,7 +20,7 @@ test.upload.import.small <- function() {
         expect_equal(cols_u, cols_i, info="Expected same number of cols regardless of method.")
     }
 
-    testEnd()
+    
 }
 
 doTest("Test upload import", test.upload.import.small)

@@ -11,9 +11,9 @@
 # Prediction should still go through
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
-source('../h2o-runit.R')
+
+
 
 
 pub35gbm <- function(){
@@ -45,7 +45,7 @@ pub35gbm <- function(){
   print(as.data.frame(df.h2))
   expect_that(is.na(preds[1,1]), equals(FALSE))
 
-  testEnd()
+  
 }
 
 doTest('pub-35-gbm_superset_factors', pub35gbm)

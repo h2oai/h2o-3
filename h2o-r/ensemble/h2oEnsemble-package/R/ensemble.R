@@ -12,17 +12,17 @@ h2o.ensemble <- function(x, y, training_frame,
   starttime <- Sys.time()
   runtime <- list()
   
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an H2O Frame object
+  if ((!inherits(training_frame, "Frame") && !inherits(training_frame, "H2OFrame")))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid H2O Frame or id")
              })
   if (!is.null(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (is.character(validation_frame))
       tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                error = function(err) {
-                 stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                 stop("argument \"validation_frame\" must be a valid H2O Frame or id")
                })
   }
   N <- dim(training_frame)[1L]  #Number of observations in training set
@@ -53,7 +53,6 @@ h2o.ensemble <- function(x, y, training_frame,
   } else {
     ylim <- NULL
   }
-  
   
   # Update control args by filling in missing list elements
   cvControl <- do.call(".cv_control", cvControl)
@@ -89,11 +88,10 @@ h2o.ensemble <- function(x, y, training_frame,
   if (is.numeric(seed)) set.seed(seed)  #If seed is specified, set seed prior to next step
   folds <- sample(rep(seq(V), ceiling(N/V)))[1:N]  # Cross-validation folds (stratified folds not yet supported)
   training_frame$fold_id <- as.h2o(folds)  # Add a fold_id column for each observation so we can subset by row later
-  #training_frame <- h2o.cbind(training_frame, as.h2o(folds))
-  
+
   # What type of metalearning function do we have?
   # The h2o version is memory-optimized (the N x L level-one matrix, Z, never leaves H2O memory);
-  # SuperLearner metalearners provide expanded functionality, but has a much bigger memory footprint
+  # SuperLearner metalearners provide additional metalearning algos, but has a much bigger memory footprint
   if (grepl("^SL.", metalearner)) {
     metalearner_type <- "SuperLearner"
   } else if (grepl("^h2o.", metalearner)){
@@ -191,15 +189,14 @@ h2o.ensemble <- function(x, y, training_frame,
     } else {
       predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
     }
-    cvpred_sparse <- do.call("h2o.cbind", predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
+    cvpred_sparse <- h2o.cbind(predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
     cvpred_col <- apply(cvpred_sparse, 1, sum)
-    return(cvpred_col@frame_id)
+    return(cvpred_col)
   } 
-  cvpred_framelist <- sapply(1:L, function(l) h2o.getFrame(.compress_cvpred_into_1col(l, family)))
-  Zhf <- do.call(h2o.cbind, cvpred_framelist)
-  names(Zhf) <- learner
-
-  return(list(Z = Zhf, basefits = basefits))
+  cvpred_framelist <- sapply(1:L, function(l) .compress_cvpred_into_1col(l, family))
+  Z <- h2o.cbind(cvpred_framelist)
+  names(Z) <- learner
+  return(list(Z = Z, basefits = basefits))
 }
 
 
@@ -240,7 +237,7 @@ h2o.ensemble <- function(x, y, training_frame,
 
 
 # TO DO:check if this is working
-predict.h2o.ensemble <- function(object, newdata) {
+predict.h2o.ensemble <- function(object, newdata, ...) {
   
   L <- length(object$basefits)
   basepreddf <- as.data.frame(matrix(NA, nrow = nrow(newdata), ncol = L))

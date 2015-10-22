@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.RF.nfolds <- function() {
   iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"),
@@ -17,7 +17,7 @@ test.RF.nfolds <- function() {
   h2o.randomForest(y = 5, x = 1:4, training_frame = iris.hex,
                    ntrees = 50, nfolds = 5,
                    validation_frame = iris.hex)
-  testEnd()
+  
 }
 
 doTest("RF Cross-Validation Test: Iris", test.RF.nfolds)

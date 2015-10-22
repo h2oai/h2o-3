@@ -2,8 +2,8 @@
 # Generate lots of keys then remove them
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test <- function() {
 
@@ -21,7 +21,7 @@ test <- function() {
   vals <- c("NEW SETOSA ENUM", "NEW VIRG ENUM", "NEW VERSI ENUM")
   expect_equal(h2o.levels(hex$Species), vals)
 
-  testEnd()
+  
 }
 
 doTest("Many Keys Test: Removing", test)

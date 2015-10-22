@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.glm2ProstateAUC.golden <- function() {
 	
@@ -33,7 +33,7 @@ test.glm2ProstateAUC.golden <- function() {
     expect_equal(fitH2O@model$training_metrics@metrics$AIC, fitR$aic, tolerance = 0.01)
     expect_equal(aucR, aucH, tolerance=0.05)
     
-    testEnd()
+    
 }
 
 doTest("GLM Test: GLM2 - ProstateAUC", test.glm2ProstateAUC.golden)

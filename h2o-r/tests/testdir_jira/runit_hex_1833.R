@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 test <- function() {
@@ -7,7 +7,7 @@ test <- function() {
 
   print(jsonlite::fromJSON(json_file))
  
-  testEnd()
+  
 }
 
 doTest("testing JSON parse", test)

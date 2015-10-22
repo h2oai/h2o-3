@@ -3,8 +3,8 @@
 ##
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 test <- function() {
@@ -61,7 +61,7 @@ test <- function() {
 	#	print("Dimension of strongest predictions: ") ; dim(top.air)
 	#	print("Head of strongest predictions: ") ; head(top.air)
 
-  testEnd()
+  
 }
 
 doTest("Test parsing, splitting, modelling, and computation on data with UUID column", test)

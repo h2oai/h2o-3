@@ -5,8 +5,8 @@
 ##
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 test <- function() {
@@ -30,7 +30,7 @@ test <- function() {
 						  alpha=1, lambda_search=T, nfolds=3, standardize = TRUE)
 	print(h2o.glm.CV)  #Confirm reported values accurate and match browser
 
-  testEnd()
+  
 }
 
 doTest("Testing R's glm model with cross validation on for Binomial and Gaussian distribution", test)

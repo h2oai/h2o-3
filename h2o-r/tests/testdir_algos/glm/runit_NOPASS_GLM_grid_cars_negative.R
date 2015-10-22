@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.glm.grid.cars.negative <- function(conn) {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
@@ -83,7 +83,7 @@ check.glm.grid.cars.negative <- function(conn) {
     expect_error(cars_glm_grid <- h2o.grid("glm", grid_id="glm_grid_cars_test", x=predictors, y=response_col,
                                            training_frame=train, validation_frame=valid, hyper_params=grid_space, do_hyper_params_check=TRUE)) }
 
-  testEnd()
+  
 }
 
 doTest("GLM Grid Search using bad parameters", check.glm.grid.cars.negative)

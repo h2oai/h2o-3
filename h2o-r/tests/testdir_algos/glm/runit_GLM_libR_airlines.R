@@ -1,9 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
 
-Log.info("Loading LiblineaR and ROCR packages\n")
-if(!"LiblineaR" %in% rownames(installed.packages())) install.packages("LiblineaR")
-if(!"ROCR" %in% rownames(installed.packages())) install.packages("ROCR")
+
 require(LiblineaR)
 require(ROCR)
 
@@ -42,13 +38,12 @@ test.LiblineaR.airlines <- function() {
     
     h2op         <- predict(h2o.m, testhex)
     h2operf      <- h2o.performance(h2o.m, testhex)
-    h2opreds     <- head(h2op, nrow(h2op))
-    vec.preds    <- as.vector((h2opreds$predict))
-    h2oCM        <- table(testLabels, as.logical(vec.preds))
+    h2opreds     <- as.numeric(as.character((as.data.frame(h2op)[,1])))
+    h2oCM        <- table(testLabels, h2opreds)
     h2oPrecision <- h2oCM[1] / (h2oCM[1] + h2oCM[3])
     h2oRecall    <- h2oCM[1] / (h2oCM[1] + h2oCM[2])
     h2oF1        <- 2 * (h2oPrecision * h2oRecall) / (h2oPrecision + h2oRecall)
-    h2oAUC       <- performance(prediction(vec.preds, testLabels), measure = "auc")@y.values
+    h2oAUC       <- performance(prediction(h2opreds, testLabels), measure = "auc")@y.values
     
     Log.info("                ============= H2O Performance =============\n")
     Log.info(paste("H2O AUC (performance(prediction(predictions,actual))): ", h2oAUC[[1]], "\n", sep = ""))
@@ -81,20 +76,22 @@ test.LiblineaR.airlines <- function() {
   }
   
   Log.info("Importing Airlines test/train data...\n")
-  exdir         <- locate("Rsandbox_runit_GLM_libR_airlines.R")
+  exdir         <- sandbox()
+#  exdir <- "/Users/spencer/0xdata/h2o-3/h2o-r/tests/testdir_algos/glm/Rsandbox_runit_GLM_libR_airlines.R/"
+#  airlinesTrain <- "/Users/spencer/0xdata/h2o-3/smalldata/airlines/AirlinesTrain.csv.zip"   #locate("smalldata/airlines/AirlinesTrain.csv.zip")
+#  airlinesTest  <- "/Users/spencer/0xdata/h2o-3/smalldata/airlines/AirlinesTest.csv.zip"  #locate("smalldata/airlines/AirlinesTest.csv.zip")
   airlinesTrain <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
   airlinesTest  <- locate("smalldata/airlines/AirlinesTest.csv.zip")
   aTrain        <- na.omit(read.zip(zipfile = airlinesTrain, exdir = exdir))
   aTest         <- na.omit(read.zip(zipfile = airlinesTest,  exdir = exdir))
   trainhex      <- h2o.uploadFile(paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
   testhex       <- h2o.uploadFile(paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
-  # remove_exdir(exdir)
   
   print(trainhex)
 
   Log.info("Mapping column IsDepDelayed_REC from {-1,1} to {0,1}...\n")
-  aTrain$IsDepDelayed_REC   <- aTrain$IsDepDelayed_REC == 1
-  aTest$IsDepDelayed_REC    <- aTest$IsDepDelayed_REC == 1
+  aTrain$IsDepDelayed_REC   <- as.numeric(aTrain$IsDepDelayed_REC == 1)
+  aTest$IsDepDelayed_REC    <- as.numeric(aTest$IsDepDelayed_REC == 1)
   trainhex$IsDepDelayed_REC <- trainhex$IsDepDelayed_REC == 1
   trainhex$IsDepDelayed_REC <- as.factor(trainhex$IsDepDelayed_REC)
   testhex$IsDepDelayed_REC  <- testhex$IsDepDelayed_REC == 1
@@ -105,10 +102,15 @@ test.LiblineaR.airlines <- function() {
   #xTest   <- model.matrix(IsDepDelayed_REC ~., aTest[-11])[,-1]
   xTest   <- scale(data.frame(aTest$DepTime, aTest$ArrTime, aTest$Distance))
   yTest   <- aTest[,12]
+  train <- xTrain
+  trainLabels <- yTrain
+  test <- xTest
+  testLabels <- yTest
+
   models  <- L1logistic(xTrain,yTrain,xTest,yTest,trainhex,testhex)
   compareCoefs(models[[1]], models[[2]])
   
-  testEnd()
+  
 }
 
 doTest("LiblineaR Test: Airlines", test.LiblineaR.airlines)

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.binop2.pipe <- function() {
  hex <- as.h2o(iris)
@@ -27,7 +27,7 @@ test.binop2.pipe <- function() {
   print(head(newHex))
   print(head(as.data.frame(sliced) | 5))
   
-  testEnd()
+  
 }
 
 doTest("Binop2 EQ2 Test: |", test.binop2.pipe)

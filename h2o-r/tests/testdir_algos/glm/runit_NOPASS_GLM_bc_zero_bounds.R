@@ -3,8 +3,8 @@
 ## runs glm with and without beta contraints which will be checked
 ## against glmnet's results.
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
   Log.info("Importing prostate dataset...")
@@ -68,7 +68,7 @@ test <- function() {
   print("TEST RESULTS FOR PROSTATE DATA SET with bounds [-0.1,0.1] : ")
   print(t)
 
-  testEnd()
+  
 }
 
 doTest("GLM Test: GLM w/ Beta Constraints", test)

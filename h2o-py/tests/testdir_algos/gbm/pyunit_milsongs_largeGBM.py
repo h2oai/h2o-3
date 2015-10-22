@@ -1,12 +1,15 @@
-import sys, os
-sys.path.insert(1, "../../../")
-import h2o, tests
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+import os
+
 import random
 
 def milsong_checkpoint():
 
-    milsong_train = h2o.upload_file(h2o.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
-    milsong_valid = h2o.upload_file(h2o.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
+    milsong_train = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
+    milsong_valid = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
     distribution = "gaussian"
 
     # build first model
@@ -20,7 +23,7 @@ def milsong_checkpoint():
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
     # save the model, then load the model
-    path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..","results"))
+    path = pyunit_utils.locate("results")
 
     assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
     model_path = h2o.save_model(model1, path=path, force=True)
@@ -43,5 +46,9 @@ def milsong_checkpoint():
     model3 = h2o.gbm(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees2,max_depth=max_depth2, min_rows=min_rows2,
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, milsong_checkpoint)
+    pyunit_utils.standalone_test(milsong_checkpoint)
+else:
+    milsong_checkpoint()

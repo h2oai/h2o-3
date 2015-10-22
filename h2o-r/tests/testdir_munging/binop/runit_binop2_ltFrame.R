@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 
 test.lt.frame <- function() {
@@ -22,7 +22,7 @@ test.lt.frame <- function() {
   # else hexLTHex <- hex < hex
   hexLTHex <- hex < hex
   
-  testEnd()
+  
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '<' on frames", test.lt.frame)

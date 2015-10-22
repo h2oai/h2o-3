@@ -5,8 +5,8 @@
 ##
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
     print("Reading in Arcene training data for binomial modeling.")
@@ -33,7 +33,7 @@ test <- function() {
             diff = h2o.model@model$coefficients - h2o.model.s@model$coefficients
             stopifnot(diff < 5e-10)
 
-    testEnd()
+    
 }
 
 doTest("Testing glm consistency on 1 chunk dataset with and without shuffling rows.", test)

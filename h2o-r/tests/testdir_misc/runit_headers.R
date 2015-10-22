@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.headers <- function() {
 
@@ -9,7 +9,7 @@ test.headers <- function() {
   print(names(hex))
   checkIdentical(names(headers), names(hex))
 
-  testEnd()
+  
 }
 
 doTest("Import a dataset with a header H2OParsedData Object", test.headers)

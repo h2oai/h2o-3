@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.upload.import <- function() {
     uploaded_frame <- h2o.uploadFile(locate("bigdata/laptop/mnist/train.csv.gz"))
@@ -15,7 +15,7 @@ test.upload.import <- function() {
     expect_equal(rows_u, rows_i, info="Expected same number of rows regardless of method.")
     expect_equal(cols_u, cols_i, info="Expected same number of cols regardless of method.")
 
-    testEnd()
+    
 }
 
 doTest("Test upload import", test.upload.import)

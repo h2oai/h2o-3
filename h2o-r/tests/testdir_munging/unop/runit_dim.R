@@ -6,8 +6,8 @@
 ##
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 
 test.dim <- function() {
@@ -52,7 +52,7 @@ test.dim <- function() {
   h2oTOR <- data.frame(as.data.frame(h2oCol) & 5)
   Log.info("as.data.frame(h2oCol) & 5")
   expect_that(dim(h2oTOR), equals(dim(h2oColAmpFive)))
-  testEnd()
+  
 }
 
 

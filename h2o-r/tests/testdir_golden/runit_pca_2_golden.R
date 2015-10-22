@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pcascore.golden <- function() {
   # Import data: 
@@ -20,7 +20,7 @@ test.pcascore.golden <- function() {
   isFlipped2 <- checkSignedCols(as.matrix(predH2O), predR, tolerance = 5e-5)
   expect_equal(isFlipped1, isFlipped2)
   
-  testEnd()
+  
 }
 
 doTest("PCA Golden Test: USArrests with Scoring", test.pcascore.golden)

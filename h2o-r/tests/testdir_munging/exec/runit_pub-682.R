@@ -1,6 +1,6 @@
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # use this for interactive setup
 #     library(h2o)
@@ -43,7 +43,7 @@ test.head_empty <- function() {
     print(head(b.h2o[,1]))
     print(head(b.h2o[1,]))
 
-    testEnd()
+    
 }
 
 doTest("Test for head_empty.", test.head_empty)

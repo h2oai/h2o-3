@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 library(gbm)
 
 test.GBM.smallcat <- function() {
@@ -52,7 +52,7 @@ test.GBM.smallcat <- function() {
   # pred <- ifelse(drfmodel.r.pred == "0", 0, 1)
   # R.auc = gbm.roc.area(actual, pred)
   # Log.info(paste("R AUC:", R.auc, "\tH2O (Group Split) AUC:", drfmodel.grpsplit@model$AUC))
-  testEnd()
+  
 }
 
 doTest("GBM Test: Classification with 26 categorical level predictor", test.GBM.smallcat)

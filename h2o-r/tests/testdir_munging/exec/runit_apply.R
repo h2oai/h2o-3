@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.apply <- function() {
   hex <- h2o.importFile(locate("smalldata/logreg/prostate.csv"))
@@ -45,7 +45,7 @@ test.apply <- function() {
   zzz <- 2.5
   print(apply( hex, 2, function(x) { zzz }))
 
-  testEnd()
+  
 }
 
 # doesn't include issues with NAs! 

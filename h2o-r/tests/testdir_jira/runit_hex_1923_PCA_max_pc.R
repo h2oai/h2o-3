@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.PCA.australia <- function() {
   Log.info("Importing AustraliaCoast.csv data...\n")
@@ -16,7 +16,7 @@ test.PCA.australia <- function() {
   
   expect_equal(ncol(australia.pca@model$eigenvectors), 8)
   expect_equal(ncol(australia.pca2@model$eigenvectors), 2)
-  testEnd()
+  
 }
 
 doTest("PCA: Australia Data", test.PCA.australia)

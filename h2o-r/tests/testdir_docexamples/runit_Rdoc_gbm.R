@@ -1,10 +1,10 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.RdocGBM.golden <- function() {
 
 
-ausPath <- system.file("extdata", "australia.csv", package="h2o")
+ausPath <- locate("smalldata/extdata/australia.csv")
 australia.hex <- h2o.uploadFile(path = ausPath)
 independent<- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst", "maxsoilmoist", "Max_czcs")
 dependent<- "runoffnew"
@@ -16,7 +16,7 @@ h2o.gbm(y = dependent, x = independent, training_frame = australia.hex, ntrees =
 australia.hex$runoffnew <- as.factor(australia.hex$runoffnew)
 h2o.gbm(y = dependent, x = independent, training_frame = australia.hex, ntrees = 15, max_depth = 5, min_rows = 2, learn_rate = 0.01, distribution= "multinomial")
 
-testEnd()
+
 }
 
 doTest("R Doc GBM", test.RdocGBM.golden)

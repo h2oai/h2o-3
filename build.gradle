@@ -32,6 +32,7 @@ buildscript {
         classpath 'joda-time:joda-time:2.3'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
+        classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
     }
 }
 
@@ -59,10 +60,10 @@ ext {
       project(':h2o-app'),
       project(':h2o-persist-hdfs'),
       project(':h2o-test-integ'),
-      project(':h2o-testng'),   
+      project(':h2o-testng'),
       project(':h2o-genmodel'),
       project(':h2o-java-rest-bindings'),
-      project(':h2o-selenium-testing'), 
+      project(':h2o-selenium-testing'),
     ]
 
     scalaProjects = [
@@ -133,6 +134,7 @@ subprojects {
         }
         // mavenLocal()
     }
+
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
     // to all projects
     if (project in publishedProjects) {
@@ -142,8 +144,11 @@ subprojects {
         if (project.doJava6Bytecode == "true"
             || (project.doJava6Bytecode == "auto"
                 && System.getProperty("user.name").equals("jenkins")
-                && System.getenv("JAVA_6_HOME")))
+                && System.getenv("JAVA_6_HOME"))) {
           apply from: "$rootDir/gradle/java6bytecode.gradle"
+          // Always do animal sniffing for java6
+          ext.doAnimalSniffer = "true"
+          }
       }
     }
 
@@ -163,6 +168,9 @@ subprojects {
         }
         if (project.hasProperty("doCheckStyle")) {
             apply from: "$rootDir/gradle/checkstyle.gradle"
+        }
+        if (project.hasProperty("doAnimalSniffer") && project.doAnimalSniffer == "true") {
+            apply from: "$rootDir/gradle/animalSniffer.gradle"
         }
     }
 

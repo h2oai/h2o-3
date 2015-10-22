@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 library(gbm)
 
 test.GBM.bigcat <- function() {
@@ -28,7 +28,7 @@ test.GBM.bigcat <- function() {
   # Check AUC and overall prediction error at least as good with group split than without
   #expect_true(h2o.auc(drfmodel.grpsplit.perf) >= h2o.auc(drfmodel.nogrp.perf))
   #expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5))
-  testEnd()
+  
 }
 
 doTest("GBM Test: Classification with 100 categorical level predictor", test.GBM.bigcat)

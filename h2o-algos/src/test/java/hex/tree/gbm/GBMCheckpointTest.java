@@ -11,6 +11,7 @@ import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.VecUtils;
 
 import static water.serial.ModelSerializationTest.assertTreeEquals;
 import static water.serial.ModelSerializationTest.getTrees;
@@ -55,10 +56,10 @@ public class GBMCheckpointTest extends TestUtil {
                                             int ntreesInPriorModel, int ntreesInNewModel,
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
     Frame f = parse_test_file(dataset);
-    // If classification turn response into enum
+    // If classification turn response into categorical
     if (classification) {
       Vec respVec = f.vec(responseIdx);
-      f.replace(responseIdx, respVec.toEnum()).remove();
+      f.replace(responseIdx, VecUtils.toCategoricalVec(respVec)).remove();
       DKV.put(f._key, f);
     }
     GBMModel model = null;

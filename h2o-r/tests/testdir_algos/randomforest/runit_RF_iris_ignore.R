@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.RF.iris_ignore <- function() {
   iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris22.csv"), "iris.hex")
@@ -9,7 +9,7 @@ test.RF.iris_ignore <- function() {
     iris.rf <- h2o.randomForest(y = 5, x = myX, training_frame = iris.hex, ntrees = 50, max_depth = 100)
     print(iris.rf)
   }
-  testEnd()
+  
 }
 
 doTest("RF test iris ignore", test.RF.iris_ignore)

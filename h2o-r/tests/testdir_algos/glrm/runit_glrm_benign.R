@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.glrm.benign <- function() {
   Log.info("Importing benign.csv data...\n")
@@ -17,7 +17,7 @@ test.glrm.benign <- function() {
     checkGLRMPredErr(benign.glrm, benign.hex, tolerance = 1e-6)
     h2o.rm(benign.glrm@model$loading_key$name)   # Remove loading matrix to free memory
   }
-  testEnd()
+  
 }
 
 doTest("GLRM Test: Benign Data with Missing Entries", test.glrm.benign)

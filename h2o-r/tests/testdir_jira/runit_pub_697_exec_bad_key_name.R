@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub_697_exec_bad_key_name <- function() {
 
@@ -18,7 +18,7 @@ expect_equal(1, dim(remote)[2])
 
 expect_error(t(pub697$AGE) %*% prostate.hex$CAPSULE)
 
-testEnd()
+
 
 }
 

@@ -4,8 +4,8 @@
 # Testing h2o.performance with rogue label vector and original dataframe
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 test <- function() {
@@ -32,7 +32,7 @@ test <- function() {
   h2o.performance(h2o.glm.model, prostate.test) # works
   h2o.performance(h2o.glm.model, test.labels) # checking performance with separate vector containing labels
 
-  testEnd()
+  
 }
 
 doTest("Testing h2o.performance with rogue label vector and original dataframe ", test)

@@ -10,7 +10,7 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4.2 hdp2.1 hdp2.2 mapr3.1.1 mapr4.0.1 mapr5.0"
+HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4.2 hdp2.1 hdp2.2 hdp2.3 mapr3.1.1 mapr4.0.1 mapr5.0"
 
 function make_zip_common {
   PROJECT_BASE=$1
@@ -93,6 +93,10 @@ cd target/Rcran
 cp -p ../R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz .
 tar zxvf h2o_${PROJECT_VERSION}.tar.gz
 mv h2o/inst/java/h2o.jar ../Rjar
+mkdir gaid
+touch gaid/CRAN
+jar -uf ../Rjar/h2o.jar gaid/CRAN
+rm -rf gaid
 rm -f h2o_${PROJECT_VERSION}.tar.gz
 tar cvf h2o_${PROJECT_VERSION}.tar h2o
 gzip h2o_${PROJECT_VERSION}.tar

@@ -1,6 +1,9 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
 
 def scale_pca_rf_pipe():
 
@@ -15,7 +18,7 @@ def scale_pca_rf_pipe():
   from scipy.stats import randint
 
 
-  iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+  iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
   # build  transformation pipeline using sklearn's Pipeline and H2O transforms
   pipe = Pipeline([("standardize", H2OScaler()),
@@ -42,5 +45,9 @@ def scale_pca_rf_pipe():
 
   print random_search.best_estimator_
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, scale_pca_rf_pipe)
+    pyunit_utils.standalone_test(scale_pca_rf_pipe)
+else:
+    scale_pca_rf_pipe()

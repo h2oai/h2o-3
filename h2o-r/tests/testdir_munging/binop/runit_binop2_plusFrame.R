@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.plus.onFrame <- function() {
   hex <- as.h2o( iris)
@@ -55,7 +55,7 @@ test.plus.onFrame <- function() {
   Log.info("HPH:")
   print(hph)
 
-  testEnd()
+  
 }
 
 doTest("BINOP2 EXEC2 TEST: '+' with Frames", test.plus.onFrame)

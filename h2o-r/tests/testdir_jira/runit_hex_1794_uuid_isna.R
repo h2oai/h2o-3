@@ -4,9 +4,9 @@
 # Issue: is.na on a UUID column was not giving correct results
 ######################################################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-source('../h2o-runit.R')
+
 
 test.uuid <- function() {
   Log.info('Importing test_uuid.csv to H2O...')
@@ -27,7 +27,7 @@ test.uuid <- function() {
 
   expect_that(dim(df.nona)[1], is_less_than(dim(df)[1]))
 
-  testEnd()
+  
 }
 
 doTest("HEX-1789 Test: UUID", test.uuid)

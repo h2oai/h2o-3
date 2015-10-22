@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.logloss <- function() {
   Log.info("Testing binomial logloss")
@@ -73,7 +73,7 @@ test.logloss <- function() {
   expect_true(abs(ll1-ll2)<1e-6)
   expect_true(abs(ll1-ll3)<1e-6)
 
-  testEnd()
+  
 }
 
 doTest("Test logloss computation", test.logloss)

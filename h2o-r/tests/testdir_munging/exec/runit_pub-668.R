@@ -1,6 +1,6 @@
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # library(h2o)
 # library(testthat)
@@ -70,7 +70,7 @@ test.pub.668 <- function() {
     expect_that(all(d == dd     ), equals(T))
 
 
-    testEnd()
+    
 }
 
 doTest("Test for pub-668.", test.pub.668)

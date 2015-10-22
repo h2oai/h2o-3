@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pubdev_1844 <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
@@ -23,7 +23,7 @@ test.pubdev_1844 <- function() {
   Log.info("Constructing the grid of gbm models...")
   cars_gbm_grid = h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train,
                            validation_frame=valid, hyper_params=grid_space)
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1844", test.pubdev_1844)

@@ -8,8 +8,8 @@ import water.*;
 public class SubsetVec extends WrappedVec {
   final Key _subsetRowsKey;
   transient Vec _rows;          // Cached copy of the rows-Vec
-  public SubsetVec(Key key, long[] espc, Key masterVecKey, Key subsetRowsKey) {
-    super(key, espc, masterVecKey);
+  public SubsetVec(Key key, int rowLayout, Key masterVecKey, Key subsetRowsKey) {
+    super(key, rowLayout, masterVecKey);
     _subsetRowsKey = subsetRowsKey;
   }
   public Vec rows() {

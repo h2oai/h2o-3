@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.ops<- function() {
 
@@ -13,7 +13,7 @@ test.ops<- function() {
   hex %% 3
   hex %/% 3.14
 
-  testEnd()
+  
 }
 
 doTest("test %/%, %%, **", test.ops)

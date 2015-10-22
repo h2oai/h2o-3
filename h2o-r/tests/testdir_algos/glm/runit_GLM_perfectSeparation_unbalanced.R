@@ -6,8 +6,8 @@
 ##
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 
 test <- function() {
@@ -24,7 +24,7 @@ test <- function() {
         suppressWarnings((coef$"Intercept"<-NULL))
         stopifnot(coef < 50)
 
-    testEnd()
+    
 }
 
 doTest("Testing glm performance on unbalanced synthetic dataset with perfect separation.", test)

@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------
 # Try to slice by using != factor_level
 #----------------------------------------------------------------------
-source('../h2o-runit.R')
+
 options(echo=TRUE)
 library(h2o)
 check.revalue <- function() {
@@ -19,7 +19,7 @@ check.revalue <- function() {
   print(levels(air$Origin))
 
 
-  testEnd()
+  
 }
 
 doTest("Slice using != factor_level test", check.revalue)

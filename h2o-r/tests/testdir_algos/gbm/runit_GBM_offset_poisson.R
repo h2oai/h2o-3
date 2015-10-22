@@ -1,7 +1,7 @@
 ####### This tests offset in gbm for poisson by comparing results with R ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function(h) {
 	
@@ -28,6 +28,6 @@ test <- function(h) {
 	expect_equal(fit2$train.error[length(fit2$train.error)], hh@model$training_metrics@metrics$mean_residual_deviance,tolerance=1e-4) #residual deviance
 	expect_equal(max(pr), max(ph[,1]) ,tolerance=1e-4)
 	
-	testEnd()
+	
 }
 doTest("GBM offset Test: GBM w/ offset for poisson distribution", test)

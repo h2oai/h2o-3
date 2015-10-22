@@ -3,9 +3,9 @@
 #
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
-source('../h2o-runit.R')
+
+
 
 
 h2o.ddplytest <- function(){
@@ -111,7 +111,7 @@ h2o.ddplytest <- function(){
   # expect_that( all(df.4d == df.4), equals(T))   # See above .notation
 
 
-  testEnd()
+  
 }
 
 if(F){

@@ -7,28 +7,31 @@
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
 
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
 
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
+test.gbm.javapredict.smtrees <-
+function() {
+    #----------------------------------------------------------------------
+    # Parameters for the test.
+    #----------------------------------------------------------------------
+    training_file <- locate("smalldata/gbm_test/smtrees.csv")
+    test_file <- locate("smalldata/gbm_test/smtrees.csv")
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
 
-n.trees <- 3
-interaction.depth <- 1
-n.minobsinnode <- 2
-shrinkage <- 1
-distribution <- "gaussian"
-train <- locate("smalldata/gbm_test/smtrees.csv")
-test <- locate("smalldata/gbm_test/smtrees.csv")
-x = c("girth","height")
-y = "vol"
+    params                 <- list()
+    params$ntrees          <- 3
+    params$max_depth       <- 1
+    params$min_rows        <- 2
+    params$learn_rate      <- 1
+    params$x               <- c("girth","height")
+    params$y               <- "vol"
+    params$training_frame  <- training_frame
 
+    #----------------------------------------------------------------------
+    # Run the test
+    #----------------------------------------------------------------------
+    doJavapredictTest("gbm",test_file,test_frame,params)
+}
 
-#----------------------------------------------------------------------
-# Run the test
-#----------------------------------------------------------------------
-source('../Utils/shared_javapredict_GBM.R')
+doTest("GBM test", test.gbm.javapredict.smtrees)

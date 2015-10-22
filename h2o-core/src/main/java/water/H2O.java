@@ -1,35 +1,54 @@
 package water;
 
+import com.brsanthu.googleanalytics.DefaultRequest;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
-import hex.ModelBuilder;
+
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
+
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+
+import hex.ModelBuilder;
+import water.UDPRebooted.ShutdownTsk;
+import water.api.ModelCacheManager;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.*;
+import water.init.AbstractBuildVersion;
+import water.init.AbstractEmbeddedH2OConfig;
+import water.init.JarHash;
+import water.init.NetworkInit;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
 import water.util.GAUtils;
 import water.util.Log;
 import water.util.OSUtils;
 import water.util.PrettyPrint;
-
-import java.io.*;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
-import com.brsanthu.googleanalytics.DefaultRequest;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -439,7 +458,10 @@ final public class H2O {
     }
   }
 
-  //Google analytics performance measurement
+  // Model cache manager
+  public static ModelCacheManager getMCM() { return new ModelCacheManager(); }
+
+  // Google analytics performance measurement
   public static GoogleAnalytics GA;
   public static int CLIENT_TYPE_GA_CUST_DIM = 1;
   public static int CLIENT_ID_GA_CUST_DIM = 2;
@@ -497,10 +519,31 @@ final public class H2O {
 
   /** Cluster shutdown itself by sending a shutdown UDP packet. */
   public static void shutdown(int status) {
-    (status==0 ? UDPRebooted.T.shutdown : UDPRebooted.T.error).send(H2O.SELF);
+    if(status == 0) H2O.orderlyShutdown();
+    UDPRebooted.T.error.send(H2O.SELF);
     H2O.exit(status);
   }
 
+  public static int orderlyShutdown(){return orderlyShutdown(-1);}
+  public static int orderlyShutdown(int timeout){
+    boolean [] confirmations = new boolean[H2O.CLOUD.size()];
+    confirmations[H2O.SELF.index()] = true;
+    Futures fs = new Futures();
+    for(H2ONode n:H2O.CLOUD._memary) {
+      if(n != H2O.SELF)
+        fs.add(new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call());
+    }
+    if(timeout > 0)
+      try { Thread.sleep(timeout); }
+      catch (Exception ignore) {}
+    else fs.blockForPending(); // todo, should really have block for pending with a timeout
+
+    int failedToShutdown = 0;
+    // shutdown failed
+    for(boolean b:confirmations)
+      if(!b) failedToShutdown++;
+    return failedToShutdown;
+  }
   private static volatile boolean _shutdownRequested = false;
 
   public static void requestShutdown() {
@@ -973,9 +1016,13 @@ final public class H2O {
    *  TaskGetKey} can block an entire node for lack of some small piece of
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
-  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
-    public H2OCountedCompleter(){}
-    protected H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
+  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
+    public final byte _priority;
+    public H2OCountedCompleter( ) { this(false); }
+    public H2OCountedCompleter( boolean bumpPriority ) {
+      _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
+    }
+    protected H2OCountedCompleter(H2OCountedCompleter completer){ super(completer); _priority = MIN_PRIORITY; }
 
     /** Used by the F/J framework internally to do work.  Once per F/J task,
      *  drain the high priority queue before doing any low priority work.
@@ -1029,7 +1076,7 @@ final public class H2O {
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
-    protected byte priority() { return MIN_PRIORITY; }
+    protected byte priority() { return _priority; }
     @Override public final T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
@@ -1449,13 +1496,18 @@ final public class H2O {
     }
     return old; // Return success
   }
+  public static String foo( Value v ) {
+    if( v==null ) return null;
+    if( v.isNull() ) return "Null";
+    return Integer.toString(((water.fvec.Vec.ESPC)(v.get()))._espcs.length);
+  }
 
   // Get the value from the store
-  public static Value get( Key key ) { return STORE.get(key); }
-  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
+  public static Value     get(Key key) { return STORE.get(key); }
   public static Value raw_get(Key key) { return STORE.get(key); }
   public static void raw_remove(Key key) { STORE.remove(key); }
   public static void raw_clear() { STORE.clear(); }
+  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
@@ -1471,6 +1523,7 @@ final public class H2O {
       Object ov = kvs[i+1];
       if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
       Value val = (Value)ov;
+      if( val.isNull() ) { Value.STORE_get(val._key); continue; } // Another variant of NULL
       int t = val.type();
       while( t >= cnts.length ) cnts = Arrays.copyOf(cnts,cnts.length<<1);
       cnts[t]++;
@@ -1566,26 +1619,34 @@ final public class H2O {
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
-    // Register with GA
+    // Register with GA or not
+    List<String> gaidList = JarHash.getResourcesList("gaid");
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
-            || ARGS.ga_opt_out ) {
+            || ARGS.ga_opt_out
+            || gaidList.contains("CRAN")) {
       GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {
       try {
         GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
         DefaultRequest defReq = GA.getDefaultRequest();
-        try {
-          String bakedGaId;
-          BufferedReader index = new BufferedReader(new InputStreamReader(ClassLoader.getSystemClassLoader().getResourceAsStream("gaid")));
-          while ((bakedGaId = index.readLine()) != null) {
-            if (!(bakedGaId.equals("index") || bakedGaId.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))) {
-              defReq.clientId(bakedGaId);
+        String gaid = null;
+        if (gaidList.size() > 0) {
+          if (gaidList.size() > 1) Log.debug("More than once resource seen in gaid dir.");
+          for (String str : gaidList) {
+            if (str.matches("........-....-....-....-............")
+                && !str.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")) {
+              gaid = str;
+              break;
             }
           }
-        } catch (Exception ignore) {}
-        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, defReq.clientId());
+        }
+        if (gaid == null) { // No UUID, create one
+          gaid = defReq.clientId();
+          gaid = gaid.replaceFirst("........-","ANONYMOU-");
+        }
+        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, gaid);
         GA.setDefaultRequest(defReq);
       } catch(Throwable t) {
         Log.POST(11, t.toString());

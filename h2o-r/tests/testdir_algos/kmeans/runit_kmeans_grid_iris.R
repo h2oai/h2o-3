@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.kmeans.grid.iris <- function() {
   iris <- h2o.uploadFile(locate("smalldata/iris/iris.csv"))
@@ -35,7 +35,7 @@ check.kmeans.grid.iris <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  testEnd()
+  
 }
 
 doTest("K-means Grid Search using iris dataset", check.kmeans.grid.iris)

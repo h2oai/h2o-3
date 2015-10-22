@@ -1,7 +1,7 @@
 ####### This tests rowsubsetting in H2O ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 ###################
 
 test <- function(h) {
@@ -11,6 +11,6 @@ test <- function(h) {
 	frm_R =  iris[-1,]
 	expect_that(frm_h2o,equals(frm_R))
 	
-	testEnd()
+	
 }
 doTest("Subset dataframe test: row subset in h2o and compare results with R", test)

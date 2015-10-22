@@ -2,8 +2,8 @@
 #Randomly choose a lambda and get the model specific to that lambda
 #Change the 1st parameter of the getLambdaModel method and make sure you get the same model for the same lambda
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 
 test.GLM.getLambdaModel <- function() {
@@ -35,7 +35,7 @@ for(i in 1:10){
 	expect_equal(m1,m2)
 }
 
-testEnd()
+
 }
 
 doTest("GLM get Model for each Lambda Test: Prostate", test.GLM.getLambdaModel)

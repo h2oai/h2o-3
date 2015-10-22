@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.glm2binregression.golden <- function() {
 	
@@ -28,7 +28,7 @@ expect_equal(fitH2O@model$training_metrics@metrics$residual_degrees_of_freedom, 
 expect_equal(fitH2O@model$training_metrics@metrics$null_degrees_of_freedom, fitR$df.null, tolerance = 0.01)
 expect_equal(fitH2O@model$training_metrics@metrics$AIC, fitR$aic, tolerance = 0.01)
 
-testEnd()
+
 }
 
 doTest("GLM Test: Golden GLM2 - Factors as predictors", test.glm2binregression.golden)

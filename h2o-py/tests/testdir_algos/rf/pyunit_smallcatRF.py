@@ -1,6 +1,10 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 import numpy as np
 from sklearn import ensemble
@@ -16,13 +20,13 @@ def smallcatRF():
     
 
     #Log.info("Importing alphabet_cattest.csv data...\n")
-    alphabet = h2o.import_file(path=h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"))
+    alphabet = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"))
     alphabet["y"] = alphabet["y"].asfactor()
     #Log.info("Summary of alphabet_cattest.csv from H2O:\n")
     #alphabet.summary()
 
     # Prepare data for scikit use
-    trainData = np.loadtxt(h2o.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1,
+    trainData = np.loadtxt(pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1,
                            converters={0:lambda s: ord(s.split("\"")[1])})
     trainDataResponse = trainData[:,1]
     trainDataFeatures = trainData[:,0]
@@ -46,5 +50,9 @@ def smallcatRF():
     #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, smallcatRF)
+    pyunit_utils.standalone_test(smallcatRF)
+else:
+    smallcatRF()

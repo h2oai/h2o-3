@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.glm2Ridge.golden <- function() {
 	
@@ -75,7 +75,7 @@ expect_equal(fitH2O@model$training_metrics@metrics$null_deviance, fitRglmnet$nul
 expect_equal(H2Oratio, fitRglmnet$dev.ratio, tolerance = 0.01)
 
 
-   testEnd()
+   
 }
 
 doTest("GLM2 SimpleRidge", test.glm2Ridge.golden)

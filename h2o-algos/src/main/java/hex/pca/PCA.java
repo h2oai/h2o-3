@@ -5,6 +5,7 @@ import Jama.SingularValueDecomposition;
 import hex.DataInfo;
 
 import hex.ModelBuilder;
+import hex.ModelMetrics;
 import hex.ModelCategory;
 import hex.glrm.EmbeddedGLRM;
 import hex.glrm.GLRM;
@@ -43,8 +44,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return new PCAV3();
   }
 
-  @Override
-  public Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
+  @Override protected Job<PCAModel> trainModelImpl(long work, boolean restartTimer) {
     return start(new PCADriver(), work, restartTimer);
   }
 
@@ -101,6 +101,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
+    protected PCADriver() { super(true); } // bump driver priority
 
     protected void buildTables(PCAModel pca, String[] rowNames) {
       // Eigenvectors are just the V matrix
@@ -236,7 +237,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           update(1, "Computing stats from SVD");
           computeStatsFillModel(model, dinfo, svdJ, gram, gtsk._nobs);
 
-        } else if(_parms._pca_method == PCAParameters.Method.Power) {
+        } else if(_parms._pca_method == PCAParameters.Method.Power || _parms._pca_method == PCAParameters.Method.Randomized) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
           parms._valid = _parms._valid;
@@ -249,9 +250,16 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
 
+          // Set method for computing SVD accordingly
+          if(_parms._pca_method == PCAParameters.Method.Power)
+            parms._svd_method = SVDModel.SVDParameters.Method.Power;
+          else if(_parms._pca_method == PCAParameters.Method.Randomized)
+            parms._svd_method = SVDModel.SVDParameters.Method.Randomized;
+
           // Calculate standard deviation, but not projection
           parms._only_v = false;
           parms._keep_u = false;
+          parms._save_v_frame = false;
 
           SVDModel svd = null;
           SVD job = null;
@@ -309,16 +317,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         update(1, "Scoring and computing metrics on training data");
         if (_parms._compute_metrics) {
           model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
-          ModelMetricsPCA mm = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
+          ModelMetrics mm = ModelMetrics.getFromDKV(model,_parms.train());
           model._output._training_metrics = mm;
         }
 
         // At the end: validation scoring (no need to gather scoring history)
         update(1, "Scoring and computing metrics on validation data");
         if (_valid != null) {
-          Frame pred = model.score(_parms.valid()); //this appends a ModelMetrics on the validation set
-          model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length - 1]);
-          pred.delete();
+          model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set
+          model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
         }
         model.update(self());
         done();

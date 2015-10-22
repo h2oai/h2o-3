@@ -2,8 +2,8 @@
 # Testing creation of random data frame in H2O
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.createFrame <- function() {
   Log.info("Create a data frame with rows = 1000, cols = 20, randomize = TRUE")
@@ -26,7 +26,7 @@ test.createFrame <- function() {
   cons_col <- sapply(1:20, function(i) { min(hex2[,i]) == 5 && max(hex2[,i]) == 5 })
   expect_true(all(cons_col))
 
-  testEnd()
+  
 }
 
 doTest("Create a random data frame in H2O", test.createFrame)

@@ -1,7 +1,7 @@
 ####### This tests offset in deeplearning for tweedie by comparing results with expected behaviour  ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 	
@@ -61,7 +61,7 @@ test <- function() {
 	expect_equal(1.073911, min(ph[,1]), tolerance=1e-1 )
 	expect_equal(397.3288, max(ph[,1]), tolerance=1e-1 )
 	
-	testEnd()
+	
 }
 doTest("Deeplearning offset Test: deeplearning w/ offset for tweedie distribution", test)
 

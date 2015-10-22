@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.summary2 <- function() {
   Log.info("Importing iris.csv data...\n")
@@ -11,7 +11,7 @@ test.summary2 <- function() {
 
   Log.info("Summary from R's iris data: ")
   summary(iris)
-  testEnd()
+  
 }
 
 doTest("Summary2 Test", test.summary2)

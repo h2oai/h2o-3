@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 # Compare within-cluster sum of squared error
 test.kmstand.golden <- function() {
@@ -50,7 +50,7 @@ test.kmstand.golden <- function() {
   classH2O <- as.matrix(predict(fitH2O, ozoneH2O))
   expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)   # H2O indexes from 0, but R indexes from 1
   
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Golden Kmeans - Ozone with Standardization", test.kmstand.golden)

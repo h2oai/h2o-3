@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 # Compare within-cluster sum of squared error
 test.kmslice.golden <- function() {
@@ -45,7 +45,7 @@ test.kmslice.golden <- function() {
   # one has dim names, the other doesn't. will get length error unless..
   expect_true(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
   
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Golden Kmeans - Iris without Standardization", test.kmslice.golden)

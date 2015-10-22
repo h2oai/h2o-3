@@ -1,14 +1,18 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def shuffling_large():
     
     
 
     print("Reading in Arcene training data for binomial modeling.")
-    train_data = h2o.upload_file(path=h2o.locate("smalldata/arcene/shuffle_test_version/arcene.csv"))
-    train_data_shuffled = h2o.upload_file(path=h2o.locate("smalldata/arcene/shuffle_test_version/arcene_shuffled.csv"))
+    train_data = h2o.upload_file(path=pyunit_utils.locate("smalldata/arcene/shuffle_test_version/arcene.csv"))
+    train_data_shuffled = h2o.upload_file(path=pyunit_utils.locate("smalldata/arcene/shuffle_test_version/arcene_shuffled.csv"))
 
 
     print("Create model on original Arcene dataset.")
@@ -39,5 +43,9 @@ def shuffling_large():
         if isinstance(x[2],float):
             assert abs(x[2] - y[2]) < 5e-10, "coefficients should be equal"
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, shuffling_large)
+    pyunit_utils.standalone_test(shuffling_large)
+else:
+    shuffling_large()

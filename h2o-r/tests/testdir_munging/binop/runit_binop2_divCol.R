@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.slice.div <- function() {
   hex <- as.h2o(iris)
@@ -68,7 +68,7 @@ test.slice.div <- function() {
     expect_true( res < 1E-4 || C == nrow(A))
   }
 
-  testEnd()
+  
 }
 
 doTest("BINOP2 EXEC2 TEST: /", test.slice.div)

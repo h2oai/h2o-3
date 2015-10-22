@@ -1,7 +1,7 @@
 package water.api;
 
 import water.*;
-import water.currents.Val;
+import water.rapids.Val;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -14,7 +14,7 @@ class RapidsHandler extends Handler {
       // No locking, no synchronization - since any local locking is NOT a
       // cluster-wide lock locking, which just provides the illusion of safety
       // but not the actuality.
-      val = water.currents.Exec.exec(rapids.ast);
+      val = water.rapids.Exec.exec(rapids.ast);
     } catch( IllegalArgumentException e ) {
       throw e;
     } catch( Throwable e ) {
@@ -35,8 +35,8 @@ class RapidsHandler extends Handler {
         //  double d=Double.NaN;
         //  if( fr.numCols() == 1 && fr.numRows() == 1 ) {
         //    if (fr.anyVec().isNumeric())     d = fr.anyVec().at(0);
-        //    else if( fr.anyVec().isString()) s = fr.anyVec().atStr(new ValueString(), 0).toString();
-        //    else if( fr.anyVec().isEnum() )  s = fr.domains()[0][(int)fr.anyVec().at(0)];
+        //    else if( fr.anyVec().isString()) s = fr.anyVec().atStr(new BufferedString(), 0).toString();
+        //    else if( fr.anyVec().isCategorical() )  s = fr.domains()[0][(int)fr.anyVec().at(0)];
         //    fr.delete();
         //    return s!=null ? new RapidsStringV3(s) : new RapidsScalarV3(d);
         //  } else {

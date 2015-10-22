@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub.65 <- function() {
   fPath <- tryCatch({
@@ -9,7 +9,7 @@ test.pub.65 <- function() {
   }, error= function(e) {
     print("File bigdata/laptop/jira/pub_65.csv could not be found.Please run ./gradlew syncBigdataLaptop (or gradlew.bat syncBigdataLaptop for Windows) to retrieve the file.")
   }, finally = {
-    testEnd()
+    
   })
   fzPath <- locate("bigdata/laptop/jira/pub_65.csv.zip")
   
@@ -34,7 +34,7 @@ test.pub.65 <- function() {
   
   Log.info("Check that H2O summaries match R")
   checkSummary(hex.sum, hexR.sum)
-  testEnd()
+  
 }
 
 doTest("PUBDEV-65: H2O gives inconsistent summaries of Date cols", test.pub.65)

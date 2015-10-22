@@ -3,8 +3,8 @@
 # gitHash: 2581a0dfa12a51892283830529a5126ea49f0cb9
 # SEED: 2481425483200553751
 ##
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 sliceTest_prostate_2_4 <- function() {
     Log.info("A munge-task R unit test on data <prostate_2> testing the functional unit <[> ")
     Log.info("Uploading prostate_2")
@@ -15,6 +15,6 @@ sliceTest_prostate_2_4 <- function() {
     slicedHex <- hex[c(5),c(3,2)]
         Log.info("Performing a 1-by-1 column slice of prostate_2 using these columns: ")
         Log.info("Performing a 1-by-1 row slice of prostate_2 using these rows: ")
-testEnd()
+
 }
 doTest("sliceTest_ on data prostate_2 unit= [", sliceTest_prostate_2_4)

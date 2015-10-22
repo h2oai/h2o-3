@@ -7,11 +7,11 @@
 #' @import methods
 #' @import RCurl
 #' @importFrom graphics barplot lines
-#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot
+#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot na.omit
 #' @importFrom statmod tweedie
 #' @importFrom tools md5sum
 #' @importFrom utils download.file packageVersion read.csv
-#'           setTxtProgressBar txtProgressBar URLencode write.csv
+#'           setTxtProgressBar txtProgressBar URLencode write.csv head tail
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   GET & POST
@@ -19,7 +19,7 @@
 
 .skip_if_not_developer <- function() {
   # TODO: Verify this function serves a useful purpose
-  if (!(Sys.getenv("USER") %in% c("tomk", "amy")))
+  if (!(Sys.getenv("USER") %in% c("cliffc", "tomk", "amy")))
     return(TRUE)
   FALSE
 }
@@ -135,6 +135,7 @@
                                 writefunction = t$update,
                                 headerfunction = h$update,
                                 useragent=R.version.string,
+                                httpheader = c('Connection' = 'close'),
                                 verbose = FALSE,
                                 timeout = timeout_secs,
                                 .opts = opts),
@@ -153,7 +154,7 @@
                             .opts=curlOptions(writefunction = t$update,
                                               headerfunction = h$update,
                                               useragent = R.version.string,
-                                              httpheader = c('Expect' = ''),
+                                              httpheader = c('Expect' = '', 'Connection' = 'close'),
                                               verbose = FALSE,
                                               timeout = timeout_secs,
                                               .opts = opts)),
@@ -171,7 +172,7 @@
                                writefunction = t$update,
                                headerfunction = h$update,
                                useragent = R.version.string,
-                               httpheader = c('Expect' = ''),
+                               httpheader = c('Expect' = '', 'Connection' = 'close'),
                                verbose = FALSE,
                                timeout = timeout_secs,
                                .opts = opts),
@@ -447,8 +448,13 @@
 
 
 .format.helper <- function(x, format) {
-  if( is.list(x) ) lapply(x, .format.helper, format)
-  else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+    tryCatch(
+      if( is.list(x) ) lapply(x, .format.helper, format)
+      else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+    , error=function(e) {
+      print("\n\n Format Error \n\n")
+      print("x:"); print(x); print("format: "); print(format); print(e)
+    })
 }
 
 #' Print method for H2OTable objects
@@ -466,7 +472,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   xx <- x
   if( !is.null(formats) ) {  # might be NULL if resulted from slicing H2OTable (no need for full blown slice method on H2OTable... allow to be data frame at that point)
     for (j in seq_along(x)) {
-#      if( formats[j] == "%d" ) formats[j] <- "%f"
+      if( formats[j] == "%d" ) formats[j] <- "%.f"
       xx[[j]] <- .format.helper(x[[j]], formats[j])
     }
   }
@@ -538,6 +544,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
 #' Determine if an H2O cluster is up or not
 #'
+#' @param conn H2OConnection object
 #' @return TRUE if the cluster is up; FALSE otherwise
 #' @export
 h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
@@ -643,13 +650,13 @@ h2o.clusterInfo <- function() {
     healthy = node$healthy
     if (! healthy) {
       ip_port = node$ip_port
-      warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = T)
+      warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = TRUE)
       overallHealthy = FALSE
     }
   }
   if (! overallHealthy) {
     url <- .h2o.calcBaseURL( conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
-    warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = T)
+    warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = TRUE)
   }
 }
 
@@ -741,6 +748,10 @@ h2o.getBaseURL <- function(conn) {
   .h2o.calcBaseURL( conn, urlSuffix = "")
 }
 
+#' Get h2o version
+#'
+#' @rdname h2o.getVersion
+#' @export
 h2o.getVersion <- function() {
   res = .h2o.__remoteSend(.h2o.__CLOUD)
   res$version

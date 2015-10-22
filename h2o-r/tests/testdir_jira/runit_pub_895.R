@@ -3,8 +3,8 @@
 # It is passing on 1,2 JVMs, but failing on 3JVMs
 #
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub.895 <- function() {
 print("Parse header file")
@@ -26,7 +26,7 @@ for(i in 1:length(colnames(spect_train))){
 #print(summary(spect_test))
 
    
-testEnd()
+
 }
 
 doTest("Test pub 895", test.pub.895)

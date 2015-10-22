@@ -5,8 +5,8 @@
 ##
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 
 test <- function() {
@@ -36,7 +36,7 @@ test <- function() {
     print("Check that prediction AUC better than guessing (0.5).")
         stopifnot(h2o.auc(perf.noSR.3250) > 0.5)
 
-  testEnd()
+  
 }
 
 doTest("Testing glm modeling performance with wide Arcene dataset with and without strong rules", test)

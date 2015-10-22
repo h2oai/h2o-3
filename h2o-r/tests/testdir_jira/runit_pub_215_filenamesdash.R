@@ -3,8 +3,8 @@
 #
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 dash_filename_test <- function(){
@@ -16,7 +16,7 @@ dash_filename_test <- function(){
 
   res <- as.data.frame(h2o.table(df.h$l>0))
 
-  testEnd()
+  
 }
 
 if(F){

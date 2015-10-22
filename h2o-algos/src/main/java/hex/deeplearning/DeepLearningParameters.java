@@ -4,7 +4,7 @@ import hex.Distribution;
 import hex.Model;
 import water.H2O;
 import static water.H2O.technote;
-import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -78,7 +78,7 @@ public class DeepLearningParameters extends Model.Parameters {
    */
   public long _train_samples_per_iteration = -2;
 
-  public double _target_ratio_comm_to_comp = 0.02;
+  public double _target_ratio_comm_to_comp = 0.05;
 
   /**
    * The random seed controls sampling and initialization. Reproducible
@@ -411,11 +411,11 @@ public class DeepLearningParameters extends Model.Parameters {
 
   /**
    * Loss functions
-   * Absolute, MeanSquare, Huber for regression
-   * Absolute, MeanSquare, Huber or CrossEntropy for classification
+   * Absolute, Quadratic, Huber for regression
+   * Absolute, Quadratic, Huber or CrossEntropy for classification
    */
   public enum Loss {
-    Automatic, MeanSquare, CrossEntropy, Huber, Absolute
+    Automatic, Quadratic, CrossEntropy, Huber, Absolute
   }
 
   /**
@@ -457,17 +457,18 @@ public class DeepLearningParameters extends Model.Parameters {
       }
     }
 
-    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
+    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
       dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
-    if (_hidden_dropout_ratios == null) {
-      // ok - nothing to check
-    } else if (_hidden_dropout_ratios.length != _hidden.length) {
-      dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
-    } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
-      if (!_quiet_mode)
-        dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
-    } else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
-      dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");
+    }
+    if (_hidden_dropout_ratios != null) {
+      if (_hidden_dropout_ratios.length != _hidden.length) {
+        dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
+      } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
+        if (!_quiet_mode)
+          dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
+      } else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
+        dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");
+      }
     }
     if (_input_dropout_ratio < 0 || _input_dropout_ratio >= 1)
       dl.error("_input_dropout_ratio", "Input dropout must be >= 0 and <1.");
@@ -505,7 +506,7 @@ public class DeepLearningParameters extends Model.Parameters {
     }
     if (_loss == null) {
       if (expensive || dl.nclasses() != 0) {
-        dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare, Absolute or Huber for numerical response (regression).");
+        dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), Quadratic, Absolute or Huber for numerical response (regression).");
       }
       //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
     } else {
@@ -515,7 +516,7 @@ public class DeepLearningParameters extends Model.Parameters {
         dl.error("_loss", technote(2, "For CrossEntropy loss, the response must be categorical."));
     }
     if (!classification && _loss == Loss.CrossEntropy)
-      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, MeanSquare, Absolute or Huber loss for regression, or use a categorical response.");
+      dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, Quadratic, Absolute or Huber loss for regression, or use a categorical response.");
     if (classification) {
       switch(_distribution) {
         case gaussian:
@@ -585,8 +586,6 @@ public class DeepLearningParameters extends Model.Parameters {
       dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
     if (_max_categorical_features < 1)
       dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
-    if (_sparse)
-      dl.error("_sparse", "Deprecated: Sparse data handling not supported anymore - not faster.");
     if (_col_major)
       dl.error("_col_major", "Deprecated: Column major data handling not supported anymore - not faster.");
     if (!_sparse && _col_major) {
@@ -711,30 +710,29 @@ public class DeepLearningParameters extends Model.Parameters {
       checkCompleteness();
       if (newP._nfolds != 0)
         throw new UnsupportedOperationException("nfolds must be 0: Cross-validation is not supported during checkpoint restarts.");
-      if ((newP._valid == null) != (oldP._valid == null)
-              || (newP._valid != null && !newP._valid.equals(oldP._valid))) {
-        throw new IllegalArgumentException("Validation dataset must be the same as for the checkpointed model.");
+      if ((newP._valid == null) != (oldP._valid == null)) {
+        throw new H2OIllegalArgumentException("Presence of validation dataset must agree with the checkpointed model.");
       }
       if (!newP._autoencoder && (newP._response_column == null || !newP._response_column.equals(oldP._response_column))) {
-        throw new IllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
+        throw new H2OIllegalArgumentException("Response column (" + newP._response_column + ") is not the same as for the checkpointed model: " + oldP._response_column);
       }
       if (!Arrays.equals(newP._hidden, oldP._hidden)) {
-        throw new IllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
+        throw new H2OIllegalArgumentException("Hidden layers (" + Arrays.toString(newP._hidden) + ") is not the same as for the checkpointed model: " + Arrays.toString(oldP._hidden));
       }
       if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
-        throw new IllegalArgumentException("Ignored columns must be the same as for the checkpointed model.");
+        throw new H2OIllegalArgumentException("Ignored columns must be the same as for the checkpointed model.");
       }
 
       //compare the user-given parameters before and after and check that they are not changed
-      for (Field fBefore : oldP.getClass().getDeclaredFields()) {
+      for (Field fBefore : oldP.getClass().getFields()) {
         if (ArrayUtils.contains(cp_not_modifiable, fBefore.getName())) {
-          for (Field fAfter : newP.getClass().getDeclaredFields()) {
+          for (Field fAfter : newP.getClass().getFields()) {
             if (fBefore.equals(fAfter)) {
               try {
                 if (fAfter.get(newP) == null || fBefore.get(oldP) == null || !fBefore.get(oldP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
                   if (fBefore.get(oldP) == null && fAfter.get(newP) == null)
                     continue; //if both parameters are null, we don't need to do anything
-                  throw new IllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
+                  throw new H2OIllegalArgumentException("Cannot change parameter: '" + fBefore.getName() + "': " + fBefore.get(oldP) + " -> " + fAfter.get(newP));
                 }
               } catch (IllegalAccessException e) {
                 e.printStackTrace();
@@ -760,7 +758,8 @@ public class DeepLearningParameters extends Model.Parameters {
                 if (fAfter.get(newP) == null || fBefore.get(actualNewP) == null || !fBefore.get(actualNewP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
                   if (fBefore.get(actualNewP) == null && fAfter.get(newP) == null)
                     continue; //if both parameters are null, we don't need to do anything
-                  Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
+                  if (!actualNewP._quiet_mode)
+                    Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
                   fBefore.set(actualNewP, fAfter.get(newP));
                 }
               } catch (IllegalAccessException e) {
@@ -795,24 +794,29 @@ public class DeepLearningParameters extends Model.Parameters {
         toParms._hidden_dropout_ratios = fromParms._hidden_dropout_ratios.clone();
       }
       if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
-        Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
+        if (!fromParms._quiet_mode)
+          Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
         toParms._replicate_training_data = false;
       }
       if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
-        Log.info("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
+        if (!fromParms._quiet_mode)
+          Log.info("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
         toParms._single_node_mode = false;
       }
       if (!fromParms._use_all_factor_levels && fromParms._autoencoder) {
-        Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
+        if (!fromParms._quiet_mode)
+          Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
         toParms._use_all_factor_levels = true;
       }
       if (fromParms._overwrite_with_best_model && fromParms._nfolds != 0) {
-        Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
+        if (!fromParms._quiet_mode)
+          Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
         toParms._overwrite_with_best_model = false;
       }
       if (fromParms._adaptive_rate) {
-        Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
-                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable.");
+        if (!fromParms._quiet_mode)
+          Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
+                  + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable.");
         toParms._rate = 0;
         toParms._rate_decay = 0;
         toParms._rate_annealing = 0;
@@ -820,27 +824,30 @@ public class DeepLearningParameters extends Model.Parameters {
         toParms._momentum_ramp = 0;
         toParms._momentum_stable = 0;
       } else {
-        Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
-                + "rho, epsilon.");
+        if (!fromParms._quiet_mode)
+          Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
+                  + "rho, epsilon.");
         toParms._rho = 0;
         toParms._epsilon = 0;
       }
       if (fromParms._activation == Activation.Rectifier || fromParms._activation == Activation.RectifierWithDropout) {
         if (fromParms._max_w2 == Float.POSITIVE_INFINITY) {
-          Log.info("_max_w2: Automatically setting max_w2 to 1000 to keep (unbounded) Rectifier activation in check.");
+          if (!fromParms._quiet_mode)
+            Log.info("_max_w2: Automatically setting max_w2 to 1000 to keep (unbounded) Rectifier activation in check.");
           toParms._max_w2 = 1e3f;
         }
       }
       if (fromParms._nfolds != 0) {
         if (fromParms._overwrite_with_best_model) {
-          Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+          if (!fromParms._quiet_mode)
+            Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;
         }
       }
 
       // Automatically set the distribution
       if (fromParms._distribution == Distribution.Family.AUTO) {
-        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/MeanSquare/Huber/Absolute
+        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/Quadratic/Huber/Absolute
         if (nClasses > 1) {
           toParms._distribution = nClasses == 2 ? Distribution.Family.bernoulli : Distribution.Family.multinomial;
         }
@@ -848,7 +855,7 @@ public class DeepLearningParameters extends Model.Parameters {
           //regression/autoencoder
           switch(fromParms._loss) {
             case Automatic:
-            case MeanSquare:
+            case Quadratic:
               toParms._distribution = Distribution.Family.gaussian;
               break;
             case Absolute:
@@ -864,9 +871,9 @@ public class DeepLearningParameters extends Model.Parameters {
       }
 
       if (fromParms._loss == Loss.Automatic) {
-        switch (fromParms._distribution) {
+        switch (toParms._distribution) {
           case gaussian:
-            toParms._loss = Loss.MeanSquare;
+            toParms._loss = Loss.Quadratic;
             break;
           case laplace:
             toParms._loss = Loss.Absolute;
@@ -888,8 +895,9 @@ public class DeepLearningParameters extends Model.Parameters {
         }
       }
       if (fromParms._reproducible) {
-        Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
-                + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
+        if (!fromParms._quiet_mode)
+          Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
+                  + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
         toParms._force_load_balance = true;
         toParms._single_node_mode = false;
         toParms._train_samples_per_iteration = -1;

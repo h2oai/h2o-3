@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 #import multimodal data set; parse as FV
 test.summary2.numeric <- function() {
@@ -27,7 +27,7 @@ test.summary2.numeric <- function() {
   print(summary_)
 
   checkSummary(H2Osum, wonky.Rsum) 
-  testEnd()
+  
 }
 
 doTest("Summary Tests", test.summary2.numeric)

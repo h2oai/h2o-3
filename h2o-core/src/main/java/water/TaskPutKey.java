@@ -1,7 +1,5 @@
 package water;
 
-import java.util.concurrent.Future;
-
 /** Push the given key to the remote node
  *  @author <a href="mailto:cliffc@h2o.ai"></a>
  *  @version 1.0
@@ -25,14 +23,21 @@ public class TaskPutKey extends DTask<TaskPutKey> {
     Paxos.lockCloud(_key);
     // Initialize Value for having a single known replica (the sender)
     if( _val != null ) _val.initReplicaHome(sender,_key);
+    else if( _key.home() ) _val = Value.makeNull(_key);
     // Spin, until we update something.
     Value old = H2O.raw_get(_key); // Raw-get: do not lazy-manifest if overwriting
     while( H2O.putIfMatch(_key,_val,old) != old )
       old = H2O.raw_get(_key);  // Repeat until we update something.
     // Invalidate remote caches.  Block, so that all invalidates are done
-    // before we return to the remote caller.
-    if( _key.home() && old != null )
-      old.lockAndInvalidate(sender,new Futures()).blockForPending();
+    // before we return to the remote caller.  This is conservative, but
+    // otherwise we have to send the invalidate-completion message to the
+    // remote caller; i.e. the caller would have to handle a 2-step Put
+    // completion ("I started your Put request" and "I completed your Put
+    // request").
+    if( _key.home() ) {
+      if( old != null ) old.lockAndInvalidate(sender,_val,new Futures()).blockForPending();
+      else _val.lowerActiveGetCount(null);  // Remove initial read-lock, accounting for pending inv counts
+    }
     // No return result
     _key = null;
     _val = null;

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.GBM.ecology <- function() {
   
@@ -67,7 +67,7 @@ test.GBM.ecology <- function() {
 
   checkGBMModel(ecology.h2o, ecology.r, ecologyTest.hex, ecologyTest.data)
   
-  testEnd()
+  
 }
 
 doTest("GBM: Ecology Data", test.GBM.ecology)

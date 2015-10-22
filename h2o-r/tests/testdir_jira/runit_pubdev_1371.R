@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub.1371 <- function() {
   test_frame <- h2o.createFrame(rows = 10000, cols = 200, randomize = TRUE, value = 0, real_range = 37743, 
@@ -9,7 +9,7 @@ test.pub.1371 <- function() {
   print(summary(test_frame))
   my_pca <- h2o.prcomp(test_frame, k = 19, transform = "STANDARDIZE", max_iterations = 1000, use_all_factor_levels = FALSE)
   print(my_pca)
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1371: Row handling must match between Gram and SVD tasks", test.pub.1371)

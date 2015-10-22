@@ -7,7 +7,7 @@ import water.fvec.Vec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.Log;
 import hex.word2vec.Word2VecModel.*;
 import hex.word2vec.Word2Vec.*;
@@ -22,7 +22,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   private Word2VecModelInfo _input;
   Word2VecModelInfo _output;
   Frame _vocab;
-  static NonBlockingHashMap<ValueString,Integer> _vocabHM;
+  static NonBlockingHashMap<BufferedString,Integer> _vocabHM;
   final WordModel _wordModel; final NormModel _normModel;
   final int _vocabSize, _wordVecSize, _windowSize, _epochs, _negExCnt;
   final float _initLearningRate, _sentSampleRate;
@@ -83,7 +83,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   private void buildVocabHashMap() {
     Vec word = _vocab.vec(0);
     _vocabHM = new NonBlockingHashMap<>((int)_vocab.numRows());
-    for(int i=0; i < _vocab.numRows(); i++) _vocabHM.put(word.atStr(new ValueString(),i),i);
+    for(int i=0; i < _vocab.numRows(); i++) _vocabHM.put(word.atStr(new BufferedString(),i),i);
   }
 
   private void updateAlpha(int localWordCnt) {
@@ -96,7 +96,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
    */
   private int getSentence(int[] sentence, CStrChunk cs) {
     Vec count = _vocab.vec(1);
-    ValueString tmp = new ValueString();
+    BufferedString tmp = new BufferedString();
     float ran;
     int wIdx, sentIdx = 0;
 

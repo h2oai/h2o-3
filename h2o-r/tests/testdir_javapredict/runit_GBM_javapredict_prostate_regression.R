@@ -7,28 +7,31 @@
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
 
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
 
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
+test.gbm.javapredict.prostate <-
+function() {
+    #----------------------------------------------------------------------
+    # Parameters for the test.
+    #----------------------------------------------------------------------
+    training_file <- locate("smalldata/logreg/prostate.csv")
+    test_file <- locate("smalldata/logreg/prostate.csv")
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
 
-n.trees <- 100
-interaction.depth <- 5
-n.minobsinnode <- 10
-shrinkage <- 0.1
-distribution <- "gaussian"
-train <- locate("smalldata/logreg/prostate.csv")
-test <- locate("smalldata/logreg/prostate.csv")
-x = c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
-y = "CAPSULE"
+    params                 <- list()
+    params$ntrees          <- 100
+    params$max_depth       <- 5
+    params$min_rows        <- 10
+    params$learn_rate      <- 0.1
+    params$x               <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    params$y               <- "CAPSULE"
+    params$training_frame  <- training_frame
 
+    #----------------------------------------------------------------------
+    # Run the test
+    #----------------------------------------------------------------------
+    doJavapredictTest("gbm",test_file,test_frame,params)
+}
 
-#----------------------------------------------------------------------
-# Run the test
-#----------------------------------------------------------------------
-source('../Utils/shared_javapredict_GBM.R')
+doTest("GBM test", test.gbm.javapredict.prostate)

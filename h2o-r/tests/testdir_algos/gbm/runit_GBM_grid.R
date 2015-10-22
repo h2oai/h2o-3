@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.gbm.grid <- function() {
   iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
@@ -35,7 +35,7 @@ check.gbm.grid <- function() {
   cat("\n\n Grid search results:")
   print(gg)
 
-  testEnd()
+  
 }
 
 doTest("GBM Grid Search: iteration over parameters", check.gbm.grid)

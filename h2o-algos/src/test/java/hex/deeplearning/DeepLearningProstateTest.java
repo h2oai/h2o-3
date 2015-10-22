@@ -13,8 +13,6 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.rapids.Env;
-import water.rapids.Exec;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -27,7 +25,7 @@ import static hex.ConfusionMatrix.buildCM;
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void run() throws Exception { runFraction(0.00001f); }
+  @Test public void run() throws Exception { runFraction(0.00002f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -50,16 +48,16 @@ public class DeepLearningProstateTest extends TestUtil {
       try {
         for (int resp : responses[i]) {
           boolean classification = !(i == 0 && resp == 2);
-          if (classification && !frame.vec(resp).isEnum()) {
+          if (classification && !frame.vec(resp).isCategorical()) {
             DKV.remove(frame._key);
             String respname = frame.name(resp);
-            Vec r = frame.vec(respname).toEnum();
+            Vec r = frame.vec(respname).toCategoricalVec();
             frame.remove(respname).remove();
             frame.add(respname, r);
             DKV.put(frame);
 
             DKV.remove(vframe._key);
-            Vec vr = vframe.vec(respname).toEnum();
+            Vec vr = vframe.vec(respname).toCategoricalVec();
             vframe.remove(respname).remove();
             vframe.add(respname, vr);
             DKV.put(vframe);
@@ -69,7 +67,7 @@ public class DeepLearningProstateTest extends TestUtil {
                   DeepLearningParameters.Loss.CrossEntropy,
                   DeepLearningParameters.Loss.Huber,
                   DeepLearningParameters.Loss.Absolute,
-                  DeepLearningParameters.Loss.MeanSquare
+                  DeepLearningParameters.Loss.Quadratic
           }) {
             if ( !classification && loss == DeepLearningParameters.Loss.CrossEntropy ) continue;
             for (Distribution.Family dist : new Distribution.Family[]{
@@ -265,6 +263,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           assert(model1.model_info().get_params()._l1 == 0);
                                           assert(model1.model_info().get_params()._l2 == 0);
 
+                                          if (n_folds != 0) continue;
                                           // Do some more training via checkpoint restart
                                           // For n_folds, continue without n_folds (not yet implemented) - from now on, model2 will have n_folds=0...
                                           DeepLearningParameters p2 = new DeepLearningParameters();
@@ -273,7 +272,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                           {
                                             p2._model_id = Key.make();
                                             p2._checkpoint = model1._key;
-                                            p2._nfolds = 0;
+                                            p2._distribution = dist;
+                                            p2._loss = loss;
+                                            p2._nfolds = n_folds;
                                             p2._train = frame._key;
                                             p2._activation = activation;
                                             p2._hidden = hidden;
@@ -345,7 +346,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           if (valid == null) valid = frame;
                                           double threshold;
                                           if (model2._output.isClassifier()) {
-                                            Frame pred = null, pred2 = null;
+                                            Frame pred = null;
                                             Vec labels, predlabels, pred2labels;
                                             try {
                                               pred = model2.score(valid);
@@ -372,20 +373,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 Log.info(cm.toASCII());
 //                                              Assert.assertEquals(cm.err(), error, 1e-4); //FIXME
 
-                                                // manually make labels with AUC-given default threshold
-                                                String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
                                                 // confirm that orig CM was made with threshold 0.5
-                                                // put pred2 into DKV, and allow access
-                                                pred2 = new Frame(Key.make("pred2"), pred.names(), pred.vecs());
-                                                pred2.delete_and_lock(null);
-                                                pred2.unlock(null);
-                                                Env ev = Exec.exec(ast);
-                                                try {
-                                                  pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
-                                                } finally {
-                                                  if (ev != null) ev.remove_and_unlock();
-                                                }
-                                                pred2labels = pred2.vecs()[0];
+                                                // manually make labels with AUC-given default threshold
+                                                String ast = "(= pred (> ([] pred 2) #"+threshold+") [0] [])";
+                                                Frame tmp = water.rapids.Exec.exec(ast).getFrame();
+                                                pred2labels = tmp.vecs()[0];
                                                 cm = buildCM(labels, pred2labels);
                                                 Log.info("CM from self-made labels:");
                                                 Log.info(cm.toASCII());
@@ -393,7 +385,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                               }
                                             } finally {
                                               if (pred != null) pred.delete();
-                                              if (pred2 != null) pred2.delete();
                                             }
                                           } //classifier
                                           else {
@@ -417,8 +408,14 @@ public class DeepLearningProstateTest extends TestUtil {
                                           t.printStackTrace();
                                           throw new RuntimeException(t);
                                         } finally {
-                                          if (model1 != null) model1.delete();
-                                          if (model2 != null) model2.delete();
+                                          if (model1 != null) {
+                                            model1.deleteCrossValidationModels();
+                                            model1.delete();
+                                          }
+                                          if (model2 != null) {
+                                            model2.deleteCrossValidationModels();
+                                            model2.delete();
+                                          }
                                         }
                                       }
                                     }

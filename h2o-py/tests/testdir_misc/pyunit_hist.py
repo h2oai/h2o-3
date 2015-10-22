@@ -1,6 +1,10 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def hist_test():
     
@@ -10,9 +14,13 @@ def hist_test():
     kwargs['server'] = True
 
     print "Import small prostate dataset"
-    hex = h2o.import_file(h2o.locate("smalldata/logreg/prostate.csv"))
+    hex = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     hex["AGE"].hist(**kwargs)
     hex["VOL"].hist(**kwargs)
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, hist_test)
+    pyunit_utils.standalone_test(hist_test)
+else:
+    hist_test()

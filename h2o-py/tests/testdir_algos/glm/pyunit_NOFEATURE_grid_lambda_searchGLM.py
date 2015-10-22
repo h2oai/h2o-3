@@ -1,6 +1,10 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 import random
 
 def grid_lambda_search():
@@ -8,7 +12,7 @@ def grid_lambda_search():
   
 
   # Log.info("Importing prostate.csv data...\n")
-  prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
   #prostate.summary()
 
@@ -51,5 +55,9 @@ def grid_lambda_search():
   assert params_bestlambda.lambda_best() == params_best.lambda_best(), "expected lambdas to be equal"
   assert len(params_best.lambda_all()) <= 20, "expected 20 or fewer lambdas"
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, grid_lambda_search)
+    pyunit_utils.standalone_test(grid_lambda_search)
+else:
+    grid_lambda_search()

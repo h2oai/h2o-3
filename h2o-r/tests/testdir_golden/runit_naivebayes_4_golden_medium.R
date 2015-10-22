@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.nbayes.golden <- function() {
   Log.info("Importing covtype.20k.data training data...") 
@@ -27,7 +27,7 @@ test.nbayes.golden <- function() {
   checkNaiveBayesPrediction(predH2O, classR, type = "class", tolerance = 1e-4)
   checkNaiveBayesPrediction(predH2O, postR, type = "raw", tolerance = 1e-4)
   
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Golden Test: Covtype without Laplace smoothing", test.nbayes.golden)

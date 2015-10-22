@@ -1,12 +1,16 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def offset_poisson():
     # Connect to a pre-existing cluster
     
 
-    insurance = h2o.import_file(h2o.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/insurance.csv"))
 
     insurance["offset"] = insurance["Holders"].log()
 
@@ -32,5 +36,9 @@ def offset_poisson():
     assert abs(398.0608 - predictions.max()) < 1e-2, "expected prediction max to be {0}, but got {1}". \
         format(398.0608, predictions.max())
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, offset_poisson)
+    pyunit_utils.standalone_test(offset_poisson)
+else:
+    offset_poisson()

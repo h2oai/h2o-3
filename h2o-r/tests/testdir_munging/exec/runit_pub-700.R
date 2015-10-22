@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 get.eval.result <- function(expr) {
   res <-  .h2o.__exec2(expr)
@@ -50,7 +50,7 @@ test.round_prec <- function() {
     Log.info("Check signif(B, 3) matches R")
     S2_s <- as.data.frame(signif(B, 3))
     expect_true(all(S2_s == s2_s))
-    testEnd()
+    
 }
 
 doTest("Test trunc, round and signif", test.round_prec)

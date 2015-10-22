@@ -1,6 +1,6 @@
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 
 colPlus.numeric <- function() {
@@ -42,7 +42,7 @@ colPlus.numeric <- function() {
   print(head(hexPlusHex))
   expect_that(as.data.frame(hexPlusHex), equals(2*as.data.frame(fivePlusSliced)))
 
-  testEnd()
+  
 }
 
 doTest("Column Addition With Scaler", colPlus.numeric)

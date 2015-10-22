@@ -1,6 +1,6 @@
 ####### This tests gamma distribution w weights in gbm by comparing results with R ######
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 	
@@ -25,6 +25,6 @@ test <- function() {
 	expect_equal(15298.87,max(ph[,1]),tolerance = 1e-4)
 	expect_equal( 8121.98,mean(ph[,1]),tolerance = 1e-4)
 	
-	testEnd()
+	
 }
 doTest("GBM weight Test: GBM w/ weight for gamma distribution", test)

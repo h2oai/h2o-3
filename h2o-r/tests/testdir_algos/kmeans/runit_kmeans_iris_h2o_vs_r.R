@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # Test k-means clustering on R's iris dataset
 test.km.iris <- function() {
@@ -26,7 +26,7 @@ test.km.iris <- function() {
     }
   }
 
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Iris Data (H2O vs. R)", test.km.iris)

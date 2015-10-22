@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.eq.frame <- function() {
   hex <- as.h2o( iris)
@@ -18,7 +18,7 @@ test.eq.frame <- function() {
   hexEQHex <- hex == hex
   print(hexEQHex)
 
-  testEnd()
+  
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '==' on frames", test.eq.frame)

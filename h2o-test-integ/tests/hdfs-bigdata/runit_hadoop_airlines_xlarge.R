@@ -1,23 +1,10 @@
 #----------------------------------------------------------------------
 # Purpose:  This test exercises HDFS operations from R.
 #----------------------------------------------------------------------
-
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R')
-
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-myIP   <- ipPort[[1]]
-myPort <- ipPort[[2]]
+test <-
+function() {
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
-
-library(RCurl)
-library(testthat)
-library(h2o)
-
-heading("BEGIN TEST")
-h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
-h2o.removeAll()
 
 hdfs_airlines_file = "/datasets/airlines_all.csv"
 
@@ -35,7 +22,7 @@ if (n != 116695259) {
     stop("nrows is wrong")
 }
 
-if (class(data.hex) != "H2OFrame") {
+if (class(data.hex) != "Frame") {
     stop("data.hex is the wrong type")
 }
 print ("Import worked")
@@ -80,4 +67,6 @@ auc_dl <- h2o.auc(perf_dl)
 print(auc_dl)
 expect_true(abs(auc_dl - 0.80) <= 0.02)
 
-PASS_BANNER()
+}
+
+doTest("Test", test)

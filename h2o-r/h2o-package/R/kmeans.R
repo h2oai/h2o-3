@@ -4,7 +4,7 @@
 #' Performs k-means clustering on an H2O dataset.
 #'
 #'
-#' @param training_frame An \linkS4class{Frame} object containing the
+#' @param training_frame An H2O Frame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -23,10 +23,10 @@
 #'        centers. Possible values are "Random": for random initialization,
 #'        "PlusPlus": for k-means plus initialization, or "Furthest": for
 #'        initialization at the furthest point from each successive center.
-#'        Additionally, the user may specify a the initial centers as a matrix, 
-#'        data.frame, Frame, or list of vectors. For matrices, 
+#'        Additionally, the user may specify a the initial centers as a matrix,
+#'        data.frame, Frame, or list of vectors. For matrices,
 #'        data.frames, and Frames, each row of the respective structure
-#'        is an initial center. For lists of vectors, each vector is an 
+#'        is an initial center. For lists of vectors, each vector is an
 #'        initial center.
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
@@ -39,11 +39,13 @@
 #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
 #'          \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
 #' @examples
+#' \donttest{
 #' library(h2o)
-#' localH2O <- h2o.init()
+#' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' h2o.kmeans(training_frame = prostate.hex, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
+#' }
 #' @export
 h2o.kmeans <- function(training_frame, x, k,
                        model_id,
@@ -56,7 +58,7 @@ h2o.kmeans <- function(training_frame, x, k,
                        fold_assignment = c("AUTO","Random","Modulo"),
                        keep_cross_validation_predictions = FALSE)
 {
-  # Training_frame may be a key or an Frame object
+  # Training_frame may be a key or an H2O Frame object
   if( !is.Frame(training_frame) )
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
@@ -111,5 +113,5 @@ h2o.kmeans <- function(training_frame, x, k,
   }
 
   # Error check and build model
-  .h2o.modelJob('kmeans', parms, do_future=FALSE)
+  .h2o.modelJob('kmeans', parms)
 }

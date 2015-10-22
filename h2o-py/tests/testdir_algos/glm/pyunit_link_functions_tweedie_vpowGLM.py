@@ -1,13 +1,17 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def link_functions_tweedie_vpow():
     
     
 
     # Load example data from HDtweedie, y = aggregate claim loss
-    hdf = h2o.upload_file(h2o.locate("smalldata/glm_test/auto.csv"))
+    hdf = h2o.upload_file(pyunit_utils.locate("smalldata/glm_test/auto.csv"))
     y = "y"
     x = list(set(hdf.names) - set(["y"]))
 
@@ -34,6 +38,10 @@ def link_functions_tweedie_vpow():
         assert abs(r_null[ridx] - h2ofit.null_deviance()) < 1e-6, "h2o's null deviance is not equal to R's. h2o: {0}, r: " \
                                                                    "{1}".format(h2ofit.null_deviance(), r_null[ridx])
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, link_functions_tweedie_vpow)
 
+
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(link_functions_tweedie_vpow)
+else:
+    link_functions_tweedie_vpow()

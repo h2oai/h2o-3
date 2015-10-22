@@ -17,6 +17,25 @@
 % This is just a debugging technique.
 \lstset{backgroundcolor=\color{black}}
 
+% Define scala language first
+% ``define'' Scala
+\lstdefinelanguage{scala}{
+  morekeywords={abstract,case,catch,class,def,%
+    do,else,extends,false,final,finally,%
+    for,if,implicit,import,match,mixin,%
+    new,null,object,override,package,%
+    private,protected,requires,return,sealed,%
+    super,this,throw,trait,true,try,%
+    type,val,var,while,with,yield},
+  otherkeywords={=>,<-,<\%,<:,>:,\#,@},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[n]{/*}{*/},
+  morestring=[b]``,
+  morestring=[b]',
+  morestring=[b]''``
+}
+
 \lstdefinestyle{R}{
   language=R,
   frame=single,
@@ -27,7 +46,8 @@
   numbers=left,% display line numbers on the left side 
   numberstyle=\scriptsize,% use small line numbers 
   numbersep=10pt,% space between line numbers and code
-  backgroundcolor=\color{white}
+  backgroundcolor=\color{white}, 
+  showstringspaces=false % don't show spaces as weird char.
 }
 
 \lstdefinestyle{python}{
@@ -40,8 +60,38 @@
   numbers=left,% display line numbers on the left side 
   numberstyle=\scriptsize,% use small line numbers 
   numbersep=10pt,% space between line numbers and code
-  backgroundcolor=\color{white}
+  backgroundcolor=\color{white}, 
+  showstringspaces=false %don't show spaces as weird char.
 }
+
+\lstdefinestyle{Scala}{
+  language=scala,
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  commentstyle=\textsl,% comment style
+  keywordstyle=\ttfamily,
+  numbers=left,% display line numbers on the left side 
+  numberstyle=\scriptsize,% use small line numbers 
+  numbersep=10pt,% space between line numbers and code
+  backgroundcolor=\color{white}, 
+  showstringspaces=false % don't show spaces as weird char.
+}
+
+\lstdefinestyle{Bash}{
+  language=bash,
+  frame=single,
+  breaklines,
+  basicstyle=\ttfamily,
+  commentstyle=\textsl,% comment style
+  keywordstyle=\ttfamily,
+  numbers=left,% display line numbers on the left side 
+  numberstyle=\scriptsize,% use small line numbers 
+  numbersep=10pt,% space between line numbers and code
+  backgroundcolor=\color{white}, 
+  showstringspaces=false % don't show spaces as weird char.
+}
+
 
 \definecolor{mygray}{rgb}{0.92,0.92,0.92}
 
@@ -52,7 +102,8 @@
   numbers=left,% display line numbers on the left side 
   numberstyle=\scriptsize,% use small line numbers 
   numbersep=10pt,% space between line numbers and code
-  backgroundcolor=\color{mygray}
+  backgroundcolor=\color{mygray}, 
+  showstringspaces=false %don't show spaces as weird char.
 }
 
 \newcommand{\waterExampleInR} {

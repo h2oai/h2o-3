@@ -1,8 +1,15 @@
+\documentclass{standalone}
+
+\begin{document}
+
 \section{Installation} 
+\Urlmuskip=0mu plus 1mu\relax %needed to make long URLs break nicely
+
+H2O requires Java; if you do not already have Java installed, install it from {\url{https://java.com/en/download/}} before installing H2O. 
 
 The easiest way to directly install H2O is  via an R or Python package.
 
-({\bf{Note}}: This document was created with H2O version \waterVersion.)
+({\bf{Note}}: The examples in this document were created with H2O version \waterVersion.)
 
 \subsection{Installation in R}
 
@@ -12,10 +19,12 @@ To load a recent H2O package from CRAN, run:
 install.packages("h2o")
 \end{lstlisting}
 
-{\bf{Note}}: The version of H2O in CRAN is often one release behind the current version.
+{\bf{Note}}: The version of H2O in CRAN may be one release behind the current version.
 
-Alternatively, you can (and should for this tutorial) download the
+For the latest recommended version, download the
 latest stable H2O-3 build from the H2O download page:
+
+\begin{minipage}{\textwidth}
 
 \begin{enumerate}
 \item Go to {\url{http://h2o.ai/download}}.
@@ -24,8 +33,11 @@ latest stable H2O-3 build from the H2O download page:
 \item Copy and paste the commands into your R session.
 \end{enumerate}
 
-\bigskip
+\end{minipage}
+
 After H2O is installed on your system, verify the installation:
+
+\begin{minipage}{\textwidth}
 
 \begin{lstlisting}[style=R]
 library(h2o)
@@ -43,6 +55,8 @@ demo(h2o.glm)
 demo(h2o.gbm)
 \end{lstlisting}
 
+\end{minipage}
+
 \subsection{Installation in Python}
 
 To load a recent H2O package from PyPI, run:
@@ -51,8 +65,10 @@ To load a recent H2O package from PyPI, run:
 pip install h2o
 \end{lstlisting}
 
-Alternatively, you can (and should for this tutorial) download the
+To download the
 latest stable H2O-3 build from the H2O download page:
+
+\begin{minipage}{\textwidth}
 
 \begin{enumerate}
 \item Go to {\url{http://h2o.ai/download}}.
@@ -61,8 +77,12 @@ latest stable H2O-3 build from the H2O download page:
 \item Copy and paste the commands into your Python session.
 \end{enumerate}
 
+\end{minipage}
+
 \bigskip
 After H2O is installed, verify the installation:
+
+\begin{minipage}{\textwidth}
 
 \begin{lstlisting}[style=python]
 import h2o
@@ -80,7 +100,9 @@ h2o.demo("gbm")
 
 \end{lstlisting}
 
-\subsection{Pointing to a different H2O cluster}
+\end{minipage}
+
+\subsection{Pointing to a Different H2O Cluster}
 
 The instructions in the previous sections create a one-node H2O cluster on your local machine. 
 
@@ -93,3 +115,4 @@ h2o.init(ip = "123.45.67.89", port = 54321)
 
 %if it's the same, only one is needed
 
+\end{document}

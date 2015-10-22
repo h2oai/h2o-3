@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.glrm.arrests_miss <- function() {
   missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
@@ -20,8 +20,8 @@ test.glrm.arrests_miss <- function() {
     print(summary(arrests.miss))
     
     Log.info(paste("H2O GLRM with ", 100 * f, "% missing entries:\n", sep = ""))
-    arrests.glrm <- h2o.glrm(training_frame = arrests.miss, validation_frame = arrests.full, ignore_const_cols = FALSE, k = 4, regularization_x = "None",
-                             regularization_y = "None", loss = "Quadratic", init = "PlusPlus", max_iterations = 10, min_step_size = 1e-6, seed = SEED)
+    arrests.glrm <- h2o.glrm(training_frame = arrests.miss, validation_frame = arrests.full, ignore_const_cols = FALSE, k = 4, loss = "Quadratic", 
+                             regularization_x = "None", regularization_y = "None", init = "PlusPlus", max_iterations = 10, min_step_size = 1e-6, seed = SEED)
     
     # Check imputed data and error metrics
     trainmm <- arrests.glrm@model$training_metrics@metrics
@@ -41,7 +41,7 @@ test.glrm.arrests_miss <- function() {
                          validmm$numerr, misserr)
   }
   print(model_stats)
-  testEnd()
+  
 }
 
 doTest("GLRM Test: USArrests Data with Missing Entries Inserted", test.glrm.arrests_miss)

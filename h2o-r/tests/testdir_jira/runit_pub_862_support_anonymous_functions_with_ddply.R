@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub_862_support_anonymous_functions_with_ddply <- function() {
 
@@ -17,7 +17,7 @@ expect_equal(55, dim(covtype.local)[2])
 
 h2o.ddply(covtype.hex, c(2), function(x) { mean( x[,2]) })
 
-testEnd()
+
 
 }
 

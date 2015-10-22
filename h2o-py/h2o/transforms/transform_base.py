@@ -1,3 +1,6 @@
+from ..frame import H2OFrame
+import urllib
+
 class TransformAttributeError(AttributeError):
   def __init__(self,obj,method):
     super(AttributeError, self).__init__("No {} method for {}".format(method,obj.__class__.__name__))
@@ -21,7 +24,7 @@ class H2OTransformer(object):
   def inverse_transform(self,X,y=None,**params): raise TransformAttributeError(self,"inverse_transform")
   def export(self,X,y,**params):                 raise TransformAttributeError(self,"export")
   def fit_transform(self, X, y=None, **params):
-      return self.fit(X, y, **params).transform(X)
+      return self.fit(X, y, **params).transform(X, **params)
 
   def get_params(self, deep=True):
     """
@@ -41,3 +44,13 @@ class H2OTransformer(object):
   def set_params(self, **params):
     self.parms.update(params)
     return self
+
+  @staticmethod
+  def _dummy_frame():
+    dummy = H2OFrame()
+    dummy._id = "py_dummy"
+    dummy._computed = True
+    return dummy
+
+  def to_rest(self, args):
+    return urllib.quote("{}__{}__{}__{}__{}".format(*args))

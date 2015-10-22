@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.verify.parameters.slot <- function() {
     Log.info("Getting data...")
@@ -32,7 +32,7 @@ check.verify.parameters.slot <- function() {
     iris.km.cpy <- do.call("h2o.kmeans", parameters_unmunged)
     print(h2o.ls()[,1])
     expect_equal(length(h2o.ls()[,1]), 5)
-    testEnd()
+    
 }
 
 doTest("Kmeans Test: Verify correct parameters passed into model", check.verify.parameters.slot)

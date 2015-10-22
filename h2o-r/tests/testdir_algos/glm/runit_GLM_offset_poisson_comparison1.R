@@ -1,7 +1,7 @@
 ### This tests offset in glm on real data ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function(h) {
     insurance_h2o <- h2o.importFile(locate("smalldata/glm_test/insurance.csv"))
@@ -41,7 +41,7 @@ test <- function(h) {
     Log.info(paste("H2O null deviance (offsets): ", h2o.nd.w, ", and H2O null deviance (no offsets): ", h2o.nd.wo))
     expect_less_than(h2o.nd.w, h2o.nd.wo)
 
-	testEnd()
+	
 }
 
 doTest("GLM poisson offset comparision1: ", test)

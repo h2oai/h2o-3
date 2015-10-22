@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.nbayes.bad_data <- function() {
   rawdata <- matrix(rnorm(1000), nrow = 100, ncol = 10)
@@ -30,7 +30,7 @@ test.nbayes.bad_data <- function() {
   expect_warning(fitH2O <- h2o.naiveBayes(x = 2:10, y = 1, training_frame = colCons.hex))
   expect_equal(length(fitH2O@model$pcond), 8)
   
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Test: Test handling of bad training data", test.nbayes.bad_data)

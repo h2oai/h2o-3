@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 print_diff <- function(r, h2o) {
   if (!isTRUE(all.equal(r,h2o))) {
@@ -64,7 +64,7 @@ test.rdoc_settimezone.golden <- function() {
   # erase side effect of test
   h2o.setTimezone(origTZ)
   h2o.rm(hdf)
-  testEnd()
+  
 }
 
 doTest("R Doc setTimezone", test.rdoc_settimezone.golden)

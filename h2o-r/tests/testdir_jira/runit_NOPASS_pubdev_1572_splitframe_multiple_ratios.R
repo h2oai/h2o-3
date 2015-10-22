@@ -6,8 +6,8 @@
 ##
 ################################################################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.splitFrame.multiple.ratios <- function() {
   hex <- as.h2o(iris)
@@ -29,7 +29,7 @@ test.splitFrame.multiple.ratios <- function() {
   expect_equal(small_3, 3*small_1)
   expect_equal(small_2, 2*small_1)
 
-  endTest()
+  
 }
 
 doTest("Using Splitframe on Multiple Ratios", test.splitFrame.multiple.ratios)

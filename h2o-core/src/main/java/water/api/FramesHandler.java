@@ -1,38 +1,19 @@
 package water.api;
 
-import jsr166y.CountedCompleter;
-
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import hex.Model;
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.KeySnapshot;
-import water.Value;
+import jsr166y.CountedCompleter;
+import water.*;
 import water.api.ModelsHandler.Models;
-import water.exceptions.H2OColumnNotFoundArgumentException;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.exceptions.H2OKeyWrongTypeArgumentException;
-import water.exceptions.H2OKeysNotFoundArgumentException;
-import water.exceptions.H2OParseException;
+import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.persist.PersistManager;
 import water.util.KeyedVoid;
 import water.util.Log;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.*;
 
 /*
  * FramesHandler deals with all REST API endpoints that start with /Frames.
@@ -44,7 +25,7 @@ import water.util.Log;
  * <p> columnSummary(): Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.
  * <p>
  * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)/domain
- * <p> columnDomain(): Return the domains for the specified column. \"null\" if the column is not an Enum.
+ * <p> columnDomain(): Return the domains for the specified column. \"null\" if the column is not an categorical.
  * <p>
  * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)
  * <p> column(): Return the specified column from a Frame.
@@ -88,12 +69,22 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     protected static Frame[] fetchAll() {
       // Get all the frames.
       final Key[] frameKeys = KeySnapshot.globalKeysOfClass(Frame.class);
-      Frame[] frames = new Frame[frameKeys.length];
+      List<Frame> frames = new ArrayList<Frame>(frameKeys.length);
       for (int i = 0; i < frameKeys.length; i++) {
         Frame frame = getFromDKV("(none)", frameKeys[i]);
-        frames[i] = frame;
+        // Weed out frames with vecs that are no longer in DKV
+        Vec[] vs = frame.vecs();
+        boolean skip = false;
+        for (int j=0; j < vs.length; j++) {
+          if (DKV.get(vs[j]._key) == null) {
+            Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
+            skip = true;
+            break;
+          }
+        }
+        if (!skip) frames.add(frame);
       }
-      return frames;
+      return frames.toArray(new Frame[frames.size()]);
     }
 
     /**
@@ -281,6 +272,13 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     s.job =  (JobV3) Schema.schema(version, Job.class).fillFromImpl(ExportDatasetJob.export(fr, s.path, s.frame_id.key().toString(),s.force));
     return s;
   }
+
+
+  // TODO: export a collection of columns as a single Frame.
+//  public FrameV3 exportCols(int version, FramesV3 s) {
+//    // have a collection of frames and column indices, cbind them, export, drop the ephemeral Frame
+//
+//  }
 
   private static class ExportDatasetJob extends Job<KeyedVoid> {
 

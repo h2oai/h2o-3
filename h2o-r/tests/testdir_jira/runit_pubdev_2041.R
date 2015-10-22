@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pubdev.2041 <- function(conn) {
   iris = h2o.importFile(locate("smalldata/iris/iris.csv"))
@@ -13,7 +13,7 @@ test.pubdev.2041 <- function(conn) {
   # update m1 with new training data
   m2 = h2o.deeplearning(x=1:4, y=5, training_frame=train2, epochs=200, checkpoint=m1@model_id)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-2041", test.pubdev.2041)

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub.859 <- function() {
 
@@ -23,7 +23,7 @@ test.pub.859 <- function() {
   dd
   d.h2o
   expect_that(all(d.h2o == dd), equals(T)) 
-  testEnd()
+  
 }
 
 doTest("Test pub 859", test.pub.859)

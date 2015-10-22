@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.h2o.nfold <- function() {
   tolerance <- 1e-2
@@ -47,7 +47,7 @@ test.h2o.nfold <- function() {
   perf_cm@model$confusion
   if (max(abs(cm[1:9] - perf_cm@model$confusion[1:9])) > 2) stop("cm is wrong")
 
-  testEnd()
+  
 }
 
 doTest("Test H2O N-Fold CV", test.h2o.nfold)

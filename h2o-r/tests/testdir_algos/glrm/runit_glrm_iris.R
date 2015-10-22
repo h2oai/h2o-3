@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.glrm.iris <- function() {
   Log.info("Importing iris_wheader.csv data...") 
@@ -15,7 +15,7 @@ test.glrm.iris <- function() {
     checkGLRMPredErr(fitH2O, irisH2O, tolerance = 1e-5)
     h2o.rm(fitH2O@model$loading_key$name)   # Remove loading matrix to free memory
   }
-  testEnd()
+  
 }
 
 doTest("GLRM Test: Iris with Various Transformations", test.glrm.iris)

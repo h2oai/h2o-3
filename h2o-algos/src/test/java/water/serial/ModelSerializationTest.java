@@ -1,33 +1,33 @@
 package water.serial;
 
-import hex.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 
+import hex.Model;
+import hex.ModelMetrics;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
-import hex.schemas.SharedTreeModelV3;
 import hex.tree.CompressedTree;
-import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import water.*;
+import water.AutoBuffer;
+import water.DKV;
+import water.Iced;
+import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.util.FileUtils;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 public class ModelSerializationTest extends TestUtil {
 
@@ -133,8 +133,8 @@ public class ModelSerializationTest extends TestUtil {
   private GBMModel prepareGBMModel(String dataset, String[] ignoredColumns, String response, boolean classification, int ntrees) {
     Frame f = parse_test_file(dataset);
     try {
-      if (classification && !f.vec(response).isEnum()) {
-        f.replace(f.find(response), f.vec(response).toEnum()).remove();
+      if (classification && !f.vec(response).isCategorical()) {
+        f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
         DKV.put(f._key, f);
       }
       GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
@@ -152,8 +152,8 @@ public class ModelSerializationTest extends TestUtil {
   private DRFModel prepareDRFModel(String dataset, String[] ignoredColumns, String response, boolean classification, int ntrees) {
     Frame f = parse_test_file(dataset);
     try {
-      if (classification && !f.vec(response).isEnum()) {
-        f.replace(f.find(response), f.vec(response).toEnum()).remove();
+      if (classification && !f.vec(response).isCategorical()) {
+        f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
         DKV.put(f._key, f);
       }
       DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
@@ -216,7 +216,9 @@ public class ModelSerializationTest extends TestUtil {
   }
   private <M extends Model> M saveAndLoad(M model, boolean deleteModel) throws IOException {
     // Serialize to a file
-    File file = Files.createTempDirectory("H2O_ModelSerializationTest").toFile();
+    // Cannot use following call since it is available since Java 1.7
+    // File file = Files.createTempDirectory("H2O_ModelSerializationTest").toFile();
+    File file = com.google.common.io.Files.createTempDir();
     try {
       // Enable the following URI to save model to HDFS (+disable delete below + configure classpath to H2O assembly)
       // java.net.URI uri = java.net.URI.create("hdfs://mr-0x6/tmp/xo.model");// file.toURI()
