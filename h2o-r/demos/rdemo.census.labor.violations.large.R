@@ -38,7 +38,7 @@ plot(acs_model_score$iteration, acs_model_score$objective, xlab = "Iteration", y
 zcta_arch_x <- h2o.getFrame(acs_model@model$representation_name)
 head(zcta_arch_x)
 
-print("Plot a few ZCTAs on first few archetypes")
+print("Plot a few ZCTAs on the first two archetypes")
 idx <- (acs_zcta_col == "10065" |   # Manhattan, NY (Upper East Side)
         acs_zcta_col == "11219" |   # Manhattan, NY (East Harlem)
         acs_zcta_col == "66753" |   # McCune, KS
