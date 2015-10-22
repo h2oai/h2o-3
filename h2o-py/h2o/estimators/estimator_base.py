@@ -110,7 +110,7 @@ class H2OEstimator(ModelBase):
     y = algo_params.pop("y",None)
     training_frame = algo_params.pop("training_frame")
     validation_frame = algo_params.pop("validation_frame",None)
-    is_auto_encoder = algo_params is not None and "autoencoder" in algo_params and algo_params["autoencoder"]
+    is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
     algo = self._compute_algo()
     is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
     if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
@@ -171,7 +171,7 @@ class H2OEstimator(ModelBase):
   def _compute_algo(self):
     name = self.__class__.__name__
     if name == "H2ODeepLearningEstimator":       return "deeplearning"
-    if name == "H2OAutoEncoderEstimator":        return "autoencoder"
+    if name == "H2OAutoEncoderEstimator":        return "deeplearning"
     if name == "H2OGradientBoostingEstimator":   return "gbm"
     if name == "H2OGeneralizedLinearEstimator":  return "glm"
     if name == "H2OGeneralizedLowRankEstimator": return "glrm"
