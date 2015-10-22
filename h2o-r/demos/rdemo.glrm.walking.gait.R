@@ -2,8 +2,8 @@ library(h2o)
 h2o.init()
 
 ## Find and import data into H2O
-locate       <- h2o:::.h2o.locate
-pathToData   <- locate("smalldata/glrm_test/subject01_walk1.csv")
+locate     <- h2o:::.h2o.locate
+pathToData <- locate("smalldata/glrm_test/subject01_walk1.csv")
 pathToMissingData <- locate("smalldata/glrm_test/subject01_walk1_miss15.csv")
 print("Importing walking gait dataset into H2O...")
 gait.hex <- h2o.importFile(path = pathToData, destination_frame = "gait.hex")
