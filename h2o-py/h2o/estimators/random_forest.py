@@ -66,129 +66,129 @@ class H2ORandomForestEstimator(H2OEstimator):
 
   @property
   def mtries(self):
-    return self.parms["mtries"]
+    return self._parms["mtries"]
 
   @mtries.setter
   def mtries(self, value):
-    self.parms["mtries"] = value
+    self._parms["mtries"] = value
 
   @property
   def sample_rate(self):
-    return self.parms["sample_rate"]
+    return self._parms["sample_rate"]
 
   @sample_rate.setter
   def sample_rate(self, value):
-    self.parms["sample_rate"] = value
+    self._parms["sample_rate"] = value
 
   @property
   def build_tree_one_node(self):
-    return self.parms["build_tree_one_node"]
+    return self._parms["build_tree_one_node"]
 
   @build_tree_one_node.setter
   def build_tree_one_node(self, value):
-    self.parms["build_tree_one_node"] = value
+    self._parms["build_tree_one_node"] = value
 
   @property
   def ntrees(self):
-    return self.parms["ntrees"]
+    return self._parms["ntrees"]
 
   @ntrees.setter
   def ntrees(self, value):
-    self.parms["ntrees"] = value
+    self._parms["ntrees"] = value
 
   @property
   def max_depth(self):
-    return self.parms["max_depth"]
+    return self._parms["max_depth"]
 
   @max_depth.setter
   def max_depth(self, value):
-    self.parms["max_depth"] = value
+    self._parms["max_depth"] = value
 
   @property
   def min_rows(self):
-    return self.parms["min_rows"]
+    return self._parms["min_rows"]
 
   @min_rows.setter
   def min_rows(self, value):
-    self.parms["min_rows"] = value
+    self._parms["min_rows"] = value
 
   @property
   def nbins(self):
-    return self.parms["nbins"]
+    return self._parms["nbins"]
 
   @nbins.setter
   def nbins(self, value):
-    self.parms["nbins"] = value
+    self._parms["nbins"] = value
 
   @property
   def nbins_cats(self):
-    return self.parms["nbins_cats"]
+    return self._parms["nbins_cats"]
 
   @nbins_cats.setter
   def nbins_cats(self, value):
-    self.parms["nbins_cats"] = value
+    self._parms["nbins_cats"] = value
 
   @property
   def binomial_double_trees(self):
-    return self.parms["binomial_double_trees"]
+    return self._parms["binomial_double_trees"]
 
   @binomial_double_trees.setter
   def binomial_double_trees(self, value):
-    self.parms["binomial_double_trees"] = value
+    self._parms["binomial_double_trees"] = value
 
   @property
   def balance_classes(self):
-    return self.parms["balance_classes"]
+    return self._parms["balance_classes"]
 
   @balance_classes.setter
   def balance_classes(self, value):
-    self.parms["balance_classes"] = value
+    self._parms["balance_classes"] = value
 
   @property
   def max_after_balance_size(self):
-    return self.parms["max_after_balance_size"]
+    return self._parms["max_after_balance_size"]
 
   @max_after_balance_size.setter
   def max_after_balance_size(self, value):
-    self.parms["max_after_balance_size"] = value
+    self._parms["max_after_balance_size"] = value
 
   @property
   def seed(self):
-    return self.parms["seed"]
+    return self._parms["seed"]
 
   @seed.setter
   def seed(self, value):
-    self.parms["seed"] = value
+    self._parms["seed"] = value
 
   @property
   def nfolds(self):
-    return self.parms["nfolds"]
+    return self._parms["nfolds"]
 
   @nfolds.setter
   def nfolds(self, value):
-    self.parms["nfolds"] = value
+    self._parms["nfolds"] = value
 
   @property
   def fold_assignment(self):
-    return self.parms["fold_assignment"]
+    return self._parms["fold_assignment"]
 
   @fold_assignment.setter
   def fold_assignment(self, value):
-    self.parms["fold_assignment"] = value
+    self._parms["fold_assignment"] = value
 
   @property
   def keep_cross_validation_predictions(self):
-    return self.parms["keep_cross_validation_predictions"]
+    return self._parms["keep_cross_validation_predictions"]
 
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
-    self.parms["keep_cross_validation_predictions"] = value
+    self._parms["keep_cross_validation_predictions"] = value
 
   @property
   def checkpoint(self):
-    return self.parms["checkpoint"]
+    return self._parms["checkpoint"]
 
   @checkpoint.setter
   def checkpoint(self, value):
-    self.parms["checkpoint"] = value
+    self._parms["checkpoint"] = value
 

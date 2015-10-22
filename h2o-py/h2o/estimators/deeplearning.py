@@ -196,475 +196,475 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
   @property
   def overwrite_with_best_model(self):
-    return self.parms["overwrite_with_best_model"]
+    return self._parms["overwrite_with_best_model"]
 
   @overwrite_with_best_model.setter
   def overwrite_with_best_model(self, value):
-    self.parms["overwrite_with_best_model"] = value
+    self._parms["overwrite_with_best_model"] = value
 
   @property
   def checkpoint(self):
-    return self.parms["checkpoint"]
+    return self._parms["checkpoint"]
 
   @checkpoint.setter
   def checkpoint(self, value):
-    self.parms["checkpoint"] = value
+    self._parms["checkpoint"] = value
 
   @property
   def use_all_factor_levels(self):
-    return self.parms["use_all_factor_levels"]
+    return self._parms["use_all_factor_levels"]
 
   @use_all_factor_levels.setter
   def use_all_factor_levels(self, value):
-    self.parms["use_all_factor_levels"] = value
+    self._parms["use_all_factor_levels"] = value
 
   @property
   def activation(self):
-    return self.parms["activation"]
+    return self._parms["activation"]
 
   @activation.setter
   def activation(self, value):
-    self.parms["activation"] = value
+    self._parms["activation"] = value
 
   @property
   def hidden(self):
-    return self.parms["hidden"]
+    return self._parms["hidden"]
 
   @hidden.setter
   def hidden(self, value):
-    self.parms["hidden"] = value
+    self._parms["hidden"] = value
 
   @property
   def epochs(self):
-    return self.parms["epochs"]
+    return self._parms["epochs"]
 
   @epochs.setter
   def epochs(self, value):
-    self.parms["epochs"] = value
+    self._parms["epochs"] = value
 
   @property
   def train_samples_per_iteration(self):
-    return self.parms["train_samples_per_iteration"]
+    return self._parms["train_samples_per_iteration"]
 
   @train_samples_per_iteration.setter
   def train_samples_per_iteration(self, value):
-    self.parms["train_samples_per_iteration"] = value
+    self._parms["train_samples_per_iteration"] = value
 
   @property
   def seed(self):
-    return self.parms["seed"]
+    return self._parms["seed"]
 
   @seed.setter
   def seed(self, value):
-    self.parms["seed"] = value
+    self._parms["seed"] = value
 
   @property
   def adaptive_rate(self):
-    return self.parms["adaptive_rate"]
+    return self._parms["adaptive_rate"]
 
   @adaptive_rate.setter
   def adaptive_rate(self, value):
-    self.parms["adaptive_rate"] = value
+    self._parms["adaptive_rate"] = value
 
   @property
   def rho(self):
-    return self.parms["rho"]
+    return self._parms["rho"]
 
   @rho.setter
   def rho(self, value):
-    self.parms["rho"] = value
+    self._parms["rho"] = value
 
   @property
   def epsilon(self):
-    return self.parms["epsilon"]
+    return self._parms["epsilon"]
 
   @epsilon.setter
   def epsilon(self, value):
-    self.parms["epsilon"] = value
+    self._parms["epsilon"] = value
 
   @property
   def rate(self):
-    return self.parms["rate"]
+    return self._parms["rate"]
 
   @rate.setter
   def rate(self, value):
-    self.parms["rate"] = value
+    self._parms["rate"] = value
 
   @property
   def rate_annealing(self):
-    return self.parms["rate_annealing"]
+    return self._parms["rate_annealing"]
 
   @rate_annealing.setter
   def rate_annealing(self, value):
-    self.parms["rate_annealing"] = value
+    self._parms["rate_annealing"] = value
 
   @property
   def rate_decay(self):
-    return self.parms["rate_decay"]
+    return self._parms["rate_decay"]
 
   @rate_decay.setter
   def rate_decay(self, value):
-    self.parms["rate_decay"] = value
+    self._parms["rate_decay"] = value
 
   @property
   def momentum_start(self):
-    return self.parms["momentum_start"]
+    return self._parms["momentum_start"]
 
   @momentum_start.setter
   def momentum_start(self, value):
-    self.parms["momentum_start"] = value
+    self._parms["momentum_start"] = value
 
   @property
   def momentum_ramp(self):
-    return self.parms["momentum_ramp"]
+    return self._parms["momentum_ramp"]
 
   @momentum_ramp.setter
   def momentum_ramp(self, value):
-    self.parms["momentum_ramp"] = value
+    self._parms["momentum_ramp"] = value
 
   @property
   def momentum_stable(self):
-    return self.parms["momentum_stable"]
+    return self._parms["momentum_stable"]
 
   @momentum_stable.setter
   def momentum_stable(self, value):
-    self.parms["momentum_stable"] = value
+    self._parms["momentum_stable"] = value
 
   @property
   def nesterov_accelerated_gradient(self):
-    return self.parms["nesterov_accelerated_gradient"]
+    return self._parms["nesterov_accelerated_gradient"]
 
   @nesterov_accelerated_gradient.setter
   def nesterov_accelerated_gradient(self, value):
-    self.parms["nesterov_accelerated_gradient"] = value
+    self._parms["nesterov_accelerated_gradient"] = value
 
   @property
   def input_dropout_ratio(self):
-    return self.parms["input_dropout_ratio"]
+    return self._parms["input_dropout_ratio"]
 
   @input_dropout_ratio.setter
   def input_dropout_ratio(self, value):
-    self.parms["input_dropout_ratio"] = value
+    self._parms["input_dropout_ratio"] = value
 
   @property
   def hidden_dropout_ratios(self):
-    return self.parms["hidden_dropout_ratios"]
+    return self._parms["hidden_dropout_ratios"]
 
   @hidden_dropout_ratios.setter
   def hidden_dropout_ratios(self, value):
-    self.parms["hidden_dropout_ratios"] = value
+    self._parms["hidden_dropout_ratios"] = value
 
   @property
   def l1(self):
-    return self.parms["l1"]
+    return self._parms["l1"]
 
   @l1.setter
   def l1(self, value):
-    self.parms["l1"] = value
+    self._parms["l1"] = value
 
   @property
   def l2(self):
-    return self.parms["l2"]
+    return self._parms["l2"]
 
   @l2.setter
   def l2(self, value):
-    self.parms["l2"] = value
+    self._parms["l2"] = value
 
   @property
   def max_w2(self):
-    return self.parms["max_w2"]
+    return self._parms["max_w2"]
 
   @max_w2.setter
   def max_w2(self, value):
-    self.parms["max_w2"] = value
+    self._parms["max_w2"] = value
 
   @property
   def initial_weight_distribution(self):
-    return self.parms["initial_weight_distribution"]
+    return self._parms["initial_weight_distribution"]
 
   @initial_weight_distribution.setter
   def initial_weight_distribution(self, value):
-    self.parms["initial_weight_distribution"] = value
+    self._parms["initial_weight_distribution"] = value
 
   @property
   def initial_weight_scale(self):
-    return self.parms["initial_weight_scale"]
+    return self._parms["initial_weight_scale"]
 
   @initial_weight_scale.setter
   def initial_weight_scale(self, value):
-    self.parms["initial_weight_scale"] = value
+    self._parms["initial_weight_scale"] = value
 
   @property
   def loss(self):
-    return self.parms["loss"]
+    return self._parms["loss"]
 
   @loss.setter
   def loss(self, value):
-    self.parms["loss"] = value
+    self._parms["loss"] = value
 
   @property
   def distribution(self):
-    return self.parms["distribution"]
+    return self._parms["distribution"]
 
   @distribution.setter
   def distribution(self, value):
-    self.parms["distribution"] = value
+    self._parms["distribution"] = value
 
   @property
   def tweedie_power(self):
-    return self.parms["tweedie_power"]
+    return self._parms["tweedie_power"]
 
   @tweedie_power.setter
   def tweedie_power(self, value):
-    self.parms["tweedie_power"] = value
+    self._parms["tweedie_power"] = value
 
   @property
   def score_interval(self):
-    return self.parms["score_interval"]
+    return self._parms["score_interval"]
 
   @score_interval.setter
   def score_interval(self, value):
-    self.parms["score_interval"] = value
+    self._parms["score_interval"] = value
 
   @property
   def score_training_samples(self):
-    return self.parms["score_training_samples"]
+    return self._parms["score_training_samples"]
 
   @score_training_samples.setter
   def score_training_samples(self, value):
-    self.parms["score_training_samples"] = value
+    self._parms["score_training_samples"] = value
 
   @property
   def score_validation_samples(self):
-    return self.parms["score_validation_samples"]
+    return self._parms["score_validation_samples"]
 
   @score_validation_samples.setter
   def score_validation_samples(self, value):
-    self.parms["score_validation_samples"] = value
+    self._parms["score_validation_samples"] = value
 
   @property
   def score_duty_cycle(self):
-    return self.parms["score_duty_cycle"]
+    return self._parms["score_duty_cycle"]
 
   @score_duty_cycle.setter
   def score_duty_cycle(self, value):
-    self.parms["score_duty_cycle"] = value
+    self._parms["score_duty_cycle"] = value
 
   @property
   def classification_stop(self):
-    return self.parms["classification_stop"]
+    return self._parms["classification_stop"]
 
   @classification_stop.setter
   def classification_stop(self, value):
-    self.parms["classification_stop"] = value
+    self._parms["classification_stop"] = value
 
   @property
   def regression_stop(self):
-    return self.parms["regression_stop"]
+    return self._parms["regression_stop"]
 
   @regression_stop.setter
   def regression_stop(self, value):
-    self.parms["regression_stop"] = value
+    self._parms["regression_stop"] = value
 
   @property
   def quiet_mode(self):
-    return self.parms["quiet_mode"]
+    return self._parms["quiet_mode"]
 
   @quiet_mode.setter
   def quiet_mode(self, value):
-    self.parms["quiet_mode"] = value
+    self._parms["quiet_mode"] = value
 
   @property
   def max_confusion_matrix_size(self):
-    return self.parms["max_confusion_matrix_size"]
+    return self._parms["max_confusion_matrix_size"]
 
   @max_confusion_matrix_size.setter
   def max_confusion_matrix_size(self, value):
-    self.parms["max_confusion_matrix_size"] = value
+    self._parms["max_confusion_matrix_size"] = value
 
   @property
   def max_hit_ratio_k(self):
-    return self.parms["max_hit_ratio_k"]
+    return self._parms["max_hit_ratio_k"]
 
   @max_hit_ratio_k.setter
   def max_hit_ratio_k(self, value):
-    self.parms["max_hit_ratio_k"] = value
+    self._parms["max_hit_ratio_k"] = value
 
   @property
   def balance_classes(self):
-    return self.parms["balance_classes"]
+    return self._parms["balance_classes"]
 
   @balance_classes.setter
   def balance_classes(self, value):
-    self.parms["balance_classes"] = value
+    self._parms["balance_classes"] = value
 
   @property
   def class_sampling_factors(self):
-    return self.parms["class_sampling_factors"]
+    return self._parms["class_sampling_factors"]
 
   @class_sampling_factors.setter
   def class_sampling_factors(self, value):
-    self.parms["class_sampling_factors"] = value
+    self._parms["class_sampling_factors"] = value
 
   @property
   def max_after_balance_size(self):
-    return self.parms["max_after_balance_size"]
+    return self._parms["max_after_balance_size"]
 
   @max_after_balance_size.setter
   def max_after_balance_size(self, value):
-    self.parms["max_after_balance_size"] = value
+    self._parms["max_after_balance_size"] = value
 
   @property
   def score_validation_sampling(self):
-    return self.parms["score_validation_sampling"]
+    return self._parms["score_validation_sampling"]
 
   @score_validation_sampling.setter
   def score_validation_sampling(self, value):
-    self.parms["score_validation_sampling"] = value
+    self._parms["score_validation_sampling"] = value
 
   @property
   def diagnostics(self):
-    return self.parms["diagnostics"]
+    return self._parms["diagnostics"]
 
   @diagnostics.setter
   def diagnostics(self, value):
-    self.parms["diagnostics"] = value
+    self._parms["diagnostics"] = value
 
   @property
   def variable_importances(self):
-    return self.parms["variable_importances"]
+    return self._parms["variable_importances"]
 
   @variable_importances.setter
   def variable_importances(self, value):
-    self.parms["variable_importances"] = value
+    self._parms["variable_importances"] = value
 
   @property
   def fast_mode(self):
-    return self.parms["fast_mode"]
+    return self._parms["fast_mode"]
 
   @fast_mode.setter
   def fast_mode(self, value):
-    self.parms["fast_mode"] = value
+    self._parms["fast_mode"] = value
 
   @property
   def ignore_const_cols(self):
-    return self.parms["ignore_const_cols"]
+    return self._parms["ignore_const_cols"]
 
   @ignore_const_cols.setter
   def ignore_const_cols(self, value):
-    self.parms["ignore_const_cols"] = value
+    self._parms["ignore_const_cols"] = value
 
   @property
   def force_load_balance(self):
-    return self.parms["force_load_balance"]
+    return self._parms["force_load_balance"]
 
   @force_load_balance.setter
   def force_load_balance(self, value):
-    self.parms["force_load_balance"] = value
+    self._parms["force_load_balance"] = value
 
   @property
   def replicate_training_data(self):
-    return self.parms["replicate_training_data"]
+    return self._parms["replicate_training_data"]
 
   @replicate_training_data.setter
   def replicate_training_data(self, value):
-    self.parms["replicate_training_data"] = value
+    self._parms["replicate_training_data"] = value
 
   @property
   def single_node_mode(self):
-    return self.parms["single_node_mode"]
+    return self._parms["single_node_mode"]
 
   @single_node_mode.setter
   def single_node_mode(self, value):
-    self.parms["single_node_mode"] = value
+    self._parms["single_node_mode"] = value
 
   @property
   def shuffle_training_data(self):
-    return self.parms["shuffle_training_data"]
+    return self._parms["shuffle_training_data"]
 
   @shuffle_training_data.setter
   def shuffle_training_data(self, value):
-    self.parms["shuffle_training_data"] = value
+    self._parms["shuffle_training_data"] = value
 
   @property
   def sparse(self):
-    return self.parms["sparse"]
+    return self._parms["sparse"]
 
   @sparse.setter
   def sparse(self, value):
-    self.parms["sparse"] = value
+    self._parms["sparse"] = value
 
   @property
   def col_major(self):
-    return self.parms["col_major"]
+    return self._parms["col_major"]
 
   @col_major.setter
   def col_major(self, value):
-    self.parms["col_major"] = value
+    self._parms["col_major"] = value
 
   @property
   def average_activation(self):
-    return self.parms["average_activation"]
+    return self._parms["average_activation"]
 
   @average_activation.setter
   def average_activation(self, value):
-    self.parms["average_activation"] = value
+    self._parms["average_activation"] = value
 
   @property
   def sparsity_beta(self):
-    return self.parms["sparsity_beta"]
+    return self._parms["sparsity_beta"]
 
   @sparsity_beta.setter
   def sparsity_beta(self, value):
-    self.parms["sparsity_beta"] = value
+    self._parms["sparsity_beta"] = value
 
   @property
   def max_categorical_features(self):
-    return self.parms["max_categorical_features"]
+    return self._parms["max_categorical_features"]
 
   @max_categorical_features.setter
   def max_categorical_features(self, value):
-    self.parms["max_categorical_features"] = value
+    self._parms["max_categorical_features"] = value
 
   @property
   def reproducible(self):
-    return self.parms["reproducible"]
+    return self._parms["reproducible"]
 
   @reproducible.setter
   def reproducible(self, value):
-    self.parms["reproducible"] = value
+    self._parms["reproducible"] = value
 
   @property
   def export_weights_and_biases(self):
-    return self.parms["export_weights_and_biases"]
+    return self._parms["export_weights_and_biases"]
 
   @export_weights_and_biases.setter
   def export_weights_and_biases(self, value):
-    self.parms["export_weights_and_biases"] = value
+    self._parms["export_weights_and_biases"] = value
 
   @property
   def nfolds(self):
-    return self.parms["nfolds"]
+    return self._parms["nfolds"]
 
   @nfolds.setter
   def nfolds(self, value):
-    self.parms["nfolds"] = value
+    self._parms["nfolds"] = value
 
   @property
   def fold_assignment(self):
-    return self.parms["fold_assignment"]
+    return self._parms["fold_assignment"]
 
   @fold_assignment.setter
   def fold_assignment(self, value):
-    self.parms["fold_assignment"] = value
+    self._parms["fold_assignment"] = value
 
   @property
   def keep_cross_validation_predictions(self):
-    return self.parms["keep_cross_validation_predictions"]
+    return self._parms["keep_cross_validation_predictions"]
 
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
-    self.parms["keep_cross_validation_predictions"] = value
+    self._parms["keep_cross_validation_predictions"] = value
 
 
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):

@@ -111,169 +111,169 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
   @property
   def max_iterations(self):
-    return self.parms["max_iterations"]
+    return self._parms["max_iterations"]
 
   @max_iterations.setter
   def max_iterations(self, value):
-    self.parms["max_iterations"] = value
+    self._parms["max_iterations"] = value
 
   @property
   def beta_epsilon(self):
-    return self.parms["beta_epsilon"]
+    return self._parms["beta_epsilon"]
 
   @beta_epsilon.setter
   def beta_epsilon(self, value):
-    self.parms["beta_epsilon"] = value
+    self._parms["beta_epsilon"] = value
 
   @property
   def solver(self):
-    return self.parms["solver"]
+    return self._parms["solver"]
 
   @solver.setter
   def solver(self, value):
-    self.parms["solver"] = value
+    self._parms["solver"] = value
 
   @property
   def standardize(self):
-    return self.parms["standardize"]
+    return self._parms["standardize"]
 
   @standardize.setter
   def standardize(self, value):
-    self.parms["standardize"] = value
+    self._parms["standardize"] = value
 
   @property
   def family(self):
-    return self.parms["family"]
+    return self._parms["family"]
 
   @family.setter
   def family(self, value):
-    self.parms["family"] = value
+    self._parms["family"] = value
 
   @property
   def link(self):
-    return self.parms["link"]
+    return self._parms["link"]
 
   @link.setter
   def link(self, value):
-    self.parms["link"] = value
+    self._parms["link"] = value
 
   @property
   def tweedie_variance_power(self):
-    return self.parms["tweedie_variance_power"]
+    return self._parms["tweedie_variance_power"]
 
   @tweedie_variance_power.setter
   def tweedie_variance_power(self, value):
-    self.parms["tweedie_variance_power"] = value
+    self._parms["tweedie_variance_power"] = value
 
   @property
   def tweedie_link_power(self):
-    return self.parms["tweedie_link_power"]
+    return self._parms["tweedie_link_power"]
 
   @tweedie_link_power.setter
   def tweedie_link_power(self, value):
-    self.parms["tweedie_link_power"] = value
+    self._parms["tweedie_link_power"] = value
 
   @property
   def alpha(self):
-    return self.parms["alpha"]
+    return self._parms["alpha"]
 
   @alpha.setter
   def alpha(self, value):
-    self.parms["alpha"] = value
+    self._parms["alpha"] = value
 
   @property
   def prior(self):
-    return self.parms["prior"]
+    return self._parms["prior"]
 
   @prior.setter
   def prior(self, value):
-    self.parms["prior"] = value
+    self._parms["prior"] = value
 
   @property
   def lambda_search(self):
-    return self.parms["lambda_search"]
+    return self._parms["lambda_search"]
 
   @lambda_search.setter
   def lambda_search(self, value):
-    self.parms["lambda_search"] = value
+    self._parms["lambda_search"] = value
 
   @property
   def nlambdas(self):
-    return self.parms["nlambdas"]
+    return self._parms["nlambdas"]
 
   @nlambdas.setter
   def nlambdas(self, value):
-    self.parms["nlambdas"] = value
+    self._parms["nlambdas"] = value
 
   @property
   def lambda_min_ratio(self):
-    return self.parms["lambda_min_ratio"]
+    return self._parms["lambda_min_ratio"]
 
   @lambda_min_ratio.setter
   def lambda_min_ratio(self, value):
-    self.parms["lambda_min_ratio"] = value
+    self._parms["lambda_min_ratio"] = value
 
   @property
   def beta_constraints(self):
-    return self.parms["beta_constraints"]
+    return self._parms["beta_constraints"]
 
   @beta_constraints.setter
   def beta_constraints(self, value):
-    self.parms["beta_constraints"] = value
+    self._parms["beta_constraints"] = value
 
   @property
   def nfolds(self):
-    return self.parms["nfolds"]
+    return self._parms["nfolds"]
 
   @nfolds.setter
   def nfolds(self, value):
-    self.parms["nfolds"] = value
+    self._parms["nfolds"] = value
 
   @property
   def fold_assignment(self):
-    return self.parms["fold_assignment"]
+    return self._parms["fold_assignment"]
 
   @fold_assignment.setter
   def fold_assignment(self, value):
-    self.parms["fold_assignment"] = value
+    self._parms["fold_assignment"] = value
 
   @property
   def keep_cross_validation_predictions(self):
-    return self.parms["keep_cross_validation_predictions"]
+    return self._parms["keep_cross_validation_predictions"]
 
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
-    self.parms["keep_cross_validation_predictions"] = value
+    self._parms["keep_cross_validation_predictions"] = value
 
   @property
   def intercept(self):
-    return self.parms["intercept"]
+    return self._parms["intercept"]
 
   @intercept.setter
   def intercept(self, value):
-    self.parms["intercept"] = value
+    self._parms["intercept"] = value
 
   @property
   def Lambda(self):
-    return self.parms["Lambda"]
+    return self._parms["Lambda"]
 
   @Lambda.setter
   def Lambda(self, value):
-    self.parms["Lambda"] = value
+    self._parms["Lambda"] = value
 
   @property
   def max_active_predictors(self):
-    return self.parms["max_active_predictors"]
+    return self._parms["max_active_predictors"]
 
   @max_active_predictors.setter
   def max_active_predictors(self, value):
-    self.parms["max_active_predictors"] = value
+    self._parms["max_active_predictors"] = value
 
   @property
   def checkpoint(self):
-    return self.parms["checkpoint"]
+    return self._parms["checkpoint"]
 
   @checkpoint.setter
   def checkpoint(self, value):
-    self.parms["checkpoint"] = value
+    self._parms["checkpoint"] = value
 

@@ -125,12 +125,12 @@ class H2OSVD(H2OEstimator):
       Return a new H2OSVD
     """
     super(H2OSVD, self).__init__()
-    self.parms = locals()
-    self.parms = {k: v for k, v in self.parms.iteritems() if k != "self"}
-    self.parms["svd_method"] = "GramSVD" if isinstance(svd_method, tuple) else svd_method
-    self.parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
-    self.parms["algo"] = "svd"
-    self.parms['_rest_version']=99
+    self._parms = locals()
+    self._parms = {k: v for k, v in self._parms.iteritems() if k != "self"}
+    self._parms["svd_method"] = "GramSVD" if isinstance(svd_method, tuple) else svd_method
+    self._parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
+    self._parms["algo"] = "svd"
+    self._parms['_rest_version']=99
 
   def fit(self, X,y=None,  **params):
     return super(H2OSVD, self).fit(X)

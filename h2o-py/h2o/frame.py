@@ -468,11 +468,9 @@ class H2OFrame(H2OFrameWeakRefMixin):
     :return: a list of strings that are the factor levels for the column.
     """
     if self.ncol==1 or col is None:
-      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", self))._frame(), False)[1:]
-      levels=[level for l in lol for level in l] if self.ncol==1 else lol
+      levels=H2OFrame(expr=ExprNode("levels", self))._scalar()
     elif col is not None:
-      lol=h2o.as_list(H2OFrame(expr=ExprNode("levels", ExprNode("cols", self, col)))._frame(),False)[1:]
-      levels=[level for l in lol for level in l]
+      levels = H2OFrame(expr=ExprNode("levels", ExprNode("cols", self, col)))._scalar()
     else:                             levels=None
     return None if levels is None or levels==[] else levels
 
@@ -1506,10 +1504,10 @@ class H2OFrame(H2OFrameWeakRefMixin):
   def _scalar(self):
     self._eager()  # scalar should be stashed into self._data
     if self._data is None:
-      res = self.as_data_frame(use_pandas=False)[1:]
-      if len(res)==1: return H2OFrame._get_scalar(res[0][0])
+      res = self.as_data_frame(use_pandas=False)[0][1:]
+      if len(res)==1: return H2OFrame._get_scalar(res[0])
       else:
-        return [H2OFrame._get_scalar(r[0]) for r in res]
+        return [H2OFrame._get_scalar(r) for r in res]
     else:
       return H2OFrame._get_scalar(self._data)
 

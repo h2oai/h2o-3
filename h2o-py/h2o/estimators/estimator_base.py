@@ -255,7 +255,7 @@ class H2OEstimator(ModelBase):
     -------
       Returns self, the current estimator object with the parameters all set as desired.
     """
-    self.parms.update(parms)
+    self._parms.update(parms)
     return self
 
   @staticmethod

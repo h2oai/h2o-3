@@ -45,81 +45,81 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
   @property
   def laplace(self):
-    return self.parms["laplace"]
+    return self._parms["laplace"]
 
   @laplace.setter
   def laplace(self, value):
-    self.parms["laplace"] = value
+    self._parms["laplace"] = value
 
   @property
   def threshold(self):
-    return self.parms["threshold"]
+    return self._parms["threshold"]
 
   @threshold.setter
   def threshold(self, value):
-    self.parms["threshold"] = value
+    self._parms["threshold"] = value
 
   @property
   def eps(self):
-    return self.parms["eps"]
+    return self._parms["eps"]
 
   @eps.setter
   def eps(self, value):
-    self.parms["eps"] = value
+    self._parms["eps"] = value
 
   @property
   def compute_metrics(self):
-    return self.parms["compute_metrics"]
+    return self._parms["compute_metrics"]
 
   @compute_metrics.setter
   def compute_metrics(self, value):
-    self.parms["compute_metrics"] = value
+    self._parms["compute_metrics"] = value
 
   @property
   def balance_classes(self):
-    return self.parms["balance_classes"]
+    return self._parms["balance_classes"]
 
   @balance_classes.setter
   def balance_classes(self, value):
-    self.parms["balance_classes"] = value
+    self._parms["balance_classes"] = value
 
   @property
   def max_after_balance_size(self):
-    return self.parms["max_after_balance_size"]
+    return self._parms["max_after_balance_size"]
 
   @max_after_balance_size.setter
   def max_after_balance_size(self, value):
-    self.parms["max_after_balance_size"] = value
+    self._parms["max_after_balance_size"] = value
 
   @property
   def nfolds(self):
-    return self.parms["nfolds"]
+    return self._parms["nfolds"]
 
   @nfolds.setter
   def nfolds(self, value):
-    self.parms["nfolds"] = value
+    self._parms["nfolds"] = value
 
   @property
   def fold_assignment(self):
-    return self.parms["fold_assignment"]
+    return self._parms["fold_assignment"]
 
   @fold_assignment.setter
   def fold_assignment(self, value):
-    self.parms["fold_assignment"] = value
+    self._parms["fold_assignment"] = value
 
   @property
   def keep_cross_validation_predictions(self):
-    return self.parms["keep_cross_validation_predictions"]
+    return self._parms["keep_cross_validation_predictions"]
 
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
-    self.parms["keep_cross_validation_predictions"] = value
+    self._parms["keep_cross_validation_predictions"] = value
 
   @property
   def checkpoint(self):
-    return self.parms["checkpoint"]
+    return self._parms["checkpoint"]
 
   @checkpoint.setter
   def checkpoint(self, value):
-    self.parms["checkpoint"] = value
+    self._parms["checkpoint"] = value
 

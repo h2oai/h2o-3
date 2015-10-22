@@ -120,153 +120,153 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
   @property
   def max_iterations(self):
-    return self.parms["max_iterations"]
+    return self._parms["max_iterations"]
 
   @max_iterations.setter
   def max_iterations(self, value):
-    self.parms["max_iterations"] = value
+    self._parms["max_iterations"] = value
 
   @property
   def transform(self):
-    return self.parms["transform"]
+    return self._parms["transform"]
 
   @transform.setter
   def transform(self, value):
-    self.parms["transform"] = value
+    self._parms["transform"] = value
 
   @property
   def seed(self):
-    return self.parms["seed"]
+    return self._parms["seed"]
 
   @seed.setter
   def seed(self, value):
-    self.parms["seed"] = value
+    self._parms["seed"] = value
 
   @property
   def ignore_const_cols(self):
-    return self.parms["ignore_const_cols"]
+    return self._parms["ignore_const_cols"]
 
   @ignore_const_cols.setter
   def ignore_const_cols(self, value):
-    self.parms["ignore_const_cols"] = value
+    self._parms["ignore_const_cols"] = value
 
   @property
   def loss(self):
-    return self.parms["loss"]
+    return self._parms["loss"]
 
   @loss.setter
   def loss(self, value):
-    self.parms["loss"] = value
+    self._parms["loss"] = value
 
   @property
   def multi_loss(self):
-    return self.parms["multi_loss"]
+    return self._parms["multi_loss"]
 
   @multi_loss.setter
   def multi_loss(self, value):
-    self.parms["multi_loss"] = value
+    self._parms["multi_loss"] = value
 
   @property
   def loss_by_col(self):
-    return self.parms["loss_by_col"]
+    return self._parms["loss_by_col"]
 
   @loss_by_col.setter
   def loss_by_col(self, value):
-    self.parms["loss_by_col"] = value
+    self._parms["loss_by_col"] = value
 
   @property
   def loss_by_col_idx(self):
-    return self.parms["loss_by_col_idx"]
+    return self._parms["loss_by_col_idx"]
 
   @loss_by_col_idx.setter
   def loss_by_col_idx(self, value):
-    self.parms["loss_by_col_idx"] = value
+    self._parms["loss_by_col_idx"] = value
 
   @property
   def regularization_x(self):
-    return self.parms["regularization_x"]
+    return self._parms["regularization_x"]
 
   @regularization_x.setter
   def regularization_x(self, value):
-    self.parms["regularization_x"] = value
+    self._parms["regularization_x"] = value
 
   @property
   def regularization_y(self):
-    return self.parms["regularization_y"]
+    return self._parms["regularization_y"]
 
   @regularization_y.setter
   def regularization_y(self, value):
-    self.parms["regularization_y"] = value
+    self._parms["regularization_y"] = value
 
   @property
   def gamma_x(self):
-    return self.parms["gamma_x"]
+    return self._parms["gamma_x"]
 
   @gamma_x.setter
   def gamma_x(self, value):
-    self.parms["gamma_x"] = value
+    self._parms["gamma_x"] = value
 
   @property
   def gamma_y(self):
-    return self.parms["gamma_y"]
+    return self._parms["gamma_y"]
 
   @gamma_y.setter
   def gamma_y(self, value):
-    self.parms["gamma_y"] = value
+    self._parms["gamma_y"] = value
 
   @property
   def init_step_size(self):
-    return self.parms["init_step_size"]
+    return self._parms["init_step_size"]
 
   @init_step_size.setter
   def init_step_size(self, value):
-    self.parms["init_step_size"] = value
+    self._parms["init_step_size"] = value
 
   @property
   def min_step_size(self):
-    return self.parms["min_step_size"]
+    return self._parms["min_step_size"]
 
   @min_step_size.setter
   def min_step_size(self, value):
-    self.parms["min_step_size"] = value
+    self._parms["min_step_size"] = value
 
   @property
   def init(self):
-    return self.parms["init"]
+    return self._parms["init"]
 
   @init.setter
   def init(self, value):
-    self.parms["init"] = value
+    self._parms["init"] = value
 
   @property
   def svd_method(self):
-    return self.parms["svd_method"]
+    return self._parms["svd_method"]
 
   @svd_method.setter
   def svd_method(self, value):
-    self.parms["svd_method"] = value
+    self._parms["svd_method"] = value
 
   @property
   def user_x(self):
-    return self.parms["user_x"]
+    return self._parms["user_x"]
 
   @user_x.setter
   def user_x(self, value):
-    self.parms["user_x"] = value
+    self._parms["user_x"] = value
 
   @property
   def user_y(self):
-    return self.parms["user_y"]
+    return self._parms["user_y"]
 
   @user_y.setter
   def user_y(self, value):
-    self.parms["user_y"] = value
+    self._parms["user_y"] = value
 
   @property
   def recover_svd(self):
-    return self.parms["recover_svd"]
+    return self._parms["recover_svd"]
 
   @recover_svd.setter
   def recover_svd(self, value):
-    self.parms["recover_svd"] = value
+    self._parms["recover_svd"] = value
 
