@@ -288,6 +288,29 @@ To avoid using 127.0.0.1 on servers with multiple local IP addresses, run the co
 
 ---
 
+**How does the timeline tool work?**
+
+The timeline is a debugging tool that provides information on the current communication between H2O nodes. It shows a snapshot of the most recent messages passed between the nodes. Each node retains its own history of messages sent to or received from other nodes. 
+
+H2O collects these messages from all the nodes and orders them by whether they were sent or received. Each node has an implicit internal order where sent messages must precede received messages on the other node. 
+
+The following information displays for each message: 
+
+- `HH:MM:SS:MS` and `nanosec`: The local time of the event
+- `Who`: The endpoint of the message; can be either a source/receiver node or source node and multicast for broadcasted messages
+- `I/O Type`: The type of communication (either UDP for small messages or TCP for large messages)
+   >**Note**: UDP messages are only sent if the UDP option was enabled when launching H2O or for multicast when a flatfile is not used for configuration. 
+- `Event`: The type of H2O message. The most common type is a distributed task, which displays as `exec` (the requested task) -> `ack` (results of the processed task) -> `ackck` (sender acknowledges receiving the response, task is completed and removed)
+- `rebooted`: Sent during node startup 
+- `heartbeat`: Provides small message tracking information about node health, exchanged periodically between nodes
+- `fetchack`: Aknowledgement of the `Fetch` type task, which retrieves the ID of a previously unseen type
+- `bytes`: Information extracted from the message, including the type of the task and the unique task number 
+
+
+
+---
+
+
 ##Data
 
 **How should I format my SVMLight data before importing?**
@@ -327,6 +350,15 @@ Currently, H2O supports:
 - String
 
 ---
+
+**I am trying to parse a Gzip data file containing multiple files, but it does not parse as quickly as the uncompressed files. Why is this?**
+
+Parsing Gzip files is not done in parallel, so it is sequential and uses only one core. Other parallel parse compression schemes are on the roadmap. 
+
+
+
+---
+
 
 ##General
 
@@ -373,16 +405,6 @@ You must match the table column names to the order specified in the POJO. The ou
 ```
 java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model gbm_model --input input.csv --output output.csv
 ```
-
----
-
-**After creating my POJO, I noticed that it does not predict the results consistently; for example, one row contains the same data as another row but results in a different prediction. Why is this?**
-
-A POJO (like any model) is only as good as the data that is fed into it. We strongly recommend munging your data before creating a model or POJO, as this will improve the accuracy. 
-
-For example, if your dataset has many rows where the values are all zeros, the model and resulting POJO will not be as accurate because the NA values reduce the accuracy of the model and the POJO may predict inaccurate results. 
-
-We strongly recommend removing any rows containing all zeros before creating your model or POJO. If your results are inaccurate, munge the dataset to remove the all-zero rows and rerun the model. 
 
 ---
 

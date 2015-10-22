@@ -25,7 +25,7 @@ summary(ratings.hex)
 #          Matrix Decomposition         #
 #---------------------------------------#
 ## Basic GLRM with quadratic loss and regularization
-ratings.glrm <- h2o.glrm(ratings.hex, x = 2:ncol(ratings.hex), k = 15, ignore_const_cols = FALSE, transform = "NONE",
+ratings.glrm <- h2o.glrm(ratings.hex, cols = 2:ncol(ratings.hex), k = 15, ignore_const_cols = FALSE, transform = "NONE",
                          init = "PlusPlus", loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic",
                          gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000)
 ratings.glrm
