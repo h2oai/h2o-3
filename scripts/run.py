@@ -13,6 +13,8 @@ import ConfigParser
 import requests
 from requests import exceptions
 import socket
+import multiprocessing
+import platform
 
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
 
@@ -1497,11 +1499,12 @@ class TestRunner:
         finish_seconds = time.time()
         duration = finish_seconds - test.start_seconds
         test_name = test.get_test_name()
+        if not test.get_skipped():
+            if self.perf: self._report_perf(test, finish_seconds)
         if (test.get_passed()):
             s = "PASS      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)
             if self.produce_unit_reports: self._report_xunit_result("r_suite", test_name, duration, False)
-            if self.perf: self._report_perf(test, finish_seconds)
         elif (test.get_skipped()):
             s = "SKIP      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)
@@ -1548,9 +1551,9 @@ class TestRunner:
 
     def _report_perf(self, test, finish_seconds):
         f = open(self.perf_file, "a")
-        f.write('{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}\n'.format(g_date, g_build_id, g_git_hash, g_git_branch,
-                                                                  g_machine_ip, test.get_test_name(),
-                                                                  test.start_seconds, finish_seconds))
+        f.write('{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}\n'
+                ''.format(g_date, g_build_id, g_git_hash, g_git_branch, g_machine_ip, test.get_test_name(),
+                          test.start_seconds, finish_seconds, 1 if test.get_passed() else 0, g_ncpu, g_os))
         f.close()
 
     def _save_xunit_report(self, testsuite, testcase, report):
@@ -1682,6 +1685,8 @@ g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath
                                                 "../h2o-py/scripts/h2o-py-test-setup.py"))
 g_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 g_machine_ip = socket.gethostbyname(socket.gethostname())
+g_ncpu = multiprocessing.cpu_count()
+g_os = platform.system()
 
 
 def use(x):
@@ -1879,6 +1884,8 @@ def parse_args(argv):
     global g_machine_ip
     global g_date
     global g_build_id
+    global g_ncpu
+    global g_os
 
     i = 1
     while (i < len(argv)):
@@ -2095,6 +2102,8 @@ def main(argv):
     global g_machine_ip
     global g_date
     global g_build_id
+    global g_ncpu
+    global g_os
 
     g_script_name = os.path.basename(argv[0])
 
