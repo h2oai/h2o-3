@@ -72,7 +72,7 @@ public class MRUtils {
           }
         }
       }
-    }.doAll_numericResult(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(), fr.domains());
   }
 
   /**

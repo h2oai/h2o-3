@@ -1,41 +1,49 @@
-"""
-Binomial Models
-"""
-
-from metrics_base import *
+from model_base import ModelBase
 
 
 class H2OBinomialModel(ModelBase):
-  """
-  Class for Binomial models.
-  """
-  def __init__(self, dest_key, model_json):
-    """
-    Create a new binomial model.
-    """
-    super(H2OBinomialModel, self).__init__(dest_key, model_json,H2OBinomialModelMetrics)
-
   def F1(self, thresholds=None, train=False, valid=False, xval=False):
-    """
-    Get the F1 for a set of thresholds.
-    If all are False (default), then return the training metric value.
-    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-    and "xval"
+    """Get the F1 value for a set of thresholds
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the F1 value for the training data.
-    :param valid: If valid is True, then return the F1 value for the validation data.
-    :param xval:  If xval is True, then return the F1 value for the cross validation data.
-    :return: The F1 for this binomial model.
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where
+    the keys are "train", "valid", and "xval".
+
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+      train : bool, optional
+        If True, return the F1 value for the training data.
+      valid : bool, optional
+        If True, return the F1 value for the validation data.
+      xval : bool, optional
+        If True, return the F1 value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The F1 values for the specified key(s).
+
+    Examples
+    --------
+    >>> import h2o as ml
+    >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    >>> ml.init()
+    >>> rows=[[1,2,3,4,0],[2,1,2,4,1],[2,1,4,2,1],[0,1,2,34,1],[2,3,4,1,0]]*50
+    >>> fr = ml.H2OFrame(rows)
+    >>> fr[4] = fr[4].asfactor()
+    >>> model = H2OGradientBoostingEstimator(ntrees=10, max_depth=10, nfolds=4)
+    >>> model.train(x=range(4), y=4, training_frame=fr)
+    >>> model.F1(train=True)
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("f1", thresholds=thresholds)
+    for k,v in tm.iteritems():
+      m[k] = None if v is None else v.metric("f1", thresholds=thresholds)
     return m.values()[0] if len(m) == 1 else m
 
   def F2(self, thresholds=None, train=False, valid=False, xval=False):
-    """
-    Get the F2 for a set of thresholds.
+    """Get the F2 for a set of thresholds.
     If all are False (default), then return the training metric value.
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
@@ -52,8 +60,7 @@ class H2OBinomialModel(ModelBase):
     return m.values()[0] if len(m) == 1 else m
 
   def F0point5(self, thresholds=None, train=False, valid=False, xval=False):
-    """
-    Get the F0.5 for a set of thresholds.
+    """Get the F0.5 for a set of thresholds.
     If all are False (default), then return the training metric value.
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
@@ -339,21 +346,22 @@ class H2OBinomialModel(ModelBase):
     for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric(metric,thresholds)
     return m.values()[0] if len(m) == 1 else m
 
-  def plot(self, type="roc", train=False, valid=False, xval=False, **kwargs):
+  def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
     """
-    Produce the desired metric plot
-    If all are False (default), then return the training metric value.
+    Plots training set (and validation set if available) scoring history for an H2OBinomialModel. The timestep and metric
+    arguments are restricted to what is available in its scoring history.
 
-    :param type: the type of metric plot (currently, only ROC supported)
-    :param train: If train is True, then plot for training data.
-    :param valid: If valid is True, then plot for validation data.
-    :param xval:  If xval is True, then plot for cross validation data.
-    :param show: if False, the plot is not shown. matplotlib show method is blocking.
-    :return: None
+    :param timestep: A unit of measurement for the x-axis.
+    :param metric: A unit of measurement for the y-axis.
+    :return: A scoring history plot.
     """
-    tm = ModelBase._get_metrics(self, train, valid, xval)
-    for k,v in zip(tm.keys(),tm.values()):
-      if v is not None: v.plot(type=type, **kwargs)
+
+    if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
+      if metric == "AUTO": metric = "logloss"
+      elif metric not in ("logloss","AUC","classification_error","MSE"):
+        raise ValueError("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+
+    self._plot(timestep=timestep, metric=metric, **kwargs)
 
   def roc(self, train=False, valid=False, xval=False):
     """

@@ -1,9 +1,13 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o,tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def pyunit_apply():
-  fr = h2o.import_file(tests.locate("smalldata/logreg/prostate.csv"))
+  fr = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
   fr.apply(lambda x: x["PSA"], axis=1).show()
   print
@@ -42,5 +46,9 @@ def pyunit_apply():
   fr.apply(lambda row: h2o.ifelse(row[0] < 5, (row[2]-3).expm1(), 55), axis=1)
   fr.apply(lambda row: h2o.ifelse(row[0] < 5, 3, (row[2] - 1).expm1()), axis=1)
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, pyunit_apply)
+  pyunit_utils.standalone_test(pyunit_apply)
+else:
+  pyunit_apply()

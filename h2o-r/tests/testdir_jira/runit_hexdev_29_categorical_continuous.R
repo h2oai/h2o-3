@@ -3,8 +3,8 @@
 ## Verifying that R can define features as categorical or continuous
 ##
 ################################################################################
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.continuous.or.categorical <- function() {
   aa <- data.frame(

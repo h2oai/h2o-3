@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 checkRollups <- function(h2o_data, r_data) {
     h2o_num_cols <- ncol(h2o_data)

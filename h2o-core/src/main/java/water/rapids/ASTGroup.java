@@ -208,7 +208,7 @@ class ASTGroup extends ASTPrim {
     Vec v = Vec.makeZero(ngrps); // dummy layout vec
 
     // Convert the output arrays into a Frame, also doing the post-pass work
-    Frame f= mrfill.doAll_numericResult(nCols,new Frame(v)).outputFrame(names,domains);
+    Frame f= mrfill.doAll(nCols, Vec.T_NUM, new Frame(v)).outputFrame(names,domains);
     v.remove();
     return f;
   }

@@ -16,7 +16,7 @@
 
 
 \begin{center}
-\textsc{\Large\bf{Gradient Boosted Models with H2O's R Package}}
+\textsc{\Large\bf{Gradient Boosted Models with H2O}}
 
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
@@ -35,7 +35,7 @@
 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Third Edition 
+\monthname \hspace{1pt}  \the\year: Fourth Edition 
 
 \bigskip
 \end{center}
@@ -69,7 +69,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Third Edition 
+\monthname \hspace{1pt}  \the\year: Fourth Edition 
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -141,7 +141,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Aug. 2015). \t
 \section{Overview}
 
 A GBM is an ensemble of either regression or classification tree models.
-Both are forward-learning ensemble methods that obtain predictive results through gradually improved estimations.
+Both are forward-learning ensemble methods that obtain predictive results using gradually improved estimations.
 
 Boosting is a flexible nonlinear regression procedure that helps improve the accuracy of trees. Weak classification algorithms are sequentially applied to the incrementally changed data to create a series of decision trees, producing an ensemble of weak prediction models. 
 
@@ -154,7 +154,7 @@ H2O's GBM functionalities include:
 \begin{itemize}
 \item supervised learning for regression and classification tasks
 \item distributed and parallelized computation on either a single node or a multi-node cluster
-\item fast and memory-efficient Java implementations of the underlying algorithms
+\item fast and memory-efficient Java implementations of the algorithms
 \item the ability to run H2O from R, Python, Scala, or the intuitive web UI (Flow)
 \item grid search for hyperparameter optimization and model selection
 \item model export in plain Java code for deployment in production environments
@@ -162,7 +162,9 @@ H2O's GBM functionalities include:
 \end{itemize}
 
 
-Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
+Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. 
+
+Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
 
 
 \subsection{Theory and Framework}
@@ -298,23 +300,23 @@ Loading a dataset in R or Python for use with H2O is slightly different from the
 \waterExampleInR
 Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
 
-\lstinputlisting[style=R]{gbm/gbm_uploadfile_example.R}
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_uploadfile_example.R}
 \medskip
 \waterExampleInPython
 Load the data to your current working directory in Python (do this for any future dataset downloads), and then run the following command.
 
-\lstinputlisting[style=python]{gbm/gbm_uploadfile_example.py}
+\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_uploadfile_example.py}
 
 
 \subsection{Performing a Trial Run}
 Load the Airline dataset into H2O and select the variables to use to predict  the response. The following example models delayed flights based on the departure's scheduled day of the week and day of the month.
 
 \waterExampleInR
-\lstinputlisting[style=R]{gbm/gbm_examplerun.R}
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_examplerun.R}
 
 
 \waterExampleInPython
-\lstinputlisting[style=python]{gbm/gbm_examplerun.py}
+\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_examplerun.py}
 
 
 Since it is meant just as a trial run, the model contains only 100 trees. In this trial run, no validation set was
@@ -327,12 +329,12 @@ Now, extract the parameters of the model, examine the scoring process, and make 
 \begin{minipage}{\textwidth}
 
 \waterExampleInR
-\lstinputlisting[style=R]{gbm/gbm_extractmodelparams.R}
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_extractmodelparams.R}
 \end{minipage}
 
 \begin{minipage}{\textwidth}
 \waterExampleInPython
-\lstinputlisting[style=python]{gbm/gbm_extractmodelparams.py}
+\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_extractmodelparams.py}
 \end{minipage}
 
 The first command ({\texttt{air.model}}) returns the trained model's training and validation errors.
@@ -341,12 +343,12 @@ new data, which can then be used for further tasks in the interactive modeling p
 
 \begin{minipage}{\textwidth}
 \waterExampleInR
-\lstinputlisting[style=R]{gbm/gbm_predict.R}
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_predict.R}
 \end{minipage}
 
 \begin{minipage}{\textwidth}
 \waterExampleInPython
-\lstinputlisting[style=python]{gbm/gbm_predict.py}
+\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_predict.py}
 \end{minipage}
 
 \subsection{Web Interface}
@@ -397,7 +399,7 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 To enable grid search capabilities for model tuning, specify sets of values for parameter arguments that will configure certain parameters and then observe the changes in the model behavior. The following example represents a grid search:
 
 \waterExampleInR
-\lstinputlisting[style=R]{gbm/gbm_gridsearch.R}
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch.R}
 
 %is a Python example available?
 
@@ -407,7 +409,7 @@ Of course, sets of other parameters can be specified for a larger space of model
 
 \begin{minipage}{\textwidth}
 \waterExampleInR
-\lstinputlisting[style=R]{gbm/gbm_gridsearch_result.R} 
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch_result.R} 
 \end{minipage}
 
 

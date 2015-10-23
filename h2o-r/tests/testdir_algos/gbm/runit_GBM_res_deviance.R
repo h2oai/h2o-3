@@ -1,6 +1,6 @@
 ####### This tests deviance for poisson, tweedie and gamma distributions in gbm by comparing results with R ######
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 	
@@ -38,7 +38,7 @@ test <- function() {
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,149.4331681)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
 	
-	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv"),destination_frame = "fre")
+	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	#fren = as.data.frame(fre)
 	#fren$VehPower = as.factor(fren$VehPower)

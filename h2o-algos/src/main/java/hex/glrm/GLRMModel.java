@@ -41,9 +41,10 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
-    // public Key<Frame> _loading_key;               // Key to save X matrix
-    public String _loading_name;
+    // public Key<Frame> _representation_key;               // Key to save X matrix
+    public String _representation_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
+    public boolean _expand_user_y = true;         // Should categorical columns in _user_y be expanded via one-hot encoding? (for _init = User)
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
     // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
@@ -429,7 +430,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Average change in objective function this iteration
     public double _avg_change_obj;
-    public double[/*iterations*/] _history_avg_change_obj = new double[0];
+    public double[/*iterations*/] _history_objective = new double[0];
 
     // Mapping from lower dimensional k-space to training features (Y)
     public TwoDimTable _archetypes;
@@ -444,7 +445,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double[] _singular_vals;
 
     // Frame key of X matrix
-    public Key<Frame> _loading_key;
+    public String _representation_name;
+    public Key<Frame> _representation_key;
     public Key<? extends Model> _init_key;
 
     // Number of categorical and numeric columns
@@ -489,8 +491,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   @Override protected Futures remove_impl( Futures fs ) {
     if(null != _output._init_key)
       _output._init_key.remove(fs);
-    if(null != _output._loading_key)
-      _output._loading_key.remove(fs);
+    if(null != _output._representation_key)
+      _output._representation_key.remove(fs);
     return super.remove_impl(fs);
   }
 
@@ -503,7 +505,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Need [A,X,P] where A = adaptedFr, X = loading frame, P = imputed frame
     // Note: A is adapted to original training frame, P has columns shuffled so cats come before nums!
     Frame fullFrm = new Frame(adaptedFr);
-    Frame loadingFrm = DKV.get(_output._loading_key).get();
+    Frame loadingFrm = DKV.get(_output._representation_key).get();
     fullFrm.add(loadingFrm);
     String[][] adaptedDomme = adaptedFr.domains();
     for(int i = 0; i < ncols; i++) {
@@ -606,7 +608,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Append loading frame X for calculating XY
     Frame fullFrm = new Frame(adaptedFr);
-    Frame loadingFrm = DKV.get(_output._loading_key).get();
+    Frame loadingFrm = DKV.get(_output._representation_key).get();
     fullFrm.add(loadingFrm);
 
     GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);

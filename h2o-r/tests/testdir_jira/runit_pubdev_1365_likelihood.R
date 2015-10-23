@@ -3,8 +3,8 @@
 ## Likelihood reaches infinity and fails
 ####################################################################################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.likelihood.infinity <- function() {
   cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))

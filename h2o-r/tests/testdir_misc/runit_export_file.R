@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.export.file <- function() {
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))

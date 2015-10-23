@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.glrm.simplex <- function() {
   m <- 1000; n <- 100; k <- 10
@@ -15,7 +15,7 @@ test.glrm.simplex <- function() {
   fitH2O <- h2o.glrm(train.h2o, k = k, init = "User", user_y = initY, loss = "Quadratic", regularization_x = "Simplex", regularization_y = "None", gamma_x = 1, gamma_y = 0)
   Log.info(paste("Iterations:", fitH2O@model$iterations, "\tFinal Objective:", fitH2O@model$objective))
   fitY <- as.matrix(fitH2O@model$archetypes)
-  fitX <- h2o.getFrame(fitH2O@model$loading_key$name)
+  fitX <- h2o.getFrame(fitH2O@model$representation_name)
 
   Log.info("Check that X matrix consists of rows within standard probability simplex")
   fitX.mat <- as.matrix(fitX)

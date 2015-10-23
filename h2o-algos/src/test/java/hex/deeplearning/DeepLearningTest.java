@@ -14,6 +14,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -239,19 +240,19 @@ public class DeepLearningTest extends TestUtil {
 
   @Test public void testCreditProstateMaxoutDropout() throws Throwable {
     basicDLTest_Classification(
-        "./smalldata/logreg/prostate.csv", "prostateMaxoutDropout.hex",
-        new PrepData() {
-          @Override
-          int prep(Frame fr) {
-            fr.remove("ID").remove();
-            return fr.find("CAPSULE");
-          }
-        },
-        100,
-        ard(ard(183, 44),
-            ard(40, 113)),
-        s("0", "1"),
-        DeepLearningParameters.Activation.MaxoutWithDropout);
+            "./smalldata/logreg/prostate.csv", "prostateMaxoutDropout.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                fr.remove("ID").remove();
+                return fr.find("CAPSULE");
+              }
+            },
+            100,
+            ard(ard(183, 44),
+                    ard(40, 113)),
+            s("0", "1"),
+            DeepLearningParameters.Activation.MaxoutWithDropout);
   }
 
   @Test public void testCreditProstateRegression1() throws Throwable {
@@ -320,17 +321,17 @@ public class DeepLearningTest extends TestUtil {
 
   @Test public void testCreditProstateRegression50() throws Throwable {
     basicDLTest_Regression(
-        "./smalldata/logreg/prostate.csv", "prostateRegression50.hex",
-        new PrepData() {
-          @Override
-          int prep(Frame fr) {
-            fr.remove("ID").remove();
-            return fr.find("AGE");
-          }
-        },
-        50,
-        37.894819598316246,
-        DeepLearningParameters.Activation.Rectifier);
+            "./smalldata/logreg/prostate.csv", "prostateRegression50.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                fr.remove("ID").remove();
+                return fr.find("AGE");
+              }
+            },
+            50,
+            37.894819598316246,
+            DeepLearningParameters.Activation.Rectifier);
 
   }
   @Test public void testAlphabet() throws Throwable {
@@ -583,7 +584,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel [] models = new DeepLearningModel[N];
     dl = new DeepLearningParameters();
     Scope.enter();
-    boolean covtype = new Random().nextBoolean();
+    boolean covtype = true; //new Random().nextBoolean();
     if (covtype) {
       frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
       Vec resp = frTrain.lastVec().toCategoricalVec();
@@ -612,16 +613,16 @@ public class DeepLearningTest extends TestUtil {
         dl._quiet_mode = false;
         dl._max_w2 = 10;
         dl._l1 = 1e-5;
-        dl._reproducible = true;
+        dl._reproducible = false;
         dl._replicate_training_data = false; //every node only has a piece of the data
         dl._force_load_balance = true; //use multi-node
 
-        dl._epochs = 1;
-        dl._train_samples_per_iteration = frTrain.numRows()/100; //100 M/R steps
+        dl._epochs = 10;
+        dl._train_samples_per_iteration = frTrain.numRows()/100; //100 M/R steps per epoch
 
         dl._elastic_averaging = i==1;
         dl._elastic_averaging_moving_rate = 0.999;
-        dl._elastic_averaging_regularization = 1e-3;
+        dl._elastic_averaging_regularization = 1e-4;
 
         // Invoke DL and block till the end
         DeepLearning job = null;
@@ -682,7 +683,7 @@ public class DeepLearningTest extends TestUtil {
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.31481334186707816, mse, 1e-8);
 
-      assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr), 1e-5));
+      assertTrue(dl.testJavaScoring(tfr, fr2 = dl.score(tfr), 1e-5));
       job.remove();
       dl.delete();
     } finally {
@@ -765,7 +766,7 @@ public class DeepLearningTest extends TestUtil {
       double mse = dl._output._training_metrics.mse();
       assertEquals(0.3164307133994674, mse, 1e-8);
 
-      assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr), 1e-5));
+      assertTrue(dl.testJavaScoring(tfr, fr2 = dl.score(tfr), 1e-5));
       job.remove();
       dl.delete();
     } finally {
@@ -817,24 +818,101 @@ public class DeepLearningTest extends TestUtil {
     Scope.exit();
   }
 
+  static class PrintEntries extends MRTask<PrintEntries> {
+    @Override
+    public void map(Chunk[] cs) {
+      StringBuilder sb = new StringBuilder();
+      for (int r=0; r<cs[0].len(); ++r) {
+        sb.append("Row " + (cs[0].start() + r) + ": ");
+        for (int i=0; i<cs.length; ++i) {
+          if (i==0) //response
+            sb.append("response: " + _fr.vec(i).domain()[(int)cs[i].at8(r)] + " ");
+          if (cs[i].atd(r) != 0) {
+            sb.append(i + ":" + cs[i].atd(r) + " ");
+          }
+        }
+        sb.append("\n");
+      }
+      Log.info(sb);
+    }
+  }
+
   @Ignore
   @Test public void testWhatever() {
     DeepLearningParameters dl;
-    Frame frTrain = null;
+    Frame first1kSVM = null;
+    Frame second1kSVM = null;
+    Frame third1kSVM = null;
+
+    Frame first1kCSV = null;
+    Frame second1kCSV = null;
+    Frame third1kCSV = null;
+
     DeepLearningModel model = null;
     dl = new DeepLearningParameters();
     Scope.enter();
     try {
-      frTrain = parse_test_file("/users/arno/good.svm");
-      Scope.track(frTrain.replace(frTrain.find("C1"), frTrain.vec("C1").toCategoricalVec())._key);
+//      first1kSVM = parse_test_file("/users/arno/first1k.svm");
+//      Scope.track(first1kSVM.replace(0, first1kSVM.vec(0).toCategoricalVec())._key);
+//      DKV.put(first1kSVM);
+//
+//      second1kSVM = parse_test_file("/users/arno/second1k.svm");
+//      Scope.track(second1kSVM.replace(0, second1kSVM.vec(0).toCategoricalVec())._key);
+//      DKV.put(second1kSVM);
+//
+//      third1kSVM = parse_test_file("/users/arno/third1k.svm");
+//      Scope.track(third1kSVM.replace(third1kSVM.find("C1"), third1kSVM.vec("C1")).toCategoricalVec()._key);
+//      DKV.put(third1kSVM);
+
+      first1kCSV = parse_test_file("/users/arno/first1k.csv");
+//      first1kCSV.remove(first1kCSV.find("C1")).remove(); //remove id
+      Vec response = first1kCSV.remove(first1kCSV.find("C2")); //remove response, but keep it around outside the frame
+      Vec responseFactor = response.toCategoricalVec(); //turn response into a categorical
+      response.remove();
+//      first1kCSV.prepend("C2", first1kCSV.anyVec().makeCon(0)); //add a dummy column (will be the first predictor)
+      first1kCSV.prepend("C2", responseFactor); //add back response as first column
+      DKV.put(first1kCSV);
+
+//      second1kCSV = parse_test_file("/users/arno/second1k.csv");
+//      second1kCSV.remove(second1kCSV.find("C1")).remove(); //remove id
+//      response = second1kCSV.remove(second1kCSV.find("C2")); //remove response, but keep it around outside the frame
+//      responseFactor = response.toCategoricalVec(); //turn response into a categorical
+//      response.remove();
+//      second1kCSV.prepend("C2", second1kCSV.anyVec().makeCon(0)); //add a dummy column (will be the first predictor)
+//      second1kCSV.prepend("C1", responseFactor); //add back response as first column
+//      DKV.put(second1kCSV);
+//
+//      third1kCSV = parse_test_file("/users/arno/third1k.csv");
+//      third1kCSV.remove(third1kCSV.find("C1")).remove(); //remove id
+//      response = third1kCSV.remove(third1kCSV.find("C2")); //remove response, but keep it around outside the frame
+//      responseFactor = response.toCategoricalVec(); //turn response into a categorical
+//      response.remove();
+//      third1kCSV.prepend("C2", third1kCSV.anyVec().makeCon(0)); //add a dummy column (will be the first predictor)
+//      third1kCSV.prepend("C1", responseFactor); //add back response as first column
+//      DKV.put(third1kCSV);
+
+      //print non-zeros for each frame
+//      Log.info("SVMLight First 1k non-trivial rows");
+//      new PrintEntries().doAll(trainSVM);
+//      Log.info("DenseCSV First 1k non-trivial rows");
+//      new PrintEntries().doAll(trainCSV);
+
+//      Log.info("SVMLight Second 1k non-trivial rows");
+//      new PrintEntries().doAll(trainSVM);
+//      Log.info("DenseCSV Second 1k non-trivial rows");
+//      new PrintEntries().doAll(testCSV);
 
       // Configure DL
-      dl._train = frTrain._key;
-      dl._response_column = "C1";
-      dl._epochs = 1;
-      dl._ignore_const_cols = false;
-      dl._sparse = true;
-      dl._hidden = new int[]{20, 20, 20};
+      dl._train = first1kCSV._key;
+//      dl._valid = second1kSVM._key;
+      dl._ignored_columns = new String[]{"C1"};
+      dl._response_column = "C2";
+      dl._epochs = 10; //default
+      dl._reproducible = true; //default
+      dl._seed = 1234;
+      dl._ignore_const_cols = false; //default
+      dl._sparse = true; //non-default, much faster here for sparse data
+      dl._hidden = new int[]{10, 10};
 
       // Invoke DL and block till the end
       DeepLearning job = null;
@@ -843,15 +921,63 @@ public class DeepLearningTest extends TestUtil {
         // Get the model
         model = job.trainModel().get();
         Log.info(model._output);
+
+//        Log.info("Holdout CSV");
+//        model.score(third1kCSV).delete();
+//
+//        Log.info("Holdout SVM");
+//        model.score(third1kSVM).delete();
+//
+//        Log.info("POJO SVM Train Check");
         Frame pred;
-        assertTrue(model.testJavaScoring(frTrain, pred = model.score(frTrain), 1e-5));
-        pred.delete();
+//        assertTrue(model.testJavaScoring(first1kSVM, pred = model.score(first1kSVM), 1e-5));
+//        pred.remove();
+//
+//        Log.info("POJO SVM Validation Check");
+//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        assertTrue(model.testJavaScoring(second1kSVM,  pred = model.score(second1kSVM), 1e-5));
+//        pred.remove();
+//
+//        Log.info("POJO SVM Test Check");
+//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        assertTrue(model.testJavaScoring(third1kSVM,  pred = model.score(third1kSVM), 1e-5));
+//        pred.remove();
+
+        Log.info("POJO CSV Train Check");
+        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+        assertTrue(model.testJavaScoring(first1kCSV,  pred = model.score(first1kCSV), 1e-5));
+        pred.remove();
+
+//        Log.info("POJO CSV Validation Check");
+//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        assertTrue(model.testJavaScoring(second1kCSV,  pred = model.score(second1kCSV), 1e-5));
+//        pred.remove();
+//
+//        Log.info("POJO CSV Test Check");
+//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        assertTrue(model.testJavaScoring(third1kCSV, pred = model.score(third1kSVM), 1e-5));
+//        pred.remove();
+//
+//        Log.info("POJO SVM vs H2O CSV Test Check");
+//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        assertTrue(model.testJavaScoring(third1kSVM, pred = model.score(third1kCSV), 1e-5));
+//        pred.remove();
+//
+//        Log.info("POJO CSV vs H2O SVM Test Check");
+//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        assertTrue(model.testJavaScoring(third1kSVM, pred = model.score(third1kCSV), 1e-5));
+//        pred.remove();
       } finally {
         if (job != null) job.remove();
       }
       assertTrue(job._state == Job.JobState.DONE); //HEX-1817
     } finally {
-      if (frTrain != null) frTrain.remove();
+      if (first1kSVM != null) first1kSVM.remove();
+      if (second1kSVM != null) second1kSVM.remove();
+      if (third1kSVM != null) third1kSVM.remove();
+      if (first1kCSV != null) first1kCSV.remove();
+      if (second1kCSV != null) second1kCSV.remove();
+      if (third1kCSV != null) third1kCSV.remove();
       if (model != null) model.delete();
       Scope.exit();
     }

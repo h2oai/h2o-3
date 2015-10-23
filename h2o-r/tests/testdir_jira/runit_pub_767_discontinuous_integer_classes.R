@@ -17,9 +17,9 @@
 #
 ######################################################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-source('../h2o-runit.R')
+
 
 test.pub.767 <- function() {
   Log.info('Importing the altered covtype training_data from smalldata.')

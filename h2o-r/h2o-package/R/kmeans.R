@@ -39,11 +39,13 @@
 #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
 #'          \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' h2o.kmeans(training_frame = prostate.hex, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
+#' }
 #' @export
 h2o.kmeans <- function(training_frame, x, k,
                        model_id,

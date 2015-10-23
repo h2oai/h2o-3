@@ -1,4 +1,5 @@
-from .estimator_base import H2OEstimator
+from .estimator_base import *
+
 
 class H2ORandomForestEstimator(H2OEstimator):
   def __init__(self, model_id=None, mtries=None, sample_rate=None, build_tree_one_node=None,
@@ -60,7 +61,134 @@ class H2ORandomForestEstimator(H2OEstimator):
       Whether to keep the predictions of the cross-validation models
     """
     super(H2ORandomForestEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["algo"] = "drf"
-    self._estimator_type=""
+    self._parms = locals()
+    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+
+  @property
+  def mtries(self):
+    return self._parms["mtries"]
+
+  @mtries.setter
+  def mtries(self, value):
+    self._parms["mtries"] = value
+
+  @property
+  def sample_rate(self):
+    return self._parms["sample_rate"]
+
+  @sample_rate.setter
+  def sample_rate(self, value):
+    self._parms["sample_rate"] = value
+
+  @property
+  def build_tree_one_node(self):
+    return self._parms["build_tree_one_node"]
+
+  @build_tree_one_node.setter
+  def build_tree_one_node(self, value):
+    self._parms["build_tree_one_node"] = value
+
+  @property
+  def ntrees(self):
+    return self._parms["ntrees"]
+
+  @ntrees.setter
+  def ntrees(self, value):
+    self._parms["ntrees"] = value
+
+  @property
+  def max_depth(self):
+    return self._parms["max_depth"]
+
+  @max_depth.setter
+  def max_depth(self, value):
+    self._parms["max_depth"] = value
+
+  @property
+  def min_rows(self):
+    return self._parms["min_rows"]
+
+  @min_rows.setter
+  def min_rows(self, value):
+    self._parms["min_rows"] = value
+
+  @property
+  def nbins(self):
+    return self._parms["nbins"]
+
+  @nbins.setter
+  def nbins(self, value):
+    self._parms["nbins"] = value
+
+  @property
+  def nbins_cats(self):
+    return self._parms["nbins_cats"]
+
+  @nbins_cats.setter
+  def nbins_cats(self, value):
+    self._parms["nbins_cats"] = value
+
+  @property
+  def binomial_double_trees(self):
+    return self._parms["binomial_double_trees"]
+
+  @binomial_double_trees.setter
+  def binomial_double_trees(self, value):
+    self._parms["binomial_double_trees"] = value
+
+  @property
+  def balance_classes(self):
+    return self._parms["balance_classes"]
+
+  @balance_classes.setter
+  def balance_classes(self, value):
+    self._parms["balance_classes"] = value
+
+  @property
+  def max_after_balance_size(self):
+    return self._parms["max_after_balance_size"]
+
+  @max_after_balance_size.setter
+  def max_after_balance_size(self, value):
+    self._parms["max_after_balance_size"] = value
+
+  @property
+  def seed(self):
+    return self._parms["seed"]
+
+  @seed.setter
+  def seed(self, value):
+    self._parms["seed"] = value
+
+  @property
+  def nfolds(self):
+    return self._parms["nfolds"]
+
+  @nfolds.setter
+  def nfolds(self, value):
+    self._parms["nfolds"] = value
+
+  @property
+  def fold_assignment(self):
+    return self._parms["fold_assignment"]
+
+  @fold_assignment.setter
+  def fold_assignment(self, value):
+    self._parms["fold_assignment"] = value
+
+  @property
+  def keep_cross_validation_predictions(self):
+    return self._parms["keep_cross_validation_predictions"]
+
+  @keep_cross_validation_predictions.setter
+  def keep_cross_validation_predictions(self, value):
+    self._parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def checkpoint(self):
+    return self._parms["checkpoint"]
+
+  @checkpoint.setter
+  def checkpoint(self, value):
+    self._parms["checkpoint"] = value
+

@@ -1,11 +1,11 @@
 ### This tests tweedie distribution,tweedie with offsets,  and tweedie with weights in glm ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 	print("parse data")
-	dh = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv"),destination_frame="dh")
+	dh = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame="dh")
 	colnames(dh)
 	
 	print("build models w/ and w/o weights")

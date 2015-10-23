@@ -1,24 +1,11 @@
 #----------------------------------------------------------------------
 # Purpose:  This test exercises HDFS operations from R.
 #----------------------------------------------------------------------
+test <-
+function() {
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R')
-
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-myIP   <- ipPort[[1]]
-myPort <- ipPort[[2]]
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
-
-library(RCurl)
-library(h2o)
-library(testthat)
-
-#----------------------------------------------------------------------
-
-heading("BEGIN TEST")
-h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
 hdfs_data_file = "/datasets/runit/BigCross.data"
 
@@ -41,4 +28,6 @@ print(data.gbm)
 data.dl  <- h2o.deeplearning(myX, myY, training_frame = data.hex, epochs=1, hidden=c(50,50), loss = 'Automatic')
 print(data.dl)
 
-PASS_BANNER()
+}
+
+doTest("Test", test)

@@ -6,8 +6,8 @@
 #           curl, javac, java must be installed.
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
+
+
 
 test.gbm.javapredict.iris.rand <-
 function() {

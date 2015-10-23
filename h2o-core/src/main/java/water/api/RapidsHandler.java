@@ -49,7 +49,7 @@ class RapidsHandler extends Handler {
         Iced i = DKV.getGet(k);
         if( i instanceof Lockable) ((Lockable)i).delete();
         else if( i instanceof Keyed ) ((Keyed)i).remove();
-        else if( i != null ) throw new IllegalArgumentException("Attempting to overright an unexpected key");
+        else if( i != null ) throw new IllegalArgumentException("Attempting to overwrite an unexpected key");
         // Install new top-level result
         DKV.put(fr=new Frame(k,fr._names,fr.vecs()));
         return new RapidsFrameV3(fr); // Return the Frame key, not the entire frame

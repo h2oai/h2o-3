@@ -1,16 +1,26 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def iris_all():
-    
-    
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris2.csv"))
 
-    model = h2o.random_forest(y=iris[4], x=iris[0:4], ntrees=50, max_depth=100)
-    model.show()
+
+  iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris2.csv"))
+  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
+  model = H2ORandomForestEstimator(ntrees=50, max_depth=100)
+  model.train(y=4, x=range(4), training_frame=iris)
+  model.show()
+
+
+
 
 if __name__ == "__main__":
-  tests.run_test(sys.argv, iris_all)
-
+  pyunit_utils.standalone_test(iris_all)
+else:
+  iris_all()

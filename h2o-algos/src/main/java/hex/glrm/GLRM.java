@@ -116,9 +116,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       Frame user_y = _parms._user_y.get();
       assert null != user_y;
+      int user_y_cols = _parms._expand_user_y ? _train.numCols() : _ncolY;
 
-      if (user_y.numCols() != _train.numCols())
-        error("_user_y", "The user-specified Y must have the same number of columns (" + _train.numCols() + ") as the training observations");
+      // Check dimensions of user-specified initial Y
+      if (user_y.numCols() != user_y_cols)
+        error("_user_y", "The user-specified Y must have the same number of columns (" + user_y_cols + ") as the training observations");
       else if (user_y.numRows() != _parms._k)
         error("_user_y", "The user-specified Y must have k = " + _parms._k + " rows");
       else {
@@ -273,17 +275,25 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
         if (null != _parms._user_y) {   // Set Y = user-specified initial points
           Vec[] yVecs = _parms._user_y.get().vecs();
-          centers = new double[_parms._k][_ncolA];
 
-          // Get the centers and put into array
-          for (int c = 0; c < _ncolA; c++) {
-            for (int r = 0; r < _parms._k; r++)
-              centers[r][c] = yVecs[c].at(r);
+          if(_parms._expand_user_y) {   // Categorical cols must be one-hot expanded
+            // Get the centers and put into array
+            centers = new double[_parms._k][_ncolA];
+            for (int c = 0; c < _ncolA; c++) {
+              for (int r = 0; r < _parms._k; r++)
+                centers[r][c] = yVecs[c].at(r);
+            }
+
+            // Permute cluster columns to align with dinfo and expand out categoricals
+            centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
+            centers_exp = expandCats(centers, tinfo);
+          } else {    // User Y already has categoricals expanded
+            centers_exp = new double[_parms._k][_ncolY];
+            for (int c = 0; c < _ncolY; c++) {
+              for (int r = 0; r < _parms._k; r++)
+                centers_exp[r][c] = yVecs[c].at(r);
+            }
           }
-
-          // Permute cluster columns to align with dinfo and expand out categoricals
-          centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-          centers_exp = expandCats(centers, tinfo);
         } else
           centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
 
@@ -657,7 +667,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // Add to scoring history
           model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._training_time_ms.length+1, System.currentTimeMillis());
           model._output._history_step_size = ArrayUtils.copyAndFillOf(model._output._history_step_size, model._output._history_step_size.length+1, step);
-          model._output._history_avg_change_obj = ArrayUtils.copyAndFillOf(model._output._history_avg_change_obj, model._output._history_avg_change_obj.length+1, model._output._avg_change_obj);
+          model._output._history_objective = ArrayUtils.copyAndFillOf(model._output._history_objective, model._output._history_objective.length+1, model._output._objective);
           model._output._scoring_history = createScoringHistoryTable(model._output);
           model.update(self()); // Update model in K/V store
         }
@@ -677,9 +687,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
-        String loading_name = (_parms._loading_name == null || _parms._loading_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._loading_name;
-        model._output._loading_key = Key.make(loading_name);
-        Frame x = new Frame(model._output._loading_key, xnames, xvecs);
+        model._output._representation_name = (_parms._representation_name == null || _parms._representation_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._representation_name;
+        model._output._representation_key = Key.make(model._output._representation_name);
+        Frame x = new Frame(model._output._representation_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x);
         DKV.put(xinfo);
@@ -766,7 +776,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
       colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Step Size"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Avg. Change in Objective"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Objective"); colTypes.add("double"); colFormat.add("%.5f");
 
       final int rows = output._training_time_ms.length;
       TwoDimTable table = new TwoDimTable(
@@ -785,7 +795,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[row] - _start_time, true));
         table.set(row, col++, row);
         table.set(row, col++, output._history_step_size[row]);
-        table.set(row, col++, output._history_avg_change_obj[row]);
+        table.set(row, col++, output._history_objective[row]);
       }
       return table;
     }

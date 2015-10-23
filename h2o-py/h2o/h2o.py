@@ -1,4 +1,5 @@
 import warnings
+
 warnings.simplefilter('always', DeprecationWarning)
 import os
 import os.path
@@ -10,9 +11,9 @@ import tabulate
 from connection import H2OConnection
 from job import H2OJob
 from expr import ExprNode
-from frame import H2OFrame, _py_tmp_key, _is_list_of_lists
-from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
-import h2o_model_builder
+from frame import H2OFrame, _py_tmp_key, _is_list_of_lists, _gen_header
+from estimators.estimator_base import H2OEstimator
+from h2o_model_builder import supervised, unsupervised, _resolve_model
 
 
 def lazy_import(path):
@@ -26,34 +27,71 @@ def lazy_import(path):
 
  :return: A new H2OFrame
   """
-  return [_import(p)[0] for p in path] if isinstance(path,(list,tuple)) else _import(path)
+  return [_import(p)[0] for p in path] if isinstance(path, (list, tuple)) else _import(path)
+
 
 def _import(path):
   j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
   if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
   return j['destination_frames']
 
+
 def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
   """
-Upload a dataset at the path given from the local machine to the H2O cluster.
+  Upload a dataset at the path given from the local machine to the H2O cluster.
 
-Parameters
-----------
-  path : str
-    A path specifying the location of the data to upload.
-  destination_frame : str, optional
-    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  header : int, optional
-   -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep : str, optional
-    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names : list, optional
-    A list of column names for the file.
-  col_types : list or dict, optional
-    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
-  na_strings : list or dict, optional
-    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
- :return: A new H2OFrame
+  Parameters
+  ----------
+    path : str
+      A path specifying the location of the data to upload.
+    destination_frame : str, optional
+      The unique hex key assigned to the imported file. If none is given, a key will
+      automatically be generated.
+    header : int, optional
+     -1 means the first line is data, 0 means guess, 1 means first line is header.
+    sep : str, optional
+      The field separator character. Values on each line of the file are separated by
+      this character. If sep = "", the parser will automatically detect the separator.
+    col_names : list, optional
+      A list of column names for the file.
+    col_types : list or dict, optional
+      A list of types or a dictionary of column names to types to specify whether columns
+      should be forced to a certain type upon import parsing. If a list, the types for
+      elements that are None will be guessed. The possible types a column may have are:
+          "unknown" - this will force the column to be parsed as all NA
+          "uuid"    - the values in the column must be true UUID or will be parsed as NA
+          "string"  - force the column to be parsed as a string
+          "numeric" - force the column to be parsed as numeric. H2O will handle the
+                      compression of the numeric data in the optimal manner.
+          "enum"    - force the column to be parsed as a categorical column.
+          "time"    - force the column to be parsed as a time column. H2O will attempt to
+                      parse the following list of date time formats.
+                        date:
+                          "yyyy-MM-dd"
+                          "yyyy MM dd"
+                          "dd-MMM-yy"
+                          "dd MMM yy"
+                        time:
+                          "HH:mm:ss"
+                          "HH:mm:ss:SSS"
+                          "HH:mm:ss:SSSnnnnnn"
+                          "HH.mm.ss"
+                          "HH.mm.ss.SSS"
+                          "HH.mm.ss.SSSnnnnnn"
+                      Times can also contain "AM" or "PM".
+    na_strings : list or dict, optional
+      A list of strings, or a list of lists of strings (one list per column), or a
+      dictionary of column names to strings which are to be interpreted as missing values.
+
+  Returns
+  -------
+    A new H2OFrame instance.
+
+  Examples
+  --------
+    >>> import h2o as ml
+    >>> ml.upload_file(path="/path/to/local/data", destination_frame="my_local_data")
+    ...
   """
   fui = {"file": os.path.abspath(path)}
   destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
@@ -61,58 +99,123 @@ Parameters
   return H2OFrame(raw_id=destination_frame)
 
 
-def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
-  """
-  Import a frame from a file (remote or local machine). If you run H2O on Hadoop, you can access to HDFS
+def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="",
+                col_names=None, col_types=None, na_strings=None):
+  """Have H2O import a dataset into memory. The path to the data must be a valid path for
+  each node in the H2O cluster. If some node in the H2O cluster cannot see the file, then
+  an exception will be thrown by the H2O cluster.
 
   Parameters
   ----------
-  path : str
-    A path specifying the location of the data to import.
-  destination_frame : str, optional
-    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  parse : boolean, optional
-    A logical value indicating whether the file should be parsed after import.
-  header : int, optional
-   -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep : str, optional
-    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names : list, optional
-    A list of column names for the file.
-  col_types : list or dict, optional
-    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
-  na_strings : list or dict, optional
-    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
-  :return: A new H2OFrame
+    path : str
+      A path specifying the location of the data to import.
+    destination_frame : str, optional
+      The unique hex key assigned to the imported file. If none is given, a key will
+      automatically be generated.
+    parse : bool, optional
+      A logical value indicating whether the file should be parsed after import.
+    header : int, optional
+     -1 means the first line is data, 0 means guess, 1 means first line is header.
+    sep : str, optional
+      The field separator character. Values on each line of the file are separated by this
+      character. If sep = "", the parser will automatically detect the separator.
+    col_names : list, optional
+      A list of column names for the file.
+    col_types : list or dict, optional
+      A list of types or a dictionary of column names to types to specify whether columns
+      should be forced to a certain type upon import parsing. If a list, the types for
+      elements that are None will be guessed. The possible types a column may have are:
+          "unknown" - this will force the column to be parsed as all NA
+          "uuid"    - the values in the column must be true UUID or will be parsed as NA
+          "string"  - force the column to be parsed as a string
+          "numeric" - force the column to be parsed as numeric. H2O will handle the
+                      compression of the numeric data in the optimal manner.
+          "enum"    - force the column to be parsed as a categorical column.
+          "time"    - force the column to be parsed as a time column. H2O will attempt to
+                      parse the following list of date time formats.
+                        date:
+                          "yyyy-MM-dd"
+                          "yyyy MM dd"
+                          "dd-MMM-yy"
+                          "dd MMM yy"
+                        time:
+                          "HH:mm:ss"
+                          "HH:mm:ss:SSS"
+                          "HH:mm:ss:SSSnnnnnn"
+                          "HH.mm.ss"
+                          "HH.mm.ss.SSS"
+                          "HH.mm.ss.SSSnnnnnn"
+                      Times can also contain "AM" or "PM".
+    na_strings : list or dict, optional
+      A list of strings, or a list of lists of strings (one list per column), or a
+      dictionary of column names to strings which are to be interpreted as missing values.
+
+  Returns
+  -------
+    A new H2OFrame instance.
   """
   if not parse:
       return lazy_import(path)
 
   return H2OFrame(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
 
+
 def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
   """
+
+  During parse setup, the H2O cluster will make several guesses about the attributes of
+  the data. This method allows a user to perform corrective measures by updating the
+  returning dictionary from this method. This dictionary is then fed into `parse_raw` to
+  produce the H2OFrame instance.
 
   Parameters
   ----------
 
-  raw_frames : H2OFrame
-    A collection of imported file frames
-  destination_frame : str, optional
-    The unique hex key assigned to the imported file. If none is given, a key will automatically be generated.
-  parse : boolean, optional
-    A logical value indicating whether the file should be parsed after import.
-  header : int, optional
-   -1 means the first line is data, 0 means guess, 1 means first line is header.
-  sep : str, optional
-    The field separator character. Values on each line of the file are separated by this character. If sep = "", the parser will automatically detect the separator.
-  col_names : list, optional
-    A list of column names for the file.
-  col_types : list or dict, optional
-    A list of types or a dictionary of column names to types to specify whether columns should be forced to a certain type upon import parsing. If a list, the types for elements that are None will be guessed.
-  na_strings : list or dict, optional
-    A list of strings, or a list of lists of strings (one list per column), or a dictionary of column names to strings which are to be interpreted as missing values.
-  :return: A ParseSetup "object"
+    raw_frames : H2OFrame
+      A collection of imported file frames
+    destination_frame : str, optional
+      The unique hex key assigned to the imported file. If none is given, a key will
+      automatically be generated.
+    parse : bool, optional
+      A logical value indicating whether the file should be parsed after import.
+    header : int, optional
+     -1 means the first line is data, 0 means guess, 1 means first line is header.
+    sep : str, optional
+      The field separator character. Values on each line of the file are separated by this
+       character. If sep = "", the parser will automatically detect the separator.
+    col_names : list, optional
+      A list of column names for the file.
+    col_types : list or dict, optional
+      A list of types or a dictionary of column names to types to specify whether columns
+      should be forced to a certain type upon import parsing. If a list, the types for
+      elements that are None will be guessed. The possible types a column may have are:
+          "unknown" - this will force the column to be parsed as all NA
+          "uuid"    - the values in the column must be true UUID or will be parsed as NA
+          "string"  - force the column to be parsed as a string
+          "numeric" - force the column to be parsed as numeric. H2O will handle the
+                      compression of the numeric data in the optimal manner.
+          "enum"    - force the column to be parsed as a categorical column.
+          "time"    - force the column to be parsed as a time column. H2O will attempt to
+                      parse the following list of date time formats.
+                        date:
+                          "yyyy-MM-dd"
+                          "yyyy MM dd"
+                          "dd-MMM-yy"
+                          "dd MMM yy"
+                        time:
+                          "HH:mm:ss"
+                          "HH:mm:ss:SSS"
+                          "HH:mm:ss:SSSnnnnnn"
+                          "HH.mm.ss"
+                          "HH.mm.ss.SSS"
+                          "HH.mm.ss.SSSnnnnnn"
+                      Times can also contain "AM" or "PM".
+      A list of strings, or a list of lists of strings (one list per column), or a
+      dictionary of column names to strings which are to be interpreted as missing values.
+
+  Returns
+  -------
+    A dictionary is returned containing all of the guesses made by the H2O back end.
   """
 
   # The H2O backend only accepts things that are quoted
@@ -133,7 +236,8 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if column_types:
     if isinstance(column_types, dict):
       #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
-      if not j["column_names"]: raise ValueError("column names should be specified")
+      if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
+        j["column_names"] = _gen_header(j["number_columns"])
       if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
       idx = 0
       column_types_list = []
@@ -211,6 +315,7 @@ def _parse(setup):
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
   return j.jobs
 
+
 def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   """
   Used in conjunction with lazy_import and parse_setup in order to make alterations before
@@ -237,14 +342,16 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   fr._update_post_parse(parsed)
   return fr
 
+
 def _quoted(key):
   if key is None: return "\"\""
-  #mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
+  # mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
   # key = key.replace("%", ".")
   # key = key.replace("&", ".")
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else '"' + key + '"'
   return key
+
 
 def assign(data,id):
   if data._computed:
@@ -252,6 +359,7 @@ def assign(data,id):
   data._id = id
   data._keep=True  # named things are always safe
   return data
+
 
 def which(condition):
   """
@@ -264,7 +372,8 @@ def which(condition):
 
   :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
   """
-  return H2OFrame(expr=ExprNode("h2o.which",condition))._frame()
+  return (H2OFrame(expr=ExprNode("h2o.which",condition)))._scalar()
+
 
 def ifelse(test,yes,no):
   """
@@ -286,6 +395,7 @@ def ifelse(test,yes,no):
   """
   return H2OFrame(expr=ExprNode("ifelse",test,yes,no))._frame()
 
+
 def get_future_model(future_model):
   """
   Waits for the future model to finish building, and then returns the model.
@@ -298,7 +408,8 @@ def get_future_model(future_model):
 
   :return: a resolved model (i.e. an H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, ...)
   """
-  return h2o_model_builder._resolve_model(future_model)
+  return _resolve_model(future_model)
+
 
 def get_model(model_id):
   """
@@ -313,14 +424,10 @@ def get_model(model_id):
   :return: H2OModel
 
   """
+  m = H2OEstimator()
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
-  model_type = model_json["output"]["model_category"]
-  if   model_type=="Binomial":    return H2OBinomialModel(model_id, model_json)
-  elif model_type=="Clustering":  return H2OClusteringModel(model_id, model_json)
-  elif model_type=="Regression":  return H2ORegressionModel(model_id, model_json)
-  elif model_type=="Multinomial": return H2OMultinomialModel(model_id, model_json)
-  elif model_type=="AutoEncoder": return H2OAutoEncoderModel(model_id, model_json)
-  else:                           raise NotImplementedError(model_type)
+  m._resolve_model(model_id,model_json)
+  return m
 
 
 def get_frame(frame_id):
@@ -331,6 +438,7 @@ def get_frame(frame_id):
   """
   return H2OFrame.get_frame(frame_id)
 
+
 def ou():
   """
   Where is my baguette!?
@@ -338,7 +446,9 @@ def ou():
   :return: the name of the baguette. oh uhr uhr huhr
   """
   from inspect import stack
+
   return stack()[2][1]
+
 
 def no_progress():
   """
@@ -349,6 +459,7 @@ def no_progress():
   """
   H2OJob.__PROGRESS_BAR__ = False
 
+
 def show_progress():
   """
   Enable the progress bar. (Progress bar is enabled by default).
@@ -356,6 +467,7 @@ def show_progress():
   :return: None
   """
   H2OJob.__PROGRESS_BAR__ = True
+
 
 def log_and_echo(message):
   """
@@ -377,6 +489,7 @@ def log_and_echo(message):
   if message is None: message = ""
   H2OConnection.post_json("LogAndEcho", message=message)
 
+
 def remove(object):
   """
   Remove object from H2O. This is a "hard" delete of the object. It removes all subparts.
@@ -395,6 +508,7 @@ def remove(object):
   if isinstance(object, H2OFrame): H2OConnection.delete("DKV/"+object._id)
   if isinstance(object, str):      H2OConnection.delete("DKV/"+object)
 
+
 def remove_all():
   """
   Remove all objects from H2O.
@@ -403,21 +517,6 @@ def remove_all():
   """
   H2OConnection.delete("DKV")
 
-def removeFrameShallow(key):
-  """
-  Do a shallow DKV remove of the frame (does not remove any internal Vecs).
-  This is a "soft" delete. Just removes the top level pointer, but all big data remains!
-
-  Parameters
-  ----------
-
-  key : str
-    A Frame Key to be removed
-
-  :return: None
-  """
-  rapids("(removeframe '"+key+"')")
-  return None
 
 def rapids(expr, id=None):
   """
@@ -432,6 +531,7 @@ def rapids(expr, id=None):
   :return: The JSON response of the Rapids execution
   """
   return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99) if id is None else H2OConnection.post_json("Rapids", ast=urllib.quote(expr), id=id, _rest_version=99)
+
 
 def ls():
   """
@@ -454,7 +554,8 @@ def frame(frame_id, exclude=""):
 
   :return: Meta information on the frame
   """
-  return H2OConnection.get_json("Frames/" + urllib.quote(frame_id+exclude))
+  return H2OConnection.get_json("Frames/" + urllib.quote(frame_id + exclude))
+
 
 def frames():
   """
@@ -463,6 +564,7 @@ def frames():
   :return: Meta information on the frames
   """
   return H2OConnection.get_json("Frames")
+
 
 def download_pojo(model,path="", get_jar=True):
   """
@@ -494,6 +596,7 @@ def download_pojo(model,path="", get_jar=True):
     with open(filename, "wb") as f:
       f.write(response.read())
 
+
 def download_csv(data, filename):
   """
   Download an H2O data set to a CSV file on the local disk.
@@ -514,6 +617,7 @@ def download_csv(data, filename):
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
   url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
   with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
+
 
 def download_all_logs(dirname=".",filename=None):
   """
@@ -544,6 +648,7 @@ def download_all_logs(dirname=".",filename=None):
   with open(path, 'w') as f: f.write(urllib2.urlopen(url).read())
   return path
 
+
 def save_model(model, path="", force=False):
   """
   Save an H2O Model Object to Disk.
@@ -563,6 +668,7 @@ def save_model(model, path="", force=False):
   path=os.path.join(os.getcwd() if path=="" else path,model._id)
   return H2OConnection.get_json("Models.bin/"+model._id,dir=path,force=force,_rest_version=99)["dir"]
 
+
 def load_model(path):
   """
   Load a saved H2O model from disk.
@@ -580,6 +686,7 @@ def load_model(path):
   """
   res = H2OConnection.post_json("Models.bin/",dir=path,_rest_version=99)
   return get_model(res['models'][0]['model_id']['name'])
+
 
 def cluster_status():
   """
@@ -624,7 +731,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   port : int
     A port, default is 54321
   size : int
-    THe expected number of h2o instances (ignored if start_h2o is True)
+    The expected number of h2o instances (ignored if start_h2o is True)
   start_h2o : bool
     A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
   enable_assertions : bool
@@ -665,6 +772,7 @@ def export_file(frame,path,force=False):
   frame._eager()
   H2OJob(H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
+
 def cluster_info():
   """
   Display the current H2O cluster information.
@@ -672,6 +780,7 @@ def cluster_info():
   :return: None
   """
   H2OConnection._cluster_info()
+
 
 def shutdown(conn=None, prompt=True):
   """
@@ -691,9 +800,11 @@ def shutdown(conn=None, prompt=True):
   if conn == None: conn = H2OConnection.current_connection()
   H2OConnection._shutdown(conn=conn, prompt=prompt)
 
+
 def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=None,model_id=None,
                  overwrite_with_best_model=None,validation_frame=None,checkpoint=None,autoencoder=None,
                  use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
+                 target_ratio_comm_to_comp=None,
                  seed=None,adaptive_rate=None,rho=None,epsilon=None,rate=None,rate_annealing=None,rate_decay=None,
                  momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
                  input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
@@ -709,9 +820,64 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   Build a supervised Deep Learning model
   Performs Deep Learning neural networks on an H2OFrame
 
- Parameters
- ----------
+  Parameters
+  ----------
 
+<<<<<<< HEAD
+   x : H2OFrame
+     An H2OFrame containing the predictors in the model.
+   y : H2OFrame
+     An H2OFrame of the response variable in the model.
+   training_frame : H2OFrame
+     (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
+   model_id : str
+     (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
+   overwrite_with_best_model : bool
+     Logical. If True, overwrite the final model with the best model found during training. Defaults to True.
+   validation_frame : H2OFrame
+     (Optional) An H2OFrame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the
+     training data when nfolds = 0
+   checkpoint : H2ODeepLearningModel
+     "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+   autoencoder : bool
+     Enable auto-encoder for model building.
+   use_all_factor_levels : bool
+     Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). Useful for variable
+     importances and auto-enabled for autoencoder.
+   activation : str
+     A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
+   hidden : list
+     Hidden layer sizes (e.g. c(100,100))
+   epochs : float
+     How many times the dataset should be iterated (streamed), can be fractional
+   train_samples_per_iteration : int
+     Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
+     or -2 auto-tuning (default)
+   seed : int
+     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
+   adaptive_rate : bool
+     Logical. Adaptive learning rate (ADAELTA)
+   rho : float
+     Adaptive learning rate time decay factor (similarity to prior updates)
+   epsilon : float
+     Adaptive learning rate parameter, similar to learn rate annealing during initial training phase. Typical values are between 1.0e-10 and 1.0e-4
+   rate : float
+     Learning rate (higher => less stable, lower => slower convergence)
+   rate_annealing : float
+     Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)
+   rate_decay : float
+     Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1))
+   momentum_start : float
+     Initial momentum at the beginning of training (try 0.5)
+   momentum_ramp : float
+     Number of training samples for which momentum increases
+   momentum_stable : float
+     Final momentum after the amp is over (try 0.99)
+   nesterov_accelerated_gradient : bool
+     Logical. Use Nesterov accelerated gradient (recommended)
+   input_dropout_ratio : float
+     A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
+=======
   x : H2OFrame
     An H2OFrame containing the predictors in the model.
   y : H2OFrame
@@ -741,6 +907,9 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   train_samples_per_iteration : int
     Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
     or -2 auto-tuning (default)
+  target_ratio_comm_to_comp : float
+    Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning).
+    Higher values can lead to faster convergence.
   seed : int
     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
   adaptive_rate : bool
@@ -765,6 +934,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
     Logical. Use Nesterov accelerated gradient (recommended)
   input_dropout_ratio : float
     A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
+>>>>>>> 1754605368086617cb177d9d44b0d7feaa7bc365
   hidden_dropout_ratios : float
     Input layer dropout ratio (can improve generalization) specify one value per hidden layer, defaults to 0.5
   l1 : float
@@ -854,15 +1024,17 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   keep_cross_validation_predictions : bool
     Whether to keep the predictions of the cross-validation models
 
-
- :return: Return a new classifier or regression model.
+  :return: Return a new classifier or regression model.
   """
+  warnings.warn("`h2o.deeplearning` is deprecated. Use the estimators sub module to build an H2ODeepLearningEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["y","training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
+
 
 def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=None,checkpoint=None,
                 use_all_factor_levels=None,activation=None,hidden=None,epochs=None,train_samples_per_iteration=None,
+                target_ratio_comm_to_comp=None,
                 seed=None,adaptive_rate=None,rho=None,epsilon=None,rate=None,rate_annealing=None,rate_decay=None,
                 momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
                 input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
@@ -900,6 +1072,9 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
     train_samples_per_iteration : int
       Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data
       (e.g., replicated training data); or -2 auto-tuning (default)
+    target_ratio_comm_to_comp : float
+      Target ratio of communication overhead to computation. Only for multi-node operation and train_samples_per_iteration=-2 (auto-tuning).
+      Higher values can lead to faster convergence.
     seed : int
       Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
     adaptive_rate : bool
@@ -1002,10 +1177,11 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
 
   """
+  warnings.warn("`h2o.autoencoder` is deprecated. Use the estimators sub module to build an H2OAutoEncoderEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="deeplearning"
   parms["autoencoder"]=True
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
 
 
 def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,
@@ -1080,9 +1256,10 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
 
   :return: A new classifier or regression model.
   """
+  warnings.warn("`h2o.gbm` is deprecated. Use the estimators sub module to build an H2OGradientBoostedEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="gbm"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
 
 
 def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,validation_frame=None,
@@ -1185,10 +1362,12 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   aic, and a host of model metrics including MSE, AUC (for logistic regression), degrees of freedom, and confusion
   matrices.
   """
+  warnings.warn("`h2o.glm` is deprecated. Use the estimators sub module to build an H2OGeneralizedLinearEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k.lower():v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   if "alpha" in parms and not isinstance(parms["alpha"], (list,tuple)): parms["alpha"] = [parms["alpha"]]
   parms["algo"]="glm"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
+
 
 def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
   """
@@ -1200,6 +1379,7 @@ def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   kwargs["do_future"] = True
   return glm(x,y,validation_x,validation_y,**kwargs)
+
 
 def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standardize=None,init=None,seed=None,
            nfolds=None,fold_column=None,fold_assignment=None,training_frame=None,validation_frame=None,
@@ -1239,9 +1419,10 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
 
   :return: An instance of H2OClusteringModel.
   """
+  warnings.warn("`h2o.kmeans` is deprecated. Use the estimators sub module to build an H2OKMeansEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="kmeans"
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
 
 
 def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,mtries=None,sample_rate=None,
@@ -1309,9 +1490,10 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
 
   :return: A new classifier or regression model.
   """
+  warnings.warn("`h2o.random_forest` is deprecated. Use the estimators sub module to build an H2ORandomForestEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="drf"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
 
 
 def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None,
@@ -1341,14 +1523,17 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   pca_method : str
     A character string that indicates how PCA should be calculated.
     Possible values are "GramSVD": distributed computation of the Gram matrix followed by a local SVD using the JAMA package,
-    "Power": computation of the SVD using the power iteration method, "GLRM": fit a generalized low rank model with an l2 loss function
-    (no regularization) and solve for the SVD using local matrix algebra.
+    "Power": computation of the SVD using the power iteration method, "Randomized": approximate SVD by projecting onto a random
+    subspace, "GLRM": fit a generalized low rank model with an l2 loss function (no regularization) and solve for the SVD using
+    local matrix algebra.
 
   :return: a new dim reduction model
   """
+  warnings.warn("`h2o.prcomp` is deprecated. Use the transforms sub module to build an H2OPCA.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="pca"
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
+
 
 def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
         use_all_factor_levels=None,svd_method=None):
@@ -1382,15 +1567,17 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 
   :return: a new dim reduction model
   """
+  warnings.warn("`h2o.svd` is deprecated. Use the transforms sub module to build an H2OSVD.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="svd"
   parms['_rest_version']=99
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
+
 
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
          ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
-         user_y=None,user_x=None,recover_svd=None):
+         user_y=None,user_x=None,recover_svd=None,expand_user_y=None):
   """
   Builds a generalized low rank model of a H2O dataset.
 
@@ -1453,14 +1640,18 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   recover_svd : bool
     A logical value indicating whether the singular values and eigenvectors should be recovered during post-processing of the generalized
     low rank decomposition.
+  expand_user_y : bool
+	A logical value indicating whether the categorical columns of the initial Y matrix should be one-hot expanded. Only used when init = "User" and user_y is specified.
 
 
   :return: a new dim reduction model
   """
+  warnings.warn("`h2o.glrm` is deprecated. Use the estimators sub module to build an H2OGeneralizedLowRankEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="glrm"
   parms['_rest_version']=99
-  return h2o_model_builder.unsupervised(parms)
+  return unsupervised(parms)
+
 
 def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,validation_frame=None,
                 laplace=None,threshold=None,eps=None,compute_metrics=None,offset_column=None,weights_column=None,
@@ -1503,9 +1694,11 @@ def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,vali
 
   :return: Returns an H2OBinomialModel if the response has two categorical levels, H2OMultinomialModel otherwise.
   """
+  warnings.warn("`h2o.naive_bayes` is deprecated. Use the estimators sub module to build an H2ONaiveBayesEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="naivebayes"
-  return h2o_model_builder.supervised(parms)
+  return supervised(parms)
+
 
 def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0, real_range = 100,
                  categorical_fraction = 0.2, factors = 100, integer_fraction = 0.2, integer_range = 100,
@@ -1616,7 +1809,7 @@ def network_test():
   res["table"].show()
 
 
-def locate(path):
+def _locate(path):
   """
   Search for a relative path and turn it into an absolute path.
   This is handy when hunting for data files to be passed into h2o and used by import file.
@@ -1632,16 +1825,16 @@ def locate(path):
 
   tmp_dir = os.path.realpath(os.getcwd())
   possible_result = os.path.join(tmp_dir, path)
-  while (True):
-      if (os.path.exists(possible_result)):
-          return possible_result
+  while True:
+    if os.path.exists(possible_result):
+      return possible_result
 
-      next_tmp_dir = os.path.dirname(tmp_dir)
-      if (next_tmp_dir == tmp_dir):
-          raise ValueError("File not found: " + path)
+    next_tmp_dir = os.path.dirname(tmp_dir)
+    if next_tmp_dir == tmp_dir:
+      raise ValueError("File not found: " + path)
 
-      tmp_dir = next_tmp_dir
-      possible_result = os.path.join(tmp_dir, path)
+    tmp_dir = next_tmp_dir
+    possible_result = os.path.join(tmp_dir, path)
 
 
 def store_size():
@@ -1697,6 +1890,7 @@ def set_timezone(tz):
   """
   rapids(ExprNode._collapse_sb(ExprNode("setTimeZone", tz)._eager()))
 
+
 def get_timezone():
   """
   Get the Time Zone on the H2O Cloud
@@ -1704,6 +1898,7 @@ def get_timezone():
   :return: the time zone (string)
   """
   return H2OFrame(expr=ExprNode("getTimeZone"))._scalar()
+
 
 def list_timezones():
   """
@@ -1798,17 +1993,29 @@ class H2ODisplay:
     table= "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
     table_rows=[]
     if header is not None:
-      table_rows.append(H2ODisplay._html_row(header))
+      table_rows.append(H2ODisplay._html_row(header, bold=True))
     for row in rows:
       table_rows.append(H2ODisplay._html_row(row))
     return table.format("\n".join(table_rows))
 
   @staticmethod
-  def _html_row(row):
+  def _html_row(row, bold=False):
     res = "<tr>{}</tr>"
-    entry = "<td>{}</td>"
-    entries = "\n".join([entry.format(str(r)) for r in row])
+    entry = "<td><b>{}</b></td>"if bold else "<td>{}</td>"
+    #format full floating point numbers to only 1 decimal place
+    entries = "\n".join([entry.format(str(r))
+                         if len(str(r)) < 10 or not H2ODisplay._is_number(str(r))
+                         else entry.format("{0:.1f}".format(float(str(r)))) for r in row])
     return res.format(entries)
+
+  @staticmethod
+  def _is_number(s):
+    try:
+      float(s)
+      return True
+    except ValueError:
+      return False
+
 
 def can_use_pandas():
   try:
@@ -1820,6 +2027,7 @@ def can_use_pandas():
 
 #  ALL DEPRECATED METHODS BELOW #
 
+# the @h2o_deprecated decorator
 def h2o_deprecated(newfun=None):
   def o(fun):
     def i(*args, **kwargs):
@@ -1840,7 +2048,9 @@ def import_frame():
   path : str
     A path specifying the location of the data to import.
 
-  :return: A new H2OFrame
+  Returns
+  -------
+    A new H2OFrame
   """
 
 @h2o_deprecated()
@@ -1853,5 +2063,7 @@ def parse():
   setup : dict
     The result of calling parse_setup.
 
-  :return: A new H2OFrame
+  Returns
+  -------
+    A new H2OFrame
   """

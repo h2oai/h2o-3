@@ -1,11 +1,11 @@
 ####### This tests weights in deeplearning for poisson by comparing results with expected behaviour  ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 
-	fre = h2o.importFile(locate("smalldata/glm_test/freMTPL2freq.csv"),destination_frame = "fre")
+	fre = h2o.importFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	fre = h2o.assign(fre[1:6000,],key = "fre")
 	#fren = as.data.frame(fre)

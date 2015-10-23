@@ -1,10 +1,14 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def cumsumminprodmax():
     # TODO PUBDEV-1748
-    foo = h2o.H2OFrame(python_obj=[[x,y] for x,y in zip(range(10),range(9,-1,-1))])
+    foo = h2o.H2OFrame(python_obj=zip(*[[x,y] for x,y in zip(range(10),range(9,-1,-1))]))
     foo.show()
 
     cumsum1 = foo[0].cumsum()
@@ -33,5 +37,9 @@ def cumsumminprodmax():
 
     h2o.remove(foo)
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, cumsumminprodmax)
+    pyunit_utils.standalone_test(cumsumminprodmax)
+else:
+    cumsumminprodmax()

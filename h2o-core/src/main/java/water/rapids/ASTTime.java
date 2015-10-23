@@ -84,7 +84,7 @@ abstract class ASTTime extends ASTPrim {
             for( int i=0; i<chk._len; i++ )
               cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt,chk.at8(i)));
           }
-        }.doAll_numericResult(1,fr).outputFrame(fr._names, factors()));
+        }.doAll(1, Vec.T_NUM, fr).outputFrame(fr._names, factors()));
     default: throw water.H2O.fail();
     }
   }
@@ -142,7 +142,7 @@ class ASTasDate extends ASTPrim {
           } else nc.addNA();
         }
       }
-    }.doAll_numericResult(1,fr).outputFrame(fr._names, null);
+    }.doAll(1, Vec.T_NUM, fr).outputFrame(fr._names, null);
     return new ValFrame(fr2);
   }
 }
