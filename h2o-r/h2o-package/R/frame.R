@@ -461,7 +461,7 @@ median.Frame <- h2o.median
 
 #' Range of an H2O Column
 #'
-#' @param x An H2O Frame object.
+#' @param ... An H2O Frame object.
 #' @param na.rm ignore missing values
 #' @export
 range.Frame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
