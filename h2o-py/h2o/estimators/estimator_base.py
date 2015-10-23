@@ -101,6 +101,9 @@ class H2OEstimator(ModelBase):
     tframe = algo_params["training_frame"]
     if tframe is None: raise ValueError("Missing training_frame")
     if y is not None:
+      if isinstance(y, (list, tuple)):
+        if len(y) == 1: parms["y"] = y[0]
+        else: raise ValueError('y must be a single column reference')
       self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
     self.build_model(parms)
 
