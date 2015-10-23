@@ -197,6 +197,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // Cannot use a List<Long> as that's restricted to 2Bn items and also isn't an Iced datatype
     long perNodeRows[][][] = new long[H2O.CLOUD.size()][][];
     long perNodeRowFrom[][][] = new long[H2O.CLOUD.size()][][];
+    long perNodeLoc[] = new long[H2O.CLOUD.size()];
     int batchSize = (int)_leftBatchSize;  // TODO: what's the right batch size here. And why is _leftBatchSize type long?
     for (int i=0; i<H2O.CLOUD.size(); i++) {
       if (_perNodeNumRowsToFetch[i] == 0) continue;
@@ -216,18 +217,25 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
 
     // Loop over _retFirst and _retLen and assign the matching rows to the right node request so as to make one batched call
-    for (int jb=0; jb<_leftBatchSize; ++jb) {
-      for (int jo=0; jo<_retLen[jb].length; ++jo) {
+    // _retFirst and _retLen are the same shape
+    long ansLoc=0;
+    for (int jb=0; jb<_retFirst.length; ++jb) {              // jb = j batch
+      for (int jo=0; jo<_retFirst[jb].length; ++jo) {        // jo = j offset
         long a = _retFirst[jb][jo];
-        if (a==0) continue;
+        if (a==0) {
+          if (_outerJoin) ansLoc++;  // TODO: NA to be placed in the result in this case
+          // We don't request NA
+          continue;
+        }
         for (int r=0; r<_retLen[jb][jo]; ++r) {
           long loc = a+r;
           long row = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];   // TODO: could take / and % outside loop in cases where it doesn't span a batch boundary
           // find the owning node for the row, using local operations here
           int chkIdx = _rightFrame.anyVec().elem2ChunkIdx(row); //binary search in espc
           H2ONode node = _rightFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
-          perNodeRows[node.index()][(int)(row/batchSize)][(int)(row%batchSize)] = row;  // ask that node for row row
-          perNodeRowFrom[node.index()][(int)(row/batchSize)][(int) (row % batchSize)] = jb*_leftBatchSize + jo;   // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
+          long pnl = perNodeLoc[node.index()]++;   // pnl = per node location
+          perNodeRows[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
+          perNodeRowFrom[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = ansLoc++;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
         }
       }
     }
@@ -241,7 +249,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     Frame fr = new Frame(Key.make(_rightFrame._key.toString() + "_joined_with_" + _leftFrame._key.toString() + " on_some_columns_right_half_forLeftMSB_"+_leftMSB + "_RightMSB_" + _rightMSB), names, vecs);
 
     for (H2ONode node : H2O.CLOUD._memary) {
-      for (int b=0; b<perNodeRows[node.index()].length; ++b) {
+      int bUpp = perNodeRows[node.index()] == null ? 0 : perNodeRows[node.index()].length;
+      for (int b=0; b<bUpp; ++b) {
         GetRawRemoteRows grrr = new GetRawRemoteRows(_rightFrame, perNodeRows[node.index()][b]);
         H2O.submitTask(grrr);
         grrr.join();
@@ -261,7 +270,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         }
       }
     }
-
+    Log.info(fr);
   }
 
   class GetRawRemoteRows extends DTask<GetRawRemoteRows> {
@@ -271,13 +280,13 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     GetRawRemoteRows(Frame rightFrame, long[] rows) {
       _rows = rows;
       _rightFrame = rightFrame;
-      _chk  = new Chunk[_rightFrame.numCols()];
     }
 
     @Override
     protected void compute2() {
       assert(_rows!=null);
       assert(_chk ==null);
+      _chk  = new Chunk[_rightFrame.numCols()];
 
       double[][] rawVals = new double[_rightFrame.numCols()][_rows.length];
       for (int col=0; col<_rightFrame.numCols(); ++col) {
@@ -292,6 +301,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 //      perNodeRows[node] has perNodeRows[node].length batches of row numbers to fetch
       _rows=null;
       assert(_chk !=null);
+      tryComplete();
     }
   }
 }
