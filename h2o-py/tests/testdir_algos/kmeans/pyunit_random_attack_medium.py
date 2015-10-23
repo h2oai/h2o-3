@@ -16,7 +16,7 @@ def random_attack():
     kwargs = {}
 
     # randomly select parameters and their corresponding values
-    kwargs['k'] = random.randint(1,20)
+    kwargs['k'] = random.randint(2,20)
     if random.randint(0,1): kwargs['model_id'] = "my_model"
     if random.randint(0,1): kwargs['max_iterations'] = random.randint(1,1000)
     if random.randint(0,1): kwargs['standardize'] = [True, False][random.randint(0,1)]

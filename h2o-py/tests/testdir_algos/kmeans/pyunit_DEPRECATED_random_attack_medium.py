@@ -8,23 +8,21 @@ from tests import pyunit_utils
 import random
 
 def random_attack():
-    
-    
+
+
 
     def attack(train, x):
         kwargs = {}
 
         # randomly select parameters and their corresponding values
-        kwargs['k'] = random.randint(1,20)
+        kwargs['k'] = random.randint(2,20)
         if random.randint(0,1): kwargs['model_id'] = "my_model"
         if random.randint(0,1): kwargs['max_iterations'] = random.randint(1,1000)
         if random.randint(0,1): kwargs['standardize'] = [True, False][random.randint(0,1)]
         if random.randint(0,1):
             method = random.randint(0,3)
             if method == 3:
-                s = []
-                for p in range(kwargs['k']):
-                    s.append([random.uniform(train[c].mean()-100,train[c].mean()+100) for c in x])
+                s = [[random.uniform(train[c].mean()-100,train[c].mean()+100) for p in range(kwargs['k'])] for c in x]
                 print "s: {0}".format(s)
                 start = h2o.H2OFrame(python_obj=s)
                 kwargs['user_points'] = start
@@ -48,7 +46,7 @@ def random_attack():
     ozone = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
 
     for i in range(50):
-        attack(ozone, random.sample([0,1,2,3],random.randint(1,4)))
+        attack(ozone, random.sample([0,1,2,3],random.randint(2,4)))
 
 
 
