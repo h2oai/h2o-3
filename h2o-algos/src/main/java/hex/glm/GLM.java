@@ -172,6 +172,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return 1;
   }
 
+  @Override
+  protected  boolean ignoreConstColumns(){
+    return _parms._beta_constraints == null;
+  }
 
   @Override public void init(boolean expensive) {
     _sc = new ScoringHistory();
@@ -293,10 +297,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for(int i = 0; i < v.length(); ++i) {
             if(!v.isNA(i)) {
               int idx = map == null ? i : map[i];
-              if (idx > _dinfo._cats) {
-                _dinfo._normSub[idx - _dinfo._cats] = v.at(i);
+              if (idx > _dinfo.numStart() && idx < _dinfo.fullN()) {
+                _dinfo._normSub[idx - _dinfo.numStart()] = v.at(i);
               } else {
-                // categorical, will be ignored
+                // categorical or Intercept, will be ignored
               }
             }
           }
@@ -306,10 +310,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (int i = 0; i < v.length(); ++i) {
             if (!v.isNA(i)) {
               int idx = map == null ? i : map[i];
-              if (idx > _dinfo._cats) {
-                _dinfo._normMul[idx - _dinfo._cats] = v.at(i);
+              if (idx > _dinfo.numStart() && idx < _dinfo.fullN()) {
+                _dinfo._normMul[idx - _dinfo.numStart()] = 1.0/v.at(i);
               } else {
-                // categorical, will be ignored
+                // categorical or Intercept, will be ignored
               }
             }
           }
@@ -396,9 +400,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double lmax = lmax(itsk.getNullGradient());
       double objStart;
       if(_parms._family == Family.multinomial){
-        objStart = objVal(itsk.getBetaStartLikelihood(),itsk.getNullMultinomialBeta());
+        objStart = objVal(itsk.getBetaStartLikelihood(),itsk.getNullMultinomialBeta(),lmax);
       } else
-        objStart = objVal(itsk.getBetaStartLikelihood(),itsk.getBetaStart());
+        objStart = objVal(itsk.getBetaStartLikelihood(),itsk.getBetaStart(),lmax);
       // todo - fix ymu to be a vec for multinomial?
       _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._nobs, itsk._wsum, _parms._prior > 0?new double[]{_parms._prior}:itsk._yMu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(itsk.getBetaStartLikelihood(),objStart, itsk.getStartGradient()),objStart);
       _tInfos[0]._nullGradNorm = ArrayUtils.linfnorm(itsk.getNullGradient(), false);
@@ -594,11 +598,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     protected void compute2() {
       // get filtered dataset's mean and number of observations
-      new YMUTask(_dinfo, nclasses(), new H2OCallback<YMUTask>(this) {
+      new YMUTask(_dinfo, nclasses(), _parms._beta_constraints == null, new H2OCallback<YMUTask>(this) {
         @Override
         public void callback(final YMUTask ymut) {
           _yMu = _parms._intercept ? ymut._yMu : new double[nclasses()];
           _wsum = ymut._wsum;
+          if(_parms._obj_reg == -1)
+            _parms._obj_reg = 1.0/_wsum;
           _ymuLink = (_parms._intercept && _parms._family != Family.multinomial) ? _parms.link(_yMu[0]):0;
           _yMin = ymut._yMin;
           _yMax = ymut._yMax;
@@ -631,15 +637,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             beta[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);
             beta[i][_dinfo.fullN()] = Math.log(_yMu[i]); // log is link?
           }
-          _gtNullMultinomial = new GLMMultinomialGradientTask(_dinfo, 0, _yMu, beta, 1.0 / _wsum, true, InitTsk.this).asyncExec(_dinfo._adaptedFrame);
+          _gtNullMultinomial = new GLMMultinomialGradientTask(_dinfo, 0, _yMu, beta, 1.0 / _parms._obj_reg, true, InitTsk.this).asyncExec(_dinfo._adaptedFrame);
           if (_validDinfo != null) {
             InitTsk.this.addToPendingCount(1);
             _gtNullTestMultinomial = new GLMMultinomialGradientTask(_validDinfo, 0, _yMu, beta, 1.0, true, InitTsk.this).asyncExec(_validDinfo._adaptedFrame);
           }
         } else {
           final double[] beta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
-          if (_intercept)
+          if (_intercept) {
             beta[beta.length - 1] = _ymuLink;
+          }
           if (_bc._betaStart == null)
             _bc.setBetaStart(beta);
           // compute the lambda_max
@@ -920,6 +927,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       //todo: fill in initialization for n-folds
       H2O.submitTask(new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]));
     }
+
     private class LambdaSearchIteration extends H2O.H2OCallback {
       public LambdaSearchIteration(H2OCountedCompleter cmp){super(cmp); }
       @Override
@@ -967,7 +975,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    * @param beta
    * @return
    */
-  double objVal(double likelihood, double[][] beta) {
+  double objVal(double likelihood, double[][] beta) { return objVal(likelihood, beta, currentLambda());}
+  double objVal(double likelihood, double[][] beta, double lambda) {
     double alpha = _parms._alpha[0];
 
     double proximalPen = 0;
@@ -982,24 +991,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     double res = likelihood * _parms._obj_reg
             + proximalPen
-            + currentLambda() * ((alpha * l1normSum) + (1 - alpha) * .5 * l2normSum);
+            + lambda * ((alpha * l1normSum) + (1 - alpha) * .5 * l2normSum);
     return res;
   }
 
-
-  double objVal(double likelihood, double[] beta) {
+  double objVal(double likelihood, double[] beta) { return objVal(likelihood,beta,currentLambda());}
+  double objVal(double likelihood, double[] beta, double lambda) {
     double alpha = _parms._alpha[0];
     double proximalPen = 0;
     if (_bc._betaGiven != null) {
       for (int i = 0; i < _bc._betaGiven.length; ++i) {
         double diff = beta[i] - _bc._betaGiven[i];
-        proximalPen += diff * diff * _bc._rho[i] * .5;
+        proximalPen += diff * diff * _bc._rho[i];
       }
     }
-    return likelihood * _parms._obj_reg
-      + proximalPen
-      + currentLambda() * (alpha * ArrayUtils.l1norm(beta, _parms._intercept)
-      + (1 - alpha) * .5 * ArrayUtils.l2norm2(beta, _parms._intercept));
+    return (likelihood * _parms._obj_reg
+      + .5* proximalPen
+      + lambda * (alpha * ArrayUtils.l1norm(beta, _parms._intercept)
+      + (1 - alpha) * .5 * ArrayUtils.l2norm2(beta, _parms._intercept)));
   }
 
   /**
@@ -1096,7 +1105,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       switch(solverType) {
         case L_BFGS: {
           double[] beta = _taskInfo._beta;
-          GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _taskInfo._wsum);
+          GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _parms._obj_reg);
           if(_bc._betaGiven != null && _bc._rho != null)
             solver = new ProximalGradientSolver(solver,_bc._betaGiven,_bc._rho);
           if(_parms._family == Family.multinomial) {
@@ -1757,8 +1766,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         @Override
         public void callback(final GLMGradientTask gt1) {
           assert gt1._nobs == _taskInfo._nobs;
-          double newObj = objVal(gt1._currentLambda,gt1._beta);
-          
           double[] subgrad = gt1._gradient.clone();
           ADMM.subgrad(_parms._alpha[0] * _parms._lambda[_lambdaId], fullBeta, subgrad);
           double err = 0;
@@ -1922,7 +1929,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       @Override
       public void callback(final GLMIterationTask glmt) {
-        System.out.println("likelihood = " + glmt._likelihood);
         assert _parms._intercept || glmt._beta[_activeData.fullN()] == 0;
         double objVal = _parms._family == Family.multinomial
           ?objVal(glmt._likelihood, glmt._beta_multinomial)
@@ -1939,7 +1945,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         long callbackStart = System.currentTimeMillis();
         double lastObjVal = _taskInfo._objVal;
         double logl = glmt._likelihood;               // negated condition to work with NaNs
-        if (_doLinesearch && (glmt.hasNaNsOrInf() || !((objVal) <= lastObjVal))) {
+        if (_doLinesearch && (glmt.hasNaNsOrInf() || !((objVal) <= (lastObjVal)))) {
           // needed line search, have to discard the last step and go again with line search
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get ginfo here?
@@ -1949,7 +1955,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double [] direction = ArrayUtils.subtract(glmt._beta_multinomial[_c], _taskInfo._beta_multinomial[_c]);
             new GLMTask.GLMMultinomialLineSearchTask(new MultinomialLineSearchIteration(getCompleter(), _taskInfo._beta_multinomial, direction, glmt._likelihood, MINLINE_SEARCH_STEP, true), _activeData, _taskInfo._beta_multinomial, direction,_c, 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS).asyncExec(_activeData._adaptedFrame);
           }else
-            new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter(),glmt._likelihood)).asyncExec(_activeData._adaptedFrame);
+            new GLMLineSearchTask(_activeData, _parms, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter(),glmt._likelihood)).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
           _sc.addIterationScore(_taskInfo._iter - 1, logl, objVal);
@@ -1991,8 +1997,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             LogInfo("converged (reached a fixed point with ~ 1e" + diff + " precision), got " + nzs + " nzs");
             if(_parms._family == Family.multinomial)
               System.arraycopy(newBeta,0,_taskInfo._beta_multinomial[_c],0,newBeta.length);
-            else
-              _taskInfo._beta = newBeta; // fixme - need to test newBeta! _parms._family == Family.gaussian ? newBeta : glmt._beta;
+            else if(_parms._family == Family.gaussian){
+              _taskInfo._beta = newBeta;
+            }
             checkKKTsAndComplete(true,(H2OCountedCompleter)getCompleter());
             return;
           } else { // not done yet, launch next iteration
@@ -2004,7 +2011,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 double [] direction = ArrayUtils.subtract(newBeta, _taskInfo._beta_multinomial[_c]);
                 new GLMTask.GLMMultinomialLineSearchTask(new MultinomialLineSearchIteration(getCompleter(), _taskInfo._beta_multinomial, direction, Double.NaN,0.0625,true), _activeData, _taskInfo._beta_multinomial, direction, _c, 1,.5,4).asyncExec(_activeData._adaptedFrame);
               }else
-                new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(newBeta, _taskInfo._beta), 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter(),Double.NaN)).asyncExec(_activeData._adaptedFrame);
+                new GLMLineSearchTask(_activeData, _parms, _taskInfo._beta.clone(), ArrayUtils.subtract(newBeta, _taskInfo._beta), 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter(),Double.NaN)).asyncExec(_activeData._adaptedFrame);
               return;
             } else {
               if(_parms._family == Family.multinomial) {
@@ -2084,7 +2091,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);
           double newObj = objVal(lst._likelihoods[i], beta);
           if (_taskInfo._objVal > newObj) {
-            assert _taskInfo._lineSearch || t < 1;
+//            assert _taskInfo._lineSearch || t < 1;
             LogInfo("line search: found admissible step = " + t + ",  objval = " + newObj);
             _taskInfo._lineSearch = t < 1;
             getCompleter().addToPendingCount(1);
@@ -2096,7 +2103,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           getCompleter().addToPendingCount(1);
           t /= LINE_SEARCH_STEP;
           // GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
-          new GLMTask.GLMLineSearchTask(_activeData, _parms, lst._reg, lst._beta, lst._direction, t, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter(),lst._likelihoods[lst._likelihoods.length - 1])).asyncExec(_activeData._adaptedFrame);
+          new GLMTask.GLMLineSearchTask(_activeData, _parms, lst._beta, lst._direction, t, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter(),lst._likelihoods[lst._likelihoods.length - 1])).asyncExec(_activeData._adaptedFrame);
           return;
         }
         // no line step worked => converge
@@ -2439,22 +2446,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     final double _lambda;
     final double _reg;
-    Vec _rowFilter;
     double [] _beta;
     final double [][] _betaMultinomial;
 
-    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double [] ymu, double wsum) {
-      this(glmp, dinfo, lambda, ymu, wsum,  null);
-    }
-
-    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double [] ymu, double wsum, Vec rowFilter) {
+    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double [] ymu, double reg) {
       _parms = glmp;
       _dinfo = dinfo;
       _ymu = ymu;
 //      _nobs = _nobs;
       _lambda = lambda;
-      _rowFilter = rowFilter;
-      _reg = 1.0/wsum;
+      _reg = reg;
       if(glmp._family == Family.multinomial)
         _betaMultinomial = new double[ymu.length][_dinfo.fullN()+1];
       else
@@ -2486,7 +2487,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if(!_parms._intercept) // make sure intercept is 0
           beta[beta.length-1] = 0;
         GLMGradientTask gt = _parms._family == Family.binomial
-          ? new LBFGS_LogisticGradientTask(_dinfo, _parms, _lambda, beta, _reg, _rowFilter, _parms._intercept).doAll(_dinfo._adaptedFrame)
+          ? new LBFGS_LogisticGradientTask(_dinfo, _parms, _lambda, beta, _reg, _parms._intercept).doAll(_dinfo._adaptedFrame)
           :
       /*GLMGradientTask gt = */new GLMGradientTask(_dinfo, _parms, _lambda, beta, _reg, _parms._intercept).doAll(_dinfo._adaptedFrame);
         if (!_parms._intercept) // no intercept, null the ginfo

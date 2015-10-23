@@ -99,8 +99,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _objective_epsilon = 1e-4;
-    public double _gradient_epsilon = 1e-4;
+    public double _objective_epsilon = 1e-5;
+    public double _gradient_epsilon = 1e-5;
     public double _obj_reg = -1;
 
     public Key<Frame> _beta_constraints = null;
@@ -504,6 +504,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return _coefficient_names;
     }
 
+    // GLM is always supervised
+    public boolean isSupervised() { return true; }
+
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo;
@@ -514,14 +517,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _nclasses = binomial?2:1;
 
       if(_binomial && domains[domains.length-1] != null) {
-        assert domains.length == 2;
+        assert domains[domains.length - 1].length == 2:"Unexpected domains " + Arrays.toString(domains);
         binomialClassNames = domains[domains.length - 1];
       }
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial, double[] beta) {
       this(dinfo,column_names,domains,coefficient_names,binomial);
+      assert !ArrayUtils.hasNaNsOrInfs(beta);
       _global_beta=beta;
+      _submodels = new Submodel[]{new Submodel(0,beta,-1,Double.NaN,Double.NaN)};
     }
 
     public GLMOutput() {_isSupervised = true; _nclasses = -1;}
@@ -529,6 +534,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(GLM glm) {
       super(glm);
       _dinfo = glm._dinfo;
+      if(!glm.hasWeightCol()){
+        _dinfo = (DataInfo)_dinfo.clone();
+        _dinfo._adaptedFrame = new Frame(_dinfo._adaptedFrame.names().clone(),_dinfo._adaptedFrame.vecs().clone());
+        _dinfo.dropWeights();
+      }
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();

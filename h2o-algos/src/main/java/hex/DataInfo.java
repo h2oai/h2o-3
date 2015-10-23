@@ -30,6 +30,12 @@ public class DataInfo extends Keyed {
     return null;
   }
 
+  public void dropWeights() {
+    if(!_weights)return;
+    _adaptedFrame.remove(weightChunkId());
+    _weights = false;
+  }
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 

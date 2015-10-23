@@ -42,14 +42,14 @@ public abstract class GLMTask  {
    final int _nums; // number of numeric columns
    final int _numOff;
 
-   final boolean _comupteWeightedSigma = true;
+   final boolean _comupteWeightedSigma;
 
    double [] _xsum; // weighted sum of x
    double [] _xxsum; // weighted sum of x^2
    double [] _yMu;
    final int _nClasses;
 
-   public YMUTask(DataInfo dinfo, int nclasses, H2OCountedCompleter cmp){
+   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, H2OCountedCompleter cmp){
      super(cmp);
      _nums = dinfo._nums;
      _numOff = dinfo._cats;
@@ -57,6 +57,7 @@ public abstract class GLMTask  {
      _weightId = dinfo._weights?dinfo.weightChunkId():-1;
      _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
      _nClasses = nclasses;
+     _comupteWeightedSigma = computeWeightedSigma;
    }
    @Override public void setupLocal(){}
 
@@ -162,14 +163,11 @@ public abstract class GLMTask  {
     final double _initStep;
     final int _nSteps;
     final GLMParameters _params;
-    final double _reg;
     boolean _useFasterMetrics = false;
 
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps){this(dinfo, params, reg, beta, direction, initStep, step, nsteps, null);}
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double initStep, double step, int nsteps, CountedCompleter cc) {
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double [] beta, double [] direction, double initStep, double step, int nsteps, CountedCompleter cc) {
       super ((H2OCountedCompleter)cc);
       _dinfo = dinfo;
-      _reg = reg;
       _beta = beta;
       _betaMultinomial = null;
       _direction = direction;
@@ -181,32 +179,9 @@ public abstract class GLMTask  {
       _c = -1;
     }
 
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [][] betaMultinomial, int c, double [] direction, double initStep, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
-      super ((H2OCountedCompleter)cc);
-      _dinfo = dinfo;
-      _reg = reg;
-      _beta = null;
-      _betaMultinomial = betaMultinomial;
-      _c = c;
-      _direction = direction;
-      _step = step;
-      _nSteps = nsteps;
-      _params = params;
-      _initStep = initStep;
-    }
-
-    public GLMLineSearchTask setFasterMetrics(boolean b){
-      _useFasterMetrics = b;
-      return this;
-    }
     long _nobs;
     double [] _likelihoods; // result
 
-//    private final double beta(int i, int j) {
-//      return _beta[j] + _direction2D[j] * _steps[i];
-//    }
-    // compute linear estimate by summing contributions for all columns
-    // (looping by column in the outer loop to have good access pattern and to exploit sparsity)
     @Override
     public void map(Chunk [] chks) {
 
@@ -281,7 +256,7 @@ public abstract class GLMTask  {
       _likelihoods = MemoryManager.malloc8d(_nSteps);
       for (int r = 0; r < chks[0]._len; ++r) {
         double w = weightsChunk.atd(r);
-        if(skip[r] || responseChunk.isNA(r))
+        if(w == 0 || responseChunk.isNA(r))
           continue;
         _nobs++;
         double y = responseChunk.atd(r);
@@ -660,6 +635,7 @@ public abstract class GLMTask  {
           continue;
         _nobs++;
         _wsum += w;
+        assert w > 0;
         double y = responseChunk.atd(r);
         double mu = _params.linkInv(eta[r]);
         _val.add(y, mu, w, offsetChunk.atd(r));
@@ -756,7 +732,7 @@ public abstract class GLMTask  {
    */
   public static class LBFGS_LogisticGradientTask extends GLMGradientTask {
 
-    public LBFGS_LogisticGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, Vec rowFilter, boolean intercept) {
+    public LBFGS_LogisticGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, boolean intercept) {
       super(dinfo, params, lambda, beta, reg, intercept);
     }
 
@@ -767,8 +743,8 @@ public abstract class GLMTask  {
       for(int rid = 0; rid < chks[0]._len; ++rid) {
         if(skp[rid])continue;
         row = _dinfo.extractDenseRow(chks, rid, row);
+        if(row.bad || row.weight == 0) continue;
         double y = -1 + 2*row.response(0);
-        if(row.bad) continue;
         ++_nobs;
         double eta = row.innerProduct(b) + row.offset;
         double gval;
@@ -805,7 +781,7 @@ public abstract class GLMTask  {
       // compute the predicted mean and variance and ginfo for each row
       for(int r = 0; r < chks[0]._len; ++r){
         double w = weightsChunk.atd(r);
-        if(skp[r] || responseChunk.isNA(r))
+        if(skp[r] || responseChunk.isNA(r) || w == 0)
           continue;
         ++_nobs;
         double off = (_dinfo._offset?offsetChunk.atd(r):0);

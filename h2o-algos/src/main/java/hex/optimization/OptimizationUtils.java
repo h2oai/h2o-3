@@ -329,6 +329,7 @@ public class OptimizationUtils {
           _betGradient = newGinfo;
           _bestStep = step;
         }
+        ++_iter;
         if(!Double.isNaN(step) && (Double.isNaN(newGinfo._objVal) || Double.isInfinite(newGinfo._objVal) || ArrayUtils.hasNaNsOrInfs(newGinfo._gradient))) {
           _brackt = true;
           _sty = step;
@@ -338,7 +339,7 @@ public class OptimizationUtils {
           step *= .5;
           continue;
         }
-        ++_iter;
+
         double dgp = ArrayUtils.innerProduct(newGinfo._gradient, direction);
         if(Double.isNaN(step) || _brackt && (step <= _stMin || step >= _stMax)) {
           _returnStatus = 6;

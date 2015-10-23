@@ -695,6 +695,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   protected  boolean ignoreStringColumns(){return true;}
+  protected  boolean ignoreConstColumns(){return true;}
 
   /**
    * Ignore constant columns, columns with all NAs and strings.
@@ -703,9 +704,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected void ignoreBadColumns(int npredictors, boolean expensive){
     // Drop all-constant and all-bad columns.
-    if( _parms._ignore_const_cols)
+    if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad() || (ignoreStringColumns() && v.isString()); }
+        @Override protected boolean filter(Vec v) {
+          return (ignoreConstColumns() && v.isConst()) || v.isBad() || (ignoreStringColumns() && v.isString()); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
   }
   /**
@@ -812,7 +814,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_train","There are no usable columns to generate model");
 
     if(isSupervised()) {
-
       if(_response != null) {
         _nclass = _response.isCategorical() ? _response.cardinality() : 1;
         if (_response.isConst())
@@ -832,7 +833,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column parameter not set.");
           return;
         }
-
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
             MRUtils.ClassDist cdmt =
