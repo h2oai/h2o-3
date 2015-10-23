@@ -1680,8 +1680,6 @@ g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(
                                                "../h2o-r/scripts/h2o-r-test-setup.R"))
 g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                 "../h2o-py/scripts/h2o-py-test-setup.py"))
-g_ipynb_runner = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                               "notebook_runner.py"))
 g_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 g_machine_ip = socket.gethostbyname(socket.gethostname())
 

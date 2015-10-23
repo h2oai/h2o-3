@@ -9,9 +9,11 @@ def add_perf_results_to_mr_unit(args):
     cursor = mr_unit.cursor()
     try:
         for row in csv.reader(file(os.path.join(args[2], "perf.csv"))):
+            row = [r.strip() for r in row]
+            row[3] = row[3].split("/")[-1]
             cursor.execute('INSERT INTO perf(date, build_id, git_hash, git_branch, machine_ip, test_name, start_time, '
                            'end_time) VALUES("{0}", "{1}", "{2}", "{3}", "{4}", "{5}", {6}, {7})'
-                           .format(*[r.strip() for r in row]))
+                           .format(*row))
         mr_unit.commit()
     except:
         traceback.print_exc()
