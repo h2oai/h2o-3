@@ -168,6 +168,11 @@ class H2OFrame(H2OFrameWeakRefMixin):
     ncol = self._ncols
     return (self[i] for i in range(ncol))
 
+  def where(self):
+	fr = H2OFrame(expr=ExprNode("h2o.which", self))
+	idx = h2o.as_list(fr)["C1"]
+	return [i-1 for i in idx]
+
   def logical_negation(self): H2OFrame(expr=ExprNode("not", self))
 
   # ops

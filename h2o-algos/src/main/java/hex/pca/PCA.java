@@ -20,7 +20,6 @@ import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
-import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -305,8 +304,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           } finally {
             if (job != null) job.remove();
             if (glrm != null) {
-              // glrm._parms._loading_key.get().delete();
-              glrm._output._loading_key.get().delete();
+              // glrm._parms._representation_key.get().delete();
+              glrm._output._representation_key.get().delete();
               glrm.remove();
             }
           }

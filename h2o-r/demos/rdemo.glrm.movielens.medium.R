@@ -25,7 +25,7 @@ summary(ratings.hex)
 #          Matrix Decomposition         #
 #---------------------------------------#
 ## Basic GLRM with quadratic loss and regularization
-ratings.glrm <- h2o.glrm(ratings.hex, x = 2:ncol(ratings.hex), k = 15, ignore_const_cols = FALSE, transform = "NONE",
+ratings.glrm <- h2o.glrm(ratings.hex, cols = 2:ncol(ratings.hex), k = 15, ignore_const_cols = FALSE, transform = "NONE",
                          init = "PlusPlus", loss = "Quadratic", regularization_x = "Quadratic", regularization_y = "Quadratic",
                          gamma_x = 0.15, gamma_y = 0.15, max_iterations = 1000)
 ratings.glrm
@@ -50,7 +50,7 @@ plot(1:length(movie_idx), ratings.y[1,movie_idx], xlab = "Movie", ylab = "Archet
 # text(as.numeric(ratings.y[1,movie_idx]), as.numeric(ratings.y[2,movie_idx]), labels = movieInfo[1:25,3], cex = 0.7, pos = 3)
 
 print("Projection of users into archetype space (X):")
-ratings.x <- h2o.getFrame(ratings.glrm@model$loading_key$name)
+ratings.x <- h2o.getFrame(ratings.glrm@model$representation_name)
 head(ratings.x)
 
 print("Impute missing ratings from X and Y")
@@ -82,7 +82,7 @@ ratings_new.glrm <- h2o.glrm(ratings_new.hex, k = 15, ignore_const_cols = FALSE,
 ratings_new.glrm
 
 print("Projection of new user into archetype space (X):")
-ratings_new.x <- h2o.getFrame(ratings_new.glrm@model$loading_key$name)
+ratings_new.x <- h2o.getFrame(ratings_new.glrm@model$representation_name)
 ratings_new.x
 
 print("Impute new user's missing ratings from X and Y")

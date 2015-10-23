@@ -13,7 +13,7 @@ test.glrm.iris <- function() {
     fitH2O <- h2o.glrm(irisH2O, k = rank, loss = "Quadratic", gamma_x = gx, gamma_y = gy, transform = t)
     Log.info(paste("Iterations:", fitH2O@model$iterations, "\tFinal Objective:", fitH2O@model$objective))    
     checkGLRMPredErr(fitH2O, irisH2O, tolerance = 1e-5)
-    h2o.rm(fitH2O@model$loading_key$name)   # Remove loading matrix to free memory
+    h2o.rm(fitH2O@model$representation_name)   # Remove X matrix to free memory
   }
   
 }
