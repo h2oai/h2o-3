@@ -197,7 +197,7 @@ class H2OFrame:
     csv_writer.writeheader()             # write the header
     csv_writer.writerows(data_to_write)  # write the data
     tmp_file.close()                     # close the streams
-    res = H2OFrame.read_csv(tmp_path, _py_tmp_key())
+    res = H2OFrame.read_csv(tmp_path, _py_tmp_key(), header=1)
     os.remove(tmp_path)                  # delete the tmp file
     return res
 
@@ -626,7 +626,7 @@ class H2OFrame:
     :param data: an self._newExpr
     :return: self, with data appended (row-wise)
     """
-    if not isinstance(data, self._newExpr): raise ValueError("`data` must be an self._newExpr, but got {0}".format(type(data)))
+    if not isinstance(data, H2OFrame): raise ValueError("`data` must be an H2OFrame, but got {0}".format(type(data)))
     return self._newExpr("rbind", self, data)
 
   def split_frame(self, ratios=[0.75], destination_frames=""):
@@ -835,7 +835,7 @@ class H2OFrame:
 
     :return: An self._newExpr of the counts at each combination of factor levels
     """
-    return self._newExpr("table",self,data2) if data2 is not None else ExprNode("table",self)
+    return self._newExpr("table",self,data2) if data2 is not None else self._newExpr("table",self)
 
   def hist(self, breaks="Sturges", plot=True, **kwargs):
     """

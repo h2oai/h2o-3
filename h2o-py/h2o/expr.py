@@ -289,7 +289,10 @@ class ExprNode:
       # Pythonic: if the row & col selector turn into ints (or a single col
       # name), then extract the single element out of the Frame.  Otherwise
       # return a Frame, EVEN IF the selectors are e.g. slices-of-1-value.
-      return ExprNode("flatten",res)._eager_scalar() if isinstance(rows, int) and isinstance(cols,(basestring,int)) else res
+      if isinstance(rows, int) and isinstance(cols,(basestring,int)):
+        res = ExprNode("flatten",res) # Overwrite res to preserve gc referrer count
+        return res._eager_scalar()
+      return res
     raise ValueError("Unexpected __getitem__ selector: "+str(type(item))+" "+str(item.__class__))
 
   def _setitem(self, b, c):

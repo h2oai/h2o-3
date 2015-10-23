@@ -319,14 +319,15 @@ public class NewChunk extends Chunk {
     assert sparseLen() <= _len;
   }
 
+  // TODO: FIX isAllASCII test to actually inspect string contents
   public void addStr(Chunk c, long row) {
     if( c.isNA_abs(row) ) addNA();
-    else addStr(c.atStr_abs(new BufferedString(), row));
+    else { addStr(c.atStr_abs(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
   }
 
   public void addStr(Chunk c, int row) {
     if( c.isNA(row) ) addNA();
-    else addStr(c.atStr(new BufferedString(), row));
+    else { addStr(c.atStr(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
   }
 
   // Append a UUID, stored in _ls & _ds
