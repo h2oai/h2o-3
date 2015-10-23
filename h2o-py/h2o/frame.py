@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy,weakref,inspect,ast
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, urllib,imp,copy,weakref,inspect,ast
 import h2o, expr
 from astfun import _bytecode_decompile_lambda
 from group_by import GroupBy
@@ -202,18 +202,19 @@ class H2OFrame:
     return res
 
   @staticmethod
-  def fromRawText(self, text_key, check_header=None):
+  def fromRawText(text_key, check_header=None):
     """
     Handle result of upload_file
     :param text_key: A key pointing to raw text to be parsed
     :return: Part of the H2OFrame constructor.
     """
-    # perform the parse setup
     setup = h2o.parse_setup(text_key)
     if check_header is not None: setup["check_header"] = check_header
     parse = h2o._parse(setup)
-    self._update_post_parse(parse)
-    print "Uploaded {} into cluster with {:,} rows and {:,} cols".format(text_key, self.nrow, self.ncol)
+    destination_frame = parse["destination_frame"]["name"]
+    res = H2OFrame.get_frame(destination_frame)
+    print "Uploaded {} into cluster with {:,} rows and {:,} cols".format(text_key, res.nrow, res.ncol)
+    return res
 
   def _newExpr(self,op,*args): return H2OFrame(expr.ExprNode(op,*args))
 
@@ -300,23 +301,22 @@ class H2OFrame:
 
     :return: Returns msec since the Epoch.
     """
-    return self._newExpr("mktime", year,month,day,hour,minute,second,msec)._frame()
+    return self._newExpr("mktime", year,month,day,hour,minute,second,msec)
 
   def filterNACols(self, frac=0.2):
     """
     Filter columns with prportion of NAs >= frac.
     :param frac: Fraction of NAs in the column.
-    :return: A  list of column indices.
+    :return: A list of column indices.
     """
-    return self._newExpr("filterNACols", self, frac)._frame()
+    return self._newExpr("filterNACols", self, frac)
 
   def unique(self):
     """
     Extract the unique values in the column.
-
-    :return: A new self._newExpr of just the unique values in the column.
+    :return: A new H2OFrame of just the unique values in the column.
     """
-    return self._newExpr("unique", self)._frame()
+    return self._newExpr("unique", self)
 
   def levels(self, col=None):
     """
@@ -326,10 +326,10 @@ class H2OFrame:
     :return: a list of strings that are the factor levels for the column.
     """
     if self.ncol==1 or col is None:
-      lol=h2o.as_list(self._newExpr("levels", self)._frame(), False)[1:]
+      lol=h2o.as_list(self._newExpr("levels", self), False)[1:]
       levels=[level for l in lol for level in l] if self.ncol==1 else lol
     elif col is not None:
-      lol=h2o.as_list(self._newExpr("levels", ExprNode("cols", self, col))._frame(),False)[1:]
+      lol=h2o.as_list(self._newExpr("levels", ExprNode("cols", self, col)),False)[1:]
       levels=[level for l in lol for level in l]
     else:                             levels=None
     return None if levels is None or levels==[] else levels
@@ -379,16 +379,14 @@ class H2OFrame:
   def set_name(self,col=None,name=None):
     """
     Set the name of the column at the specified index.
-
-    :param col: Index of the column whose name is to be set. Or current name of the column to change.
+    :param col: Index of the column whose name is to be set; may be skipped for 1-column frames
     :param name: The new name of the column to set
     :return: the input frame
     """
-    if isinstance(col, basestring): col = self._find_idx(col)  # lookup the name!
+    if isinstance(col, basestring): col = self.names.index(col)  # lookup the name!
     if not isinstance(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
     if self.ncol == 1: col = 0
-    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, col, name)._eager()),id=self._id)
-    self._update()
+    self._ex = expr.ExprNode("colnames=",self,col,name) # Update-in-place, but still lazy
     return self
 
   def as_date(self,format):
@@ -396,7 +394,7 @@ class H2OFrame:
     Return the column with all elements converted to millis since the epoch.
 
     :param format: The date time format string
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("as.Date",self,format)
 
@@ -476,7 +474,7 @@ class H2OFrame:
     :param seed:Seed for random numbers (affects sampling when balance_classes=T)
     :return: A column of fold IDs.
     """
-    return self._newExpr("kfold_column",self,n_folds,seed)._frame()
+    return self._newExpr("kfold_column",self,n_folds,seed)
 
   def modulo_kfold_column(self, n_folds=3):
     """
@@ -490,7 +488,7 @@ class H2OFrame:
 
     :return: An self._newExpr holding a single column of the fold assignments.
     """
-    return self._newExpr("modulo_kfold_column",self,n_folds)._frame()
+    return self._newExpr("modulo_kfold_column",self,n_folds)
 
   def stratified_kfold_column(self, n_folds=3, seed=-1):
     """
@@ -506,7 +504,7 @@ class H2OFrame:
 
     :return: An self._newExpr holding a single column of the fold assignments.
     """
-    return self._newExpr("stratified_kfold_column",self,n_folds,seed)._frame()
+    return self._newExpr("stratified_kfold_column",self,n_folds,seed)
 
 
   def structure(self):
@@ -542,8 +540,7 @@ class H2OFrame:
     :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a
     pandas DataFrame) containing this self._newExpr instance's data.
     """
-    self._eager()
-    url = 'http://' + h2o.H2OConnection.ip() + ':' + str(h2o.H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self._id) + "&hex_string=false"
+    url = 'http://' + h2o.H2OConnection.ip() + ':' + str(h2o.H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self.frame_id) + "&hex_string=false"
     response = urllib2.urlopen(url)
     if h2o.can_use_pandas() and use_pandas:
       import pandas
@@ -578,7 +575,7 @@ class H2OFrame:
 
   def __getitem__(self, item):  ex = self._ex[item]; return H2OFrame(ex) if isinstance(ex,expr.ExprNode) else ex
   def __setitem__(self, b, c):
-    self._ex = self._ex._setitem(b,c) # Update-in-place
+    self._ex = self._ex._setitem(b,c) # Update-in-place, but still lazy
 
   def __int__(self):   return int(self._scalar())
 
@@ -613,7 +610,7 @@ class H2OFrame:
     """
     if len(self) == 0: return self
     if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
-    return self._newExpr("quantile",self,prob,combine_method)._frame()
+    return self._newExpr("quantile",self,prob,combine_method)
 
   def cbind(self,data):
     """
@@ -652,7 +649,7 @@ class H2OFrame:
     :param fun: Function to execute on each group.  Right now limited to textual Rapids expression
     :return: New frame with 1 row per-group, of results from 'fun'
     """
-    return self._newExpr("ddply", self, cols, fun)._frame()
+    return self._newExpr("ddply", self, cols, fun)
 
   def group_by(self,by,order_by=None):
     """
@@ -666,8 +663,7 @@ class H2OFrame:
 
   def impute(self,column,method="mean",combine_method="interpolate",by=None,inplace=True):
     """
-    Impute a column in this self._newExpr.
-
+    Impute a column in this H2OFrame
     :param column: The column to impute
     :param method: How to compute the imputation value.
     :param combine_method: For even samples and method="median", how to combine quantiles.
@@ -675,9 +671,16 @@ class H2OFrame:
     :param inplace: Impute inplace?
     :return: the imputed frame.
     """
-    if isinstance(column, basestring): column = self._find_idx(column)
-    if isinstance(by, basestring):     by     = self._find_idx(by)
-    return self._newExpr("h2o.impute", self, column, method, combine_method, by, inplace)._frame()
+    if isinstance(column, basestring): column = self.names.index(column)
+    if isinstance(by, basestring):     by     = self.names.index(by)
+    ex = expr.ExprNode("h2o.impute", self, column, method, combine_method, by)
+    # Note: if the backend does in-place imputation on demand, then we must be
+    # eager here because in-place implies side effects which need to be ordered
+    # with (possibly lazy posssible eager) readers
+    if not inplace: return H2OFrame(ex)
+    self._ex = ex
+    return self
+    
 
   def merge(self, other, allLeft=True, allRite=False):
     """
@@ -688,23 +691,22 @@ class H2OFrame:
     :param allRite: If true, include all rows from the right/other frame
     :return: Original self frame enhanced with merged columns and rows
     """
-    return self._newExpr("merge", self, other, allLeft, allRite)._frame()
+    return self._newExpr("merge", self, other, allLeft, allRite)
 
   def insert_missing_values(self, fraction=0.1, seed=None):
     """
-    Inserting Missing Values to an self._newExpr
-    *This is primarily used for testing*. Randomly replaces a user-specified fraction of entries in a H2O dataset with
-    missing values.
-    WARNING: This will modify the original dataset. Unless this is intended, this function should only be called on a
+    Inserting Missing Values into an H2OFrame.  *This is primarily used for
+    testing*.  Randomly replaces a user-specified fraction of entries in a H2O
+    dataset with missing values.  WARNING: This will modify the original
+    dataset.  Unless this is intended, this function should only be called on a
     subset of the original.
 
     :param fraction: A number between 0 and 1 indicating the fraction of entries to replace with missing.
     :param seed: A random number used to select which entries to replace with missing values. Default of seed = -1 will automatically generate a seed in H2O.
-    :return: self._newExpr with missing values inserted
+    :return: H2OFrame with missing values inserted
     """
-    self._eager()
     kwargs = {}
-    kwargs['dataset'] = self._id
+    kwargs['dataset'] = self.frame_id  # Eager; forces eval now for following REST call
     kwargs['fraction'] = fraction
     if seed is not None: kwargs['seed'] = seed
     job = {}
@@ -762,7 +764,7 @@ class H2OFrame:
     """
     :return: A lazy Expr representing this vec converted to a factor
     """
-    return self._newExpr("as.factor",self)._frame()
+    return self._newExpr("as.factor",self)
 
   def isfactor(self):
     """
@@ -791,7 +793,7 @@ class H2OFrame:
       pattern : str
         The split pattern.
 
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("strsplit", self, pattern)
 
@@ -804,15 +806,14 @@ class H2OFrame:
       pattern : str
         The pattern to count matches on in each string.
 
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("countmatches", self, pattern)
 
   def trim(self):
     """
     Trim the edge-spaces in a column of strings (only operates on frame with one column)
-
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("trim", self)
 
@@ -820,7 +821,7 @@ class H2OFrame:
     """
     Create a column containing the length of the strings in the target column (only operates on frame with one column)
 
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("length", self)
 
@@ -844,7 +845,7 @@ class H2OFrame:
     :param plot: A logical value indicating whether or not a plot should be generated (default is TRUE).
     :return: if plot is True, then return None, else, an self._newExpr with these columns: breaks, counts, mids_true, mids, and density
     """
-    frame = self._newExpr("hist", self, breaks)._frame()
+    frame = self._newExpr("hist", self, breaks)
     total = frame["counts"].sum(True)
     densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow)]
     densities.insert(0,0)
@@ -889,7 +890,7 @@ class H2OFrame:
     :param replacement:
     :param ignore_case:
 
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("replacefirst", self, pattern, replacement, ignore_case)
 
@@ -900,7 +901,7 @@ class H2OFrame:
     :param pattern:
     :param replacement:
     :param ignore_case:
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("replaceall", self, pattern, replacement, ignore_case)
 
@@ -915,7 +916,7 @@ class H2OFrame:
     :param max_factors: Max. number of factor levels in pair-wise interaction terms (if enforced, one extra catch-all factor will be made)
     :param min_occurrence: Min. occurrence threshold for factor levels in pair-wise interaction terms
     :param destination_frame: A string indicating the destination key. If empty, this will be auto-generated by H2O.
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return h2o.interaction(data=self, factors=factors, pairwise=pairwise, max_factors=max_factors,
                            min_occurrence=min_occurrence, destination_frame=destination_frame)
@@ -923,14 +924,14 @@ class H2OFrame:
   def toupper(self):
     """
     Translate characters from lower to upper case for a particular column
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("toupper", self)
 
   def tolower(self):
     """
     Translate characters from upper to lower case for a particular column
-    :return: self._newExpr
+    :return: H2OFrame
     """
     return self._newExpr("tolower", self)
 
@@ -947,7 +948,7 @@ class H2OFrame:
     """
     Centers and/or scales the columns of the self._newExpr
 
-    :return: self._newExpr
+    :return: H2OFrame
     :param center: either a ‘logical’ value or numeric list of length equal to the number of columns of the self._newExpr
     :param scale: either a ‘logical’ value or numeric list of length equal to the number of columns of self._newExpr.
     """
@@ -983,7 +984,7 @@ class H2OFrame:
     """
     :return: Removes rows with NAs
     """
-    return self._newExpr("na.omit", self)._frame()
+    return self._newExpr("na.omit", self)
 
   def isna(self):
     """
@@ -1059,7 +1060,7 @@ class H2OFrame:
       >>> train["response"].table()["Count"] / train["response"].table()["Count"].sum()
       >>> test["response"].table()["Count"] / test["response"].table()["Count"].sum()
     """
-    return self._newExpr('h2o.random_stratified_split', self, test_frac, seed)._frame()
+    return self._newExpr('h2o.random_stratified_split', self, test_frac, seed)
 
   def match(self, table, nomatch=0):
     """
@@ -1068,7 +1069,7 @@ class H2OFrame:
     :param table:
     :param nomatch:
 
-    :return: self._newExpr of one boolean column
+    :return: H2OFrame of one boolean column
     """
     return self._newExpr("match", self, table, nomatch, None)
 
@@ -1104,7 +1105,7 @@ class H2OFrame:
     :param no:  Frame to use if [test] is false; may be a scalar or single column
     :return: A H2OFrame
     """
-    return self._newExpr("ifelse",test,yes,no)
+    return self._newExpr("ifelse",self,yes,no)
 
   def apply(self, fun=None, axis=0):
     """

@@ -57,7 +57,7 @@ Parameters
   fui = {"file": os.path.abspath(path)}
   destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
   H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
-  return H2OFrame.raw_text(raw_id=destination_frame)
+  return H2OFrame.fromRawText(text_key=destination_frame)
 
 
 def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
@@ -115,7 +115,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   """
 
   # The H2O backend only accepts things that are quoted
-  if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
+  if isinstance(raw_frames, basestring): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
 
   if destination_frame: j["destination_frame"] = _quoted(destination_frame).replace("%",".").replace("&",".") # TODO: really should be url encoding...
@@ -1533,10 +1533,9 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
 
   :return: H2OFrame
   """
-  data._eager()
   factors = [data.names[n] if isinstance(n,int) else n for n in factors]
   parms = {"dest": _py_tmp_key() if destination_frame is None else destination_frame,
-           "source_frame": data._id,
+           "source_frame": data.frame_id,
            "factor_columns": [_quoted(f) for f in factors],
            "pairwise": pairwise,
            "max_factors": max_factors,

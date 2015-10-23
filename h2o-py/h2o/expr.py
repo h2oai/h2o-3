@@ -1,5 +1,5 @@
 import h2o, frame
-import math, collections, tabulate, urllib, gc
+import math, collections, tabulate, urllib, gc, sys
 
 
 class ExprNode:
@@ -88,24 +88,22 @@ class ExprNode:
   # Internal call, eagerly execute and return a frame.
   # Fully caching, includes fast-path cutout
   def _eager(self):
-    if self._id: return self  # Data already computed under ID, but not cached
-    # Frame does not have a name in the cluster?
-    # Act "as if" they're on the 2nd execution - and they will get assigned a temp
-    self._id="" 
-    return self._eval_driver()
+    if self._data is not None: return self
+    if self._id: return self  # Data already computed under ID, but not cached locally
+    return self._eval_driver(True)
 
   # Internal call, eagerly execute and return a scalar
   # Fully caching, includes fast-path cutout
   def _eager_scalar(self):
+    if self._data is not None: return self
     assert self._id is None
-    self._eval_driver()
+    self._eval_driver(False)
     assert not self._id , self.__repr__()
     assert not isinstance(self._data,ExprNode)
     return self._data
 
-  def _eval_driver(self):
-    if self._data is not None: return self
-    exec_str = self._do_it()
+  def _eval_driver(self,top):
+    exec_str = self._do_it(top)
     res = h2o.rapids(exec_str)
     if 'scalar' in res:  self._data = res['scalar']
     if 'string' in res:  self._data = res['string']
@@ -120,43 +118,35 @@ class ExprNode:
     gc.collect()
     return self
     
-  # Recursively build a rapids execution string; assign the "id" field to count
-  # executions; flip to using a temp on the 2nd execution.
-  #
-  # This call "counts"!!!
-  # On the 2nd .eval.impl call to any Frame object, the object will be cached as
-  # a temp until the next R GC cycle - consuming memory.  Do Not Call This except
-  # when you need to do some other cluster operation on the evaluated object.
-  # Examples might be: lazy dataset time parse vs changing the global timezone.
-  # Global timezone change is eager, so the time parse as to occur in the correct
-  # order relative to the timezone change, so cannot be lazy.
-  def _do_it(self):
+  # Magical count-of-5:   (get 2 more when looking at it in debug mode)
+  #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
+  MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
+
+  # Recursively build a rapids execution string.  Any object with more than
+  # MAGIC_REF_COUNT referrers will be cached as a temp until the next client GC
+  # cycle - consuming memory.  Do Not Call This except when you need to do some
+  # other cluster operation on the evaluated object.  Examples might be: lazy
+  # dataset time parse vs changing the global timezone.  Global timezone change
+  # is eager, so the time parse as to occur in the correct order relative to
+  # the timezone change, so cannot be lazy.
+  def _do_it(self,top):
     if self._data is not None:    # Data already computed and cached; could a "false-like" cached value 
       return self._id if isinstance(self._data,dict) else str(self._data) 
     if self._id: return self._id  # Data already computed under ID, but not cached
+    # Here self._id is either None or ""
     # Build the eval expression
     assert isinstance(self._ast,tuple)
     exec_str = "("+self._op+" "+" ".join([ExprNode._arg_to_expr(ast) for ast in self._ast])+")"
-    # First exec: ID is missing, convert to NA
-    # 2nd exec: ID is NA, convert to unique string
-    # 3rd exec: there is no 3rd exec, just use the ID string
-    if self._id is None: self._id = ""  # 1st exec: None->""; set to false-like but not None
-    elif not self._id: # Found false-like id
+    gc_ref_cnt = len(gc.get_referrers(self))
+    #print(gc_ref_cnt,self._op)
+    if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
       self._id = frame._py_tmp_key()
       exec_str = "(tmp= "+self._id+" "+exec_str+")"
     return exec_str
 
-  def _clear_impl(self):
-    if not isinstance(self._ast,tuple): return
-    for ast in self._ast:
-      if isinstance(ast,tuple): 
-        ast._clear_impl()
-    if self._id: self._ast = True  # Local pytmp
-
-
   @staticmethod
   def _arg_to_expr(arg):
-    if   isinstance(arg, ExprNode):               return arg._do_it()
+    if   isinstance(arg, ExprNode):               return arg._do_it(False)
     elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
     elif isinstance(arg, (int, float)):           return "{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, basestring):             return '"'+arg+'"'
@@ -164,6 +154,14 @@ class ExprNode:
     elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if isinstance(arg[0], basestring) else ("[" + " ".join(["NaN" if math.isnan(i) else str(i) for i in arg])+"]")
     elif arg is None:                             return "[]"  # empty list
     raise ValueError("Unexpected arg type: " + str(type(arg))+" "+arg.__repr__())
+
+  def _clear_impl(self):
+    if not isinstance(self._ast,tuple): return
+    for ast in self._ast:
+      if isinstance(ast,ExprNode): 
+        ast._clear_impl()
+    if self._id: self._ast = True  # Local pytmp
+
 
   def __del__(self):
     if( isinstance(self._ast,bool) and self._ast ):
@@ -321,9 +319,6 @@ class ExprNode:
         if col_expr.start is None and col_expr.stop is None:
           col_expr = slice(0,self.ncol)    # Slice of all
     elif isinstance(b, ExprNode): row_expr = b # Row slicing
-
-    if row_expr is None: row_expr = slice(0,self._nrows)
-    if col_expr is None: col_expr = slice(0,self._ncols)
 
     src = c if isinstance(c,ExprNode) else (float("nan") if c is None else c)
     return (ExprNode(":="    ,self,src,col_expr,row_expr) if colname is None

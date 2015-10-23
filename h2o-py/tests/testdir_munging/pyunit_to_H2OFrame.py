@@ -13,79 +13,79 @@ def to_H2OFrame():
     ## 1. list
     #   a. single row
     python_obj = [1, "a", 2.5, "bcd", 0]
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=1, cols=5)
 
     #   b. single column
     python_obj = [[1], [2], [3.7], [8], [9]]
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=5, cols=1)
 
     #   c. multiple rows, columns
     python_obj = [[6,7,8,9,10], [1,2,3,4,5], [3,2,2,2,2]]
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=3, cols=5)
 
     python_obj = [["a", "b"], ["c", "d"]]
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=2, cols=2)
 
     #   d. jagged
     python_obj = [[6,7,8,9,10], [1,2,3,4], [3,2,2]]
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     #tests.check_dims_values(python_obj, the_frame, rows=3, cols=5) TODO
 
 
     ## 2. tuple
     #   a. single row
     python_obj = (1, "a", 2.5, "bcd", 0)
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=1, cols=5)
 
     #   b. single column
     python_obj = ((1,), (2,), (3.7,), (8,), (9,))
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=5, cols=1)
 
     #   c. multiple rows, columns
     python_obj = ((6,7,8,9,10), (1,2,3,4,5), (3,2,2,2,2))
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=3, cols=5)
 
     #   d. jagged
     python_obj = ((6,7,8,9,10), (1,2,3,4), (3,2,2))
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     #tests.check_dims_values(python_obj, the_frame, rows=3, cols=5) TODO
 
     ## 3. list-tuple mixed
     #   a. single column
     python_obj = ((1,), [2], (3.7,), [8], (9,))
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=5, cols=1)
 
     #   b. single column
     python_obj = [(1,), [2], (3.7,), [8], (9,)]
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=5, cols=1)
 
     #   c. multiple rows, columns
     python_obj = ([6,7,8,9,10], (1,2,3,4,5), [3,2,2,2,2])
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=3, cols=5)
 
     #   d. multiple rows, columns
     python_obj = [(6,7,8,9,10), [1,2,3,4,5], (3,2,2,2,2)]
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     tests.check_dims_values(python_obj, the_frame, rows=3, cols=5)
 
     #   e. jagged
     python_obj = [(6,7,8,9,10), [1,2,3,4], (3,2,2)]
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     # tests.check_dims_values(python_obj, the_frame, rows=3, cols=5) TODO
 
     #   f. jagged
     python_obj = ((6,7,8,9,10), [1,2,3,4], (3,2,2))
-    the_frame = h2o.H2OFrame(python_obj=python_obj)
+    the_frame = h2o.H2OFrame.fromPython(python_obj)
     # tests.check_dims_values(python_obj, the_frame, rows=3, cols=5) TODO
 
     ## 4. dictionary
