@@ -2,7 +2,6 @@ package h2o.testng.db;
 
 import h2o.testng.utils.CommonHeaders;
 
-import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashMap;
 
@@ -24,12 +23,22 @@ public class MySQL {
 		}
 
 		final String sql = "create table if not exists " + config.getTableName() + "("
-				+ "test_case_id			 VARCHAR(125)," + "training_frame_id	 VARCHAR(125),"
-				+ "validation_frame_id	 VARCHAR(125)," + "mse_result			 DOUBLE," + "auc_result			 DOUBLE,"
-				+ "date					 datetime," + "interpreter_version	 VARCHAR(125)," + "machine_name			 VARCHAR(125),"
-				+ "total_hosts			 INT," + "cpus_per_hosts		 INT," + "total_nodes			 INT," + "source				 VARCHAR(125),"
-				+ "parameter_list		 VARCHAR(1024)," + "git_hash_number		 VARCHAR(125),"
-				+ "tuned_or_defaults	 VARCHAR(125)" + ")";
+				+ "test_case_id			 VARCHAR(125)," 
+				+ "training_frame_id	 VARCHAR(125),"
+				+ "validation_frame_id	 VARCHAR(125)," 
+				+ "mse_result			 DOUBLE," 
+				+ "auc_result			 DOUBLE,"
+				+ "date					 datetime," 
+				+ "interpreter_version	 VARCHAR(125)," 
+				+ "machine_name			 VARCHAR(125),"
+				+ "total_hosts			 INT," 
+				+ "cpus_per_hosts		 INT," 
+				+ "total_nodes			 INT," 
+				+ "source				 VARCHAR(125),"
+				+ "parameter_list		 VARCHAR(2048)," 
+				+ "git_hash_number		 VARCHAR(125),"
+				+ "tuned_or_defaults	 VARCHAR(125)" 
+				+ ")";
 
 		MySQLConnection connection = new MySQLConnection();
 		Statement statement = null;
