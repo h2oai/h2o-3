@@ -1,9 +1,13 @@
 package water.rapids;
 
-import water.H2ONode;
-import water.RPC;
+import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Merge {
 
@@ -35,6 +39,8 @@ public class Merge {
     //   We hope most common case. Common width keys (e.g. ids, codes, enums, integers, etc) both sides over similar range
     //   Left msb will match exactly to right msb one-to-one, without any alignment needed.
 
+
+    List<RPC> bmList = new ArrayList<>();
     for (int leftMSB =0; leftMSB <leftExtent; leftMSB++) { // each of left msb values.  TO DO: go parallel
 //      long leftLen = leftIndex._MSBhist[i];
 //      if (leftLen > 0) {
@@ -50,34 +56,81 @@ public class Merge {
         H2ONode rightNode = MoveByFirstByte.ownerOfMSB(rightMSB);
         //if (leftMSB!=73 || rightMSB!=73) continue;
         //Log.info("Calling BinaryMerge for " + leftMSB + " " + rightMSB);
-        BinaryMerge bm = new RPC<>(rightNode,
+        RPC bm = new RPC<>(rightNode,
                 new BinaryMerge(leftFrame, rightFrame,
                         leftMSB, rightMSB,
                         //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
                         leftIndex._bytesUsed,   // field sizes for each column in the key
                         rightIndex._bytesUsed
                 )
-        ).call().get();
-
-        //System.out.println(" ... first match " + bm._retFirst[0] + " len " + bm._retLen[0]);
-        long lefto[][] = leftIndex._o[leftMSB];
-        long righto[][] = rightIndex._o[rightMSB];
-//        for (int lr = 0; lr < leftLen; lr++) {
-//          System.out.print("Left row" + lefto[0][lr] + " matches to right row(s): ");
-//          for (int rr = 0; rr < bm._retLen[lr]; rr++)
-//            System.out.print(righto[0][(int) bm._retFirst[lr] + rr] + " ");
-//          System.out.println();
-//            }
-//          }
-//        }
+        );
+        bmList.add(bm);
+        bm.call(); //async
       }
+    }
 
-      //long[][] y = ((long[][])rightIndex.get(1))
-      //System.out.println(i + " right " + ((byte[][][]) rightIndex.get(0))[i].length);
-      //
-      //System.out.println(retFirst[0]);
-      // TO DO:   We don't even need to descend into all the buckets of the right, just the ones that the left matches to.
-      // TO DO:   Add some small to v-large benchmarks
+    long ansN = 0;
+    List<Long> chunkSizes = new ArrayList<>();
+    List<Integer> chunkLeftMSB = new ArrayList<>();
+    List<Integer> chunkRightMSB = new ArrayList<>();
+    List<Integer> chunkBatch = new ArrayList<>();
+    for (RPC rpc : bmList) {
+      BinaryMerge bm = (BinaryMerge)rpc.get(); //block
+      ansN += bm._ansN;
+      int i=0;
+      for (long s : bm._chunkSizes) {
+        chunkSizes.add(s);
+        chunkLeftMSB.add(bm._leftMSB);
+        chunkRightMSB.add(bm._rightMSB);
+        chunkBatch.add(i++);
+      }
+    }
+
+    // convert to long[], int[] etc., pass to MRTask
+
+    // Now we can stitch together the final frame from the raw chunks that were put into the store
+    //First, create espc array
+    long espc[] = new long[chunkSizes.size()+1];
+    int i=0;
+    long sum=0;
+    for (Long s : chunkSizes.toArray(new Long[0])) {
+      espc[i++] = sum;
+      sum+=s;
+    }
+    espc[espc.length-1] = sum;
+    assert(sum==ansN);
+
+    // Allocate dummy vecs/chunks, to be filled in MRTask below
+    // TODO: home the chunks to where they already are
+    Vec[] vecs = new Vec[rightFrame.numCols()];
+    for (i=0; i<vecs.length; ++i) {
+      vecs[i] = Vec.makeCon(0, new Vec.VectorGroup(), espc);
+    }
+    String[] names = rightFrame.names().clone();
+
+    //TODO add left half
+    // Now we can stitch together the final frame from the raw chunks that were put into the store
+    Frame fr = new Frame(Key.make(rightFrame._key.toString() + "_joined_with_" + leftFrame._key.toString()), names, vecs);
+
+    FrameFiller ff = new FrameFiller(leftFrame, rightFrame, , );
+    ff.doAll(fr);
+  }
+
+  class FrameFiller extends MRTask<FrameFiller> {
+    final Frame _leftFrame;
+    final Frame _rightFrame;
+    public FrameFiller(Frame leftFrame, Frame rightFrame) {
+      _leftFrame = leftFrame;
+      _rightFrame = rightFrame;
+    }
+    @Override
+    public void map(Chunk[] cs) {
+      for (int i=0;i<cs.length;++i) {
+        Key destKey = cs[i].vec().chunkKey(cs[i].cidx());
+        Chunk ck = DKV.getGet(BinaryMerge.getKeyForMSBComboPerCol(_leftFrame, _rightFrame, leftMSB, rightMSB, i, b));
+        DKV.put(destKey, ck);
+      }
     }
   }
 }
+

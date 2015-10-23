@@ -446,7 +446,7 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.  */
   public Vec makeCon( final double d ) { return makeCon(d, group(), _espc); }
 
-  private static Vec makeCon( final double d, VectorGroup group, long[] espc ) {
+  public static Vec makeCon( final double d, VectorGroup group, long[] espc ) {
     if( (long)d==d ) return makeCon((long)d, null, group, espc);
     final int nchunks = espc.length-1;
     final Vec v0 = new Vec(group.addVec(), espc, null, T_NUM);
