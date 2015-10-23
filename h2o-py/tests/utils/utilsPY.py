@@ -111,7 +111,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
     for i in range(num_elements):
         r = random.randint(0,rows-1)
         c = random.randint(0,cols-1)
-        h2o_val = h2o_data[r,c] if isinstance(h2o_data,H2OFrame) else h2o_data[r]
+        h2o_val = h2o_data[r,c]
         np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
         if isinstance(np_val, np.bool_): np_val = bool(np_val)  # numpy haz special bool type :(
         assert np.absolute(h2o_val - np_val) < 1e-6, \

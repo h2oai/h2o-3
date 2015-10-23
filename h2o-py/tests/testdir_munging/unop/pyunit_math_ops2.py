@@ -15,10 +15,10 @@ def expr_math_ops():
     acosh_data = [[random.uniform(1,10) for r in range(10)] for c in range(10)]
     abs_data = [[random.uniform(-100000,0) for r in range(10)] for c in range(10)]
 
-    h2o_data1_1 = h2o.H2OFrame(python_obj=sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
-    h2o_data2_1 = h2o.H2OFrame(python_obj=asin_acos_atanh_data)
-    h2o_data3_1 = h2o.H2OFrame(python_obj=acosh_data)
-    h2o_data4_1 = h2o.H2OFrame(python_obj=abs_data)
+    h2o_data1_1 = h2o.H2OFrame.fromPython(sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
+    h2o_data2_1 = h2o.H2OFrame.fromPython(asin_acos_atanh_data)
+    h2o_data3_1 = h2o.H2OFrame.fromPython(acosh_data)
+    h2o_data4_1 = h2o.H2OFrame.fromPython(abs_data)
 
     np_data1 = np.array(sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
     np_data2 = np.array(asin_acos_atanh_data)

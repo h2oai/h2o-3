@@ -31,12 +31,12 @@ def minmax_basic():
     assert irisall_min == np_min, "Expected the same min value. H2O got {0}, but numpy got {1}".format(irisall_min, np_min)
     assert irisall_max == np_max, "Expected the same max value. H2O got {0}, but numpy got {1}".format(irisall_max, np_max)
 
-    print "min and max corretness"
+    print "min and max correctness"
     data = [1,-0.1,0]
     mn = min(data)
     mx = max(data)
-    h2o_min = h2o.H2OFrame(data).min()
-    h2o_max = h2o.H2OFrame(data).max()
+    h2o_min = h2o.H2OFrame.fromPython(data).min()
+    h2o_max = h2o.H2OFrame.fromPython(data).max()
     assert h2o_min == mn, "Expected the same min value. H2O got {0}, but python got {1}".format(h2o_min, mn)
     assert h2o_max == mx, "Expected the same max value. H2O got {0}, but python got {1}".format(h2o_max, mx)
 

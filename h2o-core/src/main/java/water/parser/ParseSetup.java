@@ -476,17 +476,16 @@ public final class ParseSetup extends Iced {
     int sep = n.lastIndexOf(java.io.File.separatorChar);
     if( sep > 0 ) n = n.substring(sep+1);
     int dot = n.lastIndexOf('.');
-    if( dot > 0) {
-      while (n.endsWith("zip")
-              || n.endsWith("gz")
-              || n.endsWith("csv")
-              || n.endsWith("xls")
-              || n.endsWith("txt")
-              || n.endsWith("svm")
-              || n.endsWith("arff")) {
-        n = n.substring(0, dot);
-        dot = n.lastIndexOf('.');
-      }
+    while ( (dot > 0) &&
+            n.endsWith("zip")
+            || n.endsWith("gz")
+            || n.endsWith("csv")
+            || n.endsWith("xls")
+            || n.endsWith("txt")
+            || n.endsWith("svm")
+            || n.endsWith("arff")) {
+      n = n.substring(0, dot);
+      dot = n.lastIndexOf('.');
     }
     // "2012_somedata" ==> "X2012_somedata"
     if( !Character.isJavaIdentifierStart(n.charAt(0)) ) n = "X"+n;

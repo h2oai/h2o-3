@@ -50,7 +50,7 @@ def cbind():
 
   # unequal rows should fail
   try:
-    hdf7 = hdf.cbind(otherhdf)._frame()
+    hdf7 = hdf.cbind(otherhdf).frame_id
     assert False, "expected an error"
   except EnvironmentError:
     assert True

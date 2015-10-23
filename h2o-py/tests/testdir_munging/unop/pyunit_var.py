@@ -10,9 +10,6 @@ import h2o, tests
 import numpy as np
 
 def var_test():
-    
-    
-
     iris_h2o = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
     iris_np = np.genfromtxt(tests.locate("smalldata/iris/iris_wheader.csv"),
                             delimiter=',',
@@ -23,7 +20,6 @@ def var_test():
     for i in range(4):
         var_h2o = iris_h2o[i].var()
         assert abs(var_np[i] - var_h2o) < 1e-10, "expected equal variances"
-
 
     var_cov_h2o = iris_h2o[0:4].var()
     var_cov_np = np.cov(iris_np, rowvar=0, ddof=1)

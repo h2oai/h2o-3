@@ -329,7 +329,7 @@ class H2OFrame:
       lol=h2o.as_list(self._newExpr("levels", self), False)[1:]
       levels=[level for l in lol for level in l] if self.ncol==1 else lol
     elif col is not None:
-      lol=h2o.as_list(self._newExpr("levels", ExprNode("cols", self, col)),False)[1:]
+      lol=h2o.as_list(self._newExpr("levels", self._newExpr("cols", self, col)),False)[1:]
       levels=[level for l in lol for level in l]
     else:                             levels=None
     return None if levels is None or levels==[] else levels
@@ -577,9 +577,13 @@ class H2OFrame:
   def __setitem__(self, b, c):
     self._ex = self._ex._setitem(b,c) # Update-in-place, but still lazy
 
-  def __int__(self):   return int(self._scalar())
+  def __int__(self):
+    if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
+    return int(self.flatten())
 
-  def __float__(self): return self._scalar()
+  def __float__(self): 
+    if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
+    return float(self.flatten())
 
   def drop(self, i):
     """
@@ -749,9 +753,12 @@ class H2OFrame:
   def var(self,y=None,use="everything"):
     """
     :param use: One of "everything", "complete.obs", or "all.obs".
-    :return: The covariance matrix of the columns in this self._newExpr.
+    :return: The covariance matrix of the columns in this H2OFrame if y is
+             given, or a eagerly computed scalar if y is not given.
     """
-    return self._newExpr("var",self,self if y is None else y,use)._get()
+    if y is None: y = self
+    if self.nrow==1 or (self.ncol==1 and y.ncol==1): return self._scalar("var",self,y,use)
+    return self._newExpr("var",self,y,use)
 
   def sd(self):
     """
