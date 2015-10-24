@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<head>
+    <title>Tree Creator</title>
+    <link rel="stylesheet" href="TreeCreator.css">
+</head>
+<div id="topPage"></div>
+<ul>
+    <li id="logo">H<sub>2</sub>O Tree</li>
+    <li><a>Tree Visualization</a></li>
+    <li><a>H<sub>2</sub>O Flow</a></li>
+    <li><a>H<sub>2</sub>O Home Page</a></li>
+
+</ul>
+
+
+<div id="saveMenu">
+    <ul>
+        <input id="nameTree" type="text" name="treeName" placeholder="Untitled Tree">
+        <li><a>Save Tree</a></li>
+        <li><a>Get Info</a></li>
+        <li><a>Other</a></li>
+
+    </ul>
+
+
+</div>
+
+
+<div id="sidebar">
+    <ul id="tinyMenu">
+        <li><a>Tree Info</a></li>
+        <li><a>Decision Info</a></li>
+        <li><a>Model Info</a></li>
+        <li><a>Help</a></li>
+    </ul>
+    <h2>Forest Info</h2>
+
+    <p>Number of Trees: </p>
+
+    <p>Model Type: </p>
+
+    <h2>Tree Info</h2>
+
+    <p>Tree Number:
+
+        <select>
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="all">See Forest</option>
+        </select>
+    </p>
+
+    <p>Tree Alignment: </p>
+
+    <p>Number of nodes: </p>
+
+    <p>Depth: </p>
+
+    <p>Split Count: </p>
+    <p>Number of Nodes: </p>
+    <p>Regression Type: </p>
+    <p>Number of Observations: </p>
+    <p>Average: </p>
+
+</div>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="TreeCreator.js"></script>
+</body>
+</html>
