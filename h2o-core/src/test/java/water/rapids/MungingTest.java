@@ -1,5 +1,6 @@
 package water.rapids;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -59,9 +60,23 @@ public class MungingTest extends TestUtil {
       //   Log.info("Chunk " + i + " is on node " + rightFrame.anyVec().chunkKey(i).home_node().index());
       // }
 
-      new Merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1});  // 0==id, 1==date  (no dups)
-      new Merge(leftFrame, rightFrame, new int[] {0}, new int[] {0});      // 0==id           (many dups)
+      Frame fr1 = Merge.merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1});  // 0==id, 1==date  (no dups)
+      Frame fr2 = Merge.merge(leftFrame, rightFrame, new int[] {0},   new int[] {0}  );  // 0==id           (many dups)
 
+
+      Log.info(fr1.toString(0,(int)fr1.numRows()));
+      Log.info(fr2.toString(0,(int)fr2.numRows()));
+
+//      NFSFileVec ref1 = NFSFileVec.make(find_test_file("/users/arno/devtestdata/ref1.csv"));
+//      Frame ref1Frame = ParseDataset.parse(Key.make(), nfs._key);
+//      Assert.assertTrue("First Join is not correct", TestUtil.isBitIdentical(fr1, ref1Frame));
+//
+//      NFSFileVec ref2 = NFSFileVec.make(find_test_file("/users/arno/devtestdata/ref2.csv"));
+//      Frame ref2Frame = ParseDataset.parse(Key.make(), nfs._key);
+//      Assert.assertTrue("First Join is not correct", TestUtil.isBitIdentical(fr2, ref2Frame));
+//
+//      ref1Frame.delete();
+//      ref2Frame.delete();
       leftFrame.delete();
       rightFrame.delete();
     }

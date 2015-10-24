@@ -303,13 +303,15 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       }
 
       // compress all chunks and store them
+      Futures fs = new Futures();
       for (int col=0; col<_rightFrame.numCols(); ++col) {
         for (int b = 0; b < nbatch; b++) {
           Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
-          DKV.put(getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _leftMSB, _rightMSB, col, b), ck);
+          DKV.put(getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _leftMSB, _rightMSB, col, b), ck, fs, true);
           frameLikeChunks[col][b]=null; //free mem as early as possible (it's now in the store)
         }
       }
+      fs.blockForPending();
 
     }
   }
@@ -317,7 +319,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   static Key getKeyForMSBComboPerCol(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int col /*final table*/, int batch) {
     return Key.make("Chunk_for_col_" + col + "_batch_" + batch
             + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
-            + "_forLeftMSB_"+leftMSB + "_RightMSB_" + rightMSB);
+            + "_forLeftMSB_"+leftMSB + "_RightMSB_" + rightMSB); //TODO home locally
   }
 
   class GetRawRemoteRows extends DTask<GetRawRemoteRows> {

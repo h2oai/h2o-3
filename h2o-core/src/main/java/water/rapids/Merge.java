@@ -12,7 +12,7 @@ import java.util.List;
 public class Merge {
 
   // single-threaded driver logic
-  Merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[]) {
+  static Frame merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[]) {
 
     // each of those launches an MRTask
     RadixOrder leftIndex = new RadixOrder(leftFrame, leftCols);
@@ -113,11 +113,11 @@ public class Merge {
     assert(sum==ansN);
 
     // Allocate dummy vecs/chunks, to be filled in MRTask below
-    // TODO: home the chunks to where they already are
-    Vec[] vecs = new Vec[rightFrame.numCols()];
-    for (i=0; i<vecs.length; ++i) {
-      vecs[i] = Vec.makeCon(0, new Vec.VectorGroup(), espc);
-    }
+    int num = rightFrame.numCols();
+    final byte[] types = new byte[num];
+    int j=0;
+    for (Vec v : rightFrame.vecs()) types[j++] = v.get_type();
+    Vec[] vecs = new Vec(Vec.newKey(),espc).makeCons(num, 0, rightFrame.domains(), types);
     String[] names = rightFrame.names().clone();
 
     //TODO add left half
@@ -125,7 +125,7 @@ public class Merge {
     Frame fr = new Frame(Key.make(rightFrame._key.toString() + "_joined_with_" + leftFrame._key.toString()), names, vecs);
     ChunkStitcher ff = new ChunkStitcher(leftFrame, rightFrame, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     ff.doAll(fr);
-    Log.info(fr);
+    return fr;
   }
 
   static class ChunkStitcher extends MRTask<ChunkStitcher> {
@@ -152,12 +152,16 @@ public class Merge {
     @Override
     public void map(Chunk[] cs) {
       int chkIdx = cs[0].cidx();
+      Futures fs = new Futures();
       for (int i=0;i<cs.length;++i) {
         Key destKey = cs[i].vec().chunkKey(chkIdx);
         assert(cs[i].len() == _chunkSizes[chkIdx]);
-        Chunk ck = DKV.getGet(BinaryMerge.getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]));
-        DKV.put(destKey, ck);
+        Key k = BinaryMerge.getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
+        Chunk ck = DKV.getGet(k);
+        DKV.put(destKey, ck, fs);
+        DKV.remove(k);
       }
+      fs.blockForPending();
     }
   }
 }
