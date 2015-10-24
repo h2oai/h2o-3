@@ -70,30 +70,40 @@ public class Merge {
     }
 
     long ansN = 0;
-    List<Long> chunkSizes = new ArrayList<>();
-    List<Integer> chunkLeftMSB = new ArrayList<>();
-    List<Integer> chunkRightMSB = new ArrayList<>();
-    List<Integer> chunkBatch = new ArrayList<>();
+    int numChunks = 0;
+    BinaryMerge bmResults[] = new BinaryMerge[bmList.size()];
+    int i=0;
     for (RPC rpc : bmList) {
-      BinaryMerge bm = (BinaryMerge)rpc.get(); //block
-      ansN += bm._ansN;
-      int i=0;
-      for (long s : bm._chunkSizes) {
-        chunkSizes.add(s);
-        chunkLeftMSB.add(bm._leftMSB);
-        chunkRightMSB.add(bm._rightMSB);
-        chunkBatch.add(i++);
+      BinaryMerge thisbm;
+      bmResults[i++] = thisbm = (BinaryMerge)rpc.get(); //block
+      numChunks += thisbm._chunkSizes.length;
+      ansN += thisbm._ansN;
+    }
+    assert(i == bmList.size());
+
+    long chunkSizes[] = new long[numChunks];
+    int chunkLeftMSB[] = new int[numChunks];  // using too much space repeating the same value here, but, limited
+    int chunkRightMSB[] = new int[numChunks];
+    int chunkBatch[] = new int[numChunks];
+    int k = 0;
+    for (i=0; i<bmList.size(); i++) {
+      BinaryMerge thisbm = bmResults[i];
+      long thisChunkSizes[] = thisbm._chunkSizes;  // TODO: change chunkSizes to int[]
+      for (int j=0; j<thisChunkSizes.length; j++) {
+        chunkSizes[k] = thisChunkSizes[j];
+        chunkLeftMSB[k] = thisbm._leftMSB;
+        chunkRightMSB[k] = thisbm._rightMSB;
+        chunkBatch[k] = j;
+        k++;
       }
     }
 
-    // convert to long[], int[] etc., pass to MRTask
-
     // Now we can stitch together the final frame from the raw chunks that were put into the store
     //First, create espc array
-    long espc[] = new long[chunkSizes.size()+1];
-    int i=0;
+    long espc[] = new long[chunkSizes.length+1];
+    i=0;
     long sum=0;
-    for (Long s : chunkSizes.toArray(new Long[0])) {
+    for (long s : chunkSizes) {
       espc[i++] = sum;
       sum+=s;
     }
