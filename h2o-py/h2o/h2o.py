@@ -216,7 +216,10 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
   # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
-  j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
+  kwargs={"url_suffix":"ParseSetup", "source_frames":[_quoted(id) for id in raw_frames]}
+  if separator:
+      kwargs['separator'] = separator
+  j = H2OConnection.post_json(**kwargs)
 
   if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
   if header != (-1, 0, 1):
