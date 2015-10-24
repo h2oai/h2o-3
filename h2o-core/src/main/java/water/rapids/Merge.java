@@ -76,6 +76,7 @@ public class Merge {
     for (RPC rpc : bmList) {
       BinaryMerge thisbm;
       bmResults[i++] = thisbm = (BinaryMerge)rpc.get(); //block
+      if (thisbm._ansN == 0) continue;
       numChunks += thisbm._chunkSizes.length;
       ansN += thisbm._ansN;
     }
@@ -88,6 +89,7 @@ public class Merge {
     int k = 0;
     for (i=0; i<bmList.size(); i++) {
       BinaryMerge thisbm = bmResults[i];
+      if (thisbm._ansN == 0) continue;
       long thisChunkSizes[] = thisbm._chunkSizes;  // TODO: change chunkSizes to int[]
       for (int j=0; j<thisChunkSizes.length; j++) {
         chunkSizes[k] = thisChunkSizes[j];
@@ -121,23 +123,39 @@ public class Merge {
     //TODO add left half
     // Now we can stitch together the final frame from the raw chunks that were put into the store
     Frame fr = new Frame(Key.make(rightFrame._key.toString() + "_joined_with_" + leftFrame._key.toString()), names, vecs);
-
-    FrameFiller ff = new FrameFiller(leftFrame, rightFrame, , );
+    ChunkStitcher ff = new ChunkStitcher(leftFrame, rightFrame, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     ff.doAll(fr);
+    Log.info(fr);
   }
 
-  class FrameFiller extends MRTask<FrameFiller> {
+  static class ChunkStitcher extends MRTask<ChunkStitcher> {
     final Frame _leftFrame;
     final Frame _rightFrame;
-    public FrameFiller(Frame leftFrame, Frame rightFrame) {
+    final long _chunkSizes[];
+    final int _chunkLeftMSB[];
+    final int _chunkRightMSB[];
+    final int _chunkBatch[];
+    public ChunkStitcher(Frame leftFrame,
+                         Frame rightFrame,
+                         long[] chunkSizes,
+                         int[] chunkLeftMSB,
+                         int[] chunkRightMSB,
+                         int[] chunkBatch
+    ) {
       _leftFrame = leftFrame;
       _rightFrame = rightFrame;
+      _chunkSizes = chunkSizes;
+      _chunkLeftMSB = chunkLeftMSB;
+      _chunkRightMSB = chunkRightMSB;
+      _chunkBatch = chunkBatch;
     }
     @Override
     public void map(Chunk[] cs) {
+      int chkIdx = cs[0].cidx();
       for (int i=0;i<cs.length;++i) {
-        Key destKey = cs[i].vec().chunkKey(cs[i].cidx());
-        Chunk ck = DKV.getGet(BinaryMerge.getKeyForMSBComboPerCol(_leftFrame, _rightFrame, leftMSB, rightMSB, i, b));
+        Key destKey = cs[i].vec().chunkKey(chkIdx);
+        assert(cs[i].len() == _chunkSizes[chkIdx]);
+        Chunk ck = DKV.getGet(BinaryMerge.getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]));
         DKV.put(destKey, ck);
       }
     }

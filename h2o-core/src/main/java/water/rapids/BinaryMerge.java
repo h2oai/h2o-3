@@ -264,14 +264,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       _chunkSizes = new long[nbatch];
 
       // batch chunks (per column), each chunk has up to batchSize rows
-      Chunk[][] frameLikeChunks = new Chunk[_rightFrame.numCols()/*cols*/][nbatch/*batch*/];
+      double[][][] frameLikeChunks = new double[_rightFrame.numCols()/*cols*/][nbatch/*batch*/][]; //TODO: compression via int types
       for (int col=0; col<_rightFrame.numCols(); ++col) {
         int b;
         for (b = 0; b < nbatch - 1; b++) {
-          frameLikeChunks[col][b] = new NewChunk(null, -1, batchSize);
+          frameLikeChunks[col][b] = new double[batchSize];
           _chunkSizes[b] = batchSize;
         }
-        frameLikeChunks[col][b] = new NewChunk(null, -1, lastSize);
+        frameLikeChunks[col][b] = new double[lastSize];
         _chunkSizes[b] = lastSize;
       }
 
@@ -293,7 +293,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
               long actualRowInMSBCombo = perNodeRowFrom[node.index()][b][row];
               int whichChunk = (int) (actualRowInMSBCombo / batchSize);
               int offset = (int) (actualRowInMSBCombo % batchSize);
-              frameLikeChunks[col][whichChunk].set(offset, val); //TODO: Avoid double blow-up for small integers
+              frameLikeChunks[col][whichChunk][offset] = val;
 //              w.set(actualRowInMSBCombo, val); //writes into fr.vec(col)
             }
 //            w.close();
@@ -305,7 +305,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       // compress all chunks and store them
       for (int col=0; col<_rightFrame.numCols(); ++col) {
         for (int b = 0; b < nbatch; b++) {
-          Chunk ck = ((NewChunk)frameLikeChunks[col][b]).compress();
+          Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
           DKV.put(getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _leftMSB, _rightMSB, col, b), ck);
           frameLikeChunks[col][b]=null; //free mem as early as possible (it's now in the store)
         }
