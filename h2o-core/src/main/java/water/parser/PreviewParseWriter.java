@@ -158,7 +158,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
 
       // with NA, but likely numeric
       if (_domains[i].size() <= 1
-              && (_nnums[i] + _nstrings[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
+              && (_nnums[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
         types[i] = Vec.T_NUM;
         continue;
       }
@@ -204,7 +204,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       }
 
       // All guesses failed
-      types[i] = Vec.T_BAD;
+      types[i] = Vec.T_NUM;
     }
     return types;
   }

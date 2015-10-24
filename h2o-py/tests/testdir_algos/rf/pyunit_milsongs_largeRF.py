@@ -1,12 +1,15 @@
-import sys, os
-sys.path.insert(1, "../../../")
-import h2o,tests
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+import os
+
 import random
 
 def milsong_checkpoint():
 
-    milsong_train = h2o.upload_file(h2o.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
-    milsong_valid = h2o.upload_file(h2o.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
+    milsong_train = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
+    milsong_valid = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
 
     # build first model
     ntrees1 = random.sample(range(50,100),1)[0]
@@ -19,7 +22,7 @@ def milsong_checkpoint():
                                validation_x=milsong_valid[1:],validation_y=milsong_valid[0],seed=1234)
 
     # save the model, then load the model
-    path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..","results"))
+    path = pyunit_utils.locate("results")
 
     assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
     model_path = h2o.save_model(model1, path=path, force=True)
@@ -45,5 +48,9 @@ def milsong_checkpoint():
     assert isinstance(model2,type(model3))
     assert model2.mse(valid=True)==model3.mse(valid=True), "Expected Model 2 MSE: {0} to be the same as Model 4 MSE: {1}".format(model2.mse(valid=True), model3.mse(valid=True))
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, milsong_checkpoint)
+    pyunit_utils.standalone_test(milsong_checkpoint)
+else:
+    milsong_checkpoint()

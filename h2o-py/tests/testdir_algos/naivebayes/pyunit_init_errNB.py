@@ -1,12 +1,16 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def nb_init_err():
     
 
     print "Importing iris_wheader.csv data...\n"
-    iris = h2o.upload_file(h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     iris.describe
 
     print "Laplace smoothing parameter is negative"
@@ -30,5 +34,9 @@ def nb_init_err():
     except:
         pass
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, nb_init_err)
+    pyunit_utils.standalone_test(nb_init_err)
+else:
+    nb_init_err()

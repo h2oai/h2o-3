@@ -221,6 +221,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     // --------------------------------------------------------------------------
     // Compute Residuals
+    // Do this for all rows, whether OOB or not
     class ComputePredAndRes extends MRTask<ComputePredAndRes> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
@@ -344,11 +345,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // Build the next k-trees, which is trying to correct the residual error from
     // the prior trees.
     @Override protected void buildNextKTrees() {
-      // Compute predictions and resulting residuals for trees built so far
-      // ESL2, page 387, Steps 2a, 2b
-//      Log.info("3 before ComputePredAndRes\n", _train);
-      new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node); //fills "Work" columns
-
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -356,12 +352,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Define a "working set" of leaf splits, from here to tree._len
       int[] leafs = new int[_nclass];
 
+      // Compute predictions and resulting residuals for trees built so far
+      // ESL2, page 387, Steps 2a, 2b
+//      Log.info("3 before ComputePredAndRes\n", _train);
+      new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node); //fills "Work" columns for all rows (incl. OOB)
+
 //      Log.info("4 before growTrees\n", _train);
       // ----
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
-      growTrees(ktrees, leafs, _rand);
+      growTrees(ktrees, leafs, _rand); //assign to OOB and split using non-OOB only
 
 //      Log.info("5 before fitBestConstants\n", _train);
       // ----
@@ -411,7 +412,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Sample ss[] = new Sample[_nclass];
         for (int k = 0; k < _nclass; k++)
           if (ktrees[k] != null)
-            ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(0, new Frame(vec_nids(_train, k), vec_resp(_train)), _parms._build_tree_one_node);
+            ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(null, new Frame(vec_nids(_train, k), vec_resp(_train)), _parms._build_tree_one_node);
         for (int k = 0; k < _nclass; k++)
           if (ss[k] != null) ss[k].getResult();
       }
@@ -539,12 +540,16 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           Distribution dist = new Distribution(_parms._distribution, _parms._tweedie_power);
           for( int row=0; row<nids._len; row++ ) { // For all rows
             int nid = (int)nids.at8(row);          // Get Node to decide from
+
+            final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chk_nids(chks,k).at8(row)); //same for all k
+            if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
+
             if( nid < 0 ) continue;                // Missing response
             if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
-              nid = tree.node(nid)._pid;                  // Then take parent's decision
+              nid = tree.node(nid).pid();                  // Then take parent's decision
             DecidedNode dn = tree.decided(nid);           // Must have a decision point
             if( dn._split._col == -1 )                    // Unable to decide?
-              dn = tree.decided(dn._pid);  // Then take parent's decision
+              dn = tree.decided(dn.pid());  // Then take parent's decision
             int leafnid = dn.ns(chks,row); // Decide down to a leafnode
             assert leaf <= leafnid && leafnid < tree._len :
                     "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
@@ -555,6 +560,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             // leaf, and get our prediction from that.
             nids.set(row, leafnid);
             assert !ress.isNA(row);
+
+            // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
+            if (wasOOBRow) continue;
 
             // Compute numerator and denominator of terminal node estimate (gamma)
             double w = hasWeightCol() ? chk_weight(chks).atd(row) : 1; //weight

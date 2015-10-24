@@ -1,6 +1,10 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 import random
 
 def covtype_get_model():
@@ -8,7 +12,7 @@ def covtype_get_model():
     
 
     #Log.info("Importing covtype.20k.data...\n")
-    covtype = h2o.import_file(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
+    covtype = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
 
     Y = 54
     X = range(0,20) + range(29,54)
@@ -38,6 +42,10 @@ def covtype_get_model():
     covtype_mod3 = h2o.get_model(covtype_mod3._id)
     covtype_mod3.show()
   
-if __name__ == "__main__":
-  tests.run_test(sys.argv, covtype_get_model)
 
+
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(covtype_get_model)
+else:
+    covtype_get_model()

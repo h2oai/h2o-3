@@ -15,7 +15,7 @@ import java.io.File;
 import java.util.Arrays;
 
 public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void bigSlice() {
     // check that large slices do something sane
@@ -333,8 +333,8 @@ public class RapidsTest extends TestUtil {
   static void checkSaneFrame() {  assert checkSaneFrame_impl(); }
   static boolean checkSaneFrame_impl() {
     for( Key k : H2O.localKeySet() ) {
-      Value val = H2O.raw_get(k);
-      if( val.isFrame() ) {
+      Value val = Value.STORE_get(k);
+      if( val != null && val.isFrame() ) {
         Frame fr = val.get();
         Vec vecs[] = fr.vecs();
         for( int i=0; i<vecs.length; i++ ) {

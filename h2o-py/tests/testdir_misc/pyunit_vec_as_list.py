@@ -1,12 +1,16 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def vec_as_list():
     
     
 
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
     res = h2o.as_list(iris[0], use_pandas=False)
     assert abs(float(res[4][0]) - 4.6) < 1e-10 and abs(float(res[6][0]) - 5.4) < 1e-10 and \
@@ -21,5 +25,9 @@ def vec_as_list():
     assert abs(float(res3[4][0]) - -1.1) < 1e-10 and abs(float(res3[6][0]) - -1.9) < 1e-10 and \
            abs(float(res3[10][0]) - -1.1) < 1e-10, "incorrect values"
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, vec_as_list)
+    pyunit_utils.standalone_test(vec_as_list)
+else:
+    vec_as_list()

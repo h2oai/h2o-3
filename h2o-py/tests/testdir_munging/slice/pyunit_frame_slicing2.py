@@ -1,12 +1,16 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def expr_slicing():
     
     
 
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     iris.show()
 
     ###################################################################
@@ -36,5 +40,9 @@ def expr_slicing():
     assert abs(res6[0,0] - 10.8) < 1e-10 and abs(res6[1,1] - 6.8) < 1e-10 and abs(res6[2,2] - 3.0) < 1e-10 and \
            abs(res6[3,3] - 0.4) < 1e-10, "incorrect values"
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, expr_slicing)
+    pyunit_utils.standalone_test(expr_slicing)
+else:
+    expr_slicing()

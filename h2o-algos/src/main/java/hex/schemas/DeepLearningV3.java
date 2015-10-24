@@ -84,9 +84,9 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "reproducible",
         "export_weights_and_biases",
 //        "mini_batch_size",
-//        "elastic_averaging",
-//        "elastic_averaging_moving_rate",
-//        "elastic_averaging_regularization"
+        "elastic_averaging",
+        "elastic_averaging_moving_rate",
+        "elastic_averaging_regularization"
     };
 
   /*Imbalanced Classes*/
@@ -515,7 +515,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Handling of missing values. Either Skip or MeanImputation.", values = { "Skip", "MeanImputation" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.MissingValuesHandling missing_values_handling;
 
-    @API(help = "Sparse data handling (Deprecated).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Sparse data handling (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean sparse;
 
     @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Deprecated).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
@@ -539,13 +539,13 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //    @API(help = "Mini-batch size (use 1 for stochastic gradient descent)", level = API.Level.expert, direction=API.Direction.INOUT)
 //    public int mini_batch_size;
 
-//    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence", level = API.Level.expert, direction=API.Direction.INOUT)
-//    public boolean elastic_averaging;
-//
-//    @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
-//    public double elastic_averaging_moving_rate;
-//
-//    @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
-//    public double elastic_averaging_regularization;
+    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT)
+    public boolean elastic_averaging;
+
+    @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+    public double elastic_averaging_moving_rate;
+
+    @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+    public double elastic_averaging_regularization;
   }
 }

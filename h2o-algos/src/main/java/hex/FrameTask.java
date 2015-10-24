@@ -4,12 +4,14 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
 import water.util.RandomUtils;
 
 import java.util.Arrays;
 import java.util.Random;
 
 public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
+  protected boolean _sparse;
   protected transient DataInfo _dinfo;
   public DataInfo dinfo() { return _dinfo; }
   final Key _dinfoKey;
@@ -22,19 +24,19 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   private final int _iteration;
 
   public FrameTask(Key jobKey, DataInfo dinfo) {
-    this(jobKey, dinfo, 0xDECAFBEE, -1);
+    this(jobKey, dinfo, 0xDECAFBEE, -1, false);
   }
-  public FrameTask(Key jobKey, DataInfo dinfo, long seed, int iteration) {
-    this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration);
+  public FrameTask(Key jobKey, DataInfo dinfo, long seed, int iteration, boolean sparse) {
+    this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration, sparse);
   }
-  private FrameTask(Key jobKey, Key dinfoKey, int [] activeCols,long seed, int iteration) {
+  private FrameTask(Key jobKey, Key dinfoKey, int [] activeCols,long seed, int iteration, boolean sparse) {
     super(null);
-    assert dinfoKey == null || DKV.get(dinfoKey) != null;
     _jobKey = jobKey;
     _dinfoKey = dinfoKey;
     _activeCols = activeCols;
     _seed = seed;
     _iteration = iteration;
+    _sparse = sparse;
   }
   @Override protected void setupLocal(){
     DataInfo dinfo = DKV.get(_dinfoKey).get();
@@ -100,7 +102,23 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final boolean obs_weights = _dinfo._weights && !_fr.vecs()[_dinfo.weightChunkId()].isConst();
     final double global_weight_sum = obs_weights ? _fr.vecs()[_dinfo.weightChunkId()].mean() * _fr.numRows() : 0;
 
-    DataInfo.Row row = _dinfo.newDenseRow();
+    DataInfo.Row row = null;
+    DataInfo.Row[] rows = null;
+    if (_sparse) {
+      rows = _dinfo.extractSparseRows(chunks, 0);
+      // expensive sanity check
+//      DataInfo.Row[] rowsD = _dinfo.extractDenseRows(chunks);
+//      for (int i = 0; i < rows.length; ++i) {
+//        for (int j = 0; j < _dinfo.fullN(); ++j) {
+//          assert (Double.doubleToRawLongBits(rows[i].get(j)) == Double.doubleToRawLongBits(rowsD[i].get(j)));
+//        }
+//      }
+    }
+    else {
+      row = _dinfo.newDenseRow();
+    }
+
+
     double[] weight_map = null;
     double relative_chunk_weight = 1;
     //TODO: store node-local helper arrays in _dinfo -> avoid re-allocation and construction
@@ -108,7 +126,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       weight_map = new double[nrows];
       double weight_sum = 0;
       for (int i = 0; i < nrows; ++i) {
-        row = _dinfo.extractDenseRow(chunks, i, row);
+        row = _sparse ? rows[i] : _dinfo.extractDenseRow(chunks, i, row);
         weight_sum += row.weight;
         weight_map[i] = weight_sum;
         assert (i == 0 || row.weight == 0 || weight_map[i] > weight_map[i - 1]);
@@ -166,7 +184,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         assert(r >= 0 && r<=nrows);
 
-        row = _dinfo.extractDenseRow(chunks, r, row);
+        row = _sparse ? rows[r] : _dinfo.extractDenseRow(chunks, r, row);
         if(!row.bad) {
           assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
           long seed = offset + rep * nrows + r;

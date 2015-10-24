@@ -30,6 +30,12 @@ public class ASTMerge extends ASTPrim {
   @Override public String str(){ return "merge";}
   @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
 
+  // Size cutoff before switching between a hashed-join vs a sorting join.
+  // Hash tables beyond this count are assumed to be inefficient, and we're
+  // better served by sorting all the join columns and doing a global
+  // merge-join.
+  static final int MAX_HASH_SIZE = 120000000;
+
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
@@ -51,7 +57,7 @@ public class ASTMerge extends ASTPrim {
           throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names[ncols]+
                                              " found types "+lv.get_type_str()+" and "+rv.get_type_str());
         if( lv.isString() )
-          throw new IllegalArgumentException("Cannot merge Strings; flip toCategorical first");
+          throw new IllegalArgumentException("Cannot merge Strings; flip toCategoricalVec first");
         if( lv.isNumeric() && !lv.isInt())  
           throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
         ncols++;
@@ -82,11 +88,8 @@ public class ASTMerge extends ASTPrim {
     int[][] id_maps = new int[ncols][];
     for( int i=0; i<ncols; i++ ) {
       Vec lv = walked.vecs()[i];
-      if( lv.isCategorical() ) {
-        CategoricalWrappedVec ewv = new CategoricalWrappedVec(hashed.vecs()[i].domain(),lv.domain());
-        id_maps[i] = ewv.getDomainMap();
-        ewv.remove();
-      }
+      if( lv.isCategorical() )
+        id_maps[i] = CategoricalWrappedVec.computeMap(hashed.vecs()[i].domain(),lv.domain());
     }
 
     // Build the hashed version of the hashed frame.  Hash and equality are
@@ -115,7 +118,8 @@ public class ASTMerge extends ASTPrim {
       // matching row; append matching column data
       String[]   names  = Arrays.copyOfRange(hashed._names,   ncols,hashed._names   .length);
       String[][] domains= Arrays.copyOfRange(hashed.domains(),ncols,hashed.domains().length);
-      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(hashed.numCols()-ncols,walked).outputFrame(names,domains);
+      byte[] types = Arrays.copyOfRange(hashed.types(),ncols,hashed.numCols());
+      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(types,walked).outputFrame(names,domains);
       return new ValFrame(walked.add(res));
     }
 
@@ -126,7 +130,10 @@ public class ASTMerge extends ASTPrim {
       System.arraycopy(hashed.names(),ncols,names,walked.numCols(),hashed.numCols()-ncols);
       String[][] domains = Arrays.copyOf(walked.domains(),walked.numCols() + hashed.numCols()-ncols);
       System.arraycopy(hashed.domains(),ncols,domains,walked.numCols(),hashed.numCols()-ncols);
-      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(walked.numCols()+hashed.numCols()-ncols,walked).outputFrame(names,domains));
+      byte[] types = walked.types();
+      types = Arrays.copyOf(types,types.length+hashed.numCols()-ncols);
+      System.arraycopy(hashed.types(),ncols,types,walked.numCols(),hashed.numCols()-ncols);
+      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(types,walked).outputFrame(names,domains));
     } 
 
     throw H2O.unimpl();

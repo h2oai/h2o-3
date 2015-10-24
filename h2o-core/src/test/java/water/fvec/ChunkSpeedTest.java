@@ -3,9 +3,7 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.H2O;
-import water.MRTask;
-import water.TestUtil;
+import water.*;
 import water.util.Log;
 import water.util.PrettyPrint;
 
@@ -13,8 +11,8 @@ public class ChunkSpeedTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   final int cols = 100;
-  final int rows = 50000;
-  final int rep = 20;
+  final int rows = 100000;
+  final int rep = 10;
   final double[][] raw = new double[cols][rows];
   Chunk[] chunks = new Chunk[cols];
 
@@ -23,44 +21,39 @@ public class ChunkSpeedTest extends TestUtil {
   public void run() {
     for (int j = 0; j < cols; ++j) {
       for (int i = 0; i < rows; ++i) {
-        raw[j][i] = get(j,i);
+        raw[j][i] = get(j, i);
       }
     }
     for (int j = 0; j < cols; ++j) {
-      chunks[j] = new NewChunk(raw[j]).compress();
+      chunks[j] = (Chunk) new NewChunk(raw[j]).compress();
       Log.info("Column " + j + " compressed into: " + chunks[j].getClass().toString());
     }
     Log.info("COLS: " + cols);
     Log.info("ROWS: " + rows);
     Log.info("REPS: " + rep);
 
-    raw();
-    raw();
-
-    chunks();
-    chunks();
-
-    chunksInline();
-    chunksInline();
-
-    mrtask(false);
-    mrtask(false);
-
-    bulk();
-    bulk();
-
-    Log.info("Now doing funny stuff.\n\n");
-    mrtask(true);
-    mrtask(true);
-
-//    raw();
-//    raw();
-
-    chunksInverted();
-    chunksInverted();
-
-    rawInverted();
-    rawInverted();
+    int ll = 5;
+//    for (int i = 0; i < ll; ++i)
+//      raw();
+//    for (int i = 0; i < ll; ++i)
+//      chunks();
+//    for (int i = 0; i < ll; ++i)
+//      chunksInline();
+//    for (int i = 0; i < ll; ++i)
+//      mrtask(false);
+    for (int i = 0; i < ll; ++i)
+      rollups(false);
+//    for (int i = 0; i < ll; ++i)
+//      bulk();
+//    Log.info("Now doing funny stuff.\n\n");
+//    for (int i = 0; i < ll; ++i)
+//      mrtask(true);
+    for (int i = 0; i < ll; ++i)
+      rollups(true);
+//    for (int i = 0; i < ll; ++i)
+//      chunksInverted();
+//    for (int i = 0; i < ll; ++i)
+//      rawInverted();
 
   }
 
@@ -283,6 +276,38 @@ public class ChunkSpeedTest extends TestUtil {
     siz += fr.byteSize();
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " MRTask: " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+    fr.remove();
+  }
+
+  void rollups(boolean parallel)
+  {
+    Frame fr = new Frame();
+//    Vec v = Vec.makeCon(Double.NaN, rows);
+//    Log.info(v.mean());
+//    Log.info(v.sigma());
+//    Log.info(v.min());
+//    Log.info(v.max());
+//    Log.info(v.length());
+//    Log.info(v.nzCnt());
+//    Log.info(v.naCnt());
+//    v.remove();
+    for (int i=0; i<cols; ++i)
+      fr.add("C" + i, Vec.makeCon(0, rows, parallel)); //multi-chunk (based on #cores)
+    new FillTask().doAll(fr);
+
+    long start = System.currentTimeMillis();
+    for (int r = 0; r < rep; ++r) {
+      for (int i=0; i<cols; ++i) {
+        DKV.remove(fr.vec(i).rollupStatsKey());
+        fr.vec(i).mean();
+      }
+    }
+    long done = System.currentTimeMillis();
+    long siz = 0;
+    siz += fr.byteSize();
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " Rollups: " + PrettyPrint.msecs(done - start, true));
     Log.info("");
     fr.remove();
   }

@@ -117,7 +117,8 @@ public class Merge {
     final byte[] types = new byte[num];
     int j=0;
     for (Vec v : rightFrame.vecs()) types[j++] = v.get_type();
-    Vec[] vecs = new Vec(Vec.newKey(),espc).makeCons(num, 0, rightFrame.domains(), types);
+    Key key = Vec.newKey();
+    Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(num, 0, rightFrame.domains(), types);
     String[] names = rightFrame.names().clone();
 
     //TODO add left half

@@ -8,8 +8,8 @@
 #           curl, javac, java must be installed.
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
+
+
 
 test.drf.javapredict.czech <-
 function() {
@@ -31,7 +31,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("randomForest",normalizePath(paste0(getwd(),"/..")),test_file,test_frame,params)
+    doJavapredictTest("randomForest",test_file,test_frame,params)
 }
 
 doTest("RF test", test.drf.javapredict.czech)

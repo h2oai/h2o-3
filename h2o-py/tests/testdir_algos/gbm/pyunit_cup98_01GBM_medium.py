@@ -1,13 +1,17 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def cupMediumGBM():
   
   
 
-  train = h2o.import_file(path=h2o.locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
-  test = h2o.import_file(path=h2o.locate("bigdata/laptop/usecases/cup98VAL_z.csv"))
+  train = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
+  test = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/usecases/cup98VAL_z.csv"))
 
   train["TARGET_B"] = train["TARGET_B"].asfactor()
 
@@ -17,5 +21,9 @@ def cupMediumGBM():
     train_cols.remove(c)
   model = h2o.gbm(x=train[train_cols], y=train["TARGET_B"], distribution = "bernoulli", ntrees = 5)
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, cupMediumGBM)
+    pyunit_utils.standalone_test(cupMediumGBM)
+else:
+   cupMediumGBM()

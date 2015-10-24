@@ -1,10 +1,14 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def weights_gamma():
 
-    htable  = h2o.upload_file(h2o.locate("smalldata/gbm_test/moppe.csv"))
+    htable  = h2o.upload_file(pyunit_utils.locate("smalldata/gbm_test/moppe.csv"))
     htable["premiekl"] = htable["premiekl"].asfactor()
     htable["moptva"] = htable["moptva"].asfactor()
     htable["zon"] = htable["zon"]
@@ -21,5 +25,9 @@ def weights_gamma():
     assert abs(15298.87-ph[0].max()) < 1e-4*15298.87
     assert abs(8121.98-ph[0].mean()) < 1e-4*8121.98
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, weights_gamma)
+    pyunit_utils.standalone_test(weights_gamma)
+else:
+    weights_gamma()

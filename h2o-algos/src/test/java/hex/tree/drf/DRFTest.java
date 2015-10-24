@@ -12,6 +12,7 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -255,7 +256,7 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 Vec resp = fr.remove("C2");
-                fr.add("C2", resp.toCategorical());
+                fr.add("C2", VecUtils.toCategoricalVec(resp));
                 resp.remove();
                 return fr.find("C3");
               }
@@ -277,10 +278,10 @@ public class DRFTest extends TestUtil {
               int prep(Frame fr) {
                 String[] names = fr.names().clone();
                 Vec[] en = fr.remove(new int[]{1,4,5,8});
-                fr.add(names[1], en[0].toCategorical()); //CAPSULE
-                fr.add(names[4], en[1].toCategorical()); //DPROS
-                fr.add(names[5], en[2].toCategorical()); //DCAPS
-                fr.add(names[8], en[3].toCategorical()); //GLEASON
+                fr.add(names[1], VecUtils.toCategoricalVec(en[0])); //CAPSULE
+                fr.add(names[4], VecUtils.toCategoricalVec(en[1])); //DPROS
+                fr.add(names[5], VecUtils.toCategoricalVec(en[2])); //DCAPS
+                fr.add(names[8], VecUtils.toCategoricalVec(en[3])); //GLEASON
                 for (Vec v : en) v.remove();
                 fr.remove(0).remove(); //drop ID
                 return 4; //CAPSULE
@@ -367,7 +368,7 @@ public class DRFTest extends TestUtil {
     Vec ret = null;
     if (classification) {
       ret = fr.remove(idx);
-      fr.add(rname,resp.toCategorical());
+      fr.add(rname, VecUtils.toCategoricalVec(resp));
     } else {
       fr.remove(idx);
       fr.add(rname,resp);
@@ -482,7 +483,7 @@ public class DRFTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategorical())._key);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
 //      DKV.put(tfr);
 
       for (int i=0; i<N; ++i) {
@@ -534,7 +535,7 @@ public class DRFTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategorical())._key);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
@@ -593,8 +594,8 @@ public class DRFTest extends TestUtil {
       tfr = parse_test_file(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
       test = parse_test_file(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
 //      for (int i : new int[]{0,1,2}) {
-//        tfr.vecs()[i] = tfr.vecs()[i].toCategorical();
-//        test.vecs()[i] = test.vecs()[i].toCategorical();
+//        tfr.vecs()[i] = tfr.vecs()[i].toCategoricalVec();
+//        test.vecs()[i] = test.vecs()[i].toCategoricalVec();
 //      }
 
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1141,7 +1142,7 @@ public class DRFTest extends TestUtil {
       tfr.remove("name").remove(); // Remove unique id
       tfr.remove("economy").remove();
       old = tfr.remove("economy_20mpg");
-      tfr.add("economy_20mpg", old.toCategorical()); // response to last column
+      tfr.add("economy_20mpg", VecUtils.toCategoricalVec(old)); // response to last column
       DKV.put(tfr);
 
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1196,7 +1197,7 @@ public class DRFTest extends TestUtil {
         tfr.remove("name").remove(); // Remove unique id
         tfr.remove("economy").remove();
         old = tfr.remove("economy_20mpg");
-        tfr.add("economy_20mpg", old.toCategorical()); // response to last column
+        tfr.add("economy_20mpg", VecUtils.toCategoricalVec(old)); // response to last column
         DKV.put(tfr);
 
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();

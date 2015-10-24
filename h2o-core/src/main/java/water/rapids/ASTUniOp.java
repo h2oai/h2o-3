@@ -6,6 +6,7 @@ import org.apache.commons.math3.util.FastMath;
 import water.*;
 import water.fvec.*;
 import water.util.MathUtils;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -22,7 +23,7 @@ abstract class ASTUniOp extends ASTPrim {
     Val val = stk.track(asts[1].exec(env));
     switch( val.type() ) {
     case Val.NUM: return new ValNum(op(val.getNum()));
-    case Val.FRM: 
+    case Val.FRM:
       Frame fr = val.getFrame();
       return new ValFrame(new MRTask() {
           @Override public void map( Chunk cs[], NewChunk ncs[] ) {
@@ -33,16 +34,21 @@ abstract class ASTUniOp extends ASTPrim {
                 nc.addNum(op(c.atd(i)));
             }
           }
-        }.doAll(fr.numCols(),fr).outputFrame());
-    case Val.STR: throw H2O.unimpl();
-    default: throw H2O.fail();
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
+      case Val.ROW:
+        ValRow v = (ValRow)val;
+        double[] ds = new double[v._ds.length];
+        for(int i=0;i<ds.length;++i)
+          ds[i] = op(v._ds[i]);
+        String[] names = v._names.clone();
+        return new ValRow(ds,names);
+    default: throw H2O.unimpl("unop unimpl: " + val.getClass());
     }
   }
   abstract double op( double d );
 }
 
-class ASTCeiling extends ASTUniOp{
-  public String str() { return "ceiling";}double op(double d) { return Math.ceil (d); } }
+class ASTCeiling extends ASTUniOp{ public String str() { return "ceiling";}double op(double d) { return Math.ceil (d); } }
 class ASTFloor extends ASTUniOp { public String str() { return "floor"; } double op(double d) { return Math.floor(d); } }
 class ASTNot   extends ASTUniOp { public String str() { return "!!"   ; } double op(double d) { return d==0?1:0; } }
 class ASTTrunc extends ASTUniOp { public String str() { return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
@@ -90,7 +96,7 @@ class ASTIsNA  extends ASTPrim {
     Val val = stk.track(asts[1].exec(env));
     switch( val.type() ) {
     case Val.NUM: return new ValNum(op(val.getNum()));
-    case Val.FRM: 
+    case Val.FRM:
       Frame fr = val.getFrame();
       return new ValFrame(new MRTask() {
           @Override public void map( Chunk cs[], NewChunk ncs[] ) {
@@ -101,12 +107,12 @@ class ASTIsNA  extends ASTPrim {
                 nc.addNum(c.isNA(i) ? 1 : 0);
             }
           }
-        }.doAll(fr.numCols(),fr).outputFrame());
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
     case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
-    default: throw H2O.fail();
+    default: throw H2O.unimpl("is.na unimpl: " + val.getClass());
     }
   }
-  double op(double d) { return Double.isNaN(d)?1:0; } 
+  double op(double d) { return Double.isNaN(d)?1:0; }
 }
 
 class ASTRunif extends ASTPrim {
@@ -138,7 +144,7 @@ class ASTStratifiedSplit extends ASTPrim {
     final double testFrac = asts[2].exec(env).getNum();
     long seed = (long)asts[3].exec(env).getNum();
     seed = seed == -1 ? new Random().nextLong() : seed;
-    final long[] classes = new Vec.CollectDomain().doAll(y).domain();
+    final long[] classes = new VecUtils.CollectDomain().doAll(y).domain();
     final int nClass = y.isNumeric() ? classes.length : y.domain().length;
     final long[] seeds = new long[nClass]; // seed for each regular fold column (one per class)
     for( int i=0;i<nClass;++i)
@@ -157,7 +163,7 @@ class ASTStratifiedSplit extends ASTPrim {
           }
         }
       }
-    }.doAll(1,y).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
+    }.doAll(1, Vec.T_NUM, new Frame(y)).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
   }
 }
 
@@ -220,8 +226,9 @@ class ASTLevels extends ASTPrim {
       if( f.vec(i).isCategorical() )
         if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
 
+    final int rowLayout = Vec.ESPC.rowLayout(keys[0],new long[]{0,max});
     for( int i=0;i<f.numCols();++i ) {
-      AppendableVec v = new AppendableVec(keys[i]);
+      AppendableVec v = new AppendableVec(keys[i],Vec.T_NUM);
       NewChunk nc = new NewChunk(v,0);
       String[] dom = f.vec(i).domain();
       int numToPad = dom==null?max:max-dom.length;
@@ -229,7 +236,7 @@ class ASTLevels extends ASTPrim {
         for(int j=0;j<dom.length;++j) nc.addNum(j);
       for(int j=0;j<numToPad;++j)     nc.addNA();
       nc.close(0,fs);
-      vecs[i] = v.close(fs);
+      vecs[i] = v.close(rowLayout,fs);
       vecs[i].setDomain(dom);
     }
     fs.blockForPending();
@@ -263,7 +270,7 @@ class ASTSetLevel extends ASTPrim {
         for (int i=0;i<c._len;++i)
           nc.addNum(idx);
       }
-    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
     return new ValFrame(fr2);
   }
 }
@@ -283,7 +290,7 @@ class ASTSetDomain extends ASTPrim {
     if( !v.isCategorical() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
     if( _domains!=null && _domains.length != v.domain().length) {
       // in this case we want to recollect the domain and check that number of levels matches _domains
-      Vec.CollectDomainFast t = new Vec.CollectDomainFast((int)v.max());
+      VecUtils.CollectDomainFast t = new VecUtils.CollectDomainFast((int)v.max());
       t.doAll(v);
       final long[] dom = t.domain();
       if( dom.length != _domains.length)
@@ -361,7 +368,7 @@ class ASTMatch extends ASTPrim {
         else
           for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
       }
-    }.doAll(1, fr.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame();
     return new ValFrame(rez);
   }
   private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0; }
@@ -401,14 +408,14 @@ class ASTWhich extends ASTPrim {
       for(int i=0;i<in.length;++i) in[i] = f.vecs()[i].at(0)==1?i:-1;
       Futures fs = new Futures();
       Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-      AppendableVec v = new AppendableVec(key);
+      AppendableVec v = new AppendableVec(key,Vec.T_NUM);
       NewChunk chunk = new NewChunk(v, 0);
       for (double d : in) {
         if( d!=-1)
           chunk.addNum(d);
       }
       chunk.close(0, fs);
-      Vec vec = v.close(fs);
+      Vec vec = v.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }
@@ -418,7 +425,7 @@ class ASTWhich extends ASTPrim {
         for(int i=0;i<c._len;++i)
           if( c.at8(i)==1 ) nc.addNum(start+i);
       }
-    }.doAll(1,f.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM},f.anyVec()).outputFrame();
     return new ValFrame(f2);
   }
 }

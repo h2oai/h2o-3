@@ -1,6 +1,10 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def swpredsGBM():
   # Training set has two predictor columns
@@ -11,7 +15,7 @@ def swpredsGBM():
   
   
   #Log.info("Importing swpreds_1000x3.csv data...\n")
-  swpreds = h2o.import_file(path=h2o.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
+  swpreds = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
   swpreds["y"] = swpreds["y"].asfactor()
 
   #Log.info("Summary of swpreds_1000x3.csv from H2O:\n")
@@ -33,5 +37,9 @@ def swpredsGBM():
   h2o_gbm_perf2 = h2o_gbm_model2.model_performance(swpreds)
   h2o_auc2 = h2o_gbm_perf2.auc()
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, swpredsGBM)
+    pyunit_utils.standalone_test(swpredsGBM)
+else:
+    swpredsGBM()

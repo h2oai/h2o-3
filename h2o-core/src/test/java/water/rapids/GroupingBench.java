@@ -127,7 +127,7 @@ class WriteOrder extends MRTask<WriteOrder> {
         long nanos[] = new long[5];
         Vec vec = chk._vec;
         int range = (int)(_max-_min+1);
-        long[] espc = vec._espc;
+        long[] espc = vec.espc();
 
         long myCounts[] = _counts[chk._cidx];
 

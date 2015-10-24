@@ -70,8 +70,8 @@ public class DeepLearningMNIST extends TestUtil {
         p._hidden = new int[]{800,800};
         p._input_dropout_ratio = 0.2;
         p._mini_batch_size = 1;
-        p._train_samples_per_iteration = 50000;
-        p._score_duty_cycle = 0;
+        p._train_samples_per_iteration = -2;
+        p._score_duty_cycle = 0.4;
 //        p._shuffle_training_data = true;
 //        p._l1= 1e-5;
 //        p._max_w2= 10;
@@ -79,8 +79,8 @@ public class DeepLearningMNIST extends TestUtil {
 
         // Convert response 'C785' to categorical (digits 1 to 10)
         int ci = frame.find("C785");
-        Scope.track(frame.replace(ci, frame.vecs()[ci].toCategorical())._key);
-        Scope.track(vframe.replace(ci, vframe.vecs()[ci].toCategorical())._key);
+        Scope.track(frame.replace(ci, frame.vecs()[ci].toCategoricalVec())._key);
+        Scope.track(vframe.replace(ci, vframe.vecs()[ci].toCategoricalVec())._key);
         DKV.put(frame);
         DKV.put(vframe);
 
@@ -89,7 +89,7 @@ public class DeepLearningMNIST extends TestUtil {
         p._replicate_training_data = true; //avoid extra communication cost upfront, got enough data on each node for load balancing
         p._overwrite_with_best_model = true; //no need to keep the best model around
         p._classification_stop = -1;
-        p._score_interval = 60; //score and print progress report (only) every 20 seconds
+        p._score_interval = 5; //score and print progress report (only) every 20 seconds
         p._score_training_samples = 10000; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)
 
         DeepLearning dl = new DeepLearning(p);

@@ -1,10 +1,14 @@
 import sys
 sys.path.insert(1,"../../../")
-import h2o, tests
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def rf_mean_residual_deviance():
 
-    cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars[0].runif()
     train = cars[s > 0.2]
     valid = cars[s <= 0.2]
@@ -23,5 +27,9 @@ def rf_mean_residual_deviance():
     assert isinstance(rf_mrd['xval'],float), "Expected cross-validation mean residual deviance to be a float, but got " \
                                              "{0}".format(type(rf_mrd['xval']))
 
-if __name__ == '__main__':
-    tests.run_test(sys.argv, rf_mean_residual_deviance)
+
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(rf_mean_residual_deviance)
+else:
+    rf_mean_residual_deviance()

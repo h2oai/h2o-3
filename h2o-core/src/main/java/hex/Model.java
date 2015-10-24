@@ -1,5 +1,9 @@
 package hex;
 
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
 
 import java.io.ByteArrayOutputStream;
@@ -157,7 +161,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
-    public final Frame train() { return _train.get(); }
+    public final Frame train() { return _train==null ? null : _train.<Frame>get(); }
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.<Frame>get(); }
@@ -171,12 +175,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         valid().read_lock(job._key);
     }
 
-    /** Read-UnLock both training and validation User frames. */
+    /** Read-UnLock both training and validation User frames.  This method is
+     *  called on crashing cleanup pathes, so handles the case where the frames
+     *  are not actually locked. */
     public void read_unlock_frames(Job job) {
       Frame tr = train();
-      if( tr != null ) tr.unlock(job._key);
+      if( tr != null ) tr.unlock(job._key,false);
       if( _valid != null && !_train.equals(_valid) )
-        valid().unlock(job._key);
+        valid().unlock(job._key,false);
     }
 
     // Override in subclasses to change the default; e.g. true in GLM
@@ -202,6 +208,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Sort the fields first, since reflection gives us the fields in random order and we don't want the checksum to be affected by the field order.
      * NOTE: if a field is added to a Parameters class the checksum will differ even when all the previous parameters have the same value.  If
      * a client wants backward compatibility they will need to compare parameter values explicitly.
+     *
+     * The method is motivated by standard hash implementation `hash = hash * P + value` but we use high prime numbers in random order.
      * @return checksum
      */
     protected long checksum_impl() {
@@ -224,22 +232,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (f.get(this) != null) {
               if (c.getComponentType() == Integer.TYPE){
                 int[] arr = (int[]) f.get(this);
-                xs = P * xs + (long) Arrays.hashCode(arr);
+                xs = xs * P  + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Float.TYPE) {
                 float[] arr = (float[]) f.get(this);
-                xs = P * xs + (long) Arrays.hashCode(arr);
+                xs = xs * P + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Double.TYPE) {
                 double[] arr = (double[]) f.get(this);
-                xs = P * xs + (long) Arrays.hashCode(arr);
+                xs = xs * P + (long) Arrays.hashCode(arr);
               } else if (c.getComponentType() == Long.TYPE){
                 long[] arr = (long[]) f.get(this);
-                xs = P * xs + (long) Arrays.hashCode(arr);
+                xs = xs * P + (long) Arrays.hashCode(arr);
               } else {
                 Object[] arr = (Object[]) f.get(this);
-                xs = P * xs + (long) Arrays.deepHashCode(arr);
+                xs = xs * P + (long) Arrays.deepHashCode(arr);
               } //else lead to ClassCastException
             } else {
-              xs = P * xs + P;
+              xs = xs * P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -251,9 +259,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             f.setAccessible(true);
             Object value = f.get(this);
             if (value != null) {
-              xs = P * xs + (long)(value.hashCode());
+              xs = xs * P + (long)(value.hashCode());
             } else {
-              xs = P * xs + P;
+              xs = xs * P + P;
             }
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -261,7 +269,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
         count++;
       }
-      xs ^= train().checksum() * (_valid == null ? 17 : valid().checksum());
+      xs ^= (train() == null ? 43 : train().checksum()) * (valid() == null ? 17 : valid().checksum());
       return xs;
     }
   }
@@ -682,7 +690,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if( actual != null ) {  // Predict does not have an actual, scoring does
         String sdomain[] = actual.domain(); // Scored/test domain; can be null
         if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual.get_espc(), sdomain, predicted._key));
+          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
       }
     }
 
@@ -728,7 +736,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/).doAll(ncols, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr);
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
@@ -779,6 +787,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
+      if (isCancelled()) return;
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : new C0DChunk(1, chks[0]._len);
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : new C0DChunk(0, chks[0]._len);
       Chunk responseChunk = null;
@@ -1094,9 +1103,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         String sdomain[] = actual == null ? null : actual.domain(); // Scored/test domain; can be null
         String mdomain[] = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
         if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
-          CategoricalWrappedVec ewv = new CategoricalWrappedVec(mdomain,sdomain);
-          omap = ewv.getDomainMap(); // Map from model-domain to scoring-domain
-          ewv.remove();
+          omap = CategoricalWrappedVec.computeMap(mdomain,sdomain); // Map from model-domain to scoring-domain
         }
       }
 
@@ -1119,22 +1126,85 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
+      int totalMiss = 0;
       int miss = 0;
       for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
-        for( int col=0; col<features.length; col++ ) // Build feature set
+
+        // Native Java API
+        for (int col = 0; col < features.length; col++) // Build feature set
           features[col] = dvecs[col].at(row);
-        genmodel.score0(features,predictions);            // POJO predictions
-        for( int col=0; col<pvecs.length; col++ ) { // Compare predictions
+        genmodel.score0(features, predictions);            // POJO predictions
+        for (int col = 0; col < pvecs.length; col++) { // Compare predictions
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
-          if( col==0 && omap != null ) d = omap[(int)d];  // map categorical response to scoring domain
-          if( !MathUtils.compare(predictions[col],d,1e-15,rel_epsilon) ) {
+          if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
+          if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
             if (miss++ < 10)
-              System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
+              System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
           }
         }
+        totalMiss = miss;
       }
-      if (miss != 0) System.err.println("Number of mismatches: " + miss);
-      return miss==0;
+
+      for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
+        // EasyPredict API
+        RowData rowData = new RowData();
+        for( int col=0; col<features.length; col++ ) {
+          double val = dvecs[col].at(row);
+          rowData.put(
+                  genmodel._names[col],
+                  genmodel._domains[col] == null ? (Double) val
+                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel");
+        }
+        EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
+        AbstractPrediction p=null;
+
+        if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) {
+          continue;
+        }
+
+        try { p = epmw.predictClustering(rowData); } catch (PredictException e) { }
+        try { if (p==null) p = epmw.predictRegression(rowData); } catch (PredictException e) { }
+        try { if (p==null) p = epmw.predictBinomial(rowData); } catch (PredictException e) { }
+        try { if (p==null) p = epmw.predictMultinomial(rowData); } catch (PredictException e) { }
+        if  (p==null) continue;
+        int oldmiss=miss;
+        for (int col = 0; col < pvecs.length; col++) { // Compare predictions
+          double d = pvecs[col].at(row);                  // Load internal scoring predictions
+          if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
+
+          if (genmodel.getModelCategory() == ModelCategory.Clustering) {
+            if (!MathUtils.compare(((ClusteringModelPrediction) p).cluster, d, 1e-15, rel_epsilon))
+              miss++;
+          }
+          if (genmodel.getModelCategory() == ModelCategory.Regression) {
+            if (!MathUtils.compare(((RegressionModelPrediction) p).value, d, 1e-15, rel_epsilon))
+              miss++;
+          }
+          if (genmodel.getModelCategory() == ModelCategory.Binomial) {
+            if (col == 0) {
+              if (!MathUtils.compare(((BinomialModelPrediction) p).labelIndex, d, 1e-15, rel_epsilon))
+                miss++;
+            } else {
+              if (!MathUtils.compare(((BinomialModelPrediction) p).classProbabilities[col-1], d, 1e-15, rel_epsilon))
+                miss++;
+            }
+          }
+          if (genmodel.getModelCategory() == ModelCategory.Multinomial) {
+            if (col == 0) {
+              if (!MathUtils.compare(((MultinomialModelPrediction) p).labelIndex, d, 1e-15, rel_epsilon))
+                miss++;
+            } else {
+              if (!MathUtils.compare(((MultinomialModelPrediction) p).classProbabilities[col-1], d, 1e-15, rel_epsilon))
+                miss++;
+            }
+          }
+          if (miss > oldmiss)
+            System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+          totalMiss = miss;
+        }
+      }
+      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss);
+      return totalMiss==0;
     } finally {
       // Remove temp keys.
       cleanup_adapt(fr, data);

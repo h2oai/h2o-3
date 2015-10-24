@@ -6,8 +6,8 @@
 #           curl, javac, java must be installed.
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
+
+
 
 test.gbm.javapredict.smtrees <-
 function() {
@@ -31,7 +31,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("gbm",normalizePath(paste0(getwd(),"/..")),test_file,test_frame,params)
+    doJavapredictTest("gbm",test_file,test_frame,params)
 }
 
 doTest("GBM test", test.gbm.javapredict.smtrees)

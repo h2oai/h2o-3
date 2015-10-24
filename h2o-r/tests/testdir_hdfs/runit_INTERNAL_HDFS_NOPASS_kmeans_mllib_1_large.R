@@ -2,8 +2,8 @@
 # Purpose:  This test compares k-means centers between H2O and MLlib.
 #----------------------------------------------------------------------
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -11,10 +11,10 @@ source('../h2o-runit.R')
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-running_inside_h2o = is.running.internal.to.h2o()
+hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
 
-if (running_inside_h2o) {
-    hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+if (hadoop_namenode_is_accessible) {
+    hdfs_name_node = hadoop.namenode()
     hdfs_cross_file = "/datasets/runit/BigCross.data"
 } else {
     stop("Not running on H2O internal network.  No access to HDFS.")

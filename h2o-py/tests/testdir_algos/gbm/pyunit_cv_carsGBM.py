@@ -1,12 +1,16 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 import random
 
 def cv_carsGBM():
 
     # read in the dataset and construct training set (and validation set)
-    cars =  h2o.import_file(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial
@@ -36,7 +40,7 @@ def cv_carsGBM():
                    fold_assignment="Modulo")
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Modulo")
-    tests.check_models(gbm1, gbm2, True)
+    pyunit_utils.check_models(gbm1, gbm2, True)
 
     # 2. check that cv metrics are different over repeated "Random" runs
     nfolds = random.randint(3,10)
@@ -45,7 +49,7 @@ def cv_carsGBM():
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Random")
     try:
-        tests.check_models(gbm1, gbm2, True)
+        pyunit_utils.check_models(gbm1, gbm2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
@@ -99,7 +103,7 @@ def cv_carsGBM():
     gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=0, distribution=distribution, ntrees=5)
     # check that this is equivalent to no nfolds
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], distribution=distribution, ntrees=5)
-    tests.check_models(gbm1, gbm2)
+    pyunit_utils.check_models(gbm1, gbm2)
 
     # 3. cross-validation and regular validation attempted
     gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), validation_y=cars[response_col], ntrees=5,
@@ -139,5 +143,9 @@ def cv_carsGBM():
     except EnvironmentError:
         assert True
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, cv_carsGBM)
+    pyunit_utils.standalone_test(cv_carsGBM)
+else:
+    cv_carsGBM()

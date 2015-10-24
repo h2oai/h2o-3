@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.Distribution;
 import water.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.nio.ByteBuffer;
@@ -246,7 +247,10 @@ public abstract class Neurons {
 
       //this is the actual gradient dE/dw
       double grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
-      if (_wEA !=null) grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
+      if (_wEA !=null) {
+        grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
+//        Log.info("weight: my: " + _w.raw()[w] + ", consensus: " + _wEA.raw()[w] + ", delta: " + (_w.raw()[w] -_wEA.raw()[w]) + ", relative delta: " + (_w.raw()[w] -_wEA.raw()[w])/_w.raw()[w]);
+      }
 
       // store the gradient (grad is the negative gradient)
       if (DeepLearningModelInfo.gradientCheck != null)
@@ -501,7 +505,7 @@ public abstract class Neurons {
         if(_dinfo._normMul != null) d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
         nums[i-_dinfo._cats] = d; //can be NaN for missing numerical data
       }
-      setInput(seed, nums, ncats, cats);
+      setInput(seed, null, nums, ncats, cats);
     }
 
     /**
@@ -512,7 +516,7 @@ public abstract class Neurons {
      * @param cats Array of indices, the first numcat values are the input layer unit (==column) indices for the non-zero categorical values
      *             (This allows this array to be re-usable by the caller, without re-allocating each time)
      */
-    public void setInput(long seed, final double[] nums, final int numcat, final int[] cats) {
+    public void setInput(long seed, final int[] numIds, final double[] nums, final int numcat, final int[] cats) {
       Arrays.fill(_a.raw(), 0f);
 
       // random projection from fullN down to max_categorical_features
@@ -564,8 +568,15 @@ public abstract class Neurons {
       } else {
         assert(_a.size() == _dinfo.fullN());
         for (int i = 0; i < numcat; ++i) _a.set(cats[i], 1f); // one-hot encode categoricals
-        for (int i = 0; i < nums.length; ++i)
-          _a.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
+        if (numIds != null) {
+          //sparse
+          for (int i = 0; i < numIds.length; ++i)
+            _a.set(numIds[i], Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
+        } else {
+          //dense
+          for (int i = 0; i < nums.length; ++i)
+            _a.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
+        }
       }
 
       // Input Dropout

@@ -1,7 +1,7 @@
 ####### This tests weights in deeplearning for poisson by comparing results with expected behaviour  ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 
@@ -28,9 +28,9 @@ test <- function() {
   print(min(ph[,1]))
   print(max(ph[,1]))
 	expect_equal(1.996, mean_deviance, tolerance=1e-2)
-	expect_equal(1.0435, mean(ph[,1]), tolerance=1e-2 )
-	expect_equal(0.8789, min(ph[,1]), tolerance=1e-1 )
-	expect_equal(1.216, max(ph[,1]), tolerance=1e-1 )
+	expect_equal(1.05837, mean(ph[,1]), tolerance=1e-2 )
+	expect_equal(0.86598, min(ph[,1]), tolerance=1e-1 )
+	expect_equal(1.2629, max(ph[,1]), tolerance=1e-1 )
 		
 	
 }

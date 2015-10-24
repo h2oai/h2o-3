@@ -25,10 +25,10 @@
 #` - TRUE : Node is evaluated, cluster has the ID, and an R GC finalizer will remove this temp ID
 #` - FALSE: Node is evaluated, cluster has the ID, and the user has to explictly remove this permanent ID
 #` - list of Nodes: Then further ID is one of:
-#` - - missing: this Node is lazy and has never been evaluated 
+#` - - missing: this Node is lazy and has never been evaluated
 #` - - NA: this Node has been executed once, but no temp ID was made
 #` - - String: this Node is-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to FALSE
-#` 
+#`
 #` # A number of fields represent cached queries of an evaluated frame.
 #` E$data   <- A cached result; can be a scalar, or a R dataframe result holding
 #`             the first N (typically 10) rows and all cols of the frame
@@ -43,10 +43,14 @@ chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
 #' @param x A Frame
 #' @return The id
 #' @export
-h2o.getId <- function(x) {
-  chk.Frame(x)
-  attr(x, "id")
-}
+h2o.getId <- function(x) attr( chk.Frame(x), "id")
+
+#' Get the types-per-column
+#'
+#' @param x A Frame
+#' @return A list of types
+#' @export
+h2o.getTypes <- function(x) attr( chk.Frame(x), "types")
 
 .h2o.gc <- function() {
   gc()
@@ -319,6 +323,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #'        contained in each split. Must total up to less than 1.
 #' @param destination_frames An array of frame IDs equal to the number of ratios
 #'        specified plus one.
+#' @param seed Random seed.
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -330,18 +335,74 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' summary(iris.split[[1]])
 #' }
 #' @export
-h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
-  params <- list()
-  params$dataset <- attr(.eval.frame(chk.Frame(data)), "id")
-  params$ratios <- .collapse(ratios)
-  if (!missing(destination_frames))
-    params$destination_frames <- .collapse.char(destination_frames)
-
-  res <- .h2o.__remoteSend(method="POST", "SplitFrame", .params = params)
-  job_key <- res$key$name
-  .h2o.__waitOnJob(job_key)
-
-  splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
+h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
+  chk.Frame(data)
+  
+  if (! is.numeric(ratios)) stop("ratios must be of type numeric")
+  if (length(ratios) < 1) stop("ratios must have length of at least 1")
+  
+  if (! missing(destination_frames)) {
+    if (! is.character(destination_frames)) stop("destination_frames must be of type character")
+    if ((length(ratios) + 1) != length(destination_frames)) {
+      stop("The number of provided destination_frames must be one more than the number of provided ratios")
+    }
+  }
+  
+  if (! is.numeric(seed)) stop("seed must be an integer")
+  
+  num_slices = length(ratios) + 1
+  boundaries = numeric(length(ratios))
+  
+  i = 1
+  last_boundary = 0
+  while (i < num_slices) {
+    ratio = ratios[i]
+    if (ratio < 0) {
+      stop("Ratio must be greater than 0")
+    }
+        
+    boundary = last_boundary + ratio
+    if (boundary >= 1) {
+      stop("Ratios must add up to less than 1.0")
+    }
+    
+    boundaries[i] = boundary    
+    last_boundary = boundary
+    
+    i = i + 1
+  }
+  
+  splits = list()
+  tmp_runif = h2o.runif(data, seed)
+  
+  i = 1
+  while (i <= num_slices) {
+    if (i == 1) {
+      # lower_boundary is 0.0
+      upper_boundary = boundaries[i]
+      tmp_slice = data[tmp_runif <= upper_boundary,]
+    } else if (i == num_slices) {
+      lower_boundary = boundaries[i-1]
+      # upper_boundary is 1.0
+      tmp_slice = data[tmp_runif > lower_boundary,]
+    } else {
+      lower_boundary = boundaries[i-1]
+      upper_boundary = boundaries[i]
+      tmp_slice = data[((tmp_runif > lower_boundary) & (tmp_runif <= upper_boundary)),]
+    }
+    
+    if (missing(destination_frames)) {
+      splits = c(splits, tmp_slice)
+    } else {
+      destination_frame_id = destination_frames[i]
+      tmp_slice2 = h2o.assign(tmp_slice, destination_frame_id)
+      splits = c(splits, tmp_slice2)
+    }
+    
+    i = i + 1
+  }
+  
+  return(splits)
 }
 
 #'
@@ -362,6 +423,7 @@ h2o.filterNACols <- function(data, frac=0.2) {
 #' @param y An H2O Frame similar to x, or \code{NULL}.
 #' @return Returns a tabulated Frame object.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -375,6 +437,7 @@ h2o.filterNACols <- function(data, frac=0.2) {
 #' # Two-way table of ages (rows) and race (cols) of all patients
 #' head(h2o.table(prostate.hex[,c(3,4)]))
 #' h2o.table(prostate.hex[,c(3,4)])
+#' }
 #' @export
 h2o.table <- function(x, y = NULL) {
   chk.Frame(x)
@@ -393,9 +456,11 @@ table.Frame <- h2o.table
 #' @param x An H2O Frame object.
 #' @param na.rm a logical, indicating whether na's are omitted.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
+#' }
 #' @export
 h2o.median <- function(x, na.rm = TRUE) attr(.eval.frame(.newExpr("median",x,na.rm)), "data")
 
@@ -404,13 +469,10 @@ median.Frame <- h2o.median
 
 #' Range of an H2O Column
 #'
-#' @param x An H2O Frame object.
+#' @param ... An H2O Frame object.
 #' @param na.rm ignore missing values
 #' @export
-range <- function(x,na.rm = TRUE) {
-  if( !is.Frame(x) ) .Primitive("range")(x,na.rm)
-  else .newExpr("range",x,na.rm)
-}
+range.Frame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
 
 #' Cut H2O Numeric Data to Factor
 #'
@@ -475,6 +537,7 @@ cut.Frame <- h2o.cut
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
+  if( !is.Frame(table) && length(table)==1 && is.character(table) ) table <- .quote(table)
   .newExpr("match", chk.Frame(x), table, nomatch, incomparables)
 }
 
@@ -527,7 +590,7 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #'   max(abs(df1-df2))
 #' }
 #' @export
-h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
+h2o.dct <- function(data, destination_frame, dimensions, inverse=FALSE) {
   if(!is.logical(inverse)) stop("inverse must be a boolean value")
   params <- list()
   params$dataset <- attr(.eval.frame(chk.Frame(data)), "id")
@@ -917,7 +980,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 # dead, lest GC delete frames on last use... before the expression string is
 # shipped over the wire.  During the 2nd pass the internal DAG pointers are
 # wiped out, and allowed to go dead (hence can be nuked by GC).
-.eval.frame <- function(x) {
+.eval.frame <- function(x,skip_fetch=FALSE) {
   chk.Frame(x)
   if( !is.character( attr(x, "id")) ) {
     exec_str <- .eval.impl(x)
@@ -935,7 +998,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     }
     # Now clear all internal DAG nodes, allowing GC to reclaim them
     .clear.impl(x)
-    .fetch.data(x,1) #trigger a cache update if needed
+    if(!skip_fetch) .fetch.data(x,1) #trigger a cache update if needed
     # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
     # temps... to help debug GC issues.
     #.h2o.gc()
@@ -1022,9 +1085,11 @@ trunc <- function(x, ...) {
 #' @param x An H2O Frame object.
 #' @seealso \code{\link[base]{dim}} for the base R method.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
 #' dim(iris.hex)
+#' }
 #' @export
 dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(attr(x, "nrow"),ncol(data))) }
 
@@ -1072,10 +1137,25 @@ h2o.length <- length.Frame
 #' @param i The index of the column whose domain is to be returned.
 #' @seealso \code{\link[base]{levels}} for the base R method.
 #' @examples
+#' \donttest{
 #' iris.hex <- as.h2o(iris)
 #' h2o.levels(iris.hex, 5)  # returns "setosa"     "versicolor" "virginica"
+#' }
 #' @export
-h2o.levels <- function(x, i) levels(.fetch.data(x,1)[,i])
+h2o.levels <- function(x, i) {
+  .eval.frame(x)
+  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id")))$frames[[1]]
+  lvls <- lapply(res$columns, function(col) col$domain)
+  if( all(sapply(lvls, is.null)) ) return(NULL)
+  if( missing(i) ) {
+    nrow <- max(unlist(lapply(lvls, length)))
+    lvls <- sapply(lvls, function(l) { if( length(l) < nrow ) {l <- c(l,rep(NA,nrow-length(l))) } else { l } })
+    colnames(lvls) <- sapply(res$columns, function(col) col$label)
+    lvls
+  } else {
+    lvls[[i]]
+  }
+}
 
 #'
 #' Set Levels of H2O Factor Column
@@ -1100,12 +1180,14 @@ h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.Frame(x), levels)
 #' @param ... Further arguments passed to or from other methods.
 #' @return A Frame containing the first or last n rows of an H2O Frame object.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex <- h2o.uploadFile(path = ausPath)
 #' head(australia.hex, 10)
 #' tail(australia.hex, 10)
+#' }
 #' @export
 h2o.head <- function(x, ..., n=6L) {
   stopifnot(length(n) == 1L)
@@ -1317,6 +1399,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
 #' @param ... Further arguments passed to or from other methods.
 #' @return A vector describing the percentiles at the given cutoffs for the \code{Frame} object.
 #' @examples
+#' \donttest{
 #' # Request quantiles for an H2O parsed data set:
 #' library(h2o)
 #' h2o.init()
@@ -1326,6 +1409,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
 #' quantile(prostate.hex[,3])
 #' for(i in 1:ncol(prostate.hex))
 #'    quantile(prostate.hex[,i])
+#' }
 #' @export
 h2o.quantile <- function(x,
                      # AUTOGENERATED params
@@ -1371,6 +1455,7 @@ quantile.Frame <- h2o.quantile
 #' @return A table displaying the minimum, 1st quartile, median, mean, 3rd quartile and maximum for each
 #' numeric column, and the levels and category counts of the levels in each categorical column.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
@@ -1378,6 +1463,7 @@ quantile.Frame <- h2o.quantile
 #' summary(prostate.hex)
 #' summary(prostate.hex$GLEASON)
 #' summary(prostate.hex[,4:6])
+#' }
 #' @export
 h2o.summary <- function(object, factors=6L, ...) {
   SIG.DIGITS    <- 12L
@@ -1514,14 +1600,16 @@ summary.Frame <- h2o.summary
 #'
 #' @name h2o.mean
 #' @param x An H2O Frame object.
-#' @param ... Further arguments to be passed from or to other methods.
+#' @param ... Ignored
 #' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
 #' @seealso \code{\link[base]{mean}} for the base R implementation.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' mean(prostate.hex$AGE)
+#' }
 #' @export
 h2o.mean <- function(x, ..., na.rm=TRUE) attr(.eval.frame(.newExpr("mean",x,na.rm)), "data")
 
@@ -1553,10 +1641,12 @@ mean.Frame <- h2o.mean
 #' @param use An optional character string to be used in the presence of missing values. This must be one of the following strings. "everything", "all.obs", or "complete.obs".
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' var(prostate.hex$AGE)
+#' }
 #' @export
 h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
   if( na.rm ) stop("na.rm versions not impl")
@@ -1587,10 +1677,12 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' @param na.rm \code{logical}. Should missing values be removed?
 #' @seealso \code{\link{h2o.var}} for variance, and \code{\link[stats]{sd}} for the base R implementation.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' sd(prostate.hex$AGE)
+#' }
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
   if( na.rm ) stop("na.rm versions not impl")
@@ -1675,13 +1767,15 @@ as.h2o <- function(x, destination_frame= "") {
 #' @param x An H2O Frame object.
 #' @param ... Further arguments to be passed down from other methods.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' as.data.frame(prostate.hex)
+#' }
 #' @export
 as.data.frame.Frame <- function(x, ...) {
-  .eval.frame(x)
+  .eval.frame(x,TRUE)
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
@@ -1719,6 +1813,7 @@ as.data.frame.Frame <- function(x, ...) {
   }
 
   # Get column types from H2O to set the dataframe types correctly
+  if( is.null(attr(x, "types")) ) .fetch.types(x)
   colClasses <- attr(x, "types")
   colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
   colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric type
@@ -1791,17 +1886,18 @@ as.integer.Frame <- function(x, ...) {
 #' @param x a column from an H2O Frame data set.
 #' @seealso \code{\link{is.factor}}.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.hex[,2] <- as.factor(prostate.hex[,2])
 #' summary(prostate.hex)
+#' }
 #' @export
 as.factor <- function(x) {
   if( is.Frame(x) ) .newExpr("as.factor",x)
   else base::as.factor(x)
 }
-
 
 #' Convert an H2O Frame to a String
 #'
@@ -1810,7 +1906,7 @@ as.factor <- function(x) {
 #' @export
 as.character.Frame <- function(x, ...) {
   if( is.Frame(x) ) .newExpr("as.character",x)
-  else base::as.character(x)
+  else base::as.character(x, ...)
 }
 
 #' Convert H2O Data to Numeric
@@ -1819,11 +1915,13 @@ as.character.Frame <- function(x, ...) {
 #' @param x a column from an H2O Frame data set.
 #' @param ... Further arguments to be passed from or to other methods.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.hex[,2] <- as.factor (prostate.hex[,2])
 #' prostate.hex[,2] <- as.numeric(prostate.hex[,2])
+#' }
 #' @export
 as.numeric <- function(x) {
   if( is.Frame(x) ) .newExpr("as.numeric",x)
@@ -1866,13 +1964,19 @@ h2o.removeVecs <- function(data, cols) {
 #' @param no The value to return if the condition is FALSE.
 #' @return Returns a vector of new values matching the conditions stated in the ifelse call.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
 #' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
 #' summary(australia.hex)
+#' }
 #' @export
-h2o.ifelse <- function(test, yes, no) .newExpr("ifelse",test,yes,no)
+h2o.ifelse <- function(test, yes, no) {
+  if( !is.Frame(yes) && is.character(yes) ) yes <- .quote(yes)
+  if( !is.Frame(no)  && is.character(no ) ) no  <- .quote(no )
+  .newExpr("ifelse",test,yes,no)
+}
 
 #' @rdname h2o.ifelse
 #' @export
@@ -1908,12 +2012,14 @@ ifelse <- function(test, yes, no) {
 #' @return An H2O Frame object containing the combined \dots arguments column-wise.
 #' @seealso \code{\link[base]{cbind}} for the base \code{R} method.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.cbind <- h2o.cbind(prostate.hex, prostate.hex)
 #' head(prostate.cbind)
+#' }
 #' @export
 h2o.cbind <- function(...) {
   li <- list(unlist(list(...)))
@@ -1936,12 +2042,14 @@ h2o.cbind <- function(...) {
 #' @return An H2O Frame object containing the combined \dots arguments column-wise.
 #' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.cbind <- h2o.rbind(prostate.hex, prostate.hex)
 #' head(prostate.cbind)
+#' }
 #' @export
 h2o.rbind <- function(...) {
   ls <- list(...)
@@ -1968,6 +2076,7 @@ h2o.rbind <- function(...) {
 #' @param all.y a logical value indicating whether or not shared values are
 #'        preserved or ignored in \code{y}.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
 #' color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
@@ -1976,6 +2085,7 @@ h2o.rbind <- function(...) {
 #' l.hex <- as.h2o(left)
 #' r.hex <- as.h2o(right)
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
+#' }
 #' @export
 h2o.merge <- function(x, y, all.x = TRUE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
 
@@ -2187,6 +2297,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
 #          row-by-row
 #' @seealso \code{\link[plyr]{ddply}} for the plyr library implementation.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -2194,11 +2305,12 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 #' # Add function taking mean of sepal_len column
-#' fun = function(df) { sum(df[,1], na.rm = T)/nrow(df) }
+#' fun = function(df) { sum(df[,1], na.rm = TRUE)/nrow(df) }
 #' # Apply function to groups by class of flower
 #' # uses h2o's ddply, since iris.hex is a Frame object
 #' res = h2o.ddply(iris.hex, "class", fun)
 #' head(res)
+#' }
 #' @export
 h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
   .h2o.gc()
@@ -2273,10 +2385,12 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
 #'         subsequent H2O processes.
 #' @seealso \link[base]{apply} for the base generic
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
 #' iris.hex = h2o.importFile(path = irisPath, destination_frame = "iris.hex")
 #' summary(apply(iris.hex, 2, sum))
+#' }
 #' @export
 apply <- function(X, MARGIN, FUN, ...) {
   if( !is.Frame(X) ) return(base::apply(X,MARGIN,FUN,...))
@@ -2398,7 +2512,7 @@ h2o.toupper <- function(x) .newExpr("toupper", x)
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefirst", .quote(pattern), .quote(replacement),x,ignore.case)
+h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefirst", x, .quote(pattern), .quote(replacement),ignore.case)
 
 #'
 #' String Global Substitute
@@ -2411,7 +2525,7 @@ h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefi
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
 #' @export
-h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replaceall", .quote(pattern), .quote(replacement),x,ignore.case)
+h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replaceall", x, .quote(pattern), .quote(replacement),ignore.case)
 
 #'
 #' Trim Space

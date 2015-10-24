@@ -1,17 +1,16 @@
-import sys, os
-sys.path.insert(1, "../../../")
-import h2o, tests
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 
 import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
 def bernoulliGBM():
-  
-  
 
   #Log.info("Importing prostate.csv data...\n")
-  prostate_train = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate_train.csv"))
+  prostate_train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_train.csv"))
 
   #Log.info("Converting CAPSULE and RACE columns to factors...\n")
   prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
@@ -20,7 +19,7 @@ def bernoulliGBM():
   #prostate.summary()
 
   # Import prostate_train.csv as numpy array for scikit comparison
-  trainData = np.loadtxt(h2o.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
+  trainData = np.loadtxt(pyunit_utils.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
   trainDataResponse = trainData[:,0]
   trainDataFeatures = trainData[:,1:]
 
@@ -41,13 +40,13 @@ def bernoulliGBM():
   gbm_sci.fit(trainDataFeatures,trainDataResponse)
 
   #Log.info("Importing prostate_test.csv data...\n")
-  prostate_test = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate_test.csv"))
+  prostate_test = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_test.csv"))
 
   #Log.info("Converting CAPSULE and RACE columns to factors...\n")
   prostate_test["CAPSULE"] = prostate_test["CAPSULE"].asfactor()
 
   # Import prostate_test.csv as numpy array for scikit comparison
-  testData = np.loadtxt(h2o.locate("smalldata/logreg/prostate_test.csv"), delimiter=',', skiprows=1)
+  testData = np.loadtxt(pyunit_utils.locate("smalldata/logreg/prostate_test.csv"), delimiter=',', skiprows=1)
   testDataResponse = testData[:,0]
   testDataFeatures = testData[:,1:]
 
@@ -63,5 +62,9 @@ def bernoulliGBM():
   #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
   assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, bernoulliGBM)
+    pyunit_utils.standalone_test(bernoulliGBM)
+else:
+    bernoulliGBM()

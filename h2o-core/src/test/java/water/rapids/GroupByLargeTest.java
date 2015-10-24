@@ -58,9 +58,9 @@ public class GroupByLargeTest extends TestUtil {
 
       Log.info("Cleanup search data: replace marker values with None/missing, and convert to factors");
       Exec.exec("(= sinfo.hex NA \"CategoryID\" (== (cols sinfo.hex \"CategoryID\") 500001))",false);
-      sif.replace(sif.find("CategoryID"),sif.vec("CategoryID").toCategorical()).remove();
+      sif.replace(sif.find("CategoryID"),sif.vec("CategoryID").toCategoricalVec()).remove();
       Exec.exec("(= sinfo.hex NA \"LocationID\" (== (cols sinfo.hex \"LocationID\") 250001))",false);
-      sif.replace(sif.find("LocationID"),sif.vec("LocationID").toCategorical()).remove();
+      sif.replace(sif.find("LocationID"),sif.vec("LocationID").toCategoricalVec()).remove();
       System.out.println(sif);
 
       Log.info("GroupBy on SearchId; count searchs per user; popular searchs are more predictive");

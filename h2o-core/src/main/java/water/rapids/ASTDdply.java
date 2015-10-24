@@ -16,8 +16,7 @@ import java.util.Arrays;
  *  
  */
 class ASTDdply extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "groupByCols", "fun"}; }
+  @Override public String[] args() { return new String[]{"ary", "groupByCols", "fun"}; }
   @Override int nargs() { return 1+3; } // (ddply data [group-by-cols] fcn )
   @Override public String str() { return "ddply"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -28,18 +27,18 @@ class ASTDdply extends ASTPrim {
     ASTFun scope = env._scope;  // Current execution scope; needed to lookup variables
     // Frame of group keys
     Frame fr_keys = ASTGroup.gbFrame(fr,groupby.expand4());
-    final int ngbCols = fr_keys.numCols(); 
-    
+    final int ngbCols = fr_keys.numCols();
+
     // Pass 1: Find all the groups (and count rows-per-group)
     IcedHashMap<ASTGroup.GKX,String> gs = ASTGroup.findGroups(fr_keys);
     final ASTGroup.GK0[] grps = ASTGroup.sortGroups(gs);
-    
+
     // Pass 2: Build all the groups, building 1 Vec per-group, with exactly the
     // same Chunk layout, except each Chunk will be the filter rows numbers; a
     // list of the Chunk-relative row-numbers for that group in an original
     // data Chunk.  Each Vec will have a *different* number of rows.
-    Vec[] vgrps = new BuildGroup(gs).doAll(gs.size(),fr_keys).close();
-    
+    Vec[] vgrps = new BuildGroup(gs).doAll(gs.size(), Vec.T_NUM, fr).close();
+
     // Pass 3: For each group, build a full frame for the group, run the
     // function on it and tear the frame down.
     final RemoteRapids[] remoteTasks = new RemoteRapids[gs.size()]; // gather up the remote tasks...
@@ -94,7 +93,7 @@ class ASTDdply extends ASTPrim {
       Futures fs = new Futures();
       Vec[] vgrps = new Vec[_gs.size()];
       for( int i = 0; i < vgrps.length; i++ )
-        vgrps[i] = _appendables[i].close(fs);
+        vgrps[i] = _appendables[i].close(_appendables[i].compute_rowLayout(),fs);
       fs.blockForPending();
       return vgrps;
     }
@@ -133,7 +132,7 @@ class ASTDdply extends ASTPrim {
       final Vec[] groupVecs = new Vec[_data.numCols()];
       Futures fs = new Futures();
       for( int i=0; i<_data.numCols(); i++ )
-        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._espc, gvec.domain(), gvec.get_type()), fs);
+        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._rowLayout, gvec.domain(), gvec.get_type()), fs);
       fs.blockForPending();
       // Fill in the chunks
       new MRTask() {

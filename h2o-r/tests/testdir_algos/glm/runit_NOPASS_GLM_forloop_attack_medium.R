@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # Constants and setters
 bools <- c(TRUE, FALSE)
@@ -22,7 +22,7 @@ set_training_frame <- function(frame) return(frame)
 set_validation_frame <- function(frame) return(frame)
 set_max_iterations <- function() sample.int(50,1)
 set_beta_epsilon <- function() runif(1)
-set_solver <- function() sample(c("IRLSM", "L_BFGS"),1)
+set_solver <- function() sample(c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"),1)
 set_standardize <- function() sample(bools,1)
 set_family <- function(family) return(family)
 set_link <- function(family) {
@@ -97,15 +97,15 @@ randomParams <- function(family, train, test, x, y) {
         if (identical(val, "weights")) {
           Log.info(paste0(sub("_", " ", parm), ":"))
           print(weights.train)
-        } else if (is.vector(val))
-          Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
-        else if (inherits(val, "H2OFrame"))
-          Log.info(paste0(sub("_", " ", parm), ": ",val@frame_id))
-        else if (inherits(val, "data.frame")) {
-          Log.info(paste0(sub("_", " ", parm), ":"))
+        } else if (is.vector(val)) {
+          Log.info(paste0(sub("_", " ", parm), ": ",val))
+        } else if (class(val) == "Frame") {
+          Log.info(paste0(sub("_", " ", parm), ": "))
+        } else if (inherits(val, "data.frame")) {
+          Log.info(paste0(sub("_", " ", parm), ": "))
           print(val)
-        } else
-          Log.info(paste0(sub("_", " ", parm), ": ", val))
+        } else {
+          Log.info(paste0(sub("_", " ", parm), ": ",val)) }
       return(val)
     }
     return(NULL)
@@ -134,15 +134,14 @@ randomParams <- function(family, train, test, x, y) {
   parms$lambda_search <- parm_set("lambda_search")
   parms$nlambdas <- parm_set("nlambdas", dep = !is.null(parms$lambda_search) && parms$lambda_search)
   # parms$lambda_min_ratio <- parm_set("lambda_min_ratio")
-  parms$offset_column <- parm_set("offset_column", cols = x, frame = train)
-  parms$weights_column <- parm_set("weights_column")
+  #parms$offset_column <- parm_set("offset_column", cols = x, frame = train)
+  #parms$weights_column <- parm_set("weights_column")
   parms$beta_constraints <- parm_set("beta_constraints", standardize = parms$standardize,
     cols = parms$x, frame = train, ignored = parms$offset_column)
 
   t <- system.time(hh <- do.call("h2o.glm", parms))
   print(hh)
 
-  h2o.rm(hh@model_id)
   print("#########################################################################################")
   print("")
   print(t)
@@ -150,6 +149,7 @@ randomParams <- function(family, train, test, x, y) {
 }
 
 test.glm.rand_attk_forloop <- function() {
+
   Log.info("Import and data munging...")
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
@@ -180,7 +180,6 @@ test.glm.rand_attk_forloop <- function() {
   for(i in 1:10)
     randomParams("gamma", cars.train, cars.test, 3:7, 2)
 
-  
 }
 
 doTest("Checking GLM in Random Attack For Loops", test.glm.rand_attk_forloop)

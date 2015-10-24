@@ -1,13 +1,17 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def link_correct_default():
 	
 	
 
 	print("Reading in original prostate data.")
-	h2o_data = h2o.upload_file(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
+	h2o_data = h2o.upload_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
 
 	print("Compare models with link unspecified and canonical link specified.")
 	print("GAUSSIAN: ")
@@ -34,5 +38,9 @@ def link_correct_default():
 	assert h2o_model_specified._model_json['output']['coefficients_table'].cell_values == \
 		   h2o_model_unspecified._model_json['output']['coefficients_table'].cell_values, "coefficient should be equal"
 
+
+
 if __name__ == "__main__":
-	tests.run_test(sys.argv, link_correct_default)
+    pyunit_utils.standalone_test(link_correct_default)
+else:
+	link_correct_default()

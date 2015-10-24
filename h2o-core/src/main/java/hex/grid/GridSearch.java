@@ -250,6 +250,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     Key<Model> key = grid.getModelKey(checksum);
     // It was already built
     if (key != null) {
+      System.err.println("Found params: ");
+      System.err.println(" - in cache: " + key.get()._parms.toJsonString());
+      System.err.println(" - new one : " + params.toJsonString());
       return key.get();
     }
     // Build a new model

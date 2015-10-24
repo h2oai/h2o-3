@@ -3,8 +3,8 @@
 # gitHash: 2581a0dfa12a51892283830529a5126ea49f0cb9
 # SEED: 2481425483200553751
 ##
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 simpleFilterTest_prostate_cat_replaced_18 <- function() {
     Log.info("A munge-task R unit test on data <prostate_cat_replaced> testing the functional unit <>> ")
     Log.info("Uploading prostate_cat_replaced")

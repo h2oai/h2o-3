@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.export.file <- function() {
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
@@ -18,13 +18,13 @@ test.export.file <- function() {
   fname <- paste(paste0(sample(letters, 3, replace = TRUE), collapse = ""),
                  paste0(sample(0:9, 3, replace = TRUE), collapse = ""),
                  "predict.csv", sep = "_")
-  dname <- paste(tempdir(), fname, sep = "/")
+  dname <- paste(sandbox(), fname, sep = .Platform$file.sep)
 
   Log.info("Exporting File...")
   h2o.exportFile(mypred, dname)
 
   Log.info("Comparing file with R...")
-  R.pred <- read.csv(dname)
+  R.pred <- read.csv(dname, colClasses=c("factor",NA,NA))
   print(head(R.pred))
   H.pred <- as.data.frame(mypred)
   print(head(H.pred))
