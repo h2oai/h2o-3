@@ -1551,9 +1551,9 @@ class TestRunner:
 
     def _report_perf(self, test, finish_seconds):
         f = open(self.perf_file, "a")
-        f.write('{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}\n'
+        f.write('{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}\n'
                 ''.format(g_date, g_build_id, g_git_hash, g_git_branch, g_machine_ip, test.get_test_name(),
-                          test.start_seconds, finish_seconds, 1 if test.get_passed() else 0, g_ncpu, g_os))
+                          test.start_seconds, finish_seconds, 1 if test.get_passed() else 0, g_ncpu, g_os, g_job_name))
         f.close()
 
     def _save_xunit_report(self, testsuite, testcase, report):
@@ -1673,6 +1673,7 @@ g_perf = False
 g_git_hash = None
 g_git_branch = None
 g_build_id = None
+g_job_name= None
 
 
 # Global variables that are set internally.
@@ -1784,9 +1785,9 @@ def usage():
     print("    --hadoopNamenode Specifies that the runit/pyunit tests have access to this hadoop namenode.")
     print("                     runit/pyunit test utilities have ability to retrieve this value.")
     print("")
-    print("    --perf           Save Jenkins build id, date, machine ip, git hash, name, start time and finish time of")
-    print("                     of each test to perf.csv in the results directory.")
-    print("                     Takes three parameters: git hash, git branch, and build id, in that order.")
+    print("    --perf           Save Jenkins build id, date, machine ip, git hash, name, start time, finish time,")
+    print("                     pass, ncpus, os, and job name of each test to perf.csv in the results directory.")
+    print("                     Takes three parameters: git hash, git branch, and build id, job name in that order.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
@@ -1886,6 +1887,7 @@ def parse_args(argv):
     global g_build_id
     global g_ncpu
     global g_os
+    global g_job_name
 
     i = 1
     while (i < len(argv)):
@@ -2023,6 +2025,11 @@ def parse_args(argv):
             if (i > len(argv)):
                 usage()
             g_build_id = argv[i]
+
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_job_name = argv[i]
         else:
             unknown_arg(s)
 
@@ -2104,6 +2111,7 @@ def main(argv):
     global g_build_id
     global g_ncpu
     global g_os
+    global g_job_name
 
     g_script_name = os.path.basename(argv[0])
 
