@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy, six
+import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy, six, math, tabulate
 from astfun import _bytecode_decompile_lambda
 from expr import h2o,ExprNode
 import gc
@@ -52,8 +52,6 @@ class H2OFrame(object):
     fr._id = frame_id
     fr._update()
     return fr
-
-  def __str__(self): return self._id
 
   def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(path)
@@ -372,72 +370,61 @@ class H2OFrame(object):
     """
     Extract the unique values in the column.
 
-    :return: A new H2OFrame of just the unique values in the column.
+    Returns
+    -------
+      H2OFrame of unique column values.
     """
     return H2OFrame._expr(expr=ExprNode("unique", self))._frame()
 
-  def show(self, use_pandas=True):
+  def show(self, use_pandas=False):
     """
-    Used by the H2OFrame.__repr__ method to display a snippet of the data frame.
-
-    :param use_pandas: Display a pandas style data frame (better for pretty printing wide datasets)
+    Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
+    If called from IPython, displays an html'ized result
+    Else prints a tabulate'd result
     :return: None
     """
-    self.head(rows=10,cols=sys.maxint,show=True,use_pandas=use_pandas)  # all columns
+    if h2o.H2ODisplay._in_ipy():
+      import IPython.display
+      if use_pandas and h2o.can_use_pandas():
+        IPython.display.display(self.head().as_data_frame())
+      IPython.display.display_html(self._cache._tabulate(self._id,"html",False),raw=True)
+    else:
+      print(self)
 
-  def head(self,rows=10,cols=200,show=True,use_pandas=False):
+  def head(self,rows=10,cols=200):
     """
-    Analogous to R's `head` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the beginning.
+    Analogous to R's `head` call on a data.frame.
 
-    :param rows: Number of rows starting from the topmost to display.
-    :param cols: Number of columns starting from the leftmost to display.
-    :param show: A flag specifying whether or not to display the output. If True, return None.
-    :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
-    :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a
-    pandas DataFrame) containing this H2OFrame instance's data. If show = True, print only and return None.
+    Parameters
+    ----------
+      rows : int, default 10
+      cols : int, default 200
+
+    Returns
+    -------
+      H2OFrame having shape (min(self.nrow, rows), min(self.ncol, cols)).
     """
-    self._eager()
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
-    res = self[:nrows,:ncols].as_data_frame(use_pandas=use_pandas)
-    if show:
-      self._do_show(res,use_pandas)
-    else:
-      return res
+    return self[:nrows,:ncols]
 
-  def _do_show(self,fr,use_pandas):
-    print "H2OFrame with {} rows and {} columns: ".format(self.nrow, self.ncol)
-    if use_pandas:
-      import pandas
-      pandas.options.display.max_rows=20
-      if h2o.H2ODisplay._in_ipy():
-        from IPython.display import display
-        display(fr)
-      else:
-        print fr
-    else:
-      h2o.H2ODisplay(fr[1:],fr[0])
-
-  def tail(self, rows=10, cols=200, show=True, use_pandas=False):
+  def tail(self, rows=10, cols=200):
     """
-    Analogous to R's `tail` call on a data.frame. Display a digestible chunk of the H2OFrame starting from the end.
+    Analogous to R's `tail` call on a data.frame.
 
-    :param rows: Number of rows starting from the bottommost to display in their original order.
-    :param cols: Number of columns starting from the leftmost to display.
-    :param show: A flag specifying whether or not to display the output. If True, return None.
-    :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
-    :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a pandas
-     DataFrame) containing this H2OFrame instance's data. If show = True, print only and return None.
+    Parameters
+    ----------
+      rows : int, default 10
+      cols : int, default 200
+
+    Returns
+    -------
+      H2OFrame having shape (min(self.nrow, rows), min(self.ncol, cols)).
     """
-    self._eager()
     nrows = min(self.nrow, rows)
     ncols = min(self.ncol, cols)
-    start_idx = self.nrow - nrows if rows is not None else 0
-    res = self[start_idx:self.nrow,:ncols].as_data_frame(use_pandas=use_pandas)
-    if show:
-      self._do_show(res,use_pandas)
-    else:
-      return res
+    start_idx = self.nrow - nrows
+    return self[start_idx:start_idx+nrows,:ncols]
 
   def levels(self, col=None):
     """
@@ -559,6 +546,11 @@ class H2OFrame(object):
     table = [type,mins,maxs,mean,sigma,zeros,miss]
     headers = self.names
     h2o.H2ODisplay(table, [""] + headers, "Column-by-Column Summary")
+
+  def __str__(self):
+    if sys.gettrace() is None:
+      return self._cache._tabulate(self._id,"simple",False)
+    return self._id
 
   def __repr__(self):
     if sys.gettrace() is None:
@@ -1576,6 +1568,29 @@ class H2OCache(object):
       # to math.nan.  Do that now.
       else: c['data'] = [float('nan') if x=="NaN" else x for x in c['data']]
       self._data[c.pop('label')] = c["data"]  # Label used as the Key
+
+  def _tabulate(self,frame_id,tablefmt,rollups):
+    """Pretty tabulated string of all the cached data, and column names"""
+    if not isinstance(self.fill(frame_id,10),dict):  return str(self._data)  # Scalars print normally
+    # Pretty print cached data
+    d = collections.OrderedDict()
+    # If also printing the rollup stats, build a full row-header
+    if rollups:
+      col = self._data.itervalues().next() # Get a sample column
+      lrows = len(col['data'])  # Cached rows being displayed
+      d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+map(str,range(lrows))
+    # For all columns...
+    for k,v in self._data.iteritems():
+      x = v['data']          # Data to display
+      domain = v['domain']   # Map to cat strings as needed
+      if domain:
+        x = ["" if math.isnan(idx) else domain[int(idx)] for idx in x]
+      if rollups:            # Rollups, if requested
+        mins = v['mins'][0] if v['mins'] else None
+        maxs = v['maxs'][0] if v['maxs'] else None
+        x = [v['type'],mins,v['mean'],maxs,v['sigma'],v['zero_count'],v['missing_count']]+x
+      d[k] = x               # Insert into ordered-dict
+    return tabulate.tabulate(d,headers="keys",tablefmt=tablefmt)
 
   def flush(self):
     self.__dict__ = H2OCache().__dict__.copy()
