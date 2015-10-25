@@ -257,6 +257,7 @@ class ExprNode:
 
     Examples:
       fr[2]              # All rows, column 2
+      fr[-2]             # All rows, 2nd column from end
       fr[:,-1]           # All rows, last column
       fr[0:5,:]          # first 5 rows, all columns
       fr[fr[0] > 1, :]   # all rows greater than 1 in the first column, all columns
@@ -271,7 +272,8 @@ class ExprNode:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (int,basestring,list)): return ExprNode("cols",self,item)  # just columns
+    if isinstance(item, (basestring,list)): return ExprNode("cols",self,item)  # just columns
+    if isinstance(item, int): return ExprNode("cols",self,item if item >= 0 else self._ncols+item)  # just columns
     if isinstance(item, slice):
       item = slice(item.start,min(self._ncols,item.stop))
       return ExprNode("cols",self,item)

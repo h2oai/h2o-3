@@ -17,7 +17,7 @@ class H2OMultinomialModel(ModelBase):
     """
     if not isinstance(data, H2OFrame): raise ValueError("data argument must be of type H2OFrame, but got {0}"
                                                         .format(type(data)))
-    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + data._id)
+    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + data.frame_id)
     return j["model_metrics"][0]["cm"]["table"]
 
   def hit_ratio_table(self, train=False, valid=False, xval=False):

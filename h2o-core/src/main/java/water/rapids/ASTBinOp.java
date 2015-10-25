@@ -204,13 +204,19 @@ abstract class ASTBinOp extends ASTPrim {
 
     Frame res = new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
+          BufferedString lfstr = new BufferedString();
+          BufferedString rtstr = new BufferedString();
           assert (cress.length<<1) == chks.length;
           for( int c=0; c<cress.length; c++ ) {
             Chunk clf = chks[c];
             Chunk crt = chks[c+cress.length];
             NewChunk cres = cress[c];
-            for( int i=0; i<clf._len; i++ )
-              cres.addNum(op(clf.atd(i),crt.atd(i)));
+            if( clf.vec().isString() )
+              for( int i=0; i<clf._len; i++ )
+                cres.addNum(str_op(clf.atStr(lfstr,i),crt.atStr(rtstr,i)));
+            else
+              for( int i=0; i<clf._len; i++ )
+                cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
       }.doAll(lf.numCols(), Vec.T_NUM, new Frame(lf).add(rt)).outputFrame(lf._names,null);

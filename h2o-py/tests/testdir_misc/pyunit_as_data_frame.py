@@ -16,8 +16,7 @@ def pyunit_as_data_frame():
   head_small_bike = smallbike.head(rows=5, cols=2)
   tail_small_bike = smallbike.tail(rows=5, cols=2)
   assert len(head_small_bike) == len(tail_small_bike) == 5
-  assert len(head_small_bike[3]) == len(tail_small_bike[4]) == 2
-  assert head_small_bike[-1:] == tail_small_bike[1]
+  assert head_small_bike[-1] == tail_small_bike[1]
 
   ##use_pandas = True
   small_bike_pandas = smallbike.as_data_frame(use_pandas=True)
