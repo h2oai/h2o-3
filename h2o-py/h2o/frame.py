@@ -32,7 +32,7 @@ class H2OFrame(object):
     -------
       H2OFrame instance
     """
-    self._id        = None
+    self._id        = None        # tmp if None; tmp if not None and _ast is not None
     self._ast       = None        # ExprNode, or None
     self._cache     = H2OCache()  # nrows, ncols, colnames, types, data
     self._data      = None        # holds scalar data
@@ -58,11 +58,13 @@ class H2OFrame(object):
   def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(path)
     self._parse(rawkey,destination_frame, header, separator, column_names, column_types, na_strings)
+    return self
 
   def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings):
     fui = {"file": os.path.abspath(path)}
     rawkey = h2o.H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui)["destination_frame"]
     self._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings)
+    return self
 
   def _upload_python_object(self, python_obj, destination_frame, header, separator, column_names, column_types, na_strings):
     """
@@ -139,9 +141,7 @@ class H2OFrame(object):
 
     :return: An iterator over the H2OFrame
     """
-    self._eager()
-    ncol = self._ncols
-    return (self[i] for i in range(ncol))
+    return (self[i] for i in range(self.ncol))
 
   def where(self):
     fr = H2OFrame._expr(expr=ExprNode("h2o.which", self))
@@ -1579,6 +1579,7 @@ class H2OCache(object):
 
   def flush(self):
     self.__dict__ = H2OCache().__dict__.copy()
+    return self
 
 
 # private static methods

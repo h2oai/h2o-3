@@ -93,10 +93,7 @@ def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names
     >>> ml.upload_file(path="/path/to/local/data", destination_frame="my_local_data")
     ...
   """
-  fui = {"file": os.path.abspath(path)}
-  destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
-  res = H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
-  return H2OFrame(raw_id=destination_frame)
+  return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
 def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="",
@@ -157,8 +154,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   if not parse:
       return lazy_import(path)
 
-  return H2OFrame(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
-
+  return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
   """
@@ -2018,7 +2014,8 @@ def import_frame():
 @h2o_deprecated()
 def parse():
   """
-  External use of parse is deprecated. parse has been renamed _parse for internal use.
+  External use of parse is deprecated. parse has been renamed H2OFrame._parse for internal
+  use.
 
   Parameters
   ----------
