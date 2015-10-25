@@ -487,7 +487,7 @@ def rapids(expr, id=None):
 
   :return: The JSON response of the Rapids execution
   """
-  expr = "(tmp= {} {}".format(id, expr) if id is None else expr
+  expr = expr if id is None else "(tmp= {} {})".format(id, expr)
   return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
 
 
