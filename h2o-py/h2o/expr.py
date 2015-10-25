@@ -273,11 +273,13 @@ class ExprNode:
                  If a string, then slice on the column with this name.
     :return: An H2OFrame.
     """
-    if isinstance(item, (basestring,list)): return ExprNode("cols",self,item)  # just columns
-    if isinstance(item, int): return ExprNode("cols",self,item if item >= 0 else self._ncols+item)  # just columns
-    if isinstance(item, slice):
-      item = slice(item.start,min(self._ncols,item.stop))
-      return ExprNode("cols",self,item)
+    # Select columns based on a string, a list of strings, an int or a slice.
+    # Note that the python column selector handles the case of negative
+    # selections, or out-of-range selections - without having to compute
+    # self._ncols in the front-end - which would force eager evaluation just to
+    # range check in the front-end.
+    if isinstance(item, (basestring,list,int,slice)):
+      return ExprNode("cols_py",self,item)  # just columns
     if isinstance(item, frame.H2OFrame): item = item._ex
     if isinstance(item, ExprNode): return ExprNode("rows",self,item)  # just rows
     if isinstance(item, tuple):
@@ -286,11 +288,11 @@ class ExprNode:
       if isinstance(cols, slice):  allcols = all([a is None for a in [cols.start,cols.step,cols.stop]])
       if isinstance(rows, slice):  allrows = all([a is None for a in [rows.start,rows.step,rows.stop]])
 
-      if allrows and allcols: return self            # fr[:,:]    -> all rows and columns.. return self
-      if allrows: return ExprNode("cols",self,cols)  # fr[:,cols] -> really just a column slice
-      if allcols: return ExprNode("rows",self,rows)  # fr[rows,:] -> really just a row slices
+      if allrows and allcols: return self               # fr[:,:]    -> all rows and columns.. return self
+      if allrows: return ExprNode("cols_py",self,cols)  # fr[:,cols] -> really just a column slice
+      if allcols: return ExprNode("rows",self,rows)     # fr[rows,:] -> really just a row slices
 
-      res = ExprNode("rows", ExprNode("cols",self,cols),rows)
+      res = ExprNode("rows", ExprNode("cols_py",self,cols),rows)
       # Pythonic: if the row & col selector turn into ints (or a single col
       # name), then extract the single element out of the Frame.  Otherwise
       # return a Frame, EVEN IF the selectors are e.g. slices-of-1-value.
