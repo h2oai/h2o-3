@@ -256,6 +256,8 @@ class ExprNode:
     Supports R-like row and column slicing.
 
     Examples:
+      fr[2]              # All rows, column 2
+      fr[:,-1]           # All rows, last column
       fr[0:5,:]          # first 5 rows, all columns
       fr[fr[0] > 1, :]   # all rows greater than 1 in the first column, all columns
       fr[[1,5,6]]        # columns 1, 5, and 6

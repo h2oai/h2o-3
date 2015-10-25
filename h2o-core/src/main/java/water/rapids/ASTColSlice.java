@@ -10,11 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /** Column slice */
 class ASTColSlice extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "cols"}; }
+  @Override public String[] args() { return new String[]{"ary", "cols"}; }
   @Override int nargs() { return 1+2; } // (cols src [col_list])
-  @Override
-  public String str() { return "cols" ; }
+  @Override public String str() { return "cols" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val v = stk.track(asts[1].exec(env));
     if( v instanceof ValRow ) {
@@ -33,7 +31,7 @@ class ASTColSlice extends ASTPrim {
         fr2.add(fr.names()[col],fr.vecs()[col]);
     } else {                    // Negative (exclusion) list
       fr2 = new Frame(fr);      // All of them at first
-      Arrays.sort(cols);     // This loop depends on the values in sorted order
+      Arrays.sort(cols);        // This loop depends on the values in sorted order
       for( int col : cols )
         if( 0 <= -col-1 && -col-1 < fr.numCols() ) 
           fr2.remove(-col-1);   // Remove named column

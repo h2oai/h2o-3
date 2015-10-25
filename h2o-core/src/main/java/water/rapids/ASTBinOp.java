@@ -225,10 +225,40 @@ abstract class ASTBinOp extends ASTPrim {
   }
 
   private ValFrame vec_op_frame( Vec vec, Frame fr ) {
-    throw H2O.unimpl();
+    // Already checked for same rows, non-zero frame
+    Frame rt = new Frame(fr);
+    rt.add("",vec);
+    Frame res = new MRTask() {
+        @Override public void map( Chunk[] chks, NewChunk[] cress ) {
+          assert cress.length == chks.length-1;
+          Chunk clf = chks[cress.length];
+          for( int c=0; c<cress.length; c++ ) {
+            Chunk crt = chks[c];
+            NewChunk cres = cress[c];
+            for( int i=0; i<clf._len; i++ )
+              cres.addNum(op(clf.atd(i),crt.atd(i)));
+          }
+        }
+      }.doAll(fr.numCols(), Vec.T_NUM, rt).outputFrame(fr._names,null);
+    return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
   private ValFrame frame_op_vec( Frame fr, Vec vec ) {
-    throw H2O.unimpl();
+    // Already checked for same rows, non-zero frame
+    Frame lf = new Frame(fr);
+    lf.add("",vec);
+    Frame res = new MRTask() {
+        @Override public void map( Chunk[] chks, NewChunk[] cress ) {
+          assert cress.length == chks.length-1;
+          Chunk crt = chks[cress.length];
+          for( int c=0; c<cress.length; c++ ) {
+            Chunk clf = chks[c];
+            NewChunk cres = cress[c];
+            for( int i=0; i<clf._len; i++ )
+              cres.addNum(op(clf.atd(i),crt.atd(i)));
+          }
+        }
+      }.doAll(fr.numCols(), Vec.T_NUM, lf).outputFrame(fr._names,null);
+    return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
   
   // Make sense to run this OP on an enm?
@@ -246,7 +276,7 @@ class ASTOr   extends ASTBinOp { public String str() { return "|" ; } double op(
 class ASTPlus extends ASTBinOp { public String str() { return "+" ; } double op( double l, double r ) { return l+ r; } }
 class ASTPow  extends ASTBinOp { public String str() { return "^" ; } double op( double l, double r ) { return Math.pow(l,r); } }
 class ASTSub  extends ASTBinOp { public String str() { return "-" ; } double op( double l, double r ) { return l- r; } }
-class ASTIntDiv extends ASTBinOp { public String str() { return "intDiv"; } double op(double l, double r) { return (int)l/(int)r;}}
+class ASTIntDiv extends ASTBinOp { public String str() { return "intDiv"; } double op(double l, double r) { return (((int)r)==0) ? Double.NaN : (int)l/(int)r;}}
 class ASTIntDivR extends ASTBinOp { public String str() { return "%/%"; } double op(double l, double r) { return (int)(l/r);}} // Language R intdiv op
 
 class ASTRound extends ASTBinOp { 
