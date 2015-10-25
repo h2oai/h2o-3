@@ -95,7 +95,7 @@ def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names
   """
   fui = {"file": os.path.abspath(path)}
   destination_frame = _py_tmp_key() if destination_frame == "" else destination_frame
-  H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
+  res = H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
   return H2OFrame(raw_id=destination_frame)
 
 
@@ -251,7 +251,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
     elif isinstance(column_types, list):
       if len(column_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
       column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(column_types))]
-    else: #not dictionary or list
+    else:  # not dictionary or list
       raise ValueError("col_types should be a list of types or a dictionary of column names to types")
     j["column_types"] = column_types
   if na_strings:
@@ -269,7 +269,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
       j["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in na_strings]
     elif isinstance(na_strings, list):
       j["na_strings"] = [[_quoted(na) for na in na_strings]] * len(j["column_types"])
-    else: #not a dictionary or list
+    else:  # not a dictionary or list
       raise ValueError("na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
                        "names to strings which are to be interpreted as missing values")
 
@@ -277,43 +277,6 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if j["column_names"]: j["column_names"] = map(_quoted, j["column_names"])
   j["column_types"] = map(_quoted, j["column_types"])
   return j
-
-
-def _parse(setup):
-  """
-  Trigger a parse; blocking; removeFrame just keep the Vecs.
-
-  Parameters
-  ----------
-  setup : dict
-    The result of calling parse_setup.
-
-:return: A new parsed object
-  """
-  # Parse parameters (None values provided by setup)
-  p = { "destination_frame" : _py_tmp_key(),
-        "parse_type" : None,
-        "separator" : None,
-        "single_quotes" : None,
-        "check_header"  : None,
-        "number_columns" : None,
-        "chunk_size"    : None,
-        "delete_on_done" : True,
-        "blocking" : False,
-        "column_types" : None
-        }
-
-  if setup["column_names"]: p["column_names"] = None
-  if setup["na_strings"]: p["na_strings"] = None
-
-  p.update({k: v for k, v in setup.iteritems() if k in p})
-
-  # Extract only 'name' from each src in the array of srcs
-  p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
-
-  # Request blocking parse
-  j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
-  return j.jobs
 
 
 def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
@@ -337,10 +300,8 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   if first_line_is_header != (-1, 0, 1):
     if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
     setup["check_header"] = first_line_is_header
-  parsed = _parse(setup)
   fr = H2OFrame()
-  fr._update_post_parse(parsed)
-  return fr
+  return fr._parse(setup)
 
 
 def _quoted(key):
@@ -372,7 +333,7 @@ def which(condition):
 
   :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
   """
-  return (H2OFrame(expr=ExprNode("h2o.which",condition)))._scalar()
+  return (H2OFrame._expr(expr=ExprNode("h2o.which",condition)))._scalar()
 
 
 def ifelse(test,yes,no):
@@ -393,7 +354,7 @@ def ifelse(test,yes,no):
 
  :return: An H2OFrame
   """
-  return H2OFrame(expr=ExprNode("ifelse",test,yes,no))._frame()
+  return H2OFrame._expr(expr=ExprNode("ifelse",test,yes,no))._frame()
 
 
 def get_future_model(future_model):
@@ -530,7 +491,8 @@ def rapids(expr, id=None):
 
   :return: The JSON response of the Rapids execution
   """
-  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99) if id is None else H2OConnection.post_json("Rapids", ast=urllib.quote(expr), id=id, _rest_version=99)
+  expr = "(tmp= {} {}".format(id, expr) if id is None else expr
+  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
 
 
 def ls():
@@ -539,7 +501,7 @@ def ls():
 
   :return: Returns a list of keys in the current H2O instance
   """
-  return H2OFrame(expr=ExprNode("ls")).as_data_frame()
+  return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame()
 
 
 def frame(frame_id, exclude=""):
