@@ -46,7 +46,7 @@ class H2OMultinomialModel(ModelBase):
 
     if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
       if metric == "AUTO": metric = "classification_error"
-      elif metric not in ("logloss","AUC","classification_error","MSE"):
-        raise ValueError("metric for H2OMultinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      elif metric not in ("logloss","classification_error","MSE"):
+        raise ValueError("metric for H2OMultinomialModel must be one of: AUTO, logloss, classification_error, MSE")
 
     self._plot(timestep=timestep, metric=metric, **kwargs)

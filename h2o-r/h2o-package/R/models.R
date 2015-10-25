@@ -1828,14 +1828,14 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     } else if (is(x, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
-      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
-        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      } else if (!(metric %in% c("logloss","classification_error","MSE"))) {
+        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, classification_error, MSE")
       }
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
         metric <- "MSE"
-      } else if (!(metric %in% c("MSE","deviance", "r2"))) {
-        stop("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance, r2")
+      } else if (!(metric %in% c("MSE","deviance"))) {
+        stop("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance")
       }
     } else {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
