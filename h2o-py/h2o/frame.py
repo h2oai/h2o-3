@@ -13,7 +13,6 @@ class H2OFrame(object):
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
   MAGIC_REF_COUNT = 7 if sys.gettrace() is None else 9  # M = debug ? 7 : 5
-  COUNTING = True
 
   def __init__(self, python_obj=None, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
     """Create an instance of H2OFrame
@@ -85,7 +84,7 @@ class H2OFrame(object):
     #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
     else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + str(type(python_obj)))
 
-    if header is None or data_to_write is None: raise ValueError("No data to write")
+    if col_header is None or data_to_write is None: raise ValueError("No data to write")
 
     #
     ## write python data to file and upload
@@ -95,7 +94,7 @@ class H2OFrame(object):
     tmp_handle,tmp_path = tempfile.mkstemp(suffix=".csv")
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
-    csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
+    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
     #csv_writer.writeheader()               # write the header
     if column_names is None: column_names = col_header
     csv_writer.writerows(data_to_write)    # write the data
@@ -1099,7 +1098,7 @@ class H2OFrame(object):
     :param use: One of "everything", "complete.obs", or "all.obs".
     :return: The covariance matrix of the columns in this H2OFrame.
     """
-    return H2OFrame._expr(expr=ExprNode("var",self,self if y is None else y,use))._get()
+    return H2OFrame._expr(expr=ExprNode("var",self,self if y is None else y,use))._scalar()
 
   def sd(self):
     """
@@ -1474,11 +1473,11 @@ class H2OFrame(object):
     try:    return float(res)
     except: return res
 
-  def _get(self):
-    self._eager()
-    if self._data is None:
-      return self._frame()
-    return self._scalar()
+  # def _get(self):
+  #   self._eager()
+  #   if self._data is None:
+  #     return self._frame()
+  #   return self._scalar()
 
   def _frame(self):  # force an eval on the frame and return it
     self._eager()
