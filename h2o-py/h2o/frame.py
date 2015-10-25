@@ -12,7 +12,7 @@ class H2OFrame(object):
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
-  MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
+  MAGIC_REF_COUNT = 7 if sys.gettrace() is None else 9  # M = debug ? 7 : 5
   COUNTING = True
 
   def __init__(self, python_obj=None, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
@@ -106,7 +106,7 @@ class H2OFrame(object):
   def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None, na_strings=None):
     setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
     # Parse parameters (None values provided by setup)
-    p = { "destination_frame" : _py_tmp_key(),
+    p = { "destination_frame" : None,
           "parse_type" : None,
           "separator" : None,
           "single_quotes" : None,
@@ -1457,7 +1457,7 @@ class H2OFrame(object):
 
   # flow-coding result methods
   def _scalar(self):
-    self._eager()  # scalar should be stashed into self._data
+    self._eager(scalar=True)  # scalar should be stashed into self._data
     if self._data is None:
       res = self.as_data_frame(use_pandas=False)[0][1:]
       if len(res)==1: return H2OFrame._get_scalar(res[0])
@@ -1487,16 +1487,18 @@ class H2OFrame(object):
   ##### WARNING: MAGIC REF COUNTING CODE BELOW.
   #####          CHANGE AT YOUR OWN RISK.
   ##### ALSO:    DO NOT ADD METHODS BELOW THIS LINE (pretty please)
-  def _eager(self, pytmp=True):
+  def _eager(self, pytmp=True, scalar=False):
     if self._id is None:
       # top-level call to execute all subparts of self._ast
       sb = self._ast._eager()
       if pytmp:
-        self._id = _py_tmp_key()
+        self._id = None if scalar else _py_tmp_key()
         res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
         if 'scalar' in res or "string" in res:
           self._data = res['scalar'] if "scalar" in res else res["string"]
           sb = [str(self._data)]
+        elif scalar:
+          pass  # expected a scalar result, but got a key'd thing, let caller handle
         else:
           sb = [self._id," "]
           self._update()   # fill out _nrows, _ncols, _col_names, _computed
@@ -1598,7 +1600,11 @@ class H2OCache(object):
 
 
 # private static methods
-def _py_tmp_key(): return unicode("py" + str(uuid.uuid4()))
+_id_ctr = 0
+def _py_tmp_key():
+  global _id_ctr
+  _id_ctr=_id_ctr+1
+  return "py_" + str(_id_ctr)
 def _gen_header(cols): return ["C" + str(c) for c in range(1, cols + 1, 1)]
 def _check_lists_of_lists(python_obj):
   # all items in the list must be a list too
