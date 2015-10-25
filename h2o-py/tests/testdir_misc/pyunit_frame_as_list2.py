@@ -22,10 +22,10 @@ def expr_as_list():
            abs(float(res[25][0]) - -2.8) < 1e-10, "incorrect values"
 
     # local data
-    frm = h2o.as_list(h2o.H2OFrame(python_obj=[1,2,3]), use_pandas=False)
+    frm = h2o.as_list(h2o.H2OFrame.fromPython([1,2,3]), use_pandas=False)
     assert float(frm[1][2]) == 3, "incorrect values"
 
-    frm = h2o.as_list(h2o.H2OFrame(python_obj=[[1,2,3], [4,5,6]]), use_pandas=False)
+    frm = h2o.as_list(h2o.H2OFrame.fromPython([[1,2,3], [4,5,6]]), use_pandas=False)
     assert float(frm[2][1]) == 5, "incorrect values"
 
 if __name__ == "__main__":

@@ -381,7 +381,7 @@ def ls():
   List Keys on an H2O Cluster
   :return: Returns a list of keys in the current H2O instance
   """
-  return H2OFrame(expr.ExprNode("ls")).as_data_frame()
+  return H2OFrame(expr.ExprNode("ls")).as_data_frame(use_pandas=False)
 
 
 def frame(frame_id):
@@ -447,7 +447,7 @@ def download_csv(data, filename):
   """
   data._eager()
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
-  url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
+  url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data.frame_id)
   with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
 
 def download_all_logs(dirname=".",filename=None):
@@ -1629,7 +1629,7 @@ def set_timezone(tz):
 
   :return: None
   """
-  rapids(ExprNode._collapse_sb(ExprNode("setTimeZone", tz)._eager()))
+  expr.ExprNode("setTimeZone",tz)._eager_scalar()
 
 def get_timezone():
   """
@@ -1637,7 +1637,7 @@ def get_timezone():
 
   :return: the time zone (string)
   """
-  return H2OFrame(expr=ExprNode("getTimeZone"))._scalar()
+  return expr.ExprNode("getTimeZone")._eager_scalar()
 
 def list_timezones():
   """
@@ -1645,7 +1645,7 @@ def list_timezones():
 
   :return: the time zones (as an H2OFrame)
   """
-  return H2OFrame(expr=ExprNode("listTimeZones"))._frame()
+  return H2OFrame(expr.ExprNode("listTimeZones")._eager())
 
 
 class H2ODisplay:

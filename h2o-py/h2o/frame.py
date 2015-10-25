@@ -605,9 +605,9 @@ class H2OFrame:
     :return: The column dropped from the frame; the frame is side-effected to lose the column
     """
     if isinstance(i, basestring): i=self.names.index(i)
-    # TODO: Need to use a normal __getitem__ to select the column and return it,
-    # but also side-effect in-place the dropped frame (see __setitem__)
-    raise NotImplementedError
+    col = self._newExpr("cols",self,i)
+    self._ex = expr.ExprNode("cols", self,-(i+1))
+    return col
   
 
   def quantile(self, prob=None, combine_method="interpolate"):
