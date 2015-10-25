@@ -835,7 +835,7 @@ class H2OFrame(object):
     colname=None  # When set, we are doing an append
 
     if isinstance(b, basestring):  # String column name, could be new or old
-      if b in self.col_names(): col_expr = self.col_names().index(b)  # Old, update
+      if b in self.names: col_expr = self.names.index(b)  # Old, update
       else:
         col_expr = self.ncol
         colname = b  # New, append
@@ -844,7 +844,7 @@ class H2OFrame(object):
       row_expr = b[0]
       col_expr = b[1]
       if isinstance(col_expr, basestring):    # Col by name
-        if col_expr not in self.col_names():  # Append
+        if col_expr not in self.names:  # Append
           colname = col_expr
           col_expr = self.ncol
       elif isinstance(col_expr, slice):    # Col by slice
@@ -852,10 +852,7 @@ class H2OFrame(object):
           col_expr = slice(0,self.ncol)    # Slice of all
     elif isinstance(b, ExprNode): row_expr = b # Row slicing
 
-    src = c if isinstance(c,ExprNode) else (float("nan") if c is None else c)
-
-    assert col_expr is not None
-    assert row_expr is not None
+    src = float("nan") if c is None else c
 
     expr = (ExprNode(":="    ,self,src,col_expr,row_expr) if colname is None
             else ExprNode("append",self,src,colname))
