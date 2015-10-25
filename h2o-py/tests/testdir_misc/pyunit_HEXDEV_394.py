@@ -49,8 +49,5 @@ def hexdev_394():
                    learn_rate=0.1,
                    max_depth=6)
 
-  print "KEEPING FRAME???"
-  print train._keep
-
 if __name__ == "__main__":
     tests.run_test(sys.argv, hexdev_394)

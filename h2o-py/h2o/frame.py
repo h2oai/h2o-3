@@ -94,6 +94,13 @@ class H2OFrame:
     """
     return self._ex._id or self._eager()._id
 
+  @property
+  def types(self):
+    """
+    :return: The types for each column
+    """
+    return [col["type"] for col in self._ex._fetch_data(0).itervalues()]
+
   def __iter__(self):
     """
     Allows for list comprehensions
@@ -372,8 +379,7 @@ class H2OFrame:
     :param names: A list of strings equal to the number of columns in the self._newExpr.
     :return: None. Rename the column names in this self._newExpr.
     """
-    h2o.rapids(ExprNode._collapse_sb(ExprNode("colnames=", self, range(self.ncol), names)._eager()), id=self._id)
-    self._update()
+    self._ex = expr.ExprNode("colnames=",self, range(self.ncol), names) # Update-in-place, but still lazy
     return self
 
   def set_name(self,col=None,name=None):
@@ -521,7 +527,7 @@ class H2OFrame:
     isfactor = [c.isfactor() for c in self]
     numlevels  = [self.nlevels(i) for i in range(nc)]
     lvls = self.levels()
-    print "self._newExpr '{}': \t {} obs. of {} variables(s)".format(self._id,nr,nc)
+    print "self._newExpr '{}': \t {} obs. of {} variables(s)".format(self.frame_id,nr,nc)
     for i in range(nc):
       print "$ {} {}: ".format(cn[i], ' '*(width-max(0,len(cn[i])))),
       if isfactor[i]:
@@ -642,7 +648,7 @@ class H2OFrame:
     :param destination_frames: names of the split frames
     :return: a list of frames
     """
-    j = h2o.H2OConnection.post_json("SplitFrame", dataset=self._id, ratios=ratios, destination_frames=destination_frames)
+    j = h2o.H2OConnection.post_json("SplitFrame", dataset=self.frame_id, ratios=ratios, destination_frames=destination_frames)
     h2o.H2OJob(j, "Split Frame").poll()
     return [h2o.get_frame(i["name"]) for i in j["destination_frames"]]
 
