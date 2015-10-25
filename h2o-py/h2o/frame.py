@@ -515,7 +515,7 @@ class H2OFrame(object):
     """
     self._eager()
     thousands_sep = h2o.H2ODisplay.THOUSANDS
-    print "Rows:", thousands_sep.format(self._nrows), "Cols:", thousands_sep.format(self._ncols)
+    print "Rows:", thousands_sep.format(self.nrow), "Cols:", thousands_sep.format(self.ncol)
     chunk_dist_sum = h2o.frame(self._id)["frames"][0]
     dist_summary = chunk_dist_sum["distribution_summary"]
     chunk_summary = chunk_dist_sum["chunk_summary"]
@@ -770,7 +770,7 @@ class H2OFrame(object):
   # Find a named H2OVec and return the zero-based index for it.  Error if name is missing
   def _find_idx(self,name):
     self._eager()
-    for i,v in enumerate(self._col_names):
+    for i,v in enumerate(self.names):
       if name == v: return i
     raise ValueError("Name " + name + " not in Frame")
 
@@ -1225,9 +1225,9 @@ class H2OFrame(object):
       counts.insert(0,0)
       mids = [float(m[0]) for m in mlist]
       mids.insert(0,lower)
-      plt.xlabel(self._col_names[0])
+      plt.xlabel(self.names[0])
       plt.ylabel('Frequency')
-      plt.title('Histogram of {0}'.format(self._col_names[0]))
+      plt.title('Histogram of {0}'.format(self.names[0]))
       plt.bar(mids, counts)
       if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
 
