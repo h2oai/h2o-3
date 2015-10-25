@@ -16,6 +16,7 @@ anomaly_model <- h2o.deeplearning(
         activation = "Tanh", 
         autoencoder = TRUE, 
         hidden = c(50,20,50), 
+        sparse = TRUE,
         l1 = 1e-4, 
         epochs = 100)                 
 

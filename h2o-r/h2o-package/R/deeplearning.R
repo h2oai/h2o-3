@@ -89,7 +89,7 @@
 #' @param single_node_mode Run on a single node for fine-tuning of model parameters
 #' @param shuffle_training_data Enable shuffling of training data (recommended if training data is
 #'        replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes}
-#' @param sparse Sparse data handling (Experimental)
+#' @param sparse Sparse data handling (more efficient for data with lots of 0 values)
 #' @param col_major Use a column major weight matrix for input layer. Can speed up forward
 #'        propagation, but might slow down backpropagation (Experimental)
 #' @param average_activation Average activation for sparse auto-encoder (Experimental)

@@ -998,7 +998,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   shuffle_training_data : bool
     Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes
   sparse : bool
-    Sparse data handling (Experimental)
+    Sparse data handling (more efficient for data with lots of 0 values)
   col_major : bool
     Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Experimental)
   average_activation : float

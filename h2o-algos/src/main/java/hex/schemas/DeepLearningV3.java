@@ -515,7 +515,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Handling of missing values. Either Skip or MeanImputation.", values = { "Skip", "MeanImputation" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.MissingValuesHandling missing_values_handling;
 
-    @API(help = "Sparse data handling (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Sparse data handling (more efficient for data with lots of 0 values).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean sparse;
 
     @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Deprecated).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
