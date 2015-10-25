@@ -1,4 +1,4 @@
-import h2o, frame
+import h2o, frame, astfun
 import math, collections, tabulate, urllib, gc, sys
 
 
@@ -147,13 +147,14 @@ class ExprNode:
   @staticmethod
   def _arg_to_expr(arg):
     if   isinstance(arg, ExprNode):               return arg._do_it(False)
+    elif isinstance(arg, astfun.ASTId):           return str(arg)
     elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
     elif isinstance(arg, (int, float)):           return "{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, basestring):             return '"'+arg+'"'
     elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start) )
     elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if isinstance(arg[0], basestring) else ("[" + " ".join(["NaN" if math.isnan(i) else str(i) for i in arg])+"]")
     elif arg is None:                             return "[]"  # empty list
-    raise ValueError("Unexpected arg type: " + str(type(arg))+" "+arg.__repr__())
+    raise ValueError("Unexpected arg type: " + str(type(arg))+" "+str(arg.__class__)+" "+arg.__repr__())
 
   def _clear_impl(self):
     if not isinstance(self._ast,tuple): return

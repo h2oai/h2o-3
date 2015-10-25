@@ -10,6 +10,7 @@ import tabulate
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, _py_tmp_key, _is_list_of_lists
+import expr
 from model import H2OBinomialModel,H2OAutoEncoderModel,H2OClusteringModel,H2OMultinomialModel,H2ORegressionModel
 import h2o_model_builder
 
@@ -243,11 +244,10 @@ def _quoted(key):
   key = key if is_quoted  else '"' + key + '"'
   return key
 
-def assign(data,id):
-  if data._computed:
-    rapids(data._id,id)
-  data._id = id
-  data._keep=True  # named things are always safe
+def assign(data,xid):
+  if data.frame_id == xid: ValueError("Desination key must differ input frame")
+  data._ex = expr.ExprNode("tmp=",xid,data)._eval_driver(False)
+  data._ex._id = xid
   return data
 
 

@@ -232,13 +232,11 @@ class ASTAppend extends ASTPrim {
  *  temp can be deleted.  Temp is returned for immediate use, and also set in
  *  the DKV.  Must be globally unique in the DKV.  */
 class ASTTmpAssign extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"id", "frame"}; }
+  @Override public String[] args() { return new String[]{"id", "frame"}; }
   @Override int nargs() { return 1+2; } // (tmp= id frame)
-  @Override
-  public String str() { return "tmp=" ; }
+  @Override public String str() { return "tmp=" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    Key id = Key.make(((ASTId)asts[1])._id);
+    Key id = Key.make( asts[1].str() );
     Frame src = stk.track(asts[2].exec(env)).getFrame();
     // TODO: COW optimization
     Frame dst = src.deepCopy(null);  // Make nameless copy
