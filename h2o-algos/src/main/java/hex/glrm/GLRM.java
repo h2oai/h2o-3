@@ -102,6 +102,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_parms._min_step_size < 0 || _parms._min_step_size > _parms._init_step_size)
       error("_min_step_size", "min_step_size must be between 0 and " + _parms._init_step_size);
 
+    // Cannot recover SVD of original _train from XY of transformed _train
+    if (_parms._recover_svd && (_parms._impute_original && _parms._transform != DataInfo.TransformType.NONE))
+      error("_recover_svd", "_recover_svd and _impute_original cannot both be true if _train is transformed");
+
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
 
