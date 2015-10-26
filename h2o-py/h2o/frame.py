@@ -1384,7 +1384,9 @@ class H2OFrame(object):
     :param seed: A random seed. If None, then one will be generated.
     :return: A new H2OVec filled with doubles sampled uniformly from [0,1).
     """
-    return H2OFrame._expr(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
+    import random
+    seed = random.getrandbits(32) if seed is None else seed
+    return H2OFrame._expr(expr=ExprNode("h2o.runif", self, seed))
 
   def stratified_split(self,test_frac=0.2,seed=-1):
     """
