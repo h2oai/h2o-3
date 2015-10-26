@@ -28,9 +28,9 @@ def header():
     except ValueError:
         pass
 
-    assert fhex_header_true._nrows == fhex_header_false._nrows - 1
-    assert fhex_header_unknown._nrows == fhex_header_false._nrows or fhex_header_unknown._nrows == fhex_header_true._nrows
-    assert fhex_header_unspecified._nrows == fhex_header_false._nrows or fhex_header_unspecified._nrows == fhex_header_true._nrows
+    assert fhex_header_true.nrow == fhex_header_false.nrow - 1
+    assert fhex_header_unknown.nrow == fhex_header_false.nrow or fhex_header_unknown.nrow == fhex_header_true.nrow
+    assert fhex_header_unspecified.nrow == fhex_header_false.nrow or fhex_header_unspecified.nrow == fhex_header_true.nrow
 
 
 

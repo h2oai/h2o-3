@@ -218,7 +218,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
 
-  if destination_frame: j["destination_frame"] = _quoted(destination_frame).replace("%",".").replace("&",".") # TODO: really should be url encoding...
+  if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
   if header != (-1, 0, 1):
     if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
     j["check_header"] = header
@@ -1856,7 +1856,7 @@ def get_timezone():
 
   :return: the time zone (string)
   """
-  return H2OFrame(expr=ExprNode("getTimeZone"))._scalar()
+  return H2OFrame._expr(expr=ExprNode("getTimeZone"))._scalar()
 
 
 def list_timezones():
@@ -1865,29 +1865,8 @@ def list_timezones():
 
   :return: the time zones (as an H2OFrame)
   """
-  return H2OFrame(expr=ExprNode("listTimeZones"))._frame()
+  return H2OFrame._expr(expr=ExprNode("listTimeZones"))._frame()
 
-
-def turn_off_ref_cnts():
-  """
-  Reference counting on H2OFrame's allows for eager deletion of H2OFrames that go out of
-  scope. If multiple threads are spawned, however, and data is to live beyond the use of
-  the thread (e.g. when launching multiple jobs via Parallel in scikit-learn), then there
-  may be referers outside of the current context. Use this to prevent deletion of H2OFrame
-  instances.
-
-  :return: None
-  """
-  H2OFrame.COUNTING=False
-
-def turn_on_ref_cnts():
-  """
-  See the note in turn_off_ref_cnts
-
-  :return: None
-  """
-  H2OFrame.del_dropped()
-  H2OFrame.COUNTING=True
 
 class H2ODisplay:
   """
