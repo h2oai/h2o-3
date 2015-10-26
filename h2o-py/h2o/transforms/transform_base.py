@@ -49,7 +49,6 @@ class H2OTransformer(object):
   def _dummy_frame():
     dummy = H2OFrame()
     dummy._id = "py_dummy"
-    dummy._computed = True
     return dummy
 
   def to_rest(self, args):
