@@ -22,37 +22,6 @@
 }
 
 
-#` Fetch the first N rows on demand, caching them in x$data; also cache x$nrow
-.fetch.data <- function(x,N) {
-  stopifnot(!missing(N))
-  .eval.frame(chk.Frame(x))
-  if( is.null( attr(x, "data")) || (is.data.frame( attr(x, "data")) && nrow( attr(x, "data")) < N) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id")))$frames[[1]]
-    N <- max(N,10L)
-    data <- .eval.frame(x[1:N,], TRUE)
-    data <- as.data.frame(data)
-    colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
-    .set(x,"data",data)
-    .set(x,"types",lapply(res$columns, function(c) c$type))
-    .set(x,"nrow",res$rows)
-  }
-  attr(x,"data")
-}
-
-.fetch.types <- function(x) {
-  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES,"/",attr(x,"id")))$frames[[1]]
-  .set(x,"types",lapply(res$columns,function(c)c$type))
-  invisible(x)
-}
-
-#` Flush any cached data
-.flush.data <- function(x) {
-  rm("data",envir=x)
-  rm("types",envir=x)
-  rm("nrow",envir=x)
-  x
-}
-
 #'
 #' List Keys on an H2O Cluster
 #'
@@ -70,7 +39,7 @@
 #' @export
 h2o.ls <- function() {
   .h2o.gc()
-  as.data.frame(.eval.frame(.newExpr("ls")))
+  .fetch.data(.newExpr("ls"),10000L)
 }
 
 #'
@@ -122,33 +91,13 @@ h2o.rm <- function(ids) {
 }
 
 #'
-#' Rename an H2O object.
-#'
-#' Makes a copy of the data frame and gives it the desired the key.
-#'
-#' @param data An H2O Frame object
-#' @param key The hex key to be associated with the H2O parsed data object
-#'
-#' @export
-h2o.assign <- function(data, key) {
-  .key.validate(key)
-  if( !is.null( attr(data, "id")) && key == attr(data, "id") ) stop("Destination key must differ from input frame ", key)
-  # Eager evaluate, copied from .eval.frame
-  exec_str <- .eval.impl(data);
-  #print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
-  if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-  .newFrame("h2o.assign",key)
-}
-
-#'
 #' Get an R Reference to an H2O Dataset, that will NOT be GC'd by default
 #'
 #' Get the reference to a frame with the given id in the H2O instance.
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(id) .eval.frame(.newFrame("getFrame",id))
+h2o.getFrame <- function(id) .eval.driver(.newFrame(id,id,-1,-1))
 
 #' Get an R reference to an H2O model
 #'

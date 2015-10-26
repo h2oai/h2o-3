@@ -87,7 +87,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 #' Export Files Endpoint Generator
 .h2o.__EXPORT_FILES <- function(frame,path,force) {
-  paste0("Frames/", attr(.eval.frame(frame),"id"), "/export/",path,"/overwrite/",force)
+  paste0("Frames/", h2o.getId(frame), "/export/",path,"/overwrite/",force)
 }
 
 #' Model Endpoint

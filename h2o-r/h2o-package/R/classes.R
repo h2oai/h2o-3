@@ -445,8 +445,6 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
     if( object@algorithm == "glrm" ) {
       cat("Sum of Squared Error (Numeric): ", m$numerr)
       cat("\nMisclassification Error (Categorical): ", m$caterr)
-      cat("\nNumber of Numeric Entries: ", m$numcnt)
-      cat("\nNumber of Categorical Entries: ", m$catcnt)
     }
   } else print(NULL)
 })
@@ -567,4 +565,3 @@ setMethod("summary", "H2OGrid",
               cat("\nNote: To see exception stack traces please pass parameter `show_stack_traces = T` to this function.\n")
             }
 })
-
