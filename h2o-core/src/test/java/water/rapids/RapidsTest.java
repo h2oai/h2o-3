@@ -455,7 +455,6 @@ public class RapidsTest extends TestUtil {
       Exec.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
 
       for( String s : new String[]{"weather.hex","crimes.hex","census.hex",
-<<<<<<< HEAD
                                    "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
                                    "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
                                    "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
@@ -465,17 +464,6 @@ public class RapidsTest extends TestUtil {
                                    "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
                                    "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
                                    "subset_41", "binary_op_42", "subset_43", "subset_44", } )
-=======
-              "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
-              "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
-              "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
-              "binary_op_18", "binary_op_19", "binary_op_20", "binary_op_21",
-              "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
-              "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
-              "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
-              "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
-              "subset_41", "binary_op_42", "subset_43", "subset_44", } )
->>>>>>> master
         Keyed.remove(Key.make(s));
     }
   }
