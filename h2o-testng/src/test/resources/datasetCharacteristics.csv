@@ -55,5 +55,7 @@ higgs_train_5k_classification,smalldata,higgs_train_5k.csv,response,response;x1;
 higgs_test_5k_classification,smalldata,higgs_test_5k.csv,response,response;x1;x2;x3;x4;x5;x6;x7;x8;x9;x10;x11;x12;x13;x14;x15;x16;x17;x18;x19;x20;x21;x22;x23;x24;x25;x26;x27;x28,enum;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric;numeric,5000,29,,,,,,
 airquality_train2_classification,smalldata,airquality_train2.csv,sparseOzone,sparseOzone;Solar.R;Wind;Temp;Month;Day,enum;numeric;numeric;numeric;numeric;numeric,77,6,,,,,,
 airquality_test2_classification,smalldata,airquality_validation2.csv,sparseOzone,sparseOzone;Solar.R;Wind;Temp;Month;Day,enum;numeric;numeric;numeric;numeric;numeric,39,6,,,,,,
+insurance_train1_classification,smalldata,insurance_train1.csv,Claims,District;Group;Age;Holders;Claims,enum;enum;enum;numeric;enum,43,5,,,,,,
+insurance_validation1_classification,smalldata,insurance_validation1.csv,Claims,District;Group;Age;Holders;Claims,enum;enum;enum;numeric;enum,21,5,,,,,,
 newsgroup_train1,bigdata,newsgroup_train1.csv,,,,,,,,,,,
 newsgroup_validation1,bigdata,newsgroup_validation1.csv,,,,,,,,,,,
