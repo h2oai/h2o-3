@@ -44,13 +44,13 @@ def init_err_casesKmeans():
     start_large = [[random.gauss(0,1) for c in range(numcol+2)] for r in range(5)]
 
     try:
-        h2o.kmeans(x=benign_h2o, k=5, user_points=h2o.H2OFrame(start_small))
+        h2o.kmeans(x=benign_h2o, k=5, user_points=h2o.H2OFrame.fromPython(start_small))
         assert False, "expected an error"
     except EnvironmentError:
         assert True
 
     try:
-        h2o.kmeans(x=benign_h2o, k=5, user_points=h2o.H2OFrame(start_large))
+        h2o.kmeans(x=benign_h2o, k=5, user_points=h2o.H2OFrame.fromPython(start_large))
         assert False, "expected an error"
     except EnvironmentError:
         assert True
@@ -58,7 +58,7 @@ def init_err_casesKmeans():
     # Log.info("Number of rows exceeds training set's")
     start = [[random.gauss(0,1) for c in range(numcol)] for r in range(numrow+2)]
     try:
-        h2o.kmeans(x=benign_h2o, k=numrow+2, user_points=h2o.H2OFrame(start))
+        h2o.kmeans(x=benign_h2o, k=numrow+2, user_points=h2o.H2OFrame.fromPython(start))
         assert False, "expected an error"
     except EnvironmentError:
         assert True
@@ -69,13 +69,13 @@ def init_err_casesKmeans():
     for x in ["NA", "NaN", "Inf", "-Inf"]:
         start_err = start[:]
         start_err[1][random.randint(0,numcol-1)] = x
-        h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame(start_err))
+        h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame.fromPython(start_err))
 
     # Duplicates will affect sampling probability during initialization.
     # Log.info("Duplicate initial clusters specified")
     start = [[random.gauss(0,1) for c in range(numcol)] for r in range(3)]
     start[2] = start[0]
-    h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame(start))
+    h2o.kmeans(x=benign_h2o, k=3, user_points=h2o.H2OFrame.fromPython(start))
   
 if __name__ == "__main__":
   tests.run_test(sys.argv, init_err_casesKmeans)

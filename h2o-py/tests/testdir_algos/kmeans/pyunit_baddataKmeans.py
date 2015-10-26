@@ -18,7 +18,7 @@ def baddataKmeans():
   data = rawdata[:]
   for cidx, cval in enumerate(data[24]):
     data[24][cidx] = None
-  frame = h2o.H2OFrame(data)
+  frame = h2o.H2OFrame.fromPython(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
@@ -32,7 +32,7 @@ def baddataKmeans():
   data = rawdata[:]
   for idx, val in enumerate(data):
     data[idx][4] = 5
-  frame = h2o.H2OFrame(data)
+  frame = h2o.H2OFrame.fromPython(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
@@ -47,7 +47,7 @@ def baddataKmeans():
   for idx, val in enumerate(data):
     data[idx][4] = None
     data[idx][7] = 0
-  frame = h2o.H2OFrame(data)
+  frame = h2o.H2OFrame.fromPython(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
@@ -59,7 +59,7 @@ def baddataKmeans():
 
   # Log.info("Training data with all None's")
   data = [[None for c in range(cols)] for r in range(rows)]
-  frame = h2o.H2OFrame(data)
+  frame = h2o.H2OFrame.fromPython(data)
 
   try:
     h2o.kmeans(x=frame, k=5)
@@ -69,7 +69,7 @@ def baddataKmeans():
 
   # Log.info("Training data with a categorical column(s)")
   data = [[random.choice(string.ascii_uppercase) for c in range(cols)] for r in range(rows)]
-  frame = h2o.H2OFrame(data)
+  frame = h2o.H2OFrame.fromPython(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
   centers = km_model.centers()
