@@ -25,10 +25,10 @@
 #` - TRUE : Node is evaluated, cluster has the ID, and an R GC finalizer will remove this temp ID
 #` - FALSE: Node is evaluated, cluster has the ID, and the user has to explictly remove this permanent ID
 #` - list of Nodes: Then further ID is one of:
-#` - - missing: this Node is lazy and has never been evaluated 
+#` - - missing: this Node is lazy and has never been evaluated
 #` - - NA: this Node has been executed once, but no temp ID was made
 #` - - String: this Node is mid-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to TRUE
-#` 
+#`
 #` # A number of fields represent cached queries of an evaluated frame.
 #` E$data   <- A cached result; can be a scalar, or a R dataframe result holding
 #`             the first N (typically 10) rows and all cols of the frame
@@ -227,7 +227,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     .set(x,"types",lapply(res$columns, function(c) c$type))
     nrow <- .set.nlen(x,"nrow",res$rows)
     ncol <- .set.nlen(x,"ncol",length(res$columns))
-    if( res$row_count==0 ) { 
+    if( res$row_count==0 ) {
       data <- as.data.frame(matrix(NA,ncol=ncol,nrow=0L))
       colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
     } else {
@@ -1328,7 +1328,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("is.numeric")(x)
-  else .fetch.data(.newExpr("is.numeric",x),1L)
+  else as.logical(.eval.scalar(.newExpr("is.numeric",x)))
 }
 
 #' Print An H2O Frame
@@ -1447,7 +1447,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
   if( is.character(value) ) value <- .quote(value)
   # Set col name and return updated frame
   if( is.na(name) ) .newExpr(":=", data, value, cols, rows)
-  else              .newExpr("append", data, value, .quote(name)) 
+  else              .newExpr("append", data, value, .quote(name))
 }
 
 #' @rdname Frame-Extract
