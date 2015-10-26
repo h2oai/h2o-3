@@ -557,8 +557,8 @@ class H2OFrame(object):
 
   def __repr__(self):
     if sys.gettrace() is None:
-      return self.show()
-    return self.__str__()
+      self.show()
+    return ""
 
   def as_date(self,format):
     """Return the column with all elements converted to millis since the epoch.
