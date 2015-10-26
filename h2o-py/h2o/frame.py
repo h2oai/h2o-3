@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, sys, urllib,imp,copy, six, math, tabulate
+import collections, csv, itertools, os, re, tempfile, urllib2, sys, urllib,imp,copy, tabulate
 from astfun import _bytecode_decompile_lambda
 from expr import h2o,ExprNode
 import gc
