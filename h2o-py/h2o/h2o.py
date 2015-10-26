@@ -496,14 +496,14 @@ def ls():
   """
   List Keys on an H2O Cluster
 
-  :return: Returns a list of keys in the current H2O instance
+  :return: A list of keys in the current H2O instance
   """
   return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame()
 
 
 def frame(frame_id, exclude=""):
   """
-  Retrieve metadata for a id that points to a Frame.
+  Retrieve metadata for an id that points to a Frame.
 
   Parameters
   ----------

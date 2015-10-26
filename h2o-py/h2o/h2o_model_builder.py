@@ -14,6 +14,15 @@ import h2o
 from model.model_future import H2OModelFuture
 
 
+# The H2O rest API expects those arguments:
+#  - frame id: training_frame (mandatory), validation_frame
+#  - column names (for supervised algos only): response_column (mandatory), offsets_column, weights_column and fold_column
+# The Python functions accepts those column names either as a string, or as a 1-column frame,
+# in which case this column is copied to training_frame (and validation_frame if present),
+# and its name is added to kwargs under the corresponding key.
+# In both cases the function _model_build takes frames (and not column names) as arguments,
+# so the 1-column frames are extracted from training_frame if needed.
+
 def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,weights=None,fold_column=None,kwargs=None):
   is_auto_encoder = kwargs is not None and "autoencoder" in kwargs and kwargs["autoencoder"] is not None
   if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
@@ -41,12 +50,15 @@ def unsupervised(kwargs):
   parms={k:v for k,v in kwargs.items() if k not in ["x","validation_x","algo"] and v is not None}
   return unsupervised_model_build(x,vx,algo,parms)
 
-def _frame_helper(col,fr):
+# y (and x) can be passed either as a 1-column frame or as a name to lookup in training_frame.
+#  _frame_helper does the lookup when neededdef _frame_helper(col,fr):
   if col is None: return None
   if not isinstance(col,H2OFrame):
     if fr is None: raise ValueError("Missing training_frame")
   return fr[col] if not isinstance(col,H2OFrame) else col
 
+# offsets/weights/fold can be passed either as a frame, or as a name to lookup in training_frame
+# _ow does the lookup when needed.
 def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is frame
   c=kwargs[name]
   fr=kwargs["training_frame"]
@@ -59,6 +71,7 @@ def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is fr
     raise ValueError("offsets/weights/fold given, but missing validation_frame")
   return res
 
+# Add column y to frame x under name foo, where foo is response's name.
 def _check_frame(x,y,response):  # y and response are only ever different for validation
   if x is None: return None
   x._eager()
@@ -68,6 +81,7 @@ def _check_frame(x,y,response):  # y and response are only ever different for va
     x[response.names[0]] = y
   return x
 
+# add column col to frame x, then add a column with same name as col from frame vfr to frame vx
 def _check_col(x,vx,vfr,col):
   x=_check_frame(x,col,col)
   vx= None if vfr is None else _check_frame(vx,vfr[col.names[0]],vfr[col.names[0]])

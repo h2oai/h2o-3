@@ -927,6 +927,7 @@ class H2OFrame(object):
     """
     Combine H2O Datasets by Rows.
     Takes a sequence of H2O data sets and combines them by rows.
+
     :param data: an H2OFrame
     :return: self, with data appended (row-wise)
     """
