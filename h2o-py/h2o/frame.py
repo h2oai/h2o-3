@@ -854,9 +854,13 @@ class H2OFrame(object):
 
     src = float("nan") if c is None else c
 
-    expr = (ExprNode(":="    ,self,src,col_expr,row_expr) if colname is None
-            else ExprNode("append",self,src,colname))
-    h2o.rapids(ExprNode._collapse_sb(expr._eager()))
+    if colname is None:
+      expr = ExprNode(":=",self,src,col_expr,row_expr)
+      expr_id = None
+    else:
+      expr = ExprNode("append",self,src,colname)
+      expr_id = self._id
+    h2o.rapids(ExprNode._collapse_sb(expr._eager()), id=expr_id)
     self._update()
 
   def __int__(self):   return int(self._scalar())
