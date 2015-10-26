@@ -518,6 +518,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #'        contained in each split. Must total up to less than 1.
 #' @param destination_frames An array of frame IDs equal to the number of ratios
 #'        specified plus one.
+#' @param seed Random seed.
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -529,18 +530,74 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' summary(iris.split[[1]])
 #' }
 #' @export
-h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
-  params <- list()
-  params$dataset <- h2o.getId(data)
-  params$ratios <- .collapse(ratios)
-  if (!missing(destination_frames))
-    params$destination_frames <- .collapse.char(destination_frames)
+h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
+  chk.Frame(data)
 
-  res <- .h2o.__remoteSend(method="POST", "SplitFrame", .params = params)
-  job_key <- res$key$name
-  .h2o.__waitOnJob(job_key)
+  if (! is.numeric(ratios)) stop("ratios must be of type numeric")
+  if (length(ratios) < 1) stop("ratios must have length of at least 1")
 
-  splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
+  if (! missing(destination_frames)) {
+    if (! is.character(destination_frames)) stop("destination_frames must be of type character")
+    if ((length(ratios) + 1) != length(destination_frames)) {
+      stop("The number of provided destination_frames must be one more than the number of provided ratios")
+    }
+  }
+
+  if (! is.numeric(seed)) stop("seed must be an integer")
+
+  num_slices = length(ratios) + 1
+  boundaries = numeric(length(ratios))
+
+  i = 1
+  last_boundary = 0
+  while (i < num_slices) {
+    ratio = ratios[i]
+    if (ratio < 0) {
+      stop("Ratio must be greater than 0")
+    }
+
+    boundary = last_boundary + ratio
+    if (boundary >= 1) {
+      stop("Ratios must add up to less than 1.0")
+    }
+
+    boundaries[i] = boundary
+    last_boundary = boundary
+
+    i = i + 1
+  }
+
+  splits = list()
+  tmp_runif = h2o.runif(data, seed)
+
+  i = 1
+  while (i <= num_slices) {
+    if (i == 1) {
+      # lower_boundary is 0.0
+      upper_boundary = boundaries[i]
+      tmp_slice = data[tmp_runif <= upper_boundary,]
+    } else if (i == num_slices) {
+      lower_boundary = boundaries[i-1]
+      # upper_boundary is 1.0
+      tmp_slice = data[tmp_runif > lower_boundary,]
+    } else {
+      lower_boundary = boundaries[i-1]
+      upper_boundary = boundaries[i]
+      tmp_slice = data[((tmp_runif > lower_boundary) & (tmp_runif <= upper_boundary)),]
+    }
+
+    if (missing(destination_frames)) {
+      splits = c(splits, tmp_slice)
+    } else {
+      destination_frame_id = destination_frames[i]
+      tmp_slice2 = h2o.assign(tmp_slice, destination_frame_id)
+      splits = c(splits, tmp_slice2)
+    }
+
+    i = i + 1
+  }
+
+  return(splits)
 }
 
 #'
@@ -2331,6 +2388,12 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
   res
 }
 
+#' Range of an H2O Column
+#'
+#' @param ... An H2O Frame object.
+#' @param na.rm ignore missing values
+#' @export
+range.Frame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
