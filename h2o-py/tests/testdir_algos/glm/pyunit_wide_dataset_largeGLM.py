@@ -11,7 +11,7 @@ def wide_dataset_large():
     trainDataResponse = np.genfromtxt(tests.locate("smalldata/arcene/arcene_train_labels.labels"), delimiter=' ')
     trainDataResponse = np.where(trainDataResponse == -1, 0, 1)
     trainDataFeatures = np.genfromtxt(tests.locate("smalldata/arcene/arcene_train.data"), delimiter=' ')
-    trainData = h2o.H2OFrame(np.column_stack((trainDataResponse, trainDataFeatures)).tolist())
+    trainData = h2o.H2OFrame.fromPython(np.column_stack((trainDataResponse, trainDataFeatures)).tolist())
 
     print("Run model on 3250 columns of Arcene with strong rules off.")
     model = h2o.glm(x=trainData[1:3250], y=trainData[0].asfactor(), family="binomial", lambda_search=False, alpha=[1])
@@ -20,7 +20,7 @@ def wide_dataset_large():
     validDataResponse = np.genfromtxt(tests.locate("smalldata/arcene/arcene_valid_labels.labels"), delimiter=' ')
     validDataResponse = np.where(validDataResponse == -1, 0, 1)
     validDataFeatures = np.genfromtxt(tests.locate("smalldata/arcene/arcene_valid.data"), delimiter=' ')
-    validData = h2o.H2OFrame(np.column_stack((validDataResponse, validDataFeatures)).tolist())
+    validData = h2o.H2OFrame.fromPython(np.column_stack((validDataResponse, validDataFeatures)).tolist())
     prediction = model.predict(validData)
 
     print("Check performance of predictions.")
