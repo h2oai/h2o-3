@@ -126,7 +126,6 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         if isinstance(np_val, np.bool_): np_val = bool(np_val)  # numpy haz special bool type :(
         assert np.absolute(h2o_val - np_val) < 1e-6, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
-
 def javapredict(algo, equality, train, test, x, y, **kwargs):
     print "Creating model in H2O"
     if algo == "gbm":
