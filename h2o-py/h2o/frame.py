@@ -12,7 +12,7 @@ class H2OFrame(object):
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
-  MAGIC_REF_COUNT = 7 if sys.gettrace() is None else 9  # M = debug ? 7 : 5
+  MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
   def __init__(self, python_obj=None, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
     """Create an instance of H2OFrame
@@ -1384,9 +1384,7 @@ class H2OFrame(object):
     :param seed: A random seed. If None, then one will be generated.
     :return: A new H2OVec filled with doubles sampled uniformly from [0,1).
     """
-    import random
-    seed = random.getrandbits(32) if seed is None else seed
-    return H2OFrame._expr(expr=ExprNode("h2o.runif", self, seed))
+    return H2OFrame._expr(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
 
   def stratified_split(self,test_frac=0.2,seed=-1):
     """
@@ -1394,13 +1392,14 @@ class H2OFrame(object):
 
     Parameters
     ----------
-      test_frac : float
+      test_frac : float, default=0.2
         The fraction of rows that will belong to the "test".
       seed      : int
         For seeding the random splitting.
 
-
-    :return: A categorical column of two levels "train" and "test".
+    Returns
+    -------
+      A categorical column of two levels "train" and "test".
 
     Examples
     --------
@@ -1475,12 +1474,6 @@ class H2OFrame(object):
     if res == "FALSE":return False
     try:    return float(res)
     except: return res
-
-  # def _get(self):
-  #   self._eager()
-  #   if self._data is None:
-  #     return self._frame()
-  #   return self._scalar()
 
   def _frame(self):  # force an eval on the frame and return it
     self._eager()
