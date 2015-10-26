@@ -44,6 +44,7 @@ class ExprNode:
     sb += ['\n', " "*depth, "("+self._op, " "]
     for child in self._children:
       if isinstance(child, h2o.H2OFrame) and child._id is None:   child._ast._to_string(depth+2,sb)
+      elif isinstance(child, h2o.H2OFrame):                       sb+=['\n', ' '*(depth+2), child._id]
       elif isinstance(child, ExprNode):                           child._to_string(depth+2,sb)
       else:                                                       sb+=['\n', ' '*(depth+2), str(child)]
     sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0
