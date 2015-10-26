@@ -1494,7 +1494,7 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   return unsupervised(parms)
 
 
-def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
+def svd(x,validation_x=None,training_frame=None,model_id=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
         use_all_factor_levels=None,svd_method=None):
   """
   Singular value decomposition of a H2O dataset.
@@ -1533,7 +1533,7 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
   return unsupervised(parms)
 
 
-def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
+def glrm(x,validation_x=None,training_frame=None,model_id=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
          ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
          user_y=None,user_x=None,recover_svd=None,expand_user_y=None):
@@ -1612,7 +1612,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   return unsupervised(parms)
 
 
-def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,validation_frame=None,
+def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,validation_frame=None,
                 laplace=None,threshold=None,eps=None,compute_metrics=None,offset_column=None,weights_column=None,
                 balance_classes=None,max_after_balance_size=None, nfolds=None,fold_column=None,fold_assignment=None,
                 keep_cross_validation_predictions=None,checkpoint=None):
