@@ -28,11 +28,14 @@ XPATHS = dict(
     # Import Files dialog
     file_path = xp("//input[contains(@placeholder,'Enter')]", 'input', True),
     file_search_btn = xp("//button[@data-bind='click:tryImportFiles']", 'button', True),
-    add_all_files_btn = xp("//a[contains(.,'Add all')]"),
+    add_all_files_btn = xp("//a[contains(.,'Add all')]", 'button', True),
     import_sel_files_btn = xp("//button[contains(@data-bind,'click:importSelectedFiles')]", 'button', True),
 
     # Parse Files dialog
     parse_file_test_btn = xp("//button[contains(@data-bind,'click:parse, enable:canParse')]", 'button', True),
+    parse_columns= xp("//tr[td[input[contains(@title,'%s')]]]//select", 'select', True),
+    type_columns = xp("//tr[td[input[contains(@title,'%s')]]]//input[contains(@type,textbox)]", 'select', True),
+    next_page = xp("//button[contains(.,'Next page')]", 'button', True),
 
     # choose auto
     auto = xp("//input[contains(@value,'auto')]", 'checkbox', True),
@@ -126,7 +129,6 @@ XPATHS = dict(
 
     #common
     ignored_columns_list = xp("//tr[th[contains(., 'ignored_columns')]]//tr"),
-    ignored_columns = xp("//tr[th[contains(., 'ignored_columns')]]//tr[%s]"),
     ignore_const_cols = xp("//tr[th[contains(., 'ignore_const_cols')]]//input", 'checkbox'),
     response_column = xp("//tr[th[contains(., 'response_column')]]//select", 'select'),
     response_column_last = xp("//tr[th[contains(., 'response_column')]]//select[last()]", 'select'),
@@ -140,6 +142,11 @@ XPATHS = dict(
     min_leaves = xp("//tr[th[contains(., 'min_leaves')]]//td", 'text', True),
     max_leaves = xp("//tr[th[contains(., 'max_leaves')]]//td", 'text', True),
     mean_leaves = xp("//tr[th[contains(., 'mean_leaves')]]//td", 'text', True),
+    ignored_columns = xp("//tr[td[label[contains(.,'%s')]]]//input", 'checkbox', True),
+    next_button_ignored = xp("//button[contains(.,'Next 100')]", 'button', True),
+    general_error =  xp("//span[contains(@style,'color: red')]", 'text', True),
+    error_message_requirement = xp("//td[contains(.,'requires')]", 'text', True),
+    error_message_validate = xp("//td[contains(.,'must be')]", 'text', True)
 )
 
 
@@ -212,37 +219,40 @@ DEEP_LEARNING_XPATHS = dict(
 
 
 GBM_XPATHS = dict(
-    train_dataset_id = xp("//tr[th[contains(., 'training_frame')]]//select", 'select'),
-    validate_dataset_id  = xp("//tr[th[contains(., 'validation_frame')]]//select", 'select'),
+    train_dataset_id = xp("//tr[th[contains(., 'training_frame')]]//select", 'select', True),
+    validate_dataset_id  = xp("//tr[th[contains(., 'validation_frame')]]//select", 'select', True),
     nfolds = xp("//tr[th[contains(., 'nfolds')]]//input", 'input', True),
-    response_column = xp("//tr[th[contains(., 'response_column')]]//select", 'select'),
-    ignored_columns = xp("//tr[th[contains(., 'ignored_columns')]]//input", 'input', True),
-    ignore_const_cols = xp("//tr[th[contains(., 'ignore_const_cols')]]//input", 'checkbox'),
-    ntrees = xp("//tr[th[contains(., 'ntrees')]]//input", 'input'),
-    max_depth = xp("//tr[th[contains(., 'max_depth')]]//input", 'input'),
-    min_rows = xp("//tr[th[contains(., 'min_rows')]]//input", 'input'),
-    nbins = xp("//tr[th[contains(., 'nbins')]]//input", 'input'),
-    nbins_cats = xp("//tr[th[contains(., 'nbins_cats')]]//input", 'input'),
-    seed = xp("//tr[th[contains(., 'seed')]]//input", 'input'),
-    learn_rate = xp("//tr[th[contains(., 'learn_rate')]]//input",  'input'),
+    response_column = xp("//tr[th[contains(., 'response_column')]]//select", 'select', True),
+    ignored_columns = xp("//tr[td[label[contains(.,'%s')]]]//input", 'checkbox', True),
+    ignore_const_cols = xp("//tr[th[contains(., 'ignore_const_cols')]]//input", 'checkbox', True),
+    ntrees = xp("//tr[th[contains(., 'ntrees')]]//input", 'input', True),
+    max_depth = xp("//tr[th[contains(., 'max_depth')]]//input", 'input', True),
+    min_rows = xp("//tr[th[contains(., 'min_rows')]]//input", 'input', True),
+    nbins = xp("//tr[th[contains(., 'nbins')]]//input", 'input', True),
+    nbins_cats = xp("//tr[th[contains(., 'nbins_cats')]]//input", 'input', True),
+    seed = xp("//tr[th[contains(., 'seed')]]//input", 'input', True),
+    learn_rate = xp("//tr[th[contains(., 'learn_rate')]]//input",  'input', True),
     distribution = xp("//tr[th[contains(., 'distribution')]]//select",  'select'),
-    score_each_iteration = xp("//tr[th[contains(., 'score_each_iteration')]]//input", 'checkbox'),
+    sample_rate = xp("//tr[th[contains(., 'sample_rate')]]//input", 'input', True),
+    col_sample_rate = xp("//tr[th[contains(., 'col_sample_rate')]]//input", 'input', True),
+    score_each_iteration = xp("//tr[th[contains(., 'score_each_iteration')]]//input", 'checkbox', True),
     fold_assignment = xp("//tr[th[contains(., 'fold_assignment')]]//select", 'select', True),
     fold_column = xp("//tr[th[contains(., 'fold_column')]]//select", 'select', True),
-    offset_column  = xp("//tr[th[contains(., 'offset_column')]]//select", 'select'),
-    weights_column = xp("//tr[th[contains(., 'weights_column')]]//select", 'select'),
-    balance_classes = xp("//tr[th[contains(., 'balance_classes')]]//input", 'checkbox'),
-    max_confusion_matrix_size = xp("//tr[th[contains(., 'max_confusion_matrix_size')]]//input", 'input'),
-    max_hit_ratio_k =  xp("//tr[th[contains(., 'max_hit_ratio_k')]]//input", 'input'),
-    r2_stopping = xp("//tr[th[contains(., 'r2_stopping')]]//input", 'input'),
-    build_tree_one_node  = xp("//tr[th[contains(., 'build_tree_one_node')]]//input", 'checkbox'),
+    offset_column  = xp("//tr[th[contains(., 'offset_column')]]//select", 'select', True),
+    weights_column = xp("//tr[th[contains(., 'weights_column')]]//select", 'select', True),
+    balance_classes = xp("//tr[th[contains(., 'balance_classes')]]//input", 'checkbox', True),
+    max_confusion_matrix_size = xp("//tr[th[contains(., 'max_confusion_matrix_size')]]//input", 'input', True),
+    max_hit_ratio_k =  xp("//tr[th[contains(., 'max_hit_ratio_k')]]//input", 'input', True),
+    r2_stopping = xp("//tr[th[contains(., 'r2_stopping')]]//input", 'input', True),
+    build_tree_one_node  = xp("//tr[th[contains(., 'build_tree_one_node')]]//input", 'checkbox', True),
     tweedie_power = xp("//tr[th[contains(., 'tweedie_power')]]//input", 'input', True),
     checkpoint = xp("//tr[th[contains(., 'checkpoint')]]//input", 'input', True),
     keep_cross_validation_predictions = xp("//tr[th[contains(., 'keep_cross_validation_predictions')]]//input", 'checkbox', True),
-    class_sampling_factors = xp("//tr[th[contains(., 'class_sampling_factors')]]//input", 'input'),
-    max_after_balance_size = xp("//tr[th[contains(., 'max_after_balance_size')]]//input", 'input'),
+    class_sampling_factors = xp("//tr[th[contains(., 'class_sampling_factors')]]//input", 'input', True),
+    max_after_balance_size = xp("//tr[th[contains(., 'max_after_balance_size')]]//input", 'input', True),
     nbins_top_level = xp("//tr[th[contains(., 'nbins_top_level')]]//input", 'input', True),
-    build_model = xp("//button[text()='Build Model']", 'button', True),
+    train_dataset_id_split = xp("//tr[th[contains(., 'training_frame')]]//select", 'select', True),
+    validate_dataset_id_split = xp("//tr[th[contains(., 'validation_frame')]]//select", 'select', True)
 )
 
 KMEAN_XPATHS = dict(
@@ -427,7 +437,7 @@ NAVIGATE_XPATHS = dict(
 
 def unit_test():
     ''' unit tests '''
-    print XPATHS['united_flow']
+    print XPATHS['build_error']['xpath']
 
 
 if __name__ == '__main__':

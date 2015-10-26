@@ -1,6 +1,6 @@
 from testlibs import common
 from utils.se_functions import set_values
-from testlibs.xpaths import DRF_XPATHS
+from utils.xpaths import DRF_XPATHS
 
 
 ORDERS = [
@@ -41,7 +41,7 @@ def create_model_drf(driver, configs = {}):
 
     print '---Click build model:'
     common.click_build_model(driver)
-    common.wait_progress_n_click(driver)
+
     print 'Model is created done...'
 
 

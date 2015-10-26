@@ -1,25 +1,23 @@
 '''
 For running tests, run this from command line.
 '''
-import sys
-import os
-import inspect
 import argparse
-import shutil
-import time
-import xml.etree.ElementTree as ET
 import datetime
-import logging
-import subprocess
+import inspect
+import os
+import time
+import shutil
 import sys
-import codecs
 
 
-from utils import se_functions, constant
-from utils.common import load_csv, append_xml
-from utils import config
+from utils.common import load_csv
+from utils import Constant
+from utils import Config
+from utils import ConfigAlgorithm
+from utils import DatasetCharacteristics as DS
 from utils import Logger
-from utils import DatasetCharacteristics
+from utils import se_functions
+from utils import TestNGResult
 
 
 def load_testclass(modulename, classname):
@@ -54,32 +52,94 @@ def setup_ouput_directories():
     Remove all old results and create new /results directory
     '''
 
-    if os.path.exists(config.results):
-        shutil.rmtree(config.results)
+    if os.path.exists(Config.results):
+        shutil.rmtree(Config.results)
 
-    mkdir(config.results)
-    mkdir(config.results_logs)
-    mkdir(config.results_screenshots)
+    mkdir(Config.results)
+    mkdir(Config.results_logs)
+    mkdir(Config.results_screenshots)
 
 
 def load_testsuite(suite_name):
     ''' load testsuite from csv file '''
-    return load_csv(config.load_csv % suite_name)
+    if 'drf' in suite_name:
+        return load_csv(Config.load_csv % suite_name, ConfigAlgorithm.drf_row, ConfigAlgorithm.drf_column)
+    elif 'gbm' in suite_name:
+        return load_csv(Config.load_csv % suite_name, ConfigAlgorithm.gbm_row, ConfigAlgorithm.gbm_column)
+    elif 'glm' in suite_name:
+        return load_csv(Config.load_csv % suite_name, ConfigAlgorithm.glm_row, ConfigAlgorithm.glm_column)
+    elif 'dl' in suite_name:
+        return load_csv(Config.load_csv % suite_name, ConfigAlgorithm.dl_row, ConfigAlgorithm.dl_column)
+    else:
+        raise Exception ("Uncorrect Testsuite Name, must be cotains 'drf' or 'gbm' or 'glm' or 'dl'")
 
 
-def run_testcase(testclass, tc_id, configs, additional_configs):
-    '''
-    create an instance of testclass and call setup, test and clean_up sequentially
-    '''
-    test_obj = testclass(tc_id, configs, additional_configs)
+def check_model_types(test_case, ds_chars):
+    result = ''
 
-    test_obj.setup()
-    result = test_obj.test()
-    test_obj.clean_up()
+    ds = ds_chars[test_case[Constant.train_dataset_id]]
+    colunm_names = ds[DS.column_names].split(DS.regex_split_content)
+    colunm_types = ds[DS.column_types].split(DS.regex_split_content)
+    response_colunm_name = ds[DS.target]
+    response_column_type = colunm_types[colunm_names.index(response_colunm_name)]
+
+    if test_case['classification'] == 'x' and response_column_type.lower() != 'enum':
+        result = 'This is classification testcase but response column type is not Enum'
+    elif test_case['regression'] == 'x' and response_column_type.lower() == 'enum':
+        result = 'This is regression testcase but response column type is Enum'
+    # todo: validate more here.
+
+    print result
     return result
 
 
-def run_testsuite(testsuite, additional_configs):
+def run_testcase(testcase_id, testcase, args_params):
+    '''
+    create an instance of testclass and call setup, test and clean_up sequentially
+    '''
+
+    # set up testcase
+    driver = se_functions.open_browser(args_params['args'])
+    # todo: refactor it
+    args_params['driver'] = driver
+
+    testscript = testcase.pop('testscript')
+    classname = testcase.pop('classname')
+
+    # use reflection to get CLASS for run testcase
+    testclass = load_testclass(testscript, classname)
+
+    test_obj = testclass(testcase_id, testcase, args_params)
+
+    try:
+        # run testcase
+        test_obj.setup()
+        result = test_obj.test()
+        test_obj.clean_up()
+
+    except Exception as ex:
+        print ex.message
+        result = {
+            Constant.train_dataset_id : testcase[Constant.train_dataset_id],
+            Constant.validate_dataset_id : testcase[Constant.validate_dataset_id],
+            'result' : Constant.testcase_result_status_invalid,
+            'message' : ex.message,
+            'mse' : 'N/A',
+        }
+        # todo: do not handle it
+        # raise ex
+
+    finally:
+        print 'Closing browser'
+        driver.close()
+        driver.quit()
+        time.sleep(3)
+        print 'Closed browser'
+
+    return result
+
+
+def run_testsuite(testsuite, dataset_characteristic, additional_configs):
     '''
     For each test case in the suite, run it.
 
@@ -97,88 +157,48 @@ def run_testsuite(testsuite, additional_configs):
     '''
 
     #are_headers_written = False
-    total_tc_Pass = 0
-    total_tc_Fail = 0
-    total_tc_Invalid = 0
+    total_tc_pass = 0
+    total_tc_fail = 0
+    total_tc_invalid = 0
 
-    testng_results = ET.Element("testng_results")
-    test = ET.SubElement(testng_results, "test")
-    class1 = ET.SubElement(test, "class", name = 'h2o.testng.TestNG')
+    testng_results = TestNGResult.TestNGResult()
 
-    for tc_id, test_cfgs in testsuite.iteritems():
+    list_testcase_id = list(testsuite.keys())
+    list_testcase_id.sort(key=len)
+    # for tc_id, testcase in testsuite.iteritems():
+    for tc_id in list_testcase_id:
+        testcase = testsuite.pop(tc_id)
         time_start_tc = datetime.datetime.now()
 
         # redirect output console to write log into TestNG format file
-        sys.stdout = Logger.Logger(config.temporary_log_file_name)
+        sys.stdout = Logger.Logger(Config.temporary_log_file_name)
 
-        try:
-            driver = se_functions.open_browser(additional_configs['args'])
-            additional_configs['driver'] = driver
+        validate_message = check_model_types(testcase, dataset_characteristic.get_dataset())
 
-            testscript = test_cfgs.pop('testscript')
-            classname = test_cfgs.pop('classname')
-
-            testclass = load_testclass(testscript, classname)
-            test_result = run_testcase(testclass, tc_id, test_cfgs, additional_configs)
-
-        except Exception as ex:
-            # sys.stdout.close()
-            # driver.quit()
-
-            test_result = {
-                'result' : constant.testcase_result_status_invalid,
-                'message' : ex.message,
-                'mse' : 'N/A',
-                constant.train_dataset_id : test_cfgs[constant.train_dataset_id],
-                constant.validate_dataset_id : test_cfgs[constant.validate_dataset_id],
-            }
-            # todo: do not handle it
-            # raise ex
-
-        # create xml file
-        # todo: refactor it
-        test_method_attributes =  dict()
-        test_method_attributes['started-at'] = str(time_start_tc.strftime("%Y-%m-%dT%H:%M:%SZ"))
-        test_method_attributes['name'] = tc_id
-        test_method_attributes['status'] = test_result['result']
-        time_finish_tc = datetime.datetime.now()
-        test_method_attributes['finished-at'] = str(time_finish_tc.strftime("%Y-%m-%dT%H:%M:%SZ"))
-        duration = (time_finish_tc - time_start_tc).seconds * 1000
-        test_method_attributes['duration-ms'] = str(duration)
-
-        test_method = ET.SubElement(class1, "test-method", test_method_attributes)
-
-        params = ET.SubElement(test_method, 'params')
-
-        param0 = ET.SubElement(params, 'param', index = '0')
-        ET.SubElement(param0, 'value').text = "<![CDATA[Testcase: %s]]>" % tc_id
-        param2 = ET.SubElement(params, 'param', index = '1')
-        ET.SubElement(param2, 'value').text =  "<![CDATA[Train Dataset: %s]]>" % test_result[constant.train_dataset_id]
-        param3 = ET.SubElement(params, 'param', index = '2')
-        ET.SubElement(param3, 'value').text =  "<![CDATA[Validate Dataset: %s]]>" % test_result[constant.validate_dataset_id]
-        param4 = ET.SubElement(params, 'param', index = '3')
-        ET.SubElement(param4, 'value').text =  "<![CDATA[MSE: %s]]>" % test_result['mse']
-
-        reporter_output = ET.SubElement(test_method, "reporter_output")
-
-        #get log from log file
-        ET.SubElement(reporter_output, 'line').text =  "<![CDATA[%s]]>" % (sys.stdout.read())
-
-        if constant.testcase_result_status_pass == test_result['result']:
-            total_tc_Pass += 1
-        elif constant.testcase_result_status_fail == test_result['result']:
-            total_tc_Fail += 1
+        if '' == validate_message:
+            test_result = run_testcase(tc_id, testcase, additional_configs)
         else:
-            total_tc_Invalid += 1
+            test_result = {
+                Constant.train_dataset_id : testcase[Constant.train_dataset_id],
+                Constant.validate_dataset_id : testcase[Constant.validate_dataset_id],
+                'result' : Constant.testcase_result_status_invalid,
+                'message' : validate_message,
+                'mse' : 'N/A',
+            }
 
-        total = total_tc_Pass + total_tc_Fail + total_tc_Invalid
-        driver.quit()
-        testng_results.set('Passed',str(total_tc_Pass))
-        testng_results.set('Failed',str(total_tc_Fail))
-        testng_results.set('Invalied', str(total_tc_Invalid))
-        testng_results.set('total', str(total))
+        if Constant.testcase_result_status_pass == test_result['result']:
+            total_tc_pass += 1
+        elif Constant.testcase_result_status_fail == test_result['result']:
+            total_tc_fail += 1
+        else:
+            total_tc_invalid += 1
 
-        append_xml(config.result_filename, testng_results)
+        time_finish_tc = datetime.datetime.now()
+        log = sys.stdout.read()
+
+        testng_results. add_test_method_n_child(tc_id, time_start_tc, time_finish_tc, test_result, log)
+        testng_results.set_summary_attribute(total_tc_invalid, total_tc_fail, total_tc_pass)
+        testng_results.write()
 
 
 def parse_arguments():
@@ -205,38 +225,37 @@ def parse_arguments():
         help = 'Testsuite to be ran',
         required = True)
 
-    return  parser.parse_args()
+    return parser.parse_args()
 
-
-def unit_test():
-    ''' unit tests '''
-    from pprint import pprint as pp
-
-    print load_testclass('deep_learning_basic', 'DeepLearningBasic')
-
-    args = parse_arguments()
-    pp(load_testsuite(args.testsuite)) # python run.py -t deep_learning
 
 def main():
     '''
     test runner - parse input arguments, run test suite and save test results to /results
     '''
+    args = parse_arguments()
+    print 'parse arguments: ', args
+
+    if not se_functions.check_website_connect():
+        print 'FlowUI is not available'
+        sys.exit(0)
+
     # Setup /results directory
     setup_ouput_directories()
 
-    args = parse_arguments()
-    print 'parse arguments: ', args
+    # Load the testsuite
+    testsuite = load_testsuite(args.testsuite)
+    # load the dataset characteristic
+    dataset_chars = DS.DatasetCharacteristics()
 
     # Create web driver instance, load dataset characteristics and pass them in as
     additional_configs = dict(
         args = args,
-        dataset_chars = DatasetCharacteristics.DatasetCharacteristics(config.dataset_chars),
+        # to use in tests folder
+        dataset_chars = dataset_chars
     )
 
-    # Load the testsuite and run all its testcases
-    # Test results will be stored after each test is done
-    testsuite = load_testsuite(args.testsuite)
-    run_testsuite(testsuite, additional_configs)
+    # Run all its testcases
+    run_testsuite(testsuite, dataset_chars, additional_configs)
 
 
 if __name__ == '__main__':

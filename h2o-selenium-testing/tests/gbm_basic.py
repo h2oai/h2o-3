@@ -1,20 +1,17 @@
 from testlibs import common
-from testlibs.drf import ORDERS
-from testlibs.drf import create_model_drf
+from testlibs.gbm import create_model_gbm
+from testlibs.gbm import ORDERS
 from utils.se_functions import get_auto_configs
 from utils import Constant
 
+import sys
 
-class DrfBasic:
-
+class GbmBasic:
     def __init__(self, tc_id, configs, additional_configs):
         #Init configs for model
         self.cfgs = configs
         self.add_cfgs = additional_configs
         self.tc_id = tc_id
-
-        # Helpers
-        # todo: refactor it
         self.wd = self.add_cfgs['driver']
         self.ds_chars = self.add_cfgs['dataset_chars']
 
@@ -24,7 +21,6 @@ class DrfBasic:
         print 'Start running testcase:', self.tc_id
         print 'Start import dataset...'
         print '---Import train dataset:'
-
         train_fn = self.ds_chars.get_filepath(self.cfgs[Constant.train_dataset_id])
         print 'train file path: ', train_fn
         common.import_parse_file(self.wd, dict(file_path = train_fn,
@@ -45,49 +41,54 @@ class DrfBasic:
             print 'Test case', self.tc_id,': invalid'
             raise Exception('Test case invalid')
 
-        print( 'Import dataset is successfully...')
+        print 'Import dataset is successfully...'
 
 
     def test(self):
         #Build, predict model, get values and return result
-        print 'Test now...'
-
-        result_dict = dict(train_dataset_id = self.cfgs[Constant.train_dataset_id],
-                           validate_dataset_id = self.cfgs[Constant.validate_dataset_id],
-                           result = Constant.testcase_result_status_pass,
-                           message = 'This tescase passed',
-                           mse = '',
-                           auc = '',
-                           distribution = '',
-                           sparse = ''
-                           )
-
+        print 'Test now:'
+        result_dict = dict( result = 'PASS', message = 'This tescase is passed', mse = '')
+        result_dict['train_dataset_id'] = self.cfgs['train_dataset_id']
+        result_dict['validate_dataset_id'] = self.cfgs['validate_dataset_id']
         try:
             print 'Start build model...'
+            print 'Get distribution from file: '
+            list_distribution = ['AUTO', 'gaussian', 'bernoulli', 'multinomial', 'poisson', 'gamma', 'tweedie']
+            list_distribution_file = [self.cfgs['auto'], self.cfgs['gaussian'], self.cfgs['binomial'], self.cfgs['multinomial'], self.cfgs['poisson'], self.cfgs['gamma'], self.cfgs['tweedie']]
+            print 'Get distribution from file Done'
+            print 'set list_distribution'
+            if 0 == list_distribution_file.count('x'):
+                distribution = list_distribution[0]
+            else:
+                distribution = list_distribution[list_distribution_file.index('x')]
+            print 'set distribution Done'
+            print self.cfgs
             configs = get_auto_configs(ORDERS, self.cfgs)
-            configs['response_column'] = self.ds_chars.get_data_of_column(self.cfgs[Constant.train_dataset_id],'target'),
+            configs['response_column'] = self.ds_chars.get_data_of_column(self.cfgs[Constant.train_dataset_id], 'target'),
+            configs['distribution'] = distribution
+            print "Get auto config Done"
 
-            create_model_drf (self.wd, configs)
+            create_model_gbm (self.wd, configs)
             print 'Model is built successfully...'
 
             print 'Start predict model...'
-            if not self.cfgs[Constant.validate_dataset_id].strip() == '':
+            if not self.cfgs['validate_dataset_id'].strip() == '':
                 common.predict_file(self.wd, dict(frame_select = self.cfgs[Constant.validate_dataset_id]))
             else:
                 common.predict_file(self.wd, dict(frame_select = self.cfgs[Constant.train_dataset_id]))
+            print 'Predict model is successfully...'
 
             print '---Getting value after predict model:'
             result_dict['mse'] = common.get_values(self.wd, ['mse'])
 
-            print 'Predict model is successfully...'
 
-            print 'Test case', self.tc_id, ': passed'
+            print 'Test case %s is passed' % self.tc_id
             return result_dict
 
         except Exception as e:
-            result_dict['result']= Constant.testcase_result_status_fail
-            result_dict['message'] = "Reason Failed: " + str(e.message)
-            print 'Test case', self.tc_id,': falied'
+            result_dict['result']= 'FAIL'
+            result_dict['message'] =  "Reason Failed: " + str(e.message)
+            print 'Test case %s is falied' % self.tc_id
             return result_dict
 
 
@@ -101,3 +102,5 @@ def unit_test():
 
 if __name__ == '__main__':
     unit_test()
+
+

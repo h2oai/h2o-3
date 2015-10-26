@@ -1,9 +1,7 @@
 import csv
-import config
-import xml.etree.cElementTree as ET
 
 
-def load_csv(filename):
+def load_csv(filename, index_head_row, index_id_column):
     '''
     Load a csv file and return a dict with the first column as dictionary's key.
     To mitigate data input error, raise an exception if same key is found in the csv file.
@@ -12,21 +10,37 @@ def load_csv(filename):
 
     # First read the headers, then for each row, create an dictionary
     with open(filename, 'rb') as f:
-        reader = csv.reader(f)
-        headers = reader.next()
+        print "Open File: ", filename
+        reader = csv.reader(f, delimiter=',')
+
+        #remove unused head
+        for i in range(index_head_row):
+            headers = reader.next()
 
         for row in reader:
             id = ''
             item = {} # an item
+            if 'drf' in filename:
+                item['testscript'] = 'drf_basic'
+                item['classname'] = 'DrfBasic'
+            elif 'gbm' in filename:
+                item['testscript'] = 'gbm_basic'
+                item['classname'] = 'GbmBasic'
+            elif 'glm' in filename:
+                item['testscript'] = 'glm_basic'
+                item['classname'] = 'GlmBasic'
+            else:
+                item['testscript'] = 'dl_basic'
+                item['classname'] = 'DlBasic'
 
             for hdr, value in zip(headers, row):
-                if hdr == headers[0]:
+                if hdr == headers[index_id_column]:
                     id = value
                 else:
-                    item[hdr] = value
+                    item[hdr.strip('_')] = value
 
-            if id in csv_contents:
-                raise Exception('Duplicate key "%s" found in csv file: %s' % (id, filename))
+            # if id in csv_contents:
+            #     raise Exception('Duplicate key "%s" found in csv file: %s' % (id, filename))
 
             csv_contents[id] = item
 
@@ -35,48 +49,10 @@ def load_csv(filename):
 
 def append_csv(filename, row):
     '''
-    Open a csv to write a row in append mo
-    de
+    Open a csv to write a row in append
     '''
     with open(filename, 'a') as f:
         f.write('%s\n' % row)
-
-
-def append_xml(filename, root):
-    tree = ET.ElementTree(root)
-    tree.write(filename)
-
-    with open(filename,'r') as f:
-        newlines = []
-        for line in f.readlines():
-            newlines.append(line.replace('&lt;', '<').replace('&gt;', '>'))
-
-    with open(filename, 'w') as f:
-        for line in newlines:
-            f.write(line)
-
-
-def load_dataset_characteristics(filename):
-    '''
-    Dataset Characteristics is an CSV file contains all the datasets used for testing
-    Due to limitation of CSV file, ';' is used where ',' should be.
-    Therefore a conversion is needed when loading data.
-    Return sample:
-    {'airquality_train1': {'column_names': 'Ozone,Solar.R,Wind,Temp,Month,Day',
-                           'column_types': 'numeric,numeric,numeric,numeric,numeric,numeric',
-                           'dataset_directory': 'smalldata',
-                           'file_name': 'airquality_train1.csv',
-                           'target': 'Ozone'},
-     ...
-    }
-    '''
-    ds_chars = load_csv(config.test_data % filename)
-
-    for chars in ds_chars.itervalues():
-        for char_k in chars.keys():
-            chars[char_k] = chars[char_k].replace(';', ',')
-
-    return ds_chars
 
 
 def unit_test():
@@ -84,7 +60,9 @@ def unit_test():
     print
 
     # test1: load deep_learning testcases and print out to the console
-    pp(load_csv(r'../test_data/deep_learning.csv'))
+    pp(load_csv(r'../test_data/gbmCases.csv', 4, 2))
+    #pp(load_dataset_characteristics(r'dataset_characteristics.csv'))
+    #pp(load_dataset_characteristics(r'dataset_characteristics.csv'))
 
 
 if __name__ == '__main__':
