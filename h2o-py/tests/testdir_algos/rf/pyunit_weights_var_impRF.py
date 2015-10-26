@@ -17,7 +17,7 @@ def weights_vi():
     p3 = [(1 if random.uniform(0,1) < 0.5 else 0) if y == 'a' else (0 if random.uniform(0,1) < 0.5 else 1) for y in response]
 
     dataset1_python = [[r, one, two, three] for r, one, two, three in zip(response, p1, p2, p3)]
-    dataset1_h2o = h2o.H2OFrame(python_obj=dataset1_python)
+    dataset1_h2o = h2o.H2OFrame.fromPython(dataset1_python)
     dataset1_h2o.set_names(["response", "p1", "p2", "p3"])
 
     ##### create synthetic dataset2 with 3 predictors: p3 predicts response ~90% of the time, p1 ~70%, p2 ~50%
@@ -29,7 +29,7 @@ def weights_vi():
     p3 = [(1 if random.uniform(0,1) < 0.9 else 0) if y == 'a' else (0 if random.uniform(0,1) < 0.9 else 1) for y in response]
 
     dataset2_python = [[r, one, two, three] for r, one, two, three in zip(response, p1, p2, p3)]
-    dataset2_h2o = h2o.H2OFrame(python_obj=dataset2_python)
+    dataset2_h2o = h2o.H2OFrame.fromPython(dataset2_python)
     dataset2_h2o.set_names(["response", "p1", "p2", "p3"])
 
     ##### compute variable importances on dataset1 and dataset2
@@ -54,7 +54,7 @@ def weights_vi():
     combined_dataset_python = []
     [combined_dataset_python.append(r) for r in dataset1_python_weighted]
     [combined_dataset_python.append(r) for r in dataset2_python_weighted]
-    combined_dataset_h2o = h2o.H2OFrame(python_obj=combined_dataset_python)
+    combined_dataset_h2o = h2o.H2OFrame.fromPython(combined_dataset_python)
     combined_dataset_h2o.set_names(["response", "p1", "p2", "p3", "weights"])
 
     ##### recompute the variable importances. the relative order should be the same as above.
@@ -79,7 +79,7 @@ def weights_vi():
     combined_dataset_python = []
     [combined_dataset_python.append(r) for r in dataset1_python_weighted]
     [combined_dataset_python.append(r) for r in dataset2_python_weighted]
-    combined_dataset_h2o = h2o.H2OFrame(python_obj=combined_dataset_python)
+    combined_dataset_h2o = h2o.H2OFrame.fromPython(combined_dataset_python)
     combined_dataset_h2o.set_names(["response", "p1", "p2", "p3", "weights"])
 
     ##### recompute the variable importances. the relative order should be the same as above.

@@ -36,7 +36,7 @@ def deeplearning_autoencoder():
                                 seed=1234)
 
     # conver train_supervised with autoencoder to lower-dimensional space
-    train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp]._frame(), 0)
+    train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp], 0)
 
     assert train_supervised_features.ncol == nfeatures, "Dimensionality of reconstruction is wrong!"
 
