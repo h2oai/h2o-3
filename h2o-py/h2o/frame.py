@@ -60,7 +60,9 @@ class H2OFrame:
     """
     :return: The number of rows
     """
-    return self._ex._nrows or self._eager()._nrows
+    if self._ex._nrows: return self._ex._nrows
+    self._ex._fetch_data(0)
+    return self._ex._nrows
 
   def __len__(self):
     """
