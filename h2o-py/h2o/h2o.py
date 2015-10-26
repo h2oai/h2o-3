@@ -1081,7 +1081,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
   """
   warnings.warn("`h2o.autoencoder` is deprecated. Use the estimators sub module to build an H2OAutoEncoderEstimator.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="deeplearning"
   parms["autoencoder"]=True
   return unsupervised(parms)
@@ -1323,7 +1323,7 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
   :return: An instance of H2OClusteringModel.
   """
   warnings.warn("`h2o.kmeans` is deprecated. Use the estimators sub module to build an H2OKMeansEstimator.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="kmeans"
   return unsupervised(parms)
 
@@ -1433,7 +1433,7 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   :return: a new dim reduction model
   """
   warnings.warn("`h2o.prcomp` is deprecated. Use the transforms sub module to build an H2OPCA.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="pca"
   return unsupervised(parms)
 
@@ -1471,7 +1471,7 @@ def svd(x,validation_x=None,training_frame=None,model_id=None,validation_frame=N
   :return: a new dim reduction model
   """
   warnings.warn("`h2o.svd` is deprecated. Use the transforms sub module to build an H2OSVD.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="svd"
   parms['_rest_version']=99
   return unsupervised(parms)
@@ -1550,7 +1550,7 @@ def glrm(x,validation_x=None,training_frame=None,model_id=None,validation_frame=
   :return: a new dim reduction model
   """
   warnings.warn("`h2o.glrm` is deprecated. Use the estimators sub module to build an H2OGeneralizedLowRankEstimator.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="glrm"
   parms['_rest_version']=99
   return unsupervised(parms)
