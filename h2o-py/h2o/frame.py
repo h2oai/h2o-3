@@ -1104,7 +1104,7 @@ class H2OFrame(object):
     :return: The covariance matrix of the columns in this H2OFrame.
     """
     fr = H2OFrame._expr(expr=ExprNode("var",self,self if y is None else y,use))
-    if self.nrow==1: return fr._scalar()
+    if self.ncol==1: return fr._scalar()
     return fr._frame()
 
   def sd(self):
