@@ -311,10 +311,10 @@ def _quoted(key):
 
 
 def assign(data,id):
-  if data._computed:
-    rapids(data._id,id)
-  data._id = id
-  data._keep=True  # named things are always safe
+  data._eager()
+  rapids(data._id, id)
+  data._id=id
+  data._ast=None  # ensure it won't be deleted by gc
   return data
 
 
