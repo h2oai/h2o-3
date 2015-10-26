@@ -1103,7 +1103,9 @@ class H2OFrame(object):
     :param use: One of "everything", "complete.obs", or "all.obs".
     :return: The covariance matrix of the columns in this H2OFrame.
     """
-    return H2OFrame._expr(expr=ExprNode("var",self,self if y is None else y,use))._scalar()
+    fr = H2OFrame._expr(expr=ExprNode("var",self,self if y is None else y,use))
+    if self.nrow==1: return fr._scalar()
+    return fr._frame()
 
   def sd(self):
     """
@@ -1486,11 +1488,11 @@ class H2OFrame(object):
   ##### WARNING: MAGIC REF COUNTING CODE BELOW.
   #####          CHANGE AT YOUR OWN RISK.
   ##### ALSO:    DO NOT ADD METHODS BELOW THIS LINE (pretty please)
-  def _eager(self, pytmp=True, scalar=False):
+  def _eager(self, top=True, scalar=False):
     if self._id is None:
       # top-level call to execute all subparts of self._ast
       sb = self._ast._eager()
-      if pytmp:
+      if top:
         self._id = None if scalar else _py_tmp_key()
         res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
         if 'scalar' in res or "string" in res:
