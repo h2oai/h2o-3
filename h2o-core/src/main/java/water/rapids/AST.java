@@ -184,7 +184,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTSetDomain());
     init(new ASTSetLevel());
     init(new ASTTmpAssign());
-    init(new ASTPop());
 
     // Matrix Ops
     init(new ASTTranspose());
