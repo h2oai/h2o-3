@@ -389,7 +389,7 @@ class H2OFrame(object):
         IPython.display.display(self.head().as_data_frame())
       IPython.display.display_html(self._cache._tabulate(self._id,"html",False),raw=True)
     else:
-      print(self)
+      print self
 
   def head(self,rows=10,cols=200):
     """
@@ -549,7 +549,7 @@ class H2OFrame(object):
 
   def __str__(self):
     if sys.gettrace() is None:
-      return self._frame()._cache._tabulate(self._id,"simple",False)
+      return self._frame()._cache._tabulate(self._id,"simple",False).encode("utf-8", errors="ignore")
     return self._id
 
   def __repr__(self):
@@ -1569,7 +1569,7 @@ class H2OCache(object):
 
   def _tabulate(self,frame_id,tablefmt,rollups):
     """Pretty tabulated string of all the cached data, and column names"""
-    if not isinstance(self.fill(frame_id,10),dict):  return str(self._data)  # Scalars print normally
+    if not isinstance(self._data,dict):  return str(self._data)  # Scalars print normally
     # Pretty print cached data
     d = collections.OrderedDict()
     # If also printing the rollup stats, build a full row-header
@@ -1579,10 +1579,10 @@ class H2OCache(object):
       d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+map(str,range(lrows))
     # For all columns...
     for k,v in self._data.iteritems():
-      x = v['data']          # Data to display
-      domain = v['domain']   # Map to cat strings as needed
-      if domain:
-        x = ["" if math.isnan(idx) else domain[int(idx)] for idx in x]
+      x = v         # Data to display
+      # domain = v['domain']   # Map to cat strings as needed
+      # if domain:
+      #   x = ["" if math.isnan(idx) else domain[int(idx)] for idx in x]
       if rollups:            # Rollups, if requested
         mins = v['mins'][0] if v['mins'] else None
         maxs = v['maxs'][0] if v['maxs'] else None
