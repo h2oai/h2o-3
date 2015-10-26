@@ -17,7 +17,7 @@ def iris_h2o_vs_sciKmeans():
   [5.6,2.5,3.9,1.1],
   [6.5,3.0,5.2,2.0]]
 
-  start = h2o.H2OFrame(s)
+  start = h2o.H2OFrame.fromPython(s)
 
   h2o_km = h2o.kmeans(x=iris_h2o[0:4], k=3, user_points=start, standardize=False)
 

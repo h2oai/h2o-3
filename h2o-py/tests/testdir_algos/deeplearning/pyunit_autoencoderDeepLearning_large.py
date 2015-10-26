@@ -48,8 +48,8 @@ def deeplearning_autoencoder():
                                   seed=1234)
 
     # Test the DRF model on the test set (processed through deep features)
-    test_features = ae_model.deepfeatures(test_hex[0:resp]._frame(), 0)
-    test_features = test_features.cbind(test_hex[resp])._frame()
+    test_features = ae_model.deepfeatures(test_hex[0:resp], 0)
+    test_features = test_features.cbind(test_hex[resp])
 
     # Confusion Matrix and assertion
     cm = drf_model.confusion_matrix(test_features)

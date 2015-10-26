@@ -10,7 +10,8 @@ from group_by import GroupBy
 class H2OFrame:
 
   def __init__(self,ex):
-    if not isinstance(ex,expr.ExprNode): raise ValueError("H2OFrame must be passed an ExprNode, not a "+str(ex.__class__))
+    if not isinstance(ex,expr.ExprNode): 
+      raise ValueError("H2OFrame must be passed an ExprNode, not a "+str(ex.__class__)+" and the constructor is an internal method.\nDid you mean H2OFrame.fromPython(python_obj)?")
     self._ex = ex
 
   @staticmethod
@@ -104,6 +105,12 @@ class H2OFrame:
     :return: The types for each column
     """
     return [col["type"] for col in self._ex._fetch_data(0).itervalues()]
+
+  def type(self,name):
+    """
+    :return: The type for a named column
+    """
+    return self._ex._fetch_data(0)[name]["type"]
 
   def __iter__(self):
     """
@@ -559,9 +566,9 @@ class H2OFrame:
       category_cols = []
       if self.types is not None:
         for col_name in self.names:
-          type = self.types[col_name]
-          if type.lower() == 'time': time_cols.append(col_name)
-          elif type.lower() == 'enum': category_cols.append(col_name)
+          xtype = self.type(col_name)
+          if xtype.lower() == 'time': time_cols.append(col_name)
+          elif xtype.lower() == 'enum': category_cols.append(col_name)
         #change Time to pandas datetime
         if time_cols:
           #hacky way to get the utc offset
