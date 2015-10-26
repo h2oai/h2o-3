@@ -389,7 +389,10 @@ class H2OFrame(object):
         IPython.display.display(self.head().as_data_frame())
       IPython.display.display_html(self._cache._tabulate(self._id,"html",False),raw=True)
     else:
-      print self
+      if use_pandas and h2o.can_use_pandas():
+        print self.head().as_data_frame()
+      else:
+        print self
 
   def head(self,rows=10,cols=200):
     """
@@ -554,8 +557,8 @@ class H2OFrame(object):
 
   def __repr__(self):
     if sys.gettrace() is None:
-      self.show()
-      return ""
+      return self.show()
+    return self.__str__()
 
   def as_date(self,format):
     """Return the column with all elements converted to millis since the epoch.
