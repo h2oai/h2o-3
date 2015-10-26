@@ -297,7 +297,8 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
     if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
     setup["check_header"] = first_line_is_header
   fr = H2OFrame()
-  return fr._parse(setup)
+  fr._parse_raw(setup)
+  return fr
 
 
 def _quoted(key):

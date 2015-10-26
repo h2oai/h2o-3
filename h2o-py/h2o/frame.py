@@ -104,17 +104,20 @@ class H2OFrame(object):
 
   def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None, na_strings=None):
     setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
+    self._parse_raw(setup)
+
+  def _parse_raw(self, setup):
     # Parse parameters (None values provided by setup)
     p = { "destination_frame" : None,
-          "parse_type" : None,
-          "separator" : None,
-          "single_quotes" : None,
-          "check_header"  : None,
-          "number_columns" : None,
-          "chunk_size"    : None,
-          "delete_on_done" : True,
-          "blocking" : False,
-          "column_types" : None
+          "parse_type"        : None,
+          "separator"         : None,
+          "single_quotes"     : None,
+          "check_header"      : None,
+          "number_columns"    : None,
+          "chunk_size"        : None,
+          "delete_on_done"    : True,
+          "blocking"          : False,
+          "column_types"      : None,
     }
 
     if setup["column_names"]: p["column_names"] = None
@@ -128,9 +131,7 @@ class H2OFrame(object):
     h2o.H2OJob(h2o.H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
     self._id = p["destination_frame"]
     self._update()
-    # thousands_sep = h2o.H2ODisplay.THOUSANDS
-    # if isinstance(path, str): print "Imported {}. Parsed {} rows and {} cols".format(path,thousands_sep.format(self._nrows), thousands_sep.format(self._ncols))
-    # else:                          h2o.H2ODisplay([["File"+str(i+1),f] for i,f in enumerate(path)],None, "Parsed {} rows and {} cols".format(thousands_sep.format(self._nrows), thousands_sep.format(self._ncols)))
+
 
   def __iter__(self):
     """
