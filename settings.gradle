@@ -14,6 +14,7 @@ include 'h2o-hadoop:h2o-mapreduce-generic'
 include 'h2o-hadoop:h2o-yarn-generic'
 include 'h2o-genmodel'
 include 'h2o-java-rest-bindings'
+include 'h2o-shell'
 
 if (System.getProperty("user.name").equals("jenkins") 
     || System.getenv("BUILD_HADOOP") != null

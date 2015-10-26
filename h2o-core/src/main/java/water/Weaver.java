@@ -109,7 +109,7 @@ public class Weaver {
     CtClass icer_cc = _pool.getOrNull(icer_name); // Full Name Lookup of Icer
     if( icer_cc != null ) {
       synchronized( iced_clazz ) {
-        if( !icer_cc.isFrozen() ) icer_cc.toClass(Weaver.class.getClassLoader()); // Load class (but does not link & init)
+        if( !icer_cc.isFrozen() ) icer_cc.toClass(Thread.currentThread().getContextClassLoader()); // Load class (but does not link & init)
         return Class.forName(icer_name); // Found a pre-cooked Icer implementation
       }
     }

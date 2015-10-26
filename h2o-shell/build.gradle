@@ -1,0 +1,8 @@
+description = "H2O Shell"
+
+dependencies {
+  compile project(':h2o-core')
+  compile 'org.codehaus.groovy:groovy-all:2.4.5'
+  compile 'org.fusesource.jansi:jansi:1.11'
+  compile 'jline:jline:2.13'
+}
