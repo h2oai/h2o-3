@@ -255,7 +255,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 
 .set.nlen <- function(x,fld,nlen) {
   y <- attr(x,fld)
-  if( y == -1 ) .set(x,fld,(y=nlen))
+  if( is.null(y) || y == -1 ) .set(x,fld,(y=nlen))
   else stopifnot(y==nlen)
   y
 }
