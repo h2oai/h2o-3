@@ -1,8 +1,7 @@
 package water.api;
 
-import water.*;
+import water.H2O;
 import water.rapids.Val;
-import water.fvec.Frame;
 import water.util.Log;
 
 class RapidsHandler extends Handler {

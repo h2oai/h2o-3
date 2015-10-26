@@ -2,6 +2,7 @@ from .transform_base import H2OTransformer
 import warnings
 from ..assembly import H2OCol
 
+
 class H2OScaler(H2OTransformer):
   """
   Standardize an H2OFrame by demeaning and scaling each column.

@@ -436,6 +436,7 @@ The available options vary depending on the selected model. If an option is only
 - **pca_method**: ([PCA](#PCA)) Select the algorithm to use for computing the principal components: 
 	- *GramSVD*: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
 	- *Power*: Computes the SVD using the power iteration method
+	- *Randomized*: Uses randomized subspace iteration method 
 	- *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
 - **family**: ([GLM](#GLM)) Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
@@ -545,7 +546,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **l2**: ([DL](#DL)) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. 
 
-- **balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [Naïve Bayes](#NB)) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **balance_classes**: ([GBM](#GBM), [DL](#DL), [Naïve Bayes](#NB)) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
 - **max\_confusion\_matrix\_size**: ([DRF](#DRF), [Naïve Bayes](#NB), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 

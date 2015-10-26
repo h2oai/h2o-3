@@ -188,4 +188,3 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
     print("col.types=list(by.col.idx=c(1,3,99),types=c('Numeric','Numeric','Enum')). Note: `by.col.names` and")
     print("`by.col.idx` cannot be specified simultaneously.")
 }
-

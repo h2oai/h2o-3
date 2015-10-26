@@ -1,14 +1,14 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 import numpy as np
 import random
 import math
 import scipy.special
 
+
 def vec_math_ops():
-    
-    
 
     sin_cos_tan_atan_sinh_cosh_tanh_asinh_data = [[random.uniform(-10,10) for r in range(10)] for c in range(10)]
     asin_acos_atanh_data = [[random.uniform(-1,1) for r in range(10)] for c in range(10)]
@@ -17,11 +17,11 @@ def vec_math_ops():
     zero_one_data = [random.randint(0,1) for c in range(10)]
     zero_one_data = [zero_one_data, zero_one_data]
 
-    h2o_data1 = h2o.H2OFrame.fromPython(sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
-    h2o_data2 = h2o.H2OFrame.fromPython(asin_acos_atanh_data)
-    h2o_data3 = h2o.H2OFrame.fromPython(acosh_data)
-    h2o_data4 = h2o.H2OFrame.fromPython(abs_data)
-    h2o_data5 = h2o.H2OFrame.fromPython(zero_one_data)
+    h2o_data1 = h2o.H2OFrame(python_obj=zip(*sin_cos_tan_atan_sinh_cosh_tanh_asinh_data))
+    h2o_data2 = h2o.H2OFrame(python_obj=zip(*asin_acos_atanh_data))
+    h2o_data3 = h2o.H2OFrame(python_obj=zip(*acosh_data))
+    h2o_data4 = h2o.H2OFrame(python_obj=zip(*abs_data))
+    h2o_data5 = h2o.H2OFrame(python_obj=zip(*zero_one_data))
 
     np_data1 = np.array(sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
     np_data2 = np.array(asin_acos_atanh_data)
@@ -41,33 +41,33 @@ def vec_math_ops():
     h2o_transposed = h2o_data1[c].transpose()
     x, y = h2o_transposed.dim
     assert x == 1 and y == 10, "Expected 1 row and 10 columns, but got {0} rows and {1} columns".format(x,y)
-    tests.np_comparison_check(h2o_data1[:,c].cos(), np.cos(np_data1[:,c]), 10)
-    tests.np_comparison_check(h2o_data1[:,c].sin(), np.sin(np_data1[:,c]), 10)
-    tests.np_comparison_check(h2o_data1[:,c].tan(), np.tan(np_data1[:,c]), 10)
-    tests.np_comparison_check(h2o_data2[:,c].acos(), np.arccos(np_data2[:,c]), 10)
-    tests.np_comparison_check(h2o_data2[:,c].asin(), np.arcsin(np_data2[:,c]), 10)
-    tests.np_comparison_check(h2o_data1[:,c].atan(), np.arctan(np_data1[:,c]), 10)
-    tests.np_comparison_check(h2o_data1[:,c].cosh(), np.cosh(np_data1[:,c]), 10)
-    tests.np_comparison_check(h2o_data1[c].sinh(), np.sinh(np_data1[:,c]), 10)
-    tests.np_comparison_check(h2o_data1[c].tanh(), np.tanh(np_data1[:,c]), 10)
-    tests.np_comparison_check(h2o_data3[c].acosh(), np.arccosh(np_data3[:,c]), 10)
-    tests.np_comparison_check(h2o_data1[c].asinh(), np.arcsinh(np_data1[:,c]), 10)
-    h2o_val = float(h2o_data3[c].gamma()[5,:])
+    pyunit_utils.np_comparison_check(h2o_data1[:,c].cos(), np.cos(np_data1[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data1[:,c].sin(), np.sin(np_data1[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data1[:,c].tan(), np.tan(np_data1[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data2[:,c].acos(), np.arccos(np_data2[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data2[:,c].asin(), np.arcsin(np_data2[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data1[:,c].atan(), np.arctan(np_data1[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data1[:,c].cosh(), np.cosh(np_data1[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data1[c].sinh(), np.sinh(np_data1[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data1[c].tanh(), np.tanh(np_data1[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data3[c].acosh(), np.arccosh(np_data3[:,c]), 10)
+    pyunit_utils.np_comparison_check(h2o_data1[c].asinh(), np.arcsinh(np_data1[:,c]), 10)
+    h2o_val = h2o_data3[c].gamma()[5,:]._scalar()
     num_val = math.gamma(h2o_data3[5,c])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal gamma values between h2o and" \
         "math".format(h2o_val,num_val)
-    h2o_val = float(h2o_data3[c].lgamma()[5,:])
+    h2o_val = h2o_data3[c].lgamma()[5,:]._scalar()
     num_val = math.lgamma(h2o_data3[5,c])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal lgamma values between h2o and " \
         "math".format(h2o_val,num_val)
-    h2o_val = float(h2o_data3[c].digamma()[5,:])
+    h2o_val = h2o_data3[c].digamma()[5,:]._scalar()
     num_val = scipy.special.polygamma(0,h2o_data3[5,c])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal digamma values between h2o and " \
         "math".format(h2o_val,num_val)
-    h2o_val = float(h2o_data3[c].trigamma()[5,:])
+    h2o_val = h2o_data3[c].trigamma()[5,:]._scalar()
     num_val = scipy.special.polygamma(1,h2o_data3[5,c])
     assert abs(h2o_val - float(num_val)) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal trigamma values between h2o and " \
@@ -78,5 +78,9 @@ def vec_math_ops():
     #     assert h2o_val == num_val, "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal " \
     #                                "values between h2o and numpy".format(h2o_val,num_val)
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, vec_math_ops)
+    pyunit_utils.standalone_test(vec_math_ops)
+else:
+    vec_math_ops()

@@ -1,11 +1,15 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 
 def levels_nlevels_setlevel_setLevels_test():
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     # frame (default)
     levels = iris.levels()
@@ -14,29 +18,32 @@ def levels_nlevels_setlevel_setLevels_test():
     # frame (w/ index)
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     # vec
     iris[4] = iris[4].set_level(level='Iris-setosa')
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'Iris-setosa'
 
     levels = iris[4].levels()
     nlevels = iris[4].nlevels()
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     iris[4] = iris[4].set_level(level='Iris-versicolor')
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'Iris-versicolor'
@@ -47,7 +54,7 @@ def levels_nlevels_setlevel_setLevels_test():
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     ################### reimport, set new domains, rerun tests ###################################
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
     iris[4] = iris[4].set_levels(levels=["a", "b", "c"])
 
     # frame (default)
@@ -93,5 +100,9 @@ def levels_nlevels_setlevel_setLevels_test():
     one_column_frame = one_column_frame.set_level(level='c')
     assert one_column_frame[0,0] == 'c'
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, levels_nlevels_setlevel_setLevels_test)
+    pyunit_utils.standalone_test(levels_nlevels_setlevel_setLevels_test)
+else:
+    levels_nlevels_setlevel_setLevels_test()

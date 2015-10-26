@@ -156,6 +156,16 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         continue;
       }
 
+      // All same string (NA), so just guess numeric
+      if (_domains[i].size() == 1
+          && (_domains[i].containsKey("NA")
+          || !_domains[i].containsKey("na")
+          || !_domains[i].containsKey("Na")
+          ||  _nstrings[i] >= nonemptyLines)) {
+        types[i] = Vec.T_NUM;
+        continue;
+      }
+
       // with NA, but likely numeric
       if (_domains[i].size() <= 1
               && (_nnums[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
@@ -204,7 +214,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       }
 
       // All guesses failed
-      types[i] = Vec.T_BAD;
+      types[i] = Vec.T_NUM;
     }
     return types;
   }

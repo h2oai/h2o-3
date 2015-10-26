@@ -1,10 +1,14 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def intdiv():
 
-    iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     iris = iris[:,0:4]
     rows, cols = iris.dim
 
@@ -49,6 +53,10 @@ def intdiv():
     except EnvironmentError:
       pass
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, intdiv)
 
+
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(intdiv)
+else:
+    intdiv()

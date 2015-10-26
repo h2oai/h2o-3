@@ -1,10 +1,14 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def pubdev_1953():
 
-    # small_test = [tests.locate("bigdata/laptop/citibike-nyc/2013-10.csv")]
+    # small_test = [pyunit_utils.locate("bigdata/laptop/citibike-nyc/2013-10.csv")]
     # data = h2o.import_file(path=small_test)
     # startime = data["starttime"]
     # secsPerDay=1000*60*60*24
@@ -14,7 +18,7 @@ def pubdev_1953():
     # secs = bpd["Days"]*secsPerDay
     # bpd["Month"]     = secs.month().asfactor()
     # bpd["DayOfWeek"] = secs.dayOfWeek()
-    # wthr1 = h2o.import_file(path=[tests.locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2013.csv"), tests.locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2014.csv")])
+    # wthr1 = h2o.import_file(path=[pyunit_utils.locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2013.csv"), pyunit_utils.locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2014.csv")])
     # wthr2 = wthr1[["Year Local","Month Local","Day Local","Hour Local","Dew Point (C)","Humidity Fraction","Precipitation One Hour (mm)","Temperature (C)","Weather Code 1/ Description"]]
     # wthr2.set_name(wthr2.index("Precipitation One Hour (mm)"), "Rain (mm)")
     # wthr2.set_name(wthr2.index("Weather Code 1/ Description"), "WC1")
@@ -32,10 +36,14 @@ def pubdev_1953():
 
     predictors = ['DayOfWeek', 'WC1', 'start station name', 'Temperature (C)', 'Days', 'Month', 'Humidity Fraction', 'Rain (mm)', 'Dew Point (C)']
 
-    train = h2o.import_file(tests.locate("smalldata/glm_test/citibike_small_train.csv"))
-    test = h2o.import_file(tests.locate("smalldata/glm_test/citibike_small_test.csv"))
+    train = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/citibike_small_train.csv"))
+    test = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/citibike_small_test.csv"))
 
     glm0 = h2o.glm(x=train[predictors], y=train["bikes"], validation_x=test[predictors], validation_y=test["bikes"], family="poisson")
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_1953)
+    pyunit_utils.standalone_test(pubdev_1953)
+else:
+    pubdev_1953()

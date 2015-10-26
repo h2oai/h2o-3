@@ -1,13 +1,16 @@
-import sys, os
-sys.path.insert(1, "../../")
-import h2o, tests
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+import os
+
 
 def pubdev_1431():
 
-    hadoop_namenode_is_accessible = tests.hadoop_namenode_is_accessible()
+    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
 
     if hadoop_namenode_is_accessible:
-        hdfs_name_node = tests.hadoop_namenode()
+        hdfs_name_node = pyunit_utils.hadoop_namenode()
         airlines_billion_file = "/datasets/airlinesbillion.csv"
         url = "hdfs://{0}{1}".format(hdfs_name_node, airlines_billion_file)
         airlines_billion = h2o.import_file(url)
@@ -20,5 +23,9 @@ def pubdev_1431():
     else:
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, pubdev_1431)
+    pyunit_utils.standalone_test(pubdev_1431)
+else:
+    pubdev_1431()

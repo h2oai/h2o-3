@@ -1,10 +1,6 @@
 ##
 # Check factor levels of numeric and enum columns
 ##
-
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
-
 test <- function(conn) {
   Log.info("Upload iris dataset into H2O...")
   iris.hex = as.h2o(iris)

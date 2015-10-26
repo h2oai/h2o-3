@@ -60,7 +60,7 @@ public class RapidsTest extends TestUtil {
     String tree = "(== a.hex (cols a.hex [1 2]))";
     checkTree(tree,true);
   }
-  
+
   @Test public void test5() {
     // Checking `hex && hex`, ||, &, |
     String tree = "(&& a.hex a.hex)";
@@ -147,7 +147,7 @@ public class RapidsTest extends TestUtil {
 
     tree = "(cbind 1 a.hex 2)";
     checkTree(tree);
-    
+
     tree = "(cbind a.hex (cols a.hex 0) 2)";
     checkTree(tree);
   }
@@ -275,15 +275,15 @@ public class RapidsTest extends TestUtil {
     Frame f = null;
     try {
       Frame fr = ArrayUtils.frame(ard(ard(1.223292e-02),
-                                      ard(1.635312e-25),
-                                      ard(1.601522e-11),
-                                      ard(8.452298e-10),
-                                      ard(2.643733e-10),
-                                      ard(2.671520e-06),
-                                      ard(1.165381e-06),
-                                      ard(7.193265e-10),
-                                      ard(3.383532e-04),
-                                      ard(2.561221e-05)));
+              ard(1.635312e-25),
+              ard(1.601522e-11),
+              ard(8.452298e-10),
+              ard(2.643733e-10),
+              ard(2.671520e-06),
+              ard(1.165381e-06),
+              ard(7.193265e-10),
+              ard(3.383532e-04),
+              ard(2.561221e-05)));
       double[] probs = new double[]{0.001, 0.005, .01, .02, .05, .10, .50, .8883, .90, .99};
       String x = String.format("(quantile %s %s \"interpolate\")", fr._key, Arrays.toString(probs));
       Val val = Exec.exec(x);
@@ -292,7 +292,7 @@ public class RapidsTest extends TestUtil {
       Assert.assertEquals(2,f.numCols());
       // Expected values computed as golden values from R's quantile call
       double[] exp = ard(1.4413698000016206E-13, 7.206849000001562E-13, 1.4413698000001489E-12, 2.882739600000134E-12, 7.20684900000009E-12,
-                         1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
+              1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
       for( int i=0; i<exp.length; i++ )
         Assert.assertTrue( "expected "+exp[i]+" got "+f.vec(1).at(i), water.util.MathUtils.compare(exp[i],f.vec(1).at(i),1e-6,1e-6) );
     } finally {
@@ -355,11 +355,11 @@ public class RapidsTest extends TestUtil {
       ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
       
       exec_str("(tmp= census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))");
-      
+
       exec_str("(tmp= crimes.hex (colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"]))");
-      
+
       exec_str("(setTimeZone \"Etc/UTC\")");
-      
+
       exec_str("(tmp= crimes.hex (append crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) \"Day\"))");
 
       exec_str("(tmp= crimes.hex (append crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) \"Month\"))");
@@ -455,6 +455,7 @@ public class RapidsTest extends TestUtil {
       Exec.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
 
       for( String s : new String[]{"weather.hex","crimes.hex","census.hex",
+<<<<<<< HEAD
                                    "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
                                    "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
                                    "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
@@ -464,6 +465,17 @@ public class RapidsTest extends TestUtil {
                                    "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
                                    "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
                                    "subset_41", "binary_op_42", "subset_43", "subset_44", } )
+=======
+              "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
+              "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
+              "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
+              "binary_op_18", "binary_op_19", "binary_op_20", "binary_op_21",
+              "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
+              "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
+              "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
+              "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
+              "subset_41", "binary_op_42", "subset_43", "subset_44", } )
+>>>>>>> master
         Keyed.remove(Key.make(s));
     }
   }

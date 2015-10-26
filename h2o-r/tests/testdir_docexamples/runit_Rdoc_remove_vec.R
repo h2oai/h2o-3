@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.rdoc_save_model.golden <- function() {
   prosPath <- locate("smalldata/extdata/prostate.csv")

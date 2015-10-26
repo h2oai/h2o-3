@@ -1,10 +1,14 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def javapredict_dl_xlarge():
 
-    hdfs_name_node = tests.hadoop_namenode()
+    hdfs_name_node = pyunit_utils.hadoop_namenode()
     hdfs_file_name = "/datasets/z_repro.csv"
     url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_file_name)
 
@@ -17,7 +21,11 @@ def javapredict_dl_xlarge():
     x = range(1,train.ncol)
     y = 0
 
-    tests.javapredict("deeplearning", "numeric", train, test, x, y, **params)
+    pyunit_utils.javapredict("deeplearning", "numeric", train, test, x, y, **params)
+
+
 
 if __name__ == "__main__":
-    tests.run_test(sys.argv, javapredict_dl_xlarge)
+    pyunit_utils.standalone_test(javapredict_dl_xlarge)
+else:
+    javapredict_dl_xlarge()

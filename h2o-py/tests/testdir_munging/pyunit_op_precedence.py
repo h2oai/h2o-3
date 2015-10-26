@@ -1,6 +1,10 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 import random
 import numpy as np
 
@@ -12,9 +16,9 @@ def op_precedence():
     b = [[random.uniform(-100,100) for r in range(10)] for c in range(10)]
     c = [[random.uniform(-100,100) for r in range(10)] for c in range(10)]
 
-    A = h2o.H2OFrame.fromPython(a)
-    B = h2o.H2OFrame.fromPython(b)
-    C = h2o.H2OFrame.fromPython(c)
+    A = h2o.H2OFrame(python_obj=zip(*a))
+    B = h2o.H2OFrame(python_obj=zip(*b))
+    C = h2o.H2OFrame(python_obj=zip(*c))
 
     np_A = np.array(a)
     np_B = np.array(b)
@@ -29,27 +33,31 @@ def op_precedence():
 
     print "Check A + B * C"
     S1 = A + B * C
-    tests.np_comparison_check(S1, s1, 10)
+    pyunit_utils.np_comparison_check(S1, s1, 10)
 
     print "Check A - B - C"
     S2 = A - B - C
-    tests.np_comparison_check(S2, s2, 10)
+    pyunit_utils.np_comparison_check(S2, s2, 10)
 
     print "Check A ^ 2 ^ 3"
     S3 = A ** 1 ** 2
-    tests.np_comparison_check(S3, s3, 10)
+    pyunit_utils.np_comparison_check(S3, s3, 10)
 
     print "Check A == B & C"
     S4 = A == B & C
-    tests.np_comparison_check(S4, s4, 10)
+    pyunit_utils.np_comparison_check(S4, s4, 10)
 
     print "Check A == B + C"
     S5 = A == B + C
-    tests.np_comparison_check(S5, s5, 10)
+    pyunit_utils.np_comparison_check(S5, s5, 10)
 
     print "Check A | B & C"
     S6 = A | B & C
-    tests.np_comparison_check(S6, s6, 10)
+    pyunit_utils.np_comparison_check(S6, s6, 10)
+
+
 
 if __name__ == "__main__":
-    tests.run_test(sys.argv, op_precedence)
+    pyunit_utils.standalone_test(op_precedence)
+else:
+    op_precedence()

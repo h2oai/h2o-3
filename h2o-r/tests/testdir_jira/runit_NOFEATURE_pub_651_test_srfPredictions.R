@@ -1,9 +1,9 @@
 # Run speedRf. Get Mean Squared error from the model.
 # Predict on the same dataset and calculate Mean Squared error in R by pulling in the predictions
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-source('../h2o-runit.R')
+
 
 test.pub.651 <- function() {
   print("Parsing the adult income dataset")

@@ -1,6 +1,9 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
 
 def scale_pca_rf_pipe():
 
@@ -15,16 +18,16 @@ def scale_pca_rf_pipe():
   from scipy.stats import randint
 
 
-  iris = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))
+  iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
   # build  transformation pipeline using sklearn's Pipeline and H2O transforms
   pipe = Pipeline([("standardize", H2OScaler()),
-                   ("pca", H2OPCA(n_components=2)),
-                   ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
+                   ("pca", H2OPCA()),
+                   ("rf", H2ORandomForestEstimator())])
 
   params = {"standardize__center":    [True, False],             # Parameters to test
             "standardize__scale":     [True, False],
-            "pca__n_components":      randint(2, iris[1:].shape[1]),
+            "pca__k":                 randint(2, iris[1:].shape[1]),
             "rf__ntrees":             randint(50,60),
             "rf__max_depth":          randint(4,8),
             "rf__min_rows":           randint(5,10),}
@@ -42,5 +45,9 @@ def scale_pca_rf_pipe():
 
   print random_search.best_estimator_
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, scale_pca_rf_pipe)
+    pyunit_utils.standalone_test(scale_pca_rf_pipe)
+else:
+    scale_pca_rf_pipe()

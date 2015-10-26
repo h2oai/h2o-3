@@ -23,18 +23,18 @@ class ASTAssign extends ASTPrim {
       ASTNumList rows = asts[4] instanceof ASTNum ? new ASTNumList(((ASTNum)asts[4])._v.getNum()) : ((ASTNumList)asts[4]);
       if( rows.isEmpty() ) rows = new ASTNumList(0,dst.numRows());
       switch( vsrc.type() ) {
-      case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
-      case Val.STR:  assign_frame_scalar(slice,rows,vsrc.getStr()  );  break;
-      case Val.FRM:  assign_frame_frame (slice,rows,vsrc.getFrame());  break;
-      default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+        case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
+        case Val.STR:  assign_frame_scalar(slice,rows,vsrc.getStr()  );  break;
+        case Val.FRM:  assign_frame_frame (slice,rows,vsrc.getFrame());  break;
+        default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
       }
     } else {                    // Boolean assignment selection?
       Frame rows = stk.track(asts[4].exec(env)).getFrame();
       switch( vsrc.type() ) {
-      case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
-      case Val.STR:  throw H2O.unimpl();
-      case Val.FRM:  throw H2O.unimpl();
-      default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+        case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
+        case Val.STR:  throw H2O.unimpl();
+        case Val.FRM:  throw H2O.unimpl();
+        default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
       }
     }
     return new ValFrame(dst);
@@ -46,7 +46,7 @@ class ASTAssign extends ASTPrim {
     // Special for ASTAssign: "empty" really means "all"
     if( dim.isEmpty() ) return new ASTNumList(0,dstX);
     if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&
-        !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
+            !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
       throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
     return dim;
   }
@@ -88,7 +88,7 @@ class ASTAssign extends ASTPrim {
     for( int col=0; col<dvecs.length; col++ )
       if( dvecs[col].get_type() != svecs[col].get_type() )
         throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[col]+"\', is of type "+dvecs[col].get_type_str()+" and the source is "+svecs[col].get_type_str());
-    
+
     // Frame fill
     // Handle fast small case
     if( nrows==1 ) {

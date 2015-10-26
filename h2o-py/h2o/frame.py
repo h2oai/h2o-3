@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, uuid, urllib2, urllib,imp,copy,weakref,inspect,ast
+import collections, csv, itertools, os, re, tempfile, urllib2, sys, urllib,imp,copy, tabulate
 import h2o, expr
 from astfun import _bytecode_decompile_lambda
 from group_by import GroupBy
@@ -187,13 +187,14 @@ class H2OFrame:
     Properly handle native python data types. For a discussion of the rules and
     permissible data types please refer to the main documentation for H2OFrame.
     :param python_obj: A tuple, list, dict, collections.OrderedDict
+    :param kwargs: Optional arguments for input into parse_setup(), such as column_names and column_types
     :return: None
     """
     # [] and () cases -- folded together since H2OFrame is mutable
-    if isinstance(python_obj, (list, tuple)): header, data_to_write = _handle_python_lists(python_obj)
+    if isinstance(python_obj, (list, tuple)): col_header, data_to_write = _handle_python_lists(python_obj)
 
     # {} and collections.OrderedDict cases
-    elif isinstance(python_obj, (dict, collections.OrderedDict)): header, data_to_write = _handle_python_dicts(python_obj)
+    elif isinstance(python_obj, (dict, collections.OrderedDict)): col_header, data_to_write = _handle_python_dicts(python_obj)
 
     # handle a numpy.ndarray
     # elif isinstance(python_obj, numpy.ndarray):
@@ -201,7 +202,7 @@ class H2OFrame:
     #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
     else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + str(type(python_obj)))
 
-    if header is None or data_to_write is None: raise ValueError("No data to write")
+    if col_header is None or data_to_write is None: raise ValueError("No data to write")
 
     #
     ## write python data to file and upload
@@ -269,6 +270,7 @@ class H2OFrame:
   # unops
   def __abs__ (self):        return self._newExpr("abs",self)
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
+  def __invert__(self): return H2OFrame._expr(expr=ExprNode("!!", self))
 
   def mult(self, matrix):
     """
@@ -329,6 +331,16 @@ class H2OFrame:
     """
     return self._newExpr("filterNACols", self, frac)
 
+  @frame_id.setter
+  def frame_id(self, value):
+    oldname = self.frame_id
+    keep    = self._ast is None
+    if keep:
+      h2o.assign(self,value)
+    else:
+      self._id = value
+      h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
+
   def unique(self):
     """
     Extract the unique values in the column.
@@ -384,8 +396,12 @@ class H2OFrame:
     return self._newExpr("setDomain",self,levels)
 
   def set_names(self,names):
-    """
-    Change the column names to `names`.
+    """Change all of this H2OFrame instance's column names.
+
+    Parameters
+    ----------
+      names : list
+        A list of strings equal to the number of columns in the H2OFrame.
 
     :param names: A list of strings equal to the number of columns in the self._newExpr.
     :return: None. Rename the column names in this self._newExpr.
@@ -407,11 +423,16 @@ class H2OFrame:
     return self
 
   def as_date(self,format):
-    """
-    Return the column with all elements converted to millis since the epoch.
+    """Return the column with all elements converted to millis since the epoch.
 
-    :param format: The date time format string
-    :return: H2OFrame
+    Parameters
+    ----------
+      format : str
+        A datetime format string (e.g. "YYYY-mm-dd")
+
+    Returns
+    -------
+      An H2OFrame instance.
     """
     return self._newExpr("as.Date",self,format)
 
@@ -483,25 +504,32 @@ class H2OFrame:
     return self.isstring()
 
   def kfold_column(self, n_folds=3, seed=-1):
-    """
-    Build a fold assignments column for cross-validation. This call will produce a column
-    having the same data layout as the calling object.
-
-    :param n_folds: Number of folds.
-    :param seed:Seed for random numbers (affects sampling when balance_classes=T)
-    :return: A column of fold IDs.
-    """
-    return self._newExpr("kfold_column",self,n_folds,seed)
-
-  def modulo_kfold_column(self, n_folds=3):
-    """
-    Build a fold assignments column for cross-validation. Rows are assigned a fold according
-    to the current row number modulo n_folds.
+    """Build a fold assignments column for cross-validation. This call will produce a
+    column having the same data layout as the calling object.
 
     Parameters
     ----------
       n_folds : int
-        The number of folds to build.
+        An integer specifying the number of validation sets to split the training data
+        into.
+      seed : int, optional
+        Seed for random numbers as fold IDs are randomly assigned.
+
+    Returns
+    -------
+      An H2OFrame consisting of 1 column of the fold IDs.
+    """
+    return self._newExpr("kfold_column",self,n_folds,seed)
+
+  def modulo_kfold_column(self, n_folds=3):
+    """Build a fold assignments column for cross-validation. Rows are assigned a fold
+    according to the current row number modulo n_folds.
+
+    Parameters
+    ----------
+      n_folds : int
+        An integer specifying the number of validation sets to split the training data
+        into.
 
     :return: An self._newExpr holding a single column of the fold assignments.
     """
@@ -550,8 +578,7 @@ class H2OFrame:
         print "num {} ...".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:]))
 
   def as_data_frame(self, use_pandas=True):
-    """
-    Obtain the dataset as a python-local object (pandas frame if possible, list otherwise)
+    """Obtain the dataset as a python-local object.
 
     :param use_pandas: A flag specifying whether or not to return a pandas DataFrame.
     :return: A local python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise a
@@ -585,7 +612,8 @@ class H2OFrame:
       return df
     else:
       cr = csv.reader(response)
-      return [[''] if row == [] else row for row in cr]
+      t_col_list = [[''] if row == [] else row for row in cr]
+      return [list(x) for x in zip(*t_col_list)]
 
   def flatten(self):
     return self._scalar("flatten",self)
@@ -650,18 +678,71 @@ class H2OFrame:
     if not isinstance(data, H2OFrame): raise ValueError("`data` must be an H2OFrame, but got {0}".format(type(data)))
     return self._newExpr("rbind", self, data)
 
-  def split_frame(self, ratios=[0.75], destination_frames=""):
+  def split_frame(self, ratios=None, destination_frames=None, seed=None):
     """
     Split a frame into distinct subsets of size determined by the given ratios.
     The number of subsets is always 1 more than the number of ratios given.
 
     :param ratios: The fraction of rows for each split.
     :param destination_frames: names of the split frames
+    :param seed: Random seed
     :return: a list of frames
     """
-    j = h2o.H2OConnection.post_json("SplitFrame", dataset=self.frame_id, ratios=ratios, destination_frames=destination_frames)
-    h2o.H2OJob(j, "Split Frame").poll()
-    return [h2o.get_frame(i["name"]) for i in j["destination_frames"]]
+
+    if ratios is None:
+      ratios = [0.75]
+
+    if len(ratios) < 1:
+      raise ValueError("Ratios must have length of at least 1")
+
+    if destination_frames is not None:
+      if (len(ratios)+1) != len(destination_frames):
+        raise ValueError("The number of provided destination_frames must be one more than the number of provided ratios")
+
+    num_slices = len(ratios) + 1
+    boundaries = []
+
+    last_boundary = 0
+    i = 0
+    while i < num_slices-1:
+      ratio = ratios[i]
+      if ratio < 0:
+        raise ValueError("Ratio must be greater than 0")
+      boundary = last_boundary + ratio
+      if boundary >= 1.0:
+        raise ValueError("Ratios must add up to less than 1.0")
+      boundaries.append(boundary)
+      last_boundary = boundary
+      i += 1
+
+    splits = []
+    tmp_runif = self.runif(seed)
+
+    i = 0
+    while i < num_slices:
+      if i == 0:
+        # lower_boundary is 0.0
+        upper_boundary = boundaries[i]
+        tmp_slice = self[(tmp_runif <= upper_boundary), :]
+      elif i == num_slices-1:
+        lower_boundary = boundaries[i-1]
+        # upper_boundary is 1.0
+        tmp_slice = self[(tmp_runif > lower_boundary), :]
+      else:
+        lower_boundary = boundaries[i-1]
+        upper_boundary = boundaries[i]
+        tmp_slice = self[((tmp_runif > lower_boundary) & (tmp_runif <= upper_boundary)), :]
+
+      if destination_frames is None:
+        splits.append(tmp_slice)
+      else:
+        destination_frame_id = destination_frames[i]
+        tmp_slice2 = h2o.assign(tmp_slice, destination_frame_id)
+        splits.append(tmp_slice2)
+
+      i += 1
+
+    return splits
 
   # ddply in h2o
   def ddply(self,cols,fun):
@@ -702,7 +783,6 @@ class H2OFrame:
     self._ex = ex
     return self
     
-
   def merge(self, other, allLeft=True, allRite=False):
     """
     Merge two datasets based on common column names
@@ -889,9 +969,11 @@ class H2OFrame:
 
       lower = float(frame[0,"breaks"])
       clist = h2o.as_list(frame["counts"], use_pandas=False)
+      clist = zip(*clist)
       clist.pop(0)
       clist.pop(0)
       mlist = h2o.as_list(frame["mids"], use_pandas=False)
+      mlist = zip(*mlist)
       mlist.pop(0)
       mlist.pop(0)
       counts = [float(c[0]) for c in clist]
@@ -1065,13 +1147,14 @@ class H2OFrame:
 
     Parameters
     ----------
-      test_frac : float
+      test_frac : float, default=0.2
         The fraction of rows that will belong to the "test".
       seed      : int
         For seeding the random splitting.
 
-
-    :return: A categorical column of two levels "train" and "test".
+    Returns
+    -------
+      A categorical column of two levels "train" and "test".
 
     Examples
     --------
@@ -1149,15 +1232,87 @@ class H2OFrame:
     else:
       raise ValueError("unimpl: not a lambda")
 
-  #### DO NOT ADD ANY MEMBER METHODS HERE ####
+=======
+      return H2OFrame._expr(expr=ExprNode("apply",self, 1+(axis==0),*res))
+    else:
+      raise ValueError("unimpl: not a lambda")
 
+  # flow-coding result methods
+  def _scalar(self):
+    self._eager(scalar=True)  # scalar should be stashed into self._data
+    if self._data is None:
+      res = self.as_data_frame(use_pandas=False)[0][1:]
+      if len(res)==1: return H2OFrame._get_scalar(res[0])
+      else:
+        return [H2OFrame._get_scalar(r) for r in res]
+    else:
+      return H2OFrame._get_scalar(self._data)
+
+  @staticmethod
+  def _get_scalar(res):
+    if res == '' or res=="NaN": return float("nan")
+    if res == "TRUE": return True
+    if res == "FALSE":return False
+    try:    return float(res)
+    except: return res
+
+  def _frame(self):  # force an eval on the frame and return it
+    self._eager()
+    return self
+
+  ##### WARNING: MAGIC REF COUNTING CODE BELOW.
+  #####          CHANGE AT YOUR OWN RISK.
+  ##### ALSO:    DO NOT ADD METHODS BELOW THIS LINE (pretty please)
+  def _eager(self, top=True, scalar=False):
+    if self._id is None:
+      # top-level call to execute all subparts of self._ast
+      sb = self._ast._eager()
+      if top:
+        self._id = None if scalar else _py_tmp_key()
+        res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
+        if 'scalar' in res or "string" in res:
+          self._data = res['scalar'] if "scalar" in res else res["string"]
+          sb = [str(self._data)]
+        elif scalar:
+          pass  # expected a scalar result, but got a key'd thing, let caller handle
+        else:
+          sb = [self._id," "]
+          self._update()   # fill out _nrows, _ncols, _col_names, _computed
+      return sb
+
+  def _do_it(self,sb):
+    # this method is only ever called from ExprNode._do_it
+    # it's the "long" way 'round the mutual recursion from ExprNode to H2OFrame
+    #
+    #  Here's a diagram that illustrates the call order:
+    #
+    #           H2OFrame:                   ExprNode:
+    #               _eager ---------------->  _eager
+    #
+    #                 ^^                       ^^ ||
+    #                 ||                       || \/
+    #
+    #               _do_it <----------------  _do_it
+    #
+    #  the "long" path:
+    #     pending exprs in DAG with exterior refs must be saved (refs >= magic count)
+    #
+    if self._id is not None:
+      if self.dim == [1,1]:
+        sb += [str(self._scalar()), " "]   # inline 1x1 H2OFrame here
+      else:                 sb += [self._id+" "]
+    else:              sb += self._eager(True) if (len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT) else self._eager(False)
+
+  def _update(self):
+    self._cache.flush().fill(self._id)
+  #### DO NOT ADD ANY MEMBER METHODS HERE ####
 
 
 # private static methods
 _id_ctr = 0
-def _py_tmp_key(): 
-  global _id_ctr   
-  _id_ctr=_id_ctr+1 
+def _py_tmp_key():
+  global _id_ctr
+  _id_ctr=_id_ctr+1
   return "py_" + str(_id_ctr)
 def _gen_header(cols): return ["C" + str(c) for c in range(1, cols + 1, 1)]
 def _check_lists_of_lists(python_obj):
@@ -1176,14 +1331,15 @@ def _handle_python_lists(python_obj):
   lol = _is_list_of_lists(python_obj)  # do we have a list of lists: [[...], ..., [...]] ?
   if lol:
     _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
-    # have list of lists, each list is a row
-    # length of the longest list is the number of columns
-    cols = max([len(l) for l in python_obj])
+  else:
+    cols=1
+    python_obj=[python_obj]
 
   # create the header
   header = _gen_header(cols)
   # shape up the data for csv.DictWriter
-  data_to_write = [dict(zip(header, row)) for row in python_obj] if lol else [dict(zip(header, python_obj))]
+  rows = map(list, itertools.izip_longest(*python_obj))
+  data_to_write = [dict(zip(header,row)) for row in rows]
   return header, data_to_write
 def _is_list(l)    : return isinstance(l, (tuple, list))
 def _is_str_list(l): return isinstance(l, (tuple, list)) and all([isinstance(i,basestring) for i in l])

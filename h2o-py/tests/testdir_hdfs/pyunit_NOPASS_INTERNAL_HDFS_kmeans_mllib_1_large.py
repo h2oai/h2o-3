@@ -1,10 +1,14 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 #----------------------------------------------------------------------
 # Purpose:  This test compares k-means centers between H2O and MLlib.
 #----------------------------------------------------------------------
 
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 import numpy as np
 
 def kmeans_mllib():
@@ -12,10 +16,10 @@ def kmeans_mllib():
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    hadoop_namenode_is_accessible = tests.hadoop_namenode_is_accessible()
+    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
 
     if hadoop_namenode_is_accessible:
-        hdfs_name_node = tests.hadoop_namenode()
+        hdfs_name_node = pyunit_utils.hadoop_namenode()
         hdfs_cross_file = "/datasets/runit/BigCross.data"
 
         print "Import BigCross.data from HDFS"
@@ -23,7 +27,7 @@ def kmeans_mllib():
         cross_h2o = h2o.import_file(url)
         n = cross_h2o.nrow
 
-        err_mllib = np.genfromtxt(tests.locate("smalldata/mllib_bench/bigcross_wcsse.csv"), delimiter=",", skip_header=1)
+        err_mllib = np.genfromtxt(pyunit_utils.locate("smalldata/mllib_bench/bigcross_wcsse.csv"), delimiter=",", skip_header=1)
         ncent = [int(err_mllib[r][0]) for r in range(len(err_mllib))]
 
         for k in ncent:
@@ -31,7 +35,7 @@ def kmeans_mllib():
             cross_km = h2o.kmeans(training_frame = cross_h2o, x = cross_h2o, k = k, init = "PlusPlus",
                                   max_iterations = 10, standardize = False)
 
-            clust_mllib = np.genfromtxt(tests.locate("smalldata/mllib_bench/bigcross_centers_" + str(k) + ".csv"),
+            clust_mllib = np.genfromtxt(pyunit_utils.locate("smalldata/mllib_bench/bigcross_centers_" + str(k) + ".csv"),
                                         delimiter=",").tolist()
             clust_h2o = cross_km.centers()
 
@@ -53,5 +57,9 @@ def kmeans_mllib():
     else:
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, kmeans_mllib)
+    pyunit_utils.standalone_test(kmeans_mllib)
+else:
+    kmeans_mllib()

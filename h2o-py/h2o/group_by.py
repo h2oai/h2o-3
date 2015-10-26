@@ -1,5 +1,6 @@
 import h2o, expr
 
+
 class GroupBy:
   """
   A class that represents the group by operation on an H2OFrame.

@@ -2,8 +2,8 @@
 # Purpose:  This tests GLRM on a large dataset.
 #----------------------------------------------------------------------
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -38,7 +38,7 @@ check.hdfs_glrm <- function() {
   heading("Running GLRM on BigCross.data")
   cross.glrm = h2o.glrm(training_frame = cross.hex, k = 3, max_iterations = 20)
   print(cross.glrm)
-  h2o.rm(cross.glrm@model$loading_key$name)   # Remove loading matrix to free memory
+  h2o.rm(cross.glrm@model$representation_name)   # Remove X matrix to free memory
 
 
   

@@ -132,7 +132,10 @@ class H2OConnection(object):
   def _connect(self, size, max_retries=5, print_dots=False):
     """
     Does not actually "connect", instead simply tests that the cluster can be reached,
-    is of a certain size, and is taking basic status commands.
+    is of a certain size, and is taking basic status commands.df = h2o.H2OFrame(((1, 2, 3),
+                   ('a', 'b', 'c'),
+                   (0.1, 0.2, 0.3)))
+df
     :param size: The number of H2O instances in the cloud.
     :return: The JSON response from a "stable" cluster.
     """

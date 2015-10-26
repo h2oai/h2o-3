@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.km.empty <- function() {
   Log.info("Importing ozone.csv data...\n")

@@ -1,37 +1,54 @@
 package water;
 
+import com.brsanthu.googleanalytics.DefaultRequest;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
-import hex.ModelBuilder;
+
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
+
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+
+import hex.ModelBuilder;
 import water.UDPRebooted.ShutdownTsk;
 import water.api.ModelCacheManager;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.*;
+import water.init.AbstractBuildVersion;
+import water.init.AbstractEmbeddedH2OConfig;
+import water.init.JarHash;
+import water.init.NetworkInit;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
 import water.util.GAUtils;
 import water.util.Log;
 import water.util.OSUtils;
 import water.util.PrettyPrint;
-
-import java.io.*;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
-import com.brsanthu.googleanalytics.DefaultRequest;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -999,7 +1016,7 @@ final public class H2O {
    *  TaskGetKey} can block an entire node for lack of some small piece of
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
-  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
+  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
     public final byte _priority;
     public H2OCountedCompleter( ) { this(false); }
     public H2OCountedCompleter( boolean bumpPriority ) {
