@@ -548,7 +548,7 @@ class H2OFrame(object):
 
   def __str__(self):
     if sys.gettrace() is None:
-      return self._cache._tabulate(self._id,"simple",False)
+      return self._frame()._cache._tabulate(self._id,"simple",False)
     return self._id
 
   def __repr__(self):
