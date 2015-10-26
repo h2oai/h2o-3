@@ -23,8 +23,8 @@ def pyunit_as_data_frame():
   assert small_bike_pandas.__class__.__name__ == "DataFrame"
   assert small_bike_pandas.shape == (smallbike.nrow, smallbike.ncol)
 
-  head_small_bike_pandas = smallbike.head(rows=5)
-  tail_small_bike_pandas = smallbike.tail(rows=5)
+  head_small_bike_pandas = smallbike.head(rows=5).as_data_frame(use_pandas=True)
+  tail_small_bike_pandas = smallbike.tail(rows=5).as_data_frame(use_pandas=True)
   assert head_small_bike_pandas.shape == tail_small_bike_pandas.shape == (5,smallbike.ncol)
   assert head_small_bike_pandas.loc[1][2] == small_bike_pandas.loc[1][2]
   assert tail_small_bike_pandas.loc[2][3] == small_bike_pandas.loc[6][3]

@@ -384,7 +384,7 @@ def ls():
   return H2OFrame(expr.ExprNode("ls")).as_data_frame(use_pandas=False)
 
 
-def frame(frame_id):
+def frame(frame_id,exclude=""):
   """
   Retrieve metadata for a id that points to a Frame.
   :param frame_id: A string name of a Frame in H2O.

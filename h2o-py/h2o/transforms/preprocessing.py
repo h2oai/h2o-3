@@ -63,7 +63,7 @@ class H2OScaler(H2OTransformer):
     :param params: (Ignored)
     :return: A scaled H2OFrame.
     """
-    return X.scale(self.means, self.stds)._frame()
+    return X.scale(self.means, self.stds)
 
   def inverse_transform(self,X,y=None,**params):
     """
@@ -87,7 +87,7 @@ class H2OColSelect(H2OTransformer):
     return self
 
   def transform(self,X,y=None,**params):
-    return X[self.cols]._frame()
+    return X[self.cols]
 
   def to_rest(self, step_name):
     ast = self._dummy_frame()[self.cols]._ast._debug_print(pprint=False)
@@ -115,7 +115,7 @@ class H2OColOp(H2OTransformer):
   def transform(self,X,y=None,**params):
     res = H2OColOp._transform_helper(X,params)
     if self.inplace:  X[self.col] = res
-    else:             return X.cbind(res)._frame()
+    else:             return X.cbind(res)
     return X
 
   def _transform_helper(self,X,**params):

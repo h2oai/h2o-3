@@ -898,9 +898,9 @@ class H2OFrame:
       counts.insert(0,0)
       mids = [float(m[0]) for m in mlist]
       mids.insert(0,lower)
-      plt.xlabel(self._col_names[0])
+      plt.xlabel(self.names[0])
       plt.ylabel('Frequency')
-      plt.title('Histogram of {0}'.format(self._col_names[0]))
+      plt.title('Histogram of {0}'.format(self.names[0]))
       plt.bar(mids, counts)
       if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
 
