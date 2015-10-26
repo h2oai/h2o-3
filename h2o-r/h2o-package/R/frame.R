@@ -662,16 +662,6 @@ h2o.median <- function(x, na.rm = TRUE) .eval.scalar(.newExpr("median",x,na.rm))
 #' @rdname h2o.median
 median.Frame <- h2o.median
 
-#' Range of an H2O Column
-#'
-#' @param x An H2O Frame object.
-#' @param na.rm ignore missing values
-#' @export
-range <- function(x,na.rm = TRUE) {
-  if( !is.Frame(x) ) .Primitive("range")(x,na.rm)
-  else .newExpr("range",x,na.rm)
-}
-
 #' Cut H2O Numeric Data to Factor
 #'
 #' Divides the range of the H2O data into intervals and codes the values according to which interval they fall in. The
@@ -1338,7 +1328,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("is.numeric")(x)
-  else .fetch.data(.newExpr("is.numeric",x),1L)
+  else .eval.scalar(.newExpr("is.numeric",x))
 }
 
 #' Print An H2O Frame

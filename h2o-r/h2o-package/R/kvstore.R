@@ -97,8 +97,11 @@ h2o.rm <- function(ids) {
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(id) .eval.driver(.newFrame(id,id,-1,-1))
-
+h2o.getFrame <- function(id) {
+  x <- .newFrame(id,id,-1,-1)
+  .fetch.data(x,10L)
+  x
+}
 #' Get an R reference to an H2O model
 #'
 #' Returns a reference to an existing model in the H2O instance.
