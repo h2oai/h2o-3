@@ -69,11 +69,7 @@ class ModelBase(object):
     """
     if not isinstance(test_data, H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
     test_data._eager()
-<<<<<<< HEAD
-    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id)
-=======
     j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id)
->>>>>>> master
     # prediction_frame_id = j["predictions_frame"] #j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     return h2o.get_frame(j["predictions_frame"]["name"])
 

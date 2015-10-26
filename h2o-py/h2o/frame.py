@@ -1232,34 +1232,6 @@ class H2OFrame:
     else:
       raise ValueError("unimpl: not a lambda")
 
-=======
-      return H2OFrame._expr(expr=ExprNode("apply",self, 1+(axis==0),*res))
-    else:
-      raise ValueError("unimpl: not a lambda")
-
-  # flow-coding result methods
-  def _scalar(self):
-    self._eager(scalar=True)  # scalar should be stashed into self._data
-    if self._data is None:
-      res = self.as_data_frame(use_pandas=False)[0][1:]
-      if len(res)==1: return H2OFrame._get_scalar(res[0])
-      else:
-        return [H2OFrame._get_scalar(r) for r in res]
-    else:
-      return H2OFrame._get_scalar(self._data)
-
-  @staticmethod
-  def _get_scalar(res):
-    if res == '' or res=="NaN": return float("nan")
-    if res == "TRUE": return True
-    if res == "FALSE":return False
-    try:    return float(res)
-    except: return res
-
-  def _frame(self):  # force an eval on the frame and return it
-    self._eager()
-    return self
-
   ##### WARNING: MAGIC REF COUNTING CODE BELOW.
   #####          CHANGE AT YOUR OWN RISK.
   ##### ALSO:    DO NOT ADD METHODS BELOW THIS LINE (pretty please)
