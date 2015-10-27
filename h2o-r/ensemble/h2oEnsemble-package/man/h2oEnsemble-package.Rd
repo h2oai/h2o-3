@@ -12,8 +12,8 @@ H2O Ensemble implements the Super Learner ensemble (stacking) algorithm using th
 \tabular{ll}{
 Package: \tab h2oEnsemble\cr
 Type: \tab Package\cr
-Version: \tab 0.0.8.9000\cr
-Date: \tab 2015-10-19\cr
+Version: \tab 0.0.8.9001\cr
+Date: \tab 2015-10-26\cr
 License: \tab Apache License (== 2.0)\cr
 }
 }
@@ -23,6 +23,9 @@ Erin LeDell
 Maintainer: Erin LeDell <erin@h2o.ai>
 }
 \references{
+LeDell, E. (2015) Scalable Ensemble Learning and Computationally Efficient Variance Estimation (Doctoral Dissertation).  University of California, Berkeley, USA.\cr
+\url{http://www.stat.berkeley.edu/~ledell/papers/ledell-phd-thesis.pdf}\cr
+\cr
 van der Laan, M. J., Polley, E. C. and Hubbard, A. E. (2007) Super Learner, Statistical Applications of Genetics and Molecular Biology, 6, article 25. \cr
 \url{http://dx.doi.org/10.2202/1544-6115.1309}\cr
 \url{http://biostats.bepress.com/ucbbiostat/paper222}\cr
