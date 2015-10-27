@@ -10,7 +10,7 @@ from group_by import GroupBy
 class H2OFrame:
 
   def __init__(self,ex):
-    if not isinstance(ex,expr.ExprNode): 
+    if not isinstance(ex,expr.ExprNode):
       raise ValueError("H2OFrame must be passed an ExprNode, not a "+str(ex.__class__)+" and the constructor is an internal method.\nDid you mean H2OFrame.fromPython(python_obj)?")
     self._ex = ex
 
@@ -180,7 +180,7 @@ class H2OFrame:
   #
   # :param python_obj: A "native" python object - list, dict, tuple.
   @staticmethod
-  def fromPython(python_obj):
+  def fromPython(python_obj, **kwargs):
     """
     Properly handle native python data types. For a discussion of the rules and
     permissible data types please refer to the main documentation for H2OFrame.
@@ -211,10 +211,11 @@ class H2OFrame:
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    csv_writer.writeheader()             # write the header
+    #csv_writer.writeheader()             # write the header
+    if 'column_names' not in kwargs: kwargs['column_names'] = col_header
     csv_writer.writerows(data_to_write)  # write the data
     tmp_file.close()                     # close the streams
-    res = H2OFrame.read_csv(tmp_path, _py_tmp_key(), header=1)
+    res = H2OFrame.read_csv(tmp_path, _py_tmp_key(), **kwargs)
     os.remove(tmp_path)                  # delete the tmp file
     return res
 
@@ -227,7 +228,7 @@ class H2OFrame:
     """
     setup = h2o.parse_setup(text_key)
     if check_header is not None: setup["check_header"] = check_header
-    destination_frame = H2OFrame_parse_raw(setup)
+    destination_frame = H2OFrame._parse_raw(setup)
     res = H2OFrame.get_frame(destination_frame)
     print "Uploaded {} into cluster with {:,} rows and {:,} cols".format(text_key, res.nrow, res.ncol)
     return res
@@ -309,7 +310,7 @@ class H2OFrame:
   # unops
   def __abs__ (self):        return self._newExpr("abs",self)
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
-  def __invert__(self): return H2OFrame._expr(expr=ExprNode("!!", self))
+  def __invert__(self):      return self._newExpr("!!", self)
 
   def mult(self, matrix):
     """
@@ -394,10 +395,10 @@ class H2OFrame:
     :param col: A column index in this H2OFrame
     :return: a list of strings that are the factor levels for the column.
     """
-    fr = self if col is None else self._newExpr("cols", self, col) 
+    fr = self if col is None else self._newExpr("cols", self, col)
     lol = h2o.as_list(self._newExpr("levels", fr), False)
     for l in lol: l.pop(0)
-    #levels = lol if self.ncol>1 else [level for l in lol for level in l] 
+    #levels = lol if self.ncol>1 else [level for l in lol for level in l]
     return levels
 
   def nlevels(self, col=None):
@@ -662,7 +663,7 @@ class H2OFrame:
     if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
     return int(self.flatten())
 
-  def __float__(self): 
+  def __float__(self):
     if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
     return float(self.flatten())
 
@@ -683,7 +684,7 @@ class H2OFrame:
     col = self._newExpr("cols",self,i)
     self._ex = expr.ExprNode("cols", self,-(i+1))
     return col
-  
+
 
   def quantile(self, prob=None, combine_method="interpolate"):
     """
@@ -818,7 +819,7 @@ class H2OFrame:
     if not inplace: return H2OFrame(ex)
     self._ex = ex
     return self
-    
+
   def merge(self, other, allLeft=True, allRite=False):
     """
     Merge two datasets based on common column names
