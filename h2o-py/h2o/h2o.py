@@ -216,7 +216,10 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
   # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
-  j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
+  kwargs={"url_suffix":"ParseSetup", "source_frames":[_quoted(id) for id in raw_frames]}
+  if separator:
+      kwargs['separator'] = separator
+  j = H2OConnection.post_json(**kwargs)
 
   if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
   if header != (-1, 0, 1):
@@ -496,14 +499,14 @@ def ls():
   """
   List Keys on an H2O Cluster
 
-  :return: Returns a list of keys in the current H2O instance
+  :return: A list of keys in the current H2O instance
   """
   return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame()
 
 
 def frame(frame_id, exclude=""):
   """
-  Retrieve metadata for a id that points to a Frame.
+  Retrieve metadata for an id that points to a Frame.
 
   Parameters
   ----------
@@ -782,61 +785,6 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   Parameters
   ----------
 
-<<<<<<< HEAD
-   x : H2OFrame
-     An H2OFrame containing the predictors in the model.
-   y : H2OFrame
-     An H2OFrame of the response variable in the model.
-   training_frame : H2OFrame
-     (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
-   model_id : str
-     (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
-   overwrite_with_best_model : bool
-     Logical. If True, overwrite the final model with the best model found during training. Defaults to True.
-   validation_frame : H2OFrame
-     (Optional) An H2OFrame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the
-     training data when nfolds = 0
-   checkpoint : H2ODeepLearningModel
-     "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
-   autoencoder : bool
-     Enable auto-encoder for model building.
-   use_all_factor_levels : bool
-     Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). Useful for variable
-     importances and auto-enabled for autoencoder.
-   activation : str
-     A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
-   hidden : list
-     Hidden layer sizes (e.g. c(100,100))
-   epochs : float
-     How many times the dataset should be iterated (streamed), can be fractional
-   train_samples_per_iteration : int
-     Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
-     or -2 auto-tuning (default)
-   seed : int
-     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
-   adaptive_rate : bool
-     Logical. Adaptive learning rate (ADAELTA)
-   rho : float
-     Adaptive learning rate time decay factor (similarity to prior updates)
-   epsilon : float
-     Adaptive learning rate parameter, similar to learn rate annealing during initial training phase. Typical values are between 1.0e-10 and 1.0e-4
-   rate : float
-     Learning rate (higher => less stable, lower => slower convergence)
-   rate_annealing : float
-     Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)
-   rate_decay : float
-     Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1))
-   momentum_start : float
-     Initial momentum at the beginning of training (try 0.5)
-   momentum_ramp : float
-     Number of training samples for which momentum increases
-   momentum_stable : float
-     Final momentum after the amp is over (try 0.99)
-   nesterov_accelerated_gradient : bool
-     Logical. Use Nesterov accelerated gradient (recommended)
-   input_dropout_ratio : float
-     A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
-=======
   x : H2OFrame
     An H2OFrame containing the predictors in the model.
   y : H2OFrame
@@ -893,7 +841,6 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
     Logical. Use Nesterov accelerated gradient (recommended)
   input_dropout_ratio : float
     A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
->>>>>>> 1754605368086617cb177d9d44b0d7feaa7bc365
   hidden_dropout_ratios : float
     Input layer dropout ratio (can improve generalization) specify one value per hidden layer, defaults to 0.5
   l1 : float
@@ -1137,7 +1084,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
   """
   warnings.warn("`h2o.autoencoder` is deprecated. Use the estimators sub module to build an H2OAutoEncoderEstimator.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="deeplearning"
   parms["autoencoder"]=True
   return unsupervised(parms)
@@ -1379,7 +1326,7 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
   :return: An instance of H2OClusteringModel.
   """
   warnings.warn("`h2o.kmeans` is deprecated. Use the estimators sub module to build an H2OKMeansEstimator.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="kmeans"
   return unsupervised(parms)
 
@@ -1489,12 +1436,12 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
   :return: a new dim reduction model
   """
   warnings.warn("`h2o.prcomp` is deprecated. Use the transforms sub module to build an H2OPCA.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="pca"
   return unsupervised(parms)
 
 
-def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
+def svd(x,validation_x=None,training_frame=None,model_id=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
         use_all_factor_levels=None,svd_method=None):
   """
   Singular value decomposition of a H2O dataset.
@@ -1527,13 +1474,13 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
   :return: a new dim reduction model
   """
   warnings.warn("`h2o.svd` is deprecated. Use the transforms sub module to build an H2OSVD.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="svd"
   parms['_rest_version']=99
   return unsupervised(parms)
 
 
-def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
+def glrm(x,validation_x=None,training_frame=None,model_id=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
          ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
          user_y=None,user_x=None,recover_svd=None,expand_user_y=None):
@@ -1606,13 +1553,13 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   :return: a new dim reduction model
   """
   warnings.warn("`h2o.glrm` is deprecated. Use the estimators sub module to build an H2OGeneralizedLowRankEstimator.", category=DeprecationWarning, stacklevel=2)
-  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
+  parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x"] or v is not None}
   parms["algo"]="glrm"
   parms['_rest_version']=99
   return unsupervised(parms)
 
 
-def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,validation_frame=None,
+def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,validation_frame=None,
                 laplace=None,threshold=None,eps=None,compute_metrics=None,offset_column=None,weights_column=None,
                 balance_classes=None,max_after_balance_size=None, nfolds=None,fold_column=None,fold_assignment=None,
                 keep_cross_validation_predictions=None,checkpoint=None):
