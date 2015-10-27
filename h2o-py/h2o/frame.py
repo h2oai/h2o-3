@@ -406,12 +406,14 @@ class H2OFrame:
     Get the factor levels for this frame and specified columns
 
     :param col: A column index in this H2OFrame
-    :return: a list of lists of strings that are the factor levels for columns.
+    :return: A list of lists of strings that are the factor levels for columns. If there is only one column, return a
+    list of strings.
     """
     fr = self if col is None else self._newExpr("cols", self, col)
     lol = h2o.as_list(self._newExpr("levels", fr), False)
     for l in lol: l.pop(0) # Remove column headers
-    return lol
+    res = lol if len(lol) != 1 else lol[0]
+    return res if res else None
 
   def nlevels(self, col=None):
     """
@@ -420,8 +422,8 @@ class H2OFrame:
     :param col: A column index in this H2OFrame
     :return: an integer.
     """
-    nlevels = self.levels(col=col)
-    return len(nlevels) if nlevels else 0
+    levels = self.levels(col=col)
+    return len(levels) if levels else 0
 
   def set_level(self, level):
     """

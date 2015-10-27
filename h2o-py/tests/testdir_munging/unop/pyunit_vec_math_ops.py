@@ -52,22 +52,22 @@ def vec_math_ops():
     pyunit_utils.np_comparison_check(h2o_data1[c].tanh(), np.tanh(np_data1[:,c]), 10)
     pyunit_utils.np_comparison_check(h2o_data3[c].acosh(), np.arccosh(np_data3[:,c]), 10)
     pyunit_utils.np_comparison_check(h2o_data1[c].asinh(), np.arcsinh(np_data1[:,c]), 10)
-    h2o_val = h2o_data3[c].gamma()[5,:]._scalar()
+    h2o_val = h2o_data3[c].gamma()[5,:].flatten()
     num_val = math.gamma(h2o_data3[5,c])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal gamma values between h2o and" \
         "math".format(h2o_val,num_val)
-    h2o_val = h2o_data3[c].lgamma()[5,:]._scalar()
+    h2o_val = h2o_data3[c].lgamma()[5,:].flatten()
     num_val = math.lgamma(h2o_data3[5,c])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal lgamma values between h2o and " \
         "math".format(h2o_val,num_val)
-    h2o_val = h2o_data3[c].digamma()[5,:]._scalar()
+    h2o_val = h2o_data3[c].digamma()[5,:].flatten()
     num_val = scipy.special.polygamma(0,h2o_data3[5,c])
     assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal digamma values between h2o and " \
         "math".format(h2o_val,num_val)
-    h2o_val = h2o_data3[c].trigamma()[5,:]._scalar()
+    h2o_val = h2o_data3[c].trigamma()[5,:].flatten()
     num_val = scipy.special.polygamma(1,h2o_data3[5,c])
     assert abs(h2o_val - float(num_val)) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
         "check unsuccessful! h2o computed {0} and math computed {1}. expected equal trigamma values between h2o and " \

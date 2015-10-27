@@ -275,7 +275,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   return j
 
 
-def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
+def parse_raw(setup):
   """
   Used in conjunction with lazy_import and parse_setup in order to make alterations before
   parsing.
@@ -292,10 +292,6 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
 
  :return: An H2OFrame object
   """
-  if id: setup["destination_frame"] = _quoted(id).replace("%",".").replace("&",".")
-  if first_line_is_header != (-1, 0, 1):
-    if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
-    setup["check_header"] = first_line_is_header
   return H2OFrame.get_frame(H2OFrame._parse_raw(setup))
 
 
@@ -415,7 +411,7 @@ def remove(x):
   """
   if x is None:
     raise ValueError("remove with no object is not supported, for your protection")
-  if isinstance(x, H2OFrame): 
+  if isinstance(x, H2OFrame):
     x = x._ex._id       # String or None
     if not x: return    # Lazy frame, never evaluated, nothing in cluster
   if isinstance(x, str): H2OConnection.delete("DKV/"+x)
