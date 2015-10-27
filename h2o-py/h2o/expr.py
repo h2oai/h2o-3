@@ -18,7 +18,7 @@ class ExprNode:
     #       - tuple of Exprs; further: ID is one of
     #       -  - None: Expr is lazy, never evaluated
     #       -  - ""; Expr has been executed once, but no temp ID was made
-    #       -  - String: this Expr is mid-execution, with the given temp ID.  
+    #       -  - String: this Expr is mid-execution, with the given temp ID.
     #            Once execution has completed the ast field will be set to TRUE
     self._ast       = tuple(child._ex if isinstance(child,frame.H2OFrame) else child for child in ast)
     self._id        = None  # "id"  - See above; sometimes None, "", or a "py_tmp" string, or a user string
@@ -117,7 +117,7 @@ class ExprNode:
     # temps... to help debug GC issues.
     gc.collect()
     return self
-    
+
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
   MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
@@ -130,8 +130,8 @@ class ExprNode:
   # is eager, so the time parse as to occur in the correct order relative to
   # the timezone change, so cannot be lazy.
   def _do_it(self,top):
-    if self._data is not None:    # Data already computed and cached; could a "false-like" cached value 
-      return self._id if isinstance(self._data,dict) else str(self._data) 
+    if self._data is not None:    # Data already computed and cached; could a "false-like" cached value
+      return self._id if isinstance(self._data,dict) else str(self._data)
     if self._id: return self._id  # Data already computed under ID, but not cached
     # Here self._id is either None or ""
     # Build the eval expression
@@ -159,7 +159,7 @@ class ExprNode:
   def _clear_impl(self):
     if not isinstance(self._ast,tuple): return
     for ast in self._ast:
-      if isinstance(ast,ExprNode): 
+      if isinstance(ast,ExprNode):
         ast._clear_impl()
     if self._id: self._ast = True  # Local pytmp
 
@@ -171,7 +171,7 @@ class ExprNode:
   def _tabulate(self,tablefmt,rollups):
     """
     Pretty tabulated string of all the cached data, and column names
-    """    
+    """
     if not isinstance(self._fetch_data(10),dict):  return str(self._data) # Scalars print normally
     # Pretty print cached data
     d = collections.OrderedDict()
@@ -333,3 +333,6 @@ class ExprNode:
     src = c if isinstance(c,ExprNode) else (float("nan") if c is None else c)
     return (ExprNode(":="    ,self,src,col_expr,row_expr) if colname is None
        else ExprNode("append",self,src,colname))
+
+  def _to_string(self):
+    return ' '.join(["("+self._op] + [ExprNode._arg_to_expr(a) for a in self._ast] + [")"])

@@ -91,7 +91,7 @@ class H2OColSelect(H2OTransformer):
     return X[self.cols]
 
   def to_rest(self, step_name):
-    ast = self._dummy_frame()[self.cols]._ast._debug_print(pprint=False)
+    ast = self._dummy_frame()[self.cols]._ex._to_string()
     return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False,"|"])
 
 
@@ -129,7 +129,7 @@ class H2OColOp(H2OTransformer):
     return res
 
   def to_rest(self, step_name):
-    ast = self._transform_helper(self._dummy_frame())._ast._debug_print(pprint=False)
+    ast = self._transform_helper(self._dummy_frame())._ex._to_string()
     new_col_names = self.new_col_name
     if new_col_names is None: new_col_names=["|"]
     elif not isinstance(new_col_names, (list,tuple)): new_col_names = [new_col_names]
