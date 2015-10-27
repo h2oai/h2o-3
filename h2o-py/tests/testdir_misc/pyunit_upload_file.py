@@ -70,7 +70,7 @@ def upload_file():
 
     # import numpy as np
     #
-    # py_numpy_ary_to_h2o = H2OFrame(python_obj=np.ones((50, 100), dtype=int))
+    # py_numpy_ary_to_h2o = H2OFrame.fromPython(np.ones((50, 100), dtype=int))
     #
     # py_numpy_ary_to_h2o.describe()
 
