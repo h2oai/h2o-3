@@ -1612,7 +1612,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   warnings.warn("`h2o.glrm` is deprecated. Use the estimators sub module to build an H2OGeneralizedLowRankEstimator.", category=DeprecationWarning, stacklevel=2)
   parms = {k:v for k,v in locals().items() if k in ["training_frame", "validation_frame", "validation_x", "validation_y", "offset_column", "weights_column", "fold_column"] or v is not None}
   parms["algo"]="glrm"
-  parms['_rest_version']=99
+  parms['_rest_version']=3
   return unsupervised(parms)
 
 

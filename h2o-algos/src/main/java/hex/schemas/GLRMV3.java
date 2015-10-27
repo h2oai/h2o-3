@@ -8,9 +8,9 @@ import water.api.API;
 import water.api.KeyV3;
 import water.api.ModelParametersSchema;
 
-public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParametersV99> {
+public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
 
-  public static final class GLRMParametersV99 extends ModelParametersSchema<GLRMParameters, GLRMParametersV99> {
+  public static final class GLRMParametersV3 extends ModelParametersSchema<GLRMParameters, GLRMParametersV3> {
     static public String[] fields = new String[] {
 				"model_id",
 				"training_frame",

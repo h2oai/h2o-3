@@ -218,5 +218,5 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
   
   # Error check and build model
-  .h2o.modelJob('glrm', parms, h2oRestApiVersion=99)
+  .h2o.modelJob('glrm', parms, h2oRestApiVersion=3)
 }
