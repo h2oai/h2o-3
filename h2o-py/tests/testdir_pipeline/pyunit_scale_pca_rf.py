@@ -16,7 +16,7 @@ def scale_pca_rf_pipe():
 
   # build transformation pipeline using sklearn's Pipeline and H2O transforms
   pipe = Pipeline([("standardize", H2OScaler()),
-                   ("pca", H2OPCA(n_components=2)),
+                   ("pca", H2OPCA(k=2)),
                    ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
   pipe.fit(iris[:4],iris[4])
 

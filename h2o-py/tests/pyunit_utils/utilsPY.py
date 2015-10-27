@@ -1,12 +1,21 @@
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
-from h2o import H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, H2OClusteringModel, H2OFrame
 import imp
 import random
 import re
 import subprocess
 from subprocess import STDOUT,PIPE
+import sys, os
+sys.path.insert(1, "../../")
+import h2o
+from h2o import H2OFrame, H2OConnection
+from h2o.model.autoencoder import H2OAutoEncoderModel
+from h2o.model.binomial import H2OBinomialModel
+from h2o.model.clustering import H2OClusteringModel
+from h2o.model.dim_reduction import H2ODimReductionModel
+from h2o.model.multinomial import H2OMultinomialModel
+from h2o.model.regression import H2ORegressionModel
 import urllib2
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -20,9 +29,9 @@ def check_models(model1, model2, use_cross_validation=False, op='e'):
     :return: None. Throw meaningful error messages if the check fails
     """
     # 1. Check model types
-    model1_type = type(model1)
-    model2_type = type(model2)
-    assert model1_type == model2_type, "The model types differ. The first model is of type {0} and the second " \
+    model1_type = model1.__class__.__name__
+    model2_type = model1.__class__.__name__
+    assert model1_type is model2_type, "The model types differ. The first model is of type {0} and the second " \
                                        "models is of type {1}.".format(model1_type, model2_type)
 
     # 2. Check model metrics
@@ -78,9 +87,9 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
     assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
                                                   "".format(h2o_rows, rows, h2o_cols, cols)
     if isinstance(python_obj, (list, tuple)):
-        for r in range(rows):
-            for c in range(cols):
-                pval = python_obj[r][c] if rows > 1 else python_obj[c]
+        for c in range(cols):
+            for r in range(rows):
+                pval = python_obj[c][r] if cols > 1 else python_obj[r]
                 hval = h2o_frame[r,c]
                 assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
                                      "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
@@ -117,7 +126,6 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         if isinstance(np_val, np.bool_): np_val = bool(np_val)  # numpy haz special bool type :(
         assert np.absolute(h2o_val - np_val) < 1e-6, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
-
 def javapredict(algo, equality, train, test, x, y, **kwargs):
     print "Creating model in H2O"
     if algo == "gbm":
@@ -276,3 +284,72 @@ def standalone_test(test):
     h2o.log_and_echo("")
     h2o.log_and_echo("------------------------------------------------------------")
     test()
+
+def make_random_grid_space(algo, ncols=None, nrows=None):
+    """
+    Construct a dictionary of the form {gbm_parameter:list_of_values, ...}, which will eventually be passed to
+    H2OGridSearch to build a grid object. The gbm parameters, and their associated values, are randomly selected.
+    :param algo: a string {"gbm", "rf", "dl", "km", "glm"} representing the algo dimension of the grid space
+    :param ncols: Used for mtries selection or k (pca)
+    :param nrows: Used for k (pca)
+    :return: a dictionary of parameter_name:list_of_values
+    """
+    grid_space = {}
+    if algo in ["gbm", "rf"]:
+        if random.randint(0,1): grid_space['ntrees'] = random.sample(range(1,6),random.randint(2,3))
+        if random.randint(0,1): grid_space['max_depth'] = random.sample(range(1,6),random.randint(2,3))
+        if random.randint(0,1): grid_space['min_rows'] = random.sample(range(1,11),random.randint(2,3))
+        if random.randint(0,1): grid_space['nbins'] = random.sample(range(2,21),random.randint(2,3))
+        if random.randint(0,1): grid_space['nbins_cats'] = random.sample(range(2,1025),random.randint(2,3))
+
+        if algo == "gbm":
+            if random.randint(0,1): grid_space['learn_rate'] = [random.random() for r in range(random.randint(2,3))]
+            grid_space['distribution'] = random.sample(['bernoulli','multinomial','gaussian','poisson','tweedie','gamma'], 1)
+        if algo == "rf":
+            if random.randint(0,1): grid_space['mtries'] = random.sample(range(1,ncols+1),random.randint(2,3))
+            if random.randint(0,1): grid_space['sample_rate'] = [random.random() for r in range(random.randint(2,3))]
+    elif algo == "km":
+        grid_space['k'] = random.sample(range(1,10),random.randint(2,3))
+        if random.randint(0,1): grid_space['max_iterations'] = random.sample(range(1,1000),random.randint(2,3))
+        if random.randint(0,1): grid_space['standardize'] = [True, False]
+        if random.randint(0,1): grid_space['seed'] = random.sample(range(1,1000),random.randint(2,3))
+        if random.randint(0,1): grid_space['init'] = random.sample(['Random','PlusPlus','Furthest'],random.randint(2,3))
+    elif algo == "glm":
+        if random.randint(0,1): grid_space['alpha'] = [random.random() for r in range(random.randint(2,3))]
+        grid_space['family'] = random.sample(['binomial','gaussian','poisson','tweedie','gamma'], 1)
+        if grid_space['family'] == "tweedie":
+            if random.randint(0,1):
+                grid_space['tweedie_variance_power'] = [round(random.random()+1,6) for r in range(random.randint(2,3))]
+                grid_space['tweedie_link_power'] = 1 - grid_space['tweedie_variance_power']
+    elif algo == "dl":
+        if random.randint(0,1): grid_space['activation'] = \
+            random.sample(["Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "MaxoutWithDropout"],
+                          random.randint(2,3))
+        if random.randint(0,1): grid_space['epochs'] = random.sample(range(1,10),random.randint(2,3))
+        grid_space['distribution'] = random.sample(['bernoulli','multinomial','gaussian','poisson','tweedie','gamma'],1)
+        return grid_space
+    elif algo == "naiveBayes":
+        grid_space['laplace'] = 0
+        if random.randint(0,1): grid_space['laplace'] = [round(random.random() + r, 6) for r in random.sample(range(0,11), random.randint(2,3))]
+        if random.randint(0,1): grid_space['min_sdev'] = [round(random.random(),6) for r in range(random.randint(2,3))]
+        if random.randint(0,1): grid_space['eps_sdev'] = [round(random.random(),6) for r in range(random.randint(2,3))]
+    elif algo == "pca":
+        if random.randint(0,1): grid_space['max_iterations'] = random.sample(range(1,1000),random.randint(2,3))
+        if random.randint(0,1): grid_space['transform'] = random.sample(["NONE","STANDARDIZE","NORMALIZE","DEMEAN","DESCALE"], random.randint(2,3))
+        grid_space['k'] = random.sample(range(1,min(ncols,nrows)),random.randint(2,3))
+    else:
+        raise(ValueError, "Algo {0} not supported".format(algo))
+    return grid_space
+
+# Validate given models' parameters against expected values
+def expect_model_param(models, attribute_name, expected_values):
+    print "param: {0}".format(attribute_name)
+    actual_values = list(set([m.params[attribute_name]['actual'] for m in models.models]))
+    print "actual values: {0}".format(actual_values)
+    print "expected values: {0}".format(actual_values)
+    actual_values_len = len(actual_values)
+    expected_values_len = len(expected_values)
+    assert actual_values_len == expected_values_len, "Expected values len: {0}. Actual values len: " \
+                                                     "{1}".format(expected_values_len, actual_values_len)
+    diff = set(actual_values) - set(actual_values)
+    assert len(diff) == 0, "Difference between actual and expected values: {0}".format(diff)

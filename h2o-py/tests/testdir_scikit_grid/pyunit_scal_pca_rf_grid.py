@@ -22,12 +22,12 @@ def scale_pca_rf_pipe():
 
   # build  transformation pipeline using sklearn's Pipeline and H2O transforms
   pipe = Pipeline([("standardize", H2OScaler()),
-                   ("pca", H2OPCA(n_components=2)),
-                   ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
+                   ("pca", H2OPCA()),
+                   ("rf", H2ORandomForestEstimator())])
 
   params = {"standardize__center":    [True, False],             # Parameters to test
             "standardize__scale":     [True, False],
-            "pca__n_components":      randint(2, iris[1:].shape[1]),
+            "pca__k":                 randint(2, iris[1:].shape[1]),
             "rf__ntrees":             randint(50,60),
             "rf__max_depth":          randint(4,8),
             "rf__min_rows":           randint(5,10),}

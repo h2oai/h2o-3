@@ -4,12 +4,8 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
 def interaction_check():
     # Connect to a pre-existing cluster
-    
-
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     # add a couple of factor columns to iris

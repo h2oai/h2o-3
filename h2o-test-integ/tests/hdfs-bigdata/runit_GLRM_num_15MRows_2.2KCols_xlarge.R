@@ -27,7 +27,7 @@ response <- 1     # 1:1000 imbalance
 predictors <- c(3:ncol(data.hex))
 
 print("Running GLRM on frame with quadratic loss and no regularization")
-aat <- system.time(myframe.glrm <- h2o.glrm(training_frame=data.hex, x=predictors, k=k_dim, init="PlusPlus", loss="Quadratic", regularization_x="None", regularization_y="None", max_iterations=100))
+aat <- system.time(myframe.glrm <- h2o.glrm(training_frame=data.hex, cols=predictors, k=k_dim, init="PlusPlus", loss="Quadratic", regularization_x="None", regularization_y="None", max_iterations=100))
 print(myframe.glrm)
 algo_run_time <- as.numeric(aat[3])
 print(paste("Time it took to build model:", algo_run_time))

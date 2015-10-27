@@ -28,7 +28,7 @@ class ExprNode:
   def _arg_to_expr(arg):
     if isinstance(arg, (ExprNode, h2o.H2OFrame, astfun.ASTId)): return arg
     elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
-    elif isinstance(arg, (int, float)):           return "{}".format("NaN" if math.isnan(arg) else arg)
+    elif isinstance(arg, (int, long, float)):     return "{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, basestring):             return '"'+arg+'"'
     elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start) )
     elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if isinstance(arg[0], basestring) else ("[" + " ".join(["NaN" if math.isnan(i) else str(i) for i in arg])+"]")
@@ -43,7 +43,8 @@ class ExprNode:
   def _to_string(self,depth=0,sb=None):
     sb += ['\n', " "*depth, "("+self._op, " "]
     for child in self._children:
-      if isinstance(child, h2o.H2OFrame) and not child._computed: child._ast._to_string(depth+2,sb)
+      if isinstance(child, h2o.H2OFrame) and child._id is None:   child._ast._to_string(depth+2,sb)
+      elif isinstance(child, h2o.H2OFrame):                       sb+=['\n', ' '*(depth+2), child._id]
       elif isinstance(child, ExprNode):                           child._to_string(depth+2,sb)
       else:                                                       sb+=['\n', ' '*(depth+2), str(child)]
     sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0

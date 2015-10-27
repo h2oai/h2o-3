@@ -5,13 +5,16 @@ import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.init.Linpack;
 import water.init.NetworkTest;
-import water.util.*;
+import water.util.Log;
+import water.util.MRUtils;
+import water.util.PrettyPrint;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -210,9 +213,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
 
         if( isClassifier() != previous._output.isClassifier() )
-          throw new IllegalArgumentException("Response type must be the same as for the checkpointed model.");
+          throw new H2OIllegalArgumentException("Response type must be the same as for the checkpointed model.");
         if( isSupervised() != previous._output.isSupervised() )
-          throw new IllegalArgumentException("Model type must be the same as for the checkpointed model.");
+          throw new H2OIllegalArgumentException("Model type must be the same as for the checkpointed model.");
 
         // check the user-given arguments for consistency
         DeepLearningParameters oldP = previous._parms; //sanitized parameters for checkpointed model
@@ -224,20 +227,24 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         DeepLearningParameters.Sanity.modifyParms(newP, newP2, nclasses()); //sanitize the user-given parameters
         DeepLearningParameters.Sanity.checkpoint(oldP2, newP2);
 
+        DataInfo dinfo;
         try {
-          final DataInfo dinfo = makeDataInfo(_train, _valid, _parms);
+          dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
           cp.write_lock(self());
 
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
-            throw new IllegalArgumentException("The columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
+            throw new H2OIllegalArgumentException("The columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
           }
           if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
-            throw new IllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
+            throw new H2OIllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
           }
           if (dinfo.fullN() != previous.model_info().data_info().fullN()) {
-            throw new IllegalArgumentException("Total number of predictors is different than for the checkpointed model.");
+            throw new H2OIllegalArgumentException("Total number of predictors is different than for the checkpointed model.");
+          }
+          if (_parms._epochs <= previous.epoch_counter) {
+            throw new H2OIllegalArgumentException("Total number of epochs must be larger than the number of epochs already trained for the checkpointed model (" + previous.epoch_counter + ").");
           }
 
           // these are the mutable parameters that are to be used by the model (stored in model_info._parms)
@@ -249,6 +256,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
           Log.info("Continuing training after " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
           cp.update(self());
+        } catch (H2OIllegalArgumentException ex){
+          if (cp != null) {
+            cp.unlock(self());
+            cp.delete();
+            cp = null;
+          }
+          throw ex;
         } finally {
           if (cp != null) cp.unlock(self());
         }

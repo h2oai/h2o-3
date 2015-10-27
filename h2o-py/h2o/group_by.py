@@ -1,5 +1,6 @@
 import h2o
 
+
 class GroupBy:
   """
   A class that represents the group by operation on an H2OFrame.
@@ -21,13 +22,19 @@ class GroupBy:
       "rm"     - exclude NAs
       "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
   """
-  def __init__(self,fr,by):
+  def __init__(self,fr,by,order_by=None):
     self._fr=fr                 # IN
     self._by=by                 # IN
     self._col_names=fr.names    # IN
     self._aggs={}               # IN
+    self._order_by = order_by
     self._computed=False        #
     self._res=None              # OUT: resulting group by frame
+
+    if isinstance(order_by,basestring):  # sanitize order_by if str
+      idx = self._fr.index(order_by)  # must indirectly index into by columns
+      try:               self._order_by=self._by.index(idx)
+      except ValueError: print "Invalid order_by: Must be a group by column."
 
     if isinstance(by,basestring):     self._by = [self._fr.index(by)]
     elif isinstance(by,(tuple,list)): self._by = [self._fr.index(b) if isinstance(b, basestring) else b for b in by]
@@ -38,7 +45,7 @@ class GroupBy:
   def mean( self,col=None,na="all"): return self._add_agg("mean",col,na)
   def count(self,na="all"):          return self._add_agg("nrow",None,na)
   def sum(  self,col=None,na="all"): return self._add_agg("sum",col,na)
-  def sd(   self,col=None,na="all"): return self._add_agg("sdev",col,na)
+  def sd(   self,col=None,na="all"): return self._add_agg("sd",col,na)
   def var(  self,col=None,na="all"): return self._add_agg("var",col,na)
   # def first(self,col=None,na="all"): return self._add_agg("first",col,na)
   # def last( self,col=None,na="all"): return self._add_agg("last",col,na)
@@ -84,7 +91,8 @@ class GroupBy:
     if not self._computed:
       aggs=[]
       for k in self._aggs: aggs += (self._aggs[k])
-      self._res = h2o.H2OFrame(expr=h2o.ExprNode("GB", self._fr,self._by, *aggs))._frame()
+      #self._res = h2o.H2OFrame._expr(expr=h2o.ExprNode("GB", self._fr,self._by,self._order_by, *aggs))._frame()
+      self._res = h2o.H2OFrame._expr(expr=h2o.ExprNode("GB", self._fr,self._by,*aggs))._frame() #always sorted by grouping
       self._computed=True
 
   def _add_agg(self,op,col,na):

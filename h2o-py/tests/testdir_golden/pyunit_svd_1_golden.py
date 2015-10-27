@@ -8,7 +8,7 @@ from tests import pyunit_utils
 
 
 def svd_1_golden():
-    
+
 
     print "Importing USArrests.csv data..."
     arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
@@ -25,6 +25,7 @@ def svd_1_golden():
 
     print "Compare right singular vectors (V)"
     h2o_v = h2o.as_list(h2o.get_frame(fitH2O._model_json['output']['v_key']['name']), use_pandas=False)
+    h2o_v = zip(*h2o_v)
     h2o_v.pop(0)
     r_v = [[-0.04239181, 0.01616262, -0.06588426, 0.99679535],
            [-0.94395706, 0.32068580, 0.06655170, -0.04094568],
@@ -37,6 +38,7 @@ def svd_1_golden():
 
     print "Compare left singular vectors (U)"
     h2o_u = h2o.as_list(h2o.get_frame(fitH2O._model_json['output']['u_key']['name']), use_pandas=False)
+    h2o_u = zip(*h2o_u)
     h2o_u.pop(0)
     r_u = [[-0.1716251, 0.096325710, 0.06515480, 0.15369551],
            [-0.1891166, 0.173452566, -0.42665785, -0.17801438],

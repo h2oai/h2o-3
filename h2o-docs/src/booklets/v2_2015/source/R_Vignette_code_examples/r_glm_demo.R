@@ -19,12 +19,12 @@ flightsByMonth = h2o.ddply(airlines.hex,"Month", nrow)
 flightsByMonth.R = as.data.frame(originFlights)
 
 # Find months with the highest cancellation ratio
-# TODO: Bug
-# fun = function(df) {sum(df[,which(colnames(airlines.hex)=="Cancelled")])}
-# cancellationsByMonth = h2o.ddply(airlines.hex,"Month", fun)
-# cancellation_rate = cancellationsByMonth$C1/flightsByMonth$C1
-# rates_table = cbind(flightsByMonth$Month, cancellation_rate)
-# rates_table.R = as.data.frame(rates_table)
+which(colnames(airlines.hex)=="Cancelled")
+fun = function(df) {sum(df[,22])}
+cancellationsByMonth = h2o.ddply(airlines.hex,"Month", fun)
+cancellation_rate = cancellationsByMonth$C1/flightsByMonth$C1
+rates_table = cbind(flightsByMonth$Month, cancellation_rate)
+rates_table.R = as.data.frame(rates_table)
 
 # Construct test and train sets using sampling
 airlines.split = h2o.splitFrame(data = airlines.hex,ratios = 0.85)

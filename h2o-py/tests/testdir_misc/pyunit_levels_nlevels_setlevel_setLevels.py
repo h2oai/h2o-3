@@ -18,29 +18,32 @@ def levels_nlevels_setlevel_setLevels_test():
     # frame (w/ index)
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     # vec
     iris[4] = iris[4].set_level(level='Iris-setosa')
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'Iris-setosa'
 
     levels = iris[4].levels()
     nlevels = iris[4].nlevels()
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     iris[4] = iris[4].set_level(level='Iris-versicolor')
     levels = iris.levels(col=4)
     nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'Iris-versicolor'

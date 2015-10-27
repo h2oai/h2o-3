@@ -8,6 +8,7 @@ model_vi <- h2o.deeplearning(
         activation = "RectifierWithDropout", 
         hidden = c(200,200,200), 
         input_dropout_ratio = 0.2, 
+        sparse = TRUE,
         l1 = 1e-5, 
         validation_frame = test, 
         epochs = 10,

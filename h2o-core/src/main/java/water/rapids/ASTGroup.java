@@ -50,11 +50,9 @@ class ASTGroup extends ASTPrim {
     sum() { 
       @Override void atomic_op ( double[][] dss, int agnum, int gnum, double d ) { aadd(dss[agnum],gnum,d); }
     },
-//    sumSquares() {
-//      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; }
-//      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
-//      @Override double postPass( double ds[], long n) { return ds[0]; }
-//    },
+    sumSquares() {
+      @Override void atomic_op ( double[][] dss, int agnum, int gnum, double d ) { aadd(dss[agnum],gnum,d*d); }
+    },
     var() {
       @Override void atomic_op ( double[][] dss, int agnum, int gnum, double d ) { aadd(dss[agnum],gnum,d); aadd(dss[agnum+1],gnum,d*d); }
       @Override double postPass( double[][] dss, int agnum, int gnum, int naggcols, long n ) {

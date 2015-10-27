@@ -1,18 +1,15 @@
 package hex.deeplearning;
 
 
-import hex.*;
-
-import static hex.Distribution.Family.*;
-
+import hex.Distribution;
+import hex.ModelMetricsAutoEncoder;
+import hex.ModelMetricsRegression;
 import org.junit.Assert;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -22,7 +19,10 @@ import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
-import java.util.Random;
+
+import static hex.Distribution.Family.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -1264,6 +1264,96 @@ public class DeepLearningTest extends TestUtil {
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testCheckpointSameEpochs() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 10;
+      parms._response_column = "C5";
+      parms._reproducible = true;
+      parms._hidden = new int[]{2,2};
+      parms._seed = 0xdecaf;
+      parms._variable_importances = true;
+      parms._model_id = Key.make();
+
+      DeepLearning job = new DeepLearning(parms);
+      try {
+        dl = job.trainModel().get();
+      } finally {
+        job.remove();
+      }
+
+      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
+      parms2._epochs = 10;
+      parms2._checkpoint = parms._model_id;
+      parms2._model_id = Key.make();
+      DeepLearning job2 = new DeepLearning(parms2);
+      try {
+        dl2 = job2.trainModel().get();
+        Assert.fail("Should toss exception instead of reaching here");
+      } catch (H2OIllegalArgumentException ex) {
+      } finally {
+        job2.remove();
+      }
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+
+  @Test
+  public void testCheckpointBackwards() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 10;
+      parms._response_column = "C5";
+      parms._reproducible = true;
+      parms._hidden = new int[]{2,2};
+      parms._seed = 0xdecaf;
+      parms._variable_importances = true;
+      parms._model_id = Key.make();
+
+      DeepLearning job = new DeepLearning(parms);
+      try {
+        dl = job.trainModel().get();
+      } finally {
+        job.remove();
+      }
+
+      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
+      parms2._epochs = 9;
+      parms2._checkpoint = parms._model_id;
+      parms2._model_id = Key.make();
+      DeepLearning job2 = new DeepLearning(parms2);
+      try {
+        dl2 = job2.trainModel().get();
+        Assert.fail("Should toss exception instead of reaching here");
+      } catch (H2OIllegalArgumentException ex) {
+      } finally {
+        job2.remove();
+      }
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
     }
   }
 }

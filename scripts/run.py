@@ -12,6 +12,9 @@ import subprocess
 import ConfigParser
 import requests
 from requests import exceptions
+import socket
+import multiprocessing
+import platform
 
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
 
@@ -813,7 +816,7 @@ class TestRunner:
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
-                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop):
+                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf):
         """
         Create a runner.
 
@@ -837,6 +840,7 @@ class TestRunner:
         @param r_pkg_ver_chk: check R packages/versions
         @param hadoop_namenode
         @param on_hadoop
+        @param perf
         @return: The runner object.
         """
         self.test_root_dir = test_root_dir
@@ -879,6 +883,8 @@ class TestRunner:
         self.r_pkg_ver_chk = r_pkg_ver_chk
         self.hadoop_namenode = hadoop_namenode
         self.on_hadoop = on_hadoop
+        self.perf = perf
+        self.perf_file = None
 
         if (use_cloud):
             node_num = 0
@@ -1127,6 +1133,8 @@ class TestRunner:
         """
         if (self.terminated):
             return
+
+        if (self.perf): self.perf_file = os.path.join(self.output_dir, "perf.csv")
 
         if self.on_hadoop and self.hadoop_namenode == None:
             print("")
@@ -1488,14 +1496,15 @@ class TestRunner:
 
     def _report_test_result(self, test, nopass):
         port = test.get_port()
-        now = time.time()
-        duration = now - test.start_seconds
+        finish_seconds = time.time()
+        duration = finish_seconds - test.start_seconds
         test_name = test.get_test_name()
+        if not test.get_skipped():
+            if self.perf: self._report_perf(test, finish_seconds)
         if (test.get_passed()):
             s = "PASS      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)
-            if self.produce_unit_reports:
-                self._report_xunit_result("r_suite", test_name, duration, False)
+            if self.produce_unit_reports: self._report_xunit_result("r_suite", test_name, duration, False)
         elif (test.get_skipped()):
             s = "SKIP      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)
@@ -1539,6 +1548,13 @@ class TestRunner:
            errors=errors, failures=failures, skip=skip)
 
         self._save_xunit_report(testsuite_name, testcase_name, xml_report)
+
+    def _report_perf(self, test, finish_seconds):
+        f = open(self.perf_file, "a")
+        f.write('{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}\n'
+                ''.format(g_date, g_build_id, g_git_hash, g_git_branch, g_machine_ip, test.get_test_name(),
+                          test.start_seconds, finish_seconds, 1 if test.get_passed() else 0, g_ncpu, g_os, g_job_name))
+        f.close()
 
     def _save_xunit_report(self, testsuite, testcase, report):
         f = self._get_testreport_filehandle(testsuite, testcase)
@@ -1652,17 +1668,26 @@ g_phantomjs_packs = "examples"
 g_r_pkg_ver_chk = False
 g_on_hadoop = False
 g_hadoop_namenode = None
-g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                "../h2o-r/scripts/h2o-r-test-setup.R"))
-g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                               "../h2o-py/scripts/h2o-py-test-setup.py"))
-g_ipynb_runner = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                               "notebook_runner.py"))
+g_build_id = None
+g_perf = False
+g_git_hash = None
+g_git_branch = None
+g_build_id = None
+g_job_name= None
+
 
 # Global variables that are set internally.
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
+g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               "../h2o-r/scripts/h2o-r-test-setup.R"))
+g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                "../h2o-py/scripts/h2o-py-test-setup.py"))
+g_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+g_machine_ip = socket.gethostbyname(socket.gethostname())
+g_ncpu = multiprocessing.cpu_count()
+g_os = platform.system()
 
 
 def use(x):
@@ -1760,6 +1785,10 @@ def usage():
     print("    --hadoopNamenode Specifies that the runit/pyunit tests have access to this hadoop namenode.")
     print("                     runit/pyunit test utilities have ability to retrieve this value.")
     print("")
+    print("    --perf           Save Jenkins build id, date, machine ip, git hash, name, start time, finish time,")
+    print("                     pass, ncpus, os, and job name of each test to perf.csv in the results directory.")
+    print("                     Takes three parameters: git hash, git branch, and build id, job name in that order.")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -1850,6 +1879,15 @@ def parse_args(argv):
     global g_hadoop_namenode
     global g_r_test_setup
     global g_py_test_setup
+    global g_perf
+    global g_git_hash
+    global g_git_branch
+    global g_machine_ip
+    global g_date
+    global g_build_id
+    global g_ncpu
+    global g_os
+    global g_job_name
 
     i = 1
     while (i < len(argv)):
@@ -1970,6 +2008,28 @@ def parse_args(argv):
             if (i > len(argv)):
                 usage()
             g_hadoop_namenode = argv[i]
+        elif (s == "--perf"):
+            g_perf = True
+
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_git_hash = argv[i]
+
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_git_branch = argv[i]
+
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_build_id = argv[i]
+
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_job_name = argv[i]
         else:
             unknown_arg(s)
 
@@ -2043,6 +2103,15 @@ def main(argv):
     global g_nointernal
     global g_path_to_tar
     global g_path_to_whl
+    global g_perf
+    global g_git_hash
+    global g_git_branch
+    global g_machine_ip
+    global g_date
+    global g_build_id
+    global g_ncpu
+    global g_os
+    global g_job_name
 
     g_script_name = os.path.basename(argv[0])
 
@@ -2091,7 +2160,7 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop)
+                          testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf)
 
     # Build test list.
     if (g_test_to_run is not None):
