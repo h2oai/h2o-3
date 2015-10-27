@@ -100,7 +100,6 @@
   h2o.getFutureModel(job)
 }
 
-
 .h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
@@ -1828,14 +1827,14 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     } else if (is(x, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
-      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
-        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      } else if (!(metric %in% c("logloss","classification_error","MSE"))) {
+        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, classification_error, MSE")
       }
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
         metric <- "MSE"
-      } else if (!(metric %in% c("MSE","deviance", "r2"))) {
-        stop("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance, r2")
+      } else if (!(metric %in% c("MSE","deviance"))) {
+        stop("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance")
       }
     } else {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
@@ -1970,6 +1969,14 @@ h2o.sdev <- function(object) {
 # It allows for having algorithm name aliases
 .h2o.unifyAlgoName <- function(algo) {
   result <- if (algo == "randomForest") "drf" else algo
+  result
+}
+
+#
+# Returns REST API version for given algo.
+#
+.h2o.getAlgoVersion <- function(algo, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+  result <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]][["__meta"]]$schema_version
   result
 }
 

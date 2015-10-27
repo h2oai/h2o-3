@@ -625,7 +625,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **quiet_mode**: ([DL](#DL)) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
-- **sparse**: ([DL](#DL)) Check this checkbox to use sparse iterators for the input layer. This option is not selected by default as it rarely improves performance. 
+- **sparse**: ([DL](#DL)) Check this checkbox to enable sparse data handling, which is more efficient for data with many zero values. 
 
 - **col_major**: ([DL](#DL)) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default.  
   

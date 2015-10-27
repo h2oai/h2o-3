@@ -23,9 +23,9 @@ def separator():
 
     fhex_wrong_separator = h2o.import_file(pyunit_utils.locate(path), sep=";")
     fhex_wrong_separator.summary()
-    fhex_wrong_separator_col_summary =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(fhex_wrong_separator._id) + "/summary")["frames"][0]["columns"]
+    fhex_wrong_separator_col_summary =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(fhex_wrong_separator.frame_id) + "/summary")["frames"][0]["columns"]
     fhex_wrong_separator_missing_count = sum([e["missing_count"] for e in fhex_wrong_separator_col_summary])
-    assert fhex_wrong_separator_missing_count == fhex_wrong_separator._nrows*fhex_wrong_separator._ncols
+    assert fhex_wrong_separator_missing_count == fhex_wrong_separator.nrow*fhex_wrong_separator.ncol
 
     try:
         h2o.import_file(pyunit_utils.locate(path), sep="--")

@@ -75,7 +75,7 @@ class MetricsBase(object):
       self._metric_json["max_criteria_and_metric_scores"].show()
     if metric_type in types_w_mult:
                                                                self.confusion_matrix().show()
-                                                               self._metric_json['hit_ratio_table'].show()
+                                                               self.hit_ratio_table().show()
     if metric_type in types_w_clustering:
       print "Total Within Cluster Sum of Square Error: "      + str(self.tot_withinss())
       print "Total Sum of Square Error to Grand Mean: "       + str(self.totss())

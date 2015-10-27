@@ -526,7 +526,7 @@ class ModelBase(object):
       else:  #self._model_json["algo"] == "deeplearning":
         # Delete first row of DL scoring history since it contains NAs & NaNs
         if scoring_history["samples"][0] == 0:
-          scoring_history = scoring_history.ix[1:]
+          scoring_history = scoring_history[1:]
         if timestep == "AUTO": timestep = "epochs"
         elif timestep not in ("epochs","samples","duration"):
           raise ValueError("timestep for deeplearning must be one of: epochs, samples, duration")
@@ -537,8 +537,17 @@ class ModelBase(object):
         dur_colname = "duration_{}".format(scoring_history["duration"][1].split()[1])
         scoring_history[dur_colname] = map(lambda x: str(x).split()[0],scoring_history["duration"])
         timestep = dur_colname
-      if validation_metric in scoring_history.columns.values: #Training and Validation scoring history
-        ylim = (scoring_history.ix[:,[training_metric, validation_metric]].min().min(), scoring_history.ix[:,[training_metric, validation_metric]].max().max())
+
+      if h2o.can_use_pandas():
+        valid = validation_metric in list(scoring_history)
+        ylim = (scoring_history[[training_metric, validation_metric]].min().min(), scoring_history[[training_metric, validation_metric]].max().max()) if valid \
+          else (scoring_history[training_metric].min(), scoring_history[training_metric].max())
+      else:
+        valid = validation_metric in scoring_history.col_header
+        ylim = (min(min(scoring_history[[training_metric, validation_metric]])), max(max(scoring_history[[training_metric, validation_metric]]))) if valid \
+          else (min(scoring_history[training_metric]), max(scoring_history[training_metric]))
+
+      if valid: #Training and validation scoring history
         plt.xlabel(timestep)
         plt.ylabel(metric)
         plt.title("Scoring History")
@@ -547,7 +556,6 @@ class ModelBase(object):
         plt.plot(scoring_history[timestep], scoring_history[validation_metric], color = "orange", label = "Validation")
         plt.legend()
       else:  #Training scoring history only
-        ylim = (scoring_history[training_metric].min(), scoring_history[training_metric].max())
         plt.xlabel(timestep)
         plt.ylabel(training_metric)
         plt.title("Training Scoring History")

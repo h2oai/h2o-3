@@ -1,5 +1,6 @@
 import h2o
 
+
 class GroupBy:
   """
   A class that represents the group by operation on an H2OFrame.
@@ -90,7 +91,7 @@ class GroupBy:
     if not self._computed:
       aggs=[]
       for k in self._aggs: aggs += (self._aggs[k])
-      self._res = h2o.H2OFrame(expr=h2o.ExprNode("GB", self._fr,self._by,self._order_by, *aggs))._frame()
+      self._res = h2o.H2OFrame._expr(expr=h2o.ExprNode("GB", self._fr,self._by,self._order_by, *aggs))._frame()
       self._computed=True
 
   def _add_agg(self,op,col,na):

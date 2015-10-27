@@ -1287,7 +1287,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **quiet_mode**: Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
-- **sparse**: Check this checkbox to use sparse data handling. This option is not selected by default. 
+- **sparse**: Check this  checkbox to enable sparse data handling, which is more efficient for data with many zero values.  
 
 - **col_major**: Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
 
