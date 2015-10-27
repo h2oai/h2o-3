@@ -1371,6 +1371,15 @@ public /* final */ class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putAA1(ary[i]);
     return this;
   }
+  public AutoBuffer putAAA4( int[][][] ary ) {
+    //_arys++;
+    long xy = putZA(ary);
+    if( xy == -1 ) return this;
+    int x=(int)(xy>>32);
+    int y=(int)xy;
+    for( int i=x; i<x+y; i++ ) putAA4(ary[i]);
+    return this;
+  }
   public AutoBuffer putAAA8( long[][][] ary ) {
     //_arys++;
     long xy = putZA(ary);
