@@ -456,15 +456,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int r = 0;
       if(beta != null){
         // grab the indeces of non-zero coefficients
-        for(double d:beta)if(d != 0)++r;
+        for(int i = 0; i < beta.length-1; ++i)if(beta[i] != 0)++r;
         idxs = MemoryManager.malloc4(r);
         int j = 0;
-        for(int i = 0; i < beta.length; ++i)
+        for(int i = 0; i < beta.length-1; ++i)
           if(beta[i] != 0)idxs[j++] = i;
         j = 0;
-        this.beta = MemoryManager.malloc8d(idxs.length);
+        this.beta = MemoryManager.malloc8d(idxs.length+1);
         for(int i:idxs)
           this.beta[j++] = beta[i];
+        this.beta[this.beta.length-1] = beta[beta.length-1]; // intercept
       } else {
         this.beta = null;
         idxs = null;
@@ -616,6 +617,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int k = 0;
       for(int i:_submodels[l].idxs)
         beta[i] = _submodels[l].beta[k++];
+      beta[beta.length-1] = _submodels[l].beta[_submodels[l].beta.length-1];
     }
     public void setSubmodelIdx(int l){
       _best_lambda_idx = l;

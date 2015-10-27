@@ -297,7 +297,8 @@ public class OptimizationUtils {
       double maxObj = ginfo._objVal - _minRelativeImprovement*ginfo._objVal;
       final double dgInit = ArrayUtils.innerProduct(ginfo._gradient, direction);
       final double dgtest = dgInit * _ftol;
-      assert dgtest < 0:"invalid gradient/direction, got positive differential";
+      if(dgtest >= 0) return false;
+//      assert dgtest < 0:"invalid gradient/direction, got positive differential " + dgtest;
       if(_beta == null)_beta = new double[betaStart.length];
       double width = maxStep - minStep;
       double oldWidth = 2*width;
