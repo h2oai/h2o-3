@@ -388,18 +388,30 @@ class H2OFrame:
     """
     return self._newExpr("unique", self)
 
-  def levels(self, col=None):
+  def level(self, col=None):
     """
-    Get the factor levels for this frame and the specified column index.
+    Get the factor levels for this single column
 
     :param col: A column index in this H2OFrame
-    :return: a list of strings that are the factor levels for the column.
+    :return: a list of strings that are the factor levels for the one column.
+    """
+    fr = self if col is None else self._newExpr("cols", self, col)
+    if fr.ncol > 1: raise ValueError("level takes only a single column")
+    l = h2o.as_list(self._newExpr("levels", fr), False)[0]
+    l.pop(0) # Remove column header
+    return l
+
+  def levels(self, col=None):
+    """
+    Get the factor levels for this frame and specified columns
+
+    :param col: A column index in this H2OFrame
+    :return: a list of lists of strings that are the factor levels for columns.
     """
     fr = self if col is None else self._newExpr("cols", self, col)
     lol = h2o.as_list(self._newExpr("levels", fr), False)
-    for l in lol: l.pop(0)
-    #levels = lol if self.ncol>1 else [level for l in lol for level in l]
-    return levels
+    for l in lol: l.pop(0) # Remove column headers
+    return lol
 
   def nlevels(self, col=None):
     """
