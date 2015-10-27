@@ -93,7 +93,7 @@ def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names
     >>> ml.upload_file(path="/path/to/local/data", destination_frame="my_local_data")
     ...
   """
-  return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+  return H2OFrame._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
 def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="",
@@ -296,8 +296,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
   if first_line_is_header != (-1, 0, 1):
     if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
     setup["check_header"] = first_line_is_header
-  parsed = _parse(setup)
-  return H2OFrame.get_frame(parsed["destination_frame"]["name"])
+  return fr._parse_raw(setup)
 
 
 def _quoted(key):

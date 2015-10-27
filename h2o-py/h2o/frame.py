@@ -165,9 +165,7 @@ class H2OFrame:
     :param destination_frame:  The result *Key* name in the H2O cluster
     """
     rawkey = h2o.lazy_import(file_path)
-    setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
-    parse = h2o._parse(setup)
-    destination_frame = parse["destination_frame"]["name"]
+    destination_frame = H2OFrame._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
     res = H2OFrame.get_frame(destination_frame)
     nrows = res.nrow
     ncols = res.ncol
@@ -212,7 +210,7 @@ class H2OFrame:
     tmp_handle,tmp_path = tempfile.mkstemp(suffix=".csv")
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
-    csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
+    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
     csv_writer.writeheader()             # write the header
     csv_writer.writerows(data_to_write)  # write the data
     tmp_file.close()                     # close the streams
@@ -229,11 +227,52 @@ class H2OFrame:
     """
     setup = h2o.parse_setup(text_key)
     if check_header is not None: setup["check_header"] = check_header
-    parse = h2o._parse(setup)
-    destination_frame = parse["destination_frame"]["name"]
+    destination_frame = H2OFrame_parse_raw(setup)
     res = H2OFrame.get_frame(destination_frame)
     print "Uploaded {} into cluster with {:,} rows and {:,} cols".format(text_key, res.nrow, res.ncol)
     return res
+
+  @staticmethod
+  def _parse(rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None, na_strings=None):
+    setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
+    return H2OFrame._parse_raw(setup)
+
+  @staticmethod
+  def _parse_raw(setup):
+    # Parse parameters (None values provided by setup)
+    p = { "destination_frame" : None,
+          "parse_type"        : None,
+          "separator"         : None,
+          "single_quotes"     : None,
+          "check_header"      : None,
+          "number_columns"    : None,
+          "chunk_size"        : None,
+          "delete_on_done"    : True,
+          "blocking"          : False,
+          "column_types"      : None,
+    }
+
+    if setup["column_names"]: p["column_names"] = None
+    if setup["na_strings"]: p["na_strings"] = None
+
+    p.update({k: v for k, v in setup.iteritems() if k in p})
+
+    # Extract only 'name' from each src in the array of srcs
+    p['source_frames'] = [h2o._quoted(src['name']) for src in setup['source_frames']]
+
+    job = h2o.H2OJob(h2o.H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
+    return job.dest_key
+
+  @staticmethod
+  def _import_parse(path, destination_frame, header, sep, column_names, column_types, na_strings):
+    rawkey = h2o.lazy_import(path)
+    return H2OFrame.get_frame(H2OFrame._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings))
+
+  @staticmethod
+  def _upload_parse(path, destination_frame, header, sep, column_names, column_types, na_strings):
+    fui = {"file": os.path.abspath(path)}
+    rawkey = h2o.H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui)["destination_frame"]
+    return H2OFrame.get_frame(H2OFrame._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings))
 
   def _newExpr(self,op,*args): return H2OFrame(expr.ExprNode(op,*args))
 
@@ -352,23 +391,20 @@ class H2OFrame:
     """
     Get the factor levels for this frame and the specified column index.
 
-    :param col: A column index in this self._newExpr.
+    :param col: A column index in this H2OFrame
     :return: a list of strings that are the factor levels for the column.
     """
-    if self.ncol==1 or col is None:
-      lol=h2o.as_list(self._newExpr("levels", self), False)[1:]
-      levels=[level for l in lol for level in l] if self.ncol==1 else lol
-    elif col is not None:
-      lol=h2o.as_list(self._newExpr("levels", self._newExpr("cols", self, col)),False)[1:]
-      levels=[level for l in lol for level in l]
-    else:                             levels=None
-    return None if levels is None or levels==[] else levels
+    fr = self if col is None else self._newExpr("cols", self, col) 
+    lol = h2o.as_list(self._newExpr("levels", fr), False)
+    for l in lol: l.pop(0)
+    #levels = lol if self.ncol>1 else [level for l in lol for level in l] 
+    return levels
 
   def nlevels(self, col=None):
     """
     Get the number of factor levels for this frame and the specified column index.
 
-    :param col: A column index in this self._newExpr.
+    :param col: A column index in this H2OFrame
     :return: an integer.
     """
     nlevels = self.levels(col=col)
@@ -1231,54 +1267,6 @@ class H2OFrame:
       return self._newExpr("apply",self, 1+(axis==0),*res)
     else:
       raise ValueError("unimpl: not a lambda")
-
-  ##### WARNING: MAGIC REF COUNTING CODE BELOW.
-  #####          CHANGE AT YOUR OWN RISK.
-  ##### ALSO:    DO NOT ADD METHODS BELOW THIS LINE (pretty please)
-  def _eager(self, top=True, scalar=False):
-    if self._id is None:
-      # top-level call to execute all subparts of self._ast
-      sb = self._ast._eager()
-      if top:
-        self._id = None if scalar else _py_tmp_key()
-        res = h2o.rapids(ExprNode._collapse_sb(sb), self._id)
-        if 'scalar' in res or "string" in res:
-          self._data = res['scalar'] if "scalar" in res else res["string"]
-          sb = [str(self._data)]
-        elif scalar:
-          pass  # expected a scalar result, but got a key'd thing, let caller handle
-        else:
-          sb = [self._id," "]
-          self._update()   # fill out _nrows, _ncols, _col_names, _computed
-      return sb
-
-  def _do_it(self,sb):
-    # this method is only ever called from ExprNode._do_it
-    # it's the "long" way 'round the mutual recursion from ExprNode to H2OFrame
-    #
-    #  Here's a diagram that illustrates the call order:
-    #
-    #           H2OFrame:                   ExprNode:
-    #               _eager ---------------->  _eager
-    #
-    #                 ^^                       ^^ ||
-    #                 ||                       || \/
-    #
-    #               _do_it <----------------  _do_it
-    #
-    #  the "long" path:
-    #     pending exprs in DAG with exterior refs must be saved (refs >= magic count)
-    #
-    if self._id is not None:
-      if self.dim == [1,1]:
-        sb += [str(self._scalar()), " "]   # inline 1x1 H2OFrame here
-      else:                 sb += [self._id+" "]
-    else:              sb += self._eager(True) if (len(gc.get_referrers(self)) >= H2OFrame.MAGIC_REF_COUNT) else self._eager(False)
-
-  def _update(self):
-    self._cache.flush().fill(self._id)
-  #### DO NOT ADD ANY MEMBER METHODS HERE ####
-
 
 # private static methods
 _id_ctr = 0
