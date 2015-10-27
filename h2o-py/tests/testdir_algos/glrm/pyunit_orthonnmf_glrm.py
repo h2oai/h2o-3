@@ -15,11 +15,11 @@ def glrm_orthonnmf():
   Y = np.random.rand(k,n)
   X = np.random.rand(m, k)
   train = np.dot(X,Y)
-  train_h2o = h2o.H2OFrame(zip(*train.tolist()))
+  train_h2o = h2o.H2OFrame.fromPython(zip(*train.tolist()))
 
   print "Run GLRM with orthogonal non-negative regularization on X, non-negative regularization on Y"
   initial_y = np.random.rand(k,n)
-  initial_y_h2o = h2o.H2OFrame(zip(*initial_y.tolist()))
+  initial_y_h2o = h2o.H2OFrame.fromPython(zip(*initial_y.tolist()))
   glrm_h2o = H2OGeneralizedLowRankEstimator(k=k,
                                             init="User",
                                             user_y=initial_y_h2o,
