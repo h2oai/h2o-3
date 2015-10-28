@@ -86,7 +86,7 @@ public abstract class GLMTask  {
      }
      for(int r = 0; r < response._len; ++r) {
        double w = weight.atd(r);
-       if(skip[r] || w == 0) continue;
+       if(!good[r] || w == 0) continue;
        if(_comupteWeightedSigma) {
          for(int i = 0; i < _nums; ++i) {
            double d = chunks[i+_numOff].atd(r);
@@ -107,15 +107,15 @@ public abstract class GLMTask  {
          _yMax = d;
        _nobs++;
      }
-     boolean has_skips = false;
-     for(boolean b:skip) has_skips |= b;
+     boolean all_good = true;
+     for(boolean b:good)all_good &= b;
 
-     if(has_skips) {
+     if(!all_good) {
        if (weight instanceof C0DChunk && weight.atd(0) == 1) // shortcut for h2o-made binary weights
-         DKV.put(weight.vec().chunkKey(chunks[0].cidx()), new CBSChunk(skip));
+         DKV.put(weight.vec().chunkKey(chunks[0].cidx()), new CBSChunk(good));
        else {
-         for(int i = 0; i  < skip.length; ++i) // already got weights, need to set the zeros
-           if(skip[i]) weight.set(i,0);
+         for(int i = 0; i  < good.length; ++i) // already got weights, need to set the zeros
+           if(!good[i]) weight.set(i,0);
        }
      }
    }
