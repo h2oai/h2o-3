@@ -5,7 +5,7 @@ from tests import pyunit_utils
 
 
 def deeplearning_autoencoder():
-    
+
 
     resp = 784
     nfeatures = 20 # number of features (smallest hidden layer)
@@ -38,7 +38,7 @@ def deeplearning_autoencoder():
                                 seed=1234)
 
     # conver train_supervised with autoencoder to lower-dimensional space
-    train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp]._frame(), 0)
+    train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp], 0)
 
     assert train_supervised_features.ncol == nfeatures, "Dimensionality of reconstruction is wrong!"
 
@@ -50,8 +50,8 @@ def deeplearning_autoencoder():
                                   seed=1234)
 
     # Test the DRF model on the test set (processed through deep features)
-    test_features = ae_model.deepfeatures(test_hex[0:resp]._frame(), 0)
-    test_features = test_features.cbind(test_hex[resp])._frame()
+    test_features = ae_model.deepfeatures(test_hex[0:resp], 0)
+    test_features = test_features.cbind(test_hex[resp])
 
     # Confusion Matrix and assertion
     cm = drf_model.confusion_matrix(test_features)
