@@ -12,6 +12,8 @@ import water.*;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -65,7 +67,7 @@ public class L_BFGS_Test  extends TestUtil {
       Frame valid = new Frame(source._names.clone(),source.vecs().clone());
       dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
       DKV.put(dinfo._key,dinfo);
-      GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,new double[] {source.vec("CAPSULE").mean()}, source.numRows());
+      GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,new double[] {source.vec("CAPSULE").mean()}, 1.0/source.numRows());
       L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
 
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
