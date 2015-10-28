@@ -292,7 +292,7 @@ def parse_raw(setup):
 
  :return: An H2OFrame object
   """
-  return H2OFrame.get_frame(H2OFrame._parse_raw(setup))
+  return H2OFrame._parse_raw(setup)
 
 
 def _quoted(key):
