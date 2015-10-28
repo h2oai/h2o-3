@@ -19,23 +19,31 @@ def javapredict_dynamic_data():
             dataset_params['integer_fraction'] = dataset_params['integer_fraction'] - 0.1
         else:
             dataset_params['categorical_fraction'] = dataset_params['categorical_fraction'] - 0.1
-    #missing_fraction = random.uniform(0,0.5) # gives missing values in response too!
+            dataset_params['categorical_fraction'] = dataset_params['categorical_fraction'] - 0.1
+    dataset_params['missing_fraction'] = random.uniform(0,0.5)
     dataset_params['has_response'] = True
     dataset_params['randomize'] = True
-    dataset_params['factors'] = random.randint(2,100)
+    dataset_params['factors'] = random.randint(2,2000)
     print "Dataset parameters: {0}".format(dataset_params)
 
-    distribution = random.sample(['bernoulli','multinomial','gaussian','poisson','tweedie','gamma'], 1)[0]
-    if   distribution == 'bernoulli': dataset_params['response_factors'] = 2
-    elif distribution == 'gaussian':  dataset_params['response_factors'] = 1
-    else:                             dataset_params['response_factors'] = random.randint(3,100)
-    print "Distribution: {0}".format(distribution)
+    append_response = False
+    family = random.sample(['binomial','gaussian','poisson','tweedie','gamma'], 1)[0]
+    if   family == 'binomial':  dataset_params['response_factors'] = 2
+    elif family == 'gaussian':  dataset_params['response_factors'] = 1
+    else:
+        dataset_params['has_response'] = False
+        response = h2o.H2OFrame(python_obj=[random.randint(1,1000) for r in range(0,dataset_params['rows'])])
+        append_response = True
+    print "Family: {0}".format(family)
 
-
-    train = h2o.create_frame(missing_fraction=0.0, **dataset_params)
+    train = h2o.create_frame(**dataset_params)
+    if append_response:
+        train = response.cbind(train)
+        train.set_name(0,"response")
+    if family == 'binomial': train['response'] = train['response'].asfactor()
+    train = train.impute("response", method="mode")
     print "Training dataset:"
     print train
-    if distribution == 'bernoulli' or distribution == 'multinomial': train['response'] = train['response'].asfactor()
 
     # Save dataset to results directory
     results_dir = pyunit_utils.locate("results")
@@ -43,21 +51,18 @@ def javapredict_dynamic_data():
 
     # Generate random parameters
     params = {}
-    if random.randint(0,1): params['ntrees'] = random.sample(range(1,21),1)[0]
-    if random.randint(0,1): params['max_depth'] = random.sample(range(1,11),1)[0]
-    if random.randint(0,1): params['min_rows'] = random.sample(range(1,11),1)[0]
-    if random.randint(0,1): params['nbins'] = random.sample(range(2,21),1)[0]
-    if random.randint(0,1): params['nbins_cats'] = random.sample(range(2,1025),1)[0]
-    if random.randint(0,1): params['learn_rate'] = random.random()
+    if random.randint(0,1): params['alpha'] = random.random()
+    params['family'] = family
+    if params['family'] == "tweedie":
+        if random.randint(0,1):
+            params['tweedie_variance_power'] = round(random.random()+1,6)
+            params['tweedie_link_power'] = 1 - params['tweedie_variance_power']
     print "Parameter list: {0}".format(params)
 
-    test = train[1:random.randint(10,21),:]
     x = range(1,train.ncol)
     y = "response"
 
-    equality = "class" if distribution == 'bernoulli' or distribution == 'multinomial' else "numeric"
-    pyunit_utils.javapredict(algo="gbm", equality=equality, train=train, test=test, x=x, y=y, compile_only=True,
-                             **params)
+    pyunit_utils.javapredict(algo="glm", equality=None, train=train, test=None, x=x, y=y, compile_only=True, **params)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(javapredict_dynamic_data)

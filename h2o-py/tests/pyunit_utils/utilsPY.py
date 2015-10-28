@@ -6,16 +6,15 @@ import random
 import re
 import subprocess
 from subprocess import STDOUT,PIPE
-import sys, os
-sys.path.insert(1, "../../")
-import h2o
-from h2o import H2OFrame, H2OConnection
-from h2o.model.autoencoder import H2OAutoEncoderModel
+from h2o import H2OFrame
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
-from h2o.model.dim_reduction import H2ODimReductionModel
 from h2o.model.multinomial import H2OMultinomialModel
 from h2o.model.regression import H2ORegressionModel
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+from h2o.estimators.random_forest import H2ORandomForestEstimator
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 import urllib2
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -126,18 +125,15 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         if isinstance(np_val, np.bool_): np_val = bool(np_val)  # numpy haz special bool type :(
         assert np.absolute(h2o_val - np_val) < 1e-6, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
+
 def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs):
     print "Creating model in H2O"
-    if algo == "gbm":
-        model = h2o.gbm(x=train[x], y=train[y], **kwargs)
-    elif algo == "random_forest":
-        model = h2o.random_forest(x=train[x], y=train[y], **kwargs)
-    elif algo == "deeplearning":
-        model = h2o.deeplearning(x=train[x], y=train[y], **kwargs)
-    elif algo == "glm":
-        model = h2o.glm(x=train[x], y=train[y], **kwargs)
-    else:
-        raise(ValueError, "algo {0} is not supported".format(algo))
+    if algo == "gbm": model = H2OGradientBoostingEstimator(**kwargs)
+    elif algo == "random_forest": model = H2ORandomForestEstimator(**kwargs)
+    elif algo == "deeplearning": model = H2ODeepLearningEstimator(**kwargs)
+    elif algo == "glm": model = H2OGeneralizedLinearEstimator(**kwargs)
+    else: raise(ValueError, "algo {0} is not supported".format(algo))
+    model.train(x=x, y=y, training_frame=train)
     print model
 
     print "Downloading Java prediction model code from H2O"
@@ -151,35 +147,35 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
     print "java code saved in {0}".format(java_file)
 
-    print "Predicting in H2O"
-    predictions = model.predict(test)
-    predictions.summary()
-    predictions.head()
-    out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
-    h2o.download_csv(predictions, out_h2o_csv)
-    assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
-    print "H2O Predictions saved in {0}".format(out_h2o_csv)
-
-    print "Setting up for Java POJO"
-    in_csv = os.path.join(tmpdir,"in.csv")
-    h2o.download_csv(test[x], in_csv)
-
-    # hack: the PredictCsv driver can't handle quoted strings, so remove them
-    f = open(in_csv, 'r+')
-    csv = f.read()
-    csv = re.sub('\"', '', csv)
-    f.seek(0)
-    f.write(csv)
-    f.truncate()
-    f.close()
-    assert os.path.exists(in_csv), "Expected file {0} to exist, but it does not.".format(in_csv)
-    print "Input CSV to PredictCsv saved in {0}".format(in_csv)
-
     print "Compiling Java Pojo"
     javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
     subprocess.check_call(javac_cmd)
 
     if not compile_only:
+        print "Predicting in H2O"
+        predictions = model.predict(test)
+        predictions.summary()
+        predictions.head()
+        out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
+        h2o.download_csv(predictions, out_h2o_csv)
+        assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
+        print "H2O Predictions saved in {0}".format(out_h2o_csv)
+
+        print "Setting up for Java POJO"
+        in_csv = os.path.join(tmpdir,"in.csv")
+        h2o.download_csv(test[x], in_csv)
+
+        # hack: the PredictCsv driver can't handle quoted strings, so remove them
+        f = open(in_csv, 'r+')
+        csv = f.read()
+        csv = re.sub('\"', '', csv)
+        f.seek(0)
+        f.write(csv)
+        f.truncate()
+        f.close()
+        assert os.path.exists(in_csv), "Expected file {0} to exist, but it does not.".format(in_csv)
+        print "Input CSV to PredictCsv saved in {0}".format(in_csv)
+
         print "Running PredictCsv Java Program"
         out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
