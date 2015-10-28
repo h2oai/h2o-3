@@ -72,12 +72,13 @@ public abstract class GLMTask  {
 
    @Override public void map(Chunk [] chunks) {
      _yMu = new double[_nClasses > 2?_nClasses:1];
-     boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
+     boolean [] good = MemoryManager.mallocZ(chunks[0]._len);
+     Arrays.fill(good,true);
      Chunk weight = chunks[_weightId];
      for(int i = 0; i < chunks.length; ++i)
        for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
          if(weight.atd(i) != 0 && chunks[i].isNA(r))
-            skip[r] = true;
+            good[r] = false;
      Chunk response = chunks[_responseId];
      if(_comupteWeightedSigma) {
        _xsum = MemoryManager.malloc8d(_nums);
