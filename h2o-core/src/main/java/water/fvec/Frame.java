@@ -795,11 +795,11 @@ public class Frame extends Lockable<Frame> {
   // Make NewChunks to for holding data from e.g. Spark.  Once per set of
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
-  static NewChunk[] createNewChunks( String name, byte[] type, int cidx ) {
+  static NewChunk[] createNewChunks( String name, byte type, int cidx ) {
     Frame fr = (Frame)Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for( int i=0; i<nchks.length; i++ )
-      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i],type[i]),cidx);
+      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i],type),cidx);
     return nchks;
   }
 
