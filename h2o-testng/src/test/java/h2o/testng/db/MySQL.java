@@ -35,7 +35,7 @@ public class MySQL {
 				+ "cpus_per_hosts		 INT," 
 				+ "total_nodes			 INT," 
 				+ "source				 VARCHAR(125),"
-				+ "parameter_list		 VARCHAR(2048)," 
+				+ "parameter_list		 TEXT," 
 				+ "git_hash_number		 VARCHAR(125),"
 				+ "tuned_or_defaults	 VARCHAR(125)" 
 				+ ")";
