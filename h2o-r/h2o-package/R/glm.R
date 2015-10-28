@@ -126,6 +126,9 @@ h2o.glm <- function(x, y, training_frame, model_id,
   #       beta_constraints <- as.h2o(beta_constraints)
   #     }
   # }
+  if (inherits(beta_constraints, "data.frame")) {
+        beta_constraints <- as.h2o(beta_constraints)
+  }
 
   if (!is.Frame(training_frame))
    tryCatch(training_frame <- h2o.getFrame(training_frame),
