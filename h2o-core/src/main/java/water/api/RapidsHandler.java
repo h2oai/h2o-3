@@ -22,11 +22,11 @@ class RapidsHandler extends Handler {
     }
 
     switch( val.type() ) {
-      case Val.NUM:  return new RapidsScalarV3(val.getNum());
-      case Val.STR:  return new RapidsStringV3(val.getStr());
-      case Val.FRM:  return new RapidsFrameV3 (val.getFrame());
-      case Val.FUN:  return new RapidsFunctionV3(val.getFun().toString());
-      default:  throw H2O.fail();
+    case Val.NUM:  return new RapidsScalarV3(val.getNum());
+    case Val.STR:  return new RapidsStringV3(val.getStr());
+    case Val.FRM:  return new RapidsFrameV3 (val.getFrame());
+    case Val.FUN:  return new RapidsFunctionV3(val.getFun().toString());
+    default:  throw H2O.fail();
     }
   }
 }

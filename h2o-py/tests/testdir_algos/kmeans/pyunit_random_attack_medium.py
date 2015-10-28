@@ -25,7 +25,7 @@ def random_attack():
       if method == 3:
         s = [[random.uniform(train[c].mean()-100,train[c].mean()+100) for p in range(kwargs['k'])] for c in x]
         print "s: {0}".format(s)
-        start = h2o.H2OFrame(python_obj=s)
+        start = h2o.H2OFrame.fromPython(s)
         kwargs['user_points'] = start
       else:
         kwargs['init'] = ["Furthest","Random", "PlusPlus"][method]

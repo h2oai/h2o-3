@@ -48,9 +48,6 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   public String[] compatible_models;
 
-  @API(help="The set of IDs of vectors in the Frame", direction=API.Direction.OUTPUT)
-  public VecKeyV3[] vec_ids;
-
   @API(help="Chunk summary", direction=API.Direction.OUTPUT)
   public TwoDimTableBase chunk_summary;
 
@@ -143,7 +140,6 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     ColV3(String name, Vec vec, long off, int len, boolean force_summary) {
       label=name;
 
-      if (force_summary) {
         missing_count = vec.naCnt();
         zero_count = vec.length() - vec.nzCnt() - missing_count;
         positive_infinity_count = vec.pinfs();
@@ -153,6 +149,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
         mean = vec.mean();
         sigma = vec.sigma();
 
+      if (force_summary) {
         // Histogram data is only computed on-demand.  By default here we do NOT
         // compute it, but will return any prior computed & cached histogram.
         histogram_bins = vec.lazy_bins();
@@ -223,7 +220,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     if( row_count == 0 ) row_count = 100;                                 // 100 rows by default
     if( column_count == 0 ) column_count = f.numCols() - column_offset; // full width by default
 
-    row_count = (int)Math.min(row_count, row_offset + f.numRows());
+    row_count    = (int) Math.min(   row_count,    row_offset + f.numRows());
     column_count = (int) Math.min(column_count, column_offset + f.numCols());
 
     this.frame_id = new FrameKeyV3(f._key);
@@ -239,13 +236,6 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     this.column_count = column_count;
 
     this.columns = new ColV3[column_count];
-    Key[] keys = f.keys();
-    if(keys != null && keys.length > 0) {
-      vec_ids = new VecKeyV3[column_count];
-      for (int i = 0; i < column_count; i++)
-        vec_ids[i] = new VecKeyV3(keys[column_offset + i]);
-    }
-
     Vec[] vecs = f.vecs();
     for( int i = 0; i < column_count; i++ ) {
       try {

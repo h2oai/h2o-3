@@ -27,11 +27,11 @@ def weights_check():
                                                                                       glm2_binomial.residual_deviance())
 
     data = [["ab"[random.randint(0,1)] if c==0 else random.gauss(0,1) for c in range(20)] for r in range(100)]
-    h2o_data = h2o.H2OFrame(python_obj=data)
+    h2o_data = h2o.H2OFrame.fromPython(data)
 
     # zero weights same as removed observations
     zero_weights = [[0] if random.randint(0,1) else [1] for r in range(100)]
-    h2o_zero_weights = h2o.H2OFrame(python_obj=zero_weights)
+    h2o_zero_weights = h2o.H2OFrame.fromPython(zero_weights)
     h2o_zero_weights.set_names(["weights"])
     h2o_data_zero_weights = h2o_data.cbind(h2o_zero_weights)
     h2o_data_zeros_removed = h2o_data[h2o_zero_weights["weights"] == 1]
@@ -42,14 +42,14 @@ def weights_check():
 
     # doubled weights same as doubled observations
     doubled_weights = [[1] if random.randint(0,1) else [2] for r in range(100)]
-    h2o_doubled_weights = h2o.H2OFrame(python_obj=doubled_weights)
+    h2o_doubled_weights = h2o.H2OFrame.fromPython(doubled_weights)
     h2o_doubled_weights.set_names(["weights"])
     h2o_data_doubled_weights = h2o_data.cbind(h2o_doubled_weights)
 
     doubled_data = copy.deepcopy(data)
     for d, w in zip(data,doubled_weights):
         if w[0] == 2: doubled_data.append(d)
-    h2o_data_doubled = h2o.H2OFrame(python_obj=doubled_data)
+    h2o_data_doubled = h2o.H2OFrame.fromPython(doubled_data)
 
     print "Checking that doubling some weights is equivalent to doubling those observations:"
     print

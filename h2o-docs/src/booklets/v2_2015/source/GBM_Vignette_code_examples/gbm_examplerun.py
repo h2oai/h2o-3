@@ -10,4 +10,5 @@ air_test_hex  = airlines_hex[r  >= 0.9]
 myX = ["DayofMonth", "DayOfWeek"]
 
 # Now, train the GBM model:
-air_model = h2o.gbm(y = "IsDepDelayed", x = myX, distribution="bernoulli", training_frame = air_train_hex, validation_frame = air_valid_hex, ntrees=100, max_depth=4, learn_rate=0.1)
+air_model = H2OGradientBoostingEstimator(distribution='bernoulli', ntrees=100, max_depth=4, learn_rate=0.1)
+air_model.train(x=myX, y="IsDepDelayed",training_frame=air_train_hex)
