@@ -165,8 +165,7 @@ class H2OFrame:
     :param destination_frame:  The result *Key* name in the H2O cluster
     """
     rawkey = h2o.lazy_import(file_path)
-    destination_frame = H2OFrame._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
-    res = H2OFrame.get_frame(destination_frame)
+    res = H2OFrame._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
     nrows = res.nrow
     ncols = res.ncol
     if isinstance(file_path, str): print "Imported {}. Parsed {} rows and {} cols".format(file_path,"{:,}".format(nrows), "{:,}".format(ncols))
@@ -228,8 +227,7 @@ class H2OFrame:
     """
     setup = h2o.parse_setup(text_key)
     if check_header is not None: setup["check_header"] = check_header
-    destination_frame = H2OFrame._parse_raw(setup)
-    res = H2OFrame.get_frame(destination_frame)
+    res = H2OFrame._parse_raw(setup)
     print "Uploaded {} into cluster with {:,} rows and {:,} cols".format(text_key, res.nrow, res.ncol)
     return res
 
@@ -262,18 +260,20 @@ class H2OFrame:
     p['source_frames'] = [h2o._quoted(src['name']) for src in setup['source_frames']]
 
     job = h2o.H2OJob(h2o.H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
-    return job.dest_key
+    # Need to return a Frame here for nearly all callers
+    # ... but job stats returns only a dest_key, requiring another REST call to get nrow/ncol
+    return H2OFrame.get_frame(job.dest_key)
 
   @staticmethod
   def _import_parse(path, destination_frame, header, sep, column_names, column_types, na_strings):
     rawkey = h2o.lazy_import(path)
-    return H2OFrame.get_frame(H2OFrame._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings))
+    return H2OFrame._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings)
 
   @staticmethod
   def _upload_parse(path, destination_frame, header, sep, column_names, column_types, na_strings):
     fui = {"file": os.path.abspath(path)}
     rawkey = h2o.H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui)["destination_frame"]
-    return H2OFrame.get_frame(H2OFrame._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings))
+    return H2OFrame._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings)
 
   def _newExpr(self,op,*args): return H2OFrame(expr.ExprNode(op,*args))
 
@@ -1282,12 +1282,18 @@ class H2OFrame:
     else:
       raise ValueError("unimpl: not a lambda")
 
+  @staticmethod
+  def temp_ctr():
+    global _id_ctr
+    return _id_ctr
+
 # private static methods
 _id_ctr = 0
 def _py_tmp_key():
   global _id_ctr
   _id_ctr=_id_ctr+1
   return "py_" + str(_id_ctr)
+
 def _gen_header(cols): return ["C" + str(c) for c in range(1, cols + 1, 1)]
 def _check_lists_of_lists(python_obj):
   # all items in the list must be a list too

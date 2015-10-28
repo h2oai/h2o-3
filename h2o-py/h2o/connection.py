@@ -466,6 +466,7 @@ df
       h2o_logging._log_rest("{0} {1}\n".format(method, url))
       h2o_logging._log_rest("postBody: {0}\n".format(post_body))
 
+    global _rest_ctr; _rest_ctr = _rest_ctr+1
     begin_time_seconds = time.time()
     http_result = self._attempt_rest(url, method, post_body, file_upload_info)
     end_time_seconds = time.time()
@@ -558,6 +559,11 @@ df
         for it in range(len(x)):
           x[it] = H2OConnection._process_tables(x[it])
     return x
+
+  global _rest_ctr
+  _rest_ctr = 0
+  @staticmethod
+  def rest_ctr(): global _rest_ctr; return _rest_ctr
 
 
 def get_human_readable_size(num):
