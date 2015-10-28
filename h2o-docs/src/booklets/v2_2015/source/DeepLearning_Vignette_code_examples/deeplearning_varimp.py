@@ -9,6 +9,7 @@ model_vi = h2o.deeplearning(
         activation="RectifierWithDropout", 
         hidden=[200,200,200], 
         input_dropout_ratio=0.2, 
+        sparse=True,
         l1=1e-5, 
         epochs=10,
         variable_importances=True)  #added

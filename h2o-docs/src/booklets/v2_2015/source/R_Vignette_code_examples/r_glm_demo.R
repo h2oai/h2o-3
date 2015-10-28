@@ -11,20 +11,19 @@ quantile(x = airlines.hex$ArrDelay, na.rm = TRUE)
 h2o.hist(airlines.hex$ArrDelay)
 
 # Find number of flights by airport
-originFlights = h2o.ddply(airlines.hex, 'Origin', nrow)
+originFlights = h2o.group_by(data = airlines.hex, by = "Origin", nrow("Origin"),gb.control=list(na.methods="rm"))
 originFlights.R = as.data.frame(originFlights)
 
-# Find number of cancellations per month
-flightsByMonth = h2o.ddply(airlines.hex,"Month", nrow)
-flightsByMonth.R = as.data.frame(originFlights)
+# Find number of flights per month
+flightsByMonth = h2o.group_by(data = airlines.hex, by = "Month", nrow("Month"),gb.control=list(na.methods="rm"))
+flightsByMonth.R = as.data.frame(flightsByMonth)
 
 # Find months with the highest cancellation ratio
-# TODO: Bug
-# fun = function(df) {sum(df[,which(colnames(airlines.hex)=="Cancelled")])}
-# cancellationsByMonth = h2o.ddply(airlines.hex,"Month", fun)
-# cancellation_rate = cancellationsByMonth$C1/flightsByMonth$C1
-# rates_table = cbind(flightsByMonth$Month, cancellation_rate)
-# rates_table.R = as.data.frame(rates_table)
+which(colnames(airlines.hex)=="Cancelled")
+cancellationsByMonth = h2o.group_by(data = airlines.hex, by = "Month", sum("Cancelled"),gb.control=list(na.methods="rm"))
+cancellation_rate = cancellationsByMonth$sum_Cancelled/flightsByMonth$nrow_Month
+rates_table = h2o.cbind(flightsByMonth$Month, cancellation_rate)
+rates_table.R = as.data.frame(rates_table)
 
 # Construct test and train sets using sampling
 airlines.split = h2o.splitFrame(data = airlines.hex,ratios = 0.85)

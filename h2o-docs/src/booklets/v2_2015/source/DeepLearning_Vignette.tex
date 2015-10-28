@@ -907,7 +907,7 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 
 \item \texttt{shuffle\_training\_data}: Logical. Shuffles training data on each node. This option is recommended if training data is replicated on $N$ nodes and the number of training samples per iteration is close to $N$ times the dataset size, where all nodes train with almost all of the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to $N$ times the dataset size or larger).  The default is false.
 
-\item \texttt{sparse}: (Deprecated) Logical. Enables sparse data handling.% (Experimental). 
+\item \texttt{sparse}: Logical. Enables sparse data handling (more efficient for data with lots of 0 values).
 The default is false.
 
 \item \texttt{col\_major}: (Deprecated) Logical. Uses a column major weight matrix for the input layer; can speed up forward propagation, but may slow down backpropagation. The default is false.

@@ -78,7 +78,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTNcol  ());
     init(new ASTNot   ());
     init(new ASTNrow  ());
-    init(new ASTPop());
     init(new ASTRound ());
     init(new ASTSgn());
     init(new ASTSignif());
@@ -184,7 +183,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTSetDomain());
     init(new ASTSetLevel());
     init(new ASTTmpAssign());
-    init(new ASTRename());
+    init(new ASTPop());
 
     // Matrix Ops
     init(new ASTTranspose());
@@ -192,6 +191,7 @@ abstract public class AST extends Iced<AST> {
 
     // Complex data mungers
     init(new ASTAssign());
+    init(new ASTAppend());
     init(new ASTCut());
     init(new ASTDdply());
     init(new ASTGroup());
@@ -249,10 +249,10 @@ class ASTStr extends ASTParameter {
   @Override public String str() { return _v.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override public Val exec(Env env) { return _v; }
   @Override public String toJavaString() { return "\"" + str() + "\""; }
-  @Override int[] columns( String[] names ) { 
+  @Override int[] columns( String[] names ) {
     int i = water.util.ArrayUtils.find(names,_v.getStr());
     if( i == -1 ) throw new IllegalArgumentException("Column "+_v.getStr()+" not found");
-    return new int[]{i}; 
+    return new int[]{i};
   }
 }
 

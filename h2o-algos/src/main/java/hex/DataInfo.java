@@ -70,7 +70,6 @@ public class DataInfo extends Keyed {
   public TransformType _response_transform;
   public boolean _useAllFactorLevels;
   public int _nums;
-  public int _bins;
   public int _cats;
   public int [] _catOffsets;
   public int [] _catMissing;  // bucket for missing categoricals
@@ -680,16 +679,17 @@ public class DataInfo extends Keyed {
 
   /**
    * Extract (sparse) rows from given chunks.
+   * Note: 0 remains 0 - _normSub of DataInfo isn't used (mean shift during standarization is not reverted) - UNLESS offset is specified (for GLM only)
    * Essentially turns the dataset 90 degrees.
    * @param chunks - chunk of dataset
    * @param offset - adjustment for 0s if running with on-the-fly standardization (i.e. zeros are not really zeros because of centering)
    * @return array of sparse rows
    */
-  public final Row[]  extractSparseRows(Chunk [] chunks, double offset) {
+  public final Row[] extractSparseRows(Chunk [] chunks, double offset) {
     Row[] rows = new Row[chunks[0]._len];
 
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, offset);
+      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, offset);
       rows[i].rid = chunks[0].start() + i;
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
@@ -718,18 +718,6 @@ public class DataInfo extends Keyed {
       }
     }
     int numStart = numStart();
-    // binary cols
-    for (int cid = 0; cid < _bins; ++cid) {
-      Chunk c = chunks[cid + _cats];
-      for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        if(!c.isSparse() && c.atd(r) == 0)continue;
-        Row row = rows[r];
-        if (row.bad) continue;
-        if (c.isNA(r))
-          row.bad = _skipMissing;
-        row.addBinId(cid + numStart);
-      }
-    }
     // generic numbers
     for (int cid = 0; cid < _nums; ++cid) {
       Chunk c = chunks[_cats + cid];
@@ -743,8 +731,75 @@ public class DataInfo extends Keyed {
         if (c.isNA(r)) row.bad = _skipMissing;
         double d = c.atd(r);
         if(_normMul != null)
-          d *= _normMul[cid]; // no centering here, we already have etaOffset
-        row.addNum(cid + numStart + _bins, d);
+          d *= _normMul[cid];
+        row.addNum(cid + numStart, d);
+      }
+    }
+    // response(s)
+    for (int i = 1; i <= _responses; ++i) {
+      Chunk rChunk = chunks[responseChunkId()];
+      for (int r = 0; r < chunks[0]._len; ++r) {
+        Row row = rows[r];
+        if(row.bad) continue;
+        row.response[row.response.length - i] = rChunk.atd(r);
+        if (_normRespMul != null) {
+          row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
+        }
+        if (Double.isNaN(row.response[row.response.length - i]))
+          row.bad = true;
+      }
+    }
+    return rows;
+  }
+
+  /**
+   * Extract (dense) rows from given chunks, one Vec at a time - should be slightly faster than per-row
+   * @param chunks - chunk of dataset
+   * @return array of dense rows
+   */
+  public final Row[] extractDenseRowsVertical(Chunk[] chunks) {
+    Row[] rows = new Row[chunks[0]._len];
+
+    for (int i = 0; i < rows.length; ++i) {
+      rows[i] = new Row(false, _nums, _cats, _responses, 0);
+      rows[i].rid = chunks[0].start() + i;
+      if(_offset)  {
+        rows[i].offset = chunks[offsetChunkId()].atd(i);
+        if(Double.isNaN(rows[i].offset)) rows[i].bad = true;
+      }
+      if(_weights) {
+        rows[i].weight = chunks[weightChunkId()].atd(i);
+        if(Double.isNaN(rows[i].weight)) rows[i].bad = true;
+      }
+    }
+    for (int i = 0; i < _cats; ++i) {
+      for (int r = 0; r < chunks[0]._len; ++r) {
+        Row row = rows[r];
+        if(row.bad)continue;
+        if (chunks[i].isNA(r)) {
+          if (_skipMissing) {
+            row.bad = true;
+          } else
+            row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
+        } else {
+          int c = getCategoricalId(i,(int)chunks[i].at8(r));
+          if(c >=0)
+            row.binIds[row.nBins++] = c;
+        }
+      }
+    }
+    int numStart = numStart();
+    // generic numbers
+    for (int cid = 0; cid < _nums; ++cid) {
+      Chunk c = chunks[_cats + cid];
+      for (int r = 0; r < c._len; ++r) {
+        Row row = rows[r];
+        if (row.bad) continue;
+        if (c.isNA(r)) row.bad = _skipMissing;
+        double d = c.atd(r);
+        if(_normMul != null && _normSub != null) //either none or both
+          d = (d - _normSub[cid]) * _normMul[cid];
+        row.numVals[numStart + cid] = d;
       }
     }
     // response(s)

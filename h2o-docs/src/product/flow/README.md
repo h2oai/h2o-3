@@ -546,7 +546,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **l2**: ([DL](#DL)) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. 
 
-- **balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [Naïve Bayes](#NB)) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+- **balance_classes**: ([GBM](#GBM), [DL](#DL), [Naïve Bayes](#NB)) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
 - **max\_confusion\_matrix\_size**: ([DRF](#DRF), [Naïve Bayes](#NB), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
@@ -625,7 +625,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **quiet_mode**: ([DL](#DL)) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
-- **sparse**: ([DL](#DL)) Check this checkbox to use sparse iterators for the input layer. This option is not selected by default as it rarely improves performance. 
+- **sparse**: ([DL](#DL)) Check this checkbox to enable sparse data handling, which is more efficient for data with many zero values. 
 
 - **col_major**: ([DL](#DL)) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default.  
   

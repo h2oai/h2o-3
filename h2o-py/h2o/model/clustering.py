@@ -203,7 +203,6 @@ class H2OClusteringModel(ModelBase):
     """
     o = self._model_json["output"]
     cvals = o["centers_std"].cell_values
-    centers_std = []
-    for cidx, cval in enumerate(cvals):
-      centers_std.append(list(cvals[cidx])[1:])
+    centers_std = [list(cval[1:]) for cval in cvals]
+    centers_std = [list(x) for x in zip(*centers_std)]
     return centers_std
