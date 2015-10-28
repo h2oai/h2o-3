@@ -982,7 +982,7 @@ h2o.runif <- function(x, seed = -1) {
 #' h2o.anyFactor(iris.hex)
 #' }
 #' @export
-h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
+h2o.anyFactor <- function(x) as.logical(.eval.scalar(.newExpr("any.factor", x)))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Overloaded Base R Methods
@@ -2321,7 +2321,7 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 #' }
 #'  @export
 h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
-                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, inplace=TRUE) {
+                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, inplace=FALSE) {
   # TODO: "bfill" back fill the missing value with the next non-missing value in the vector
   # TODO: "ffill" front fill the missing value with the most-recent non-missing value in the vector.
   # TODO: #'  @param max_gap  The maximum gap with which to fill (either "ffill", or "bfill") missing values. If more than max_gap consecutive missing values occur, then those values remain NA.
@@ -2371,7 +2371,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
       gb.cols <- .row.col.selector(vars,envir=parent.frame())
   }
 
-  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
+  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols)
   # In-place updates we force right now, because the user expects future uses
   # of 'data' to show the imputed changed.
   if( inplace ) stop("unimpl")
