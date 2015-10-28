@@ -587,6 +587,9 @@ public class DataInfo extends Keyed {
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
     row.rid = rid + chunks[0].start();
+    if(_weights)
+      row.weight = chunks[weightChunkId()].atd(rid);
+    if(row.weight == 0) return row;
     if (_skipMissing)
       for (Chunk c : chunks)
         if(c.isNA(rid)) {
@@ -627,9 +630,12 @@ public class DataInfo extends Keyed {
     }
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
-    if(_weights)
-      row.weight = chunks[weightChunkId()].atd(rid);
+
     return row;
+  }
+
+  public Vec getWeightsVec(){
+    return _adaptedFrame.vec(weightChunkId());
   }
   public Row newDenseRow(){
     return new Row(false,_nums,_cats,_responses,0);

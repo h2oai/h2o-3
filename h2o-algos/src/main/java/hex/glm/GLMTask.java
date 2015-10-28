@@ -75,10 +75,12 @@ public abstract class GLMTask  {
      boolean [] good = MemoryManager.mallocZ(chunks[0]._len);
      Arrays.fill(good,true);
      Chunk weight = chunks[_weightId];
-     for(int i = 0; i < chunks.length; ++i)
-       for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
-         if(weight.atd(i) != 0 && chunks[i].isNA(r))
-            good[r] = false;
+     for(int i = 0; i < chunks.length; ++i) {
+       for (int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r)) {
+         if (weight.atd(r) != 0 && chunks[i].isNA(r))
+           good[r] = false;
+       }
+     }
      Chunk response = chunks[_responseId];
      if(_comupteWeightedSigma) {
        _xsum = MemoryManager.malloc8d(_nums);
@@ -109,8 +111,8 @@ public abstract class GLMTask  {
      }
      boolean all_good = true;
      for(boolean b:good)all_good &= b;
-
      if(!all_good) {
+
        if (weight instanceof C0DChunk && weight.atd(0) == 1) // shortcut for h2o-made binary weights
          DKV.put(weight.vec().chunkKey(chunks[0].cidx()), new CBSChunk(good));
        else {
@@ -534,7 +536,7 @@ public abstract class GLMTask  {
       for(int rid = 0; rid < chks[0]._len; ++rid) {
         if(skp[rid]) continue;
         row = _dinfo.extractDenseRow(chks, rid, row);
-        if(row.bad || row.weight == 0) continue;
+        if(row.weight == 0 || row.bad) continue;
         _nobs++;
         _wsum += row.weight;
         double eta = row.innerProduct(b) + row.offset;
