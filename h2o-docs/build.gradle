@@ -50,6 +50,9 @@ task(createBuildInfoTex) << {
     sb.append(bv.getProjectVersion())
     sb.append('}\n')
     f.write(sb.toString())
+    if (!bookletOutputPath.exists()) {
+      bookletOutputPath.mkdirs()
+    }
 }
 
 // Note: The '6' here is the number of items in the list of booklets.
