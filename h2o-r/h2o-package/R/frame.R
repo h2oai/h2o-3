@@ -2168,7 +2168,10 @@ h2o.rbind <- function(...) {
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' }
 #' @export
-h2o.merge <- function(x, y, all.x = TRUE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
+h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE, by.x=intersect(names(x), names(y)),
+                      by.y=intersect(names(x), names(y)), method="small") {
+  .newExpr("merge", x, y, all.x, all.y, by.x, by.y, .quote(method))
+}
 
 #' Group and Apply by Column
 #'

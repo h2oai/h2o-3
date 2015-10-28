@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 
 /** plyr's merge: Join by any other name.
- *  Sample AST: (merge $leftFrame $rightFrame allLeftFlag allRightFlag)
+ *  Sample AST: (merge $xFrame $yFrame all_xFlag all_yFlag)
  *
  *  Joins two frames; all columns with the same names will be the join key.  If
  *  you want to join on a subset of identical names, rename the columns first
@@ -21,14 +21,14 @@ import java.util.Arrays;
  *  allowed - because the resulting Frame will end up with duplicate column
  *  names which blows a Frame invariant (uniqueness of column names).
  *
- *  If allLeftFlag is true, all rows in the leftFrame will be included, even if
- *  there is no matching row in the rightFrame, and vice-versa for
- *  allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
+ *  If all_xFlag is true, all rows in the xFrame will be included, even if
+ *  there is no matching row in the yFrame, and vice-versa for
+ *  all_yFlag.  Missing data will appear as NAs.  Both flags can be true.
  */
 public class ASTMerge extends ASTPrim {
-  @Override public String[] args() { return new String[]{"left","rite", "all_left", "all_rite"}; }
+  @Override public String[] args() { return new String[]{"x", "y", "all_x", "all_y", "by_x", "by_y", "method"}; }
   @Override public String str(){ return "merge";}
-  @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
+  @Override int nargs() { return 1+7; } // (merge x y all.x all.y)
 
   // Size cutoff before switching between a hashed-join vs a sorting join.
   // Hash tables beyond this count are assumed to be inefficient, and we're
@@ -39,10 +39,13 @@ public class ASTMerge extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
-    boolean allLeft = asts[3].exec(env).getNum() == 1;
-    boolean allRite = asts[4].exec(env).getNum() == 1;
+    boolean all_x = asts[3].exec(env).getNum() == 1;
+    boolean all_y = asts[4].exec(env).getNum() == 1;
+    int[] by_x = check(asts[5]);
+    int[] by_y = check(asts[6]);
+    String method = asts[7].exec(env).getStr();
 
-    // Look for the set of columns in common; resort left & right to make the
+    // Look for the set of columns in common; resort x & y to make the
     // leading prefix of column names match.  Bail out if we find any weird
     // column types.
     int ncols=0;                // Number of columns in common
@@ -71,17 +74,17 @@ public class ASTMerge extends ASTPrim {
     // or neither are "all", then pick the smallest bytesize of the non-key
     // columns.  The hashed dataframe is completely replicated per-node
     boolean walkLeft;
-    if( allLeft == allRite ) {
+    if( all_x == all_y ) {
       long lsize = 0, rsize = 0;
       for( int i=ncols; i<l.numCols(); i++ ) lsize += l.vecs()[i].byteSize();
       for( int i=ncols; i<r.numCols(); i++ ) rsize += r.vecs()[i].byteSize();
       walkLeft = lsize > rsize;
     } else {
-      walkLeft = allLeft;
+      walkLeft = all_x;
     }
     Frame walked = walkLeft ? l : r;
     Frame hashed = walkLeft ? r : l;
-    if( !walkLeft ) { boolean tmp = allLeft;  allLeft = allRite;  allRite = tmp; }
+    if( !walkLeft ) { boolean tmp = all_x;  all_x = all_y;  all_y = tmp; }
 
     // Build categorical mappings, to rapidly convert categoricals from the
     // distributed set to the hashed & replicated set.
@@ -94,68 +97,78 @@ public class ASTMerge extends ASTPrim {
 
     // Build the hashed version of the hashed frame.  Hash and equality are
     // based on the known-integer key columns.  Duplicates are either ignored
-    // (!allRite) or accumulated, and can force replication of the walked set.
+    // (!all_y) or accumulated, and can force replication of the walked set.
     //
     // Count size of this hash table as-we-go.  Bail out if the size exceeds
     // a known threshold, and switch a sorting join instead of a hashed join.
-    final MergeSet ms = new MergeSet(ncols,id_maps,allRite).doAll(hashed);
-    final Key uniq = ms._uniq;
-    IcedHashMap<Row,String> rows = MergeSet.MERGE_SETS.get(uniq)._rows;
-    new MRTask() { @Override public void setupLocal() { MergeSet.MERGE_SETS.remove(uniq);  } }.doAllNodes();
-    if( rows == null )          // Blew out hash size; switch to a sorting join
-      return sortingMerge(walked,hashed,allLeft,allRite,ncols,id_maps);
-
-    // All of the walked set, and no dup handling on the right - which means no
-    // need to replicate rows of the walked dataset.  Simple 1-pass over the
-    // walked set adding in columns (or NAs) from the right.
-    if( allLeft && !(allRite && ms._dup) ) {
-      // The lifetime of the distributed dataset is independent of the original
-      // dataset, so it needs to be a deep copy.
-      // TODO: COW Optimization
-      walked = walked.deepCopy(null);
-
-      // run a global parallel work: lookup non-hashed rows in hashSet; find
-      // matching row; append matching column data
-      String[]   names  = Arrays.copyOfRange(hashed._names,   ncols,hashed._names   .length);
-      String[][] domains= Arrays.copyOfRange(hashed.domains(),ncols,hashed.domains().length);
-      byte[] types = Arrays.copyOfRange(hashed.types(),ncols,hashed.numCols());
-      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(types,walked).outputFrame(names,domains);
-      return new ValFrame(walked.add(res));
+    if (method.equals("big")) {
+      return sortingMerge(walked,hashed,all_x,all_y,ncols,id_maps);
     }
+    else {
+      final MergeSet ms = new MergeSet(ncols, id_maps, all_y).doAll(hashed);
+      final Key uniq = ms._uniq;
+      IcedHashMap<Row, String> rows = MergeSet.MERGE_SETS.get(uniq)._rows;
+      new MRTask() {
+        @Override
+        public void setupLocal() {
+          MergeSet.MERGE_SETS.remove(uniq);
+        }
+      }.doAllNodes();
+      if (rows == null)
 
-    // Can be full or partial on the left, but won't nessecarily do all of the
-    // right.  Dups on right are OK (left will be replicated or dropped as needed).
-    if( !allRite ) {
-      String[] names = Arrays.copyOf(walked.names(),walked.numCols() + hashed.numCols()-ncols);
-      System.arraycopy(hashed.names(),ncols,names,walked.numCols(),hashed.numCols()-ncols);
-      String[][] domains = Arrays.copyOf(walked.domains(),walked.numCols() + hashed.numCols()-ncols);
-      System.arraycopy(hashed.domains(),ncols,domains,walked.numCols(),hashed.numCols()-ncols);
-      byte[] types = walked.types();
-      types = Arrays.copyOf(types,types.length+hashed.numCols()-ncols);
-      System.arraycopy(hashed.types(),ncols,types,walked.numCols(),hashed.numCols()-ncols);
-      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(types,walked).outputFrame(names,domains));
-    } 
 
-    throw H2O.unimpl();
+        // All of the walked set, and no dup handling on the y - which means no
+        // need to replicate rows of the walked dataset.  Simple 1-pass over the
+        // walked set adding in columns (or NAs) from the y.
+        if (all_x && !(all_y && ms._dup)) {
+          // The lifetime of the distributed dataset is independent of the original
+          // dataset, so it needs to be a deep copy.
+          // TODO: COW Optimization
+          walked = walked.deepCopy(null);
+
+          // run a global parallel work: lookup non-hashed rows in hashSet; find
+          // matching row; append matching column data
+          String[] names = Arrays.copyOfRange(hashed._names, ncols, hashed._names.length);
+          String[][] domains = Arrays.copyOfRange(hashed.domains(), ncols, hashed.domains().length);
+          byte[] types = Arrays.copyOfRange(hashed.types(), ncols, hashed.numCols());
+          Frame res = new AllLeftNoDupe(ncols, rows, hashed, all_y).doAll(types, walked).outputFrame(names, domains);
+          return new ValFrame(walked.add(res));
+        }
+
+      // Can be full or partial on the x, but won't nessecarily do all of the
+      // y.  Dups on y are OK (x will be replicated or dropped as needed).
+      if (!all_y) {
+        String[] names = Arrays.copyOf(walked.names(), walked.numCols() + hashed.numCols() - ncols);
+        System.arraycopy(hashed.names(), ncols, names, walked.numCols(), hashed.numCols() - ncols);
+        String[][] domains = Arrays.copyOf(walked.domains(), walked.numCols() + hashed.numCols() - ncols);
+        System.arraycopy(hashed.domains(), ncols, domains, walked.numCols(), hashed.numCols() - ncols);
+        byte[] types = walked.types();
+        types = Arrays.copyOf(types, types.length + hashed.numCols() - ncols);
+        System.arraycopy(hashed.types(), ncols, types, walked.numCols(), hashed.numCols() - ncols);
+        return new ValFrame(new AllRiteWithDupJoin(ncols, rows, hashed, all_x).doAll(types, walked).outputFrame(names, domains));
+      }
+
+      throw H2O.unimpl();
+    }
   }
 
   /** Use a sorting merge/join, probably because the hash table size exceeded
    *  MAX_HASH_SIZE; i.e. the number of unique keys in the hashed Frame exceeds
    *  MAX_HASH_SIZE.  Join is done on the first ncol columns in both frames,
    *  which are already known to be not-null and have matching names and types.
-   *  The walked and hashed frames are sorted according to allLeft; if allRite
-   *  is set then allLeft will also be set (but not vice-versa).
+   *  The walked and hashed frames are sorted according to all_x; if all_y
+   *  is set then all_x will also be set (but not vice-versa).
    *
    *  @param walked is the LHS frame; not-null.
    *  @param hashed is the RHS frame; not-null.
-   *  @param allLeft all rows in the LHS frame will appear in the result frame.
-   *  @param allRite all rows in the RHS frame will appear in the result frame.
+   *  @param all_x all rows in the LHS frame will appear in the result frame.
+   *  @param all_y all rows in the RHS frame will appear in the result frame.
    *  @param ncols is the number of columns to join on, and these are ordered
-   *  as the first ncols of both the left and right frames.  
+   *  as the first ncols of both the x and y frames.
    *  @param id_maps if not-null denote simple integer mappings from one
    *  categorical column to another; the width is ncols
    */
-  private ValFrame sortingMerge( Frame walked, Frame hashed, boolean allLeft, boolean allRite, int ncols, int[][] id_maps) {
+  private ValFrame sortingMerge( Frame walked, Frame hashed, boolean all_x, boolean all_y, int ncols, int[][] id_maps) {
     throw H2O.unimpl();
   }
 
@@ -215,12 +228,12 @@ public class ASTMerge extends ASTPrim {
     final Key _uniq;      // Key to allow sharing of this MergeSet on each Node
     final int _ncols;     // Number of leading columns for the Hash Key
     final int[][] _id_maps; // Rapid mapping between matching enums
-    final boolean _allRite; // Collect all rows with the same matching Key, or just the first
+    final boolean _all_y; // Collect all rows with the same matching Key, or just the first
     boolean _dup;           // Dups are present at all
     IcedHashMap<Row,String> _rows;
 
-    MergeSet( int ncols, int[][] id_maps, boolean allRite ) { 
-      _uniq=Key.make();  _ncols = ncols;  _id_maps = id_maps;  _allRite = allRite;
+    MergeSet( int ncols, int[][] id_maps, boolean all_y ) {
+      _uniq=Key.make();  _ncols = ncols;  _id_maps = id_maps;  _all_y = all_y;
     }
     // Per-node, make the empty hashset for later reduction
     @Override public void setupLocal() {
@@ -242,7 +255,7 @@ public class ASTMerge extends ASTPrim {
       if( rows.putIfAbsent(row,"")==null )
         return true;            // Added!
       // dup handling: keys are identical
-      if( _allRite ) {          // Collect the dups?
+      if( _all_y ) {          // Collect the dups?
         _dup = true;            // MergeSet has dups.
         rows.getk(row).atomicAddDup(row._row);
       }
@@ -262,9 +275,9 @@ public class ASTMerge extends ASTPrim {
     protected final IcedHashMap<Row,String> _rows;
     protected final int _ncols;     // Number of merge columns
     protected final Frame _hashed;
-    protected final boolean _allLeft, _allRite;
-    JoinTask( int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean allLeft, boolean allRite ) {
-      _rows = rows; _ncols = ncols; _hashed = hashed; _allLeft = allLeft; _allRite = allRite;
+    protected final boolean _all_x, _all_y;
+    JoinTask( int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean all_x, boolean all_y ) {
+      _rows = rows; _ncols = ncols; _hashed = hashed; _all_x = all_x; _all_y = all_y;
     }
     protected static void addElem(NewChunk nc, Chunk c, int row) {
       if( c.isNA(row) )                 nc.addNA();
@@ -288,8 +301,8 @@ public class ASTMerge extends ASTPrim {
   // dataset, doing a hash-lookup on the hashed replicated dataset, and adding
   // in the matching columns.
   private static class AllLeftNoDupe extends JoinTask {
-    AllLeftNoDupe(int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean allRite) {
-      super(ncols, rows, hashed, true, allRite);
+    AllLeftNoDupe(int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean all_y) {
+      super(ncols, rows, hashed, true, all_y);
     }
 
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
@@ -314,12 +327,23 @@ public class ASTMerge extends ASTPrim {
     }
   }
 
+  private int[] check(AST ast) {
+    double[] n;
+    if( ast instanceof ASTNumList  ) n = ((ASTNumList)ast).expand();
+    else if( ast instanceof ASTNum ) n = new double[]{((ASTNum)ast)._v.getNum()};  // this is the number of breaks wanted...
+    else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
+    int[] ni = new int[n.length];
+    for (int i=0; i<ni.length; ++i)
+      ni[i] = (int) n[i];
+    return ni;
+  }
+
   // Build the join-set by iterating over all the local Chunks of the walked
   // dataset, doing a hash-lookup on the hashed replicated dataset, and adding
   // in BOTH the walked and the matching columns.
   private static class AllRiteWithDupJoin extends JoinTask {
-    AllRiteWithDupJoin(int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean allLeft) {
-      super(ncols, rows, hashed, allLeft, true);
+    AllRiteWithDupJoin(int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean all_x) {
+      super(ncols, rows, hashed, all_x, true);
     }
 
     @Override public void map(Chunk[] chks, NewChunk[] nchks) {
@@ -333,11 +357,11 @@ public class ASTMerge extends ASTPrim {
       for( int i=0; i<len; i++ ) {
         Row hashed = rows.getk(row.fill(chks, null, i));
         if( hashed == null ) {    // no rows, fill in chks, and pad NAs as needed...
-          if( _allLeft ) {        // pad NAs to the right...
+          if( _all_x ) {        // pad NAs to the y...
             int c=0;
             for(; c< chks.length;++c) addElem(nchks[c],chks[c],i);
             for(; c<nchks.length;++c) nchks[c].addNA();
-          } // else no hashed and no _allLeft... skip (row is dropped)
+          } // else no hashed and no _all_x... skip (row is dropped)
         } else {
           if( hashed._dups!=null ) for(long absrow : hashed._dups ) addRow(nchks,chks,vecs,i,  absrow   ,bStr);
           else                                                      addRow(nchks,chks,vecs,i,hashed._row,bStr);
