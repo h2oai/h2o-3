@@ -29,7 +29,7 @@ def grid_glrm_iris():
   assert len(gs) == size_of_hyper_space
   total_grid_space = map(list, itertools.product(*hyper_parameters.values()))
   for model in gs.models:
-      combo = [model.parms['transform']['actual_value']] + [model.parms['k']['actual_value']]
+      combo = [model.parms['k']['actual_value']] + [model.parms['transform']['actual_value']]
       assert combo in total_grid_space
       total_grid_space.remove(combo)
 
