@@ -1,8 +1,10 @@
-import sys, os
+import sys
+import os
+import copy
+import random
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
-import random
 from h2o.grid.grid_search import H2OGridSearch
 
 def deeplearning_grid_cars():
@@ -59,6 +61,28 @@ def deeplearning_grid_cars():
     actual_size = len(cars_dl_grid)
     assert size_of_grid_space ==  actual_size, "Expected size of grid to be {0}, but got {1}" \
                                                "".format(size_of_grid_space,actual_size)
+    print "Duplicate-entries-in-grid-space check"
+    new_grid_space = copy.deepcopy(grid_space)
+    for name in grid_space.keys():
+        if not name == "distribution":
+            new_grid_space[name] = grid_space[name] + grid_space[name]
+    print "The new search space: {0}".format(new_grid_space)
+    print "Constructing the new grid of gbm models..."
+    cars_dl_grid2 = H2OGridSearch(H2ODeepLearningEstimator, hyper_params=new_grid_space)
+    if validation_scheme == 1:
+        cars_dl_grid2.train(x=predictors,y=response_col,training_frame=train)
+    elif validation_scheme == 2:
+        cars_dl_grid2.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
+    else:
+        cars_dl_grid2.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+    actual_size2 = len(cars_dl_grid2)
+    assert actual_size == actual_size2, "Expected duplicates to be ignored. Without dups grid size: {0}. With dups " \
+                                    "size: {1}".format(actual_size, actual_size2)
+
+    print "Check that the hyper_params that were passed to grid, were used to construct the models..."
+    for name in grid_space.keys():
+        pyunit_utils.expect_model_param(cars_dl_grid, name, grid_space[name])
+
 
 
 if __name__ == "__main__":
