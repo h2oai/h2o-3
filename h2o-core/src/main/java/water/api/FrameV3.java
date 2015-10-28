@@ -1,5 +1,6 @@
 package water.api;
 
+import water.Futures;
 import water.Key;
 import water.MemoryManager;
 import water.api.KeyV3.FrameKeyV3;
@@ -237,15 +238,14 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
 
     this.columns = new ColV3[column_count];
     Vec[] vecs = f.vecs();
-    for( int i = 0; i < column_count; i++ ) {
-      try {
-        columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count, force_summary);
-      }
-      catch (Exception e) {
-        Log.err("Caught exception processing FrameV2(", f._key.toString(), "): Vec: " + f._names[column_offset + i], e);
-        throw e;
-      }
-    }
+    Futures fs = new Futures();
+    // Compute rollups in parallel as needed, by starting all of them and using
+    // them when filling in the ColV3 Schemas
+    for( int i = 0; i < column_count; i++ )
+      vecs[column_offset + i].startRollupStats(fs,force_summary);
+    for( int i = 0; i < column_count; i++ )
+      columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count, force_summary);
+    fs.blockForPending();
     this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;
 
