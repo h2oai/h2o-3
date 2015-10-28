@@ -989,7 +989,7 @@ public class Vec extends Keyed<Vec> {
   /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
    *  @return Brief string representation of a Vec */
   @Override public String toString() {
-    RollupStats rs = RollupStats.getOrNull(this);
+    RollupStats rs = RollupStats.getOrNull(this,rollupStatsKey());
     String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
     int nc = nChunks();
     for( int i=0; i<nc; i++ ) {

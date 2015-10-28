@@ -3,17 +3,7 @@ An H2OConnection represents the latest active handle to a cloud. No more than a 
 H2OConnection object will be active at any one time.
 """
 
-import requests
-import math
-import re
-import os
-import sys
-import string
-import time
-import tempfile
-import subprocess
-import atexit
-import pkg_resources
+import requests, math, re, os, sys, string, time, tempfile, tabulate, subprocess, atexit, pkg_resources
 from two_dim_table import H2OTwoDimTable
 import h2o
 import h2o_logging
@@ -112,13 +102,13 @@ class H2OConnection(object):
       else:
         print "Warning: {0}".format(message)
 
+    self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()
 
   @staticmethod
   def _cluster_info():
     global __H2OCONN__
     cld = __H2OCONN__._cld
-    # self._session_id = self.get_session_id()
     ncpus = sum([n['num_cpus'] for n in cld['nodes']])
     allowed_cpus = sum([n['cpus_allowed'] for n in cld['nodes']])
     mmax = sum([n['max_mem'] for n in cld['nodes']])
@@ -145,7 +135,6 @@ class H2OConnection(object):
     is of a certain size, and is taking basic status commands.df = h2o.H2OFrame(((1, 2, 3),
                    ('a', 'b', 'c'),
                    (0.1, 0.2, 0.3)))
-df
     :param size: The number of H2O instances in the cloud.
     :return: The JSON response from a "stable" cluster.
     """
@@ -333,10 +322,6 @@ df
     if response == "Y" or response == "y": conn.post(url_suffix="Shutdown")
 
   @staticmethod
-  def get_session_id():
-      return H2OConnection.get_json(url_suffix="InitID")["session_key"]
-
-  @staticmethod
   def rest_version(): return __H2OCONN__._rest_version
 
   @staticmethod
@@ -476,6 +461,7 @@ df
       h2o_logging._log_rest("{0} {1}\n".format(method, url))
       h2o_logging._log_rest("postBody: {0}\n".format(post_body))
 
+    global _rest_ctr; _rest_ctr = _rest_ctr+1
     begin_time_seconds = time.time()
     http_result = self._attempt_rest(url, method, post_body, file_upload_info)
     end_time_seconds = time.time()
@@ -568,6 +554,11 @@ df
         for it in range(len(x)):
           x[it] = H2OConnection._process_tables(x[it])
     return x
+
+  global _rest_ctr
+  _rest_ctr = 0
+  @staticmethod
+  def rest_ctr(): global _rest_ctr; return _rest_ctr
 
 
 def get_human_readable_size(num):

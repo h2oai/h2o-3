@@ -229,6 +229,24 @@ public class ASTNumList extends ASTParameter {
     res[1]=new int[]{lb,ub}; // return 2 closest bases
   }
 
-  // Select columns by number or String.
-  @Override int[] columns( String[] names ) { return expand4(); }
+  // Select columns by number.  Numbers are capped to the number of columns +1
+  // - this allows R      to see a single out-of-range value and throw a range check
+  // - this allows Python to see a single out-of-range value and ignore it
+  // - this allows Python to pass [0:MAXINT] without blowing out the max number of columns.
+  // Note that the Python front-end does not want to cap the max column size, because
+  // this will force eager evaluation on a standard column slice operation.
+  @Override int[] columns( String[] names ) { 
+    // Count total values, capped by max len+1
+    int nrows=0, r=0;
+    for( int i=0; i<_bases.length; i++ )
+      nrows += Math.min(_bases[i]+_cnts[i],names.length+1) - Math.min(_bases[i],names.length+1);
+    // Fill in values
+    int[] vals = new int[nrows];
+    for( int i=0; i<_bases.length; i++ ) {
+      int lim = Math.min((int)(_bases[i]+_cnts[i]),names.length+1);
+      for( int d = Math.min((int)_bases[i],names.length+1); d<lim; d++ )
+        vals[r++] = d;
+    }
+    return vals;
+  }
 }

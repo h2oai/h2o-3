@@ -303,22 +303,22 @@ public class RapidsTest extends TestUtil {
   static void exec_str( String str ) {
     Val val = Exec.exec(str);
     switch( val.type() ) {
-      case Val.FRM:
-        Frame fr = val.getFrame();
-        System.out.println(fr);
-        checkSaneFrame();
-        fr.delete();
-        break;
-      case Val.NUM:
-        System.out.println("num= "+val.getNum());
-        checkSaneFrame();
-        break;
-      case Val.STR:
-        System.out.println("str= "+val.getStr());
-        checkSaneFrame();
-        break;
-      default:
-        throw water.H2O.fail();
+    case Val.FRM:
+      Frame fr = val.getFrame();
+      System.out.println(fr);
+      checkSaneFrame();
+      fr.delete();
+      break;
+    case Val.NUM:
+      System.out.println("num= "+val.getNum());
+      checkSaneFrame();
+      break;
+    case Val.STR:
+      System.out.println("str= "+val.getStr());
+      checkSaneFrame();
+      break;
+    default:
+      throw water.H2O.fail();
     }
   }
 
@@ -353,7 +353,7 @@ public class RapidsTest extends TestUtil {
       ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
       ps.getColumnTypes()[1] = Vec.T_CAT;
       ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
-
+      
       exec_str("(tmp= census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))");
 
       exec_str("(tmp= crimes.hex (colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"]))");
@@ -455,15 +455,15 @@ public class RapidsTest extends TestUtil {
       Exec.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
 
       for( String s : new String[]{"weather.hex","crimes.hex","census.hex",
-              "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
-              "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
-              "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
-              "binary_op_18", "binary_op_19", "binary_op_20", "binary_op_21",
-              "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
-              "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
-              "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
-              "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
-              "subset_41", "binary_op_42", "subset_43", "subset_44", } )
+                                   "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
+                                   "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
+                                   "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
+                                   "binary_op_18", "binary_op_19", "binary_op_20", "binary_op_21",
+                                   "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
+                                   "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
+                                   "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
+                                   "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
+                                   "subset_41", "binary_op_42", "subset_43", "subset_44", } )
         Keyed.remove(Key.make(s));
     }
   }

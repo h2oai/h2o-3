@@ -52,9 +52,6 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   @API(help="Block until the parse completes (as opposed to returning early and requiring polling")
   boolean blocking;
 
-  @API(help="Remove frame after blocking parse, and return array of Vecs")
-  boolean remove_frame;
-
   // Output fields
   @API(help="Parse job", direction=API.Direction.OUTPUT)
   JobV3 job;
@@ -62,10 +59,6 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   // Zero if blocking==false; row-count if blocking==true
   @API(help="Rows", direction=API.Direction.OUTPUT)
   long rows;
-
-  // Only not-null if blocking==true and removeFrame=true
-  @API(help="Vec IDs", direction=API.Direction.OUTPUT)
-  VecKeyV3[] vec_ids;
 
 
   //==========================

@@ -70,7 +70,7 @@ class H2OAssembly:
     for step in self.steps:
       res.append(step[1].to_rest(step[0]))
     res = "[" + ",".join([_quoted(r.replace('"',"'")) for r in res]) + "]"
-    j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr._id, _rest_version=99)
+    j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr.frame_id, _rest_version=99)
     self.id = j["assembly"]["name"]
     return get_frame(j["result"]["name"])
 

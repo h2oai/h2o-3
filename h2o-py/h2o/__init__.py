@@ -402,7 +402,6 @@ from demo import *
 from h2o_logging import *
 from frame import H2OFrame
 from group_by import GroupBy
-from expr import ExprNode
 from two_dim_table import H2OTwoDimTable
 from assembly import H2OAssembly
 
