@@ -102,13 +102,13 @@ class H2OConnection(object):
       else:
         print "Warning: {0}".format(message)
 
+    self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()
 
   @staticmethod
   def _cluster_info():
     global __H2OCONN__
     cld = __H2OCONN__._cld
-    # self._session_id = self.get_session_id()
     ncpus = sum([n['num_cpus'] for n in cld['nodes']])
     allowed_cpus = sum([n['cpus_allowed'] for n in cld['nodes']])
     mmax = sum([n['max_mem'] for n in cld['nodes']])
@@ -135,7 +135,6 @@ class H2OConnection(object):
     is of a certain size, and is taking basic status commands.df = h2o.H2OFrame(((1, 2, 3),
                    ('a', 'b', 'c'),
                    (0.1, 0.2, 0.3)))
-df
     :param size: The number of H2O instances in the cloud.
     :return: The JSON response from a "stable" cluster.
     """
@@ -321,10 +320,6 @@ df
                                     "(Y/N)? ".format(conn.ip(), conn.port()))
     else: response = "Y"
     if response == "Y" or response == "y": conn.post(url_suffix="Shutdown")
-
-  @staticmethod
-  def get_session_id():
-      return H2OConnection.get_json(url_suffix="InitID")["session_key"]
 
   @staticmethod
   def rest_version(): return __H2OCONN__._rest_version
