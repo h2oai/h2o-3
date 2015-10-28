@@ -1843,6 +1843,9 @@ def can_use_pandas():
   except ImportError:
     return False
 
+# Used by tests to verify the number of python-side temps remains sane
+def temp_ctr():  return H2OFrame.temp_ctr()
+def rest_ctr():  return H2OConnection.rest_ctr()
 
 #  ALL DEPRECATED METHODS BELOW #
 

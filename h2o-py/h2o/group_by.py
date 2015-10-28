@@ -67,7 +67,7 @@ class GroupBy:
       aggs=[]
       for k in self._aggs: aggs += (self._aggs[k])
       self._res = h2o.H2OFrame(expr.ExprNode("GB", self._fr,self._by,self._order_by, *aggs))
-    return self._res;
+    return self._res
 
   def _add_agg(self,op,col,na):
     if op=="nrow": col=0
@@ -75,7 +75,7 @@ class GroupBy:
       for i in range(self._fr.ncol):
         if i not in self._by: self._add_agg(op,i,na)
       return self
-    elif isinstance(col, basestring):  cidx=self._fr.index(col)
+    elif isinstance(col, basestring):  cidx=self._fr.names.index(col)
     elif isinstance(col, int):         cidx=col
     elif isinstance(col, (tuple,list)):
       for i in col:

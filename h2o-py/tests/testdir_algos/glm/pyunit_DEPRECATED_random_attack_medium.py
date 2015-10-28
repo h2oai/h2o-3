@@ -49,7 +49,7 @@ def random_attack():
             if len(bc) > 0:
                 beta_constraints = h2o.H2OFrame.fromPython(zip(*bc))
                 beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
-                kwargs['beta_constraints'] = beta_constraints._id
+                kwargs['beta_constraints'] = beta_constraints.frame_id
 
         # display the parameters and their corresponding values
         print "-----------------------"
