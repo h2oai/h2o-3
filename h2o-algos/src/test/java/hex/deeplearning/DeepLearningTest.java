@@ -1267,7 +1267,7 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  @Test(expected = H2OIllegalArgumentException.class)
+  @Test
   public void testCheckpointSameEpochs() {
     Frame tfr = null;
     DeepLearningModel dl = null;
@@ -1299,6 +1299,8 @@ public class DeepLearningTest extends TestUtil {
       DeepLearning job2 = new DeepLearning(parms2);
       try {
         dl2 = job2.trainModel().get();
+        Assert.fail("Should toss exception instead of reaching here");
+      } catch (H2OIllegalArgumentException ex) {
       } finally {
         job2.remove();
       }
@@ -1310,7 +1312,7 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  @Test(expected = H2OIllegalArgumentException.class)
+  @Test
   public void testCheckpointBackwards() {
     Frame tfr = null;
     DeepLearningModel dl = null;
@@ -1342,6 +1344,8 @@ public class DeepLearningTest extends TestUtil {
       DeepLearning job2 = new DeepLearning(parms2);
       try {
         dl2 = job2.trainModel().get();
+        Assert.fail("Should toss exception instead of reaching here");
+      } catch (H2OIllegalArgumentException ex) {
       } finally {
         job2.remove();
       }

@@ -100,7 +100,6 @@
   h2o.getFutureModel(job)
 }
 
-
 .h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
@@ -1970,6 +1969,14 @@ h2o.sdev <- function(object) {
 # It allows for having algorithm name aliases
 .h2o.unifyAlgoName <- function(algo) {
   result <- if (algo == "randomForest") "drf" else algo
+  result
+}
+
+#
+# Returns REST API version for given algo.
+#
+.h2o.getAlgoVersion <- function(algo, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+  result <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]][["__meta"]]$schema_version
   result
 }
 

@@ -66,6 +66,8 @@ h2o.grid <- function(algorithm,
     lparams <- params
     # Generate all combination of hyper parameters
     expanded_grid <- expand.grid(lapply(hyper_params, function(o) { 1:length(o) }))
+    # Get algo REST version
+    algo_rest_version <- .h2o.getAlgoVersion(algo = algorithm)
     # Verify each defined point in hyper space against REST API
     apply(expanded_grid,
           MARGIN = 1,
@@ -76,7 +78,7 @@ h2o.grid <- function(algorithm,
       params_for_validation <- lapply(append(lparams, hparams), function(x) { if(is.integer(x)) x <- as.numeric(x); x })
       # We have to repeat part of work used by model builders
       params_for_validation <- .h2o.checkAndUnifyModelParameters(algo = algorithm, allParams = all_params, params = params_for_validation)
-      .h2o.validateModelParameters(algorithm, params_for_validation)
+      .h2o.validateModelParameters(algorithm, params_for_validation, h2oRestApiVersion = algo_rest_version)
     })
   }
 
