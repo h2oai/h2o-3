@@ -18,18 +18,17 @@ def build_model(algo_params):
   validation_frame = algo_params.pop("validation_frame",None)
   algo  = algo_params.pop("algo")
   is_auto_encoder = algo_params is not None and "autoencoder" in algo_params and algo_params["autoencoder"] is not None
+  is_unsupervised = is_auto_encoder or algo == "pca" or algo == "kmeans"
   if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
-  if not is_auto_encoder and y is None: raise ValueError("Missing response")
+  if not is_unsupervised and y is None: raise ValueError("Missing response")
   return _model_build(x, y, training_frame, validation_frame, algo, algo_params)
 
 
 def _model_build(x, y, tframe, vframe, algo, kwargs):
-  kwargs['training_frame'] = tframe.frame_id
-  if vframe is not None: kwargs["validation_frame"] = vframe.frame_id
-  if y is not None:  kwargs['response_column'] = y
-
-  kwargs = dict([(k, kwargs[k]._frame().frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])
-
+  kwargs['training_frame'] = tframe
+  if vframe is not None: kwargs["validation_frame"] = vframe
+  if y is not None:  kwargs['response_column'] = tframe[y].names[0]
+  kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
   future_model = H2OModelFuture(H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")), x)
   return _resolve_model(future_model, **kwargs)
 

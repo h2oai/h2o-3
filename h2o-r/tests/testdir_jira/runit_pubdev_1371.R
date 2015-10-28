@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub.1371 <- function() {
   test_frame <- h2o.createFrame(rows = 10000, cols = 200, randomize = TRUE, value = 0, real_range = 37743, 

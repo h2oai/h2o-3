@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 rfReg.vi.test<- function() {
     data2.hex <- h2o.uploadFile(locate("smalldata/gbm_test/BostonHousing.csv"), destination_frame="data2.hex")

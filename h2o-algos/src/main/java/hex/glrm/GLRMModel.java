@@ -22,6 +22,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
     public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _user_x;               // User-specified X matrix (for _init = User)
+    public boolean _expand_user_y = true;    // Should categorical columns in _user_y be expanded via one-hot encoding? (for _init = User)
 
     // Loss functions
     public Loss _loss = Loss.Quadratic;                  // Default loss function for numeric cols
@@ -44,6 +45,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // public Key<Frame> _representation_key;               // Key to save X matrix
     public String _representation_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
+    public boolean _impute_original = false;      // Reconstruct original training data by reversing _transform?
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
     // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
@@ -429,7 +431,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Average change in objective function this iteration
     public double _avg_change_obj;
-    public double[/*iterations*/] _history_avg_change_obj = new double[0];
+    public double[/*iterations*/] _history_objective = new double[0];
 
     // Mapping from lower dimensional k-space to training features (Y)
     public TwoDimTable _archetypes;
@@ -587,6 +589,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         int ds = d - _output._ncats;
         double xy = _output._archetypes_raw.lmulNumCol(tmp, ds);
         preds[_output._permutation[d]] = _parms.impute(xy, _output._lossFunc[d]);
+        if(_parms._impute_original)
+          preds[_output._permutation[d]] = preds[_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
       }
       return preds;
     }
@@ -616,6 +620,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation);
+    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation, _parms._impute_original);
   }
 }

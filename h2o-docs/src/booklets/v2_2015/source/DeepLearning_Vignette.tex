@@ -47,7 +47,7 @@
 
 \normalsize
 \bigskip
-\monthname \hspace{1pt}  \the\year: Third Edition 
+\monthname \hspace{1pt}  \the\year: Fourth Edition 
 
 \bigskip
 \end{center}
@@ -81,7 +81,7 @@ Mountain View, CA 94043\\
 \textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-September 2015: Third Edition
+\monthname \hspace{1pt}  \the\year: Fourth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -155,7 +155,7 @@ In the model, the weighted combination $\alpha = \sum_{i=1}^{n} w_i x_i + b$ of 
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.9]{neuron.png}
+\includegraphics[scale=0.7]{neuron.png}
 \end{figure}
 
 Multi-layer, feedforward neural networks consist of many layers of interconnected neuron units (as shown in the following image), starting with an input layer to match the feature space, followed by multiple layers of nonlinearity, and ending with a linear regression or classification layer to match the output space. The inputs and outputs of the model's units follow the basic logic of the single neuron described above. 
@@ -173,12 +173,13 @@ Here, $W$ is the collection $\left\{W_i\right\}_{1:N-1}$, where $W_i$ denotes th
 
 This basic framework of multi-layer neural networks can be used to accomplish Deep Learning tasks. Deep Learning architectures are models of hierarchical feature extraction, typically involving multiple levels of nonlinearity. Deep Learning models are able to learn useful representations of raw data and have exhibited high performance on complex data such as images, speech, and text \href{http://www.iro.umontreal.ca/~lisa/pointeurs/TR1312.pdf}{(Bengio, 2009)}. 
 
-
 \section{H2O's Deep Learning Architecture} 
 
 H2O follows the model of multi-layer, feedforward neural networks for predictive modeling. This section provides a more detailed description of H2O's Deep Learning features, parameter configurations, and computational implementation.
+
 \newpage
-\subsection{Summary of Features} \nowidow[3]
+\subsection{Summary of Features} 
+
 H2O's Deep Learning functionalities include: 
 
 \begin{itemize}
@@ -217,13 +218,14 @@ H2O's Deep Learning functionalities include:
 
 \end{itemize}
 
+\newpage
 \subsection{Training Protocol} 
 The training protocol described below follows many of the ideas and advances discussed in recent Deep Learning literature.
 
 \subsubsection{Initialization}
 \label{sssec:Initialization}
 
-Various Deep Learning architectures employ a combination of unsupervised pre-training followed by supervised training, but H2O uses a purely supervised training protocol. The default initialization scheme is the uniform adaptive option, which is an optimized initialization based on the size of the network. Deep Learning can also be started using a random initialization drawn from either a uniform or normal distribution, optionally specifying a scaling parameter.
+Various Deep Learning architectures employ a combination of unsupervised pre-training followed by supervised training, but H2O uses a purely supervised training protocol. The default initialization scheme is the uniform adaptive option, which is an optimized initialization based on the size of the network. Deep Learning can also be started using a random initialization drawn from either a uniform or normal distribution, optionally specifying a scaling parameter. \nowidow[6]
 
 
 \subsubsection{Activation and Loss Functions} \label{sssec:ActivationLoss}
@@ -287,9 +289,9 @@ Each distribution has a primary association with a particular loss function, but
 %The following choices for the loss function $L(W,B$ $|$ $ j)$ are summarized in Table 2. 
 
 The system default enforces the table's typical use rule based on whether regression or classification is being performed. Note here that $t^{(j)}$ and $o^{(j)}$ are the predicted (also known as target) output and actual output, respectively, for training example $j$; further, let $y$ represent the output units and $O$ the output layer.
+
 \begin{table}[ht] 
 \caption{Loss functions }
-\smallskip
 % title of Table 
 \centering % used for centering table 
 \begin{adjustbox}{width=\textwidth} %resizes table to text width
@@ -308,11 +310,12 @@ Cross Entropy & $L(W,B | j) = -\sum\limits_{y \in O} \left(\ln(o_y^{(j)}) \cdot 
 \label{table:LossFunctions} % is used to refer this table in the text 
 \end{table}
 
+\newpage
 \subsubsection{Parallel Distributed Network Training} 
 
 The process of minimizing the loss function $L(W,B$ $|$ $j)$ is a parallelized version of stochastic gradient descent (SGD). A summary of standard SGD provided below, with the gradient $\nabla L(W,B$ $|$ $j)$ computed via backpropagation (\href{http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf}{LeCun et al, 1998}). The constant $\alpha$ is the learning rate, which controls the step sizes during gradient descent.
-\\
-\\
+
+
 {\bf{\footnotesize{Standard stochastic gradient descent}}}
 \\
 \line(1,0){350}
@@ -331,7 +334,6 @@ The process of minimizing the loss function $L(W,B$ $|$ $j)$ is a parallelized v
 \\
 \line(1,0){350}
 
-\newpage
 Stochastic gradient descent is fast and memory-efficient but not easily parallelizable without becoming slow. We utilize \textsc{Hogwild!}, the recently developed lock-free parallelization scheme from \href{http://i.stanford.edu/hazy/papers/hogwild-nips.pdf}{Niu et al, 2011}, to address this issue. 
 
 \textsc{Hogwild!} follows a shared memory model where multiple cores (where each core handles separate subsets or all of the training data) are able to make independent contributions to the gradient updates $\nabla L(W,B$ $ |$ $j)$ asynchronously. 
@@ -379,7 +381,7 @@ In a multi-node system, this parallelization scheme works on top of H2O's distri
 \\
 \\
 Here, the weights and bias updates follow the asynchronous  $\textsc{Hogwild!}$ procedure to incrementally adjust each node's parameters $W_n,B_n$ after seeing the example $i$. The Avg$_n$ notation represents the final averaging of these local parameters across all nodes to obtain the global model parameters and complete training.
-\newpage
+
 \subsubsection{Specifying the Number of Training Samples} 
 \label{sssec:TrainSamplesPerIter}
 H2O Deep Learning is scalable and can take advantage of large clusters of compute nodes. There are three operating modes.
@@ -485,6 +487,7 @@ There is no default setting for the hidden layer size, number, or epochs. Experi
 
 For pointers on specific values and results for these (and other) parameters, many example tests are available in the H2O \href{https://github.com/h2oai/h2o-3/}{GitHub} repository. For a full list of H2O Deep Learning model parameters and default values, refer to {\textbf{\nameref{sec:Parameters}}. 
 
+\newpage
 \section{Use Case: MNIST Digit Classification} 
 The following use case describes how to use H2O's Deep Learning for classification of handwritten numerals. 
 
@@ -500,14 +503,15 @@ The \href{http://yann.lecun.com/exdb/mnist/}{MNIST database} is a well-known aca
 
 This example downloads and imports the training and testing datasets from a public Amazon S3 bucket (\url{https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv}).
 The training file is 13MB and the testing file is 2.1MB. The data is downloaded directly, so the data import speed is dependent on download speed.  Files can be uploaded from a variety of sources, including remote locations and HDFS.
+
 \newpage
 \waterExampleInR
 To run the MNIST example in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_importfile_example.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_importfile_example.R}
 
 \waterExampleInPython
 To run the MNIST example in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_importfile_example.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_importfile_example.py}
 
 \subsection{Performing a Trial Run}
 \label{ssec:TrialRun} 
@@ -518,12 +522,13 @@ Rectified linear activation is popular with image processing and has previously 
 
 \waterExampleInR
 To perform the trial run in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_examplerun.R}
+To perform the trial run in R, use the following:
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_examplerun.R}
 
 \newpage
 \waterExampleInPython
 To perform the trial run in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_examplerun.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_examplerun.py}
 
 \noindent
 The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to (or instead of) using a validation set, another option to estimate generalization error is N-fold cross-validation.  
@@ -538,13 +543,12 @@ Advanced users can also specify a \texttt{fold\_column} that specifies the holdo
 
 \waterExampleInR
 To run the cross-validation example in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_crossval.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_crossval.R}
 
 \waterExampleInPython
 To run the cross-validation example in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_crossval.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_crossval.py}
 
-\newpage
 \subsubsection{Extracting and Handling the Results} 
 
 We can now extract the parameters of our model, examine the scoring process, and make predictions on new data.  The \texttt{h2o.performance} function in R returns all pre-computed performance metrics for the training set or validation set or returns cross-validated metrics for the training set, depending on model configuration. 
@@ -553,12 +557,12 @@ An equivalent \texttt{model\_performance} method is available in Python.  Utilit
 
 \waterExampleInR
 To view the model results in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_inspect_model.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.R}
 
 \newpage
 \waterExampleInPython
 To view the model results in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_inspect_model.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.py}
 
 
 \noindent
@@ -572,11 +576,11 @@ Once we have a satisfactory model (as determined by the validation or cross-vali
 
 \waterExampleInR
 To view the predictions in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_predict.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_predict.R}
 
 \waterExampleInPython
 To view the predictions in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_predict.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_predict.py}
 
 \subsection{Web Interface} 
 
@@ -595,11 +599,11 @@ The following code demonstrates training using the \texttt{variable\_importances
 \waterExampleInR
 To generate variable importances in R, use the following: 
 
-\lstinputlisting[style=R]{deeplearning/deeplearning_varimp.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_varimp.R}
 \newpage
 \waterExampleInPython
 To generate variable importances in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_varimp.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_varimp.py}
 
 \subsubsection{Java Model} 
 
@@ -627,22 +631,22 @@ Grid search provides more subtle insights into the model tuning and selection pr
 
 \waterExampleInR
 To run a grid search in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R}
 
 %\medskip
 %\waterExampleInPython
-%\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch.py}
+%\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py}
 
 \normalsize
 \noindent
 \newpage
 \waterExampleInR
 To view the results of the grid search in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_gridsearch_result.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R}
 
 %\medskip
 %\waterExampleInPython
-%\lstinputlisting[style=python]{deeplearning/deeplearning_gridsearch_result.py}
+%\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py}
 
 
 \subsection{Checkpoint Model}
@@ -653,13 +657,13 @@ In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the high
 
 \waterExampleInR
 To restart training in R using a checkpoint model, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_checkpoint.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_checkpoint.R}
 
 \newpage
 \waterExampleInPython
 For the Python example, we will use the original ``trial run'' model previously trained as the checkpoint model.
 \medskip
-\lstinputlisting[style=python]{deeplearning/deeplearning_checkpoint.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_checkpoint.py}
 
 \noindent
 Checkpointing can also be used to reload existing models that were saved to disk in a previous session. For example, we can save and reload a model by running the following commands.
@@ -667,12 +671,12 @@ Checkpointing can also be used to reload existing models that were saved to disk
 \waterExampleInR
 To save a model in R, use the following: 
 \medskip
-\lstinputlisting[style=R]{deeplearning/deeplearning_savemodel.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_savemodel.R}
 \newpage
 \waterExampleInPython
 To save a model in Python, use the following: 
 \medskip
-\lstinputlisting[style=python]{deeplearning/deeplearning_savemodel.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_savemodel.py}
 
 
 \normalsize
@@ -683,11 +687,11 @@ After restarting  H2O, load the saved model by specifying the host and saved mod
 \normalsize
 \waterExampleInR
 To load a saved model in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_loadmodel_checkpoint.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.R}
 
 \waterExampleInPython
 To load a saved model in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_loadmodel_checkpoint.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.py}
 
 
 \noindent
@@ -695,11 +699,11 @@ You can also use the following commands to retrieve a model from its H2O key. Th
 
 \waterExampleInR
 To retrieve a model in R using its key, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_getmodel.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_getmodel.R}
 
 \waterExampleInPython
 To retrieve a model in Python using its key, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_getmodel.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_getmodel.py}
 
 
 
@@ -768,16 +772,15 @@ This framework is used to develop an anomaly detection demonstration using a dee
 %\end{lstlisting}
 \waterExampleInR
 To run the anomaly detection example in R, use the following: 
-\lstinputlisting[style=R]{deeplearning/deeplearning_anomaly.R}
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_anomaly.R}
 
 %\medskip
 \waterExampleInPython
 To run the anomaly detection example in Python, use the following: 
-\lstinputlisting[style=python]{deeplearning/deeplearning_anomaly.py}
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_anomaly.py}
 
 \noindent
 
-\newpage
 \section{Parameters}
 \label{sec:Parameters}
 
@@ -904,7 +907,7 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 
 \item \texttt{shuffle\_training\_data}: Logical. Shuffles training data on each node. This option is recommended if training data is replicated on $N$ nodes and the number of training samples per iteration is close to $N$ times the dataset size, where all nodes train with almost all of the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to $N$ times the dataset size or larger).  The default is false.
 
-\item \texttt{sparse}: (Deprecated) Logical. Enables sparse data handling.% (Experimental). 
+\item \texttt{sparse}: Logical. Enables sparse data handling (more efficient for data with lots of 0 values).
 The default is false.
 
 \item \texttt{col\_major}: (Deprecated) Logical. Uses a column major weight matrix for the input layer; can speed up forward propagation, but may slow down backpropagation. The default is false.
@@ -945,7 +948,6 @@ The default is 0, which disables cross-validation.
 \end{itemize}
 
 % TO DO:  Replicate this in other booklets (or move the generic part to ./common)
-\newpage
 \section{Common R Commands}
 \begin{itemize}
 
@@ -965,6 +967,7 @@ The default is 0, which disables cross-validation.
 
 \end{itemize}
 
+\newpage
 % TO DO:  Replicate this in other booklets (or move the generic part to ./common)
 \section{Common Python Commands}
 \begin{itemize}

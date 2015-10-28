@@ -1,11 +1,14 @@
 % -*- mode: tex; fill-column: 115; -*-
 
-%\input{common/conf_top.tex}
-\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
+\input{common/conf_top.tex}
+%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \defcitealias{glmnet}{Regularization Paths for Generalized Linear Models via Coordinate Descent by Friedman et. al}
-\defcitealias{strong}{Strong Rules for Discarding Predictors in Lasso-type Problems by Bien et. al}
+
+\defcitealias{strongrules}{Strong Rules for Discarding Predictors in Lasso-type Problems by Bien et. al}
+
 \defcitealias{admm}{Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers by Boyd et. al}
+
 \defcitealias{prox}{Proximal Algorithms by Boyd et. al}
 
 \input{common/conf_titles.tex}
@@ -23,7 +26,7 @@
 \textsc{\Large\bf{Generalized Linear Modeling with H2O}}
 \\
 \small
-
+\bigskip
 \line(1,0){250}  %inserts  horizontal line 
 
 \textsc{Nadine Hussami  \hspace{10pt} Tom Kraljevic \hspace{10pt} \hspace{10pt} Jessica Lanford}
@@ -38,7 +41,7 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: Third Edition 
+\monthname \hspace{1pt}  \the\year: Fourth Edition 
 
  
 \bigskip
@@ -61,7 +64,7 @@
 
 {\raggedright\vfill\ 
 
-Generalized Linear Modeling with H2O's R Package\\
+Generalized Linear Modeling with H2O\\
 
 by Nadine Hussami, Tom Kraljevic, \\ Jessica Lanford, Tomas Nykodym, \\ Ariel Rao,  \& \ Amy Wang \\
 \bigskip
@@ -72,7 +75,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Third Edition 
+\monthname \hspace{1pt}  \the\year: Fourth Edition 
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -216,10 +219,11 @@ Similar to the methods discussed in \citetalias{glmnet}, H2O can compute the ful
 from the null-model (evaluated at the smallest penalty $\lambda_{\max}$ for which all coefficients are set to zero) down to a minimally-penalized model. 
 
 To improve the efficiency of this search, 
-H2O employs the strong rules as described in \citetalias{strong} to filter out inactive columns (whose coefficients will remain equal to zero given the imposed penalty). Computing the full regularization path is useful for convergence because it uses warm starts for consecutive $\lambda$ values, and gives an insight regarding the order in which the coefficients start entering the model. 
+H2O employs the strong rules as described in \citetalias{strongrules} to filter out inactive columns (whose coefficients will remain equal to zero given the imposed penalty). Computing the full regularization path is useful for convergence because it uses warm starts for consecutive $\lambda$ values, and gives an insight regarding the order in which the coefficients start entering the model. 
 
 Moreover, cross-validation can be used after fitting models for the full regularization path. H2O returns the optimal amount of regularization $\lambda$ for the given problem and data by computing the errors on the validation dataset of the fitted models created using the training data.
 
+\newpage
 \subsection{Model Fitting}
 GLM models are fitted by finding the set of parameters that maximizes the likelihood of the data. For the Gaussian family, maximum likelihood consists of minimizing the mean squared error. This has an analytical solution and can be solved with a standard method of least squares. 
 
@@ -326,10 +330,11 @@ University Comprehensive Cancer Center for a study of patients with varying degr
 following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds
 based on features such as age and race.
 \bigskip
-\lstinputlisting[style=R]{glm/glm_gaussian_example.R}
+
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_gaussian_example.R}
 
 \waterExampleInPython
-\lstinputlisting[style=python]{glm/glm_gaussian_example.py}
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_gaussian_example.py}
 
 \subsubsection{Logistic Regression (Binomial Family)}
 Logistic regression is used for binary classification problems where the response is a categorical variable with two
@@ -360,10 +365,11 @@ Using the prostate dataset, this example builds a binomial model that classifies
 capsule (CAPSULE). Confirm the entries in the CAPSULE column are binary using the \texttt{h2o.table()}
 function. Change the regression by changing the family to binomial.
 
-\lstinputlisting[style=R]{glm/glm_binomial_example.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_example.R}
 
+\newpage
 \waterExampleInPython
-\lstinputlisting[style=python]{glm/glm_binomial_example.py}
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_example.py}
 
 \subsubsection{Poisson Models}
 Poisson regression is typically used for datasets where the response represents counts and the errors are assumed to have a Poisson distribution. In general, it can be applied to any data where the response is non-negative. It models the dependency between the response and covariates as: 
@@ -383,14 +389,14 @@ The corresponding deviance is equal to:
 $$D = -2\sum_{i=1}^{N} \left( y_i \log(y_i/\hat{y}_i) - ( y_i - \hat{y}_i  ) \right)$$
 
 \waterExampleInR
-\\
+
 This example loads the Insurance data from the MASS library, imports it into H2O, and runs a Poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they
 own (Group).
 \bigskip
-\lstinputlisting[style=R]{glm/glm_poisson_example.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_poisson_example.R}
 
 \waterExampleInPython
-\lstinputlisting[style=python]{glm/glm_poisson_example.py}
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_poisson_example.py}
 
 \subsubsection{Gamma Models}
 The gamma distribution is useful for modeling a positive continuous response variable, where the conditional
@@ -406,15 +412,14 @@ The corresponding deviance is equal to:
 
 $$D = 2\sum_{i=1}^{N} - \log\left({\frac{ y_i }{\hat{y}_i}}\right) + \frac{(y_i - \hat{y}_i)}{\hat{y}_i} $$
 
-\begin{minipage}{\textwidth}
 \waterExampleInR
 To change the link function from the default inverse function to the log link function, modify the \texttt{link}
 argument. 
-\lstinputlisting[style=R]{glm/glm_gamma_example.R}
-\end{minipage}
+
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_gamma_example.R}
 
 \waterExampleInPython
-\lstinputlisting[style=python]{glm/glm_gamma_example.py}
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_gamma_example.py}
 
 \subsubsection{Tweedie Models}
 
@@ -449,10 +454,10 @@ $$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y_i^{2 - p}
 
 %\waterExampleInR
 %This example loads the Insurance data from the HDtweedie library, imports it into H2O and runs a tweedie model that predicts the aggregate claim loss (in thousand dollars) based on 56 predictors including the car type, job class etc.
-%\lstinputlisting[style=R]{glm/glm_tweedie_example.R}
+%\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_tweedie_example.R}
 
 %\waterExampleInPython
-%\lstinputlisting[style=python]{glm/glm_tweedie_example.py}
+%\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_example.py}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -473,10 +478,10 @@ numeric (either integer or real), then a regression model is created.
 The following examples show how to coerce the data type of a column to a factor.
 
 \waterExampleInR
-\lstinputlisting[style=R]{glm/coerce_column_to_factor.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/coerce_column_to_factor.R}
 
 \waterExampleInPython
-\lstinputlisting[style=python]{glm/coerce_column_to_factor.py}
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/coerce_column_to_factor.py}
 
 \subsection{Training and Validation Frames}
 
@@ -566,17 +571,15 @@ ratio close to the default.
 
 This section provides general guidelines for best performance from the H2O GLM implementation options. The optimal solver depends on the data properties and prior information regarding the variables (if available). 
 
-The data are considered sparse if the ratio of zeros to non-zeros in the input matrix is greater than $\sim 10$. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. In a dense solution, all predictors have non-zero coefficients in the final model.
+The data are considered sparse if the ratio of zeros to non-zeros in the input matrix is greater than $\sim 10$. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. In a dense solution, all predictors have non-zero coefficients in the final model.  
 
 \subsubsection{Solver Details}
-\begin{minipage}{\textwidth}
 H2O's GLM offers two different solvers: 
 
 \begin{itemize}
 \item the Iteratively Reweighted Least Squares Method (IRLSM)
 \item the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS)
 \end{itemize}
-\end{minipage}
 
 IRLSM uses a Gram Matrix approach, which is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense
 datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than $\sim 500$ predictors in the data, use the default, which is IRLSM. 
@@ -596,7 +599,6 @@ For larger numbers of predictors, it is recommended to run IRLSM with lambda sea
 
  The above recommendations are general guidelines; if the performance of the method seems slow, experiment with the available options. 
 
-\vspace{0.2cm}
 %\subsection{Solver Selection} %wide data want lambda search with alpha > 0 
 %The two solvers provided in H2O are the Iteratively Reweighted Least Squares Method (IRLSM) and the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS).  
 %comment on using IRLSM with coordinate descent or with ADMM as in the IRLSM called algo?
@@ -627,14 +629,11 @@ lower lambda values, incorporate more predictors, and take a longer time to calc
 
 Set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
 
-\bigskip
 \waterExampleInR
-\lstinputlisting[style=R]{glm/glm_stopping_criteria.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_stopping_criteria.R}
 
-\begin{minipage}{\textwidth}
 \waterExampleInPython
-\lstinputlisting[style=python]{glm/glm_stopping_criteria.py}
-\end{minipage}
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_stopping_criteria.py}
 
 %For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
 %model building can be slower. It is often better to run lambda search with the IRLSM solver instead.
@@ -660,23 +659,24 @@ You can also specify the rows that are assigned to each fold using the\\ \texttt
 or \texttt{fold\_column} parameters.
 
 \waterExampleInR
-\lstinputlisting[style=R]{glm/glm_cross_validation.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_cross_validation.R}
 
 \subsubsection{Grid Search Over Alpha}
 
 Alpha search is not always needed and simply changing its value to 0.5 (or 0 or 1 if we only want Ridge or Lasso,
 respectively) works in most cases. If $\alpha$ search is needed, specifying only a few values is typically sufficient. Alpha
 search is invoked by supplying a list of values for $\alpha$ instead of a single value. H2O then produces one model
-per $\alpha$ value. The grid search computation can be done in parallel (depending on the cluster resources) and it
+per $\alpha$ value. 
+
+The grid search computation can be done in parallel (depending on the cluster resources) and it
 is generally more efficient than computing different models separately from R.
 
 Use caution when including $\alpha=0$ or $\alpha=1$ in the grid search. $\alpha=0$ will produce a dense solution
 and it can be very slow (or even impossible) to compute in large $N$ situations. $\alpha=1$ has no  $\ell_2$ penalty, so
 it is therefore less numerically stable and can be very slow as well due to slower convergence. In general, we recommend running with $alpha=1-\epsilon$ instead.
 
-\begin{minipage}{\textwidth}
 \waterExampleInR
-\lstinputlisting[style=R]{glm/glm_grid_search_over_alpha.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_alpha.R}
 
 \subsubsection{Grid Search Over Lambda}
 
@@ -686,11 +686,10 @@ it is therefore less numerically stable and can be very slow as well due to slow
 
 % \bigskip
 % \waterExampleInR
-% \lstinputlisting[style=R]{glm/glm_grid_search_over_lambda.R}
+% \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.R}
 
 Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the built-in lambda
 search capability in GLM.
-\end{minipage}
 
 \subsubsection{Offsets}
 
@@ -699,11 +698,9 @@ search capability in GLM.
 For Gaussian distributions, they can be seen as simple corrections to the response (\texttt{y}) column. Instead of learning to predict the response (\texttt{y}-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.  
 
 \subsubsection{Row Weights}
-
 \texttt{weights\_column} is an optional column name or index referring to a column in the training frame. This column specifies on a per-row basis the weight of that row.  If no weight column is specified, a default value of 1 is used for each row. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 \subsubsection{Coefficient Constraints}
-
 Coefficient constraints allow you to set special conditions over the model coefficients. Currently supported
 constraints are upper and lower bounds and the proximal operator interface, as described in \citetalias{prox}.
 
@@ -732,7 +729,7 @@ The following sections explain the output produced by logistic regression (i.e. 
 
 \bigskip
 \waterExampleInR
-\lstinputlisting[style=R]{glm/glm_model_output_10.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_10.R}
 \begin{lstlisting}[style=output]
 Model Details:
 ==============
@@ -813,7 +810,7 @@ Maximum Metrics:
 Coefficients are the predictor weights (i.e. the actual model used for prediction).  Coefficients should be used to
 make predictions for new data points:
 
-\lstinputlisting[style=R]{glm/glm_model_output_20.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_20.R}
 \begin{lstlisting}[style=output]
   Intercept         AGE        RACE         PSA     GLEASON 
 -6.46739299 -0.02198278 -0.29576986  0.02855057  1.15680761 
@@ -821,7 +818,9 @@ make predictions for new data points:
 
 If the \texttt{standardize} option is enabled, H2O returns another set of coefficients: the standardized
 coefficients. These are the predictor weights of the standardized data and are included only for informational
-purposes (e.g. to compare relative variable importance). In this case, the ``normal'' coefficients are obtained
+purposes (e.g. to compare relative variable importance). 
+
+In this case, the ``normal'' coefficients are obtained
 from the standardized coefficients by \textbf{reversing} the data standardization process (de-scaled, with the
 intercept adjusted by an added offset) so that they can be applied to data in its original form (i.e. no
 standardization prior to scoring). \textbf{Note:} These are \textbf{not} the same as coefficients of a model built
@@ -830,7 +829,7 @@ on non-standardized data.
 Standardized coefficients are useful for comparing the relative contribution of different predictors to the
 model:
 
-\lstinputlisting[style=R]{glm/glm_model_output_30.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_30.R}
 \begin{lstlisting}[style=output]
 Coefficients:
       names coefficients standardized_coefficients
@@ -843,7 +842,7 @@ Coefficients:
 
 This view provides a sorted list of standardized coefficients in descending order for easy comparison:
 
-\lstinputlisting[style=R]{glm/glm_model_output_40.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_40.R}
 \begin{lstlisting}[style=output]
 Standardized Coefficient Magnitudes:
           names coefficients sign
@@ -875,19 +874,19 @@ Various model statistics are available:
 
 Retrieve these statistics using the following accessor functions:
 
-\lstinputlisting[style=R]{glm/glm_accessors.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_accessors.R}
 
 \subsection{Confusion Matrix}
 
 Fetch the confusion matrix directly using the following accessor function:
 
-\lstinputlisting[style=R]{glm/glm_confusion_matrix.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_confusion_matrix.R}
 
 \subsection{Scoring History}
 
 The following output example represents a sample scoring history: 
 
-\lstinputlisting[style=R]{glm/glm_scoring_history.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_scoring_history.R}
 \begin{lstlisting}[style=output]
 Scoring History:
             timestamp   duration iteration log_likelihood objective
@@ -911,14 +910,15 @@ Once you have built a model, you can use it to make predictions using two differ
 Batch in-H2O predictions are made using a normal H2O cluster on a new H2OFrame.  When you use \texttt{h2o.predict()}, the order of the rows in the results is the same as the order in which the data was loaded, even if some rows fail (for example, due to missing values or unseen factor levels). 
 In addition to predictions, you can view metrics such as area under curve (AUC) if you include the response column in the new data.  The following example represents a logistic regression model (i.e. binomial classification).
 
-\bigskip
+\newpage
 \waterExampleInR
 
-\lstinputlisting[style=R]{glm/glm_binomial_predictions_with_response.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_with_response.R}
 
 Here is an example of making predictions on new data:
 
-\lstinputlisting[style=R]{glm/glm_binomial_predictions_without_response.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.R}
+
 \begin{lstlisting}[style=output]
   predict        p0        p1
 1       1 0.1676892 0.8323108
@@ -934,7 +934,7 @@ and the probability that the prediction is class 1. The predicted class is chose
 
 You can change the threshold manually, for example to 0.3, and recalculate the predict column like this:
 
-\lstinputlisting[style=R]{glm/glm_recalculate_predict.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_recalculate_predict.R}
 \begin{lstlisting}[style=output]
   predict        p0        p1
 1       1 0.1676892 0.8323108
@@ -959,7 +959,7 @@ Directions for using the POJO in detail are beyond the scope of this document, b
 For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick Start Guide} at {\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/POJO_QuickStart.md}}. 
 
 \waterExampleInR
-\lstinputlisting[style=R]{glm/glm_download_pojo.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_download_pojo.R}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -987,7 +987,7 @@ To determine the accuracy of your model, use the following guidelines:
 \item Look for conspicuously different cross-validation results between folds:
 
 \waterExampleInR
-\lstinputlisting[style=R]{glm/glm_compare_cross_validation_folds.R}
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_compare_cross_validation_folds.R}
 
 
 \item Look for explained deviance ($1 - {NullDev - ResDev \over NullDev}$) 
@@ -1089,7 +1089,6 @@ characterizes the computational complexity and scalability of a dataset with $M$
     \end{tabular}
 \end{adjustbox}
 
-\bigskip
     \begin{tabular}{ l l }
 
     $M$ & Number of rows in the training data \\
@@ -1098,7 +1097,6 @@ characterizes the computational complexity and scalability of a dataset with $M$
     $n$ & Number of nodes in the cluster \\
     \end{tabular}
 
-\bigskip
 
 If $M>>N$, the algorithm scales linearly both in the number of nodes and the number of CPUs per node. However,
 the algorithm is limited in the number of predictors it can handle, since the size of the Gram matrix grows
@@ -1132,7 +1130,6 @@ The cost of the coefficient update is $k*N$, where $N$ is number of predictors a
 H2O supports binomial models only; any extra levels in the test response will generate an error.
 \end{itemize}
 
-\newpage
 \section{Appendix: Parameters}
 \begin{itemize}
 \item \texttt{x}: A vector containing the names of the predictors to use while building the GLM model. No default.

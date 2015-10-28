@@ -1,5 +1,5 @@
 \section{Deployment}
-Since Sparkling Water is designed as a regular Spark application, its deployment cycle is strictly driven by Spark deployment strategies (see Spark documentation\footnote{Spark deployment guide \url{http://spark.apache.org/docs/latest/cluster-overview.html}}). Spark applications are deployed by the \texttt{spark-submit}~\footnote{Submitting Spark applications \url{http://spark.apache.org/docs/latest/submitting-applications.html}} script which handles all deployment scenarios:
+Since Sparkling Water is designed as a regular Spark application, its deployment cycle is strictly driven by Spark deployment strategies (refer to Spark documentation\footnote{Spark deployment guide \url{http://spark.apache.org/docs/latest/cluster-overview.html}}). Spark applications are deployed by the \texttt{spark-submit}~\footnote{Submitting Spark applications \url{http://spark.apache.org/docs/latest/submitting-applications.html}} script that handles all deployment scenarios:
 
 \begin{lstlisting}[style=Bash]
 ./bin/spark-submit \
@@ -12,15 +12,15 @@ Since Sparkling Water is designed as a regular Spark application, its deployment
 \end{lstlisting}
 
 \begin{itemize}
-	\item \texttt{--class} name of main class with \texttt{main} method to be executed. For example, the \texttt{water.SparklingWaterDriver} application launches H2O services.
-	\item \texttt{--master} location of Spark cluster, see below
-	\item \texttt{--conf} specifies any configuration property in form \texttt{key=value}
-	\item \texttt{application-jar} jar with all classes and dependencies required for application execution
-	\item \texttt{application-arguments} arguments passed to the main method of the class passed via \texttt{--class} option
+	\item \texttt{--class}: Name of main class with \texttt{main} method to be executed. For example, the \texttt{water.SparklingWaterDriver} application launches H2O services.
+	\item \texttt{--master}: Location of Spark cluster
+	\item \texttt{--conf}: Specifies any configuration property using the format \texttt{key=value}
+	\item \texttt{application-jar}: Jar file with all classes and dependencies required for application execution
+	\item \texttt{application-arguments}: Arguments passed to the main method of the class via the \texttt{--class} option
 \end{itemize}
 
 
-Sparkling water supports deployments to the following Spark clusters:
+Sparkling Water supports deployments to the following Spark cluster types:
 \begin{itemize}
 	\item{Local cluster}
 	\item{Standalone cluster} 
@@ -28,9 +28,9 @@ Sparkling water supports deployments to the following Spark clusters:
 \end{itemize}
 
 \subsection{Local cluster}
-Local cluster is identified by the following master URLs - \texttt{local}, \texttt{local[K]}, \texttt{local[*]}. In this case, cluster is composed of single JVM and created during application submission.
+The local cluster is identified by the following master URLs - \texttt{local}, \texttt{local[K]}, or \texttt{local[*]}. In this case, the cluster is composed of a single JVM and is created during application submission.
 
-For example, the command:
+For example, the following command will run the ChicagoCrimeApp application inside a single JVM with a heap size of 5g:
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \ 
   --conf spark.executor.memory=5g \
@@ -39,12 +39,12 @@ $SPARK_HOME/bin/spark-submit \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   sparkling-water-assembly-1.5.1-all.jar  
 \end{lstlisting}
-will run ChicagoCrimeApp application inside single JVM with heap size 5g.
+
 
 \subsection{On Standalone Cluster}
-Standalone cluster deployment\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/spark-standalone.html}} is typical for AWS deployments or local private clusters. Futhermore, Spark standalone cluster is also provided by Hadoop distributions like CDH or HDP. The cluster is identified by URL \texttt{spark://IP:PORT}.
+For AWS deployments or local private clusters, the standalone cluster deployment\footnote{Refer to Spark documentation~\url{http://spark.apache.org/docs/latest/spark-standalone.html}} is typical. Additionally, a Spark standalone cluster is also provided by Hadoop distributions like CDH or HDP. The cluster is identified by the URL \texttt{spark://IP:PORT}.
 
-The following command deploys ChicagoCrimeApp on standalone cluster which master node is exposed on IP mr-0xd10-precise1.0xdata.loc and port 7077:
+The following command deploys the ChicagoCrimeApp on a standalone cluster where the master node is exposed on IP mr-0xd10-precise1.0xdata.loc and port 7077:
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \ 
@@ -55,11 +55,11 @@ $SPARK_HOME/bin/spark-submit \
   sparkling-water-assembly-1.5.1-all.jar  
 \end{lstlisting}
 
-In this case the standalone Spark cluster has to be configured to provide requested 5g of memory per executor node. 
+In this case, the standalone Spark cluster must be configured to provide the requested 5g of memory per executor node. 
 
 \subsection{On YARN Cluster}
-The most of production environments are using YARN cluster deployment since it allows for effective resource management and control.\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/running-on-yarn.html}} 
-In this case the environment has to contain shell variable~\texttt{HADOOP\_CONF\_DIR} or \texttt{YARN\_CONF\_DIR}.
+Because it provides effective resource management and control, most production environments use YARN for cluster deployment.\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/running-on-yarn.html}} 
+In this case, the environment must contain the shell variable~\texttt{HADOOP\_CONF\_DIR} or \texttt{YARN\_CONF\_DIR}.
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \ 
@@ -71,4 +71,4 @@ $SPARK_HOME/bin/spark-submit \
 sparkling-water-assembly-1.5.1-all.jar  
 \end{lstlisting}
 
-The command creates YARN job and requests 5 nodes, each with 5G of memory. The \texttt{yarn-client} option forces driver to run in the client process.
+The command in the example above creates a YARN job and requests 5 nodes, each with 5G of memory. The \texttt{yarn-client} option forces driver to run in the client process.

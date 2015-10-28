@@ -3,8 +3,8 @@
 # Description: Capture POST commands sent from R and corresponding HTTP response.
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.rh2o_logging <- function() {
 

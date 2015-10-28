@@ -1,4 +1,4 @@
-from .estimator_base import H2OEstimator
+from .estimator_base import *
 
 
 class H2OGradientBoostingEstimator(H2OEstimator):
@@ -58,7 +58,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   score_each_iteration : bool
     Attempts to score each tree.
 
-  :return: A new classifier or regression model.
+  Returns
+  -------
+    A new H2OGradientBoostedEstimator object.
   """
   def __init__(self, model_id=None, distribution=None, tweedie_power=None, ntrees=None,
                max_depth=None, min_rows=None, learn_rate=None, nbins=None,
@@ -67,7 +69,150 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
                score_each_iteration=None, checkpoint=None):
     super(H2OGradientBoostingEstimator, self).__init__()
-    self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
-    self.parms["algo"] = "gbm"
-    self._estimator_type = ""
+    self._parms = locals()
+    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+
+  @property
+  def distribution(self):
+    return self._parms["distribution"]
+
+  @distribution.setter
+  def distribution(self, value):
+    self._parms["distribution"] = value
+
+  @property
+  def tweedie_power(self):
+    return self._parms["tweedie_power"]
+
+  @tweedie_power.setter
+  def tweedie_power(self, value):
+    self._parms["tweedie_power"] = value
+
+  @property
+  def ntrees(self):
+    return self._parms["ntrees"]
+
+  @ntrees.setter
+  def ntrees(self, value):
+    self._parms["ntrees"] = value
+
+  @property
+  def max_depth(self):
+    return self._parms["max_depth"]
+
+  @max_depth.setter
+  def max_depth(self, value):
+    self._parms["max_depth"] = value
+
+  @property
+  def min_rows(self):
+    return self._parms["min_rows"]
+
+  @min_rows.setter
+  def min_rows(self, value):
+    self._parms["min_rows"] = value
+
+  @property
+  def learn_rate(self):
+    return self._parms["learn_rate"]
+
+  @learn_rate.setter
+  def learn_rate(self, value):
+    self._parms["learn_rate"] = value
+
+  @property
+  def nbins(self):
+    return self._parms["nbins"]
+
+  @nbins.setter
+  def nbins(self, value):
+    self._parms["nbins"] = value
+
+  @property
+  def nbins_top_level(self):
+    return self._parms["nbins_top_level"]
+
+  @nbins_top_level.setter
+  def nbins_top_level(self, value):
+    self._parms["nbins_top_level"] = value
+
+  @property
+  def nbins_cats(self):
+    return self._parms["nbins_cats"]
+
+  @nbins_cats.setter
+  def nbins_cats(self, value):
+    self._parms["nbins_cats"] = value
+
+  @property
+  def balance_classes(self):
+    return self._parms["balance_classes"]
+
+  @balance_classes.setter
+  def balance_classes(self, value):
+    self._parms["balance_classes"] = value
+
+  @property
+  def max_after_balance_size(self):
+    return self._parms["max_after_balance_size"]
+
+  @max_after_balance_size.setter
+  def max_after_balance_size(self, value):
+    self._parms["max_after_balance_size"] = value
+
+  @property
+  def seed(self):
+    return self._parms["seed"]
+
+  @seed.setter
+  def seed(self, value):
+    self._parms["seed"] = value
+
+  @property
+  def build_tree_one_node(self):
+    return self._parms["build_tree_one_node"]
+
+  @build_tree_one_node.setter
+  def build_tree_one_node(self, value):
+    self._parms["build_tree_one_node"] = value
+
+  @property
+  def nfolds(self):
+    return self._parms["nfolds"]
+
+  @nfolds.setter
+  def nfolds(self, value):
+    self._parms["nfolds"] = value
+
+  @property
+  def fold_assignment(self):
+    return self._parms["fold_assignment"]
+
+  @fold_assignment.setter
+  def fold_assignment(self, value):
+    self._parms["fold_assignment"] = value
+
+  @property
+  def keep_cross_validation_predictions(self):
+    return self._parms["keep_cross_validation_predictions"]
+
+  @keep_cross_validation_predictions.setter
+  def keep_cross_validation_predictions(self, value):
+    self._parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def score_each_iteration(self):
+    return self._parms["score_each_iteration"]
+
+  @score_each_iteration.setter
+  def score_each_iteration(self, value):
+    self._parms["score_each_iteration"] = value
+
+  @property
+  def checkpoint(self):
+    return self._parms["checkpoint"]
+
+  @checkpoint.setter
+  def checkpoint(self, value):
+    self._parms["checkpoint"] = value
+

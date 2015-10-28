@@ -21,16 +21,27 @@ Overall, H2O 3.0 is more stable, elegant, and simplified, with additional capabi
 
 ##Algorithm Changes
 
-Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy. Currently available model types include Gradient Boosting Machine, Deep Learning, Generalized Linear Model, K-means, Distributed Random Forest, and Naïve Bayes. 
+Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy. Currently available model types include:
+
+###Supervised 
+
+- **Generalized Linear Model (GLM)**: Binomial classification, regression (including logistic regression)
+- **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
+- **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
+- **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
+
+###Unsupervised
+
+- K-means
+- Principal Component Analysis
+- Autoencoder 
 
 There are a few algorithms that are still being refined to provide these same benefits and will be available in a future version of H2O. 
 
 Currently, the following algorithms and associated capabilities are still in development: 
 
-- Cross-validation 
-- Grid search
-- Principal Component Analysis (PCA) 
-- Cox Proportional Hazards (Cox PH)
+- Naïve Bayes
+- GLRM
 
 Check back for updates, as these algorithms will be re-introduced in an improved form in a future version of H2O. 
 
@@ -40,7 +51,7 @@ Check back for updates, as these algorithms will be re-introduced in an improved
 
 ##Parsing Changes
 
-In H2O Classic, the parser reads all the data and tries to guess the column type. In H2O 3.0, the parser reads a subset and makes a type guess for each column. In Flow, you can view the preliminary parse results in the **Data Preview** area. To change the column type, select an option from the drop-down menu at the top of the column. H2O 3.0 can also automatically identify mixed-type columns; in H2O Classic, if one column is mixed integers or real numbers using a string, the output is blank. 
+In H2O Classic, the parser reads all the data and tries to guess the column type. In H2O 3.0, the parser reads a subset and makes a type guess for each column. In Flow, you can view the preliminary parse results in the **Edit Column Names and Types** area. To change the column type, select an option from the drop-down menu to the right  of the column. H2O 3.0 can also automatically identify mixed-type columns; in H2O Classic, if one column is mixed integers or real numbers using a string, the output is blank. 
 
 ---
 
@@ -54,7 +65,7 @@ For more information, refer to our [Getting Started with Flow](https://github.co
 
 ##API Users
 
-H2O's new Python API allows Pythonistas to use H2O in their favorite environment. Using the Python command line or an integrated development environment like IPython Notebook H2O users can control clusters and manage massive datasets quickly. 
+H2O's new Python API allows Pythonistas to use H2O in their favorite environment. Using the Python command line or an integrated development environment like IPython Notebook, H2O users can control clusters and manage massive datasets quickly. 
 
 H2O's REST API is the basis for the web UI (Flow), as well as the R and Python APIs, and is versioned for stability. It is also easier to understand and use, with full metadata available dynamically from the server, allowing for easier integration by developers. 
 
@@ -72,7 +83,9 @@ As in previous versions of H2O, users can export trained models as Java objects 
 
 If you use H2O primarily in R, be aware that as a result of the improvements to the R package for H2O scripts created using previous versions (Nunes 2.8.6.2 or prior) will require minor revisions to work with H2O 3.0. 
 
-To assist our R users in upgrading to H2O 3.0 a "shim" tool has been developed. The [shim](https://github.com/h2oai/h2o-dev/blob/9795c401b7be339be56b1b366ffe816133cccb9d/h2o-r/h2o-package/R/shim.R) reviews your script, identifies deprecated or revised parameters and arguments, and suggests replacements. 
+To assist our R users in upgrading to H2O 3.0, a "shim" tool has been developed. The [shim](https://github.com/h2oai/h2o-dev/blob/9795c401b7be339be56b1b366ffe816133cccb9d/h2o-r/h2o-package/R/shim.R) reviews your script, identifies deprecated or revised parameters and arguments, and suggests replacements. 
+
+  >**Note**: As of Slater v.3.2.0.10, this shim will no longer be available. 
 
 There is also an [R Porting Guide](#PortingGuide) that provides a side-by-side comparison of the algorithms in the previous version of H2O with H2O 3.0. It outlines the new, revised, and deprecated parameters for each algorithm, as well as the changes to the output. 
 
@@ -154,7 +167,7 @@ Saving and loading a model from R is supported in version 3.0.0.18 and later. H2
 <a name="GBM"></a>
 ##GBM
 
-N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
+N-fold cross-validation and grid search are currently supported in H2O 3.0. 
 
 ###Renamed GBM Parameters
 
@@ -181,7 +194,7 @@ The following parameters have been removed:
 - `group_split`: Bit-set group splitting of categorical variables is now the default. 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
 - `holdout.fraction`: The fraction of the training data to hold out for validation is no longer supported. 
-- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O 3.0. 
+- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. 
 
 ###New GBM Parameters
 
@@ -253,8 +266,6 @@ H2O Classic | H2O 3.0  | Model Type
 <a name="GLM"></a>
 ##GLM
 
- N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
-
 ###Renamed GLM Parameters
 
 The following parameters have been renamed, but retain the same functions:
@@ -278,7 +289,6 @@ The following parameters have been removed:
  - `non_negative`: Specify a non-negative response. (may be re-added)
  - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. 
  - `disable_line_search`: This parameter has been deprecated, as it was mainly used for testing purposes. 
- - `offset`: Specify a column as an offset. (may be re-added)
  - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. (may be re-added)
 
 ###New GLM Parameters
@@ -410,8 +420,6 @@ H2O Classic | H2O 3.0
 
 <a name="DL"></a>
 ##Deep Learning
-
-N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 **Note**: If the results in the confusion matrix are incorrect, verify that `score_training_samples` is equal to 0. By default, only the first 10,000 rows are included. 
 

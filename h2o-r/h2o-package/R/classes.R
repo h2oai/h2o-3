@@ -567,4 +567,3 @@ setMethod("summary", "H2OGrid",
               cat("\nNote: To see exception stack traces please pass parameter `show_stack_traces = T` to this function.\n")
             }
 })
-

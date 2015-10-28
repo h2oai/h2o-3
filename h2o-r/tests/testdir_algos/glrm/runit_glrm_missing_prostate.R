@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.glrm.prostate_miss <- function() {
   missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)

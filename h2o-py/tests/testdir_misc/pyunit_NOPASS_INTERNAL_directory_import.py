@@ -1,13 +1,17 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def directory_import():
 
-    hadoop_namenode_is_accessible = tests.hadoop_namenode_is_accessible()
+    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
 
     if hadoop_namenode_is_accessible:
-        hdfs_name_node = tests.hadoop_namenode()
+        hdfs_name_node = pyunit_utils.hadoop_namenode()
         url1 = "hdfs://{0}{1}".format(hdfs_name_node, "/datasets/iris/identical_iris_files/iris1.csv")
         url2 = "hdfs://{0}{1}".format(hdfs_name_node, "/datasets/iris/identical_iris_files/")
         print "Importing HDFS file {0} and directory {1}".format(url1, url2)
@@ -22,7 +26,7 @@ def directory_import():
     else:
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
-    small1 = tests.locate("smalldata/jira/identical_files/iris1.csv")
+    small1 = pyunit_utils.locate("smalldata/jira/identical_files/iris1.csv")
     small2 = small1.split("iris1.csv")[0]
     print "Importing smalldata file {0} and directory {1}".format(small1, small2)
     frm_one = h2o.import_file(small1)
@@ -34,5 +38,9 @@ def directory_import():
     assert r1*3 == ra, "Expected 3 times the rows, but got {0} and {1}".format(r1,ra)
     assert c1 == ca, "Expected same number of cols, but got {0} and {1}".format(c1,ca)
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, directory_import)
+    pyunit_utils.standalone_test(directory_import)
+else:
+    directory_import()

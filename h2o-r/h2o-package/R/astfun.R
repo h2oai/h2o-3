@@ -1,4 +1,3 @@
-
 #`
 #` Transmogrify A User Defined Function Into A Rapids AST
 #`

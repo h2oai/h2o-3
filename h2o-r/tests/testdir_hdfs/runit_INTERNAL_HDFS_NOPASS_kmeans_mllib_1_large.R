@@ -2,8 +2,8 @@
 # Purpose:  This test compares k-means centers between H2O and MLlib.
 #----------------------------------------------------------------------
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 #----------------------------------------------------------------------
 # Parameters for the test.

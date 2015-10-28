@@ -66,11 +66,16 @@
 #'        initial X. Only used when init = "User". The number of columns must equal k.
 #' @param user_y (Optional) A matrix, data.frame, Frame, or list of vectors specifying the 
 #'        initial Y. Only used when init = "User". The number of rows must equal k.
+#' @param expand_user_y A logical value indicating whether the categorical columns of user_y
+#'        should be one-hot expanded. Only used when init = "User" and user_y is specified.
+#' @param impute_original A logical value indicating whether to reconstruct the original training
+#'        data by reversing the transformation during prediction. Model metrics are calculated
+#'        with respect to the original data.
 #' @param recover_svd A logical value indicating whether the singular values and eigenvectors
 #'        should be recovered during post-processing of the generalized low rank decomposition.
 #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
-#' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.prcomp}}
+#' @seealso \code{\link{h2o.kmeans}, \link{h2o.svd}}, \code{\link{h2o.prcomp}}
 #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
 #'             N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
@@ -104,6 +109,8 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
                      svd_method = c("GramSVD", "Power", "Randomized"),
                      user_y = NULL,
                      user_x = NULL,
+                     expand_user_y = TRUE,
+                     impute_original = FALSE,
                      recover_svd = FALSE,
                      seed)
 {
@@ -161,6 +168,10 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     parms$min_step_size <- min_step_size
   if(!missing(init))
     parms$init <- init
+  if(!missing(expand_user_y))
+    parms$expand_user_y <- expand_user_y
+  if(!missing(impute_original))
+    parms$impute_original <- impute_original
   if(!missing(recover_svd))
     parms$recover_svd <- recover_svd
   if(!missing(seed))
@@ -207,5 +218,5 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
   
   # Error check and build model
-  .h2o.modelJob('glrm', parms, h2oRestApiVersion=99)
+  .h2o.modelJob('glrm', parms, h2oRestApiVersion=3)
 }

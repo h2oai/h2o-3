@@ -2,8 +2,8 @@
 # Run through groupby methods with different column types
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test <- function(conn) {
   Log.info("Upload prostate dataset into H2O...")

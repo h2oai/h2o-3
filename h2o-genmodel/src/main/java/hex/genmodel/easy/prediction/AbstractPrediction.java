@@ -6,5 +6,5 @@ package hex.genmodel.easy.prediction;
  * Every model has a getModelCategory() method, and the prediction type supported by that model corresponds to the
  * model category.
  */
-public abstract class AbstractPrediction {
+public abstract class AbstractPrediction implements java.io.Serializable {
 }

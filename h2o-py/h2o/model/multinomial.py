@@ -1,15 +1,11 @@
-"""
-Multinomial Models
-"""
-
 from . import H2OFrame
 from . import H2OConnection
-from metrics_base import *
-
+from model_base import ModelBase
 
 class H2OMultinomialModel(ModelBase):
-  def __init__(self, dest_key, model_json):
-    super(H2OMultinomialModel, self).__init__(dest_key, model_json,H2OMultinomialModelMetrics)
+
+  def _make_model(self):
+    return H2OMultinomialModel()
 
   def confusion_matrix(self, data):
     """
@@ -50,8 +46,7 @@ class H2OMultinomialModel(ModelBase):
 
     if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
       if metric == "AUTO": metric = "classification_error"
-      elif metric not in ("logloss","AUC","classification_error","MSE"):
-        raise ValueError("metric for H2OMultinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      elif metric not in ("logloss","classification_error","MSE"):
+        raise ValueError("metric for H2OMultinomialModel must be one of: AUTO, logloss, classification_error, MSE")
 
     self._plot(timestep=timestep, metric=metric, **kwargs)
-

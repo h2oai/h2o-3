@@ -1,20 +1,24 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 #----------------------------------------------------------------------
 # Purpose:  This tests k-means on a large dataset.
 #----------------------------------------------------------------------
 
-import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+
+
+
 
 def hdfs_kmeans():
     
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    hadoop_namenode_is_accessible = tests.hadoop_namenode_is_accessible()
+    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
 
     if hadoop_namenode_is_accessible:
-        hdfs_name_node = tests.hadoop_namenode()
+        hdfs_name_node = pyunit_utils.hadoop_namenode()
         hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
         hdfs_covtype_file = "/datasets/runit/covtype.data"
 
@@ -43,5 +47,9 @@ def hdfs_kmeans():
     else:
         raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, hdfs_kmeans)
+    pyunit_utils.standalone_test(hdfs_kmeans)
+else:
+    hdfs_kmeans()

@@ -851,7 +851,10 @@ public final class ParseDataset extends Job<Frame> {
         if (((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()) return;
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
-          avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _setup._column_types[i], _startChunkIdx);
+          if (_setup._column_types == null) // SVMLight
+            avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, Vec.T_NUM, _startChunkIdx);
+          else
+           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _setup._column_types[i], _startChunkIdx);
         // Break out the input & output vectors before the parse loop
         FVecParseReader din = new FVecParseReader(in);
         FVecParseWriter dout;

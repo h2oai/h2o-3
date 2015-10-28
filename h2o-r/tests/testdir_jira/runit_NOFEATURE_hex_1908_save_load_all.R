@@ -3,10 +3,10 @@
 # Description: Build GLM model, save model in R, copy model and load in R
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_jira")
 
-source('../h2o-runit.R')
+
 
 test.hex_1908 <- function() {
 

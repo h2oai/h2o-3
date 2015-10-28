@@ -11,13 +11,12 @@ import sys
 import string
 import time
 import tempfile
-import tabulate
 import subprocess
 import atexit
 import pkg_resources
 from two_dim_table import H2OTwoDimTable
 import h2o
-import logging
+import h2o_logging
 import site
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
@@ -143,7 +142,10 @@ class H2OConnection(object):
   def _connect(self, size, max_retries=5, print_dots=False):
     """
     Does not actually "connect", instead simply tests that the cluster can be reached,
-    is of a certain size, and is taking basic status commands.
+    is of a certain size, and is taking basic status commands.df = h2o.H2OFrame(((1, 2, 3),
+                   ('a', 'b', 'c'),
+                   (0.1, 0.2, 0.3)))
+df
     :param size: The number of H2O instances in the cloud.
     :return: The JSON response from a "stable" cluster.
     """
@@ -159,7 +161,7 @@ class H2OConnection(object):
         if not cld['cloud_healthy']:
           raise ValueError("Cluster reports unhealthy status", cld)
         if cld['cloud_size'] >= size and cld['consensus']:
-          if print_dots: print " Connection sucessful!"
+          if print_dots: print " Connection successful!"
           return cld
       except EnvironmentError:
         pass
@@ -466,13 +468,13 @@ class H2OConnection(object):
       if query_string != '':
         url = "{}?{}".format(url, query_string)
 
-    if logging._is_logging():
-      logging._log_rest("------------------------------------------------------------\n")
-      logging._log_rest("\n")
-      logging._log_rest("Time:     {0}\n".format(time.strftime('Y-%m-%d %H:%M:%OS3')))
-      logging._log_rest("\n")
-      logging._log_rest("{0} {1}\n".format(method, url))
-      logging._log_rest("postBody: {0}\n".format(post_body))
+    if h2o_logging._is_logging():
+      h2o_logging._log_rest("------------------------------------------------------------\n")
+      h2o_logging._log_rest("\n")
+      h2o_logging._log_rest("Time:     {0}\n".format(time.strftime('Y-%m-%d %H:%M:%OS3')))
+      h2o_logging._log_rest("\n")
+      h2o_logging._log_rest("{0} {1}\n".format(method, url))
+      h2o_logging._log_rest("postBody: {0}\n".format(post_body))
 
     begin_time_seconds = time.time()
     http_result = self._attempt_rest(url, method, post_body, file_upload_info)
@@ -495,14 +497,14 @@ class H2OConnection(object):
                               .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
 
 
-    if logging._is_logging():
-      logging._log_rest("\n")
-      logging._log_rest("httpStatusCode:    {0}\n".format(http_result.status_code))
-      logging._log_rest("httpStatusMessage: {0}\n".format(http_result.reason))
-      logging._log_rest("millis:            {0}\n".format(elapsed_time_millis))
-      logging._log_rest("\n")
-      logging._log_rest("{0}\n".format(http_result.json()))
-      logging._log_rest("\n")
+    if h2o_logging._is_logging():
+      h2o_logging._log_rest("\n")
+      h2o_logging._log_rest("httpStatusCode:    {0}\n".format(http_result.status_code))
+      h2o_logging._log_rest("httpStatusMessage: {0}\n".format(http_result.reason))
+      h2o_logging._log_rest("millis:            {0}\n".format(elapsed_time_millis))
+      h2o_logging._log_rest("\n")
+      h2o_logging._log_rest("{0}\n".format(http_result.json()))
+      h2o_logging._log_rest("\n")
 
 
     return http_result

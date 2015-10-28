@@ -1,5 +1,3 @@
-
-from model_base import ModelBase
 from h2o.model.confusion_matrix import ConfusionMatrix
 import imp
 
@@ -25,6 +23,10 @@ class MetricsBase(object):
   def __repr__(self):
     self.show()
     return ""
+
+  @staticmethod
+  def _has(dictionary, key):
+    return key in dictionary and dictionary[key] is not None
 
   def show(self):
     """
@@ -73,7 +75,7 @@ class MetricsBase(object):
       self._metric_json["max_criteria_and_metric_scores"].show()
     if metric_type in types_w_mult:
                                                                self.confusion_matrix().show()
-                                                               self._metric_json['hit_ratio_table'].show()
+                                                               self.hit_ratio_table().show()
     if metric_type in types_w_clustering:
       print "Total Within Cluster Sum of Square Error: "      + str(self.tot_withinss())
       print "Total Sum of Square Error to Grand Mean: "       + str(self.totss())
@@ -130,7 +132,7 @@ class MetricsBase(object):
     """
     :return: the residual deviance if the model has residual deviance, or None if no residual deviance.
     """
-    if ModelBase._has(self._metric_json, "residual_deviance"):
+    if MetricsBase._has(self._metric_json, "residual_deviance"):
       return self._metric_json["residual_deviance"]
     return None
 
@@ -138,7 +140,7 @@ class MetricsBase(object):
     """
     :return: the residual dof if the model has residual deviance, or None if no residual dof.
     """
-    if ModelBase._has(self._metric_json, "residual_degrees_of_freedom"):
+    if MetricsBase._has(self._metric_json, "residual_degrees_of_freedom"):
       return self._metric_json["residual_degrees_of_freedom"]
     return None
 
@@ -146,7 +148,7 @@ class MetricsBase(object):
     """
     :return: the null deviance if the model has residual deviance, or None if no null deviance.
     """
-    if ModelBase._has(self._metric_json, "null_deviance"):
+    if MetricsBase._has(self._metric_json, "null_deviance"):
       return self._metric_json["null_deviance"]
     return None
 
@@ -154,7 +156,7 @@ class MetricsBase(object):
     """
     :return: the null dof if the model has residual deviance, or None if no null dof.
     """
-    if ModelBase._has(self._metric_json, "null_degrees_of_freedom"):
+    if MetricsBase._has(self._metric_json, "null_degrees_of_freedom"):
       return self._metric_json["null_degrees_of_freedom"]
     return None
 
@@ -176,7 +178,7 @@ class H2OClusteringModelMetrics(MetricsBase):
     """
     :return: the Total Within Cluster Sum-of-Square Error, or None if not present.
     """
-    if ModelBase._has(self._metric_json, "tot_withinss"):
+    if MetricsBase._has(self._metric_json, "tot_withinss"):
       return self._metric_json["tot_withinss"]
     return None
 
@@ -184,7 +186,7 @@ class H2OClusteringModelMetrics(MetricsBase):
     """
     :return: the Total Sum-of-Square Error to Grand Mean, or None if not present.
     """
-    if ModelBase._has(self._metric_json, "totss"):
+    if MetricsBase._has(self._metric_json, "totss"):
       return self._metric_json["totss"]
     return None
 
@@ -192,7 +194,7 @@ class H2OClusteringModelMetrics(MetricsBase):
     """
     :return: the Between Cluster Sum-of-Square Error, or None if not present.
     """
-    if ModelBase._has(self._metric_json, "betweenss"):
+    if MetricsBase._has(self._metric_json, "betweenss"):
       return self._metric_json["betweenss"]
     return None
 
@@ -514,9 +516,11 @@ class H2OBinomialModelMetrics(MetricsBase):
       return closest_idx
     raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
 
+
 class H2OAutoEncoderModelMetrics(MetricsBase):
   def __init__(self, metric_json, on=None, algo=""):
     super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on, algo)
+
 
 class H2ODimReductionModelMetrics(MetricsBase):
   def __init__(self, metric_json, on=None, algo=""):
@@ -526,7 +530,7 @@ class H2ODimReductionModelMetrics(MetricsBase):
     """
     :return: the Sum of Squared Error over non-missing numeric entries, or None if not present.
     """
-    if ModelBase._has(self._metric_json, "numerr"):
+    if MetricsBase._has(self._metric_json, "numerr"):
       return self._metric_json["numerr"]
     return None
 
@@ -534,6 +538,6 @@ class H2ODimReductionModelMetrics(MetricsBase):
     """
     :return: the Number of Misclassified categories over non-missing categorical entries, or None if not present.
     """
-    if ModelBase._has(self._metric_json, "caterr"):
+    if MetricsBase._has(self._metric_json, "caterr"):
       return self._metric_json["caterr"]
     return None
