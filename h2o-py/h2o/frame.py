@@ -361,7 +361,7 @@ class H2OFrame:
 
     :return: Returns msec since the Epoch.
     """
-    return self._newExpr("mktime", year,month,day,hour,minute,second,msec)
+    return expr.ExprNode("mktime", year,month,day,hour,minute,second,msec)
 
   def filterNACols(self, frac=0.2):
     """
@@ -406,14 +406,12 @@ class H2OFrame:
     Get the factor levels for this frame and specified columns
 
     :param col: A column index in this H2OFrame
-    :return: A list of lists of strings that are the factor levels for columns. If there is only one column, return a
-    list of strings.
+    :return: A list of lists of strings that are the factor levels for columns.
     """
     fr = self if col is None else self._newExpr("cols", self, col)
     lol = h2o.as_list(self._newExpr("levels", fr), False)
     for l in lol: l.pop(0) # Remove column headers
-    res = lol if len(lol) != 1 else lol[0]
-    return res if res else None
+    return lol
 
   def nlevels(self, col=None):
     """
@@ -423,6 +421,7 @@ class H2OFrame:
     :return: an integer.
     """
     levels = self.levels(col=col)
+    if len(levels) == 1: levels = levels[0]
     return len(levels) if levels else 0
 
   def set_level(self, level):
