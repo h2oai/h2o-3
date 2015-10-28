@@ -889,7 +889,15 @@ class H2OFrame:
     :param na_rm: True or False to remove NAs from computation.
     :return: The mean of the column.
     """
+    if self.ncol > 1: raise ValueError("Only one column allowed, use col_means to return a list of results")
     return self._scalar("mean", self, na_rm)
+
+  def col_means(self,na_rm=False):
+    """
+    :param na_rm: True or False to remove NAs from computation.
+    :return: A float list of means of all columns
+    """
+    return self._scalar("colMeans", self, na_rm)
 
   def median(self, na_rm=False):
     """
