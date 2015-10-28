@@ -344,7 +344,10 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
 # Validate given models' parameters against expected values
 def expect_model_param(models, attribute_name, expected_values):
     print "param: {0}".format(attribute_name)
-    actual_values = list(set([m.params[attribute_name]['actual'] for m in models.models]))
+    actual_values = list(set([m.params[attribute_name]['actual'] \
+                                  if type(m.params[attribute_name]['actual']) != list
+                                  else m.params[attribute_name]['actual'][0] for m in models.models]))
+                                  # possible for actual to be a list (GLM)
     print "actual values: {0}".format(actual_values)
     print "expected values: {0}".format(actual_values)
     actual_values_len = len(actual_values)
