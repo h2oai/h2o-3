@@ -40,7 +40,7 @@ def milsong_checkpoint():
     print "min_rows model 2: {0}".format(min_rows2)
     model2 = h2o.gbm(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees2,max_depth=max_depth2, min_rows=min_rows2,
                      distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0],
-                     checkpoint=restored_model.frame_id)
+                     checkpoint=restored_model.model_id)
 
     # build the equivalent of model 2 in one shot
     model3 = h2o.gbm(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees2,max_depth=max_depth2, min_rows=min_rows2,
