@@ -395,52 +395,39 @@ class ASTMatch extends ASTPrim {
   }
 }
 
+// Indices of which entries are not equal to 0
 class ASTWhich extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
-  @Override int nargs() { return 1+1; } // (h2o.which col)
-  @Override
-  public String str() { return "h2o.which"; }
+  @Override public String[] args() { return new String[]{"ary"}; }
+  @Override int nargs() { return 1+1; } // (which col)
+  @Override public String str() { return "which"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
+
+    // The 1-row version
     if( f.numRows()==1 && f.numCols() > 1) {
-      double[] in = new double[f.numCols()];
-      for(int i=0;i<in.length;++i) in[i] = f.vecs()[i].at(0)==1?i:-1;
-      Futures fs = new Futures();
-      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-      AppendableVec v = new AppendableVec(key,Vec.T_NUM);
+      AppendableVec v = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(),Vec.T_NUM);
       NewChunk chunk = new NewChunk(v, 0);
-      for (double d : in) {
-        if( d!=-1)
-          chunk.addNum(d);
-      }
-      chunk.close(0, fs);
+      for( int i=0; i<f.numCols(); i++ ) 
+        if( f.vecs()[i].at8(0)!=0 )
+          chunk.addNum(i);
+      Futures fs = chunk.close(0, new Futures());
       Vec vec = v.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }
+
+    // The 1-column version
+    Vec vec = f.anyVec();
+    if( f.numCols() > 1 || !vec.isInt() ) 
+      throw new IllegalArgumentException("which requires a single integer column");
     Frame f2 = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
         long start = c.start();
         for(int i=0;i<c._len;++i)
-          if( c.at8(i)==1 ) nc.addNum(start+i);
+          if( c.at8(i)!=0 ) nc.addNum(start+i);
       }
-    }.doAll(new byte[]{Vec.T_NUM},f.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM},vec).outputFrame();
     return new ValFrame(f2);
   }
 }
 
-class ASTPop extends ASTPrim {
-  @Override public String[] args() { return new String[]{"ary", "colidx"}; }
-  @Override int nargs() { return 1+2; } // (pop fr colidx)
-  @Override
-  public String str() { return "pop"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    int idx = (int)asts[2].exec(env).getNum();
-    String[] name = new String[]{fr.names()[idx]};
-    Vec[] v = new Vec[]{fr.remove(idx)};
-    if( fr._key!=null ) DKV.put(fr);
-    return new ValFrame(new Frame(name,v));
-  }
-}

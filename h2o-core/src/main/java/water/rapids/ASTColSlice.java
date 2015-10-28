@@ -8,13 +8,13 @@ import water.parser.BufferedString;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Column slice */
+/** Column slice; allows R-like syntax.
+ *  Numbers past the largest column are an error.
+ *  Negative numbers and number lists are allowed, and represent an *exclusion* list */
 class ASTColSlice extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "cols"}; }
+  @Override public String[] args() { return new String[]{"ary", "cols"}; }
   @Override int nargs() { return 1+2; } // (cols src [col_list])
-  @Override
-  public String str() { return "cols" ; }
+  @Override public String str() { return "cols" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val v = stk.track(asts[1].exec(env));
     if( v instanceof ValRow ) {
@@ -27,18 +27,52 @@ class ASTColSlice extends ASTPrim {
     Frame fr2 = new Frame();
     if( cols.length==0 ) {        // Empty inclusion list?
     } else if( cols[0] >= 0 ) { // Positive (inclusion) list
-      if( cols[cols.length-1] > fr.numCols() )
+      if( cols[cols.length-1] >= fr.numCols() )
         throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
       for( int col : cols )
         fr2.add(fr.names()[col],fr.vecs()[col]);
     } else {                    // Negative (exclusion) list
       fr2 = new Frame(fr);      // All of them at first
-      Arrays.sort(cols);     // This loop depends on the values in sorted order
+      Arrays.sort(cols);        // This loop depends on the values in sorted order
       for( int col : cols )
         if( 0 <= -col-1 && -col-1 < fr.numCols() ) 
           fr2.remove(-col-1);   // Remove named column
     }
     
+    return new ValFrame(fr2);
+  }
+}
+
+/** Column slice; allows python-like syntax.
+ *  Numbers past last column are allowed and ignored in NumLists, but throw an
+ *  error for single numbers.  Negative numbers have the number of columns
+ *  added to them, before being checked for range.
+ */
+class ASTColPySlice extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary", "cols"}; }
+  @Override int nargs() { return 1+2; } // (cols_py src [col_list])
+  @Override public String str() { return "cols_py" ; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val v = stk.track(asts[1].exec(env));
+    if( v instanceof ValRow ) {
+      ValRow vv = (ValRow)v;
+      return vv.slice(asts[2].columns(vv._names));
+    }
+    Frame fr = v.getFrame();
+    int[] cols = asts[2].columns(fr.names());
+
+    Frame fr2 = new Frame();
+    if( cols.length==0 )        // Empty inclusion list?
+      return new ValFrame(fr2);
+    if( cols[0] < 0 )           // Negative cols have number of cols added
+      for( int i=0; i<cols.length; i++ )
+        cols[i] += fr.numCols();
+    if( asts[2] instanceof ASTNum && // Singletons must be in-range
+        (cols[0] < 0 || cols[0] >= fr.numCols()) )
+      throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
+    for( int col : cols )       // For all included columns
+      if( col >= 0 && col < fr.numCols() ) // Ignoring out-of-range ones
+        fr2.add(fr.names()[col],fr.vecs()[col]);
     return new ValFrame(fr2);
   }
 }
@@ -118,19 +152,15 @@ class ASTRowSlice extends ASTPrim {
 }
 
 class ASTFlatten extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (flatten fr)
-  @Override
-  public String str() { return "flatten"; }
+  @Override public String str() { return "flatten"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols()==1 && fr.numRows()==1 ) {
-      if( fr.anyVec().isNumeric() || fr.anyVec().isBad() ) return new ValNum(fr.anyVec().at(0));
-      else if( fr.anyVec().isString() ) return new ValStr(fr.anyVec().atStr(new BufferedString(),0).toString());
-      return new ValStr(fr.domains()[0][(int) fr.anyVec().at8(0)]);
-    }
-    return new ValFrame(fr); // did not flatten
+    if( fr.numCols()!=1 || fr.numRows()!=1 ) return new ValFrame(fr); // did not flatten
+    Vec vec = fr.anyVec();
+    if( vec.isNumeric() || vec.isBad() ) return new ValNum(vec.at(0));
+    return new ValStr( vec.isString() ? vec.atStr(new BufferedString(),0).toString() : vec.factor(vec.at8(0)));
   }
 }
 

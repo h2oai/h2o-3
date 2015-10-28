@@ -139,7 +139,7 @@ class H2OGridSearch(object):
     weights= kwargs["weights_column"]
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
-    kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
+    kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
     algo = self.model._compute_algo() #unique to grid search
     kwargs["_rest_version"] = 99 #unique to grid search
 

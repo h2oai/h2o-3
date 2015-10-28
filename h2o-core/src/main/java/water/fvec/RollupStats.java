@@ -276,7 +276,7 @@ class RollupStats extends Iced {
   static void start(final Vec vec, Futures fs, boolean computeHisto) {
     if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
     final Key rskey = vec.rollupStatsKey();
-    RollupStats rs = getOrNull(vec);
+    RollupStats rs = getOrNull(vec,rskey);
     if(rs == null || computeHisto && !rs.hasHisto())
       fs.add(new RPC(rskey.home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
         @Override
@@ -310,8 +310,7 @@ class RollupStats extends Iced {
   // the rollup in the background and do not return.
   static RollupStats get(Vec vec) { return get(vec,false);}
   // Fetch if present, but do not compute
-  static RollupStats getOrNull(Vec vec) {
-    final Key rskey = vec.rollupStatsKey();
+  static RollupStats getOrNull(Vec vec, final Key rskey ) {
     Value val = DKV.get(rskey);
     if( val == null )           // No rollup stats present?
       return vec.length() > 0 ? /*not computed*/null : /*empty vec*/new RollupStats(0);

@@ -15,7 +15,7 @@ def pyunit_assign():
     PSA_outliers = h2o.assign(PSA_outliers, "PSA.outliers")
     print pros.head()
     print PSA_outliers.head()
-    assert PSA_outliers._id == "PSA.outliers", "Expected frame id to be PSA.outliers, but got {0}".format(PSA_outliers._id)
+    assert PSA_outliers.frame_id == "PSA.outliers", "Expected frame id to be PSA.outliers, but got {0}".format(PSA_outliers.frame_id)
 
 
 
