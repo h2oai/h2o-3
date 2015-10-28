@@ -22,7 +22,7 @@ flightsByMonth.R = as.data.frame(flightsByMonth)
 which(colnames(airlines.hex)=="Cancelled")
 cancellationsByMonth = h2o.group_by(data = airlines.hex, by = "Month", sum("Cancelled"),gb.control=list(na.methods="rm"))
 cancellation_rate = cancellationsByMonth$sum_Cancelled/flightsByMonth$nrow_Month
-rates_table = cbind(flightsByMonth$Month, cancellation_rate)
+rates_table = h2o.cbind(flightsByMonth$Month, cancellation_rate)
 rates_table.R = as.data.frame(rates_table)
 
 # Construct test and train sets using sampling
