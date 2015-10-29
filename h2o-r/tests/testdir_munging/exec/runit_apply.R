@@ -24,12 +24,12 @@ test.apply <- function() {
 
   # Apply on a complex anonymous function
   Log.info("Now try some misc. apply calls")
-  print(apply(hex, 2, function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/mean(x[1:20,])*x ) }))
+  print(apply(hex, 2, function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/x ) }))
 
   print(h2o.ls())
 
   # Same thing, but from an R variable
-  f <- function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/mean(x[1:20,])*x ) }
+  f <- function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/x ) }
   print(apply(hex, 2, f))
   gc()
   print(h2o.ls())
@@ -45,8 +45,8 @@ test.apply <- function() {
   zzz <- 2.5
   print(apply( hex, 2, function(x) { zzz }))
 
-  
+
 }
 
-# doesn't include issues with NAs! 
+# doesn't include issues with NAs!
 doTest("Check several cases of `apply` call ", test.apply)

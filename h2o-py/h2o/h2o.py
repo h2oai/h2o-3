@@ -233,7 +233,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
     if isinstance(column_types, dict):
       #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
       if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
-        j["column_names"] = _gen_header(j["number_columns"])
+        j["column_names"] = ["C" + str(c) for c in range(1, (j["number_columns"]) + 1)]
       if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
       idx = 0
       column_types_list = []
@@ -668,7 +668,7 @@ def export_file(frame,path,force=False):
 
   """
   frame._eager()
-  H2OJob(H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
+  H2OJob(H2OConnection.get_json("Frames/"+frame.frame_id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
 def cluster_info():

@@ -60,8 +60,8 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.NUM:
         double[] right = new double[dslf.length];
         Arrays.fill(right, rite.getNum());
-        return row_op_row(dslf,right,left.getNames());
-      case Val.ROW:  return row_op_row(dslf,rite.getRow(),rite.getNames());
+        return row_op_row(dslf,right,((ValRow)left).getNames());
+      case Val.ROW:  return row_op_row(dslf,rite.getRow(),((ValRow)rite).getNames());
       default: throw H2O.fail();
       }
 

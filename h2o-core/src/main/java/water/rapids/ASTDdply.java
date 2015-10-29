@@ -13,7 +13,7 @@ import java.util.Arrays;
  *
  *  Returns a set of grouping columns, with the single answer column, with one
  *  row per unique group.
- *  
+ *
  */
 class ASTDdply extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "groupByCols", "fun"}; }
@@ -186,6 +186,8 @@ class ASTDdply extends ASTPrim {
           _result[i] = res.vec(i).at(0);
       } else if( val.isNum() ) {
         _result = new double[]{val.getNum()};
+      } else if( val.isNums() ) {
+        _result = val.getNums();
       } else throw new IllegalArgumentException("ddply must return either a number or a frame, not a "+val);
 
 
