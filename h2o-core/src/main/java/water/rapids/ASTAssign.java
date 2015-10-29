@@ -217,10 +217,10 @@ class ASTAppend extends ASTPrim {
 
     Vec vec = dst.anyVec();
     switch( vsrc.type() ) {
-      case Val.NUM: vec = vec.makeCon(vsrc.getNum()); break;
-      case Val.STR: throw H2O.unimpl();
-      case Val.FRM: vec = vsrc.getFrame().anyVec();   break;
-      default:  throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+    case Val.NUM: vec = vec.makeCon(vsrc.getNum()); break;
+    case Val.STR: throw H2O.unimpl();
+    case Val.FRM: vec = vsrc.getFrame().anyVec();   break;
+    default:  throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
     }
     dst = new Frame(dst._names.clone(),dst.vecs().clone());
     dst.add(newColName, vec);

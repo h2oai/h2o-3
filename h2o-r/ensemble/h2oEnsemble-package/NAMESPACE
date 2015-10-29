@@ -1,6 +1,6 @@
 exportPattern("^[[:alpha:]]+")
 
 import(h2o)
-import(parallel)
 
 S3method(predict, h2o.ensemble)
+S3method(print, h2o.ensemble)

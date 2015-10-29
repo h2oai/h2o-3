@@ -621,7 +621,7 @@ public class Vec extends Keyed<Vec> {
    *  overview of the data.  Each bin is row-counts for the bin's range.  The
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
    *  histogram is computed on first use and cached thereafter.
-   *  @return A set of histogram bins. */
+   *  @return A set of histogram bins, or null for String columns */
   public long[] bins() { return RollupStats.get(this, true)._bins;      }
   /** Optimistically return the histogram bins, or null if not computed 
    *  @return the histogram bins, or null if not computed */
@@ -989,7 +989,7 @@ public class Vec extends Keyed<Vec> {
   /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
    *  @return Brief string representation of a Vec */
   @Override public String toString() {
-    RollupStats rs = RollupStats.getOrNull(this);
+    RollupStats rs = RollupStats.getOrNull(this,rollupStatsKey());
     String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
     int nc = nChunks();
     for( int i=0; i<nc; i++ ) {

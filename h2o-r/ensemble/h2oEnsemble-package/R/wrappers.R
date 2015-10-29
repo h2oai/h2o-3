@@ -1,5 +1,15 @@
 # Set of default wrappers to create a uniform interface for h2o supervised ML functions (H2O 3.0 and above)
-# Wrappers for: h2o.glm, h2o.randomForest, h2o.gbm, h2o.deeplearning
+
+# Example of a wrapper function:
+h2o.example.wrapper <- function(x, y, training_frame, model_id = "", family = c("gaussian", "binomial"), ...) {
+  # This function is just an example.  
+  # You can wrap any H2O learner inside a wrapper function, example: h2o.glm
+  h2o.glm(x = x, y = y, training_frame = training_frame, family = family)
+}
+
+
+
+# Wrappers for: h2o.glm, h2o.randomForest, h2o.gbm, h2o.deeplearning:
 
 
 # This is a version of the h2o.glm.wrapper which doesn't pass along all the args

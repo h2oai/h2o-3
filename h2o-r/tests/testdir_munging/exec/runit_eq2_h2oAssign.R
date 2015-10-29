@@ -17,7 +17,7 @@ function() {
     print(h2o.ls())
     keys <- as.vector(h2o.ls()[,1])
     expect_true(any(grepl("slicedIris.hex", keys)))
-    expect_true(grepl("slicedIris.hex", attr(irisSlice, "id")))
+    expect_true(grepl("slicedIris.hex", h2o.getId(irisSlice)))
     h2o.removeAll()
 
     iris.hex <- h2o.importFile(locate("smalldata/iris/iris.csv"), "iris.hex")

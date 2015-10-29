@@ -174,6 +174,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTCBind());
     init(new ASTColNames());
     init(new ASTColSlice());
+    init(new ASTColPySlice());
     init(new ASTFilterNACols());
     init(new ASTFlatten());
     init(new ASTIsFactor());
@@ -183,7 +184,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTSetDomain());
     init(new ASTSetLevel());
     init(new ASTTmpAssign());
-    init(new ASTPop());
 
     // Matrix Ops
     init(new ASTTranspose());

@@ -49,13 +49,13 @@ def init_err_casesKmeans():
   start_large = [[random.gauss(0,1) for r in range(5)] for c in range(numcol+2)]
 
   try:
-    H2OKMeansEstimator(k=5, user_points=h2o.H2OFrame(start_small)).train(x=range(numcol), training_frame=benign_h2o)
+    H2OKMeansEstimator(k=5, user_points=h2o.H2OFrame.fromPython(start_small)).train(x=range(numcol), training_frame=benign_h2o)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
 
   try:
-    H2OKMeansEstimator(k=5, user_points=h2o.H2OFrame(start_large)).train(x=range(numcol), training_frame=benign_h2o)
+    H2OKMeansEstimator(k=5, user_points=h2o.H2OFrame.fromPython(start_large)).train(x=range(numcol), training_frame=benign_h2o)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
@@ -63,7 +63,7 @@ def init_err_casesKmeans():
   # Log.info("Number of rows exceeds training set's")
   start = [[random.gauss(0,1) for r in range(numrow+2)] for c in range(numcol)]
   try:
-    H2OKMeansEstimator(k=numrow+2, user_points=h2o.H2OFrame(start)).train(x=range(numcol), training_frame=benign_h2o)
+    H2OKMeansEstimator(k=numrow+2, user_points=h2o.H2OFrame.fromPython(start)).train(x=range(numcol), training_frame=benign_h2o)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
@@ -74,13 +74,13 @@ def init_err_casesKmeans():
   for x in ["NA", "NaN", "Inf", "-Inf"]:
     start_err = start[:]
     start_err[random.randint(0,numcol-1)][1] = x
-    H2OKMeansEstimator(k=3, user_points=h2o.H2OFrame(start_err)).train(x=range(numcol), training_frame=benign_h2o)
+    H2OKMeansEstimator(k=3, user_points=h2o.H2OFrame.fromPython(start_err)).train(x=range(numcol), training_frame=benign_h2o)
 
   # Duplicates will affect sampling probability during initialization.
   # Log.info("Duplicate initial clusters specified")
   start = [[random.gauss(0,1) for r in range(3)] for c in range(numcol)]
   for s in start: s[2] = s[0]
-  H2OKMeansEstimator(k=3, user_points=h2o.H2OFrame(start)).train(x=range(numcol), training_frame=benign_h2o)
+  H2OKMeansEstimator(k=3, user_points=h2o.H2OFrame.fromPython(start)).train(x=range(numcol), training_frame=benign_h2o)
 
 
 

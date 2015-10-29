@@ -14,11 +14,9 @@ import java.util.Arrays;
 // (h2o.impute data col method combine_method gb in.place)
 
 public class ASTImpute extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "col", "method", "combineMethod", "groupByCols", "inPlace"}; }
-  @Override
-  public String str(){ return "h2o.impute";}
-  @Override int nargs() { return 1+6; } // (h2o.impute data col method combine_method groupby in.place)
+  @Override public String[] args() { return new String[]{"ary", "col", "method", "combineMethod", "groupByCols"}; }
+  @Override public String str(){ return "h2o.impute";}
+  @Override int nargs() { return 1+5; } // (h2o.impute data col method combine_method groupby)
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     // Argument parsing and sanity checking
     // Whole frame being imputed
@@ -59,11 +57,6 @@ public class ASTImpute extends ASTPrim {
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     final ASTNumList by = by2;  // Make final, for MRTask closure
 
-    // Inplace updates, or return a new frame?
-    final boolean inplace = asts[6].exec(env).getNum() == 1;
-    if( inplace && fr._key==null )
-      throw new IllegalArgumentException("Can only update in-place named Frames");
-
     // Compute the imputed value per-group.  Empty groups are allowed and OK.
     IcedHashMap<ASTGroup.GKX,IcedDouble> group_impute_map;
     if( by.isEmpty() ) {        // Empty group?  Skip the grouping work
@@ -85,10 +78,9 @@ public class ASTImpute extends ASTPrim {
 
     // In not in-place, return a new frame which is the old frame cloned, but
     // for the imputed column which is a copy.
-    if( !inplace ) {
-      fr = new Frame(fr);
-      stk.track(fr).replace(col,vec.makeCopy());
-    }
+    // TODO: Note major COW optimization opportunity
+    fr = new Frame(fr);
+    stk.track(fr).replace(col,vec.makeCopy());
 
     // Now walk over the data, replace NAs with the imputed results
     final IcedHashMap<ASTGroup.GKX,IcedDouble> final_group_impute_map = group_impute_map;

@@ -29,7 +29,15 @@ clean.dependsOn cleanGenerateRESTAPIDocs
 // Latex Booklets
 // --------------
 
-def bookletPath = new File("$rootDir/h2o-docs/src/booklets/v2_2015/source")
+def bookletPath = file("src/booklets/v2_2015/source")
+def bookletOutputPath = file("src/booklets/v2_2015/source/build")
+def bookletList = [
+            "GLM_Vignette",
+            "GBM_Vignette",
+            "DeepLearning_Vignette",
+            "SparklingWaterVignette",
+            "R_Vignette",
+            "Python_booklet"]
 
 task(createBuildInfoTex) << {
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
@@ -41,61 +49,56 @@ task(createBuildInfoTex) << {
     sb.append('\\newcommand{\\waterVersion}{')
     sb.append(bv.getProjectVersion())
     sb.append('}\n')
-    f.write(sb.toString());
-}
-
-def counterToBooklet(int counter) {
-    String[] booklets = [
-            "GLM_Vignette",
-            "GBM_Vignette",
-            "DeepLearning_Vignette",
-            "SparklingWaterVignette",
-            "R_Vignette",
-            "Python_booklet"]
-    return booklets[counter];
+    f.write(sb.toString())
+    if (!bookletOutputPath.exists()) {
+      bookletOutputPath.mkdirs()
+    }
 }
 
 // Note: The '6' here is the number of items in the list of booklets.
-6.times {
-    counter ->
+bookletList.eachWithIndex {
+    name, counter ->
+        // Define 0. stage - compilation
         task "compile_${counter}_0"(type: Exec, dependsOn: createBuildInfoTex) {
             workingDir bookletPath
-            commandLine 'pdflatex', '-halt-on-error', counterToBooklet(counter)
-            standardOutput = new FileOutputStream("$bookletPath/gradle_" + counterToBooklet(counter) + "_" + counter + "_0.out")
+            commandLine 'pdflatex', '-halt-on-error', name 
+            doFirst {
+              standardOutput = new FileOutputStream("$bookletOutputPath/gradle_" + name + "_" + counter + "_0.out")
+            }
         }
-}
-
-6.times {
-    counter ->
+        // Define 1. stage - compilation via bibtex
         task "compile_${counter}_1"(type: Exec, dependsOn: "compile_${counter}_0") {
             workingDir bookletPath
-            commandLine 'bibtex', counterToBooklet(counter)
-            standardOutput = new FileOutputStream("$bookletPath/gradle_" + counterToBooklet(counter) + "_" + counter + "_0.out")
+            commandLine 'bibtex', name
+            doFirst {
+                standardOutput = new FileOutputStream(
+                        "$bookletOutputPath/gradle_" + name + "_" + counter +
+                        "_0.out")
+            }
         }
-}
-
-6.times {
-    counter ->
+        // Define 2. stage - compile via pdftex
         task "compile_${counter}_2"(type: Exec, dependsOn: "compile_${counter}_1") {
             workingDir bookletPath
-            commandLine 'pdflatex', '-halt-on-error', counterToBooklet(counter)
-            standardOutput = new FileOutputStream("$bookletPath/gradle_" + counterToBooklet(counter) + "_" + counter + "_0.out")
+            commandLine 'pdflatex', '-halt-on-error', name
+            doFirst {
+                standardOutput =
+              new FileOutputStream("$bookletOutputPath/gradle_" + name + "_" + counter + "_0.out")
+            }
         }
-}
-
-6.times {
-    counter ->
+        // Define 3. stage - final compilation via pdflatex
         task "compile_${counter}_3"(type: Exec, dependsOn: "compile_${counter}_2") {
             workingDir bookletPath
-            commandLine 'pdflatex', '-halt-on-error', counterToBooklet(counter)
-            standardOutput = new FileOutputStream("$bookletPath/gradle_" + counterToBooklet(counter) + "_" + counter + "_0.out")
+            commandLine 'pdflatex', '-halt-on-error', name
+            doFirst {
+              new FileOutputStream("$bookletOutputPath/gradle_" + name + "_" + counter + "_0.out")
+            }
         }
 }
 
 // compile_X_Y
 //
 // X is the counter number
-//   See counterToBooklet()
+//   See bookletList
 //
 // Y is the phase
 //   phase 0 pdflatex
@@ -106,7 +109,8 @@ def counterToBooklet(int counter) {
 task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3", "compile_5_3"])
 
 task cleanBooklets(type: Delete) {
-    delete fileTree(dir: file(bookletPath), include: '*.out'),
+    delete bookletOutputPath,
+            fileTree(dir: file(bookletPath), include: '*.out'),
             fileTree(dir: file(bookletPath), include: '*.pdf'),
             fileTree(dir: file(bookletPath), include: '*.blg'),
             fileTree(dir: file(bookletPath), include: '*.log'),

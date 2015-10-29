@@ -7,12 +7,17 @@
 ####New Features
 The following changes represent features that have been added since the previous release:
 
+#####API
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/8a2aefb72ab9c64c7064a65c242239a69cbf87a3): Added `NumList` and `StrList`
+- [PUBDEV-674](https://0xdata.atlassian.net/browse/PUBDEV-674): Added REST API and R / Python for grid search
+
 #####Algorithms
 
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/c18cfab41bd32fd4c2f34fdda5cf73076c1320f6): Added option in PCA to use randomized subspace iteration method for calculation
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/acccdf7e0a698b2960aac8260c8284c6523d1fd5): Deep Learning: Added `target_ratio_comm_to_comp` to R and Python client APIs
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/a17dcc0637a04fc7e63c020bd0a3f2bba7b6f674): PUBDEV-1247: Added stochastic GBM parameters (`sample_rate` and `col_sample_rate`) to R/Py APIs
-
+- [PUBDEV-1450](https://0xdata.atlassian.net/browse/PUBDEV-1450): GLRM has been tested and removed from "experimental" status
 
 #####Hadoop
 
@@ -20,6 +25,8 @@ The following changes represent features that have been added since the previous
 
 #####Python
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/cc02cc6f19360a79232a781328c6afae80a4861a): Added `_to_string` method 
+- [PUBDEV-2166](https://0xdata.atlassian.net/browse/PUBDEV-2166): Added Python grid client [GitHub commit](https://github.com/h2oai/h2o-3/commit/16589b7d3362dce6a2caaed6e23287c605896a8a)
 - [PUBDEV-2098](https://0xdata.atlassian.net/browse/PUBDEV-2098): Scoring history in Python is now visualized ([GitHub commit](https://github.com/h2oai/h2o-3/commit/77b27109c84c4739f9f1b7a3078f8992beefc813))
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/3cda6e1a810dcbee5182dde5821a65f3b8800a69): PUBDEV-2020: Python implementation and test for `split_frame()`
 
@@ -40,6 +47,11 @@ The following changes represent features that have been added since the previous
 - [[GitHub commit](https://github.com/h2oai/h2o-3/commit/7b8e39e8a6624d2512620d9e230ff91dd9c7e240): Added pass-through version of `toCategoricalVec()`, `toNumericVec()`, and `toStringVec()` to `Vec.java` for code simplicity and backwards compatibility
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/20ccac7947232fbb68e318e013c0ac2a96870284): Added string column handling to `StrSplit()`
 
+#####Web UI
+
+- [PUBDEV-1977](https://0xdata.atlassian.net/browse/PUBDEV-1977): Added grid search to Flow web UI
+
+
 
 ####Enhancements
 
@@ -47,6 +59,7 @@ The following changes are improvements to existing features (which includes chan
 
 #####Algorithms
 
+- [PUBDEV-467](https://0xdata.atlassian.net/browse/PUBDEV-467): Show Frames for DL weights/biases in Flow
 - [PUBDEV-1847](https://0xdata.atlassian.net/browse/PUBDEV-1847): DRF/GBM: `nbins_top_level` is now configurable
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/f9b1fea92c46105d0a2a54874eb7898993e6f718): Deep Learning: Scoring time is now shown in the logs
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/ad041d3b5ff96ed33ea22692035f02c21b461a68): Sped up GBM split finding by dynamically switching between single and multi-threaded based on workload
@@ -71,6 +84,11 @@ The following changes are improvements to existing features (which includes chan
 
 #####Python
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/2822e05775a157b6a64d31ab3cc5ae3bbccc4322): `centers_std` is now returned as a list of columns
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/48590f6e6affc3e12246cd78bdf82b9806d79f52): `str(Frame)` no longer returns an ID; updated ExprNode `_to_string` to accomodate
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e385e78271fb634c4e43e1d3c694ee6dfe955bff): Changed default setting for `_isAllAscii` to false
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/215348e1e743e1aa0fbddb7be937f58144d6b0e9): Fixed var to return scalar/frame based on `nrow`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/aadf7e1558bf673fc44bd345b9e1a592dc7242d6): Python now checks `ncol`, not `nrow`
 - [PUBDEV-1060](https://0xdata.atlassian.net/browse/PUBDEV-1060): Python's `h2o.import_frame()` now matches R's `importFile()` parameters where applicable
 - [PUBDEV-1960](https://0xdata.atlassian.net/browse/PUBDEV-1960): Python now uses the streaming endpoint `/3/DownloadDataset.bin`
 - [PUBDEV-2223](https://0xdata.atlassian.net/browse/PUBDEV-2223): Added normalization and standardization coefficients to the model output in Python
@@ -89,6 +107,7 @@ The following changes are improvements to existing features (which includes chan
 
 #####R
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/38fc561b542d0d17caf18eeee142034c935393a9): Added null check
 - [PUBDEV-2185](https://0xdata.atlassian.net/browse/PUBDEV-2185): When appending a vec to an existing data frame, H2O now creates a new data frame while still keeping the original frame in memory
 - [PUBDEV-1959](https://0xdata.atlassian.net/browse/PUBDEV-1959): R now uses the streaming endpoint `/3/DownloadDataset.bin`
 - [PUBDEV-2020](https://0xdata.atlassian.net/browse/PUBDEV-2020): `h2o.splitFrame()` in R/Python now uses the `runif` technique instead of the horizontal slice technique
@@ -111,6 +130,7 @@ The following changes are improvements to existing features (which includes chan
 
 #####System
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/cb9fe3fd132ce7851339b99420d1c25a0129160c): Added vertical prefetch of all chunks' worth of data for dense rows
 - [PUBDEV-1426](https://0xdata.atlassian.net/browse/PUBDEV-1426): Scoring is now a non-blocking job with a progress bar
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/c84c663c33963195f960f12819afa7624370764e): EasyPojo API is now serializable
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/70d91bed44172257d6d804572c985ec1ec67201e): Changed parse setup guess when encountering large NA counts to not favor numeric over dates or UUIDs
@@ -165,6 +185,9 @@ The following changes are to resolve incorrect software behavior:
 
 #####Algorithms
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/798c098f42ad412e2331936238642dc7578450c8): Fixed bug with `CategoricalWrappedVec`
+- [PUBDEV-1664](https://0xdata.atlassian.net/browse/PUBDEV-1664): Corrected math for GBM Tweedie with offsets/weights
+- [PUBDEV-1665](https://0xdata.atlassian.net/browse/PUBDEV-1665): Corrected math for GBM Poisson with offsets/weights
 - [PUBDEV-2130](https://0xdata.atlassian.net/browse/PUBDEV-2130): Deleting Deep Learning n-fold models resulted in a `java.lang.AssertionError`
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/e14e50d85922913ff5c6f0cb5a7c0806787d7be8): Fixed GLM with nfolds
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/463ac6aee7d656a61b45b29d517054e39300c126): Updated GLM InitTsk to run at +1 priority level to avoid deadlock when launching hundreds of GLMs in parallel
@@ -177,6 +200,12 @@ The following changes are to resolve incorrect software behavior:
 
 #####Python
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/99f59e1161da82496aa3008592e1ff5d8826097e): `nrow` was not filling cache correctly
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e65bb079988ad7a19ee2fc0c17f93071f2ec4795): Fixed typo in Python object upload (`header` -> `col_header`)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f62055393b3273a67e9a5c02281d30e0dfca3392): Append now does so in place
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6ceab711563ec6b307656b0e2fad1a8bb7696fcf): Seed was not being set
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e0073fc3c03e779974896d259ff655e0b5cab8c9): Fixed `group_by`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/09779bb751c032c007f31b2408bfe7196a30c46f): Corrected `.fromPython`
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/4b078544fa49dc44ff59a920108f8d882d52bb3a): Corrected Python dict col names
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/85cf09508d1737ab9b3ad8381216e339b769b283): Fixed null/npe in H2O's fit for sklearn (Windows only)
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/ceb69702040279ff95e00dd4d5d179a30ddfcd67): `get_params` now keeps "algo" out of params
@@ -185,6 +214,9 @@ The following changes are to resolve incorrect software behavior:
 
 #####R
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/7f5424abef8d8acb4c7160134643ca4122e7ff00): Fixed `is.numeric`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/56eef73e2f019b9d6cd49239d377d4899d1eb02c): Fixed `h2o.anyFactor` and `h2o.impute`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/05e130297684b584a62d2a8a0b16fab04a1af4f0): Fixed levels 
 - [PUBDEV-1808](https://0xdata.atlassian.net/browse/PUBDEV-1808): `h2o.splitFrame` was not splitting randomly in R
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/903779fd8526f730091f70f52c67750554ed88fc): Fixed range in R
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/f3a2a3f171910ef9121a8cfae86fc6932eb6a978): PUBDEV-2020: Fixed variable name for case where `destination_frame` is provided. 
@@ -203,11 +235,10 @@ The following changes are to resolve incorrect software behavior:
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/613bd6ab537f09e24cb287addd0989178ee14134): Fixed bug in `h2o.summary` (constant categorical columns)
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/42f4635f6c5b17937b1eb58a46c505507979b89c): Fixed bug in `plot.H2OModel`
 
-
-
-
 #####System
 
+- [PUBDEV-2250](https://0xdata.atlassian.net/browse/PUBDEV-2250): During parsing, SVMLight-formatted files failed with an NPE [GitHub commit](https://github.com/h2oai/h2o-3/commit/d7c8d431a1bc08a64dc6e6233717dc7423ade58d)
+- [PUBDEV-2213](https://0xdata.atlassian.net/browse/PUBDEV-2213): During parsing, alphanumeric data in a column was converted to missing values and the column was assigned a type of `int` 
 - [PUBDEV-1990](https://0xdata.atlassian.net/browse/PUBDEV-1990): Spaces are now permitted in the Flow directory name
 - [PUBDEV-1037](https://0xdata.atlassian.net/browse/PUBDEV-1037): Space in the user name was preventing H2O from starting
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/44994ee4998543ccf13c38e44017adee307db4da): Fixed `VecUtils.copyOver()` to accept a column type for the resulting copy

@@ -905,15 +905,8 @@ Look for the following output to confirm the changes:
 **I received the following error message after launching H2O in RStudio and using `h2o.init` - what should I do to resolve this error?**
 
 ```
-> localH2O = h2o.init()
-Successfully connected to http://127.0.0.1:54321/
- 
-ERROR: Unexpected HTTP Status code: 301 Moved Permanently (url = http://127.0.0.
-1:54321/3/Cloud?skip_ticks=true)
- 
-Error in fromJSON(rv$payload) : unexpected character '<'
-Calls: h2o.init ... gsub -> .h2o.doSafeGET -> .h2o.doSafeREST -> fromJSON
-Execution halted 
+Error in h2o.init() : 
+Version mismatch! H2O is running version 3.2.0.9 but R package is version 3.2.0.3
 ```
 
 This error is due to a version mismatch between the H2O package and the running H2O instance. Make sure you are using the latest version of both files by downloading H2O from the [downloads page](http://h2o.ai/download/) and installing the latest version and that you have removed any previous H2O R package versions by running: 
@@ -942,7 +935,7 @@ Finally, install the latest version of the H2O package for R:
 ```
 install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/R")))
 library(h2o)
-localH2O = h2o.init()
+localH2O = h2o.init(nthreads=-1)
 ```
 
 ---

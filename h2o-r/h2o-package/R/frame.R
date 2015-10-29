@@ -25,10 +25,10 @@
 #` - TRUE : Node is evaluated, cluster has the ID, and an R GC finalizer will remove this temp ID
 #` - FALSE: Node is evaluated, cluster has the ID, and the user has to explictly remove this permanent ID
 #` - list of Nodes: Then further ID is one of:
-#` - - missing: this Node is lazy and has never been evaluated 
+#` - - missing: this Node is lazy and has never been evaluated
 #` - - NA: this Node has been executed once, but no temp ID was made
 #` - - String: this Node is mid-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to TRUE
-#` 
+#`
 #` # A number of fields represent cached queries of an evaluated frame.
 #` E$data   <- A cached result; can be a scalar, or a R dataframe result holding
 #`             the first N (typically 10) rows and all cols of the frame
@@ -227,7 +227,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
     .set(x,"types",lapply(res$columns, function(c) c$type))
     nrow <- .set.nlen(x,"nrow",res$rows)
     ncol <- .set.nlen(x,"ncol",length(res$columns))
-    if( res$row_count==0 ) { 
+    if( res$row_count==0 ) {
       data <- as.data.frame(matrix(NA,ncol=ncol,nrow=0L))
       colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
     } else {
@@ -982,7 +982,7 @@ h2o.runif <- function(x, seed = -1) {
 #' h2o.anyFactor(iris.hex)
 #' }
 #' @export
-h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
+h2o.anyFactor <- function(x) as.logical(.eval.scalar(.newExpr("any.factor", x)))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Overloaded Base R Methods
@@ -1241,8 +1241,8 @@ h2o.length <- length.Frame
 #' @export
 h2o.levels <- function(x, i) {
   df <- .fetch.data(x,1L)
-  if( missing(i) ) levels(df)
-  else levels(df[i])
+  if( missing(i) ) levels(df[[1]])
+  else levels(df[[i]])
 }
 
 #'
@@ -1328,7 +1328,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("is.numeric")(x)
-  else .eval.scalar(.newExpr("is.numeric",x))
+  else as.logical(.eval.scalar(.newExpr("is.numeric",x)))
 }
 
 #' Print An H2O Frame
@@ -1447,7 +1447,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
   if( is.character(value) ) value <- .quote(value)
   # Set col name and return updated frame
   if( is.na(name) ) .newExpr(":=", data, value, cols, rows)
-  else              .newExpr("append", data, value, .quote(name)) 
+  else              .newExpr("append", data, value, .quote(name))
 }
 
 #' @rdname Frame-Extract
@@ -1776,15 +1776,14 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' }
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
-  if( na.rm ) stop("na.rm versions not impl")
-  if( ncol(x)==1L ) .eval.scalar(.newExpr("sd",x))
-  else .fetch.data(.newExpr("sd",x),1L)
+  if( ncol(x)==1L ) .eval.scalar(.newExpr("sd",x, na.rm))
+  else .fetch.data(.newExpr("sd",x,na.rm),1L)
 }
 
 #' @rdname h2o.sd
 #' @export
 sd <- function(x, na.rm=FALSE) {
-  if( is.Frame(x) ) h2o.sd(x)
+  if( is.Frame(x) ) h2o.sd(x,na.rm)
   else stats::sd(x,na.rm)
 }
 
@@ -2306,7 +2305,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 #' }
 #'  @export
 h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
-                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, inplace=TRUE) {
+                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, inplace=FALSE) {
   # TODO: "bfill" back fill the missing value with the next non-missing value in the vector
   # TODO: "ffill" front fill the missing value with the most-recent non-missing value in the vector.
   # TODO: #'  @param max_gap  The maximum gap with which to fill (either "ffill", or "bfill") missing values. If more than max_gap consecutive missing values occur, then those values remain NA.
@@ -2356,7 +2355,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
       gb.cols <- .row.col.selector(vars,envir=parent.frame())
   }
 
-  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
+  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols)
   # In-place updates we force right now, because the user expects future uses
   # of 'data' to show the imputed changed.
   if( inplace ) stop("unimpl")
