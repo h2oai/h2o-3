@@ -1451,7 +1451,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   // The (local) set of Key/Value mappings.
-  static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<>();
+  public static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<>();
 
   // PutIfMatch
   // - Atomically update the STORE, returning the old Value on success

@@ -11,6 +11,26 @@ import java.util.List;
 
 public class Merge {
 
+  // Hack to cleanup helpers made during merge
+  // TODO: Keep radix order (Keys) around as hidden objects for a given frame and key column
+  static void cleanUp() {
+    new MRTask() {
+      protected void setupLocal() {
+        Object [] kvs = H2O.STORE.raw_array();
+        for(int i = 2; i < kvs.length; i+= 2){
+          Object ok = kvs[i];
+          if( !(ok instanceof Key  ) ) continue; // Ignore tombstones and Primes and null's
+          Key key = (Key )ok;
+          if(!key.home())continue;
+          String st = key.toString();
+          if (st.contains("__radix_order__") || st.contains("__binary_merge__")) {
+            DKV.remove(key);
+          }
+        }
+      }
+    }.doAllNodes();
+  }
+
   // single-threaded driver logic
   static Frame merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[]) {
 
@@ -90,7 +110,7 @@ public class Merge {
     for (i=0; i<bmList.size(); i++) {
       BinaryMerge thisbm = bmResults[i];
       if (thisbm._ansN == 0) continue;
-      long thisChunkSizes[] = thisbm._chunkSizes;  // TODO: change chunkSizes to int[]
+      int thisChunkSizes[] = thisbm._chunkSizes;  // TODO: change chunkSizes to int[]
       for (int j=0; j<thisChunkSizes.length; j++) {
         chunkSizes[k] = thisChunkSizes[j];
         chunkLeftMSB[k] = thisbm._leftMSB;

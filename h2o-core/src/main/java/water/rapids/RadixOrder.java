@@ -28,7 +28,7 @@ class RadixCount extends MRTask<RadixCount> {
   // make a unique deterministic key as a function of frame, column and node
   // make it homed to the owning node
   static Key getKey(Key frameKey, int col, H2ONode node) {
-    Key ans = Key.make("MSBNodeCounts_col" + col + "_node" + node.index() + frameKey.toString());  //, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
+    Key ans = Key.make("__radix_order__MSBNodeCounts_col" + col + "_node" + node.index() + frameKey.toString());
     // Each node's contents is different so the node number needs to be in the key
     // TO DO: need the biggestBit in here too, that the MSB is offset from
     //Log.info(ans.toString());
@@ -168,14 +168,14 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   }
 
   public static Key getNodeOXbatchKey(Key frameKey, int MSBvalue, int node, int batch) {
-    Key ans = Key.make("NodeOXbatch_MSB" + MSBvalue + "_node" + node + "_batch" + batch + frameKey.toString());  //, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, ownerOfMSB(MSBvalue));
-    //if (MSBvalue == 73) Log.info(ans.toString());
+    Key ans = Key.make("__radix_order__NodeOXbatch_MSB" + MSBvalue + "_node" + node + "_batch" + batch + frameKey.toString(),
+            (byte)1, Key.HIDDEN_USER_KEY, false, MoveByFirstByte.ownerOfMSB(MSBvalue));
     return ans;
   }
 
   public static Key getSortedOXbatchKey(Key frameKey, int MSBvalue, int batch) {
-    Key ans = Key.make("SortedOXbatch_MSB" + MSBvalue + "_batch" + batch + frameKey.toString());  //, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, ownerOfMSB(MSBvalue));
-    //if (MSBvalue == 73) Log.info(ans.toString());
+    Key ans = Key.make("__radix_order__SortedOXbatch_MSB" + MSBvalue + "_batch" + batch + frameKey.toString(),
+            (byte)1, Key.HIDDEN_USER_KEY, false, MoveByFirstByte.ownerOfMSB(MSBvalue));
     return ans;
   }
 
@@ -187,8 +187,8 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   }
 
   public static Key getMSBNodeHeaderKey(Key frameKey, int MSBvalue, int node) {
-    Key ans = Key.make("OXNodeHeader_MSB" + MSBvalue + "_node" + node + frameKey.toString());  //, (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, ownerOfMSB(MSBvalue));
-    //if (node == 1) Log.info(ans.toString());
+    Key ans = Key.make("__radix_order__OXNodeHeader_MSB" + MSBvalue + "_node" + node + frameKey.toString(),
+            (byte)1, Key.HIDDEN_USER_KEY, false, MoveByFirstByte.ownerOfMSB(MSBvalue));
     return ans;
   }
 
@@ -420,7 +420,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
   public static Key getSortedOXHeaderKey(Key frameKey, int MSBvalue) {
     // This guy has merges together data from all nodes and its data is not "from" any particular node. Therefore node number should not be in the key.
-    Key ans = Key.make("SortedOXHeader_MSB" + MSBvalue + frameKey.toString());  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
+    Key ans = Key.make("__radix_order__SortedOXHeader_MSB" + MSBvalue + frameKey.toString());  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
     //if (MSBvalue==73) Log.info(ans.toString());
     return ans;
   }

@@ -32,7 +32,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   final boolean _outerJoin = true; // TODO: add the option to do inner join (currently this flag just used to count a 1 for the NA for nomatch=NA)
   long _perNodeNumRowsToFetch[] = new long[H2O.CLOUD.size()];
   int _leftMSB, _rightMSB;
-  long _chunkSizes[];
+  int _chunkSizes[];
 
   BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
     _leftFrame = leftFrame;
@@ -261,7 +261,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       int lastSize = (int)(_ansN - (nbatch-1)*batchSize);
       assert nbatch >= 1;
       assert lastSize > 0;
-      _chunkSizes = new long[nbatch];
+      _chunkSizes = new int[nbatch];
 
       // batch chunks (per column), each chunk has up to batchSize rows
       double[][][] frameLikeChunks = new double[_rightFrame.numCols()/*cols*/][nbatch/*batch*/][]; //TODO: compression via int types
@@ -317,9 +317,11 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   }
 
   static Key getKeyForMSBComboPerCol(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int col /*final table*/, int batch) {
-    return Key.make("Chunk_for_col_" + col + "_batch_" + batch
+    return Key.make("__binary_merge__Chunk_for_col_" + col + "_batch_" + batch
             + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
-            + "_forLeftMSB_"+leftMSB + "_RightMSB_" + rightMSB); //TODO home locally
+            + "_forLeftMSB_"+leftMSB + "_RightMSB_" + rightMSB,
+            (byte)1, Key.HIDDEN_USER_KEY, false, MoveByFirstByte.ownerOfMSB(rightMSB)
+            ); //TODO home locally
   }
 
   class GetRawRemoteRows extends DTask<GetRawRemoteRows> {

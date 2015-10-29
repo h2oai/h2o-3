@@ -1,71 +1,68 @@
 package water.rapids;
 
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.util.Log;
-//import water.persist.PersistManager;
-//import water.util.Log;
-//import water.rapids.ASTGroupBy.*;
 
-import javax.management.Query;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 
 
 public class MungingTest extends TestUtil {
-    @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
-    private void copyStream(OutputStream os, InputStream is, final int buffer_size) {
-        try {
-            byte[] bytes=new byte[buffer_size];
-            for(;;) {
-                int count=is.read(bytes, 0, buffer_size);
-                if( count<=0 ) break;
-                os.write(bytes, 0, count);
-            }
-        }
-        catch(Exception ex) {
-            throw new RuntimeException(ex);
-        }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
+
+
+
+  private void copyStream(OutputStream os, InputStream is, final int buffer_size) {
+    try {
+      byte[] bytes=new byte[buffer_size];
+      for(;;) {
+        int count=is.read(bytes, 0, buffer_size);
+        if( count<=0 ) break;
+        os.write(bytes, 0, count);
+      }
     }
-    @Test public void run2() throws Exception {
-        System.out.println("Running run2 ...");
-        NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1.csv"));
-        Frame frame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
-        System.out.println("Loaded file, now calling Query ...");
-        new RadixOrder(frame, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
-        // TO DO: change back to DoGroup(frame, new int[] {0,1}, frame.vec(3), true)
-        frame.delete();
+    catch(Exception ex) {
+      throw new RuntimeException(ex);
     }
+  }
+  @Test public void run2() throws Exception {
+    System.out.println("Running run2 ...");
+    NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1.csv"));
+    Frame frame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
+    System.out.println("Loaded file, now calling Query ...");
+    new RadixOrder(frame, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
+    // TO DO: change back to DoGroup(frame, new int[] {0,1}, frame.vec(3), true)
+    frame.delete();
+  }
 
-    @Test public void run3() throws Exception {
-      System.out.println("Running run3 ...");
+  @Test public void run3() throws Exception {
+    System.out.println("Running run3 ...");
 
-      //NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1_subset.csv"));
-      NFSFileVec nfs = NFSFileVec.make(find_test_file("/users/arno/devtestdata/step1_subset.csv"));
-      Frame leftFrame = ParseDataset.parse(Key.make(), nfs._key);
+    //NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1_subset.csv"));
+    NFSFileVec nfs = NFSFileVec.make(find_test_file("/users/arno/devtestdata/step1_subset.csv"));
+    Frame leftFrame = ParseDataset.parse(Key.make(), nfs._key);
 
-      //nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/fullsize.csv"));
-      nfs = NFSFileVec.make(find_test_file("/users/arno/devtestdata/fullsize.csv"));
-      Frame rightFrame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
+    //nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/fullsize.csv"));
+    nfs = NFSFileVec.make(find_test_file("/users/arno/devtestdata/fullsize.csv"));
+    Frame rightFrame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
 
-      System.out.println("Loaded two files, now calling order ...");
+    System.out.println("Loaded two files, now calling order ...");
 
-      // TO DO: this would be nice to see in chunk summary ...
-      // for (int i=0; i<rightFrame.anyVec().nChunks(); i++) {
-      //   Log.info("Chunk " + i + " is on node " + rightFrame.anyVec().chunkKey(i).home_node().index());
-      // }
+    // TO DO: this would be nice to see in chunk summary ...
+    // for (int i=0; i<rightFrame.anyVec().nChunks(); i++) {
+    //   Log.info("Chunk " + i + " is on node " + rightFrame.anyVec().chunkKey(i).home_node().index());
+    // }
 
-      Frame fr1 = Merge.merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1});  // 0==id, 1==date  (no dups)
-      Frame fr2 = Merge.merge(leftFrame, rightFrame, new int[] {0},   new int[] {0}  );  // 0==id           (many dups)
+    Frame fr1 = Merge.merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1});  // 0==id, 1==date  (no dups)
+    Frame fr2 = Merge.merge(leftFrame, rightFrame, new int[] {0},   new int[] {0}  );  // 0==id           (many dups)
 
 
-      Log.info(fr1.toString(0,(int)fr1.numRows()));
-      Log.info(fr2.toString(0,(int)fr2.numRows()));
+    Log.info(fr1.toString(0,(int)fr1.numRows()));
+    Log.info(fr2.toString(0,(int)fr2.numRows()));
 
 //      NFSFileVec ref1 = NFSFileVec.make(find_test_file("/users/arno/devtestdata/ref1.csv"));
 //      Frame ref1Frame = ParseDataset.parse(Key.make(), nfs._key);
@@ -77,9 +74,12 @@ public class MungingTest extends TestUtil {
 //
 //      ref1Frame.delete();
 //      ref2Frame.delete();
-      leftFrame.delete();
-      rightFrame.delete();
-    }
+    fr1.delete();
+    fr2.delete();
+    leftFrame.delete();
+    rightFrame.delete();
+    Merge.cleanUp();
+  }
 
 
 //    @Test public void run1() throws Exception {

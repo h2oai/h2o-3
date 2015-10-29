@@ -327,7 +327,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
 
   // Make a Key which is homed to specific nodes.
-  static <P extends Keyed> Key<P> make(byte[] kb, byte rf, byte systemType, boolean required, H2ONode... replicas) {
+  public static <P extends Keyed> Key<P> make(byte[] kb, byte rf, byte systemType, boolean required, H2ONode... replicas) {
     // no more than 3 replicas allowed to be stored in the key
     assert 0 <=replicas.length && replicas.length<=3;
     assert systemType<32; // only system keys allowed
