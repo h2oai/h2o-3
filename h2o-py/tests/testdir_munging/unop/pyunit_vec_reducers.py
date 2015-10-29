@@ -9,8 +9,8 @@ import numpy as np
 import random
 
 def frame_reducers():
-    
-    
+
+
 
     data = [[random.uniform(-10000,10000) for r in range(10)] for c in range(10)]
     h2o_data = h2o.H2OFrame.fromPython(data)
@@ -34,7 +34,7 @@ def frame_reducers():
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sum values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    h2o_val = h2o_data[c].sd()
+    h2o_val = h2o_data[c].sd()[0]
     num_val = np.std(np_data[c], axis=0, ddof=1)
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sd values between h2o and " \
@@ -44,7 +44,7 @@ def frame_reducers():
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal var values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    h2o_val = h2o_data[c].mean()
+    h2o_val = h2o_data[c].mean()[0]
     num_val = np.mean(np_data[c])
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal mean values between h2o and " \

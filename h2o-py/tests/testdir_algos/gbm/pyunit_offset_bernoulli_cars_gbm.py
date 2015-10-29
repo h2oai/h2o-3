@@ -30,8 +30,8 @@ def offset_bernoulli_cars():
   #   pr = 1/(1+exp(-df$x1 - pr))
   assert abs(-0.1041234 - gbm._model_json['output']['init_f']) < 1e-6, "expected init_f to be {0}, but got {1}". \
     format(-0.1041234, gbm._model_json['output']['init_f'])
-  assert abs(0.577326 - predictions[:,2].mean()) < 1e-6, "expected prediction mean to be {0}, but got {1}". \
-    format(0.577326, predictions[:,2].mean())
+  assert abs(0.577326 - predictions[:,2].mean()[0]) < 1e-6, "expected prediction mean to be {0}, but got {1}". \
+    format(0.577326, predictions[:,2].mean()[0])
   assert abs(0.1621461 - predictions[:,2].min()) < 1e-6, "expected prediction min to be {0}, but got {1}". \
     format(0.1621461, predictions[:,2].min())
   assert abs(0.8506528 - predictions[:,2].max()) < 1e-6, "expected prediction max to be {0}, but got {1}". \
