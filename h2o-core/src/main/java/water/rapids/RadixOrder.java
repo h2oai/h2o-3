@@ -134,11 +134,13 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
     //int leftAlign = (8-(_biggestBit % 8)) % 8;   // only the first column is left aligned, currently. But they all could be for better splitting.
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       long thisx = chk[0].at8(r);  // - _colMin[0]) << leftAlign;  (don't subtract colMin because it unlikely helps compression and makes joining 2 compressed keys more difficult and expensive).
-      assert(_biggestBit >= 8) : "biggest bit should be >= 8, need to dip into next column otherwise";
-      int MSBvalue = (int) (thisx >> (_biggestBit-8) & 0xFFL);
+      int shift = _biggestBit-8;
+      if (shift<0) shift = 0;
+      int MSBvalue = (int) (thisx >> shift & 0xFFL);
       long target = myCounts[MSBvalue]++;
       int batch = (int) (target / _batchSize);
       int offset = (int) (target % _batchSize);
+      if (_o[MSBvalue] == null) throw new RuntimeException("Internal error: o_[MSBvalue] is null. Should never happen.");
       _o[MSBvalue][batch][offset] = (long) r + chk[0].start();    // move i and the index.
 
       byte this_x[] = _x[MSBvalue][batch];
@@ -570,6 +572,7 @@ public class RadixOrder {
       _bytesUsed[i] = (int) Math.ceil(_biggestBit[i] / 8.0);
       //colMin[i] = (long) col.min();   // TO DO: non-int/enum
     }
+    if (_biggestBit[0] < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  // TODO: feeed back to R warnings()
     new RadixCount(DF._key, _biggestBit[0], whichCols[0]).doAll(DF.vec(whichCols[0]));
     System.out.println("Time of MSB count: " + (System.nanoTime() - t0) / 1e9);
 

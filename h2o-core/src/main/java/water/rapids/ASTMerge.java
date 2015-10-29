@@ -34,7 +34,7 @@ public class ASTMerge extends ASTPrim {
   // Hash tables beyond this count are assumed to be inefficient, and we're
   // better served by sorting all the join columns and doing a global
   // merge-join.
-  static final int MAX_HASH_SIZE = 120000000;
+  static final int MAX_HASH_SIZE = 0; //120000000;
 
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
@@ -101,8 +101,8 @@ public class ASTMerge extends ASTPrim {
     //
     // Count size of this hash table as-we-go.  Bail out if the size exceeds
     // a known threshold, and switch a sorting join instead of a hashed join.
-    if (method.equals("big")) {
-      return sortingMerge(walked,hashed,all_x,all_y,ncols,id_maps);
+    if (method.equals("radix")) {
+      return sortingMerge(l,r,all_x,all_y,ncols,id_maps);
     }
     else {
       final MergeSet ms = new MergeSet(ncols, id_maps, all_y).doAll(hashed);
@@ -114,26 +114,25 @@ public class ASTMerge extends ASTPrim {
           MergeSet.MERGE_SETS.remove(uniq);
         }
       }.doAllNodes();
-      if (rows == null)
+      if (method.equals("auto") && (rows == null || rows.size() > MAX_HASH_SIZE ))  // Blew out hash size; switch to a sorting join.  Matt: even with 0, rows was size 3 hence added ||
+        return sortingMerge(l,r,all_x,all_y,ncols,id_maps);
+      // All of the walked set, and no dup handling on the y - which means no
+      // need to replicate rows of the walked dataset.  Simple 1-pass over the
+      // walked set adding in columns (or NAs) from the y.
+      if (all_x && !(all_y && ms._dup)) {
+        // The lifetime of the distributed dataset is independent of the original
+        // dataset, so it needs to be a deep copy.
+        // TODO: COW Optimization
+        walked = walked.deepCopy(null);
 
-
-        // All of the walked set, and no dup handling on the y - which means no
-        // need to replicate rows of the walked dataset.  Simple 1-pass over the
-        // walked set adding in columns (or NAs) from the y.
-        if (all_x && !(all_y && ms._dup)) {
-          // The lifetime of the distributed dataset is independent of the original
-          // dataset, so it needs to be a deep copy.
-          // TODO: COW Optimization
-          walked = walked.deepCopy(null);
-
-          // run a global parallel work: lookup non-hashed rows in hashSet; find
-          // matching row; append matching column data
-          String[] names = Arrays.copyOfRange(hashed._names, ncols, hashed._names.length);
-          String[][] domains = Arrays.copyOfRange(hashed.domains(), ncols, hashed.domains().length);
-          byte[] types = Arrays.copyOfRange(hashed.types(), ncols, hashed.numCols());
-          Frame res = new AllLeftNoDupe(ncols, rows, hashed, all_y).doAll(types, walked).outputFrame(names, domains);
-          return new ValFrame(walked.add(res));
-        }
+        // run a global parallel work: lookup non-hashed rows in hashSet; find
+        // matching row; append matching column data
+        String[] names = Arrays.copyOfRange(hashed._names, ncols, hashed._names.length);
+        String[][] domains = Arrays.copyOfRange(hashed.domains(), ncols, hashed.domains().length);
+        byte[] types = Arrays.copyOfRange(hashed.types(), ncols, hashed.numCols());
+        Frame res = new AllLeftNoDupe(ncols, rows, hashed, all_y).doAll(types, walked).outputFrame(names, domains);
+        return new ValFrame(walked.add(res));
+      }
 
       // Can be full or partial on the x, but won't nessecarily do all of the
       // y.  Dups on y are OK (x will be replicated or dropped as needed).
@@ -168,8 +167,11 @@ public class ASTMerge extends ASTPrim {
    *  @param id_maps if not-null denote simple integer mappings from one
    *  categorical column to another; the width is ncols
    */
+
   private ValFrame sortingMerge( Frame walked, Frame hashed, boolean all_x, boolean all_y, int ncols, int[][] id_maps) {
-    throw H2O.unimpl();
+    int cols[] = new int[ncols];
+    for (int i=0; i<ncols; i++) cols[i] = i;
+    return new ValFrame(Merge.merge(walked, hashed, cols, cols));
   }
 
   // One Row object per row of the hashed dataset, so kept as small as

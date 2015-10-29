@@ -168,11 +168,11 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
         int jb = (int)(j/_leftBatchSize);
         int jo = (int)(j%_leftBatchSize);
-        _retFirst[jb][jo] = rLow + 1;
+        _retFirst[jb][jo] = rLow + 2;  // rLow surrounds row, so +1.  Then another +1 for 1-based row-number. 0 (default) means nomatch and saves extra set to -1 for no match.  Could be significant in large edge cases by not needing to write at all to _retFirst if it has no matches.
         _retLen[jb][jo] = len;
         StringBuilder sb = new StringBuilder();
         sb.append("Left row " + _leftOrder[jb][jo] + " matches to " + _retLen[jb][jo] + " right rows: ");
-        long a = _retFirst[jb][jo];
+        long a = _retFirst[jb][jo] -1;
         for (int i=0; i<_retLen[jb][jo]; ++i) {
           long loc = a+i;
           sb.append(_rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)] + " ");
@@ -233,7 +233,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
             continue;
           }
           for (int r=0; r<_retLen[jb][jo]; ++r) {
-            long loc = a+r;
+            long loc = a+r-1;
             long row = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];   // TODO: could take / and % outside loop in cases where it doesn't span a batch boundary
             // find the owning node for the row, using local operations here
             int chkIdx = _rightFrame.anyVec().elem2ChunkIdx(row); //binary search in espc

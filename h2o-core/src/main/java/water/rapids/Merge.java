@@ -39,7 +39,8 @@ public class Merge {
     RadixOrder rightIndex = new RadixOrder(rightFrame, rightCols);
 
     // Align MSB locations between the two keys
-    int bitShift = rightIndex._biggestBit[0] - leftIndex._biggestBit[0];
+    // If the 1st join column has range < 256 (e.g. test cases) then <=8 bits are used and there's a floor of 8 to the shift.
+    int bitShift = Math.max(8, rightIndex._biggestBit[0]) - Math.max(8, leftIndex._biggestBit[0]);
     int leftExtent = 256, rightExtent = 1;
     if (bitShift < 0) {
       // The biggest keys in left table are larger than the biggest in right table
