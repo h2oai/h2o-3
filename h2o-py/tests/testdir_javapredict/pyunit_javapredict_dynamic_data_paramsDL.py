@@ -61,7 +61,8 @@ def javapredict_dynamic_data():
     params['l1'] = random.random()
     print "Parameter list: {0}".format(params)
 
-    x = range(1,train.ncol)
+    x = train.names
+    x.remove("response")
     y = "response"
 
     pyunit_utils.javapredict(algo="deeplearning", equality=None, train=train, test=None, x=x, y=y, compile_only=True,
