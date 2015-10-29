@@ -11,7 +11,8 @@ Wrapper functions for h2o algorithms
 This is an example h2o algorithm wrapper function.
 }
 \usage{
-h2o.example.wrapper(x, y, training_frame, model_id = "", family = "binomial", ...)
+h2o.example.wrapper(x, y, training_frame, model_id = "", 
+  family = c("gaussian", "binomial"), ...)
 }
 
 \arguments{

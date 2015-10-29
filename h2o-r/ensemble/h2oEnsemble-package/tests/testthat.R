@@ -1,4 +1,3 @@
-library(testthat)
 library(h2oEnsemble)
 library(cvAUC)
 
