@@ -146,26 +146,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
   }
 
   /**
-   * @return the set of models covered by this grid search, some may be null if the search is in
-   * progress or otherwise incomplete. It can also contain duplicate entries if input grid search
-   * specification includes them.
-   *
-   * FIXME: cannot iterate over space again since it is already used below in model building
-   */
-  /*
-  public Model[] models() {
-    MP paramsPrototype = _params;
-    Model[] ms = new Model[_totalModels];
-    int mcnt = 0;
-    Object[] hypers = new Object[_hyperParamNames.length];
-    for (int[] hidx = new int[_hyperParamNames.length]; hidx != null; hidx = nextModel(hidx)) {
-      MP params = getModelParams((MP) paramsPrototype.clone(), hypers(hidx, hypers));
-      ms[mcnt++] = model(params).get();
-    }
-    return ms;
-  } */
-
-  /**
    * Invokes grid search based on specified hyper space walk strategy.
    *
    * It updates passed grid object in distributed store.
@@ -174,8 +154,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    */
   private void gridSearch(Grid<MP> grid) {
     Model model = null;
+    // Prepare nice model key and override default key by appending model counter
+    String protoModelKey = _hyperSpaceWalker.getParams()._model_id == null
+                           ? grid._key + "_model_"
+                           : _hyperSpaceWalker.getParams()._model_id.toString() + H2O.calcNextUniqueModelId("") + "_";
     try {
+      // Get iterator to traverse hyper space
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+      // Number of traversed model parameters
+      int counter = 0;
       while (it.hasNext(model)) {
         // Handle end-user cancel request
         if (!isRunning()) {
@@ -190,7 +177,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong
           try {
-            model = buildModel(params, grid);
+            model = buildModel(params, grid, counter++, protoModelKey);
           } catch (RuntimeException e) { // Catch everything
             Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
             grid.appendFailedModelParameters(params, e);
@@ -241,20 +228,23 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    * <code>null</code>.
    *
    * @param params parameters for a new model
+   * @param grid   grid object holding created models
+   * @param paramsIdx  index of generated model parameter
+   * @param protoModelKey  prototype of model key
    * @return return a new model if it does not exist
    */
-  private Model buildModel(final MP params, Grid<MP> grid) {
+  private Model buildModel(final MP params, Grid<MP> grid, int paramsIdx, String protoModelKey) {
     // Make sure that the model is not yet built (can be case of duplicated hyper parameters)
     // FIXME: get checksum here since model builder will modify instance of params!!!
     long checksum = params.checksum();
     Key<Model> key = grid.getModelKey(checksum);
     // It was already built
     if (key != null) {
-      System.err.println("Found params: ");
-      System.err.println(" - in cache: " + key.get()._parms.toJsonString());
-      System.err.println(" - new one : " + params.toJsonString());
       return key.get();
     }
+    // Modify model key to have nice version with counter
+    // Note: Cannot create it before checking the cache since checksum would differ for each model
+    params._model_id = Key.make(protoModelKey + paramsIdx);
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
@@ -288,7 +278,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    * @throws java.lang.IllegalArgumentException if frame is not saved to distributed store.
    */
   protected static Key<Grid> gridKeyName(String modelName, Frame fr) {
-    if (fr._key == null) {
+    if (fr == null || fr._key == null) {
       throw new IllegalArgumentException("The frame being grid-searched over must have a Key");
     }
     return Key.make("Grid_" + modelName + "_" + fr._key.toString() + H2O.calcNextUniqueModelId(""));
@@ -379,6 +369,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
         gridKey =
         destKey != null ? destKey : gridKeyName(modelFactory.getModelName(),
                                                 hyperSpaceWalker.getParams().train());
+
     // Start the search
     return new GridSearch(gridKey, modelFactory, hyperSpaceWalker).start();
   }

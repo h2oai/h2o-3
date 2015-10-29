@@ -9,7 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -136,7 +136,7 @@ public class GroupByTest extends TestUtil {
     Frame fr = null;
     try {
       // Impute fuel economy via the "mean" method, no.
-      String tree = "(h2o.impute hex 1 \"mean\" \"low\" [] TRUE)";
+      String tree = "(h2o.impute hex 1 \"mean\" \"low\" [])";
       fr = chkTree(tree,"smalldata/junit/cars.csv");
       chkDim(fr,8,406);
 
@@ -145,7 +145,7 @@ public class GroupByTest extends TestUtil {
       fr.delete();
 
       // Impute fuel economy via the "mean" method, after grouping by year.  Update in place.
-      tree = "(h2o.impute hex 1 \"mean\" \"low\" [7] TRUE)";
+      tree = "(h2o.impute hex 1 \"mean\" \"low\" [7])";
       fr = chkTree(tree,"smalldata/junit/cars.csv");
       chkDim(fr,8,406);
 

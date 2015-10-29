@@ -46,14 +46,26 @@ def milsong_checkpoint():
   print "ntrees model 2: {0}".format(ntrees2)
   print "max_depth model 2: {0}".format(max_depth2)
   print "min_rows model 2: {0}".format(min_rows2)
-  model1 = H2OGradientBoostingEstimator(ntrees=ntrees2,
+  model2 = H2OGradientBoostingEstimator(ntrees=ntrees2,
                                         max_depth=max_depth2,
                                         min_rows=min_rows2,
-                                        distribution=distribution)
-  model1.train(x=range(1,milsong_train.ncol),
+                                        distribution=distribution,
+                                        checkpoint=restored_model.model_id)
+  model2.train(x=range(1,milsong_train.ncol),
                y=0,
                training_frame=milsong_train,
                validation_frame=milsong_valid)
+
+  model3 = H2OGradientBoostingEstimator(ntrees=ntrees2,
+                                        max_depth=max_depth2,
+                                        min_rows=min_rows2,
+                                        distribution=distribution)
+
+  model3.train(x=range(1,milsong_train.ncol),
+               y=0,
+               training_frame=milsong_train,
+               validation_frame=milsong_valid)
+
 
 
 if __name__ == "__main__":

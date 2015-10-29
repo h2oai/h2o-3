@@ -17,7 +17,7 @@ def separator():
 
     fhex = h2o.import_file(pyunit_utils.locate(path), sep=",")
     fhex.summary()
-    fhex_col_summary =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(fhex._id) + "/summary")["frames"][0]["columns"]
+    fhex_col_summary =  h2o.H2OConnection.get_json("Frames/" + urllib.quote(fhex.frame_id) + "/summary")["frames"][0]["columns"]
     fhex_missing_count = sum([e["missing_count"] for e in fhex_col_summary])
     assert fhex_missing_count == 0
 

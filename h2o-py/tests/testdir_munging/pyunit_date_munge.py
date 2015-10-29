@@ -18,7 +18,8 @@ def refine_date_col(data, col, pattern):
   # Create weekend and season cols
   # Spring = Mar, Apr, May. Summer = Jun, Jul, Aug. Autumn = Sep, Oct. Winter = Nov, Dec, Jan, Feb.
   # data["Weekend"] = [1 if x in ("Sun", "Sat") else 0 for x in data["WeekDay"]]
-  data["Weekend"] = h2o.ifelse(data["WeekDay"] == "Sun" | data["WeekDay"] == "Sat", 1, 0)[0]
+  data["Weekend"] = (data["WeekDay"] == "Sun") | (data["WeekDay"] == "Sat")
+  assert data["Weekend"].min() < data["Weekend"].max() # Not a constant result
   data["Season"]  = data["Month"].cut([0, 2, 5, 7, 10, 12], ["Winter", "Spring", "Summer", "Autumn", "Winter"])
 
 

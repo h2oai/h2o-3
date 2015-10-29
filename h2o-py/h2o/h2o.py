@@ -10,8 +10,8 @@ import imp
 import tabulate
 from connection import H2OConnection
 from job import H2OJob
-from expr import ExprNode
-from frame import H2OFrame, _py_tmp_key, _is_list_of_lists, _gen_header
+from frame import H2OFrame, _py_tmp_key, _is_list_of_lists
+import expr
 from estimators.estimator_base import H2OEstimator
 from h2o_model_builder import supervised, unsupervised, _resolve_model
 
@@ -93,7 +93,7 @@ def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names
     >>> ml.upload_file(path="/path/to/local/data", destination_frame="my_local_data")
     ...
   """
-  return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+  return H2OFrame._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
 def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="",
@@ -154,7 +154,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   if not parse:
       return lazy_import(path)
 
-  return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+  return H2OFrame.read_csv(file_path=path, destination_frame=destination_frame, header=header, separator=sep, column_names=col_names, column_types=col_types, na_strings=na_strings)
 
 def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
   """
@@ -215,7 +215,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   """
 
   # The H2O backend only accepts things that are quoted
-  if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
+  if isinstance(raw_frames, basestring): raw_frames = [raw_frames]
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
 
   if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
@@ -233,7 +233,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
     if isinstance(column_types, dict):
       #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
       if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
-        j["column_names"] = _gen_header(j["number_columns"])
+        j["column_names"] = ["C" + str(c) for c in range(1, (j["number_columns"]) + 1)]
       if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
       idx = 0
       column_types_list = []
@@ -275,7 +275,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   return j
 
 
-def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
+def parse_raw(setup):
   """
   Used in conjunction with lazy_import and parse_setup in order to make alterations before
   parsing.
@@ -292,13 +292,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
 
  :return: An H2OFrame object
   """
-  if id: setup["destination_frame"] = _quoted(id).replace("%",".").replace("&",".")
-  if first_line_is_header != (-1, 0, 1):
-    if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
-    setup["check_header"] = first_line_is_header
-  fr = H2OFrame()
-  fr._parse_raw(setup)
-  return fr
+  return H2OFrame._parse_raw(setup)
 
 
 def _quoted(key):
@@ -310,48 +304,11 @@ def _quoted(key):
   key = key if is_quoted  else '"' + key + '"'
   return key
 
-
-def assign(data,id):
-  data._eager()
-  rapids(data._id, id)
-  data._id=id
-  data._ast=None  # ensure it won't be deleted by gc
+def assign(data,xid):
+  if data.frame_id == xid: ValueError("Desination key must differ input frame")
+  data._ex = expr.ExprNode("tmp=",xid,data)._eval_driver(False)
+  data._ex._id = xid
   return data
-
-
-def which(condition):
-  """
-
-  Parameters
-  ----------
-
-  condition : H2OFrame
-    A conditional statement.
-
-  :return: A H2OFrame of 1 column filled with 0-based indices for which the condition is True
-  """
-  return (H2OFrame._expr(expr=ExprNode("h2o.which",condition)))._scalar()
-
-
-def ifelse(test,yes,no):
-  """
-  Semantically equivalent to R's ifelse.
-  Based on the booleans in the test vector, the output has the values of the yes and no
-  vectors interleaved (or merged together).
-
-  Parameters
-  ----------
-
-  test : H2OFrame
-    A "test" H2OFrame
-  yes : H2OFrame
-    A "yes" H2OFrame
-  no : H2OFrame
-    A "no" H2OFrame
-
- :return: An H2OFrame
-  """
-  return H2OFrame._expr(expr=ExprNode("ifelse",test,yes,no))._frame()
 
 
 def get_future_model(future_model):
@@ -391,7 +348,6 @@ def get_model(model_id):
 def get_frame(frame_id):
   """
   Obtain a handle to the frame in H2O with the frame_id key.
-
   :return: An H2OFrame
   """
   return H2OFrame.get_frame(frame_id)
@@ -447,24 +403,18 @@ def log_and_echo(message):
   if message is None: message = ""
   H2OConnection.post_json("LogAndEcho", message=message)
 
-
-def remove(object):
+def remove(x):
   """
   Remove object from H2O. This is a "hard" delete of the object. It removes all subparts.
-
-  Parameters
-  ----------
-
-  object : H2OFrame or str
-    The object pointing to the object to be removed.
-
+  :param x: The object to be removed.
   :return: None
   """
-  if object is None:
+  if x is None:
     raise ValueError("remove with no object is not supported, for your protection")
-
-  if isinstance(object, H2OFrame): H2OConnection.delete("DKV/"+object._id)
-  if isinstance(object, str):      H2OConnection.delete("DKV/"+object)
+  if isinstance(x, H2OFrame):
+    x = x._ex._id       # String or None
+    if not x: return    # Lazy frame, never evaluated, nothing in cluster
+  if isinstance(x, str): H2OConnection.delete("DKV/"+x)
 
 
 def remove_all():
@@ -475,8 +425,7 @@ def remove_all():
   """
   H2OConnection.delete("DKV")
 
-
-def rapids(expr, id=None):
+def rapids(expr):
   """
   Fire off a Rapids expression.
 
@@ -488,29 +437,20 @@ def rapids(expr, id=None):
 
   :return: The JSON response of the Rapids execution
   """
-  expr = expr if id is None else "(tmp= {} {})".format(id, expr)
   return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
-
 
 def ls():
   """
   List Keys on an H2O Cluster
-
   :return: Returns a list of keys in the current H2O instance
   """
-  return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame()
+  return H2OFrame(expr.ExprNode("ls")).as_data_frame(use_pandas=False)
 
 
-def frame(frame_id, exclude=""):
+def frame(frame_id,exclude=""):
   """
   Retrieve metadata for a id that points to a Frame.
-
-  Parameters
-  ----------
-
-  frame_id : str
-    A pointer to a Frame in H2O.
-
+  :param frame_id: A string name of a Frame in H2O.
   :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + urllib.quote(frame_id + exclude))
@@ -519,7 +459,6 @@ def frame(frame_id, exclude=""):
 def frames():
   """
   Retrieve all the Frames.
-
   :return: Meta information on the frames
   """
   return H2OConnection.get_json("Frames")
@@ -574,7 +513,7 @@ def download_csv(data, filename):
   """
   data._eager()
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
-  url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data._id)
+  url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data.frame_id)
   with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
 
 
@@ -729,7 +668,7 @@ def export_file(frame,path,force=False):
 
   """
   frame._eager()
-  H2OJob(H2OConnection.get_json("Frames/"+frame._id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
+  H2OJob(H2OConnection.get_json("Frames/"+frame.frame_id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
 def cluster_info():
@@ -782,61 +721,6 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
   Parameters
   ----------
 
-<<<<<<< HEAD
-   x : H2OFrame
-     An H2OFrame containing the predictors in the model.
-   y : H2OFrame
-     An H2OFrame of the response variable in the model.
-   training_frame : H2OFrame
-     (Optional) An H2OFrame. Only used to retrieve weights, offset, or nfolds columns, if they aren't already provided in x.
-   model_id : str
-     (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
-   overwrite_with_best_model : bool
-     Logical. If True, overwrite the final model with the best model found during training. Defaults to True.
-   validation_frame : H2OFrame
-     (Optional) An H2OFrame object indicating the validation dataset used to construct the confusion matrix. If left blank, this defaults to the
-     training data when nfolds = 0
-   checkpoint : H2ODeepLearningModel
-     "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
-   autoencoder : bool
-     Enable auto-encoder for model building.
-   use_all_factor_levels : bool
-     Logical. Use all factor levels of categorical variance. Otherwise the first factor level is omitted (without loss of accuracy). Useful for variable
-     importances and auto-enabled for autoencoder.
-   activation : str
-     A string indicating the activation function to use. Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
-   hidden : list
-     Hidden layer sizes (e.g. c(100,100))
-   epochs : float
-     How many times the dataset should be iterated (streamed), can be fractional
-   train_samples_per_iteration : int
-     Number of training samples (globally) per MapReduce iteration. Special values are: 0 one epoch; -1 all available data (e.g., replicated training data);
-     or -2 auto-tuning (default)
-   seed : int
-     Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
-   adaptive_rate : bool
-     Logical. Adaptive learning rate (ADAELTA)
-   rho : float
-     Adaptive learning rate time decay factor (similarity to prior updates)
-   epsilon : float
-     Adaptive learning rate parameter, similar to learn rate annealing during initial training phase. Typical values are between 1.0e-10 and 1.0e-4
-   rate : float
-     Learning rate (higher => less stable, lower => slower convergence)
-   rate_annealing : float
-     Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)
-   rate_decay : float
-     Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1))
-   momentum_start : float
-     Initial momentum at the beginning of training (try 0.5)
-   momentum_ramp : float
-     Number of training samples for which momentum increases
-   momentum_stable : float
-     Final momentum after the amp is over (try 0.99)
-   nesterov_accelerated_gradient : bool
-     Logical. Use Nesterov accelerated gradient (recommended)
-   input_dropout_ratio : float
-     A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
-=======
   x : H2OFrame
     An H2OFrame containing the predictors in the model.
   y : H2OFrame
@@ -893,7 +777,6 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
     Logical. Use Nesterov accelerated gradient (recommended)
   input_dropout_ratio : float
     A fraction of the features for each training row to be omitted from training in order to improve generalization (dimension sampling).
->>>>>>> 1754605368086617cb177d9d44b0d7feaa7bc365
   hidden_dropout_ratios : float
     Input layer dropout ratio (can improve generalization) specify one value per hidden layer, defaults to 0.5
   l1 : float
@@ -1754,10 +1637,9 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
 
   :return: H2OFrame
   """
-  data._eager()
   factors = [data.names[n] if isinstance(n,int) else n for n in factors]
   parms = {"dest": _py_tmp_key() if destination_frame is None else destination_frame,
-           "source_frame": data._id,
+           "source_frame": data.frame_id,
            "factor_columns": [_quoted(f) for f in factors],
            "pairwise": pairwise,
            "max_factors": max_factors,
@@ -1851,7 +1733,7 @@ def set_timezone(tz):
 
   :return: None
   """
-  rapids(ExprNode._collapse_sb(ExprNode("setTimeZone", tz)._eager()))
+  expr.ExprNode("setTimeZone",tz)._eager_scalar()
 
 
 def get_timezone():
@@ -1860,8 +1742,7 @@ def get_timezone():
 
   :return: the time zone (string)
   """
-  return H2OFrame._expr(expr=ExprNode("getTimeZone"))._scalar()
-
+  return expr.ExprNode("getTimeZone")._eager_scalar()
 
 def list_timezones():
   """
@@ -1869,7 +1750,7 @@ def list_timezones():
 
   :return: the time zones (as an H2OFrame)
   """
-  return H2OFrame._expr(expr=ExprNode("listTimeZones"))._frame()
+  return H2OFrame(expr.ExprNode("listTimeZones")._eager())
 
 
 class H2ODisplay:
@@ -1966,6 +1847,9 @@ def can_use_pandas():
   except ImportError:
     return False
 
+# Used by tests to verify the number of python-side temps remains sane
+def temp_ctr():  return H2OFrame.temp_ctr()
+def rest_ctr():  return H2OConnection.rest_ctr()
 
 #  ALL DEPRECATED METHODS BELOW #
 

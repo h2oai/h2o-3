@@ -214,13 +214,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
-    if (!vec.isString()) {
-      vec.bins();
-    }
+    vec.bins();
 
     // Cons up our result
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count, true);
+    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count);
     return s;
   }
 
@@ -233,7 +231,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 fetch(int version, FramesV3 s) {
-    FramesV3 frames = doFetch(version, s, FrameV3.ColV3.NO_SUMMARY);
+    FramesV3 frames = doFetch(version, s);
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
@@ -244,12 +242,12 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     return frames;
   }
 
-  private FramesV3 doFetch(int version, FramesV3 s, boolean force_summary) {
+  private FramesV3 doFetch(int version, FramesV3 s) {
     Frames f = s.createAndFillImpl();
 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count, force_summary);  // TODO: Refactor with FrameBase
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count);  // TODO: Refactor with FrameBase
 
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
@@ -384,18 +382,14 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 summary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
 
-    if (null != frame) {
+    if( null != frame) {
       Futures fs = new Futures();
-      Vec[] vecArr = frame.vecs();
-      for (Vec v : vecArr) {
-        if (! v.isString()) {
-          v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
-        }
-      }
+      for( Vec v : frame.vecs() )
+        v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
       fs.blockForPending();
     }
 
-    return doFetch(version, s, FrameV3.ColV3.FORCE_SUMMARY);
+    return doFetch(version, s);
   }
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */
