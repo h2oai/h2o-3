@@ -930,7 +930,7 @@ class H2OFrame:
         new_types = {name:self.types[name] for name in new_names}
     elif isinstance(item, slice):
       start = 0 if item.start is None else item.start
-      end   = self.ncol if item.stop is None else item.stop
+      end   = min(self.ncol, item.stop)
       if end < 0:
         end = self.ncol+end
       if item.start is not None or item.stop is not None:
