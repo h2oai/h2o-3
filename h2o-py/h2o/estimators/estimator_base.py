@@ -132,7 +132,7 @@ class H2OEstimator(ModelBase):
     folds  = kwargs["fold_column"]
     weights= kwargs["weights_column"]
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
-    kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o._quoted(col) for col in ignored_columns]
+    kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
     kwargs = dict([(k, (kwargs[k]).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
     algo = self._compute_algo()
 
