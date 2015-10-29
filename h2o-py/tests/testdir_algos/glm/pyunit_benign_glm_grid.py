@@ -12,9 +12,11 @@ def benign_grid():
   X = range(3) + range(4,11)
 
   from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-  hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+  hyper_parameters = {'alpha': [0.01,0.5,'a'], 'lambda': [1e-5,1e-6]}
   gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+  gs.show()
   gs.train(x=X,y=Y, training_frame=training_data)
+  gs.show()
   print gs.sort_by('F1', False)
   best_model_id = gs.sort_by('F1', False)['Model Id'][0]
   best_model = h2o.get_model(best_model_id)
