@@ -531,7 +531,7 @@ class H2OFrame:
     for l in lol: l.pop(0) # Remove column headers
     return lol
 
-  def nlevels(self, col=None):
+  def nlevels(self):
     """Get the number of factor levels for this frame.
 
     Returns
@@ -599,8 +599,13 @@ class H2OFrame:
     if isinstance(col, basestring): col = self.names.index(col)  # lookup the name
     if not isinstance(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
     if self.ncol == 1: col = 0
+    old_cache = self._ex._cache
     self._ex = ExprNode("colnames=",self,col,name)  # Update-in-place, but still lazy
-    self._ex._cache.names = self.names[:col] + [name] + self.names[col+1:]
+    self._ex._cache.fill_from(old_cache)
+    if self.names is None:
+      self._frame()._ex._cache.fill()
+    else:
+      self._ex._cache.names = self.names[:col] + [name] + self.names[col+1:]
 
   def as_date(self, format):
     """Return the column with all elements converted to millis since the epoch.
@@ -868,6 +873,8 @@ class H2OFrame:
     new_types=None
     fr=None
     flatten=False
+    if self.names is None or self.types is None or self.ncol==-1:
+      self._frame()._ex._cache.fill()
     if isinstance(item, (basestring,list,int,slice)):
       new_ncols,new_names,new_types = self._compute_ncol_update(item)
       fr = H2OFrame._expr(expr=ExprNode("cols_py",self,item))
@@ -942,7 +949,7 @@ class H2OFrame:
       new_ncols = 1
       if isinstance(item, basestring):
         new_names = [item]
-        new_types = {item:self.types[item]}
+        new_types = None if item not in self.types else {item:self.types[item]}
       else:
         new_names = [self.names[item]]
         new_types = {new_names[0]:self.types[new_names[0]]}
@@ -1095,6 +1102,7 @@ class H2OFrame:
     fr._ex._cache.ncols = self.ncol + data.ncol
     fr._ex._cache.names = None  # invalidate for possibly duplicate names
     fr._ex._cache.types = None  # invalidate for possibly duplicate names
+    return fr
 
   def rbind(self, data):
     """Combine H2O Datasets by rows.

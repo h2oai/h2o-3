@@ -55,7 +55,7 @@ class ExprNode:
   def __init__(self, op="", *args):
     assert isinstance(op,str), op
     self._op        = op          # Base opcode string
-    self._children  = tuple(a._ex if isinstance(a, frame.H2OFrame) else a for a in args)        # ast children; if not None and _cache._id is not None then tmp
+    self._children  = tuple(a._ex if isinstance(a, frame.H2OFrame) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
     self._cache     = H2OCache()  # ncols, nrows, names, types
 
   def _eager_frame(self):  # returns H2OFrame instance
