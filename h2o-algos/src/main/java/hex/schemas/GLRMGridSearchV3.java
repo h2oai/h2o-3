@@ -8,9 +8,9 @@ import hex.glrm.GLRMModel;
  *
  * @see GridSearchSchema
  */
-public class GLRMGridSearchV99 extends GridSearchSchema<GLRMGridSearchHandler.GLRMGrid,
-    GLRMGridSearchV99,
+public class GLRMGridSearchV3 extends GridSearchSchema<GLRMGridSearchHandler.GLRMGrid,
+        GLRMGridSearchV3,
     GLRMModel.GLRMParameters,
-    GLRMV99.GLRMParametersV99> {
+        GLRMV3.GLRMParametersV3> {
 
 }

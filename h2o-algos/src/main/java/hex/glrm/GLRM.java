@@ -12,7 +12,7 @@ import hex.gram.Gram.*;
 import hex.kmeans.EmbeddedKMeans;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import hex.schemas.GLRMV99;
+import hex.schemas.GLRMV3;
 import hex.schemas.ModelBuilderSchema;
 import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
@@ -58,7 +58,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   private transient GLRMParameters.Loss[] _lossFunc;
 
   @Override public ModelBuilderSchema schema() {
-    return new GLRMV99();
+    return new GLRMV3();
   }
 
   @Override protected Job<GLRMModel> trainModelImpl(long work, boolean restartTimer) {
@@ -101,6 +101,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       error ("_init_step_size", "init_step_size must be a positive number");
     if (_parms._min_step_size < 0 || _parms._min_step_size > _parms._init_step_size)
       error("_min_step_size", "min_step_size must be between 0 and " + _parms._init_step_size);
+
+    // Cannot recover SVD of original _train from XY of transformed _train
+    if (_parms._recover_svd && (_parms._impute_original && _parms._transform != DataInfo.TransformType.NONE))
+      error("_recover_svd", "_recover_svd and _impute_original cannot both be true if _train is transformed");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");

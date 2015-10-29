@@ -53,6 +53,13 @@ function() {
 
         sb <- sandbox(create=TRUE)
         Log.info(paste0("Created sandbox for runit test ",test.name()," in directory ",sb,".\n"))
+
+        master_seed_dir <- locate("tests", "h2o-r")
+        ms <- paste(master_seed_dir, "/master_seed", sep = "")
+        seed <- NULL
+        if (file.exists(ms)) seed <- read.table(ms)[[1]]
+        setupRandomSeed(seed)
+        h2o.logIt("[SEED] :", get.test.seed())
     } else if (test.is.rbooklet()) {
         if (!"h2o" %in% rownames(installed.packages())) {
             stop("The H2O package has not been installed on this system. Cannot execute the H2O R booklet without it!")
@@ -71,9 +78,6 @@ function() {
     test.port <- get.test.port()
     cat(sprintf("[%s] %s\n", Sys.time(), paste0("Connect to h2o on IP: ",test.ip,", PORT: ",test.port)))
     h2o.init(ip = test.ip, port = test.port, startH2O = FALSE)
-
-    set.seed(get.test.seed())
-    cat(sprintf("[%s] %s\n", Sys.time(), paste0("[SEED] : ", get.test.seed())))
 
     h2o.startLogging(paste(results.dir(), "/rest.log", sep = ""))
     cat(sprintf("[%s] %s\n", Sys.time(),paste0("Started rest logging in: ",results.dir(),"/rest.log.")))
