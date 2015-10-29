@@ -1722,7 +1722,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if(_c == 0)_oldObj = _taskInfo._objVal;
           _taskInfo._beta = _taskInfo._beta_multinomial[_c];
           GLMSingleLambdaTsk.this.addToPendingCount(1);
-          solve(true);
+          solve(false);
         }
       }).asyncExec(_dinfo._adaptedFrame);
     }
