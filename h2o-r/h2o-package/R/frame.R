@@ -1241,8 +1241,8 @@ h2o.length <- length.Frame
 #' @export
 h2o.levels <- function(x, i) {
   df <- .fetch.data(x,1L)
-  if( missing(i) ) levels(df)
-  else levels(df[i])
+  if( missing(i) ) levels(df[[1]])
+  else levels(df[[i]])
 }
 
 #'
