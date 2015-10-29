@@ -1,15 +1,17 @@
 import sys
-sys.path.insert(1,"../../../")
+import os
+import copy
+import random
+sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
-import random
-import copy
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.grid.grid_search import H2OGridSearch
 
-def grid_cars_GBM():
+def deeplearning_grid_cars():
 
-    cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+    from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
+    cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     r = cars[0].runif(seed=42)
     train = cars[r > .2]
 
@@ -21,7 +23,7 @@ def grid_cars_GBM():
     if validation_scheme == 3:
         valid = cars[r <= .2]
 
-    grid_space = pyunit_utils.make_random_grid_space(algo="gbm")
+    grid_space = pyunit_utils.make_random_grid_space(algo="dl")
     print "Grid space: {0}".format(grid_space)
 
     predictors = ["displacement","power","weight","acceleration","year"]
@@ -42,13 +44,13 @@ def grid_cars_GBM():
             valid[response_col] = valid[response_col].asfactor()
 
     print "Constructing the grid of gbm models..."
-    cars_gbm_grid = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=grid_space)
+    cars_dl_grid = H2OGridSearch(H2ODeepLearningEstimator, hyper_params=grid_space)
     if validation_scheme == 1:
-        cars_gbm_grid.train(x=predictors,y=response_col,training_frame=train)
+        cars_dl_grid.train(x=predictors,y=response_col,training_frame=train)
     elif validation_scheme == 2:
-        cars_gbm_grid.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
+        cars_dl_grid.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
     else:
-        cars_gbm_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+        cars_dl_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
 
     print "Performing various checks of the constructed grid..."
 
@@ -56,10 +58,9 @@ def grid_cars_GBM():
     size_of_grid_space = 1
     for v in grid_space.values():
         size_of_grid_space = size_of_grid_space * len(v)
-    actual_size = len(cars_gbm_grid)
+    actual_size = len(cars_dl_grid)
     assert size_of_grid_space ==  actual_size, "Expected size of grid to be {0}, but got {1}" \
                                                "".format(size_of_grid_space,actual_size)
-
     print "Duplicate-entries-in-grid-space check"
     new_grid_space = copy.deepcopy(grid_space)
     for name in grid_space.keys():
@@ -67,22 +68,24 @@ def grid_cars_GBM():
             new_grid_space[name] = grid_space[name] + grid_space[name]
     print "The new search space: {0}".format(new_grid_space)
     print "Constructing the new grid of gbm models..."
-    cars_gbm_grid2 = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=new_grid_space)
+    cars_dl_grid2 = H2OGridSearch(H2ODeepLearningEstimator, hyper_params=new_grid_space)
     if validation_scheme == 1:
-        cars_gbm_grid2.train(x=predictors,y=response_col,training_frame=train)
+        cars_dl_grid2.train(x=predictors,y=response_col,training_frame=train)
     elif validation_scheme == 2:
-        cars_gbm_grid2.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
+        cars_dl_grid2.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
     else:
-        cars_gbm_grid2.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
-    actual_size2 = len(cars_gbm_grid2)
+        cars_dl_grid2.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+    actual_size2 = len(cars_dl_grid2)
     assert actual_size == actual_size2, "Expected duplicates to be ignored. Without dups grid size: {0}. With dups " \
-                                        "size: {1}".format(actual_size, actual_size2)
+                                    "size: {1}".format(actual_size, actual_size2)
 
     print "Check that the hyper_params that were passed to grid, were used to construct the models..."
     for name in grid_space.keys():
-        pyunit_utils.expect_model_param(cars_gbm_grid, name, grid_space[name])
+        pyunit_utils.expect_model_param(cars_dl_grid, name, grid_space[name])
+
+
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(grid_cars_GBM)
+    pyunit_utils.standalone_test(deeplearning_grid_cars)
 else:
-    grid_cars_GBM()
+    deeplearning_grid_cars()
