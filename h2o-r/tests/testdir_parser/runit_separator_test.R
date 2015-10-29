@@ -43,7 +43,7 @@ test.separator <- function(){
   expect_that(dim(caret.test), equals(c(3,3)))
   
   #Below gives error and does not parse correctly:
-  #Post to JIRA
+  #This is because the separator is not given, which sends the input to a set of auto detectors, which do not contain the caret symbol as a possible parser.
   #Caret delimited with no argument
   #caret.test.noarg = h2o.importFile(path = normalizePath(locate(path.caret)), destination_frame = "caret.hex",sep = "")
   #expect_that(dim(caret.test.noarg), equals(c(3,3)))
@@ -54,7 +54,7 @@ test.separator <- function(){
   expect_that(dim(asterisk.test), equals(c(3,3)))
   
   #Below gives error and does not parse correctly:
-  #Post to JIRA
+  #This is because the separator is not given, which sends the input to a set of auto detectors, which do not contain the asterisk symbol as a possible parser.
   #Asterisk delimited with no argument
   #asterisk.test.noarg = h2o.importFile(path = normalizePath(locate(path.asterisk)), destination_frame = "asterisk.hex",sep = "")
   #expect_that(dim(asterisk.test.noarg), equals(c(3,3)))
