@@ -1,8 +1,5 @@
 # Perform 5-fold cross-validation on the training_frame
-model_cv = h2o.deeplearning(
-        x=x, 
-        y=y, 
-        training_frame=train, 
+model_cv = H2ODeepLearningEstimator(
         distribution="multinomial",
         activation="RectifierWithDropout", 
         hidden=[200,200,200], 
@@ -11,3 +8,7 @@ model_cv = h2o.deeplearning(
         l1=1e-5, 
         epochs=10,
         nfolds=5)
+model_cv.train(
+        x=x, 
+        y=y, 
+        training_frame=train)
