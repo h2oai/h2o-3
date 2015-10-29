@@ -52,7 +52,7 @@ class ExprNode:
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
   MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
-  def __init__(self, op=None, *args):
+  def __init__(self, op="", *args):
     assert isinstance(op,str), op
     self._op        = op          # Base opcode string
     self._children  = args        # ast children; if not None and _cache._id is not None then tmp
@@ -98,7 +98,7 @@ class ExprNode:
     if self._cache._id is not None: return self._cache._id  # Data already computed under ID, but not cached
     # Here self._id is either None or ""
     # Build the eval expression
-    assert isinstance(self._children,list)
+    assert isinstance(self._children,tuple)
     exec_str = "({} {})".format(self._op," ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
     gc_ref_cnt = len(gc.get_referrers(self))
     if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
@@ -158,12 +158,12 @@ class H2OCache(object):
   def ncols(self, value): self._ncols = value
 
   @property
-  def names(self): return copy.deepcopy(self._names)
+  def names(self): return self._names
   @names.setter
   def names(self, value): self._names = value
 
   @property
-  def types(self): return copy.deepcopy(self._types)
+  def types(self): return self._types
   @types.setter
   def types(self, value): self._types = value
 
@@ -182,16 +182,15 @@ class H2OCache(object):
     return self._data is None
 
   def is_scalar(self):
-    return isinstance(self._data, dict)
+    return not isinstance(self._data, dict)
 
-  def fill(self, nrows=10):
+  def fill(self, rows=10):
     assert self._id is not None
-    nrows = max(nrows, 10)
     if self._data is not None:
-      if nrows <= len(self):
+      if rows <= len(self):
         return
-    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(self._id), row_count=nrows)["frames"][0]
-    self._l     = nrows
+    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(self._id), row_count=rows)["frames"][0]
+    self._l     = rows
     self._nrows = res["rows"]
     self._ncols = res["total_column_count"]
     self._names = [c["label"] for c in res["columns"]]

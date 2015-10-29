@@ -62,7 +62,7 @@ class H2OFrame:
     -------
       A str list of column names
     """
-    return self.names
+    return self._ex._cache.names
 
   @names.setter
   def names(self,value):
@@ -127,7 +127,7 @@ class H2OFrame:
     -------
       Get the name of this frame.
     """
-    return self._frame()._id
+    return self._frame()._ex._cache._id
 
   @frame_id.setter
   def frame_id(self, value):
@@ -153,8 +153,8 @@ class H2OFrame:
       H2OFrame that points to a pre-existing big data H2OFrame in the cluster
     """
     fr = H2OFrame()
-    fr._ex._id = frame_id
-    fr._ex._cache.fill(frame_id)
+    fr._ex._cache._id = frame_id
+    fr._ex._cache.fill()
     return fr
 
   def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
@@ -289,8 +289,8 @@ class H2OFrame:
     h2o.H2OJob(h2o.H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
     # Need to return a Frame here for nearly all callers
     # ... but job stats returns only a dest_key, requiring another REST call to get nrow/ncol
-    self._ex._id = p["destination_frame"]
-    self._ex._cache.fill(self.frame_id)
+    self._ex._cache._id = p["destination_frame"]
+    self._ex._cache.fill()
 
   def filter_na_cols(self, frac=0.2):
     """Filter columns with proportion of NAs >= frac.
@@ -319,7 +319,7 @@ class H2OFrame:
   def __str__(self):
     if sys.gettrace() is None:
       return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore")
-    return self.frame_id
+    return ""
 
   def __repr__(self):
     if sys.gettrace() is None:
@@ -367,7 +367,7 @@ class H2OFrame:
     print("\n")
     self.summary()
 
-  def _frame(self):  return self._ex._eager_frame()
+  def _frame(self):  self._ex._eager_frame(); return self
   def _scalar(self): return self._ex._eager_scalar()
 
   def head(self,rows=10,cols=200):
