@@ -62,6 +62,8 @@ class H2OFrame:
     -------
       A str list of column names
     """
+    if not self._ex._cache.names_valid():
+      self._frame()._ex._cache.fill()
     return self._ex._cache.names
 
   @names.setter
@@ -82,6 +84,8 @@ class H2OFrame:
     -------
       The number of rows in the H2OFrame.
     """
+    if not self._ex._cache.nrows_valid():
+      self._frame()
     return self._ex._cache.nrows
 
   @property
@@ -91,6 +95,8 @@ class H2OFrame:
     -------
       The number of columns in the H2OFrame.
     """
+    if not self._ex._cache.ncols_valid():
+      self._frame()
     return self._ex._cache.ncols
 
   @property
@@ -118,6 +124,8 @@ class H2OFrame:
     -------
       A dictionary of column_name-type pairs.
     """
+    if not self._ex._cache.types_valid():
+      self._frame()._ex._cache.fill()
     return self._ex._cache.types
 
   @property
@@ -139,9 +147,11 @@ class H2OFrame:
       h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
 
   @staticmethod
-  def _expr(expr):
+  def _expr(expr,cache=None):
     fr = H2OFrame()
     fr._ex = expr
+    if cache is not None:
+      fr._ex._cache.fill_from(cache)
     return fr
 
   @staticmethod
@@ -304,7 +314,7 @@ class H2OFrame:
     -------
       A list of column indices
     """
-    return H2OFrame._expr(expr=ExprNode("filterNACols", self, frac))._scalar()
+    return ExprNode("filterNACols", self, frac)._eager_scalar()
 
   def type(self,name):
     """
@@ -368,7 +378,6 @@ class H2OFrame:
     self.summary()
 
   def _frame(self):  self._ex._eager_frame(); return self
-  def _scalar(self): return self._ex._eager_scalar()
 
   def head(self,rows=10,cols=200):
     """Analogous to Rs `head` call on a data.frame.
@@ -407,38 +416,38 @@ class H2OFrame:
     start_idx = self.nrow - nrows
     return self[start_idx:start_idx+nrows,:ncols]
 
-  def logical_negation(self): return H2OFrame._expr(expr=ExprNode("not", self))
+  def logical_negation(self): return H2OFrame._expr(expr=ExprNode("not", self), cache=self._ex._cache)
 
   # ops
-  def __add__ (self, i): return H2OFrame._expr(expr=ExprNode("+",   self,i))
-  def __sub__ (self, i): return H2OFrame._expr(expr=ExprNode("-",   self,i))
-  def __mul__ (self, i): return H2OFrame._expr(expr=ExprNode("*",   self,i))
-  def __div__ (self, i): return H2OFrame._expr(expr=ExprNode("/",   self,i))
-  def __floordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",self,i))
-  def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("mod", self,i))
-  def __or__  (self, i): return H2OFrame._expr(expr=ExprNode("|",   self,i))
-  def __and__ (self, i): return H2OFrame._expr(expr=ExprNode("&",   self,i))
-  def __ge__  (self, i): return H2OFrame._expr(expr=ExprNode(">=",  self,i))
-  def __gt__  (self, i): return H2OFrame._expr(expr=ExprNode(">",   self,i))
-  def __le__  (self, i): return H2OFrame._expr(expr=ExprNode("<=",  self,i))
-  def __lt__  (self, i): return H2OFrame._expr(expr=ExprNode("<",   self,i))
-  def __eq__  (self, i): return H2OFrame._expr(expr=ExprNode("==",  self,i))
-  def __ne__  (self, i): return H2OFrame._expr(expr=ExprNode("!=",  self,i))
-  def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i))
+  def __add__ (self, i): return H2OFrame._expr(expr=ExprNode("+",   self,i), cache=self._ex._cache)
+  def __sub__ (self, i): return H2OFrame._expr(expr=ExprNode("-",   self,i), cache=self._ex._cache)
+  def __mul__ (self, i): return H2OFrame._expr(expr=ExprNode("*",   self,i), cache=self._ex._cache)
+  def __div__ (self, i): return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
+  def __floordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",self,i), cache=self._ex._cache)
+  def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("mod", self,i), cache=self._ex._cache)
+  def __or__  (self, i): return H2OFrame._expr(expr=ExprNode("|",   self,i), cache=self._ex._cache)
+  def __and__ (self, i): return H2OFrame._expr(expr=ExprNode("&",   self,i), cache=self._ex._cache)
+  def __ge__  (self, i): return H2OFrame._expr(expr=ExprNode(">=",  self,i), cache=self._ex._cache)
+  def __gt__  (self, i): return H2OFrame._expr(expr=ExprNode(">",   self,i), cache=self._ex._cache)
+  def __le__  (self, i): return H2OFrame._expr(expr=ExprNode("<=",  self,i), cache=self._ex._cache)
+  def __lt__  (self, i): return H2OFrame._expr(expr=ExprNode("<",   self,i), cache=self._ex._cache)
+  def __eq__  (self, i): return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
+  def __ne__  (self, i): return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
+  def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
   # rops
-  def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("mod",i,self))
+  def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("mod",i,self), cache=self._ex._cache)
   def __radd__(self, i): return self.__add__(i)
-  def __rsub__(self, i): return H2OFrame._expr(expr=ExprNode("-",i,  self))
+  def __rsub__(self, i): return H2OFrame._expr(expr=ExprNode("-",i,  self), cache=self._ex._cache)
   def __rand__(self, i): return self.__and__(i)
   def __ror__ (self, i): return self.__or__ (i)
-  def __rdiv__(self, i): return H2OFrame._expr(expr=ExprNode("/",i,  self))
-  def __rfloordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",i,self))
+  def __rdiv__(self, i): return H2OFrame._expr(expr=ExprNode("/",i,  self), cache=self._ex._cache)
+  def __rfloordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",i,self), cache=self._ex._cache)
   def __rmul__(self, i): return self.__mul__(i)
-  def __rpow__(self, i): return H2OFrame._expr(expr=ExprNode("^",i,  self))
+  def __rpow__(self, i): return H2OFrame._expr(expr=ExprNode("^",i,  self), cache=self._ex._cache)
   # unops
-  def __abs__ (self):        return H2OFrame._expr(expr=ExprNode("abs",self))
+  def __abs__ (self):        return H2OFrame._expr(expr=ExprNode("abs",self), cache=self._ex._cache)
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
-  def __invert__(self): return H2OFrame._expr(expr=ExprNode("!!", self))
+  def __invert__(self): return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
 
 
   def mult(self, matrix):
@@ -455,37 +464,37 @@ class H2OFrame:
     """
     return H2OFrame._expr(expr=ExprNode("x", self, matrix))
 
-  def cos(self)     :    return H2OFrame._expr(expr=ExprNode("cos", self))
-  def sin(self)     :    return H2OFrame._expr(expr=ExprNode("sin", self))
-  def tan(self)     :    return H2OFrame._expr(expr=ExprNode("tan", self))
-  def acos(self)    :    return H2OFrame._expr(expr=ExprNode("acos", self))
-  def asin(self)    :    return H2OFrame._expr(expr=ExprNode("asin", self))
-  def atan(self)    :    return H2OFrame._expr(expr=ExprNode("atan", self))
-  def cosh(self)    :    return H2OFrame._expr(expr=ExprNode("cosh", self))
-  def sinh(self)    :    return H2OFrame._expr(expr=ExprNode("sinh", self))
-  def tanh(self)    :    return H2OFrame._expr(expr=ExprNode("tanh", self))
-  def acosh(self)   :    return H2OFrame._expr(expr=ExprNode("acosh", self))
-  def asinh(self)   :    return H2OFrame._expr(expr=ExprNode("asinh", self))
-  def atanh(self)   :    return H2OFrame._expr(expr=ExprNode("atanh", self))
-  def cospi(self)   :    return H2OFrame._expr(expr=ExprNode("cospi", self))
-  def sinpi(self)   :    return H2OFrame._expr(expr=ExprNode("sinpi", self))
-  def tanpi(self)   :    return H2OFrame._expr(expr=ExprNode("tanpi", self))
-  def abs(self)     :    return H2OFrame._expr(expr=ExprNode("abs", self))
-  def sign(self)    :    return H2OFrame._expr(expr=ExprNode("sign", self))
-  def sqrt(self)    :    return H2OFrame._expr(expr=ExprNode("sqrt", self))
-  def trunc(self)   :    return H2OFrame._expr(expr=ExprNode("trunc", self))
-  def ceil(self)    :    return H2OFrame._expr(expr=ExprNode("ceiling", self))
-  def floor(self)   :    return H2OFrame._expr(expr=ExprNode("floor", self))
-  def log(self)     :    return H2OFrame._expr(expr=ExprNode("log", self))
-  def log10(self)   :    return H2OFrame._expr(expr=ExprNode("log10", self))
-  def log1p(self)   :    return H2OFrame._expr(expr=ExprNode("log1p", self))
-  def log2(self)    :    return H2OFrame._expr(expr=ExprNode("log2", self))
-  def exp(self)     :    return H2OFrame._expr(expr=ExprNode("exp", self))
-  def expm1(self)   :    return H2OFrame._expr(expr=ExprNode("expm1", self))
-  def gamma(self)   :    return H2OFrame._expr(expr=ExprNode("gamma", self))
-  def lgamma(self)  :    return H2OFrame._expr(expr=ExprNode("lgamma", self))
-  def digamma(self) :    return H2OFrame._expr(expr=ExprNode("digamma", self))
-  def trigamma(self):    return H2OFrame._expr(expr=ExprNode("trigamma", self))
+  def cos(self)     :    return H2OFrame._expr(expr=ExprNode("cos", self), cache=self._ex._cache)
+  def sin(self)     :    return H2OFrame._expr(expr=ExprNode("sin", self), cache=self._ex._cache)
+  def tan(self)     :    return H2OFrame._expr(expr=ExprNode("tan", self), cache=self._ex._cache)
+  def acos(self)    :    return H2OFrame._expr(expr=ExprNode("acos", self), cache=self._ex._cache)
+  def asin(self)    :    return H2OFrame._expr(expr=ExprNode("asin", self), cache=self._ex._cache)
+  def atan(self)    :    return H2OFrame._expr(expr=ExprNode("atan", self), cache=self._ex._cache)
+  def cosh(self)    :    return H2OFrame._expr(expr=ExprNode("cosh", self), cache=self._ex._cache)
+  def sinh(self)    :    return H2OFrame._expr(expr=ExprNode("sinh", self), cache=self._ex._cache)
+  def tanh(self)    :    return H2OFrame._expr(expr=ExprNode("tanh", self), cache=self._ex._cache)
+  def acosh(self)   :    return H2OFrame._expr(expr=ExprNode("acosh", self), cache=self._ex._cache)
+  def asinh(self)   :    return H2OFrame._expr(expr=ExprNode("asinh", self), cache=self._ex._cache)
+  def atanh(self)   :    return H2OFrame._expr(expr=ExprNode("atanh", self), cache=self._ex._cache)
+  def cospi(self)   :    return H2OFrame._expr(expr=ExprNode("cospi", self), cache=self._ex._cache)
+  def sinpi(self)   :    return H2OFrame._expr(expr=ExprNode("sinpi", self), cache=self._ex._cache)
+  def tanpi(self)   :    return H2OFrame._expr(expr=ExprNode("tanpi", self), cache=self._ex._cache)
+  def abs(self)     :    return H2OFrame._expr(expr=ExprNode("abs", self), cache=self._ex._cache)
+  def sign(self)    :    return H2OFrame._expr(expr=ExprNode("sign", self), cache=self._ex._cache)
+  def sqrt(self)    :    return H2OFrame._expr(expr=ExprNode("sqrt", self), cache=self._ex._cache)
+  def trunc(self)   :    return H2OFrame._expr(expr=ExprNode("trunc", self), cache=self._ex._cache)
+  def ceil(self)    :    return H2OFrame._expr(expr=ExprNode("ceiling", self), cache=self._ex._cache)
+  def floor(self)   :    return H2OFrame._expr(expr=ExprNode("floor", self), cache=self._ex._cache)
+  def log(self)     :    return H2OFrame._expr(expr=ExprNode("log", self), cache=self._ex._cache)
+  def log10(self)   :    return H2OFrame._expr(expr=ExprNode("log10", self), cache=self._ex._cache)
+  def log1p(self)   :    return H2OFrame._expr(expr=ExprNode("log1p", self), cache=self._ex._cache)
+  def log2(self)    :    return H2OFrame._expr(expr=ExprNode("log2", self), cache=self._ex._cache)
+  def exp(self)     :    return H2OFrame._expr(expr=ExprNode("exp", self), cache=self._ex._cache)
+  def expm1(self)   :    return H2OFrame._expr(expr=ExprNode("expm1", self), cache=self._ex._cache)
+  def gamma(self)   :    return H2OFrame._expr(expr=ExprNode("gamma", self), cache=self._ex._cache)
+  def lgamma(self)  :    return H2OFrame._expr(expr=ExprNode("lgamma", self), cache=self._ex._cache)
+  def digamma(self) :    return H2OFrame._expr(expr=ExprNode("digamma", self), cache=self._ex._cache)
+  def trigamma(self):    return H2OFrame._expr(expr=ExprNode("trigamma", self), cache=self._ex._cache)
 
 
   @staticmethod
@@ -528,7 +537,7 @@ class H2OFrame:
     """
     # TODO
     lol = h2o.as_list(H2OFrame._expr(expr=ExprNode("levels", self)))
-    for l in lol: l.pop(0) # Remove column headers
+    for l in lol: l.pop(0)  # Remove column headers
     return lol
 
   def nlevels(self):
@@ -553,7 +562,7 @@ class H2OFrame:
     -------
       H2OFrame with entries set to the desired level.
     """
-    return H2OFrame._expr(expr=ExprNode("setLevel", self, level))
+    return H2OFrame._expr(expr=ExprNode("setLevel", self, level), cache=self._ex._cache)
 
   def set_levels(self, levels):
     """Works on a single categorical column.
@@ -569,7 +578,7 @@ class H2OFrame:
     -------
       A single-column H2OFrame with the desired levels.
     """
-    return H2OFrame._expr(expr=ExprNode("setDomain",self,levels))
+    return H2OFrame._expr(expr=ExprNode("setDomain",self,levels), cache=self._ex._cache)
 
   def set_names(self,names):
     """Change all of this H2OFrame instance's column names.
@@ -664,7 +673,7 @@ class H2OFrame:
     -------
       The product of the column.
     """
-    return H2OFrame._expr(expr=ExprNode("prod.na" if na_rm else "prod",self))._scalar()
+    return ExprNode("prod.na" if na_rm else "prod",self)._eager_scalar()
 
   def any(self):
     """
@@ -672,7 +681,7 @@ class H2OFrame:
     -------
       True if any element is True or NA in the column.
     """
-    return bool(H2OFrame._expr(expr=ExprNode("any",self))._scalar())
+    return bool(ExprNode("any",self)._eager_scalar())
 
   def any_na_rm(self):
     """
@@ -680,7 +689,7 @@ class H2OFrame:
     -------
       True if any element is True in the column.
     """
-    return bool(H2OFrame._expr(expr=ExprNode("any.na",self))._scalar())
+    return bool(ExprNode("any.na",self)._eager_scalar())
 
   def all(self):
     """
@@ -688,7 +697,7 @@ class H2OFrame:
     -------
       True if every element is True or NA in the column.
     """
-    return bool(H2OFrame._expr(expr=ExprNode("all",self))._scalar())
+    return bool(ExprNode("all",self)._eager_scalar())
 
   def isnumeric(self):
     """
@@ -696,7 +705,7 @@ class H2OFrame:
     -------
       True if the column is numeric, otherwise return False
     """
-    return bool(H2OFrame._expr(expr=ExprNode("is.numeric",self))._scalar())
+    return bool(ExprNode("is.numeric",self)._eager_scalar())
 
   def isstring(self):
     """
@@ -704,7 +713,7 @@ class H2OFrame:
     -------
       True if the column is a string column, otherwise False (same as ischaracter)
     """
-    return  bool(H2OFrame._expr(expr=ExprNode("is.character",self))._scalar())
+    return  bool(ExprNode("is.character",self)._eager_scalar())
 
   def ischaracter(self):
     """
@@ -833,7 +842,7 @@ class H2OFrame:
       return [list(x) for x in zip(*t_col_list)]
 
   def flatten(self):
-    return H2OFrame._expr(expr=ExprNode("flatten",self))._scalar()
+    return ExprNode("flatten",self)._eager_scalar()
 
   def __getitem__(self, item):
     """Frame slicing. Supports R-like row and column slicing.
@@ -873,8 +882,6 @@ class H2OFrame:
     new_types=None
     fr=None
     flatten=False
-    if self.names is None or self.types is None or self.ncol==-1:
-      self._frame()._ex._cache.fill()
     if isinstance(item, (basestring,list,int,slice)):
       new_ncols,new_names,new_types = self._compute_ncol_update(item)
       fr = H2OFrame._expr(expr=ExprNode("cols_py",self,item))
@@ -916,8 +923,7 @@ class H2OFrame:
     # name), then extract the single element out of the Frame.  Otherwise
     # return a Frame, EVEN IF the selectors are e.g. slices-of-1-value.
     if flatten:
-      fr = ExprNode("flatten",fr)  # Overwrite res to preserve gc referrer count
-      return fr._eager_scalar()
+      return fr.flatten()
 
     fr._ex._cache.ncols = new_ncols
     fr._ex._cache.nrows = new_nrows
@@ -1036,8 +1042,7 @@ class H2OFrame:
       H2OFrame with the column at index i dropped. Returns a new H2OFrame.
     """
     if isinstance(i, basestring): i = self.names.index(i)
-    fr = H2OFrame._expr(expr=ExprNode("cols", self,-(i+1)))
-    fr._ex._cache.fill_from(self._ex._cache)
+    fr = H2OFrame._expr(expr=ExprNode("cols", self,-(i+1)), cache=self._ex._cache)
     fr._ex._cache.ncols -= 1
     fr._ex._cache.names = self.names[:i] + self.names[i+1:]
     fr._ex._cache.types = {name:self.types[name] for name in fr._ex._cache.names}
@@ -1097,8 +1102,7 @@ class H2OFrame:
     -------
       H2OFrame of the combined datasets.
     """
-    fr = H2OFrame._expr(expr=ExprNode("cbind", self, data))
-    fr._ex._cache.fill_from(self._ex._cache)
+    fr = H2OFrame._expr(expr=ExprNode("cbind", self, data), cache=self._ex._cache)
     fr._ex._cache.ncols = self.ncol + data.ncol
     fr._ex._cache.names = None  # invalidate for possibly duplicate names
     fr._ex._cache.types = None  # invalidate for possibly duplicate names
@@ -1117,9 +1121,8 @@ class H2OFrame:
       Returns this H2OFrame with data appended row-wise.
     """
     if not isinstance(data, H2OFrame): raise ValueError("`data` must be an H2OFrame, but got {0}".format(type(data)))
-    fr = H2OFrame._expr(expr=ExprNode("rbind", self, data))
-    fr._ex._cache.fill_from(self._ex._cache)
-    fr._ex._cache.nrows=-1
+    fr = H2OFrame._expr(expr=ExprNode("rbind", self, data), cache=self._ex._cache)
+    fr._ex._cache.nrows=self.nrow + data.nrow
     return fr
 
   def split_frame(self, ratios=None, destination_frames=None, seed=None):
@@ -1237,8 +1240,7 @@ class H2OFrame:
     """
     if isinstance(column, basestring): column = self.names.index(column)
     if isinstance(by, basestring):     by     = self.names.index(by)
-    fr = H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by))
-    fr._ex._cache.fill_from(self._ex._cache)
+    fr = H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
     if inplace:
       raise ValueError("unimpl")
     return fr
@@ -1306,7 +1308,7 @@ class H2OFrame:
     -------
       The minimum value of all frame entries
     """
-    return H2OFrame._expr(expr=ExprNode("min", self))._scalar()
+    return ExprNode("min", self)._eager_scalar()
 
   def max(self):
     """
@@ -1314,7 +1316,7 @@ class H2OFrame:
     -------
       The maximum value of all frame entries
     """
-    return H2OFrame._expr(expr=ExprNode("max", self))._scalar()
+    return ExprNode("max", self)._eager_scalar()
 
   def sum(self, na_rm=False):
     """
@@ -1336,7 +1338,7 @@ class H2OFrame:
     -------
       A list containing the mean for each column (NaN for non-numeric columns).
     """
-    return H2OFrame._expr(expr=ExprNode("mean", self, na_rm))._scalar()
+    return ExprNode("mean", self, na_rm)._eager_scalar()
 
   def median(self, na_rm=False):
     """Compute the median.
@@ -1350,7 +1352,7 @@ class H2OFrame:
     -------
       A list containing the median for each column (NaN for non-numeric columns).
     """
-    return H2OFrame._expr(expr=ExprNode("median", self, na_rm))._scalar()
+    return ExprNode("median", self, na_rm)._eager_scalar()
 
   def var(self,y=None,use="everything"):
     """Compute the variance, or co-variance matrix.
@@ -1371,7 +1373,7 @@ class H2OFrame:
       computed scalar if y is not given.
     """
     if y is None: y = self
-    if self.nrow==1 or (self.ncol==1 and y.ncol==1): return H2OFrame._expr(expr=ExprNode("var",self,y,use))._scalar()
+    if self.nrow==1 or (self.ncol==1 and y.ncol==1): return ExprNode("var",self,y,use)._eager_scalar()
     return H2OFrame._expr(expr=ExprNode("var",self,y,use))._frame()
 
   def sd(self):
@@ -1382,7 +1384,7 @@ class H2OFrame:
       A list containing the standard deviation for each column (NaN for non-numeric
       columns).
     """
-    return H2OFrame._expr(expr=ExprNode("sd", self))._scalar()
+    return ExprNode("sd", self)._eager_scalar()
 
   def asfactor(self):
     """
@@ -1390,9 +1392,7 @@ class H2OFrame:
     -------
       H2Oframe of one column converted to a factor.
     """
-    fr = H2OFrame._expr(expr=ExprNode("as.factor",self))
-    fr._ex._cache.fill_from(self._ex._cache)
-    return fr
+    return H2OFrame._expr(expr=ExprNode("as.factor",self), cache=self._ex._cache)
 
   def isfactor(self):
     #TODO: list for fr.ncol > 1 ?
@@ -1402,7 +1402,7 @@ class H2OFrame:
       True if the column is categorical; otherwise False. For String columns, the result is
       False.
     """
-    return H2OFrame._expr(expr=ExprNode("is.factor", self))._scalar()
+    return bool(ExprNode("is.factor", self)._eager_scalar())
 
   def anyfactor(self):
     """Test if H2OFrame has any factor columns.
@@ -1411,7 +1411,7 @@ class H2OFrame:
     -------
       True if there are any categorical columns; False otherwise.
     """
-    return H2OFrame._expr(expr=ExprNode("any.factor", self))._scalar()
+    return bool(ExprNode("any.factor", self)._eager_scalar())
 
   def transpose(self):
     """Transpose rows and columns of H2OFrame.

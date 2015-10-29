@@ -71,13 +71,13 @@ class ExprNode:
     self._eval_driver(False)
     assert self._cache._id is None
     assert self._cache.is_scalar()
-    return self._data
+    return self._cache._data
 
   def _eval_driver(self,top):
     exec_str = self._do_it(top)
     res = h2o.rapids(exec_str)
-    if 'scalar' in res:  self._data = res['scalar']
-    if 'string' in res:  self._data = res['string']
+    if 'scalar' in res:  self._cache._data = res['scalar']
+    if 'string' in res:  self._cache._data = res['string']
     if 'funstr' in res:  raise NotImplementedError
     if 'key'    in res:
       self._cache.nrows = res['num_rows']
@@ -148,38 +148,30 @@ class H2OCache(object):
   def nrows(self): return self._nrows
   @nrows.setter
   def nrows(self, value): self._nrows = value
-
+  def nrows_valid(self): return self._nrows >= 0
   @property
   def ncols(self): return self._ncols
   @ncols.setter
   def ncols(self, value): self._ncols = value
-
+  def ncols_valid(self): return self._ncols >= 0
   @property
   def names(self): return self._names
   @names.setter
   def names(self, value): self._names = value
-
+  def names_valid(self): return self._names is not None
   @property
   def types(self): return self._types
   @types.setter
   def types(self, value): self._types = value
-
+  def types_valid(self): return self._types is not None
   @property
-  def scalar(self):
-    return self._data if self.is_scalar() else None
-
+  def scalar(self): return self._data if self.is_scalar() else None
   @scalar.setter
-  def scalar(self, value):
-    self._data = value
+  def scalar(self, value): self._data = value
 
-  def __len__(self):
-    return self._l
-
-  def is_empty(self):
-    return self._data is None
-
-  def is_scalar(self):
-    return not isinstance(self._data, dict)
+  def __len__(self):   return self._l
+  def is_empty(self):  return self._data is None
+  def is_scalar(self): return not isinstance(self._data, dict)
 
   def fill(self, rows=10):
     assert self._id is not None
