@@ -37,7 +37,7 @@ def emptyclusKmeans():
     initial_centers_sci = np.asarray(initial_centers)
     initial_centers = zip(*initial_centers)
 
-    initial_centers_h2o = h2o.H2OFrame.fromPython(initial_centers)
+    initial_centers_h2o = h2o.H2OFrame(initial_centers)
 
 
     #Log.info("Initial cluster centers:")

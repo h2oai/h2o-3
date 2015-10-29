@@ -13,7 +13,7 @@ def expr_reducers():
 
 
     data = [[random.uniform(-10000,10000) for r in range(10)] for c in range(10)]
-    h2o_data_1 = h2o.H2OFrame.fromPython(zip(*data))
+    h2o_data_1 = h2o.H2OFrame(zip(*data))
     np_data = np.array(data)
     row, col = h2o_data_1.dim
     h2o_data = h2o_data_1 + 2

@@ -55,21 +55,21 @@ class ExprNode:
   def __init__(self, op=None, *args):
     assert isinstance(op,str), op
     self._op        = op          # Base opcode string
-    self._children  = args        # ast children; if not None and _id is not None then tmp
+    self._children  = args        # ast children; if not None and _cache._id is not None then tmp
     self._cache     = H2OCache()  # ncols, nrows, names, types
 
   def _eager_frame(self):  # returns H2OFrame instance
     if not self._cache.is_empty(): return self
-    if self._id is not None: return self  # Data already computed under ID, but not cached locally
+    if self._cache._id is not None: return self  # Data already computed under ID, but not cached locally
     return self._eval_driver(True)
 
   def _eager_scalar(self):  # returns a scalar (or a list of scalars)
     if not self._cache.is_empty():
       assert self._cache.is_scalar()
       return self
-    assert self._id is None
+    assert self._cache._id is None
     self._eval_driver(False)
-    assert self._id is None
+    assert self._cache._id is None
     assert self._cache.is_scalar()
     return self._data
 
@@ -94,8 +94,8 @@ class ExprNode:
   # the timezone change, so cannot be lazy.
   def _do_it(self,top):
     if not self._cache.is_empty():    # Data already computed and cached; could a "false-like" cached value
-      return str(self._cache._data) if self._cache.is_scalar() else self._id
-    if self._id is not None: return self._id  # Data already computed under ID, but not cached
+      return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
+    if self._cache._id is not None: return self._cache._id  # Data already computed under ID, but not cached
     # Here self._id is either None or ""
     # Build the eval expression
     assert isinstance(self._children,list)
@@ -103,7 +103,7 @@ class ExprNode:
     gc_ref_cnt = len(gc.get_referrers(self))
     if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
       self._cache._id = frame._py_tmp_key()
-      exec_str = "(tmp= {} {})".format(self._id, exec_str)
+      exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
     return exec_str
 
   @staticmethod
@@ -120,8 +120,8 @@ class ExprNode:
     raise ValueError("Unexpected arg type: " + str(type(arg))+" "+str(arg.__class__)+" "+arg.__repr__())
 
   def __del__(self):
-    if self._id is not None and self._children is not None:
-      h2o.H2OConnection.delete("DKV/"+self._id)
+    if self._cache._id is not None and self._children is not None:
+      h2o.H2OConnection.delete("DKV/"+self._cache._id)
 
   @staticmethod
   def _collapse_sb(sb): return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
@@ -129,10 +129,10 @@ class ExprNode:
   def _to_string(self,depth=0,sb=None):
     sb += ['\n', " "*depth, "("+self._op, " "]
     for child in self._children:
-      if isinstance(child, h2o.H2OFrame) and child._ex._id is None:    child._ex._to_string(depth+2,sb)
-      elif isinstance(child, h2o.H2OFrame):                            sb+=['\n', ' '*(depth+2), child._ex._id]
-      elif isinstance(child, ExprNode):                                child._to_string(depth+2,sb)
-      else:                                                            sb+=['\n', ' '*(depth+2), str(child)]
+      if isinstance(child, h2o.H2OFrame) and child._ex._cache._id is None:  child._ex._to_string(depth+2,sb)
+      elif isinstance(child, h2o.H2OFrame):                                 sb+=['\n', ' '*(depth+2), child._ex._cache._id]
+      elif isinstance(child, ExprNode):                                     child._to_string(depth+2,sb)
+      else:                                                                 sb+=['\n', ' '*(depth+2), str(child)]
     sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0
     return sb
 
