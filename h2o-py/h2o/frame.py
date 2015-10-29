@@ -360,7 +360,7 @@ class H2OFrame:
     # cached, so must be pulled.  While we're at it, go ahead and fill in
     # the default caches if they are not already filled in
     res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(self.frame_id)+"?row_count="+str(10))["frames"][0]
-    self._ex._cache._fill_rows(res)
+    self._ex._cache._fill_data(res)
     print "Rows:{:,}".format(self.nrow), "Cols:{:,}".format(self.ncol)
     res["chunk_summary"].show()
     res["distribution_summary"].show()
@@ -1002,7 +1002,7 @@ class H2OFrame:
     old_cache = self._ex._cache
     if colname is None: self._ex = ExprNode(":=",self,src,col_expr,row_expr)
     else:               self._ex = ExprNode("append",self,src,colname)
-    self._ex._cache = old_cache
+    self._ex._cache.fill_from(old_cache)
 
   def __int__(self):
     if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")

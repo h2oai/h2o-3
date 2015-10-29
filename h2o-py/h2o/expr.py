@@ -55,7 +55,7 @@ class ExprNode:
   def __init__(self, op="", *args):
     assert isinstance(op,str), op
     self._op        = op          # Base opcode string
-    self._children  = args        # ast children; if not None and _cache._id is not None then tmp
+    self._children  = tuple(a._ex if isinstance(a, frame.H2OFrame) else a for a in args)        # ast children; if not None and _cache._id is not None then tmp
     self._cache     = H2OCache()  # ncols, nrows, names, types
 
   def _eager_frame(self):  # returns H2OFrame instance
@@ -96,9 +96,7 @@ class ExprNode:
     if not self._cache.is_empty():    # Data already computed and cached; could a "false-like" cached value
       return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
     if self._cache._id is not None: return self._cache._id  # Data already computed under ID, but not cached
-    # Here self._id is either None or ""
-    # Build the eval expression
-    assert isinstance(self._children,tuple)
+    # assert isinstance(self._children,tuple)
     exec_str = "({} {})".format(self._op," ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
     gc_ref_cnt = len(gc.get_referrers(self))
     if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
@@ -109,7 +107,6 @@ class ExprNode:
   @staticmethod
   def _arg_to_expr(arg):
     if   isinstance(arg, ExprNode):               return arg._do_it(False)
-    elif isinstance(arg, frame.H2OFrame):         return arg._ex._do_it(False)
     elif isinstance(arg, astfun.ASTId):           return str(arg)
     elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
     elif isinstance(arg, (int, long, float)):     return "{}".format("NaN" if math.isnan(arg) else arg)
@@ -209,7 +206,8 @@ class H2OCache(object):
       # token NaN, so the default python json decoder does not convert them
       # to math.nan.  Do that now.
       else: c['data'] = [float('nan') if x=="NaN" else x for x in c['data']]
-      self._data[c.pop('label')] = c["data"]  # Label used as the Key
+      self._data[c.pop('label')] = c # Label used as the Key
+    return self
 
   #### pretty printing ####
 
@@ -225,10 +223,10 @@ class H2OCache(object):
       d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+map(str,range(lrows))
     # For all columns...
     for k,v in self._data.iteritems():
-      x = v         # Data to display
-      # domain = v['domain']   # Map to cat strings as needed
-      # if domain:
-      #   x = ["" if math.isnan(idx) else domain[int(idx)] for idx in x]
+      x = v['data']          # Data to display
+      domain = v['domain']   # Map to cat strings as needed
+      if domain:
+        x = ["" if math.isnan(idx) else domain[int(idx)] for idx in x]
       if rollups:            # Rollups, if requested
         mins = v['mins'][0] if v['mins'] else None
         maxs = v['maxs'][0] if v['maxs'] else None
