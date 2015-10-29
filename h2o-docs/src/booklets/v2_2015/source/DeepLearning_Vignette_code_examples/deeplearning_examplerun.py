@@ -7,11 +7,7 @@ train[y] = train[y].asfactor()
 test[y] = test[y].asfactor()
 
 # Train a Deep Learning model and validate on a test set
-model = h2o.deeplearning(
-        x=x, 
-        y=y, 
-        training_frame=train, 
-        validation_frame=test, 
+model = H2ODeepLearningEstimator(
         distribution="multinomial",
         activation="RectifierWithDropout", 
         hidden=[200,200,200], 
@@ -19,3 +15,8 @@ model = h2o.deeplearning(
         sparse=True, 
         l1=1e-5, 
         epochs=10)
+model.train(
+        x=x, 
+        y=y, 
+        training_frame=train, 
+        validation_frame=test)
