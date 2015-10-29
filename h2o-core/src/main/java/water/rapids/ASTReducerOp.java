@@ -255,7 +255,7 @@ class ASTMean extends ASTPrim {
 
 class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package result into Frame
   @Override
-  public String[] args() { return new String[]{"ary"}; }
+  public String[] args() { return new String[]{"ary", "na_rm"}; }
   @Override int nargs() { return 1+2; }
   @Override
   public String str() { return "sd"; }
