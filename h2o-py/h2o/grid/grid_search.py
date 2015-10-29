@@ -140,8 +140,8 @@ class H2OGridSearch(object):
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
     kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
-    algo = self.model._compute_algo() #unique to grid search
-    kwargs["_rest_version"] = 99 #unique to grid search
+    algo = self.model._compute_algo()  #unique to grid search
+    kwargs["_rest_version"] = 99  #unique to grid search
 
     grid = H2OJob(H2OConnection.post_json("Grid/"+algo, **kwargs), job_type=(algo+" Grid Build"))
 
@@ -152,7 +152,6 @@ class H2OGridSearch(object):
     grid.poll()
     if '_rest_version' in kwargs.keys(): grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
     else:                                grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
-
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
     #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)

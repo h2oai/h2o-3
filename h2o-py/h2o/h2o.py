@@ -304,10 +304,13 @@ def _quoted(key):
   key = key if is_quoted  else '"' + key + '"'
   return key
 
+
 def assign(data,xid):
-  if data.frame_id == xid: ValueError("Desination key must differ input frame")
-  data._ex = expr.ExprNode("tmp=",xid,data)._eval_driver(False)
-  data._ex._id = xid
+  if data._ex._id is None:
+    data._ex = expr.ExprNode("tmp=",xid,data)._eval_driver(False)
+    data._ex._id = xid
+  else:
+    if data.frame_id == xid: ValueError("Desination key must differ input frame")
   return data
 
 
@@ -1679,16 +1682,14 @@ def _locate(path):
 
 
 def store_size():
-  """
-  Get the H2O store size (current count of keys).
+  """Get the H2O store size (current count of keys).
   :return: number of keys in H2O cloud
   """
   return rapids("(store_size)")["result"]
 
 
 def keys_leaked(num_keys):
-  """
-  Ask H2O if any keys leaked.
+  """Ask H2O if any keys leaked.
   @param num_keys: The number of keys that should be there.
   :return: A boolean True/False if keys leaked. If keys leaked, check H2O logs for further detail.
   """
@@ -1696,8 +1697,7 @@ def keys_leaked(num_keys):
 
 
 def as_list(data, use_pandas=True):
-  """
-  Convert an H2O data object into a python-specific object.
+  """Convert an H2O data object into a python-specific object.
 
   WARNING: This will pull all data local!
 
