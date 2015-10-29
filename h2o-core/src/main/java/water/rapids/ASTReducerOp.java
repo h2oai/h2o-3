@@ -167,82 +167,45 @@ class ASTMad extends ASTPrim {
   }
 }
 
-// Debugging primitive; takes either a scalar or a vector.  TRUE if all values are 1.
+// Bulk AND operation on a scalar or numeric column; NAs count as true.  Returns 0 or 1.
 class ASTAll extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
-  @Override
-  public String str() { return "all" ; }
+  @Override public String[] args() { return new String[]{"ary"}; }
+  @Override public String str() { return "all" ; }
   @Override int nargs() { return 1+1; }
-  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
-    if( val.isNum() ) return new ValStr(val.getNum() == 0 ? "FALSE" : "TRUE");
+    if( val.isNum() ) return new ValNum(val.getNum()==0?0:1);
     for( Vec vec : val.getFrame().vecs() )
-      if( vec.min() != 1 || vec.max() != 1 )
-        return new ValStr("FALSE");
-    return new ValStr("TRUE");
+      if( vec.nzCnt()+vec.naCnt() < vec.length() )
+        return new ValNum(0);   // Some zeros in there somewhere
+    return new ValNum(1);
   }
 }
 
+// Bulk OR operation on boolean column; NAs count as true.  Returns 0 or 1.
 class ASTAny extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any x)
-  @Override
-  public String str() { return "any"; }
-  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    boolean any;
+  @Override public String str() { return "any"; }
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val val = stk.track(asts[1].exec(env));
-    if( val.isNum() ) any = val.getNum()!=0;
-    else {
-      Frame fr = val.getFrame();
-      for(int i=0;i<fr.numCols();i++) {
-        Vec v = fr.vec(i);
-        if( !v.isInt() ) throw new IllegalArgumentException("all columns must be a columns of 1s and 0s.");
-        if( v.isConst() )
-          if( !(v.min() == 0 || v.min() == 1) ) throw new IllegalArgumentException("columns must be a columns of 1s and 0s");
-          else
-          if( v.min() != 0 && v.max() != 1 ) throw new IllegalArgumentException("columns must be a columns of 1s and 0s");
-        if( v.naCnt() > 0 ) return new ValStr("TRUE");
-      }
-      any = new AnyTask().doAll(fr).any;
-    }
-    return new ValStr(any?"TRUE":"FALSE");
-  }
-
-  private static class AnyTask extends MRTask<AnyTask> {
-    private boolean any=false;
-    @Override public void map(Chunk[] c) {
-      int j=0;
-      for (Chunk aC : c) {
-        for( j=0; j<c[0]._len;++j ) {
-          if( !any ) {
-            if(aC.isNA(j)) {
-              any = false;
-              break;
-            }
-            any |= aC.atd(j) == 1;
-          } else break;
-        }
-        if( j!=c[0]._len) break;
-      }
-    }
-    @Override public void reduce(AnyTask t) { any &= t.any; }
+    if( val.isNum() ) return new ValNum(val.getNum()==0?0:1);
+    for( Vec vec : val.getFrame().vecs() )
+      if( vec.nzCnt()+vec.naCnt() > 0 )
+        return new ValNum(1);   // Some nonzeros in there somewhere
+    return new ValNum(0);
   }
 }
 
+// Bulk OR operation on boolean column.  Returns 0 or 1.
 class ASTAnyNA extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any.na x)
-  @Override
-  public String str() { return "any.na"; }
-  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override public String str() { return "any.na"; }
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    String res = "FALSE";
-    for (int i = 0; i < fr.vecs().length; ++i)
-      if (fr.vecs()[i].naCnt() > 0) { res = "TRUE"; break; }
-    return new ValStr(res);
+    for( Vec vec : fr.vecs() ) if( vec.nzCnt() > 0 ) return new ValNum(1);
+    return new ValNum(0);
   }
 }
 
@@ -270,61 +233,40 @@ abstract class ASTNARollupOp extends ASTRollupOp {
 }
 
 class ASTSumNA extends ASTNARollupOp { public String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
-class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
+class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l, r); } double rup( Vec vec ) { return vec.min(); } }
 class ASTMaxNA extends ASTNARollupOp { public String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
 // ----------------------------------------------------------------------------
+
 class ASTMean extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "na_rm"}; }
-  @Override
-  public String str() { return "mean"; }
+  @Override public String[] args() { return new String[]{"ary", "na_rm"}; }
+  @Override public String str() { return "mean"; }
   @Override int nargs() { return 1+2; } // (mean X na.rm)
-  @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override ValNums apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     boolean narm = asts[2].exec(env).getNum()==1;
-    if( fr.numCols() == 1) {
-      if( !fr.anyVec().isNumeric() ) return new ValNum(Double.NaN);
-      if( !narm && (fr.anyVec().length()==0 || fr.anyVec().naCnt() >0) ) return new ValNum(Double.NaN);
-      return new ValNum(fr.anyVec().mean());
-    }
-    Futures fs = new Futures();
-    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
-    NewChunk chunk = new NewChunk(v, 0);
-    for( int i=0;i<fr.numCols();++i ) chunk.addNum((fr.vec(i).isNumeric()||fr.vec(i).naCnt()>0)?fr.vec(i).mean():Double.NaN);
-    chunk.close(0,fs);
-    Vec vec = v.layout_and_close(fs);
-    fs.blockForPending();
-    Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
-    DKV.put(fr2);
-    return new ValFrame(fr2);
+    double[] ds = new double[fr.numCols()];
+    Vec[] vecs = fr.vecs();
+    for( int i=0; i<fr.numCols(); i++ )
+      ds[i] = (!vecs[i].isNumeric() || vecs[i].length()==0 || (!narm && vecs[i].naCnt() >0)) ? Double.NaN : vecs[i].mean();
+    return new ValNums(ds);
   }
 }
 
 class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package result into Frame
   @Override
-  public String[] args() { return new String[]{"ary"}; }
-  @Override int nargs() { return 1+1; }
+  public String[] args() { return new String[]{"ary", "na_rm"}; }
+  @Override int nargs() { return 1+2; }
   @Override
   public String str() { return "sd"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNums apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() == 1) {
-      if (!fr.anyVec().isNumeric()) return new ValNum(Double.NaN);
-      return new ValNum(fr.anyVec().sigma());
-    }
-    Futures fs = new Futures();
-    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
-    NewChunk chunk = new NewChunk(v, 0);
-    for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isNumeric()?fr.vec(i).sigma():Double.NaN);
-    chunk.close(0,fs);
-    Vec vec = v.layout_and_close(fs);
-    fs.blockForPending();
-    Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
-    DKV.put(fr2);
-    return new ValFrame(fr2);
+    boolean narm = asts[2].exec(env).getNum()==1;
+    double[] ds = new double[fr.numCols()];
+    Vec[] vecs = fr.vecs();
+    for( int i=0; i<fr.numCols(); i++ )
+      ds[i] = (!vecs[i].isNumeric() || vecs[i].length()==0 || (!narm && vecs[i].naCnt() >0)) ? Double.NaN : vecs[i].sigma();
+    return new ValNums(ds);
   }
 }
 

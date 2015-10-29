@@ -16,9 +16,9 @@ def op_precedence():
     b = [[random.uniform(-100,100) for r in range(10)] for c in range(10)]
     c = [[random.uniform(-100,100) for r in range(10)] for c in range(10)]
 
-    A = h2o.H2OFrame(python_obj=zip(*a))
-    B = h2o.H2OFrame(python_obj=zip(*b))
-    C = h2o.H2OFrame(python_obj=zip(*c))
+    A = h2o.H2OFrame.fromPython(zip(*a))
+    B = h2o.H2OFrame.fromPython(zip(*b))
+    C = h2o.H2OFrame.fromPython(zip(*c))
 
     np_A = np.array(a)
     np_B = np.array(b)

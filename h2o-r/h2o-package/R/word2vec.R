@@ -43,7 +43,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   if (!is.Frame(trainingFrame)) invisible(nrow(trainingFrame))  # try to force the eval of the frame
   if (!is.Frame(trainingFrame)) stop("Could not evaluate `trainingFrame` as an H2O Frame object")
 
-  params <- list(training_frame = attr(.eval.frame(trainingFrame), "id"),
+  params <- list(training_frame = h2o.getId(trainingFrame),
                  wordModel = wordModel,
                  normModel = normModel,
                  minWordFreq = minWordFreq,
@@ -54,9 +54,9 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
                  initLearningRate = initLearningRate,
                  epochs = epochs)
 
-  res <- .h2o.__remoteSend(trainingFrame@conn, .h2o.__W2V, .params = params)
-  .h2o.__waitOnJob(trainingFrame@conn, res$job)
-  dest_key <- .h2o.__remoteSend(trainingFrame@conn, paste0(.h2o.__JOBS, "/", res$job))$jobs[[1L]]$dest$name
+  res <- .h2o.__remoteSend(.h2o.__W2V, .params = params)
+  .h2o.__waitOnJob(res$job)
+  dest_key <- .h2o.__remoteSend(paste0(.h2o.__JOBS, "/", res$job))$jobs[[1L]]$dest$name
   w2vmodel <- h2o.getModel(dest_key)
   new("H2OW2V", h2o = trainingFrame@conn, key = dest_key, train.data=trainingFrame)
 }
@@ -76,7 +76,7 @@ function(word2vec, target, count) {
   if (missing(count)) stop("`count` must be specified")
   if (!is.numeric(count)) stop("`count` must be numeric")
 
-  params <- list(key = attr(.eval.frame(word2vec),"id"), target=target, cnt=count)
+  params <- list(key = h2o.getId(word2vec), target=target, cnt=count)
   if (length(target) == 1L) {
     res <- .h2o.__remoteSend(word2vec@conn, .h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)

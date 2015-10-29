@@ -42,7 +42,7 @@ def deeplearning_autoencoder():
   ae_model.train(range(resp), training_frame=train_supervised)
 
   # conver train_supervised with autoencoder to lower-dimensional space
-  train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp]._frame(), 0)
+  train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp], 0)
 
   assert train_supervised_features.ncol == nfeatures, "Dimensionality of reconstruction is wrong!"
 
@@ -53,8 +53,8 @@ def deeplearning_autoencoder():
   drf_model.train(x=range(20), y=train_supervised_features.ncol-1, training_frame=train_supervised_features)
 
   # Test the DRF model on the test set (processed through deep features)
-  test_features = ae_model.deepfeatures(test_hex[0:resp]._frame(), 0)
-  test_features = test_features.cbind(test_hex[resp])._frame()
+  test_features = ae_model.deepfeatures(test_hex[0:resp], 0)
+  test_features = test_features.cbind(test_hex[resp])
 
   # Confusion Matrix and assertion
   cm = drf_model.confusion_matrix(test_features)

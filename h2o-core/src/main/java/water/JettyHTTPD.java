@@ -647,7 +647,9 @@ public class JettyHTTPD {
           (new Thread() {
             public void run() {
               boolean [] confirmations = new boolean[H2O.CLOUD.size()];
-              confirmations[H2O.SELF.index()] = true;
+              if (H2O.SELF.index() >= 0) {
+                confirmations[H2O.SELF.index()] = true;
+              }
               for(H2ONode n:H2O.CLOUD._memary) {
                 if(n != H2O.SELF)
                   new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call();

@@ -8,8 +8,8 @@ from tests import pyunit_utils
 import random
 
 def random_attack():
-    
-    
+
+
 
     def attack(family, train, valid, x, y):
         kwargs = {}
@@ -47,9 +47,9 @@ def random_attack():
                     upper_bound = lower_bound + random.random()
                     bc.append([name, lower_bound, upper_bound])
             if len(bc) > 0:
-                beta_constraints = h2o.H2OFrame(python_obj=zip(*bc))
+                beta_constraints = h2o.H2OFrame.fromPython(zip(*bc))
                 beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
-                kwargs['beta_constraints'] = beta_constraints._id
+                kwargs['beta_constraints'] = beta_constraints.frame_id
 
         # display the parameters and their corresponding values
         print "-----------------------"

@@ -85,7 +85,7 @@ def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs):
   if vx is not None: kwargs['validation_frame']=vx.frame_id
   if y is not None:  kwargs['response_column']=y.names[0]
 
-  kwargs = dict([(k, kwargs[k]._frame()._id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])
+  kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])
 
   do_future = kwargs.pop("do_future") if "do_future" in kwargs else False
   future_model = H2OModelFuture(H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")), x)

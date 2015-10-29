@@ -1,5 +1,6 @@
 package water.api;
 
+import water.Futures;
 import water.Key;
 import water.MemoryManager;
 import water.api.KeyV3.FrameKeyV3;
@@ -48,9 +49,6 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   public String[] compatible_models;
 
-  @API(help="The set of IDs of vectors in the Frame", direction=API.Direction.OUTPUT)
-  public VecKeyV3[] vec_ids;
-
   @API(help="Chunk summary", direction=API.Direction.OUTPUT)
   public TwoDimTableBase chunk_summary;
 
@@ -71,9 +69,6 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   }
 
   public static class ColV3 extends Schema<Vec, ColV3> {
-
-    static final boolean FORCE_SUMMARY = true;
-    static final boolean NO_SUMMARY = false;
 
     public ColV3() {}
 
@@ -137,29 +132,23 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     transient Vec _vec;
 
     ColV3(String name, Vec vec, long off, int len) {
-      this(name, vec, off, len, NO_SUMMARY);
-    }
-
-    ColV3(String name, Vec vec, long off, int len, boolean force_summary) {
       label=name;
 
-      if (force_summary) {
-        missing_count = vec.naCnt();
-        zero_count = vec.length() - vec.nzCnt() - missing_count;
-        positive_infinity_count = vec.pinfs();
-        negative_infinity_count = vec.ninfs();
-        mins = vec.mins();
-        maxs = vec.maxs();
-        mean = vec.mean();
-        sigma = vec.sigma();
-
-        // Histogram data is only computed on-demand.  By default here we do NOT
-        // compute it, but will return any prior computed & cached histogram.
-        histogram_bins = vec.lazy_bins();
-        histogram_base = histogram_bins ==null ? 0 : vec.base();
-        histogram_stride = histogram_bins ==null ? 0 : vec.stride();
-        percentiles = histogram_bins ==null ? null : vec.pctiles();
-      }
+      missing_count = vec.naCnt();
+      zero_count = vec.length() - vec.nzCnt() - missing_count;
+      positive_infinity_count = vec.pinfs();
+      negative_infinity_count = vec.ninfs();
+      mins = vec.mins();
+      maxs = vec.maxs();
+      mean = vec.mean();
+      sigma = vec.sigma();
+      
+      // Histogram data is only computed on-demand.  By default here we do NOT
+      // compute it, but will return any prior computed & cached histogram.
+      histogram_bins  = vec.lazy_bins();
+      histogram_base  = histogram_bins ==null ? 0 : vec.base();
+      histogram_stride= histogram_bins ==null ? 0 : vec.stride();
+      percentiles     = histogram_bins ==null ? null : vec.pctiles();
 
       type  = vec.isCategorical() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
@@ -212,18 +201,18 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   }
 
   FrameV3(Frame f, long row_offset, int row_count, int column_offset, int column_count) {
-    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count, ColV3.NO_SUMMARY);
+    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count);
   }
 
   @Override public FrameV3 fillFromImpl(Frame f) {
-    return fillFromImpl(f, 1, (int)f.numRows(), 0, 0, ColV3.NO_SUMMARY);
+    return fillFromImpl(f, 1, (int)f.numRows(), 0, 0);
   }
 
-  public FrameV3 fillFromImpl(Frame f, long row_offset, int row_count, int column_offset, int column_count, boolean force_summary) {
+  public FrameV3 fillFromImpl(Frame f, long row_offset, int row_count, int column_offset, int column_count) {
     if( row_count == 0 ) row_count = 100;                                 // 100 rows by default
     if( column_count == 0 ) column_count = f.numCols() - column_offset; // full width by default
 
-    row_count = (int)Math.min(row_count, row_offset + f.numRows());
+    row_count    = (int) Math.min(   row_count,    row_offset + f.numRows());
     column_count = (int) Math.min(column_count, column_offset + f.numCols());
 
     this.frame_id = new FrameKeyV3(f._key);
@@ -239,23 +228,15 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     this.column_count = column_count;
 
     this.columns = new ColV3[column_count];
-    Key[] keys = f.keys();
-    if(keys != null && keys.length > 0) {
-      vec_ids = new VecKeyV3[column_count];
-      for (int i = 0; i < column_count; i++)
-        vec_ids[i] = new VecKeyV3(keys[column_offset + i]);
-    }
-
     Vec[] vecs = f.vecs();
-    for( int i = 0; i < column_count; i++ ) {
-      try {
-        columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count, force_summary);
-      }
-      catch (Exception e) {
-        Log.err("Caught exception processing FrameV2(", f._key.toString(), "): Vec: " + f._names[column_offset + i], e);
-        throw e;
-      }
-    }
+    Futures fs = new Futures();
+    // Compute rollups in parallel as needed, by starting all of them and using
+    // them when filling in the ColV3 Schemas
+    for( int i = 0; i < column_count; i++ )
+      vecs[column_offset + i].startRollupStats(fs);
+    for( int i = 0; i < column_count; i++ )
+      columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
+    fs.blockForPending();
     this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;
 

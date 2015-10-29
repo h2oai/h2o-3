@@ -100,7 +100,6 @@
   h2o.getFutureModel(job)
 }
 
-
 .h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
@@ -212,7 +211,7 @@ h2o.getFutureModel <- function(object) {
 
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
-    if(is.Frame(i))  attr(.eval.frame(i), "id")
+    if(is.Frame(i))  h2o.getId(i)
     else             i
   })
 
@@ -277,7 +276,7 @@ h2o.getFutureModel <- function(object) {
     }
   }
   if( is.Frame(paramValue) )
-    paramValue <- attr(.eval.frame(paramValue),"id")
+    paramValue <- h2o.getId(paramValue)
   paramValue
 }
 
@@ -318,7 +317,7 @@ h2o.getFutureModel <- function(object) {
                                       # Force evaluation of frames and fetch frame_id as
                                       # a side effect
                                       if (is.Frame(hv) )
-                                        hv <- attr(.eval.frame(hv), "id")
+                                        hv <- h2o.getId(hv)
                                       .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
                                 })
           hyper_params[[name]] <<- transf_hyper_vals
@@ -360,7 +359,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   }
 
   # Send keys to create predictions
-  url <- paste0('Predictions/models/', object@model_id, '/frames/',  attr(.eval.frame(newdata), "id"))
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
   res <- .h2o.__remoteSend(url, method = "POST")
   res <- res$predictions_frame
   h2o.getFrame(res$name)
@@ -441,7 +440,7 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 
   missingData <- missing(data) || is.null(data)
   trainingFrame <- model@parameters$training_frame
-  data.id <- if( missingData ) trainingFrame else attr(.eval.frame(data), "id")
+  data.id <- if( missingData ) trainingFrame else h2o.getId(data)
   if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
   else if( missingData &&  valid ) {
     if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
@@ -1682,7 +1681,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
   } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
 
   # ok need to score on the newdata
-  url <- paste0("Predictions/models/",object@model_id, "/frames/", attr(.eval.frame(newdata), "id"))
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", h2o.getId(newdata))
   res <- .h2o.__remoteSend(url, method="POST")
 
   # Make the correct class of metrics object
@@ -1970,6 +1969,14 @@ h2o.sdev <- function(object) {
 # It allows for having algorithm name aliases
 .h2o.unifyAlgoName <- function(algo) {
   result <- if (algo == "randomForest") "drf" else algo
+  result
+}
+
+#
+# Returns REST API version for given algo.
+#
+.h2o.getAlgoVersion <- function(algo, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+  result <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]][["__meta"]]$schema_version
   result
 }
 
