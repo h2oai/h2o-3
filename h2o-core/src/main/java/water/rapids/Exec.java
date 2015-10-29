@@ -3,9 +3,13 @@ package water.rapids;
 import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.nbhm.*;
 
 /**
  * Exec is an interpreter of abstract syntax trees.
+ *
+ * This file contains the AST parser and parser helper functions.  
+ * AST Execution starts in the ASTExec file, but spreads throughout Rapids.
  *
  * Trees have a Lisp-like structure with the following "reserved" special
  * characters:
@@ -36,7 +40,7 @@ public class Exec {
   public Exec(String str) { _str = str; }
 
   public static Val exec( String str ) throws IllegalArgumentException {
-    cluster_init();
+    cluster_init();    // Force class loading before requiring remote execution
     // Parse
     AST ast = new Exec(str).parse();
     // Execute

@@ -31,7 +31,9 @@ public class ASTExec extends AST {
   }
 
   // Function application.  Execute the first AST and verify that it is a
-  // function.  Then call that function's apply method.
+  // function.  Then call that function's apply method.  Do not evaluate other
+  // arguments; e.g. short-circuit logicals' apply calls may choose to not ever
+  // evalute some arguments.
   @Override public Val exec(Env env) {
     Val fun = _asts[0].exec(env);
     if( !fun.isFun() )

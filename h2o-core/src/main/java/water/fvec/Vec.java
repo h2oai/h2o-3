@@ -1198,6 +1198,8 @@ public class Vec extends Keyed<Vec> {
     @Override public String toString() {
       return "VecGrp "+_key.toString()+", next free="+_len;
     }
+    // Return current VectorGroup index; used for tests
+    public int len() { return _len; }
 
     /** True if two VectorGroups are equal 
      *  @return True if two VectorGroups are equal */
