@@ -123,7 +123,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         h2o_val = h2o_data[r,c]
         np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
         if isinstance(np_val, np.bool_): np_val = bool(np_val)  # numpy haz special bool type :(
-        assert np.absolute(h2o_val - np_val) < 1e-6, \
+        assert np.absolute(h2o_val - np_val) < 1e-5, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
 def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs):

@@ -233,26 +233,14 @@ abstract class ASTNARollupOp extends ASTRollupOp {
 }
 
 class ASTSumNA extends ASTNARollupOp { public String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
-class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
+class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l, r); } double rup( Vec vec ) { return vec.min(); } }
 class ASTMaxNA extends ASTNARollupOp { public String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
 // ----------------------------------------------------------------------------
-class ASTMean extends ASTPrim {
-  @Override public String[] args() { return new String[]{"col", "na_rm"}; }
-  @Override public String str() { return "mean"; }
-  @Override int nargs() { return 1+2; } // (mean X na.rm)
-  @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    boolean narm = asts[2].exec(env).getNum()==1;
-    if( fr.numCols() > 1 ) throw new IllegalArgumentException("Only 1 column allowed, use col_means to get an array of column means");
-    Vec vec = fr.anyVec();
-    return new ValNum(!vec.isNumeric() || vec.length()==0 || (!narm && vec.naCnt() >0) ? Double.NaN : vec.mean());
-  }
-}
 
-class ASTColMeans extends ASTPrim {
+class ASTMean extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "na_rm"}; }
-  @Override public String str() { return "colMeans"; }
+  @Override public String str() { return "mean"; }
   @Override int nargs() { return 1+2; } // (mean X na.rm)
   @Override ValNums apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -267,27 +255,18 @@ class ASTColMeans extends ASTPrim {
 
 class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package result into Frame
   @Override
-  public String[] args() { return new String[]{"ary"}; }
-  @Override int nargs() { return 1+1; }
+  public String[] args() { return new String[]{"ary", "na_rm"}; }
+  @Override int nargs() { return 1+2; }
   @Override
   public String str() { return "sd"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNums apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() == 1) {
-      if (!fr.anyVec().isNumeric()) return new ValNum(Double.NaN);
-      return new ValNum(fr.anyVec().sigma());
-    }
-    Futures fs = new Futures();
-    Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-    AppendableVec v = new AppendableVec(key,Vec.T_NUM);
-    NewChunk chunk = new NewChunk(v, 0);
-    for( int i=0;i<fr.numCols();++i ) chunk.addNum(fr.vec(i).isNumeric()?fr.vec(i).sigma():Double.NaN);
-    chunk.close(0,fs);
-    Vec vec = v.layout_and_close(fs);
-    fs.blockForPending();
-    Frame fr2 = new Frame(Key.make(), new String[]{"C1"}, new Vec[]{vec});
-    DKV.put(fr2);
-    return new ValFrame(fr2);
+    boolean narm = asts[2].exec(env).getNum()==1;
+    double[] ds = new double[fr.numCols()];
+    Vec[] vecs = fr.vecs();
+    for( int i=0; i<fr.numCols(); i++ )
+      ds[i] = (!vecs[i].isNumeric() || vecs[i].length()==0 || (!narm && vecs[i].naCnt() >0)) ? Double.NaN : vecs[i].sigma();
+    return new ValNums(ds);
   }
 }
 

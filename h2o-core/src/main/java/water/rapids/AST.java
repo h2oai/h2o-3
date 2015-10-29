@@ -122,7 +122,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTAll());
     init(new ASTAny());
     init(new ASTAnyNA());
-    init(new ASTColMeans());
     init(new ASTCumMax());
     init(new ASTCumMin());
     init(new ASTCumProd());

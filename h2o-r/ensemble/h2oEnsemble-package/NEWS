@@ -1,19 +1,24 @@
 # News for the h2oEnsemble package. #
 
-h2oEnsemble 0.0.9 (In progress)
+h2oEnsemble 0.1.0 (In progress)
 ----------------
 * TO DO: Add support for multi-class classification.
 * TO DO: Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
-* TO DO: Update `h2o.ensemble` example code to use `h2o.importFile` instead of `as.h2o`.
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
 * TO DO: Update the `runtime` list to include times for `cv` and `baselearning`.  These were dropped in version 0.0.5.
 * TO DO: Add ability to generate predicted values using the `validation_frame` argument; currently this arg is ignored and doesn't do anything, and predictions must be made with the `predict.h2o.ensemble` function.  This should also include setting a new output object to store metrics.
 * TO DO: Add a utility function, `h2o.ensemble_metrics` to extract default performance metrics for binomial and gaussian family (AUC and MSE).
 * TO FINISH: Added new functions, `h2o.save_ensemble` and `h2o.load_ensemble`, for easy saving and loading of ensemble models to disk.
-* Added new function `h2o.metalearn` which allows the user to easily re-fit the metalearner using a new metalearning algorithm.
+
+
+h2oEnsemble 0.0.9 (2015-10-28)
+----------------
 * Added `target_ratio_comm_to_comp` argument to the `h2o.deeplearning.wrapper` function.
+* Added new function `h2o.metalearn` which allows the user to easily re-fit the metalearner using a new metalearning algorithm.
 * Renamed output value, `Z`: Changed name to `levelone`.  This H2O Frame includes the Z matrix columns plus a fold id column and the original response column.
-* Added tests using the `testthat` framework.
+* Added tests for `h2o.ensemble` and `h2o.metalearn` using the `testthat` framework.
+* Updated `h2o.ensemble` example code to use `h2o.importFile` instead of `as.h2o`.
+* Added a very basic `print` method for `h2o.ensemble` objects.
 
 
 h2oEnsemble 0.0.8 (2015-10-07)
