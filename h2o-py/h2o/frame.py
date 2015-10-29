@@ -873,6 +873,8 @@ class H2OFrame:
       fr = H2OFrame._expr(expr=ExprNode("cols_py",self,item))
     elif isinstance(item, (ExprNode, H2OFrame)):
       new_ncols = self.ncol
+      new_names = self.names
+      new_types = self.types
       new_nrows = -1  # have a "big" predicate column -- update cache later on...
       fr = H2OFrame._expr(expr=ExprNode("rows",self,item))
     elif isinstance(item, tuple):
@@ -888,6 +890,8 @@ class H2OFrame:
         fr = H2OFrame._expr(expr=ExprNode("cols_py",self,cols))  # fr[:,cols] -> really just a column slice
       if allcols:
         new_ncols = self.ncol
+        new_names = self.names
+        new_types = self.types
         new_nrows = self._compute_nrow_update(rows)
         fr = H2OFrame._expr(expr=ExprNode("rows",self,rows))  # fr[rows,:] -> really just a row slices
 
