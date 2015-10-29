@@ -50,13 +50,13 @@ R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
 - An example of how to train and test an ensemble is in the `h2o.ensemble` function documentation in the `h2oEnsemble` package.
 - The ensemble is defined by its set of base learning algorithms and the metalearning algorithm.  Algorithm wrapper functions are used to specify these algorithms.
 - The ensemble fit is an object of class, "h2o.ensemble", however this is just an R list.
-- See the `example_twoClass_higgs.R` script or the `h2o.ensemble` R documentation for an example.
+- See the [example_twoClass_higgs.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/ensemble/example_twoClass_higgs.R) script or the `h2o.ensemble` R documentation for an example.
 
 
 ## Wrapper Functions
 - The ensemble works by using wrapper functions (located in the `wrappers.R` file in the package).  These wrapper functions are used to specify the base learner and metalearner algorithms for the ensemble.
 - This methodology of using wrapper functions is modeled after the [SuperLearner](http://cran.r-project.org/web/packages/SuperLearner/index.html) and [subsemble](http://cran.r-project.org/web/packages/subsemble/index.html) ensemble learning packages.  The use of wrapper functions makes the ensemble code cleaner by providing a unified interface.
-- Often it is a good idea to include variants of one algorithm/function by specifying different tuning parameters for different base learners.  There is an examples of how to create new variants of the wrapper functions in the `create_h2o_wrappers.R` script.
+- Often it is a good idea to include variants of one algorithm/function by specifying different tuning parameters for different base learners.  There is an examples of how to create new variants of the wrapper functions in the [create_h2o_wrappers.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/ensemble/create_h2o_wrappers.R) script.
 - The wrapper functions must have unique names.
 
 
