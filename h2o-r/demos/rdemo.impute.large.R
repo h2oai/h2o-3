@@ -23,15 +23,15 @@ stop("Can't impute if there is no data in the column at all.")
 DepTime_mean <- mean(air$DepTime, na.rm = TRUE)
 print(DepTime_mean)
 
-# impute the column in place with h2o.impute(...)
-h2o.impute(air, "DepTime", method = "mean")   # can also have method = "median"
-print(numNAs <- sum(is.na(air$DepTime)))
+# impute the column with h2o.impute(...)
+air_imputed <- h2o.impute(air, "DepTime", method = "mean")   # can also have method = "median"
+print(numNAs <- sum(is.na(air_imputed$DepTime)))
 stopifnot(numNAs == 0)
 
 # revert imputations
 air <- h2o.importFile(filePath, "air")
 
-# impute the column in place using a grouping based on the Origin and Distance
+# impute the column using a grouping based on the Origin and Distance
 # NB: If the Origin and Distance produce groupings of NAs, then no imputation will be done (NAs will result).
 h2o.impute(air, "DepTime", method = "mean", by = c("Dest"))
 
