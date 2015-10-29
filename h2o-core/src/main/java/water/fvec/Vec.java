@@ -621,7 +621,7 @@ public class Vec extends Keyed<Vec> {
    *  overview of the data.  Each bin is row-counts for the bin's range.  The
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
    *  histogram is computed on first use and cached thereafter.
-   *  @return A set of histogram bins. */
+   *  @return A set of histogram bins, or null for String columns */
   public long[] bins() { return RollupStats.get(this, true)._bins;      }
   /** Optimistically return the histogram bins, or null if not computed 
    *  @return the histogram bins, or null if not computed */
