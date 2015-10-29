@@ -1776,15 +1776,14 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' }
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
-  if( na.rm ) stop("na.rm versions not impl")
-  if( ncol(x)==1L ) .eval.scalar(.newExpr("sd",x))
-  else .fetch.data(.newExpr("sd",x),1L)
+  if( ncol(x)==1L ) .eval.scalar(.newExpr("sd",x, na.rm))
+  else .fetch.data(.newExpr("sd",x,na.rm),1L)
 }
 
 #' @rdname h2o.sd
 #' @export
 sd <- function(x, na.rm=FALSE) {
-  if( is.Frame(x) ) h2o.sd(x)
+  if( is.Frame(x) ) h2o.sd(x,na.rm)
   else stats::sd(x,na.rm)
 }
 
