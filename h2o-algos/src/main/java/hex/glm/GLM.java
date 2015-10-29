@@ -19,6 +19,7 @@ import hex.optimization.ADMM.ProximalSolver;
 import hex.optimization.L_BFGS.*;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
+import hex.optimization.OptimizationUtils.MoreThuente;
 import hex.schemas.GLMV3;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
@@ -1104,6 +1105,46 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           solverType = Solver.IRLSM; // default choice
       switch(solverType) {
         case L_BFGS: {
+          final double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
+          ProgressMonitor pm = new L_BFGS.ProgressMonitor() {
+            @Override
+            public boolean progress(double[] beta, GradientInfo ginfo) {
+              if (_taskInfo._iter < 8 || (_taskInfo._iter & 7) == 0) {
+                double gnorm = 0;
+                double objval = 0;
+                if (ginfo instanceof ProximalGradientInfo) {
+                  ProximalGradientInfo g = (ProximalGradientInfo) ginfo;
+                  if (g._origGinfo instanceof GLMGradientInfo) {
+                    GLMGradientInfo gg = (GLMGradientInfo) g._origGinfo;
+                    double obj = gg._objVal;
+                    for (int i = 0; i < beta.length; ++i)
+                      obj += l1pen * (beta[i] >= 0 ? beta[i] : -beta[i]);
+                    // add l1pen
+                    _sc.addIterationScore(_taskInfo._iter, gg._likelihood, obj);
+                    double[] subgrad = ginfo._gradient.clone();
+                    ADMM.subgrad(l1pen, beta, subgrad);
+                    gnorm = ArrayUtils.l2norm2(subgrad, false);
+                    objval = obj;
+                  }
+                } else {
+                  gnorm = ArrayUtils.linfnorm(ginfo._gradient,false);
+                  objval = ginfo._objVal;
+                }
+                if (ginfo instanceof GLMGradientInfo) {
+                  GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
+                  _sc.addIterationScore(_taskInfo._iter, gginfo._likelihood, gginfo._objVal);
+                }
+                int iterDelta = _taskInfo._iter < 8?1:8;
+                _taskInfo._worked += _taskInfo._workPerIteration * iterDelta;
+                update(_taskInfo._workPerIteration * iterDelta, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(objval, 4) + ", ginfo norm = " + MathUtils.roundToNDigits(gnorm, 4), GLM.this._key);
+                LogInfo("LBFGS: objval = " + objval);
+              }
+              ++_taskInfo._iter;
+              // todo update the model here so we can show intermediate results
+              return isRunning(GLM.this._key) && _taskInfo._iter < _parms._max_iterations;
+            }
+          };
+
           double[] beta = _taskInfo._beta;
           GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _parms._obj_reg);
           if(_bc._betaGiven != null && _bc._rho != null)
@@ -1120,105 +1161,56 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
           L_BFGS lbfgs = new L_BFGS().setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon).setMaxIter(_parms._max_iterations);
           assert beta.length == _taskInfo._ginfo._gradient.length;
-          final double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
+          int P = _dinfo.fullN();
           if(l1pen > 0 || _bc.hasBounds()) {
-            if(_parms._family == Family.multinomial) throw H2O.unimpl();
-            // compute ginfo at null beta to get estimate for rho
-            double [] nullBeta = MemoryManager.malloc8d(_taskInfo._beta.length);
-            if(_dinfo._intercept)
-              nullBeta[nullBeta.length-1] = _parms.link(_taskInfo._ymu[0]);
-            double [] g = solver.getGradient(nullBeta)._gradient;
-            ArrayUtils.mult(g,100);
-            double [] rho = MemoryManager.malloc8d(beta.length);
-            // compute rhos
-            for(int i = 0; i < rho.length - 1; ++i)
-              rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[i], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[i]);
-            int ii = rho.length - 1;
-            rho[ii] = ADMM.L1Solver.estimateRho(-g[ii], 0, _bc._betaLB == null?Double.NEGATIVE_INFINITY:_bc._betaLB[ii], _bc._betaUB == null?Double.POSITIVE_INFINITY:_bc._betaUB[ii]);
-            for(int i = 0; i < rho.length-1; ++i)
-              rho[i] = Math.min(1000,rho[i]);
-            final double [] objvals = new double[2];
-            objvals[1] = Double.POSITIVE_INFINITY;
-            L_BFGS.ProgressMonitor pm = new L_BFGS.ProgressMonitor(){
-              public boolean progress(double [] beta, GradientInfo ginfo){
-                double obj = ginfo._objVal;
-                double gnorm = -1;
-                if(ginfo instanceof ProximalGradientInfo) {
-                  ProximalGradientInfo g = (ProximalGradientInfo)ginfo;
-                  if(g._origGinfo instanceof GLMGradientInfo) {
-                    GLMGradientInfo gg = (GLMGradientInfo)g._origGinfo;
-                    obj = gg._objVal;
-                    for(int i = 0; i < beta.length; ++i)
-                      obj += l1pen * (beta[i] >= 0?beta[i]:-beta[i]);
-                    // add l1pen
-                    _sc.addIterationScore(_taskInfo._iter, gg._likelihood, obj);
-                    double [] subgrad = ginfo._gradient.clone();
-                    ADMM.subgrad(l1pen,beta,subgrad);
-                    gnorm = ArrayUtils.l2norm2(subgrad,false);
-                  }
-                }
-                if((++_taskInfo._iter & 3) == 0)
-                  update(_taskInfo._workPerIteration*4, "iteration " + _taskInfo._iter+ ", objective = " + MathUtils.roundToNDigits(obj,4) + ", grad_norm = " + MathUtils.roundToNDigits(gnorm,6), GLM.this._key);
-                return _taskInfo._iter < _parms._max_iterations && Job.isRunning(GLM.this._key);
-              }
-            };
+            double[] nullBeta = MemoryManager.malloc8d(beta.length); // compute ginfo at null beta to get estimate for rho
+            if (_dinfo._intercept) {
+              if (_parms._family == Family.multinomial) {
 
+                for (int c = 0; c < _nclass; c++)
+                  nullBeta[(c + 1) * (P + 1) - 1] = _parms.link(_taskInfo._ymu[c]);
+              } else
+                nullBeta[nullBeta.length - 1] = _parms.link(_taskInfo._ymu[0]);
+            }
+
+            GradientInfo ginfo = solver.getGradient(nullBeta);
+            double [] direction = ArrayUtils.mult(ginfo._gradient.clone(), -1);
+            MoreThuente mt = new MoreThuente();
+            mt.evaluate(solver, ginfo, nullBeta, direction, 1e-12, 1000, 10);
+            double t = mt.step();
+            double[] rho = MemoryManager.malloc8d(beta.length);
+            // compute rhos
+            for (int i = 0; i < rho.length - 1; ++i)
+              rho[i] = ADMM.L1Solver.estimateRho(nullBeta[i] + t*direction[i], l1pen, _bc._betaLB == null ? Double.NEGATIVE_INFINITY : _bc._betaLB[i], _bc._betaUB == null ? Double.POSITIVE_INFINITY : _bc._betaUB[i]);
+            for(int ii = P; ii < rho.length; ii += P + 1)
+              rho[ii] = ADMM.L1Solver.estimateRho(nullBeta[ii] + t*direction[ii], 0, _bc._betaLB == null ? Double.NEGATIVE_INFINITY : _bc._betaLB[ii], _bc._betaUB == null ? Double.POSITIVE_INFINITY : _bc._betaUB[ii]);
+            for (int i = 0; i < rho.length - 1; ++i)
+              rho[i] = Math.min(1000, rho[i]);
+            final double[] objvals = new double[2];
+            objvals[1] = Double.POSITIVE_INFINITY;
             double reltol = L1Solver.DEFAULT_RELTOL;
             double abstol = L1Solver.DEFAULT_ABSTOL;
             double ADMM_gradEps = 1e-2;
-            if(_bc != null)
-              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+            if (_bc != null)
+              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
             else
-              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, _taskInfo._beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), _taskInfo._beta, l1pen);
-          } else {
+              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), beta, l1pen);
+            if (_parms._family == Family.multinomial) {
 
-            if(_parms._family == Family.multinomial) {
-              double [] rho = new double[beta.length];
-              Arrays.fill(rho, _taskInfo._lambdaMax*.01);
-              Result r = lbfgs.solve(solver, beta, solver.getGradient(beta), new L_BFGS.ProgressMonitor() {
-                @Override
-                public boolean progress(double[] beta, GradientInfo ginfo) {
-                  if(ginfo instanceof GLMGradientInfo) {
-                    GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-                    _sc.addIterationScore(_taskInfo._iter, gginfo._likelihood, gginfo._objVal);
-                  }
-                  if ((_taskInfo._iter & 7) == 0) {
-                    _taskInfo._worked += _taskInfo._workPerIteration*8;
-                    update(_taskInfo._workPerIteration*8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(ginfo._objVal,4) + ", ginfo norm = " + MathUtils.roundToNDigits(ArrayUtils.linfnorm(ginfo._gradient, false), 4), GLM.this._key);
-                    LogInfo("LBFGS: objval = " + ginfo._objVal);
-                  }
-                  ++_taskInfo._iter;
-                  // todo update the model here so we can show intermediate results
-                  return isRunning(GLM.this._key);
-                }
-              });
-              int P = _activeData.fullN()+1;
-              for(int i = 0; i < _taskInfo._beta_multinomial.length; ++i)
-                System.arraycopy(r.coefs,i*P,_taskInfo._beta_multinomial[i],0,_taskInfo._beta_multinomial[i].length);
-              break;
-            } else {
-              Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new L_BFGS.ProgressMonitor() {
-                @Override
-                public boolean progress(double[] beta, GradientInfo ginfo) {
-                  if (ginfo instanceof GLMGradientInfo) {
-                    GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-                    _sc.addIterationScore(_taskInfo._iter, gginfo._likelihood, gginfo._objVal);
-                  }
-                  if ((_taskInfo._iter & 7) == 0) {
-                    _taskInfo._worked += _taskInfo._workPerIteration * 8;
-                    update(_taskInfo._workPerIteration * 8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(ginfo._objVal, 4) + ", ginfo norm = " + MathUtils.roundToNDigits(ArrayUtils.l2norm2(ginfo._gradient, false), 4), GLM.this._key);
-                    LogInfo("LBFGS: objval = " + ginfo._objVal);
-                  }
-                  ++_taskInfo._iter;
-                  // todo update the model here so we can show intermediate results
-                  return isRunning(GLM.this._key);
-                }
-              });
-              _taskInfo._beta = r.coefs;
+              for (int i = 0; i < _taskInfo._beta_multinomial.length; ++i)
+                System.arraycopy(beta, i * (P + 1), _taskInfo._beta_multinomial[i], 0, _taskInfo._beta_multinomial[i].length);
             }
+          } else {
+            Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo,pm);
+            if (_parms._family == Family.multinomial) {
+              for (int i = 0; i < _taskInfo._beta_multinomial.length; ++i)
+                System.arraycopy(r.coefs, i * (P+1), _taskInfo._beta_multinomial[i], 0, _taskInfo._beta_multinomial[i].length);
+            } else
+              _taskInfo._beta = r.coefs;
           }
           break;
         }
+
         case COORDINATE_DESCENT_NAIVE: {
 
           int p = _activeData.fullN()+ 1;
