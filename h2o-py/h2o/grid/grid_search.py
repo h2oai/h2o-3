@@ -4,10 +4,23 @@ This module implements grid search class. All grid search things inherit from th
 from .. import H2OConnection, H2OJob, H2OFrame, H2OEstimator
 import h2o
 from metrics import *
+import itertools
 
 class H2OGridSearch(object):
   def __init__(self, model, hyper_params, grid_id=None):
-    #mimic __init__ in ModelBase
+    """Grid Search of a Hyperparameter Space for a Model
+
+     Parameters
+     ----------
+     model : H2O Estimator model
+      The type of model to be explored initalized with optional parameters that will be unchanged across explored models.
+     hyper_params: dict
+      A dictionary of string parameters (keys) and a list of values to be explored by grid search (values).
+     grid_id : str, optional
+       The unique id assigned to the resulting grid object. If none is given, an id will
+       automatically be generated.
+
+ """
     self._id = grid_id
     self.model = model() if model.__class__.__name__ == 'type' else model# H2O Estimator child class
     self.hyper_params = hyper_params
@@ -305,16 +318,21 @@ class H2OGridSearch(object):
 
   def show(self):
     """
-    Print innards of model, without regards to type
+    Print innards of grid, without regard to type
 
     :return: None
     """
-
-    for i, model in enumerate(self.models):
-      print 'Model ' + str(i) + ':', self.get_hyperparams(i)
-      model.show()
-      print '\n\n'
-
+    hyper_combos = itertools.product(*self.hyper_params.values())
+    if not self.models:
+      c_values = [[idx+1, list(val)] for idx, val in enumerate(hyper_combos)]
+      print h2o.H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'],
+                               table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values)
+    else:
+      if self.failed_raw_params:
+        print 'Failed Hyperparameters and Message:'
+        for i in range(len(self.failed_raw_params)):
+          print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
+      print self.sort_by('mse')
   def varimp(self, return_list=False):
     """
     Pretty print the variable importances, or return them in a list
@@ -502,11 +520,12 @@ class H2OGridSearch(object):
 
     if metric[-1] != ')': metric += '()'
     c_values = [list(x) for x in zip(*sorted(eval('self.' + metric + '.items()'), key = lambda(k,v): v))]
-    c_values.insert(1,[[self.get_hyperparams(model_id, display=False)] for model_id in c_values[0]])
+    c_values.insert(1,[self.get_hyperparams(model_id, display=False) for model_id in c_values[0]])
     if not increasing:
       for col in c_values: col.reverse()
-    if metric[-2:] == '()': metric = metric[:-2]
-    return h2o.H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: ' + str(self.hyper_params.keys()), metric], table_header='Grid Search Results', cell_values=zip(*c_values))
+    metric = metric[:-2]
+    return h2o.H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']', metric],
+                              table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=zip(*c_values))
 
 
   def get_hyperparams(self, id, display=True):
@@ -514,14 +533,15 @@ class H2OGridSearch(object):
     Get the hyperparameters of a model explored by grid search.
     :param id: int or str, either the index of desired model or its model id
     :param display: boolean, flag whether to display hyperparameter names
-    :return: str, hyperparameters
+    :return: list, hyperparameters in the order displayed
     """
-    s = ''
     idx = id if isinstance(id, int) else self.model_ids.index(id)
     model = self[idx]
-    for h in self.hyper_params: s += str(model.params[h]['actual']) + ', '
-    if display: print 'Hyperparameters:', self.hyper_params.keys()
-    return s[:-2]
+    res = [model.params[h]['actual'][0] if isinstance(model.params[h]['actual'],list)
+           else model.params[h]['actual']
+           for h in self.hyper_params]
+    if display: print 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'
+    return res
 
 
   @staticmethod

@@ -115,7 +115,7 @@ class ExprNode:
     self._clear_impl()
     # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
     # temps... to help debug GC issues.
-    gc.collect()
+    #gc.collect()
     return self
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
