@@ -124,8 +124,7 @@ function(zipfile, exdir,header=T) {
 # returns the directory of the sandbox for the given test.
 sandbox<-
 function(create=FALSE) {
-  test_name <- R.utils::commandArgs(asValues=TRUE)$"f"
-  Rsandbox <- paste("./Rsandbox_", basename(test_name), sep = "")
+  Rsandbox <- paste0("./Rsandbox_", basename(test.name()))
   if (create) { dir.create(Rsandbox, showWarnings=FALSE) }
   if (dir.exists(Rsandbox)) { return(normalizePath(Rsandbox))
   } else { Log.err(paste0("Sandbox directory: ",Rsandbox," does not exists")) }
@@ -374,5 +373,30 @@ function(testDesc, test) {
     conn@mutable$session_id <- .init.session_id()
     tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
     PASS()
+}
+
+setupRandomSeed<-
+function(seed = NULL, master_seed = FALSE) {
+    possible_seed_path <- paste("./Rsandbox_", test.name(), "/seed", sep = "")
+
+    if (!is.null(seed)) {
+        SEED <<- seed
+        set.seed(seed)
+        write.table(seed, possible_seed_path)
+        cat("\n\n\n", paste("[INFO]: Using master SEED: ", seed), "\n\n\n\n")
+    } else if (file.exists(possible_seed_path)) {
+        fileseed <- read.table(possible_seed_path)[[1]]
+        SEED <<- fileseed
+        set.seed(fileseed)
+        cat("\n\n\n", paste("[INFO]: Reusing seed for this test from test's Rsandbox", fileseed), "\n\n\n\n")
+    } else {
+        maxInt <- .Machine$integer.max
+        seed <- sample(maxInt, 1)
+        SEED <<- seed
+        set.seed(seed)
+        write.table(seed, possible_seed_path)
+        cat("\n\n\n", paste("[INFO]: Generating new random SEED: ", seed), "\n\n\n\n")
+    }
+    Log.info(paste("USING SEED: ", SEED))
 }
 
