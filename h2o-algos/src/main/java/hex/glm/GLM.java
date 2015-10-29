@@ -637,7 +637,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             beta[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);
             beta[i][_dinfo.fullN()] = Math.log(_yMu[i]); // log is link?
           }
-          _gtNullMultinomial = new GLMMultinomialGradientTask(_dinfo, 0, _yMu, beta, 1.0 / _parms._obj_reg, true, InitTsk.this).asyncExec(_dinfo._adaptedFrame);
+          _gtNullMultinomial = new GLMMultinomialGradientTask(_dinfo, 0, _yMu, beta, _parms._obj_reg, true, InitTsk.this).asyncExec(_dinfo._adaptedFrame);
           if (_validDinfo != null) {
             InitTsk.this.addToPendingCount(1);
             _gtNullTestMultinomial = new GLMMultinomialGradientTask(_validDinfo, 0, _yMu, beta, 1.0, true, InitTsk.this).asyncExec(_validDinfo._adaptedFrame);

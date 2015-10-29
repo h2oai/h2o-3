@@ -469,9 +469,9 @@ public abstract class GLMTask  {
         _nobs++;
         processRow(row, _beta, etas, etaOffsets,  exps);
       }
-      int off = _dinfo.numStart();
-      for(int c = 0; c < _beta.length; ++c) {
-        if (rows._sparse && _dinfo._normSub != null) { // adjust for centering
+      if (rows._sparse && _dinfo._normSub != null) { // adjust for centering
+        int off = _dinfo.numStart();
+        for(int c = 0; c < _beta.length; ++c) {
           double val = _gradient[(c+1)*P-1];
           for (int i = 0; i < _dinfo._nums; ++i)
             _gradient[c * P + off + i] -= val * _dinfo._normSub[i] * _dinfo._normMul[i];
