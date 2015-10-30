@@ -8,7 +8,7 @@ from group_by import GroupBy
 
 
 # TODO: Automatically convert column names into Frame properties!
-class H2OFrame:
+class H2OFrame(object):
   def __init__(self, python_object=None):
     self._ex = ExprNode()
     self._ex._children=None
@@ -144,11 +144,11 @@ class H2OFrame:
 
   @frame_id.setter
   def frame_id(self, value):
-    if self._ex._id is None:
+    if self._ex._cache._id is None:
       h2o.assign(self, value)
     else:
       oldname = self.frame_id
-      self._ex._id = value
+      self._ex._cache._id = value
       h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
 
   @staticmethod
@@ -273,7 +273,9 @@ class H2OFrame:
       >>> l = H2OFrame(l)
       >>> l
     """
-    return H2OFrame()._upload_python_object(python_obj, destination_frame, header, separator, column_names, column_types, na_strings)
+    fr = H2OFrame()
+    fr._upload_python_object(python_obj, destination_frame, header, separator, column_names, column_types, na_strings)
+    return fr
 
   def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None, na_strings=None):
     setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
@@ -545,7 +547,7 @@ class H2OFrame:
       A dictionary of column_name:column_levels pairs.
     """
     # TODO
-    lol = h2o.as_list(H2OFrame._expr(expr=ExprNode("levels", self)))
+    lol = H2OFrame._expr(expr=ExprNode("levels", self)).as_data_frame(False)
     for l in lol: l.pop(0)  # Remove column headers
     return lol
 
@@ -557,7 +559,7 @@ class H2OFrame:
       A dictionary of column_name:number_levels pairs.
     """
     levels = self.levels()
-    return {k:len(levels[k]) for k in levels.keys()}
+    return [len(l) for l in levels]
 
   def set_level(self, level):
     """A method to set all column values to one of the levels.
@@ -714,6 +716,8 @@ class H2OFrame:
     -------
       True if the column is numeric, otherwise return False
     """
+    if self._ex._cache.types_valid():
+      return str(self._ex._cache.types.values()[0]) in ["numeric", "int", "real"]
     return bool(ExprNode("is.numeric",self)._eager_scalar())
 
   def isstring(self):
@@ -893,6 +897,7 @@ class H2OFrame:
     flatten=False
     if isinstance(item, (basestring,list,int,slice)):
       new_ncols,new_names,new_types = self._compute_ncol_update(item)
+      new_nrows = self.nrow
       fr = H2OFrame._expr(expr=ExprNode("cols_py",self,item))
     elif isinstance(item, (ExprNode, H2OFrame)):
       new_ncols = self.ncol
@@ -983,8 +988,10 @@ class H2OFrame:
         end = self.nrow+end
       if item.start is not None or item.stop is not None:
         new_nrows = end - start
+    elif isinstance(item, H2OFrame):
+      new_nrows=-1
     else:
-      new_nrows = 1
+      new_nrows=1
     return new_nrows
 
   def __setitem__(self, b, c):
@@ -1083,7 +1090,7 @@ class H2OFrame:
     self._ex._cache.names = old_cache.names[:i] + old_cache.names[i+1:]
     self._ex._cache.types = {name:old_cache.types[name] for name in self._ex._cache.names}
     col._ex._cache.ncols = 1
-    col._ex._cache.names = [old_cache[i]]
+    col._ex._cache.names = [old_cache.names[i]]
     return col
 
   def quantile(self, prob=None, combine_method="interpolate"):
@@ -1206,8 +1213,8 @@ class H2OFrame:
         splits.append(tmp_slice)
       else:
         destination_frame_id = destination_frames[i]
-        tmp_slice2 = h2o.assign(tmp_slice, destination_frame_id)
-        splits.append(tmp_slice2)
+        tmp_slice.frame_id = destination_frame_id
+        splits.append(tmp_slice)
 
       i += 1
 
@@ -1246,7 +1253,7 @@ class H2OFrame:
       For even samples and method="median", how to combine quantiles.
     by : list
       Columns to group-by for computing imputation value per groups of columns.
-    inplace : bool
+    inplace : bool, default=False
       True if the imputation should happen in place.
 
     Returns
@@ -1257,7 +1264,9 @@ class H2OFrame:
     if isinstance(by, basestring):     by     = self.names.index(by)
     fr = H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
     if inplace:
-      raise ValueError("unimpl")
+      self._ex = fr._ex
+      self._frame()
+      return self
     return fr
     # Note: if the backend does in-place imputation on demand, then we must be
     # eager here because in-place implies side effects which need to be ordered
@@ -1339,7 +1348,7 @@ class H2OFrame:
     -------
       The sum of all frame entries
     """
-    return H2OFrame._expr(expr=ExprNode("sumNA" if na_rm else "sum", self))
+    return ExprNode("sumNA" if na_rm else "sum", self)._eager_scalar()
 
   def mean(self,na_rm=False):
     """Compute the mean.
@@ -1391,15 +1400,20 @@ class H2OFrame:
     if self.nrow==1 or (self.ncol==1 and y.ncol==1): return ExprNode("var",self,y,use)._eager_scalar()
     return H2OFrame._expr(expr=ExprNode("var",self,y,use))._frame()
 
-  def sd(self):
+  def sd(self, na_rm=False):
     """Compute the standard deviation.
+
+    Parameters
+    ----------
+    na_rm : bool, default=False
+      Remove NAs from the computation.
 
     Returns
     -------
       A list containing the standard deviation for each column (NaN for non-numeric
       columns).
     """
-    return ExprNode("sd", self)._eager_scalar()
+    return ExprNode("sd", self, na_rm)._eager_scalar()
 
   def asfactor(self):
     """
@@ -1420,7 +1434,7 @@ class H2OFrame:
       False.
     """
     if self._ex._cache.types_valid():
-      return self._ex._cache.types.values()[0] is "enum"
+      return str(self._ex._cache.types.values()[0]) == "enum"
     return bool(ExprNode("is.factor", self)._eager_scalar())
 
   def anyfactor(self):
@@ -1473,6 +1487,7 @@ class H2OFrame:
     fr = H2OFrame._expr(expr=ExprNode("countmatches", self, pattern))
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncols = self.ncol
+    return fr
 
   def trim(self):
     """Trim white space on the left and right of strings in a single-column H2OFrame.
@@ -1484,6 +1499,7 @@ class H2OFrame:
     fr = H2OFrame._expr(expr=ExprNode("trim", self))
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncol = self.ncol
+    return fr
 
   def nchar(self):
     """Count the number of characters in each string of single-column H2OFrame.
@@ -1531,7 +1547,7 @@ class H2OFrame:
     total = frame["counts"].sum(True)
     densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow)]
     densities.insert(0,0)
-    densities_frame = H2OFrame(zip(*densities))
+    densities_frame = H2OFrame(densities)
     densities_frame.set_names(["density"])
     frame = frame.cbind(densities_frame)
 
@@ -1655,6 +1671,7 @@ class H2OFrame:
     fr = H2OFrame._expr(expr=ExprNode("tolower", self))
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncols = self.ncol
+    return fr
 
   def rep_len(self, length_out):
     """Replicates the values in `data` in the H2O backend

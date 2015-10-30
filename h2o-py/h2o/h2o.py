@@ -315,38 +315,37 @@ def _quoted(key):
 def assign(data,xid):
   if data.frame_id == xid: ValueError("Desination key must differ input frame")
   data._ex = ExprNode("tmp=",xid,data)._eval_driver(False)
-  data._ex._id = xid
+  data._ex._cache._id = xid
   data._ex._children = None
   return data
 
 
 def get_future_model(future_model):
-  """
-  Waits for the future model to finish building, and then returns the model.
+  """Waits for the future model to finish building, and then returns the model.
 
   Parameters
   ----------
-
   future_model : H2OModelFuture
     an H2OModelFuture object
 
-  :return: a resolved model (i.e. an H2OBinomialModel, H2ORegressionModel, H2OMultinomialModel, ...)
+  Returns
+  -------
+    H2OEstimator
   """
   return _resolve_model(future_model)
 
 
 def get_model(model_id):
-  """
-  Return the specified model
+  """Return the specified model
 
   Parameters
   ----------
-
   model_id : str
     The model identification in h2o
 
-  :return: H2OModel
-
+  Returns
+  -------
+    H2OEstimator
   """
   m = H2OEstimator()
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
@@ -357,7 +356,9 @@ def get_model(model_id):
 def get_frame(frame_id):
   """Obtain a handle to the frame in H2O with the frame_id key.
 
-  :return: An H2OFrame
+  Returns
+  -------
+    H2OFrame
   """
   return H2OFrame.get_frame(frame_id)
 
@@ -366,7 +367,9 @@ def ou():
   """
   Where is my baguette!?
 
-  :return: the name of the baguette. oh uhr uhr huhr
+  Returns
+  -------
+    The name of the baguette. oh uhr uhr huhr
   """
   from inspect import stack
 
@@ -374,27 +377,19 @@ def ou():
 
 
 def no_progress():
-  """
-  Disable the progress bar from flushing to stdout. The completed progress bar is printed
-  when a job is complete so as to demarcate a log file.
-
-  :return: None
+  """Disable the progress bar from flushing to stdout. The completed progress bar is
+  printed when a job is complete so as to demarcate a log file.
   """
   H2OJob.__PROGRESS_BAR__ = False
 
 
 def show_progress():
-  """
-  Enable the progress bar. (Progress bar is enabled by default).
-
-  :return: None
-  """
+  """Enable the progress bar. (Progress bar is enabled by default)."""
   H2OJob.__PROGRESS_BAR__ = True
 
 
 def log_and_echo(message):
-  """
-  Log a message on the server-side logs
+  """Log a message on the server-side logs
   This is helpful when running several pieces of work one after the other on a single H2O
   cluster and you want to make a notation in the H2O server side log where one piece of
   work ends and the next piece of work begins.
@@ -403,11 +398,8 @@ def log_and_echo(message):
 
   Parameters
   ----------
-
   message : str
     A character string with the message to write to the log.
-
-  :return: None
   """
   if message is None: message = ""
   H2OConnection.post_json("LogAndEcho", message=message)
@@ -430,75 +422,72 @@ def remove(x):
 
 
 def remove_all():
-  """
-  Remove all objects from H2O.
-
-  :return None
-  """
+  """Remove all objects from H2O."""
   H2OConnection.delete("DKV")
+
 
 def rapids(expr):
   """Execute a Rapids expression.
 
   Parameters
   ----------
-
   expr : str
     The rapids expression (ascii string).
 
-  :return: The JSON response of the Rapids execution
+  Returns
+  -------
+    The JSON response (as a python dictionary) of the Rapids execution
   """
   return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
 
 
 def ls():
-  """
-  List Keys on an H2O Cluster
+  """List Keys on an H2O Cluster
 
-  :return: Returns a list of keys in the current H2O instance
+  Returns
+  -------
+    A list of keys in the current H2O instance.
   """
   return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=False)
 
 
 def frame(frame_id, exclude=""):
-  """
-  Retrieve metadata for a id that points to a Frame.
+  """Retrieve metadata for a id that points to a Frame.
 
   Parameters
   ----------
-
   frame_id : str
     A pointer to a Frame in H2O.
 
-  :return: Meta information on the frame
+  Returns
+  -------
+    Python dict containing the frame meta-information
   """
   return H2OConnection.get_json("Frames/" + urllib.quote(frame_id + exclude))
 
 
 def frames():
-  """
-  Retrieve all the Frames.
-  :return: Meta information on the frames
+  """Retrieve all the Frames.
+
+  Returns
+  -------
+    Meta information on the frames
   """
   return H2OConnection.get_json("Frames")
 
 
 def download_pojo(model,path="", get_jar=True):
-  """
-  Download the POJO for this model to the directory specified by path (no trailing slash!).
-  If path is "", then dump to screen.
+  """Download the POJO for this model to the directory specified by path (no trailing
+  slash!). If path is "", then dump to screen.
 
   Parameters
   ----------
-
   model : H2OModel
     Retrieve this model's scoring POJO.
   path : str
     An absolute path to the directory where POJO should be saved.
   get_jar : bool
-    Retreive the h2o genmodel jar also.
-
-  :return: None
+    Retrieve the h2o-genmodel.jar also.
   """
   java = H2OConnection.get( "Models.java/"+model._id )
   file_path = path + "/" + model._id + ".java"
@@ -515,40 +504,36 @@ def download_pojo(model,path="", get_jar=True):
 
 
 def download_csv(data, filename):
-  """
-  Download an H2O data set to a CSV file on the local disk.
+  """Download an H2O data set to a CSV file on the local disk.
 
-  Warning: Files located on the H2O server may be very large! Make sure you have enough hard drive space to accommodate the entire file.
+  Warning: Files located on the H2O server may be very large! Make sure you have enough
+  hard drive space to accommodate the entire file.
 
   Parameters
   ----------
-
   data : H2OFrame
     An H2OFrame object to be downloaded.
   filename : str
     A string indicating the name that the CSV file should be should be saved to.
-
-  :return: None
   """
-  data._eager()
   if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
   url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data.frame_id)
   with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
 
 
 def download_all_logs(dirname=".",filename=None):
-  """
-  Download H2O Log Files to Disk
+  """Download H2O Log Files to Disk
 
   Parameters
   ----------
+  dirname : str, optional
+    A character string indicating the directory that the log file should be saved in.
+  filename : str, optional
+    A string indicating the name that the CSV file should be
 
-  dirname : str
-    (Optional) A character string indicating the directory that the log file should be saved in.
-  filename : str
-    (Optional) A string indicating the name that the CSV file should be
-
-  :return: path of logs written (as a string)
+  Returns
+  -------
+    Path of logs written.
   """
   url = 'http://{}:{}/Logs/download'.format(H2OConnection.ip(),H2OConnection.port())
   response = urllib2.urlopen(url)
@@ -1745,8 +1730,7 @@ def set_timezone(tz):
 
   :return: None
   """
-  rapids(ExprNode._collapse_sb(ExprNode("setTimeZone", tz)._eager()))
-
+  ExprNode("setTimeZone", tz)._eager_scalar()
 
 def get_timezone():
   """
@@ -1754,7 +1738,7 @@ def get_timezone():
 
   :return: the time zone (string)
   """
-  return H2OFrame._expr(expr=ExprNode("getTimeZone"))._scalar()
+  return ExprNode("getTimeZone")._eager_scalar()
 
 
 def list_timezones():

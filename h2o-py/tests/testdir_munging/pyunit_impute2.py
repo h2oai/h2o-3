@@ -18,7 +18,7 @@ def impute2():
     for inpl in inplace:
         for method in methods:
             for combine_method in combine_methods:
-              prostate.impute("DPROS", method = method, combine_method = combine_method, inplace = inpl)
+              prostate.impute("DPROS", method=method, combine_method=combine_method, inplace=inpl)
 
 #    air = h2o.upload_file(pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
 #    for inpl in inplace:
