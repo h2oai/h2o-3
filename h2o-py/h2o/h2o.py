@@ -708,8 +708,9 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
                  momentum_start=None,momentum_ramp=None,momentum_stable=None,nesterov_accelerated_gradient=None,
                  input_dropout_ratio=None,hidden_dropout_ratios=None,l1=None,l2=None,max_w2=None,initial_weight_distribution=None,
                  initial_weight_scale=None,loss=None,distribution=None,tweedie_power=None,score_interval=None,score_training_samples=None,
-                 score_validation_samples=None,score_duty_cycle=None,classification_stop=None,regression_stop=None,quiet_mode=None,
-                 max_confusion_matrix_size=None,max_hit_ratio_k=None,balance_classes=None,class_sampling_factors=None,
+                 score_validation_samples=None,score_duty_cycle=None,classification_stop=None,regression_stop=None,
+                 stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
+                 quiet_mode=None, max_confusion_matrix_size=None,max_hit_ratio_k=None,balance_classes=None,class_sampling_factors=None,
                  max_after_balance_size=None,score_validation_sampling=None,diagnostics=None,variable_importances=None,
                  fast_mode=None,ignore_const_cols=None,force_load_balance=None,replicate_training_data=None,single_node_mode=None,
                  shuffle_training_data=None,sparse=None,col_major=None,average_activation=None,sparsity_beta=None,
@@ -808,6 +809,16 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
     Stopping criterion for classification error fraction on training data (-1 to disable)
   regression_stop : float
     Stopping criterion for regression error (MSE) on training data (-1 to disable)
+  stopping_rounds : int
+    Early stopping based on convergence of stopping_metric.
+    Stop if simple moving average of length k of the metric does not improve
+    (by stopping_tolerance) for k=stopping_rounds scoring events.
+    Can only trigger after at least 2k scoring events. Use 0 to disable.
+  stopping_metric : str
+    Metric to use for convergence checking, only for _stopping_rounds > 0
+    Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+  stopping_tolerance : float
+    Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
   quiet_mode : bool
     Enable quiet mode for less output to standard output
   max_confusion_matrix_size : int
@@ -970,6 +981,16 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
       Stopping criterion for classification error fraction on training data (-1 to disable)
     regression_stop : float
       Stopping criterion for regression error (MSE) on training data (-1 to disable)
+    stopping_rounds : int
+      Early stopping based on convergence of stopping_metric.
+      Stop if simple moving average of length k of the metric does not improve
+      (by stopping_tolerance) for k=stopping_rounds scoring events.
+      Can only trigger after at least 2k scoring events. Use 0 to disable.
+    stopping_metric : str
+      Metric to use for convergence checking, only for _stopping_rounds > 0
+      Can be one of "AUTO", "MSE".
+    stopping_tolerance : float
+      Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
     quiet_mode : bool
       Enable quiet mode for less output to standard output
     max_confusion_matrix_size : int
@@ -1032,7 +1053,8 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
         nbins_top_level=None,nbins_cats=None,validation_frame=None,
         balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
-        score_each_iteration=None,offset_column=None,weights_column=None,do_future=None,checkpoint=None):
+        score_each_iteration=None,offset_column=None,weights_column=None,do_future=None,checkpoint=None,
+        stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
   """
   Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
   The default distribution function will guess the model type based on the response column typerun properly the
@@ -1095,6 +1117,16 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
     Specify the offset column.
   weights_column : H2OFrame
     Specify the weights column.
+  stopping_rounds : int
+    Early stopping based on convergence of stopping_metric.
+    Stop if simple moving average of length k of the metric does not improve
+    (by stopping_tolerance) for k=stopping_rounds scoring events.
+    Can only trigger after at least 2k scoring events. Use 0 to disable.
+  stopping_metric : str
+    Metric to use for convergence checking, only for _stopping_rounds > 0
+    Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+  stopping_tolerance : float
+    Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
 
   :return: A new classifier or regression model.
   """
@@ -1271,7 +1303,8 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
                   build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_top_level=None,
                   nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
                   max_after_balance_size=None,seed=None,offset_column=None,weights_column=None,nfolds=None,
-                  fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,checkpoint=None):
+                  fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,checkpoint=None,
+                  stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
   """
   Build a Big Data Random Forest Model
   Builds a Random Forest Model on an H2OFrame
@@ -1329,6 +1362,16 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
     Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
   keep_cross_validation_predictions : bool
     Whether to keep the predictions of the cross-validation models
+  stopping_rounds : int
+    Early stopping based on convergence of stopping_metric.
+    Stop if simple moving average of length k of the metric does not improve
+    (by stopping_tolerance) for k=stopping_rounds scoring events.
+    Can only trigger after at least 2k scoring events. Use 0 to disable.
+  stopping_metric : str
+    Metric to use for convergence checking, only for _stopping_rounds > 0
+    Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+  stopping_tolerance : float
+    Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
 
   :return: A new classifier or regression model.
   """
