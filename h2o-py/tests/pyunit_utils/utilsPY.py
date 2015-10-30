@@ -358,3 +358,6 @@ def expect_model_param(models, attribute_name, expected_values):
                                                      "{1}".format(expected_values_len, actual_values_len)
     diff = set(actual_values) - set(expected_values)
     assert len(diff) == 0, "Difference between actual and expected values: {0}".format(diff)
+
+def temp_ctr():  return H2OFrame.temp_ctr()
+def rest_ctr():  return h2o.H2OConnection.rest_ctr()

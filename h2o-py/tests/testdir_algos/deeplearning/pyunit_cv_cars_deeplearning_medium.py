@@ -46,7 +46,7 @@ def cv_cars_dl():
 
   # 3. folds_column
   num_folds = random.randint(2,5)
-  fold_assignments = h2o.H2OFrame.fromPython([[random.randint(0,num_folds-1) for f in range(cars.nrow)]])
+  fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1) for f in range(cars.nrow)]])
   fold_assignments.set_names(["fold_assignments"])
   cars = cars.cbind(fold_assignments)
 

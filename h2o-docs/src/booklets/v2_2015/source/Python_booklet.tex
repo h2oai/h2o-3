@@ -665,29 +665,86 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 
 \subsubsection{Imputing Missing Data}
 
-\subsection{Model outputs}
-\subsection{Model Evaluation}
-regression, classification
-\subsubsection{Validation}
-Cover validation, n-fold cross validation, hold-out performance
-\subsubsection{Grid Search}
+\subsubsection{Running Models}
+This section describes how to run the following model types:
 
-\subsection{Making and Saving Predictions}
-\subsubsection{Saving Models}
-\subsubsection{Loading Models}
-\subsubsection{Creating Predictions}
-Differences in regression, bionomial, and multinomial predictions
-\subsubsection{Saving Predictions}
+\begin{itemize}
+\item Gradient Boosted Models (GBM)
+\item Generalized Linear Models (GLM)
+\item K-Means
+\item Principal Components Analysis (PCA)
 
+\end{itemize}
+as well as how to generate predictions.
 
-\section{Transitioning to Production}
-POJO, Scoring, Fitting into Python pipeline using Py4J
+\subsubsection{Gradient Boosting Models (GBM)}
+To generate gradient boosting models for generating forward-learning ensembles,
+use an {\texttt{H2OGradientBoostingEstimator}}.  The construction of the estimator
+defines the parameters of the estimator, and the call to
+{\texttt{H2OGradientBoostingEstimator.train}} will train the estimator on
+the specified data.  This pattern is common for each of the H2O algorithms.
 
+\lstinputlisting[style=python, firstline=3, lastline=99]{python/ipython_machinelearning_output.txt}
 
-\section{H2O Python in Enterprise Environments}
-Hadoop, Spark
+To generate a classification model that uses labels, use
+{\texttt{distribution="multinomial"}}:
 
-\section{Where to go from here}
+\lstinputlisting[style=python, firstline=101, lastline=162]{python/ipython_machinelearning_output.txt}
+
+\subsubsection{Generalized Linear Models (GLM)}
+Generalized linear models (GLM) are some of the most commonly-used
+models for many types of data analysis use cases. While some data
+can be analyzed using general linear models, general linear models
+may not be as accurate if the variables are more complex.
+For example, if the dependent variable has a non-continuous
+distribution or if the effect of the predictors is not linear,
+generalized linear models will produce more accurate results than
+general linear models.
+
+Generalized Linear Models (GLM) estimate regression models for
+outcomes following exponential distributions in general. In
+addition to the Gaussian (i.e. normal) distribution, these include
+Poisson, binomial, gamma and Tweedie distributions. Each serves
+a different purpose, and depending on distribution and link
+function choice, it can be used either for prediction or
+classification.
+
+H2O's GLM algorithm fits the generalized linear model with
+elastic net penalties. The model fitting computation is distributed,
+extremely fast,and scales extremely well for models with a limited
+number ($\sim$ low thousands) of predictors with non-zero
+coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to glmnet. It can compute Gaussian (linear), logistic, Poisson, and gamma regression models.
+To generate a generalized linear model for developing
+linear models for exponential distributions, use
+{\texttt{H2OGeneralizedLinearEstimator}}. You can apply
+regularization to the model by adjusting the lambda and alpha
+parameters.
+
+\lstinputlisting[style=python, firstline=164, lastline=292]{python/ipython_machinelearning_output.txt}
+
+\subsubsection{K-Means}
+To generate a K-Means model for data characterization, use
+{\texttt{h2o.kmeans()}}. This algorithm does not rely on a
+dependent variable.
+
+\lstinputlisting[style=python, firstline=294, lastline=335]{python/ipython_machinelearning_output.txt}
+
+\subsubsection{Principal Components Analysis (PCA)}
+To map a set of variables onto a subspace using linear
+transformations, use {\texttt{h2o.transforms.decomposition.H2OPCA}}.
+This is the first step in Principal Components Regression.
+\lstinputlisting[style=python, firstline=337, lastline=379]{python/ipython_machinelearning_output.txt}
+
+\subsection{Grid Search}
+\lstinputlisting[style=python, firstline=381, lastline=419]{python/ipython_machinelearning_output.txt}
+
+\subsection{Integration with scikit-learn}
+\subsubsection{Pipelines}
+
+\lstinputlisting[style=python, firstline=421, lastline=509]{python/ipython_machinelearning_output.txt}
+
+\subsubsection{Randomized Grid Search}
+\lstinputlisting[style=python, firstline=511, lastline=616]{python/ipython_machinelearning_output.txt}
 
 
 \newpage

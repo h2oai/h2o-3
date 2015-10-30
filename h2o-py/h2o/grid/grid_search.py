@@ -6,9 +6,10 @@ import h2o
 from metrics import *
 import itertools
 
+
 class H2OGridSearch(object):
   def __init__(self, model, hyper_params, grid_id=None):
-    """Grid Search of a Hyperparameter Space for a Model
+    """Grid Search of a Hyper-Parameter Space for a Model
 
      Parameters
      ----------
@@ -20,9 +21,9 @@ class H2OGridSearch(object):
        The unique id assigned to the resulting grid object. If none is given, an id will
        automatically be generated.
 
- """
+    """
     self._id = grid_id
-    self.model = model() if model.__class__.__name__ == 'type' else model# H2O Estimator child class
+    self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
     self.hyper_params = hyper_params
     self._grid_json = None
     self.models = None # list of H2O Estimator instances
@@ -153,8 +154,8 @@ class H2OGridSearch(object):
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
     kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
-    algo = self.model._compute_algo() #unique to grid search
-    kwargs["_rest_version"] = 99 #unique to grid search
+    algo = self.model._compute_algo()  #unique to grid search
+    kwargs["_rest_version"] = 99  #unique to grid search
 
     grid = H2OJob(H2OConnection.post_json("Grid/"+algo, **kwargs), job_type=(algo+" Grid Build"))
 
@@ -165,7 +166,6 @@ class H2OGridSearch(object):
     grid.poll()
     if '_rest_version' in kwargs.keys(): grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
     else:                                grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
-
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
     #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
@@ -333,6 +333,7 @@ class H2OGridSearch(object):
         for i in range(len(self.failed_raw_params)):
           print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
       print self.sort_by('mse')
+
   def varimp(self, return_list=False):
     """
     Pretty print the variable importances, or return them in a list

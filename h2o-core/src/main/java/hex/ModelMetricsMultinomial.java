@@ -104,6 +104,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _hits = new double[_K];
     }
 
+    public transient double [] _priorDistribution;
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
     @Override public double[] perRow(double ds[], float[] yact, Model m) { return perRow(ds, yact, 1, 0, m); }
@@ -126,11 +127,13 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _cm[iact][(int)ds[0]]++; // actual v. predicted
 
       // Compute hit ratio
-      if( _K > 0 && iact < ds.length-1) updateHits(w,iact,ds,_hits,m._output._priorClassDist);
+      if( _K > 0 && iact < ds.length-1)
+        updateHits(w,iact,ds,_hits,m != null?m._output._priorClassDist:_priorDistribution);
 
       // Compute log loss
       final double eps = 1e-15;
       _logloss -= w*Math.log(Math.max(eps, 1-err));
+
 
       return ds;                // Flow coding
     }

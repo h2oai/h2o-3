@@ -1,6 +1,5 @@
 package hex.optimization;
 
-import hex.optimization.L_BFGS.GradientInfo;
 import water.H2O;
 import water.MemoryManager;
 import water.util.ArrayUtils;
@@ -103,7 +102,7 @@ public class ADMM {
       double [] kappa = MemoryManager.malloc8d(rho.length);
       if(l1pen > 0)
         for(int i = 0; i < N-1; ++i)
-          kappa[i] = l1pen/rho[i];
+          kappa[i] = rho[i] != 0?l1pen/rho[i]:0;
       int i;
       double orlx = 1.0; // over-relaxation
       double reltol = RELTOL;
@@ -180,7 +179,7 @@ public class ADMM {
     }
 
     /**
-     * Estimate optimal rho based on l1 penalty and (estimate of) soltuion x without the l1penalty
+     * Estimate optimal rho based on l1 penalty and (estimate of) solution x without the l1penalty
      * @param x
      * @param l1pen
      * @return
@@ -227,9 +226,9 @@ public class ADMM {
   public static void subgrad(final double lambda, final double [] beta, final double [] grad){
     if(beta == null)return;
     for(int i = 0; i < grad.length-1; ++i) {// add l2 reg. term to the gradient
-      if(beta[i] < 0) grad[i] = shrinkage(grad[i]-lambda,lambda*1e-3);
-      else if(beta[i] > 0) grad[i] = shrinkage(grad[i] + lambda,lambda*1e-3);
-      else grad[i] = shrinkage(grad[i], 1.001*lambda);
+      if(beta[i] < 0) grad[i] = shrinkage(grad[i]-lambda,lambda*1e-4);
+      else if(beta[i] > 0) grad[i] = shrinkage(grad[i] + lambda,lambda*1e-4);
+      else grad[i] = shrinkage(grad[i], lambda);
     }
   }
 }
