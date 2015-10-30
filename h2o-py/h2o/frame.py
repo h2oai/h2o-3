@@ -1048,13 +1048,15 @@ class H2OFrame(object):
     if colname is None:
       self._ex = ExprNode(":=",self,src,col_expr,row_expr)
       self._ex._cache.fill_from(old_cache)
-      if src._ex._cache.types_valid(): self._ex._cache._types.update(src._ex._cache.types)
+      if src._ex._cache.types_valid():
+        if self._ex._cache._types is not None:
+          self._ex._cache._types.update(src._ex._cache.types)
       else:                            self._ex._cache.types = None
     else:
       self._ex = ExprNode("append",self,src,colname)
       self._ex._cache.fill_from(old_cache)
       self._ex._cache.names = self.names + [colname]
-      if self._ex._cache.types_valid(): self._ex._cache.types = None
+      if not self._ex._cache.types_valid(): self._ex._cache.types = None
       else:                             self._ex._cache._types[colname] = src._ex._cache.types.values()[0]
     self._frame()  # setitem is eager
 
