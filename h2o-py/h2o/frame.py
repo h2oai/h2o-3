@@ -342,6 +342,7 @@ class H2OFrame:
     If called from IPython, displays an html'ized result
     Else prints a tabulate'd result
     """
+    if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
     if h2o.H2ODisplay._in_ipy():
       import IPython.display
       if use_pandas and h2o.can_use_pandas():
@@ -356,6 +357,7 @@ class H2OFrame:
 
   def summary(self):
     """Summary: show(), plus includes min/mean/max/sigma and other rollup data"""
+    if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
     if h2o.H2ODisplay._in_ipy():
       import IPython.display
       IPython.display.display_html(self._ex._cache._tabulate("html",True),raw=True)
@@ -1017,9 +1019,15 @@ class H2OFrame:
     src = float("nan") if c is None else c
 
     old_cache = self._ex._cache
-    if colname is None: self._ex = ExprNode(":=",self,src,col_expr,row_expr)
-    else:               self._ex = ExprNode("append",self,src,colname)
-    self._ex._cache.fill_from(old_cache)
+    if colname is None:
+      self._ex = ExprNode(":=",self,src,col_expr,row_expr)
+      self._frame()._ex._cache.fill_from(old_cache)
+      self._ex._cache.types = None  # invalidate
+    else:
+      self._ex = ExprNode("append",self,src,colname)
+      self._frame()._ex._cache.fill_from(old_cache)
+      self._ex._cache.names = self.names + [colname]
+      self._ex._cache.types = None  # invalidate
 
   def __int__(self):
     if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
@@ -1392,7 +1400,9 @@ class H2OFrame:
     -------
       H2Oframe of one column converted to a factor.
     """
-    return H2OFrame._expr(expr=ExprNode("as.factor",self), cache=self._ex._cache)
+    fr = H2OFrame._expr(expr=ExprNode("as.factor",self), cache=self._ex._cache)
+    fr._ex._cache.types = {fr._ex._cache.types.keys()[0]:"enum"}
+    return fr
 
   def isfactor(self):
     #TODO: list for fr.ncol > 1 ?
@@ -1402,6 +1412,8 @@ class H2OFrame:
       True if the column is categorical; otherwise False. For String columns, the result is
       False.
     """
+    if self._ex._cache.types_valid():
+      return self._ex._cache.types.values()[0] is "enum"
     return bool(ExprNode("is.factor", self)._eager_scalar())
 
   def anyfactor(self):

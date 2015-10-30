@@ -133,6 +133,8 @@ class ExprNode:
     sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0
     return sb
 
+  def __repr__(self):
+    return "Expr(op=%r,id=%r,ast=%r,is_scalar=%r)" % (self._op,self._cache._id,self._children,self._cache.is_scalar())
 
 class H2OCache(object):
   def __init__(self):
@@ -172,6 +174,13 @@ class H2OCache(object):
   def __len__(self):   return self._l
   def is_empty(self):  return self._data is None
   def is_scalar(self): return not isinstance(self._data, dict)
+  def is_valid(self):
+    return self._id is not None and \
+           not self.is_empty()  and \
+           self.nrows_valid()   and \
+           self.ncols_valid()   and \
+           self.names_valid()   and \
+           self.types_valid()
 
   def fill(self, rows=10):
     assert self._id is not None
