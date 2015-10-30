@@ -7,7 +7,6 @@ from tests import pyunit_utils
 def date_munge():
   crimes_path = pyunit_utils.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
   # crimes_path = "smalldata/chicago/chicagoCrimes10k.csv.zip"
-  h2o.init()
 
   tmps0 = pyunit_utils.temp_ctr() # Expected 0
   rest0 = pyunit_utils.rest_ctr() # Expected 0
@@ -72,7 +71,11 @@ def date_munge():
   rest1 = pyunit_utils.rest_ctr(); nrest = rest1-rest0
   print("Number of temps used: ",ntmps)
   print("Number of RESTs used: ",nrest)
-  assert ntmps < 10
+  assert ntmps <= 10
   assert nrest < 30
 
-date_munge()
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(date_munge)
+else:
+  date_munge()
+

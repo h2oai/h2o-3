@@ -639,7 +639,9 @@ class H2OFrame(object):
     -------
       An H2OFrame instance.
     """
-    return H2OFrame._expr(expr=ExprNode("as.Date",self,format))
+    fr = H2OFrame._expr(expr=ExprNode("as.Date",self,format), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    return fr
 
   def cumsum(self):
     """
@@ -1045,14 +1047,15 @@ class H2OFrame(object):
     if colname is None:
       self._ex = ExprNode(":=",self,src,col_expr,row_expr)
       self._ex._cache.fill_from(old_cache)
-      # self._frame()._ex._cache.fill_from(old_cache)
-      self._ex._cache.types = None  # invalidate
+      if src._ex._cache.types_valid(): self._ex._cache._types.update(src._ex._cache.types)
+      else:                            self._ex._cache.types = None
     else:
       self._ex = ExprNode("append",self,src,colname)
       self._ex._cache.fill_from(old_cache)
-      # self._frame()._ex._cache.fill_from(old_cache)
       self._ex._cache.names = self.names + [colname]
-      self._ex._cache.types = None  # invalidate
+      if self._ex._cache.types_valid(): self._ex._cache.types = None
+      else:                             self._ex._cache._types[colname] = src._ex._cache.types.values()[0]
+    self._frame()  # setitem is eager
 
   def __int__(self):
     if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
@@ -1919,9 +1922,10 @@ class H2OFrame(object):
     -------
       Single-column H2OFrame of categorical data.
     """
-    fr = H2OFrame._expr(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
+    fr = H2OFrame._expr(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab), cache=self._ex._cache)
     fr._ex._cache.ncols = 1
     fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.types = {k:"enum" for k in self.names}
     return fr
 
   def which(self):
