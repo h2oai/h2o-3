@@ -3,6 +3,7 @@ def gbm_vignette():
     approved_py_code_examples = [
         pyunit_utils.locate("GBM_Vignette_code_examples/gbm_uploadfile_example.py"),
         pyunit_utils.locate("GBM_Vignette_code_examples/gbm_examplerun.py"),
+        pyunit_utils.locate("GBM_Vignette_code_examples/gbm_examplerun_stochastic.py"),
         pyunit_utils.locate("GBM_Vignette_code_examples/gbm_extractmodelparams.py"),
         pyunit_utils.locate("GBM_Vignette_code_examples/gbm_predict.py"),
         pyunit_utils.locate("GBM_Vignette_code_examples/gbm_gridsearch.py"),
