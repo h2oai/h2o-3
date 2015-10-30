@@ -666,6 +666,7 @@ public class DeepLearningParameters extends Model.Parameters {
             "_classification_stop",
             "_regression_stop",
             "_stopping_rounds",
+            "_stopping_metric",
             "_quiet_mode",
             "_max_confusion_matrix_size",
             "_max_hit_ratio_k",
