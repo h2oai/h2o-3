@@ -28,7 +28,7 @@ def intdiv():
 
     res = iris[2] // iris
     res_rows, res_cols = res.dim
-    assert res_rows == rows and res_cols == cols, "dimension mismatch"
+    assert res_rows == rows and res_cols == 1, "dimension mismatch"
 
     #col/col
     res = iris[0] // iris[1]
