@@ -283,14 +283,14 @@ In [60]: df4 = h2o.H2OFrame.from_python({'A': [1, 2, 3,None,''],
 Parse Progress: [##################################################] 100%
 Uploaded py560240ff-1668-4445-8ae1-538a0b3daf53 into cluster with 5 rows and 4 cols
 
-In [61]: df4.mean()
-Out[61]: [2.0, nan, nan, 1426273200000.0]
+In [61]: df4.mean(na_rm=True)
+Out[61]: [2.0, u'NaN', u'NaN', u'NaN']
 
 In [62]: df4["A"].mean()
-Out[62]: nan
+Out[62]: [u'NaN']
 
 In [64]: df4["A"].mean(na_rm=True)
-Out[64]: 2.0
+Out[64]: [2.0]
 
 In [5]: df5 = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
 
