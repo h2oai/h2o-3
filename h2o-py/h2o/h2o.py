@@ -811,14 +811,14 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
     Stopping criterion for regression error (MSE) on training data (-1 to disable)
   stopping_rounds : int
     Early stopping based on convergence of stopping_metric.
-    Stop if simple moving average of length k of the metric does not improve
+    Stop if simple moving average of length k of the stopping_metric does not improve
     (by stopping_tolerance) for k=stopping_rounds scoring events.
     Can only trigger after at least 2k scoring events. Use 0 to disable.
   stopping_metric : str
     Metric to use for convergence checking, only for _stopping_rounds > 0
     Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
   stopping_tolerance : float
-    Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
+    Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
   quiet_mode : bool
     Enable quiet mode for less output to standard output
   max_confusion_matrix_size : int
@@ -983,14 +983,14 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
       Stopping criterion for regression error (MSE) on training data (-1 to disable)
     stopping_rounds : int
       Early stopping based on convergence of stopping_metric.
-      Stop if simple moving average of length k of the metric does not improve
+      Stop if simple moving average of length k of the stopping_metric does not improve
       (by stopping_tolerance) for k=stopping_rounds scoring events.
       Can only trigger after at least 2k scoring events. Use 0 to disable.
     stopping_metric : str
       Metric to use for convergence checking, only for _stopping_rounds > 0
       Can be one of "AUTO", "MSE".
     stopping_tolerance : float
-      Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
+      Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
     quiet_mode : bool
       Enable quiet mode for less output to standard output
     max_confusion_matrix_size : int
@@ -1119,14 +1119,14 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
     Specify the weights column.
   stopping_rounds : int
     Early stopping based on convergence of stopping_metric.
-    Stop if simple moving average of length k of the metric does not improve
+    Stop if simple moving average of length k of the stopping_metric does not improve
     (by stopping_tolerance) for k=stopping_rounds scoring events.
     Can only trigger after at least 2k scoring events. Use 0 to disable.
   stopping_metric : str
     Metric to use for convergence checking, only for _stopping_rounds > 0
     Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
   stopping_tolerance : float
-    Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
+    Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
 
   :return: A new classifier or regression model.
   """
@@ -1364,14 +1364,14 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
     Whether to keep the predictions of the cross-validation models
   stopping_rounds : int
     Early stopping based on convergence of stopping_metric.
-    Stop if simple moving average of length k of the metric does not improve
+    Stop if simple moving average of length k of the stopping_metric does not improve
     (by stopping_tolerance) for k=stopping_rounds scoring events.
     Can only trigger after at least 2k scoring events. Use 0 to disable.
   stopping_metric : str
     Metric to use for convergence checking, only for _stopping_rounds > 0
     Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
   stopping_tolerance : float
-    Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
+    Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
 
   :return: A new classifier or regression model.
   """
