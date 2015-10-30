@@ -1050,6 +1050,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      */
     private int[] activeCols(final double l1, final double l2, final double[] grad) {
       if (_taskInfo._allIn) return null;
+      if(_parms._family == Family.multinomial && _parms._solver == Solver.L_BFGS)
+        return null; // no strong rules for lbfgs multinomial for now ( more predictors than columns )
       int selected = 0;
       int[] cols = null;
       if (_parms._alpha[0] > 0) {
