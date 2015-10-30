@@ -1,6 +1,8 @@
 # Customarily, we import and start H2O as follows:
 import h2o
 h2o.init()  # Will set up H2O cluster using all available cores
+
+h2o.init(ip="123.45.67.89", port=54321)
 # To create an H2OFrame object from a python tuple:
 df = h2o.H2OFrame(((1, 2, 3),
                    ('a', 'b', 'c'),
