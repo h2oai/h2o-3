@@ -758,7 +758,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         for (int i = 0; i < cfs1.length; ++i)
           assertEquals(vals[i], coefs.get(cfs1[i]), relTol * (vals[i] + 1e-1));
         assertEquals(402.0254,   GLMTest.nullDeviance(model), 1e-1);
-        assertEquals(394.3998, GLMTest.residualDeviance(model), 1);
+        assertEquals(394.3998, GLMTest.residualDeviance(model), 2);
         System.out.println("VAL METRICS: " + model._output._validation_metrics);
         model.delete();
         // test scoring
