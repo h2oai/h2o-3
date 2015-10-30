@@ -30,8 +30,7 @@ gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 10
 gait.glrm
 
 print("Plot objective function value each iteration")
-gait.score <- gait.glrm@model$scoring_history
-plot(gait.score$iteration, gait.score$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
+plot(gait.glrm)
 
 ## Decompose training frame into XY with rank k
 print("Archetype to feature mapping (Y):")
@@ -88,8 +87,7 @@ gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, 
 gait.glrm2
 
 print("Plot objective function value each iteration")
-gait.score2 <- gait.glrm2@model$scoring_history
-plot(gait.score2$iteration, gait.score2$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
+plot(gait.glrm2)
 
 print("Impute missing data from X and Y")
 gait.pred2 <- predict(gait.glrm2, gait.miss)
