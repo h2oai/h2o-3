@@ -896,7 +896,7 @@ class H2OFrame(object):
     fr=None
     flatten=False
     if isinstance(item, (basestring,list,int,slice)):
-      new_ncols,new_names,new_types = self._compute_ncol_update(item)
+      new_ncols,new_names,new_types,item = self._compute_ncol_update(item)
       new_nrows = self.nrow
       fr = H2OFrame._expr(expr=ExprNode("cols_py",self,item))
     elif isinstance(item, (ExprNode, H2OFrame)):
@@ -913,19 +913,19 @@ class H2OFrame(object):
 
       if allrows and allcols: return self               # fr[:,:]    -> all rows and columns.. return self
       if allrows:
-        new_ncols,new_names,new_types = self._compute_ncol_update(cols)
+        new_ncols,new_names,new_types,cols = self._compute_ncol_update(cols)
         new_nrows = self.nrow
         fr = H2OFrame._expr(expr=ExprNode("cols_py",self,cols))  # fr[:,cols] -> really just a column slice
       if allcols:
         new_ncols = self.ncol
         new_names = self.names
         new_types = self.types
-        new_nrows = self._compute_nrow_update(rows)
+        new_nrows,rows = self._compute_nrow_update(rows)
         fr = H2OFrame._expr(expr=ExprNode("rows",self,rows))  # fr[rows,:] -> really just a row slices
 
       if not allrows and not allcols:
-        new_ncols,new_names,new_types = self._compute_ncol_update(cols)
-        new_nrows = self._compute_nrow_update(rows)
+        new_ncols,new_names,new_types,cols = self._compute_ncol_update(cols)
+        new_nrows,rows = self._compute_nrow_update(rows)
         fr = H2OFrame._expr(expr=ExprNode("rows", ExprNode("cols_py",self,cols),rows))
 
       flatten = isinstance(rows, int) and isinstance(cols, (basestring,int))
@@ -957,7 +957,7 @@ class H2OFrame(object):
         new_types = {name:self.types[name] for name in new_names}
     elif isinstance(item, slice):
       start = 0 if item.start is None else item.start
-      end   = min(self.ncol, item.stop)
+      end   = min(self.ncol, self.ncol if item.stop is None else item.stop)
       if end < 0:
         end = self.ncol+end
       if item.start is not None or item.stop is not None:
@@ -965,6 +965,7 @@ class H2OFrame(object):
       range_list = range(start,end)
       new_names = [self.names[i] for i in range_list]
       new_types = {name:self.types[name] for name in new_names}
+      item = slice(start,end)
     elif isinstance(item, (basestring,int)):
       new_ncols = 1
       if isinstance(item, basestring):
@@ -975,7 +976,7 @@ class H2OFrame(object):
         new_types = {new_names[0]:self.types[new_names[0]]}
     else:
       raise ValueError("Unexpected type: " + str(type(item)))
-    return [new_ncols,new_names,new_types]
+    return [new_ncols,new_names,new_types,item]
 
   def _compute_nrow_update(self, item):
     new_nrows=-1
@@ -988,11 +989,12 @@ class H2OFrame(object):
         end = self.nrow+end
       if item.start is not None or item.stop is not None:
         new_nrows = end - start
+      item = slice(start,end)
     elif isinstance(item, H2OFrame):
       new_nrows=-1
     else:
       new_nrows=1
-    return new_nrows
+    return [new_nrows,item]
 
   def __setitem__(self, b, c):
     """Replace or update column(s) in an H2OFrame.
