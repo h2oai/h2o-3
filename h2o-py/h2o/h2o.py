@@ -668,7 +668,7 @@ def export_file(frame,path,force=False):
   :return: None
 
   """
-  frame._eager()
+  #frame._eager()
   H2OJob(H2OConnection.get_json("Frames/"+frame.frame_id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
