@@ -282,8 +282,9 @@ h2o.assign <- function(data, key) {
   .key.validate(key)
   id <- h2o.getId(data)
   if( key == id ) stop("Destination key must differ from input frame ", key)
-  x = .eval.driver(.newExpr("tmp=", key, id)) # Eager eval, so can see it in cluster
+  x <- .eval.driver(.newExpr("tmp=", key, id)) # Eager eval, so can see it in cluster
   .set(x,"id",key)
+  .set(x,"eval",NULL)
   x
 }
 

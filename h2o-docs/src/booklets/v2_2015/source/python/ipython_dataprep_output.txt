@@ -283,14 +283,14 @@ In [60]: df4 = h2o.H2OFrame.from_python({'A': [1, 2, 3,None,''],
 Parse Progress: [##################################################] 100%
 Uploaded py560240ff-1668-4445-8ae1-538a0b3daf53 into cluster with 5 rows and 4 cols
 
-In [61]: df4.mean()
-Out[61]: [2.0, nan, nan, 1426273200000.0]
+In [61]: df4.mean(na_rm=True)
+Out[61]: [2.0, u'NaN', u'NaN', u'NaN']
 
 In [62]: df4["A"].mean()
-Out[62]: nan
+Out[62]: [u'NaN']
 
 In [64]: df4["A"].mean(na_rm=True)
-Out[64]: 2.0
+Out[64]: [2.0]
 
 In [5]: df5 = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
 
@@ -585,3 +585,13 @@ Out[171]: H2OFrame with 8 rows and 5 columns:
 7  foo  three  0.412450 -0.050374  other
 
 In[2]: h2o.init(ip="123.45.67.89", port=54321)
+
+#### Saving and loading files section
+
+In[172]: df = h2o.upload_file("/pathToFile/fileName")
+
+In[173]: df = h2o.import_file("/pathToFile/fileName")
+
+In[174]: h2o.export_file(df,"/pathToFile/fileName")
+
+In[175]: h2o.download_csv(df,"/pathToFile/fileName")

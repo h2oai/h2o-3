@@ -108,7 +108,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public ScoreKeeper.StoppingMetric stopping_metric;
 
-  @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is less than this value)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  @API(help = "Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public double stopping_tolerance;
 
   protected static String[] append_field_arrays(String[] first, String[] second) {

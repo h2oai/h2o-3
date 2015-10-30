@@ -70,7 +70,7 @@ df4 = h2o.H2OFrame.from_python({'A': [1, 2, 3,None,''],
                                 'D': ['12MAR2015:11:00:00',None,'13MAR2015:12:00:00',None,'14MAR2015:13:00:00']},
                                 column_types=['numeric', 'enum', 'string', 'time'])
 
-df4.mean()
+df4.mean(na_rm=True)
 
 df4["A"].mean()  # check if this behaviour or the one above is a bug
 
@@ -129,3 +129,8 @@ bb_df = df12.interaction(['B','B'], pairwise=False, max_factors=2, min_occurrenc
 bb_df
 df15 = df12.cbind(bb_df)
 df15
+
+#### Saving and loading files section
+df = h2o.upload_file("/pathToFile/fileName")
+
+df = h2o.import_file("/pathToFile/fileName")
