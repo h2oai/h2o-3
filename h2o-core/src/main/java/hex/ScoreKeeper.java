@@ -2,6 +2,7 @@ package hex;
 
 import water.H2O;
 import water.Iced;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
 
@@ -108,7 +109,6 @@ public class ScoreKeeper extends Iced {
       // movingAvg[2] is based on scoring events indices 16,17 <- second "new" smooth score
 
       int startIdx = sk.length-2*k+i;
-      boolean zeroCrossing = false;
       for (int j = 0; j < k; ++j) {
         ScoreKeeper skj = sk[startIdx+j];
         double val;
@@ -137,19 +137,22 @@ public class ScoreKeeper extends Iced {
         movingAvg[i] += val;
       }
       movingAvg[i]/=k;
-      assert(!Double.isNaN(movingAvg[i]));
+      if (Double.isNaN(movingAvg[i])) return false;
       if (i==0)
         lastBeforeK = movingAvg[i];
       else
         bestInLastK = moreIsBetter ? Math.max(movingAvg[i], bestInLastK) : Math.min(movingAvg[i], bestInLastK);
     }
+    // zero-crossing could be for residual deviance or r^2 -> mark it not yet converged, avoid division by 0 or weird relative improvements math below
+    if (Math.signum(ArrayUtils.maxValue(movingAvg)) != Math.signum(ArrayUtils.minValue(movingAvg))) return false;
+    if (Math.signum(bestInLastK) != Math.signum(lastBeforeK)) return false;
     assert(lastBeforeK != Double.MAX_VALUE);
     assert(bestInLastK != Double.MAX_VALUE);
     Log.info("Moving averages (length " + k + ") of last " + (k+1) + " " + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
 
-    boolean improved = moreIsBetter ? bestInLastK/lastBeforeK > 1+rel_improvement
-            :
-            bestInLastK/lastBeforeK < 1-rel_improvement;
+    double ratio = bestInLastK / lastBeforeK;
+    if (Double.isNaN(ratio)) return false;
+    boolean improved = moreIsBetter ? ratio > 1+rel_improvement : ratio < 1-rel_improvement;
     Log.info("Checking model convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
     return !improved;
   }
