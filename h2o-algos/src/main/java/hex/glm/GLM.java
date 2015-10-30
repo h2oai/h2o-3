@@ -1194,11 +1194,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double abstol = L1Solver.DEFAULT_ABSTOL;
             double ADMM_gradEps = 1e-2;
             if (_bc != null)
-              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+              new ADMM.L1Solver(ADMM_gradEps, 50, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
             else
-              new ADMM.L1Solver(ADMM_gradEps, 500, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), beta, l1pen);
+              new ADMM.L1Solver(ADMM_gradEps, 50, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), beta, l1pen);
             if (_parms._family == Family.multinomial) {
-
               for (int i = 0; i < _taskInfo._beta_multinomial.length; ++i)
                 System.arraycopy(beta, i * (P + 1), _taskInfo._beta_multinomial[i], 0, _taskInfo._beta_multinomial[i].length);
             }
