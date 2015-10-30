@@ -543,7 +543,7 @@ To perform the trial run in Python, use the following:
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_examplerun.py}
 
 \noindent
-The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to (or instead of) using a validation set, another option to estimate generalization error is N-fold cross-validation.  
+The model runs for only 10 epochs since it is just meant as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to (or instead of) using a validation set, another option to estimate generalization error is N-fold cross-validation.
 
 \subsubsection{N-fold Cross-Validation} 
 
@@ -642,7 +642,7 @@ In this example, three different network topologies and two different $\ell_1$ n
 Grid search provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to {\textbf{\nameref{sec:Parameters}}} for parameter descriptions and configurable values. 
 
 \waterExampleInR
-To run a grid search in R, use the following: 
+To run a grid search in R, use the following:
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R}
 
 %\medskip
@@ -836,7 +836,7 @@ Logical indicates the parameter requires a value of either \texttt{TRUE} or \tex
 
 \item \texttt{hidden}: Specifies the number and size of each hidden layer in the model. For example, if \texttt{c(100,200,100)} is specified, a model with 3 hidden layers is generated. The middle hidden layer will have 200 neurons and the first and third hidden layers will have 100 neurons each. The default is \texttt{c(200,200)}. For grid search, use the following format: \texttt{list(c(10,10), c(20,20))}. Refer to the section on  {\textbf{\nameref{ssec:TrialRun}}} for more details. 
 
-\item \texttt{epochs}: Specifies the number of iterations or passes over the training dataset (can be fractional). For initial grid searches, we recommend starting with lower values. The value allows continuation of selected models and can be modified during checkpoint restarts. The default is 10.
+\item \texttt{epochs}: Specifies the number of iterations or passes over the training dataset (can be fractional). For initial grid searches, we recommend starting with lower values. The value allows continuation of selected models and can be modified during checkpoint restarts. The default is 1000.
 
 \item \texttt{train\_samples\_per\_iteration}: Specifies the number of training samples (globally) per MapReduce iteration. The following special values are also supported: 
 \begin{itemize}
