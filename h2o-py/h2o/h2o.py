@@ -312,11 +312,11 @@ def _quoted(key):
   return key
 
 
-def assign(data,id):
-  data._eager()
-  rapids(data._id, id)
-  data._id=id
-  data._ast=None  # ensure it won't be deleted by gc
+def assign(data,xid):
+  if data.frame_id == xid: ValueError("Desination key must differ input frame")
+  data._ex = ExprNode("tmp=",xid,data)._eval_driver(False)
+  data._ex._id = xid
+  data._ex._children = None
   return data
 
 

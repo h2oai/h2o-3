@@ -18,19 +18,19 @@ def quantile_1_golden():
 
     print "Check errors generated for probabilities outside [0,1]"
     try:
-        vec_h2o.quantile(prob=[-0.2])._eager()
+        print vec_h2o.quantile(prob=[-0.2])
         assert False, "Expected error. Probabilities must be between 0 and 1"
     except EnvironmentError:
         assert True
 
     try:
-        vec_h2o.quantile(prob=[1.2])._eager()
+        print vec_h2o.quantile(prob=[1.2])
         assert False, "Expected error. Probabilities must be between 0 and 1"
     except EnvironmentError:
         assert True
 
     try:
-        vec_h2o.quantile(prob=[0.1, -0.5, 0.2, 1.5])._eager()
+        print vec_h2o.quantile(prob=[0.1, -0.5, 0.2, 1.5])
         assert False, "Expected error. Probabilities must be between 0 and 1"
     except EnvironmentError:
         assert True

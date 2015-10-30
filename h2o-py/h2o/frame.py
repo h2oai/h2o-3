@@ -11,6 +11,7 @@ from group_by import GroupBy
 class H2OFrame:
   def __init__(self, python_object=None):
     self._ex = ExprNode()
+    self._ex._children=None
     if python_object is not None:
       self._upload_python_object(python_object)
 
@@ -330,6 +331,8 @@ class H2OFrame:
     if sys.gettrace() is None:
       return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore")
     return ""
+  def __len__(self):
+    return self.nrow
 
   def __repr__(self):
     if sys.gettrace() is None:
