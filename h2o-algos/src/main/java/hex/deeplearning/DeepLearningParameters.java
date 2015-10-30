@@ -19,7 +19,7 @@ import java.util.Arrays;
 public class DeepLearningParameters extends Model.Parameters {
   public DeepLearningParameters() {
     super();
-    _stopping_rounds = 5; //more smoothing than default
+    _stopping_rounds = 0; //more smoothing than default
     _stopping_tolerance = 0; //expect strict improvement, it's noisy anyway
   }
 
