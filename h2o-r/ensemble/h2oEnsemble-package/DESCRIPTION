@@ -1,7 +1,7 @@
 Package: h2oEnsemble
 Type: Package
 Title: H2O Ensemble Learning
-Version: 0.1.0
+Version: 0.1.0.9000
 Date: 2015-10-29
 Author: Erin LeDell
 Maintainer: Erin LeDell <erin@h2o.ai>
