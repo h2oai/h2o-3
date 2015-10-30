@@ -912,7 +912,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_stopping_tolerance", "Stopping tolerance must be < 1.");
     }
     if (_parms._stopping_rounds == 0) {
-      hide("_stopping_metric", "Stopping metric is not needed for _stopping_rounds=0.");
+      hide("_stopping_metric", "Stopping metric is ignored for _stopping_rounds=0.");
+      hide("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
     } else {
