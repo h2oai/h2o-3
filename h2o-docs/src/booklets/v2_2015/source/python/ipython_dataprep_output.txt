@@ -585,3 +585,13 @@ Out[171]: H2OFrame with 8 rows and 5 columns:
 7  foo  three  0.412450 -0.050374  other
 
 In[2]: h2o.init(ip="123.45.67.89", port=54321)
+
+#### Saving and loading files section
+
+In[172]: df = h2o.upload_file("/pathToFile/fileName")
+
+In[173]: df = h2o.import_file("/pathToFile/fileName")
+
+In[174]: h2o.export_file(df,"/pathToFile/fileName")
+
+In[175]: h2o.download_csv(df,"/pathToFile/fileName")
