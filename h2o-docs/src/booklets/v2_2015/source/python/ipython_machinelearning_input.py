@@ -1,7 +1,8 @@
 
 import h2o
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
 h2o.init()
+
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 iris_data_path = h2o.system_file("iris.csv") # load demonstration data
 iris_df = h2o.import_file(path=iris_data_path)
@@ -38,11 +39,10 @@ pred.head()  # Projection results
 
 # Grid Search
 
-ntrees_opt = [5,10,15]
-max_depth_opt = [2,3,4]
-learn_rate_opt = [0.1,0.2]
+ntrees_opt = [5, 10, 15]
+max_depth_opt = [2, 3, 4]
+learn_rate_opt = [0.1, 0.2]
 hyper_parameters = {"ntrees": ntrees_opt, "max_depth":max_depth_opt, "learn_rate":learn_rate_opt}
-
 from h2o.grid.grid_search import H2OGridSearch
 gs = H2OGridSearch(H2OGradientBoostingEstimator(distribution="multinomial"), hyper_params=hyper_parameters)
 gs.train(x=range(0,iris_df.ncol-1), y=iris_df.ncol-1, training_frame=iris_df, nfold=10)
@@ -51,6 +51,10 @@ print gs.sort_by('logloss', increasing=True)
 # Pipeline
 from h2o.transforms.preprocessing import H2OScaler
 from sklearn.pipeline import Pipeline
+
+# Turn off h2o progress bars
+h2o.__PROGRESS_BAR__=False
+h2o.no_progress()
 
 # build transformation pipeline using sklearn's Pipeline and H2O transforms
 pipeline = Pipeline([("standardize", H2OScaler()),
@@ -63,30 +67,23 @@ from sklearn.grid_search import RandomizedSearchCV
 from h2o.cross_validation import H2OKFold
 from h2o.model.regression import h2o_r2_score
 from sklearn.metrics.scorer import make_scorer
-
 params = {"standardize__center":    [True, False],             # Parameters to test
           "standardize__scale":     [True, False],
           "pca__k":                 [2,3],
           "gbm__ntrees":            [10,20],
           "gbm__max_depth":         [1,2,3],
           "gbm__learn_rate":        [0.1,0.2]}
-
 custom_cv = H2OKFold(iris_df, n_folds=5, seed=42)
-
 pipeline = Pipeline([("standardize", H2OScaler()),
                      ("pca", H2OPCA(k=2)),
                      ("gbm", H2OGradientBoostingEstimator(distribution="gaussian"))])
-
 random_search = RandomizedSearchCV(pipeline, params,
                                    n_iter=5,
                                    scoring=make_scorer(h2o_r2_score),
                                    cv=custom_cv,
                                    random_state=42,
                                    n_jobs=1)
-
-
 random_search.fit(iris_df[1:], iris_df[0])
-
 print random_search.best_estimator_
 
 
