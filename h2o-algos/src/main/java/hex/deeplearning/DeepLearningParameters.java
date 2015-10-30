@@ -640,6 +640,9 @@ public class DeepLearningParameters extends Model.Parameters {
           dl.error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
         }
       } else {
+        if (_autoencoder && _stopping_metric != ScoreKeeper.StoppingMetric.AUTO && _stopping_metric != ScoreKeeper.StoppingMetric.MSE) {
+          dl.error("_stopping_metric", "Stopping metric must either be AUTO or MSE for autoencoder.");
+        }
         if (_stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
                 _stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
                 _stopping_metric == ScoreKeeper.StoppingMetric.logloss)
@@ -879,6 +882,11 @@ public class DeepLearningParameters extends Model.Parameters {
             Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;
         }
+      }
+      if (fromParms._autoencoder && fromParms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
+        if (!fromParms._quiet_mode)
+          Log.info("_stopping_metric: Automatically setting stopping_metric to MSE for autoencoder.");
+        toParms._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
       }
 
       // Automatically set the distribution

@@ -134,7 +134,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   // Lower is better
   public float loss() {
-    return (float) (_output.isClassifier() ? logloss() : deviance());
+    return (float) (_output.isClassifier() ? logloss() : _output.autoencoder ? mse() : deviance());
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -149,7 +149,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   public int compareTo(DeepLearningModel o) {
     if (o._output.isClassifier() != _output.isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
-    if (o._output.nclasses() != _output.nclasses()) throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
+    if (o._output.isClassifier()) {
+      if (o._output.nclasses() != _output.nclasses())
+        throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
+    }
     return (loss() < o.loss() ? -1 : loss() > o.loss() ? 1 : 0);
   }
 
@@ -605,20 +608,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
 
-      if (!get_params()._autoencoder) {
-        // always keep a copy of the best model so far (based on the following criterion)
-        if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
-            // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
-            (DKV.get(actual_best_model_key) != null && (loss() < DKV.get(actual_best_model_key).<DeepLearningModel>get().loss() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
-                ||
-                // otherwise, compare against our own _bestError
-                (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
-        ) ) {
-          if (!get_params()._quiet_mode)
-            Log.info("Loss reduced from " + _bestLoss + " to " + loss() + ".");
-          _bestLoss = loss();
-          putMeAsBestModel(actual_best_model_key);
-        }
+      // always keep a copy of the best model so far (based on the following criterion)
+      if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
+              // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
+              (DKV.get(actual_best_model_key) != null && (loss() < DKV.get(actual_best_model_key).<DeepLearningModel>get().loss() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
+                      ||
+                      // otherwise, compare against our own _bestError
+                      (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
+      ) ) {
+        if (!get_params()._quiet_mode)
+          Log.info("Loss reduced from " + _bestLoss + " to " + loss() + ".");
+        _bestLoss = loss();
+        putMeAsBestModel(actual_best_model_key);
       }
       // print the freshly scored model to ASCII
       if (keep_running && printme)
