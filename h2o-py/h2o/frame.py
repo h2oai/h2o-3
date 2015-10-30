@@ -355,12 +355,12 @@ class H2OFrame(object):
     if h2o.H2ODisplay._in_ipy():
       import IPython.display
       if use_pandas and h2o.can_use_pandas():
-        IPython.display.display(self.head().as_data_frame())
+        IPython.display.display(self.head().as_data_frame(True))
       else:
         IPython.display.display_html(self._ex._cache._tabulate("html",False),raw=True)
     else:
       if use_pandas and h2o.can_use_pandas():
-        print self.head().as_data_frame()
+        print self.head().as_data_frame(True)
       else:
         print self
 
