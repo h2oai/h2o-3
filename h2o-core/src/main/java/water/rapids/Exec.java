@@ -43,26 +43,21 @@ public class Exec {
     cluster_init();    // Force class loading before requiring remote execution
     // Parse
     AST ast = new Exec(str).parse();
-    // Execute
-    return execute(ast);
-  }
-
-  public static Val execute(AST ast) {
-    // Execute
-    Env env = new Env();
-    Val val = ast.exec(env);
-    // Results.  Deep copy returned Vecs.  Always return a key-less Frame
-    if( val.isFrame() ) {
-      Frame fr = val.getFrame();
-      if( fr._key != null ) val=new ValFrame(fr = new Frame(null,fr.names(),fr.vecs()));
-      Vec vecs[] = fr.vecs();
-      for( int i=0; i<vecs.length; i++ )
-        if( env.isPreExistingGlobal(vecs[i]) )
-          fr.replace(i,vecs[i].makeCopy());
-    }
+    // Execute a single rapids call in a short-lived session
+    Session ses = new Session();
+    Val val = ast.exec(new Env(ses));
+    ses.end();
     return val;
   }
 
+  static Val exec( String str, Session ses ) throws IllegalArgumentException {
+    cluster_init();    // Force class loading before requiring remote execution
+    // Parse
+    AST ast = new Exec(str).parse();
+    // Execute
+    Val val = ast.exec(new Env(ses));
+    return val;
+  }
 
   // Parse an expression
   //   '('   a nested function application expression ')

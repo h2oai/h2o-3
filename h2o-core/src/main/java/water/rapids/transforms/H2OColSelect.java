@@ -19,10 +19,11 @@ public class H2OColSelect extends Transform<H2OColSelect> {
   @Override public Transform<H2OColSelect> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
     _ast._asts[1] = AST.newASTFrame(f);
-    Frame fr = Exec.execute(_ast).getFrame();
-    if( fr._key==null ) fr = new Frame(Key.make("H2OColSelect_"+f._key.toString()),fr.names(),fr.vecs());
-    DKV.put(fr);
-    return fr;
+    throw water.H2O.unimpl();
+    //Frame fr = Exec.execute(_ast).getFrame();
+    //if( fr._key==null ) fr = new Frame(Key.make("H2OColSelect_"+f._key.toString()),fr.names(),fr.vecs());
+    //DKV.put(fr);
+    //return fr;
   }
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }
   public String genClassImpl() {

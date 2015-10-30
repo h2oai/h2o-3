@@ -38,22 +38,23 @@ public class H2OColOp extends Transform<H2OColOp> {
   @Override public Transform<H2OColOp> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
     ((ASTExec)_ast._asts[1])._asts[1] = AST.newASTFrame(f);
-    Frame fr = Exec.execute(_ast).getFrame();
-    _newCol = _newNames==null?new String[fr.numCols()]:_newNames;
-    _newColTypes = toJavaPrimitive(fr.anyVec().get_type_str());
-    if( (_multiColReturn=fr.numCols() > 1) ) {
-      for(int i=0;i<_newCol.length;i++) {
-        if(_newNames==null) _newCol[i] = f.uniquify(i > 0 ? _newCol[i - 1] : _oldCol);
-        f.add(_newCol[i], fr.vec(i));
-      }
-      if( _inplace ) f.remove(f.find(_oldCol)).remove();
-    } else {
-      _newCol = new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)};
-      if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
-      else          f.add(_newNames==null?_newCol[0]:_newNames[0], fr.anyVec());
-    }
-    DKV.put(f);
-    return f;
+    throw water.H2O.unimpl();
+    //Frame fr = Exec.execute(_ast).getFrame();
+    //_newCol = _newNames==null?new String[fr.numCols()]:_newNames;
+    //_newColTypes = toJavaPrimitive(fr.anyVec().get_type_str());
+    //if( (_multiColReturn=fr.numCols() > 1) ) {
+    //  for(int i=0;i<_newCol.length;i++) {
+    //    if(_newNames==null) _newCol[i] = f.uniquify(i > 0 ? _newCol[i - 1] : _oldCol);
+    //    f.add(_newCol[i], fr.vec(i));
+    //  }
+    //  if( _inplace ) f.remove(f.find(_oldCol)).remove();
+    //} else {
+    //  _newCol = new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)};
+    //  if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
+    //  else          f.add(_newNames==null?_newCol[0]:_newNames[0], fr.anyVec());
+    //}
+    //DKV.put(f);
+    //return f;
   }
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }

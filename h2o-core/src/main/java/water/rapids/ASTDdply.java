@@ -171,35 +171,36 @@ class ASTDdply extends ASTPrim {
       Frame groupFrame = new Frame(_data._names,groupVecs);
 
       // Now run the function on the group frame
-      Env env = new Env();
-      env._scope = _scope;      // Build an environment with proper lookup scope
-      Val val = new ASTExec( new AST[]{_fun,new ASTFrame(groupFrame)}).exec(env);
-      assert env.sp()==0;
-
-      // Result into a double[]
-      if( val.isFrame() ) {
-        Frame res = val.getFrame();
-        if( res.numRows() != 1 )
-          throw new IllegalArgumentException("ddply must return a 1-row (many column) frame, found "+res.numRows());
-        _result = new double[res.numCols()];
-        for( int i=0; i<res.numCols(); i++ )
-          _result[i] = res.vec(i).at(0);
-      } else if( val.isNum() ) {
-        _result = new double[]{val.getNum()};
-      } else if( val.isNums() ) {
-        _result = val.getNums();
-      } else throw new IllegalArgumentException("ddply must return either a number or a frame, not a "+val);
-
-
-      // Cleanup
-      groupFrame.delete();      // Delete the Frame holding WrappedVecs over SubsetChunks
-      gvec.remove();            // Delete the group-defining Vec
-      _data = null;             // Nuke to avoid returning (not for GC)
-      _vKey = null;             // Nuke to avoid returning (not for GC)
-      _fun = null;              // Nuke to avoid returning (not for GC)
-      _scope = null;            // Nuke to avoid returning (not for GC)
-      // And done!
-      tryComplete();
+      throw water.H2O.unimpl();
+      //Env env = new Env();
+      //env._scope = _scope;      // Build an environment with proper lookup scope
+      //Val val = new ASTExec( new AST[]{_fun,new ASTFrame(groupFrame)}).exec(env);
+      //assert env.sp()==0;
+      //
+      //// Result into a double[]
+      //if( val.isFrame() ) {
+      //  Frame res = val.getFrame();
+      //  if( res.numRows() != 1 )
+      //    throw new IllegalArgumentException("ddply must return a 1-row (many column) frame, found "+res.numRows());
+      //  _result = new double[res.numCols()];
+      //  for( int i=0; i<res.numCols(); i++ )
+      //    _result[i] = res.vec(i).at(0);
+      //} else if( val.isNum() ) {
+      //  _result = new double[]{val.getNum()};
+      //} else if( val.isNums() ) {
+      //  _result = val.getNums();
+      //} else throw new IllegalArgumentException("ddply must return either a number or a frame, not a "+val);
+      //
+      //
+      //// Cleanup
+      //groupFrame.delete();      // Delete the Frame holding WrappedVecs over SubsetChunks
+      //gvec.remove();            // Delete the group-defining Vec
+      //_data = null;             // Nuke to avoid returning (not for GC)
+      //_vKey = null;             // Nuke to avoid returning (not for GC)
+      //_fun = null;              // Nuke to avoid returning (not for GC)
+      //_scope = null;            // Nuke to avoid returning (not for GC)
+      //// And done!
+      //tryComplete();
     }
   }
 

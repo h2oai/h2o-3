@@ -21,26 +21,35 @@ class ASTColSlice extends ASTPrim {
       ValRow vv = (ValRow)v;
       return vv.slice(asts[2].columns(vv._names));
     }
-    Frame fr = v.getFrame();
-    int[] cols = asts[2].columns(fr.names());
-
-    Frame fr2 = new Frame();
-    if( cols.length==0 ) {        // Empty inclusion list?
-    } else if( cols[0] >= 0 ) { // Positive (inclusion) list
-      if( cols[cols.length-1] >= fr.numCols() )
-        throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
-      for( int col : cols )
-        fr2.add(fr.names()[col],fr.vecs()[col]);
-    } else {                    // Negative (exclusion) list
-      fr2 = new Frame(fr);      // All of them at first
-      Arrays.sort(cols);        // This loop depends on the values in sorted order
-      for( int col : cols )
-        if( 0 <= -col-1 && -col-1 < fr.numCols() ) 
-          fr2.remove(-col-1);   // Remove named column
-    }
-    
-    return new ValFrame(fr2);
+    Frame src = v.getFrame();
+    int[] cols = col_select(src.names(),asts[2]);
+    Frame dst = new Frame();
+    Vec[] vecs = src.vecs();
+    for( int col : cols )  dst.add(src._names[col],vecs[col]);
+    return new ValFrame(dst);
   }
+
+  // Complex column selector; by list of names or list of numbers or single
+  // name or number.  Numbers can be ranges or negative.
+  static int[] col_select( String[] names, AST col_selector ) {
+    int[] cols = col_selector.columns(names);
+    if( cols.length==0 ) return cols; // Empty inclusion list?
+    if( cols[0] >= 0 ) { // Positive (inclusion) list
+      if( cols[cols.length-1] >= names.length )
+        throw new IllegalArgumentException("Column must be an integer from 0 to "+(names.length-1));
+      return cols;
+    }
+
+    // Negative (exclusion) list; convert to positive inclusion list
+    int[] pos = new int[names.length];
+    for( int col : cols ) // more or less a radix sort, filtering down to cols to ignore
+      if( 0 <= -col-1 && -col-1 < names.length ) 
+        pos[-col-1] = -1;
+    int j=0;
+    for( int i=0; i<names.length; i++ )  if( pos[i] == 0 ) pos[j++] = i;
+    return Arrays.copyOfRange(pos,0,j);
+  }
+
 }
 
 /** Column slice; allows python-like syntax.

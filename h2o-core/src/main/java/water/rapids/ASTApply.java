@@ -38,7 +38,7 @@ class ASTApply extends ASTPrim {
     for( int i=0; i<vecs.length; i++ ) {
       asts[1] = new ASTFrame(new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]}));
       try (Env.StackHelp stk_inner = env.stk()) {
-          vals[i] = stk.track(stk_inner.returning(fun.apply(env,stk_inner,asts)));
+          vals[i] = stk.track(env.returning(fun.apply(env,stk_inner,asts)));
         }
     }
 

@@ -184,6 +184,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTSetDomain());
     init(new ASTSetLevel());
     init(new ASTTmpAssign());
+    init(new ASTRm());
 
     // Matrix Ops
     init(new ASTTranspose());
@@ -261,7 +262,7 @@ class ASTFrame extends AST {
   final ValFrame _fr;
   ASTFrame(Frame fr) { _fr = new ValFrame(fr); }
   @Override public String str() { return _fr.toString(); }
-  @Override public Val exec(Env env) { return _fr; }
+  @Override public Val exec(Env env) { return env.returning(_fr); }
   @Override int nargs() { return 1; }
 }
 
@@ -280,7 +281,7 @@ class ASTId extends ASTParameter {
   ASTId(Exec e) { _id = e.token(); }
   ASTId(String id) { _id=id; }
   @Override public String str() { return _id; }
-  @Override public Val exec(Env env) { return env.lookup(_id); }
+  @Override public Val exec(Env env) { return env.returning(env.lookup(_id)); }
   @Override int nargs() { return 1; }
   @Override public String toJavaString() { return "\"" + str() + "\""; }
 }
