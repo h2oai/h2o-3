@@ -1,13 +1,17 @@
-library(h2o)
+import h2o
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+from h2o.grid.grid_search import H2OGridSearch
 h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-alpha_opts = list(list(0), list(.25), list(.5), list(.75), list(1))
-hyper_parameters = list(alpha = alpha_opts)
-grid <- h2o.grid("glm", hyper_params = hyper_parameters,
-                 y = "CAPSULE", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "binomial")
-grid_models <- lapply(grid@model_ids, function(model_id) { model = h2o.getModel(model_id) })
-for (i in 1:length(grid_models)) {
-    print(sprintf("regularization: %-50s  auc: %f", grid_models[[i]]@model$model_summary$regularization, h2o.auc(grid_models[[i]])))
-}
+path = h2o.system_file("prostate.csv")
+h2o_df = h2o.import_file(path)
+h2o_df['CAPSULE'] = h2o_df['CAPSULE'].asfactor()
+alpha_opts = [0.0, 0.25, 0.5, 1.0]
+hyper_parameters = {"alpha":alpha_opts}
+
+
+grid = H2OGridSearch(H2OGeneralizedLinearEstimator(family="binomial"), hyper_params=hyper_parameters)
+grid.train(y = "CAPSULE", x = ["AGE", "RACE", "PSA", "GLEASON"], training_frame = h2o_df)
+for m in grid:
+    print "Model ID: " + m.model_id + " auc: " + str(m.auc())
+    print m.summary()
+    print "\n\n"
