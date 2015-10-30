@@ -1,4 +1,6 @@
 # Download and import ECG train and test data into the H2O cluster
+from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
+
 train_ecg = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv")
 test_ecg = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv")
 
