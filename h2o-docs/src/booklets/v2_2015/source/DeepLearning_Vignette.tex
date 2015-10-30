@@ -679,7 +679,7 @@ Checkpoint restart suggestions:
 
 With options 1 and 3, you should be able to reach your goals of finding a good model. Of course, you can use grid search with checkpoint restarts, to scan a broad range of good continuation models.
 
-In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the highest-performing model from the grid search used for additional training. For checkpoint restarts, the response column, training, and validation datasets must match.  In addition, any non-default model parameters, such as \texttt{hidden = c(200,200)} in the example below, must match. 
+In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the highest-performing model from the grid search used for additional training. For checkpoint restarts, the response column, training, and validation datasets must match.  In addition, the model architecture, such as \texttt{hidden = c(32,32,32)} in the example below, must match.
 
 \waterExampleInR
 To restart training in R using a checkpoint model, use the following: 
