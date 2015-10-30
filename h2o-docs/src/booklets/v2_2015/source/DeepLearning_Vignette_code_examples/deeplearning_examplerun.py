@@ -1,3 +1,5 @@
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
 # Specify the response and predictor columns
 y = "C785"
 x = train.names[0:784]
