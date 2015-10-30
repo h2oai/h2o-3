@@ -66,7 +66,7 @@ class GroupBy:
     if not self._res:
       aggs=[]
       for k in self._aggs: aggs += (self._aggs[k])
-      self._res = h2o.H2OFrame(expr.ExprNode("GB", self._fr,self._by,self._order_by, *aggs))
+      self._res = h2o.H2OFrame._expr(expr=expr.ExprNode("GB", self._fr,self._by,self._order_by, *aggs))
     return self._res
 
   def _add_agg(self,op,col,na):

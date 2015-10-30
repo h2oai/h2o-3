@@ -10,7 +10,7 @@ def offsets_and_distributions():
     cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     cars = cars[cars["economy_20mpg"].isna() == 0]
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-    offset = h2o.H2OFrame.fromPython([[.5] for x in range(398)])
+    offset = h2o.H2OFrame([[.5]*398])
     offset.set_name(0,"x1")
     cars = cars.cbind(offset)
 
