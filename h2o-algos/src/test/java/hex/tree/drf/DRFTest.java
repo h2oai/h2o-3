@@ -401,6 +401,7 @@ public class DRFTest extends TestUtil {
       drf._ntrees = ntree;
       drf._max_depth = max_depth;
       drf._min_rows = min_rows;
+      drf._stopping_rounds = 0; //no early stopping
 //      drf._binomial_double_trees = new Random().nextBoolean();
       drf._nbins = nbins;
       drf._nbins_cats = nbins;
