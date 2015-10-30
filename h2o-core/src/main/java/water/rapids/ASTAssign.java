@@ -3,8 +3,23 @@ package water.rapids;
 import water.*;
 import water.fvec.*;
 
-/** Assign into a row slice.  The destination must already exist, and is updated in-place */
+/** Assign a whole frame over a global.  Copy-On-Write optimizations make this cheap. */
 class ASTAssign extends ASTPrim {
+  @Override public String[] args() { return new String[]{"id", "frame"}; }
+  @Override int nargs() { return 1+2; } // (assign id frame)
+  @Override public String str() { return "assign" ; }
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Key id = Key.make( asts[1].str() );
+    Frame src = stk.track(asts[2].exec(env)).getFrame();
+    return new ValFrame(env._ses.assign(id,src)); // New global Frame over shared Vecs
+  }
+}
+
+/** Rectangular assign into a row and column slice.  The destination must
+ *  already exist.  The output is conceptually a new copy of the data, with a
+ *  fresh Frame.  Copy-On-Write optimizations lower the cost to be proportional
+ *  to the over-written sections.  */
+class ASTRectangleAssign extends ASTPrim {
   @Override public String[] args() { return new String[]{"dst", "src", "col_expr", "row_expr"}; }
   @Override int nargs() { return 5; } // (:= dst src col_expr row_expr)
   @Override public String str() { return ":=" ; }
@@ -19,15 +34,15 @@ class ASTAssign extends ASTPrim {
       ASTNumList rows = asts[4] instanceof ASTNum ? new ASTNumList(((ASTNum)asts[4])._v.getNum()) : ((ASTNumList)asts[4]);
       if( rows.isEmpty() ) rows = new ASTNumList(0,dst.numRows()); // Empty rows is really: all rows
       switch( vsrc.type() ) {
-      case Val.NUM:  assign_frame_scalar(dst,cols,rows,vsrc.getNum()  );  break;
-      case Val.STR:  assign_frame_scalar(dst,cols,rows,vsrc.getStr()  );  break;
-      case Val.FRM:  assign_frame_frame (dst,cols,rows,vsrc.getFrame());  break;
+      case Val.NUM:  assign_frame_scalar(dst,cols,rows,vsrc.getNum()  ,env._ses);  break;
+      case Val.STR:  assign_frame_scalar(dst,cols,rows,vsrc.getStr()  ,env._ses);  break;
+      case Val.FRM:  assign_frame_frame (dst,cols,rows,vsrc.getFrame(),env._ses);  break;
       default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
       }
     } else {                    // Boolean assignment selection?
       Frame rows = stk.track(asts[4].exec(env)).getFrame();
       switch( vsrc.type() ) {
-      case Val.NUM:  assign_frame_scalar(dst,cols,rows,vsrc.getNum()  );  break;
+      case Val.NUM:  assign_frame_scalar(dst,cols,rows,vsrc.getNum()  ,env._ses);  break;
       case Val.STR:  throw H2O.unimpl();
       case Val.FRM:  throw H2O.unimpl();
       default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
@@ -56,7 +71,7 @@ class ASTAssign extends ASTPrim {
   }
 
   // Rectangular array copy from src into dst
-  private void assign_frame_frame(Frame dst, int[] cols, ASTNumList rows, Frame src) {
+  private void assign_frame_frame(Frame dst, int[] cols, ASTNumList rows, Frame src, Session ses) {
     // Sanity check
     if( cols.length != src.numCols() )
       throw new IllegalArgumentException("Source and destination frames must have the same count of columns");
@@ -98,31 +113,30 @@ class ASTAssign extends ASTPrim {
   }
 
   // Assign a scalar over some dst rows; optimize for all rows
-  private void assign_frame_scalar(Frame dst, int[] cols, final ASTNumList rows, final double src) {
-    // Check for needing to copy before updating
-    throw H2O.unimpl();
+  private void assign_frame_scalar(Frame dst, int[] cols, final ASTNumList rows, final double src, Session ses) {
 
-    //// Handle fast small case
-    //Vec[] dvecs = dst.vecs();
-    //long nrows = rows.cnt();
-    //if( nrows==1 ) {
-    //  long drow = (long)rows.expand()[0];
-    //  for( Vec vec : dvecs )
-    //    vec.set(drow, src);
-    //  return;
-    //}
-    //
-    //// Bulk assign constant (probably zero) over a frame
-    //if( dst.numRows() == nrows && rows.isDense() ) {
-    //  new MRTask(){
-    //    @Override public void map(Chunk[] cs) {
-    //      for( Chunk c : cs )  c.replaceAll(new C0DChunk(src,c._len));
-    //    }
-    //  }.doAll(dst);
-    //  return;
-    //}
-    //
-    //// Handle large case
+    // Handle fast small case
+    long nrows = rows.cnt();
+    if( nrows==1 ) {
+      Vec[] vecs = ses.copyOnWrite(dst,cols);
+      long drow = (long)rows.expand()[0];
+      for( int i=0; i<cols.length; i++ )
+        vecs[cols[i]].set(drow, src);
+      return;
+    }
+    
+    // Bulk assign constant (probably zero) over a frame.  Directly set
+    // columns: Copy-On-Write optimization happens here on the apply() exit.
+    if( dst.numRows() == nrows && rows.isDense() ) {
+      Vec vsrc = dst.anyVec().makeCon(src);
+      for( int i=0; i<cols.length; i++ )
+        dst.replace(cols[i],vsrc);
+      if( dst._key != null ) DKV.put(dst);
+      return;
+    }
+    
+    throw H2O.unimpl();       // Check for needing to copy before updating
+    // Handle large case
     //new MRTask(){
     //  @Override public void map(Chunk[] cs) {
     //    long start = cs[0].start();
@@ -146,7 +160,7 @@ class ASTAssign extends ASTPrim {
   }
 
   // Assign a scalar over some dst rows; optimize for all rows
-  private void assign_frame_scalar(Frame dst, int[] cols, final ASTNumList rows, final String src) {
+  private void assign_frame_scalar(Frame dst, int[] cols, final ASTNumList rows, final String src, Session ses) {
     // Check for needing to copy before updating
     throw H2O.unimpl();
     //// Handle fast small case
@@ -193,7 +207,7 @@ class ASTAssign extends ASTPrim {
   }
 
   // Boolean assignment with a scalar
-  private void assign_frame_scalar(Frame dst, int[] cols, Frame rows, final double src) {
+  private void assign_frame_scalar(Frame dst, int[] cols, Frame rows, final double src, Session ses) {
     // Check for needing to copy before updating
     throw H2O.unimpl();
     //new MRTask() {
@@ -243,7 +257,7 @@ class ASTTmpAssign extends ASTPrim {
   @Override public String str() { return "tmp=" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Key id = Key.make( asts[1].str() );
-    if( DKV.get(id) != null ) throw new IllegalArgumentException("Temp ID "+id+"already exists");
+    if( DKV.get(id) != null ) throw new IllegalArgumentException("Temp ID "+id+" already exists");
     Frame src = stk.track(asts[2].exec(env)).getFrame();
     Frame dst = new Frame(id,src._names,src.vecs());
     return new ValFrame(env._ses.track_tmp(dst)); // Track new session-wide ID

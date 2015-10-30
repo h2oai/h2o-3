@@ -300,14 +300,13 @@ public class RapidsTest extends TestUtil {
     }
   }
 
-  static void exec_str( String str ) {
-    Val val = Exec.exec(str);
+  static void exec_str( String str, Session ses ) {
+    Val val = Exec.exec(str,ses);
     switch( val.type() ) {
     case Val.FRM:
       Frame fr = val.getFrame();
       System.out.println(fr);
       checkSaneFrame();
-      fr.delete();
       break;
     case Val.NUM:
       System.out.println("num= "+val.getNum());
@@ -343,6 +342,7 @@ public class RapidsTest extends TestUtil {
 
   @Test public void testChicago() {
     String oldtz = Exec.exec("(getTimeZone)").getStr();
+    Session ses = new Session();
     try {
       parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
       parse_test_file(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
@@ -354,103 +354,107 @@ public class RapidsTest extends TestUtil {
       ps.getColumnTypes()[1] = Vec.T_CAT;
       ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
       
-      exec_str("(tmp= census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))");
+      exec_str("(assign census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))", ses);
 
-      exec_str("(tmp= crimes.hex (colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"]))");
+      exec_str("(assign crimes.hex (colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"]))", ses);
 
-      exec_str("(setTimeZone \"Etc/UTC\")");
+      exec_str("(setTimeZone \"Etc/UTC\")", ses);
 
-      exec_str("(tmp= crimes.hex (append crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) \"Day\"))");
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) \"Day\"))", ses);
 
-      exec_str("(tmp= crimes.hex (append crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) \"Month\"))");
+      checkSaneFrame();
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) \"Month\"))", ses);
 
-      Keyed.remove(Key.make("nary_op_30"));
+      exec_str("(rm nary_op_30)",ses);
 
-      exec_str("(tmp= crimes.hex (append crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) #1900)) #1900)) \"Year\"))");
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) #1900)) #1900)) \"Year\"))", ses);
 
-      exec_str("(tmp= crimes.hex (append crimes.hex (tmp= unary_op_10 (week nary_op_5)) \"WeekNum\"))");
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_10 (week nary_op_5)) \"WeekNum\"))", ses);
 
-      Keyed.remove(Key.make("binary_op_32"));
-      Keyed.remove(Key.make("binary_op_31"));
-      Keyed.remove(Key.make("unary_op_8"));
+      exec_str("(rm binary_op_32)",ses);
+      exec_str("(rm binary_op_31)",ses);
+      exec_str("(rm unary_op_8)",ses);
       checkSaneFrame();
 
-      exec_str("(tmp= crimes.hex (append crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) \"WeekDay\"))");
-      Keyed.remove(Key.make("nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip"));
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) \"WeekDay\"))", ses);
+      exec_str("(rm nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip)",ses);
 
-      exec_str("(tmp= crimes.hex (append crimes.hex (tmp= unary_op_12 (hour nary_op_5)) \"HourOfDay\"))");
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_12 (hour nary_op_5)) \"HourOfDay\"))", ses);
 
-      exec_str("(tmp= crimes.hex (append crimes.hex (tmp= nary_op_16 (ifelse (tmp= binary_op_15 (| (tmp= binary_op_13 (== unary_op_11 \"Sun\")) (tmp= binary_op_14 (== unary_op_11 \"Sat\")))) 1 0)) \"Weekend\"))");
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= nary_op_16 (ifelse (tmp= binary_op_15 (| (tmp= binary_op_13 (== unary_op_11 \"Sun\")) (tmp= binary_op_14 (== unary_op_11 \"Sat\")))) 1 0)) \"Weekend\"))", ses);
 
       // Season is incorrectly assigned in the original chicago demo; picks up the Weekend flag
-      exec_str("(tmp= crimes.hex (append crimes.hex nary_op_16 \"Season\"))");
+      exec_str("(assign crimes.hex (append crimes.hex nary_op_16 \"Season\"))", ses);
 
       // Standard "head of 10 rows" pattern for printing
-      exec_str("(tmp= subset_33 (rows crimes.hex [0:10]))");
-      Keyed.remove(Key.make("subset_33"));
+      exec_str("(tmp= subset_33 (rows crimes.hex [0:10]))", ses);
+      exec_str("(rm subset_33)",ses);
 
-      Keyed.remove(Key.make("subset_33"));
-      Keyed.remove(Key.make("unary_op_29"));
-      Keyed.remove(Key.make("nary_op_28"));
-      Keyed.remove(Key.make("nary_op_27"));
-      Keyed.remove(Key.make("nary_op_26"));
-      Keyed.remove(Key.make("binary_op_25"));
-      Keyed.remove(Key.make("binary_op_24"));
-      Keyed.remove(Key.make("binary_op_23"));
-      Keyed.remove(Key.make("binary_op_22"));
-      Keyed.remove(Key.make("binary_op_21"));
-      Keyed.remove(Key.make("binary_op_20"));
-      Keyed.remove(Key.make("binary_op_19"));
-      Keyed.remove(Key.make("binary_op_18"));
-      Keyed.remove(Key.make("binary_op_17"));
-      Keyed.remove(Key.make("nary_op_16"));
-      Keyed.remove(Key.make("binary_op_15"));
-      Keyed.remove(Key.make("binary_op_14"));
-      Keyed.remove(Key.make("binary_op_13"));
-      Keyed.remove(Key.make("unary_op_12"));
-      Keyed.remove(Key.make("unary_op_11"));
-      Keyed.remove(Key.make("unary_op_10"));
-      Keyed.remove(Key.make("binary_op_9"));
-      Keyed.remove(Key.make("unary_op_8"));
-      Keyed.remove(Key.make("unary_op_7"));
-      Keyed.remove(Key.make("unary_op_6"));
-      Keyed.remove(Key.make("nary_op_5"));
+      exec_str("(rm subset_33)",ses);
+      exec_str("(rm unary_op_29)",ses);
+      exec_str("(rm nary_op_28)",ses);
+      exec_str("(rm nary_op_27)",ses);
+      exec_str("(rm nary_op_26)",ses);
+      exec_str("(rm binary_op_25)",ses);
+      exec_str("(rm binary_op_24)",ses);
+      exec_str("(rm binary_op_23)",ses);
+      exec_str("(rm binary_op_22)",ses);
+      exec_str("(rm binary_op_21)",ses);
+      exec_str("(rm binary_op_20)",ses);
+      exec_str("(rm binary_op_19)",ses);
+      exec_str("(rm binary_op_18)",ses);
+      exec_str("(rm binary_op_17)",ses);
+      exec_str("(rm nary_op_16)",ses);
+      exec_str("(rm binary_op_15)",ses);
+      exec_str("(rm binary_op_14)",ses);
+      exec_str("(rm binary_op_13)",ses);
+      exec_str("(rm unary_op_12)",ses);
+      exec_str("(rm unary_op_11)",ses);
+      exec_str("(rm unary_op_10)",ses);
+      exec_str("(rm binary_op_9)",ses);
+      exec_str("(rm unary_op_8)",ses);
+      exec_str("(rm unary_op_7)",ses);
+      exec_str("(rm unary_op_6)",ses);
+      exec_str("(rm nary_op_5)",ses);
       checkSaneFrame();
 
       // Standard "head of 10 rows" pattern for printing
-      exec_str("(tmp= subset_34 (rows crimes.hex [0:10]))");
-      Keyed.remove(Key.make("subset_34"));
+      exec_str("(tmp= subset_34 (rows crimes.hex [0:10]))", ses);
+      exec_str("(rm subset_34)",ses);
 
-      exec_str("(tmp= census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))");
-      Keyed.remove(Key.make("subset_34"));
+      exec_str("(assign census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))", ses);
+      exec_str("(rm subset_34)",ses);
 
-      exec_str("(tmp= subset_35 (cols  crimes.hex [-3]))");
-      exec_str("(tmp= subset_36 (cols weather.hex [-1]))");
+      exec_str("(tmp= subset_35 (cols  crimes.hex [-3]))", ses);
+      exec_str("(tmp= subset_36 (cols weather.hex [-1]))", ses);
 
-      exec_str("(tmp= subset_36 (colnames= subset_36 [0 1 2 3 4 5] [\"Month\" \"Day\" \"Year\" \"maxTemp\" \"meanTemp\" \"minTemp\"]))");
+      exec_str("(tmp= subset_36_2 (colnames= subset_36 [0 1 2 3 4 5] [\"Month\" \"Day\" \"Year\" \"maxTemp\" \"meanTemp\" \"minTemp\"]))", ses);
 
-      Keyed.remove(Key.make("crimes.hex"));
-      Keyed.remove(Key.make("weather.hex"));
+      exec_str("(rm crimes.hex)",ses);
+      exec_str("(rm weather.hex)",ses);
 
       // nary_op_37 = merge( X Y ); Vecs in X & nary_op_37 shared
-      exec_str("(tmp= nary_op_37 (merge subset_35 census.hex TRUE FALSE))");
+      exec_str("(tmp= nary_op_37 (merge subset_35 census.hex TRUE FALSE))", ses);
 
-      // nary_op_38 = merge( nary_op_37 subset_36); Vecs in nary_op_38 and nary_pop_37 and X shared
-      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8))))");
+      // nary_op_38 = merge( nary_op_37 subset_36_2); Vecs in nary_op_38 and nary_pop_37 and X shared
+      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36_2 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8))))", ses);
 
       // Standard "head of 10 rows" pattern for printing
-      exec_str("(tmp= subset_44 (rows subset_41 [0:10]))");
-      Keyed.remove(Key.make("subset_44"));
-      Keyed.remove(Key.make("subset_44"));
-      Keyed.remove(Key.make("binary_op_40"));
-      Keyed.remove(Key.make("nary_op_37"));
+      exec_str("(tmp= subset_44 (rows subset_41 [0:10]))", ses);
+      exec_str("(rm subset_44)",ses);
+      exec_str("(rm subset_44)",ses);
+      exec_str("(rm binary_op_40)",ses);
+      exec_str("(rm nary_op_37)",ses);
 
-      exec_str("(tmp= subset_43 (rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 #0.8))))");
+      exec_str("(tmp= subset_43 (rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 #0.8))))", ses);
 
       // Chicago demo continues on past, but this is all I've captured for now
 
       checkSaneFrame();
+      ses.end();
 
+    } catch( Throwable ex ) {
+      throw ses.endQuietly(ex);
     } finally {
       Exec.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
 
@@ -462,7 +466,7 @@ public class RapidsTest extends TestUtil {
                                    "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
                                    "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
                                    "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
-                                   "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
+                                   "subset_36", "subset_36_2", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
                                    "subset_41", "binary_op_42", "subset_43", "subset_44", } )
         Keyed.remove(Key.make(s));
     }

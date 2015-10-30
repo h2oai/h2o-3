@@ -183,16 +183,19 @@ abstract public class AST extends Iced<AST> {
     init(new ASTRowSlice());
     init(new ASTSetDomain());
     init(new ASTSetLevel());
-    init(new ASTTmpAssign());
-    init(new ASTRm());
+
+    // Assignment; all of these lean heavily on Copy-On-Write optimizations.
+    init(new ASTAppend());      // Add a column
+    init(new ASTAssign());      // Overwrite a global
+    init(new ASTRectangleAssign()); // Overwrite a rectangular slice
+    init(new ASTRm());          // Remove a frame, but maintain internal sharing
+    init(new ASTTmpAssign());   // Create a new immutable tmp frame
 
     // Matrix Ops
     init(new ASTTranspose());
     init(new ASTMMult());
 
     // Complex data mungers
-    init(new ASTAssign());
-    init(new ASTAppend());
     init(new ASTCut());
     init(new ASTDdply());
     init(new ASTGroup());

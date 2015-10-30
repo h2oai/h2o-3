@@ -1,11 +1,13 @@
 package water.rapids;
 
-import water.Key;
-import water.Futures;
 import water.DKV;
+import water.Futures;
+import water.Key;
+import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.*;
+import water.util.Log;
 
 /**
  * Session is a long lasting session supporting caching and Copy-On-Write
@@ -40,12 +42,17 @@ public class Session {
   // Vec that came from global frames, and are considered immutable.  Rapids
   // will always copy these Vecs before mutating or deleting.
   static NonBlockingHashSet<Vec> GLOBALS = new NonBlockingHashSet<>();
+
+  Session() { cluster_init(); }
   
   Val exec(String rapids) { 
     String sane ;
     assert (sane=sanity_check_refs())==null : sane;
 
-    Val val = Exec.exec(rapids,this); 
+    // Parse
+    AST ast = new Exec(rapids).parse();
+    // Execute
+    Val val = ast.exec(new Env(this));
     // This value is being returned of session scope; we are no longer tracking
     // it so on the internal ref-cnts, so lower them - but do not delete if
     // cnts go to zero, this is the return value and it's lifetime is the
@@ -57,6 +64,7 @@ public class Session {
     return val;
   }
 
+  // Normal session exit.
   void end() {
     String sane;
     assert (sane=sanity_check_refs())==null : sane;
@@ -70,6 +78,29 @@ public class Session {
     FRAMES.clear();
     assert (sane=sanity_check_refs())==null : sane;
     REFCNTS.clear();
+  }
+
+  // The Exec call threw an exception.  Best-effort cleanup, no more exceptions
+  RuntimeException endQuietly(Throwable ex) {
+    try { 
+      GLOBALS.clear();
+      Futures fs = new Futures();
+      for( Frame fr : FRAMES.values() ) {
+        for( Vec vec : fr.vecs() ) {
+          Integer I = REFCNTS.get(vec);
+          int i = (I==null ? 0 : I)-1;
+          if( i > 0 ) REFCNTS.put(vec,i); 
+          else { REFCNTS.remove(vec); vec.remove(fs); }
+        }
+        DKV.remove(fr._key,fs);   // Shallow remove, internal Vecs removed 1-by-1
+      }
+      fs.blockForPending();
+      FRAMES.clear();
+      REFCNTS.clear();
+    } catch( Exception ex2 ) {
+      Log.warn("Exception "+ex2+" suppressed while cleaning up Rapids Session after already throwing "+ex);
+    }
+    return ex instanceof RuntimeException ? (RuntimeException)ex : new RuntimeException(ex);
   }
 
   // Internal ref cnts (not counting globals - which only ever keep things
@@ -94,7 +125,7 @@ public class Session {
   }
 
   // RefCnt +i this Vec; Global Refs can be alive with zero internal counts
-  int addRefCnt( Vec vec, int i ) { return _addRefCnt(vec,i) + (GLOBALS.contains(vec) ? 1 : 0); }
+  int addRefCnt( Vec vec, int i ) { return _addRefCnt(vec, i) + (GLOBALS.contains(vec) ? 1 : 0); }
 
   // RefCnt +i all Vecs this Frame.
   Frame addRefCnt( Frame fr, int i ) {
@@ -137,7 +168,7 @@ public class Session {
       fs = downRefCnt(fr,fs);   // Standard down-ref counting of all Vecs
       FRAMES.remove(fr._key);   // And remove from temps
     }
-    DKV.remove(fr._key,fs);     // Shallow remove, internal were Vecs removed 1-by-1
+    DKV.remove(fr._key, fs);     // Shallow remove, internal were Vecs removed 1-by-1
     fs.blockForPending();
   }
 
@@ -151,6 +182,45 @@ public class Session {
         vec.remove(fs);
       }
     return fs;
+  }
+
+  // Update a global ID, maintaining sharing of Vecs
+  Frame assign( Key id, Frame src ) {
+    if( FRAMES.containsKey(id) ) throw new IllegalArgumentException("Cannot reassign temp "+id);
+    Futures fs = new Futures();
+    // Vec lifetime invariant: Globals do not share with other globals (but can
+    // share with temps).  All the src Vecs are about to become globals.  If
+    // the ID already exists, and global Vecs within it are about to die, and thus
+    // may be deleted.
+    Frame fr = DKV.getGet(id);
+    if( fr != null ) {          // Prior frame exists
+      for( Vec vec : fr.vecs() ) {
+        if( GLOBALS.remove(vec) && _getRefCnt(vec) == 0 )
+          vec.remove(fs);       // Remove unused global vec
+      }
+    }
+    Frame fr2 = new Frame(id,src._names.clone(),src.vecs().clone());
+    DKV.put(fr2,fs);
+    addGlobals(fr2);
+    fs.blockForPending();
+    return fr2;
+  }
+
+  // Support C-O-W optimizations: the following list of columns are about to be
+  // updated.  Copy them as-needed and replace in the Frame.  Return the
+  // updated Frame vecs for flow-coding.
+  Vec[] copyOnWrite( Frame fr, int[] cols ) {
+    Vec did_copy = null;        // Did a copy?
+    Vec[] vecs = fr.vecs();
+    for( int i=0; i<cols.length; i++ ) {
+      Vec vec = vecs[cols[i]];
+      int refcnt = getRefCnt(vec);
+      assert refcnt > 0;
+      if( refcnt > 1 )
+        fr.replace(cols[i],(did_copy = vec.makeCopy()));
+    }
+    if( did_copy != null && fr._key != null ) DKV.put(fr); // Then update frame in the DKV
+    return vecs;
   }
 
   // Check that ref cnts are sane.  Only callable between calls to Rapids
@@ -177,5 +247,16 @@ public class Session {
     if( refcnts.size() != REFCNTS.size() ) 
       return "Cached REFCNTS has "+REFCNTS.size()+" vecs, and computed refcnts has "+refcnts.size()+" vecs";
     return null;                // OK
+  }
+
+  // To avoid a class-circularity hang, we need to force other members of the
+  // cluster to load the Exec & AST classes BEFORE trying to execute code
+  // remotely, because e.g. ddply runs functions on all nodes.
+  private static volatile boolean _inited; // One-shot init
+  static void cluster_init() {
+    if( _inited ) return;
+    // Touch a common class to force loading
+    new MRTask() { @Override public void setupLocal() { new ASTPlus(); } }.doAllNodes();
+    _inited = true;
   }
 }

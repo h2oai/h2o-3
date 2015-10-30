@@ -18,7 +18,7 @@ public class RefCntTest extends TestUtil {
   // Test basic Copy-On-Write optimization is working, by witnessing that the
   // correct (small) number of real vec copies are made, despite many virtual
   // copies being made.
-  @Test @Ignore
+  @Test
   public void testBasic() {
     Session session = new Session();
     Frame crimes = parse_test_file(Key.make("chicagoCrimes10k.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");

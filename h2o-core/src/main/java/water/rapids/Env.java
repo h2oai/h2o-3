@@ -74,6 +74,16 @@ public class Env extends Iced {
       }
       if( fs != null ) fs.blockForPending();
     }
+
+    // Pop last element and lower refcnts - but do not delete.  Lifetime is
+    // responsibility of the caller.
+    Val untrack(Val vfr) {
+      if( !vfr.isFrame() ) return vfr;
+      Frame fr = vfr.getFrame();
+      _ses.addRefCnt(fr,-1);           // Lower counts, but do not delete on zero
+      return vfr;
+    }
+
   }
 
   // If an opcode is returning a Frame, it must call "returning(frame)" to

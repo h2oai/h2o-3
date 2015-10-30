@@ -1,6 +1,5 @@
 package water.rapids;
 
-import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.*;
@@ -39,25 +38,19 @@ public class Exec {
 
   public Exec(String str) { _str = str; }
 
-  public static Val exec( String str ) throws IllegalArgumentException {
-    cluster_init();    // Force class loading before requiring remote execution
-    // Parse
-    AST ast = new Exec(str).parse();
+  public static Val exec( String str ) {
     // Execute a single rapids call in a short-lived session
     Session ses = new Session();
-    Val val = ast.exec(new Env(ses));
-    ses.end();
-    return val;
+    try { 
+      Val val = ses.exec(str);
+      ses.end();
+      return val;
+    } catch( Throwable ex ) {
+      throw ses.endQuietly(ex);
+    }
   }
 
-  static Val exec( String str, Session ses ) throws IllegalArgumentException {
-    cluster_init();    // Force class loading before requiring remote execution
-    // Parse
-    AST ast = new Exec(str).parse();
-    // Execute
-    Val val = ast.exec(new Env(ses));
-    return val;
-  }
+  static Val exec( String str, Session ses ) { return ses.exec(str); }
 
   // Parse an expression
   //   '('   a nested function application expression ')
@@ -150,15 +143,4 @@ public class Exec {
     throw new IllegalASTException(s);
   }
   static class IllegalASTException extends IllegalArgumentException { IllegalASTException(String s) {super(s);} }
-
-  // To avoid a class-circularity hang, we need to force other members of the
-  // cluster to load the Exec & AST classes BEFORE trying to execute code
-  // remotely, because e.g. ddply runs functions on all nodes.
-  private static volatile boolean _inited; // One-shot init
-  static void cluster_init() {
-    if( _inited ) return;
-    // Touch a common class to force loading
-    new MRTask() { @Override public void setupLocal() { new ASTPlus(); } }.doAllNodes();
-    _inited = true;
-  }
 }

@@ -88,11 +88,9 @@ class ASTColPySlice extends ASTPrim {
 
 /** Row Slice */
 class ASTRowSlice extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "rows"}; }
+  @Override public String[] args() { return new String[]{"ary", "rows"}; }
   @Override int nargs() { return 1+2; } // (rows src [row_list])
-  @Override
-  public String str() { return "rows" ; }
+  @Override public String str() { return "rows" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame returningFrame;
@@ -249,7 +247,7 @@ class ASTRBind extends ASTPrim {
   @Override int nargs() { return -1; } // variable number of args
   @Override
   public String str() { return "rbind" ; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
 
     // Execute all args.  Find a canonical frame; all Frames must look like this one.
     // Each argument turns into either a Frame (whose rows are entirely
@@ -274,15 +272,15 @@ class ASTRBind extends ASTPrim {
     // Verify all Frames are the same columns, names, and types.  Domains can vary, and will be the union
     final Frame frs[] = new Frame[asts.length]; // Input frame
     final byte[] types = fr.types();  // Column types
-    final int ncols = fr.numCols();
     final long[] espc = new long[nchks+1]; // Compute a new layout!
     int coffset = 0;
 
+    Frame[] tmp_frs = new Frame[asts.length];
     for( int i=1; i<asts.length; i++ ) {
       Val val = vals[i];        // Save values computed for pass 2
       Frame fr0 = val.isFrame() ? val.getFrame() 
         // Scalar: auto-expand into a 1-row frame
-        : stk.track(new Frame(fr._names,Vec.makeCons(val.getNum(),1L,fr.numCols())));
+        : (tmp_frs[i] = new Frame(fr._names,Vec.makeCons(val.getNum(),1L,fr.numCols())));
 
       // Check that all frames are compatible
       if( fr.numCols() != fr0.numCols() ) 
@@ -342,6 +340,7 @@ class ASTRBind extends ASTPrim {
     // Switch to F/J thread for continuations
     ParallelRbinds t;
     H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs,cmaps)).join();
+    for( Frame tfr : tmp_frs ) if( tfr != null ) tfr.delete();
     return new ValFrame(new Frame(fr.names(), t._vecs));
   }
 
