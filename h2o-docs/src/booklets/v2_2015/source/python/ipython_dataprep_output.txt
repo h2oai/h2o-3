@@ -39,10 +39,11 @@ Uploaded py9bccf8ce-c01e-40c8-bc73-b8e7e0b17c6a into cluster with 3 rows and 3 c
 
 In [4]: df
 Out[4]: H2OFrame with 3 rows and 3 columns:
-    C1   C2   C3
-0  1.0  2.0  3.0
-1  NaN  NaN  NaN
-2  0.1  0.2  0.3
+  C1  C2      C3
+----  ----  ----
+   1  a      0.1
+   2  b      0.2
+   3  c      0.3
 
 In [5]: df = h2o.H2OFrame([[1, 2, 3],
    ...:                    ['a', 'b', 'c'],
@@ -53,10 +54,11 @@ Uploaded py2c9ccb17-a86e-47d7-be1a-a7950b338870 into cluster with 3 rows and 3 c
 
 In [6]: df
 Out[6]: H2OFrame with 3 rows and 3 columns:
-    C1   C2   C3
-0  1.0  2.0  3.0
-1  NaN  NaN  NaN
-2  0.1  0.2  0.3
+  C1  C2      C3
+----  ----  ----
+   1  a      0.1
+   2  b      0.2
+   3  c      0.3
 
 In [7]: df = h2o.H2OFrame({'A': [1, 2, 3],
    ...:                    'B': ['a', 'b', 'c'],
@@ -67,33 +69,35 @@ Uploaded py2714e8a2-67c7-45a3-9d47-247120c5d931 into cluster with 3 rows and 3 c
 
 In [8]: df
 Out[8]: H2OFrame with 3 rows and 3 columns:
-   A    C  B
-0  1  0.1  a
-1  2  0.2  b
-2  3  0.3  c
+  A    C  B
+---  ---  ---
+  1  0.1  a
+  2  0.2  b
+  3  0.3  c
 
-In [9]: df2 = h2o.H2OFrame({'A': [1, 2, 3],
-   ...:                     'B': ['a', 'a', 'b'],
-   ...:                     'C': ['hello', 'all', 'world'],
-   ...:                     'D': ['12MAR2015:11:00:00', '13MAR2015:12:00:00', '14MAR2015:13:00:00']},
-   ...:                    column_types=['numeric', 'enum', 'string', 'time'])
+In [14]: df2 = h2o.H2OFrame.from_python({'A': [1, 2, 3],
+   ....:                                 'B': ['a', 'a', 'b'],
+   ....:                                 'C': ['hello', 'all', 'world'],
+   ....:                                 'D': ['12MAR2015:11:00:00', '13MAR2015:12:00:00', '14MAR2015:13:00:00']},
+   ....:                                 column_types=['numeric', 'enum', 'string', 'time'])
 
 Parse Progress: [##################################################] 100%
 Uploaded py17ea1f6d-ae83-451d-ad33-89e770061601 into cluster with 3 rows and 4 cols
 
 In [10]: df2
 Out[10]: H2OFrame with 3 rows and 4 columns:
-   A      C  B                   D
-0  1  hello  a 2015-03-12 11:00:00
-1  2    all  a 2015-03-13 12:00:00
-2  3  world  b 2015-03-14 13:00:00
+  A      C  B                   D
+--- ------ -- -------------------
+  1  hello  a 2015-03-12 11:00:00
+  2    all  a 2015-03-13 12:00:00
+  3  world  b 2015-03-14 13:00:00
 
 In [11]: df2.types
 Out[11]: {u'A': u'numeric', u'B': u'string', u'C': u'enum', u'D': u'time'}
 
 In [16]: import numpy as np
 
-In [17]: df = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+In [17]: df = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
 
 Parse Progress: [##################################################] 100%
 Uploaded py0a4d1d8d-7d04-438a-a97f-a9521f802366 into cluster with 100 rows and 4 cols
@@ -155,7 +159,6 @@ mean           -0.0106208424692  -0.231598107744  0.114237537891  -0.16228190933
 sigma          1.04354596785     0.905765044785   0.961335815956  1.02608775498
 zero_count     0                 0                0               0
 missing_count  0                 0                0               0
-
 In [23]: df['A']
 Out[23]: H2OFrame with 100 rows and 1 columns:
           A
@@ -169,7 +172,6 @@ Out[23]: H2OFrame with 100 rows and 1 columns:
 7  1.400853
 8 -0.746025
 9 -1.120648
-
 In [24]: df[1]
 Out[24]: H2OFrame with 100 rows and 1 columns:
           B
@@ -183,7 +185,6 @@ Out[24]: H2OFrame with 100 rows and 1 columns:
 7  1.919987
 8 -0.632182
 9  0.374212
-
 In [25]: df[['B','C']]
 Out[25]: H2OFrame with 100 rows and 2 columns:
           B         C
@@ -197,7 +198,6 @@ Out[25]: H2OFrame with 100 rows and 2 columns:
 7  1.919987  0.514212
 8 -0.632182  1.274552
 9  0.374212  0.232229
-
 In [26]: df[0:2]
 Out[26]: H2OFrame with 100 rows and 2 columns:
           A         B
@@ -227,11 +227,11 @@ Out[28]: H2OFrame with 2 rows and 4 columns:
 0  1  hello  a 2015-03-12 11:00:00
 1  2    all  a 2015-03-13 12:00:00
 
-In [46]: df3 = h2o.H2OFrame({'A': [1, 2, 3,None,''],
-   ....:                     'B': ['a', 'a', 'b', 'NA', 'NA'],
-   ....:                     'C': ['hello', 'all', 'world', None, None],
-   ....:                     'D': ['12MAR2015:11:00:00',None,'13MAR2015:12:00:00',None,'14MAR2015:13:00:00']},
-   ....:                    column_types=['numeric', 'enum', 'string', 'time'])
+In [46]: df3 = h2o.H2OFrame.from_python({'A': [1, 2, 3,None,''],
+   ....:                                 'B': ['a', 'a', 'b', 'NA', 'NA'],
+   ....:                                 'C': ['hello', 'all', 'world', None, None],
+   ....:                                 'D': ['12MAR2015:11:00:00',None,'13MAR2015:12:00:00',None,'14MAR2015:13:00:00']},
+   ....:                                 column_types=['numeric', 'enum', 'string', 'time'])
 
 Parse Progress: [##################################################] 100%
 Uploaded py9fdee149-dce2-4ace-91d8-e14e0d0c306a into cluster with 5 rows and 4 cols
@@ -274,25 +274,25 @@ Out[53]: H2OFrame with 5 rows and 4 columns:
 3   0   1   0   1
 4   0   1   0   0
 
-In [60]: df4 = h2o.H2OFrame({'A': [1, 2, 3,None,''],
-   ....:                     'B': ['a', 'a', 'b', 'NA', 'NA'],
-   ....:                     'C': ['hello', 'all', 'world', None, None],
-   ....:                     'D': ['12MAR2015:11:00:00',None,'13MAR2015:12:00:00',None,'14MAR2015:13:00:00']},
-   ....:                    column_types=['numeric', 'enum', 'string', 'time'])
+In [60]: df4 = h2o.H2OFrame.from_python({'A': [1, 2, 3,None,''],
+   ....:                                 'B': ['a', 'a', 'b', 'NA', 'NA'],
+   ....:                                 'C': ['hello', 'all', 'world', None, None],
+   ....:                                 'D': ['12MAR2015:11:00:00',None,'13MAR2015:12:00:00',None,'14MAR2015:13:00:00']},
+   ....:                                 column_types=['numeric', 'enum', 'string', 'time'])
 
 Parse Progress: [##################################################] 100%
 Uploaded py560240ff-1668-4445-8ae1-538a0b3daf53 into cluster with 5 rows and 4 cols
 
-In [61]: df4.mean()
-Out[61]: [2.0, nan, nan, 1426273200000.0]
+In [61]: df4.mean(na_rm=True)
+Out[61]: [2.0, u'NaN', u'NaN', u'NaN']
 
 In [62]: df4["A"].mean()
-Out[62]: nan
+Out[62]: [u'NaN']
 
 In [64]: df4["A"].mean(na_rm=True)
-Out[64]: 2.0
+Out[64]: [2.0]
 
-In [5]: df5 = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+In [5]: df5 = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
 
 Parse Progress: [##################################################] 100%
 Uploaded py70e769fb-4a6f-43b5-8c58-7953c9651f48 into cluster with 100 rows and 4 cols
@@ -316,7 +316,7 @@ Out[26]: H2OFrame with 100 rows and 1 columns:
 8  2.321706
 9 -0.700436
 
-In [49]: df6 = h2o.H2OFrame(zip(np.random.randint(0, 7, size=100)))
+In [49]: df6 = h2o.H2OFrame(np.random.randint(0, 7, size=100).tolist())
 
 Parse Progress: [##################################################] 100%
 Uploaded py5b584604-73ff-4037-9618-c53122cd0343 into cluster with 100 rows and 1 cols
@@ -336,7 +336,7 @@ Out[50]: H2OFrame with 8 rows and 5 columns:
 6    5.25      19        2.0  4.875  0.221667
 7    6.00      32        2.5  5.625  0.373333
 
-In [62]: df7 = h2o.H2OFrame( zip(['Hello', 'World', 'Welcome', 'To', 'H2O', 'World']))
+In [62]: df7 = h2o.H2OFrame.from_python(['Hello', 'World', 'Welcome', 'To', 'H2O', 'World'])
 
 Parse Progress: [##################################################] 100%
 Uploaded py95985523-6984-4f61-bd9e-c436aa8c8004 into cluster with 6 rows and 1 cols
@@ -361,15 +361,15 @@ Out[65]: H2OFrame with 6 rows and 1 columns:
 4   0
 5   1
 
-In [89]: df7.sub('o','0')
+In [89]: df7.sub('l','x')
 Out[89]: H2OFrame with 6 rows and 1 columns:
         C1
-0    Hell0
-1    W0rld
-2  Welc0me
-3       T0
+0    Hexlo
+1    Worxd
+2  Wexcome
+3       To
 4      H2O
-5    W0rld
+5    Worxd
 
 In [86]: df7.strsplit('(l)+')
 Out[86]: H2OFrame with 6 rows and 2 columns:
@@ -381,12 +381,12 @@ Out[86]: H2OFrame with 6 rows and 2 columns:
 4  H2O   NaN
 5  Wor     d
 
-In [98]: df8 = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+In [98]: df8 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
 
 Parse Progress: [##################################################] 100%
 Uploaded py9607f2cc-087a-4d99-ba9f-917ca852c1f2 into cluster with 100 rows and 4 cols
 
-In [99]: df9 = h2o.H2OFrame(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+In [99]: df9 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
 
 Parse Progress: [##################################################] 100%
 Uploaded pycb8b3aba-77d6-4383-88dd-4729f1f2c314 into cluster with 100 rows and 4 cols
@@ -431,13 +431,13 @@ Out[101]: H2OFrame with 100 rows and 8 columns:
 8  1.446025
 9 -0.053331
 
-In [108]: df10 = h2o.H2OFrame( { 'A': ['Hello', 'World', 'Welcome', 'To', 'H2O', 'World'],
-   .....:                        'n': [0,1,2,3,4,5]} )
+In [108]: df10 = h2o.H2OFrame.from_python( { 'A': ['Hello', 'World', 'Welcome', 'To', 'H2O', 'World'],
+   .....:                                    'n': [0,1,2,3,4,5]} )
 
 Parse Progress: [##################################################] 100%
 Uploaded py57e84cb6-ce29-4d13-afe4-4333b2186c72 into cluster with 6 rows and 2 cols
 
-In [109]: df11 = h2o.H2OFrame(zip(np.random.randint(0, 10, size=100)), column_names=['n'])
+In [109]: df11 = h2o.H2OFrame.from_python(np.random.randint(0, 10, size=100).tolist9), column_names=['n'])
 
 Parse Progress: [##################################################] 100%
 Uploaded py090fa929-b434-43c0-81bd-b9c61b553a31 into cluster with 100 rows and 1 cols
@@ -508,8 +508,8 @@ Out[129]: H2OFrame with 8 rows and 6 columns:
 6  foo    one  0.098259 -1.391587  1.682168 -1.833366
 7  foo  three  0.412450 -0.050374  0.412450 -0.050374
 
-In [140]: df14 = h2o.H2OFrame({'D': ['18OCT2015:11:00:00','19OCT2015:12:00:00','20OCT2015:13:00:00']},
-   .....:                     column_types=['time'])
+In [140]: df14 = h2o.H2OFrame.from_python({'D': ['18OCT2015:11:00:00','19OCT2015:12:00:00','20OCT2015:13:00:00']},
+   .....:                                  column_types=['time'])
 
 Parse Progress: [##################################################] 100%
 Uploaded py60bef051-8017-49cf-af57-2ed6d68db6d0 into cluster with 3 rows and 1 cols

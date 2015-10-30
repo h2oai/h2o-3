@@ -1,4 +1,4 @@
-hidden_opt = [[200,200],[100,300,100],[500,500,500]]
+hidden_opt = [[32,32],[32,16,8],[100]]
 l1_opt = [1e-5,1e-7]
 
 hyper_parameters = {"hidden":hidden_opt, "l1":l1_opt}
