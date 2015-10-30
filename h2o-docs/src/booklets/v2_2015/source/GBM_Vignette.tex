@@ -156,6 +156,7 @@ H2O's GBM functionalities include:
 \item distributed and parallelized computation on either a single node or a multi-node cluster
 \item fast and memory-efficient Java implementations of the algorithms
 \item the ability to run H2O from R, Python, Scala, or the intuitive web UI (Flow)
+\item automatic early stopping based on convergence of user-specified metrics to user-specified relative tolerance
 \item grid search for hyperparameter optimization and model selection
 \item model export in plain Java code for deployment in production environments
 \item additional parameters for model tuning (for a complete listing of parameters, refer to the {\textbf{\nameref{ssec:Model Parameters}}} section.)
@@ -287,6 +288,16 @@ addition $\nu \cdot \sum_{j=1}^{J_m} \gamma_{jkm} I(x \in R_{jkm})$, where the c
 
 Smaller values of $\nu$ lead to greater rates of training errors, assuming that $M$ is constant. In general, $\nu$ and $M$ are inversely related when the error rate is  constant. However, despite the greater rate of training error with small values of $\nu$, very small ($\nu < 0.1$) values typically lead to better generalization and performance on test data.
 
+\subsubsection{Convergence-based Early Stopping}
+One nice feature for finding the optimal number of trees is early stopping based on convergence of a user-specified metric. By default, it uses the metrics on the validation dataset, if provided. Otherwise, training metrics are used.
+
+\begin{itemize}
+\item To stop model building if misclassification improves (goes down) by less than one percent between individual scoring events, specify \\\texttt{stopping\_rounds=1}, \texttt{stopping\_tolerance=0.01} and \\\texttt{stopping\_metric="misclassification"}.
+\item To stop model building if the moving average of the (window 5) AUC improves (goes up) by less than 0.001 for 5 consecutive scoring events, specify \texttt{stopping\_rounds=5}, \texttt{stopping\_tolerance=0.001} and \texttt{stopping\_metric="AUC"}.
+\item To stop model building if the logloss on the validation set does not improve at all for 3 consecutive scoring events, specify a \texttt{validation\_frame}, \texttt{stopping\_rounds=3}, \texttt{stopping\_tolerance=0} and \\\texttt{stopping\_metric="logloss"}.
+\item To not stop model building even after metrics have converged, disable this feature with \texttt{stopping\_rounds=0}.
+\item To compute the best number of trees with cross-validation, simply specify \texttt{stopping\_rounds>0} as in the examples above, in combination with \texttt{nfolds>1}, and the main model will pick the ideal number of trees from the convergence behavior of the \texttt{nfolds} cross-validation models.
+\end{itemize}
 
 \section{Use Case: Airline Data Classification}
 Download the Airline dataset from: {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/airlines/allyears2k_headers.zip}} and save the .csv file to your working directory. 
@@ -354,6 +365,7 @@ new data, which can then be used for further tasks in the interactive modeling p
 \subsection{Web Interface}
 
 H2O users have the option of using an intuitive web interface for H2O, Flow. After loading data or training a model, point your browser to your IP address and port number (e.g., localhost:12345) to launch the web interface. In the web UI, click \textsc{Admin} $>$ \textsc{Jobs} to view specific details about your model or click \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames.
+
 
 \subsection{Variable Importances}
 
@@ -441,6 +453,10 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{max\_confusion\_matrix\_size}}: Maximum size (number of classes) for confusion matrices to print in the H2O logs.  The default is 20.
 \item {\texttt{max\_hit\_ratio\_k}}: (for multi-class only) Maximum number (top K) of predictions to use for hit ratio computation.  To disable, enter  {\texttt{0}}. The default is 10.
 \item {\texttt{r2\_stopping}}: Stop making trees when the $R^2$ metric equals or exceeds this value.  The default is 0.999999.
+\item \texttt{regression\_stop}: Specifies the stopping criterion for regression error (MSE) on the training data scoring dataset. When the error is at or below this threshold, training stops. The default is 1e-6.  To disable, specify \texttt{-1}.
+\item \texttt{stopping\_rounds}: Early stopping based on convergence of \\\texttt{stopping\_metric}. Stop if simple moving average of length k of the \texttt{stopping\_metric} does not improve for k:=\texttt{stopping\_rounds} scoring events. Can only trigger after at least 2k scoring events. To disable, specify \texttt{0}.
+\item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO, deviance, logloss, MSE, AUC, r2, misclassification}.
+\item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
 \item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network overhead but fewer CPUs used. Suitable for small datasets.  The default is {\texttt{FALSE}}.
 \item {\texttt{tweedie\_power}}: A numeric specifying the power for the Tweedie function when \texttt{distribution = "tweedie"}.  The default is 1.5.
 \item {\texttt{checkpoint}}: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
