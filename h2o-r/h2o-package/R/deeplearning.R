@@ -65,6 +65,14 @@
 #'        (-1 to disable)
 #' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to
 #'        disable)
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric.
+#'        Stop if simple moving average of length k of the metric does not improve
+#'        (by relative _stopping_tolerance) for k=stopping_rounds scoring events.
+#'        Can only trigger after at least 2k scoring events. Use 0 to disable.
+#' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
+#'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
+#'        improvement is less than this value, stop)
 #' @param quiet_mode Enable quiet mode for less output to standard output
 #' @param max_confusion_matrix_size Max. size (number of classes) for confusion matrices to be shown
 #' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ratio computation(for
@@ -159,6 +167,9 @@ h2o.deeplearning <- function(x, y, training_frame,
                              score_duty_cycle,
                              classification_stop,
                              regression_stop,
+                             stopping_rounds=0,
+                             stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
+                             stopping_tolerance=0,
                              quiet_mode,
                              max_confusion_matrix_size,
                              max_hit_ratio_k,
@@ -294,6 +305,9 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$classification_stop <- classification_stop
   if(!missing(regression_stop))
     parms$regression_stop <- regression_stop
+  if(!missing(stopping_rounds)) parms$stopping_rounds <- stopping_rounds
+  if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
+  if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
   if(!missing(quiet_mode))
     parms$quiet_mode <- quiet_mode
   if(!missing(max_confusion_matrix_size))
