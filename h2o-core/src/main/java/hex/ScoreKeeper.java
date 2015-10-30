@@ -24,6 +24,9 @@ public class ScoreKeeper extends Iced {
   public ScoreKeeper() {}
   public ScoreKeeper(double mse) { _mse = mse; }
   public ScoreKeeper(ModelMetrics mm) { fillFrom(mm); }
+  public boolean isEmpty() {
+    return Double.isNaN(_mse) && Double.isNaN(_logloss); // at least one of them should always be filled
+  }
 
   public void fillFrom(ModelMetrics m) {
     if (m == null) return;
@@ -73,11 +76,14 @@ public class ScoreKeeper extends Iced {
 
   public enum StoppingMetric { AUTO, deviance, logloss, MSE, AUC, r2, misclassification}
 
-  public static boolean earlyStopping(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion) {
+  public static boolean earlyStopping(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement) {
     if (k == 0) return false;
     int len = sk.length - 1; //how many "full"/"conservative" scoring events we have (skip the first)
     if (len < 2*k) return false; //need at least k for SMA and another k to tell whether the model got better or not
 
+    if (criterion==StoppingMetric.AUTO) {
+      criterion = classification ? StoppingMetric.logloss : StoppingMetric.deviance;
+    }
 
     boolean moreIsBetter = (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2);
     double movingAvg[] = new double[k+1]; //need one moving average value for the last k+1 scoring events
@@ -112,8 +118,8 @@ public class ScoreKeeper extends Iced {
           case MSE:
             val = skj._mse;
             break;
-          case AUTO:
-            val = classification ? skj._logloss : skj._mean_residual_deviance;
+          case deviance:
+            val = skj._mean_residual_deviance;
             break;
           case logloss:
             val = skj._logloss;
@@ -138,10 +144,15 @@ public class ScoreKeeper extends Iced {
     }
     assert(lastBeforeK != Double.MAX_VALUE);
     assert(bestInLastK != Double.MAX_VALUE);
-    Log.info("Moving averages (length " + k + ") of last " + (k+1) + " metrics: " + Arrays.toString(movingAvg));
+    Log.info("Moving averages (length " + k + ") of last " + (k+1) + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
 
-    boolean improved = moreIsBetter ? bestInLastK > lastBeforeK : bestInLastK < lastBeforeK;
-    Log.info("Checking convergence of " + criterion.getClass().getSimpleName() + ": " + lastBeforeK + " --> " + bestInLastK + (improved ? " (improved)." : " (got worse)."));
+//    boolean improved = moreIsBetter ? bestInLastK > lastBeforeK
+//            :
+//            bestInLastK < lastBeforeK;
+    boolean improved = moreIsBetter ? bestInLastK/lastBeforeK > 1+rel_improvement
+            :
+            bestInLastK/lastBeforeK < 1-rel_improvement;
+    Log.info("Checking model convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
     return !improved;
   }
 

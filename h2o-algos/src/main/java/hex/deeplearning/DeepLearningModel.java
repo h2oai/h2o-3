@@ -134,7 +134,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   // Lower is better
   public float loss() {
-    return (float) (_output.isClassifier() ? logloss() : _output.autoencoder ? mse() : deviance());
+    switch (_parms._stopping_metric) {
+      case MSE:
+        return (float) mse();
+      case logloss:
+        return (float) logloss();
+      case deviance:
+        return (float) deviance();
+      case misclassification:
+        return (float) classification_error();
+      case AUC:
+        return (float)(1-auc());
+      case AUTO:
+      default:
+        return (float) (_output.isClassifier() ? logloss() : _output.autoencoder ? mse() : deviance());
+
+    }
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -188,6 +203,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double mse() {
     if (errors == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+  }
+
+  public double auc() {
+    if (errors == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
   }
 
   public double deviance() {
@@ -616,28 +636,30 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
                       // otherwise, compare against our own _bestError
                       (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
       ) ) {
-        if (!get_params()._quiet_mode)
-          Log.info("Loss reduced from " + _bestLoss + " to " + loss() + ".");
         _bestLoss = loss();
         putMeAsBestModel(actual_best_model_key);
       }
       // print the freshly scored model to ASCII
       if (keep_running && printme)
         Log.info(toString());
+      if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
+              || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
+        Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
+        stopped_early = true;
+      }
+      if (ScoreKeeper.earlyStopping(scoreKeepers(),
+              get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric, get_params()._stopping_tolerance
+      )) {
+        Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
+        stopped_early = true;
+      }
       if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
     }
-    if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
-        || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
-      Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
-      stopped_early = true;
-      keep_running = false;
-    }
-    if (ScoreKeeper.earlyStopping(scoreKeepers(),
-            get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric
-    )) {
-      Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
-      stopped_early = true;
-      keep_running = false;
+    if (stopped_early) {
+      // pretend as if we finished all epochs to get the progress bar pretty (especially for N-fold and grid-search)
+      ((Job) DKV.getGet(job_key)).update((long) (_parms._epochs * training_rows));
+      update(job_key);
+      return false;
     }
     progressUpdate(progressKey, job_key, iteration, keep_running);
     update(job_key);

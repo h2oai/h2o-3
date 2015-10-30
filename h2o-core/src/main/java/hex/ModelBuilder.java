@@ -904,6 +904,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._checkpoint != null && DKV.get(_parms._checkpoint) == null) {
       error("_checkpoint", "Checkpoint has to point to existing model!");
     }
+
+    if (_parms._stopping_tolerance < 0) {
+      error("_stopping_tolerance", "Stopping tolerance must be >= 0.");
+    }
+    if (_parms._stopping_tolerance >= 1) {
+      error("_stopping_tolerance", "Stopping tolerance must be < 1.");
+    }
+    if (_parms._stopping_rounds == 0) {
+      hide("_stopping_metric", "Stopping metric is not needed for _stopping_rounds=0.");
+    } else if (_parms._stopping_rounds < 0) {
+      error("_stopping_rounds", "Stopping rounds must be >= 0.");
+    } else {
+      if (isClassifier()) {
+        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance) {
+          error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
+        }
+        if (nclasses()!=2 && _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC) {
+          error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
+        }
+      } else {
+        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss)
+        {
+          error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+        }
+      }
+    }
   }
 
   public void checkDistributions() {
