@@ -462,41 +462,41 @@ To connect to an established H2O cluster (in a multi-node Hadoop environment, fo
 \lstinputlisting[style=python, firstline=587, lastline=588]{python/ipython_dataprep_output.txt}
 
 To create an H2OFrame object from a python tuple:
-\lstinputlisting[style=python, firstline=33, lastline=45]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=33, lastline=46]{python/ipython_dataprep_output.txt}
 
 To create an H2OFrame object from a python list:
-\lstinputlisting[style=python, firstline=47, lastline=59]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=48, lastline=61]{python/ipython_dataprep_output.txt}
 
 To create an H2OFrame object from a python dict (or collections.OrderedDict):
-\lstinputlisting[style=python, firstline=61, lastline=73]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=63, lastline=76]{python/ipython_dataprep_output.txt}
 
 To create an H2OFrame object from a python dict, specifying the column types:
-\lstinputlisting[style=python, firstline=75, lastline=89]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=78, lastline=93]{python/ipython_dataprep_output.txt}
 
 Introspecting the column types:
-\lstinputlisting[style=python, firstline=91, lastline=92]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=95, lastline=96]{python/ipython_dataprep_output.txt}
 
 \subsection{Viewing Data}
 See the top and bottom of an H2OFrame:
-\lstinputlisting[style=python, firstline=94, lastline=124]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=98, lastline=128]{python/ipython_dataprep_output.txt}
 
 Display the column names:
-\lstinputlisting[style=python, firstline=126, lastline=127]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=130, lastline=131]{python/ipython_dataprep_output.txt}
 
 Describe shows compression information, distribution (in multi-machine clusters), and summary statistics of your data:
 \small
-\lstinputlisting[style=python, firstline=129, lastline=157]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=133, lastline=161]{python/ipython_dataprep_output.txt}
 \normalsize
 
 \subsection{Selection}
 Selecting a single column by name, which yields an H2OFrame:
-\lstinputlisting[style=python, firstline=159, lastline=171]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=162, lastline=174]{python/ipython_dataprep_output.txt}
 
 Selecting a single column by index, which yields an H2OFrame:
-\lstinputlisting[style=python, firstline=173, lastline=185]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=175, lastline=187]{python/ipython_dataprep_output.txt}
 
 Selecting multiple columns by name, which yields an H2OFrame:
-\lstinputlisting[style=python, firstline=187, lastline=199]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=188, lastline=200]{python/ipython_dataprep_output.txt}
 
 Selecting multiple columns by index, which yields an H2OFrame:
 \lstinputlisting[style=python, firstline=201, lastline=213]{python/ipython_dataprep_output.txt}
@@ -548,7 +548,7 @@ in this case an H2OFrame is returned containing the sum of all columns:
 
 H2O provides many methods for histogramming and descretizing data.
 Here is an example of using the {\texttt{hist}} method on a single data frame:
-\lstinputlisting[style=python, firstline=321, lastline=337]{python/ipython_dataprep_output.txt}
+\lstinputlisting[style=python, firstline=319, lastline=337]{python/ipython_dataprep_output.txt}
 
 H2O is equipped with a set of string processing methods in the H2OFrame class
 that make it easy to operate on each element in an H2OFrame.  Some code snippets are below.
@@ -556,7 +556,7 @@ that make it easy to operate on each element in an H2OFrame.  Some code snippets
 To determine the number of times a string is contained in each element:
 \lstinputlisting[style=python, firstline=339, lastline=362]{python/ipython_dataprep_output.txt}
 
-Replace first occurance of `o' (lower case letter) with `0' (zero) and return a new H2OFrame:
+Replace first occurance of `l' (lower case letter) with `x' and return a new H2OFrame:
 \lstinputlisting[style=python, firstline=364, lastline=372]{python/ipython_dataprep_output.txt}
 
 For global substitution {\texttt{gsub}}.  Both {\texttt{sub}} and {\texttt{gsub}} support regular expressions.

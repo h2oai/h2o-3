@@ -383,8 +383,7 @@ class ASTToUpper extends ASTPrim {
  * expression with the given replacement.
  */
 class ASTReplaceFirst extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
+  @Override public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replacefirst"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -415,7 +414,7 @@ class ASTReplaceFirst extends ASTPrim {
   }
 
   private Vec replaceFirstCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
-    String[] doms = vec.domain();
+    String[] doms = vec.domain().clone();
     for (int i = 0; i < doms.length; ++i)
       doms[i] = ignoreCase
           ? doms[i].toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement)
