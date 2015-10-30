@@ -64,6 +64,7 @@ class H2OFrame:
       A str list of column names
     """
     if not self._ex._cache.names_valid():
+      self._ex._cache.flush()
       self._frame()._ex._cache.fill()
     return self._ex._cache.names
 
@@ -86,6 +87,7 @@ class H2OFrame:
       The number of rows in the H2OFrame.
     """
     if not self._ex._cache.nrows_valid():
+      self._ex._cache.flush()
       self._frame()
     return self._ex._cache.nrows
 
@@ -97,6 +99,7 @@ class H2OFrame:
       The number of columns in the H2OFrame.
     """
     if not self._ex._cache.ncols_valid():
+      self._ex._cache.flush()
       self._frame()
     return self._ex._cache.ncols
 
@@ -126,6 +129,7 @@ class H2OFrame:
       A dictionary of column_name-type pairs.
     """
     if not self._ex._cache.types_valid():
+      self._ex._cache.flush()
       self._frame()._ex._cache.fill()
     return self._ex._cache.types
 
