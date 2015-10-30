@@ -9,6 +9,8 @@ h2oEnsemble 0.1.1 (In progress)
 * TO DO: Add ability to generate predicted values using the `validation_frame` argument; currently this arg is ignored and doesn't do anything, and predictions must be made with the `predict.h2o.ensemble` function.  This should also include setting a new output object to store metrics.
 * TO DO: Add a utility function, `h2o.ensemble_metrics` to extract default performance metrics for binomial and gaussian family (AUC and MSE).
 * TO FINISH: Added new functions, `h2o.save_ensemble` and `h2o.load_ensemble`, for easy saving and loading of ensemble models to disk.
+* Added a check in `h2o.ensemble` to force the family argument and response column data type to match up.
+* Replaced an inefficient call to count levels that occured when `family = "AUTO"` with `h2o.levels`.
 
 
 h2oEnsemble 0.1.0 (2015-10-29)
