@@ -391,7 +391,7 @@ Here, the weights and bias updates follow the asynchronous  $\textsc{Hogwild!}$ 
 H2O Deep Learning is scalable and can take advantage of large clusters of compute nodes. There are three operating modes.
 The default behavior allows every node to train on the entire (replicated) dataset but automatically  shuffling (and/or using a subset of) the training examples for each iteration locally. 
 
-For datasets that don't fit into each node's memory (depending on the amount of heap memory specified by the \texttt{-XmX} Java %(or \texttt{max\_mem\_size} in R) 
+For datasets that don't fit into each node's memory (depending on the amount of heap memory specified by the \texttt{-Xmx} Java %(or \texttt{max\_mem\_size} in R)
 option), it might not be possible to replicate the data, so each compute node can be specified to train only with local data. An experimental single node mode is available for cases where final convergence is slow due to the presence of too many nodes, but this has not been necessary in our testing.
 
 To specify the global number of training examples shared with the distributed SGD worker nodes between model averaging, use the \\ \texttt{train\_samples\_per\_iteration} parameter. If the specified value is \texttt{-1}, all nodes process all their local training data on each iteration. 
