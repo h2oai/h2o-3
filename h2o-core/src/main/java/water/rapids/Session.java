@@ -105,7 +105,7 @@ public class Session {
 
   // Found in the DKV, if not a tracked TEMP make it a global
   Frame addGlobals( Frame fr ) {
-    if( !FRAMES.contains(fr._key) )
+    if( !FRAMES.containsKey(fr._key) )
       for( Vec vec : fr.vecs() ) GLOBALS.add(vec);
     return fr;                  // Flow coding
   }
@@ -121,22 +121,23 @@ public class Session {
     return fr;                  // Flow coding
   }
 
+  // Remove and delete a session-tracked frame.
   // Remove from all session tracking spaces.
-  // Remove any newly-unshared Vecs.
+  // Remove any newly-unshared Vecs, but keep the shared ones.
   void remove( Frame fr ) {
     if( fr == null ) return;
     Futures fs = new Futures();
     if( !FRAMES.containsKey(fr._key) ) { // In globals and not temps?
       for( Vec vec : fr.vecs() ) { 
         GLOBALS.remove(vec);         // Not a global anymore
-        if( REFCNTS.get(vec)==null ) // And not shared with temps
+        if( REFCNTS.get(vec)==null ) // If not shared with temps
           vec.remove(fs);            // Remove unshared dead global
       }
     } else {                    // Else a temp and not a global
       fs = downRefCnt(fr,fs);   // Standard down-ref counting of all Vecs
       FRAMES.remove(fr._key);   // And remove from temps
     }
-    DKV.remove(fr._key,fs);     // Shallow remove, internal Vecs removed 1-by-1
+    DKV.remove(fr._key,fs);     // Shallow remove, internal were Vecs removed 1-by-1
     fs.blockForPending();
   }
 
@@ -152,22 +153,29 @@ public class Session {
     return fs;
   }
 
-
   // Check that ref cnts are sane.  Only callable between calls to Rapids
   // expressions (otherwise may blow false-positives).
   String sanity_check_refs() {
+    // Compute refcnts from tracked frames only.  Since we are between Rapids
+    // calls the only tracked Vecs should be those from tracked frames.
     NonBlockingHashMap<Vec,Integer> refcnts = new NonBlockingHashMap<>();
     for( Frame fr : FRAMES.values() )
       for( Vec vec : fr.vecs() ) {
         Integer I = refcnts.get(vec);
         refcnts.put(vec,I==null ? 1 : I+1);
       }
+    // Compare computed refcnts to cached REFCNTS.  Every computed refcnt and
+    // Vec is in REFCNTS with equal counts.
     for( Vec vec : refcnts.keySet() ) {
       Integer I = REFCNTS.get(vec);
       if( I==null ) return "REFCNTS missing vec "+vec;
       Integer II = refcnts.get(vec);
       if( (int)II != (int)I ) return "Mismatch vec "+vec+", computed refcnts: "+II+", cached REFCNTS: "+I;
     }
+    // Every cached REFCNT is in the computed set as well... ie the two
+    // hashmaps are equal.
+    if( refcnts.size() != REFCNTS.size() ) 
+      return "Cached REFCNTS has "+REFCNTS.size()+" vecs, and computed refcnts has "+refcnts.size()+" vecs";
     return null;                // OK
   }
 }
