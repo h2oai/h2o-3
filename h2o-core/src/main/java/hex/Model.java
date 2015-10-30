@@ -134,7 +134,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
 
     /**
-     * Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
+     * Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
      */
     public double _stopping_tolerance = 1e-3;
 
