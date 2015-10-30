@@ -25,7 +25,7 @@
 \small
 \textsc{Cliff Click \hspace{10pt} Jessica Lanford \hspace{10pt} Michal Malohlava}
 
-\textsc{Viraj Parmar \hspace{10pt} Hank Roark}
+\textsc{Viraj Parmar \hspace{10pt} Hank Roark \hspace{10pt} Arno Candel}
 
 \normalsize
 
@@ -157,6 +157,8 @@ H2O's GBM functionalities include:
 \item fast and memory-efficient Java implementations of the algorithms
 \item the ability to run H2O from R, Python, Scala, or the intuitive web UI (Flow)
 \item automatic early stopping based on convergence of user-specified metrics to user-specified relative tolerance
+\item stochastic gradient boosting with column and row sampling for better generalization
+\item support for exponential families (Poisson, Gamma, Tweedie) and loss functions in addition to binomial (Bernoulli), Gaussian and multinomial distributions
 \item grid search for hyperparameter optimization and model selection
 \item model export in plain Java code for deployment in production environments
 \item additional parameters for model tuning (for a complete listing of parameters, refer to the {\textbf{\nameref{ssec:Model Parameters}}} section.)
@@ -299,6 +301,9 @@ One nice feature for finding the optimal number of trees is early stopping based
 \item To compute the best number of trees with cross-validation, simply specify \texttt{stopping\_rounds>0} as in the examples above, in combination with \texttt{nfolds>1}, and the main model will pick the ideal number of trees from the convergence behavior of the \texttt{nfolds} cross-validation models.
 \end{itemize}
 
+\subsubsection{Stochastic GBM}
+Stochastic GBM is a way to improve generalization of the method by sampling columns (per split) and rows (per-tree) during the model building process. The parameters to control the sampling ratios are \texttt{sample\_rate} (rows) and \texttt{col\_sample\_rate} (columns). Both parameters must range from 0 to 1.
+
 \section{Use Case: Airline Data Classification}
 Download the Airline dataset from: {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/airlines/allyears2k_headers.zip}} and save the .csv file to your working directory. 
 
@@ -332,6 +337,15 @@ Load the Airline dataset into H2O and select the variables to use to predict  th
 
 Since it is meant just as a trial run, the model contains only 100 trees. In this trial run, no validation set was
 specified, so by default, the model evaluates the entire training set.  To use n-fold validation, specify an n-folds value (for example, \texttt{nfolds=5}).
+
+Let's run again with row and column sampling:
+
+\waterExampleInR
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_examplerun_stochastic.R}
+
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_examplerun_stochastic.py}
 
 \subsection{Extracting and Handling the Results}
 
@@ -530,5 +544,9 @@ Viraj is currently an undergraduate at Princeton studying applied mathematics. P
 \textbf{Hank Roark}
 
 Hank is a Data Scientist and Hacker at H2O. Hank comes to H2O with a background turning data into products and system solutions and loves helping others find value in their data. He has a deep background in the the application domains of telematics, remote sensing, logistics, manufacturing, agriculture, and the Internet of Things. Hank has an SM from MIT in Engineering and Management and BS Physics from Georgia Tech.
+
+\textbf{Arno Candel}
+
+Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform. He is also the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named “2014 Big Data All-Star” by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
 
 \end{document}

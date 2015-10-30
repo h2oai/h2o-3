@@ -771,7 +771,7 @@ This type of algorithm, called a deep autoencoder, has been used extensively for
 
 
 \subsection{Use Case: Anomaly Detection} %%TODO: do we still want to use this example?
-For the deep autoencoder model described above,  if enough training data that resembles some underlying pattern is provided, the network will train itself to easily learn the identity when confronted with that pattern. However, if an anomalous test point does not match the learned pattern, the autoencoder will likely have a high error rate in reconstructing this data, indicating anomalous data.
+For the deep autoencoder model described above, if enough training data that resembles some underlying pattern is provided, the network will train itself to easily learn the identity when confronted with that pattern. However, if an anomalous test point does not match the learned pattern, the autoencoder will likely have a high error rate in reconstructing this data, indicating anomalous data.
 
 This framework is used to develop an anomaly detection demonstration using a deep autoencoder. The dataset is an ECG time series of heartbeats and the goal is to determine which heartbeats are outliers. The training data (20 ``good" heartbeats) and the test data (training data with 3 ``bad" heartbeats appended for simplicity) can be downloaded directly into the H2O cluster, as shown below.  Each row represents a single heartbeat. The autoencoder is trained as follows: 
 
@@ -806,6 +806,11 @@ To run the anomaly detection example in Python, use the following:
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_anomaly.py}
 
 \noindent
+
+\subsubsection{Stacked Autoencoder}
+It can be difficult to obtain convergence for deep autoencoders, especially since we attempt to train all layers at once, without imposing symmetry conditions on the network topology (arbitrary configuration of layers is allowed). To train a deep autoencoder layer by layer, you can follow the example \texttt{R} code example here:
+{\url{https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R}.
+
 
 \section{Parameters}
 \label{sec:Parameters}

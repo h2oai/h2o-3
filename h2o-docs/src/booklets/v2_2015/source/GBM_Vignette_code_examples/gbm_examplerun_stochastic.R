@@ -10,8 +10,10 @@ air_test.hex  <- airlines.hex[r  >= 0.9,]
 myX <- c("DayofMonth", "DayOfWeek")
 
 # Now, train the GBM model:
-air.model <- h2o.gbm(y = "IsDepDelayed", x = myX, 
+air.model <- h2o.gbm(
+         y = "IsDepDelayed", x = myX,
          distribution="bernoulli",
          training_frame = air_train.hex,
          validation_frame = air_valid.hex,
-         ntrees=100, max_depth=4, learn_rate=0.1)
+         ntrees=100, max_depth=4, learn_rate=0.1,
+         sample_rate=0.6, col_sample_rate=0.7)
