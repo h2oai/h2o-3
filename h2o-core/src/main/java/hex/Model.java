@@ -126,7 +126,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Stop if simple moving average of length k of the stopping_metric does not improve (by stopping_tolerance) for k=stopping_rounds scoring events."
      * Can only trigger after at least 2k scoring events. Use 0 to disable.
      */
-    public int _stopping_rounds = 5;
+    public int _stopping_rounds = 0;
 
     /**
      * Metric to use for convergence checking, only for _stopping_rounds > 0
