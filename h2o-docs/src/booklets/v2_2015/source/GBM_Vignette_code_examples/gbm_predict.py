@@ -1,3 +1,6 @@
+#import pandas for data frame display
+import pandas as pd
+
 # Perform classification on the held out data
 prediction = air_model.predict(air_test_hex)
 
