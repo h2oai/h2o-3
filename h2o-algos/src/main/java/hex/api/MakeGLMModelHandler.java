@@ -27,7 +27,7 @@ public class MakeGLMModelHandler extends Handler {
     double [] beta = model.beta().clone();
     for(int i = 0; i < beta.length; ++i)
       beta[i] = coefs.get(names[i]);
-    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, Double.NaN, Double.NaN, Double.NaN, -1, false, false);
+    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, new double[]{.5}, Double.NaN, Double.NaN, -1, false, false);
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     // GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {

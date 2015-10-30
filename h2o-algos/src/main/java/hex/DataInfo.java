@@ -22,6 +22,20 @@ public class DataInfo extends Keyed {
   public Frame _adaptedFrame;
   public int _responses;   // number of responses
 
+  public Vec setWeights(String name, Vec vec) {
+    if(_weights)
+      return _adaptedFrame.replace(weightChunkId(),vec);
+    _adaptedFrame.insertVec(weightChunkId(),name,vec);
+    _weights = true;
+    return null;
+  }
+
+  public void dropWeights() {
+    if(!_weights)return;
+    _adaptedFrame.remove(weightChunkId());
+    _weights = false;
+  }
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -68,7 +82,7 @@ public class DataInfo extends Keyed {
   public double [] _numMeans;
   public boolean _intercept = true;
   public final boolean _offset;
-  public final boolean _weights;
+  public boolean _weights;
   public final boolean _fold;
   public int responseChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
@@ -206,7 +220,9 @@ public class DataInfo extends Keyed {
   }
 
   public double[] denormalizeBeta(double [] beta) {
-    assert beta.length == fullN()+1;
+    if(beta.length != fullN()+1)
+      System.out.println("haha");
+    assert beta.length == fullN()+1:"beta len = " + beta.length;
     beta = MemoryManager.arrayCopyOf(beta,beta.length);
     if (_predictor_transform == DataInfo.TransformType.STANDARDIZE) {
       double norm = 0.0;        // Reverse any normalization on the intercept
@@ -516,11 +532,10 @@ public class DataInfo extends Keyed {
       int numStart = numStart();
       for(int i = 0; i < nBins; ++i)
         res += vec[binIds[i]];
-      if(numIds == null) {
+      if(numIds == null || (vec.length == nBins + nNums + 1)) {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];
       } else {
-        res += etaOffset;
         for (int i = 0; i < nNums; ++i)
           res += numVals[i] * vec[numIds[i]];
       }
@@ -572,6 +587,9 @@ public class DataInfo extends Keyed {
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
     row.rid = rid + chunks[0].start();
+    if(_weights)
+      row.weight = chunks[weightChunkId()].atd(rid);
+    if(row.weight == 0) return row;
     if (_skipMissing)
       for (Chunk c : chunks)
         if(c.isNA(rid)) {
@@ -612,9 +630,12 @@ public class DataInfo extends Keyed {
     }
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
-    if(_weights)
-      row.weight = chunks[weightChunkId()].atd(rid);
+
     return row;
+  }
+
+  public Vec getWeightsVec(){
+    return _adaptedFrame.vec(weightChunkId());
   }
   public Row newDenseRow(){
     return new Row(false,_nums,_cats,_responses,0);
@@ -629,14 +650,39 @@ public class DataInfo extends Keyed {
         etaOffset -= coefficients[i+numStart()] * _normSub[i] * _normMul[i];
     return etaOffset;
   }
-  public final Row[]  extractDenseRows(Chunk [] chunks) {
-    Row[] rows = new Row[chunks[0]._len];
-    for (int i = 0; i < rows.length; ++i) {
-      rows[i] = newDenseRow();
-      extractDenseRow(chunks, i, rows[i]);
+
+  public final class Rows {
+    public final int _nrows;
+    private final Row _denseRow;
+    private final Row [] _sparseRows;
+    public final boolean _sparse;
+    private final Chunk [] _chks;
+
+    private Rows(Chunk [] chks, boolean sparse) {
+      _nrows = chks[0]._len;
+      _sparse = sparse;
+      if(sparse) {
+        _denseRow = null;
+        _chks = null;
+        _sparseRows = extractSparseRows(chks,0);
+      } else {
+        _denseRow = DataInfo.this.newDenseRow();
+        _chks = chks;
+        _sparseRows = null;
+      }
     }
-    return rows;
+    public Row row(int i) {return _sparse?_sparseRows[i]:extractDenseRow(_chks,i,_denseRow);}
   }
+
+  public Rows rows(Chunk [] chks) {
+    int cnt = 0;
+    for(Chunk c:chks)
+      if(c.isSparse())
+        ++cnt;
+    return rows(chks,cnt > (chks.length >> 1));
+  }
+  public Rows rows(Chunk [] chks, boolean sparse) {return new Rows(chks,sparse);}
+
   /**
    * Extract (sparse) rows from given chunks.
    * Note: 0 remains 0 - _normSub of DataInfo isn't used (mean shift during standarization is not reverted) - UNLESS offset is specified (for GLM only)
@@ -683,7 +729,7 @@ public class DataInfo extends Keyed {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        if(!c.isSparse() && c.atd(r) == 0)continue;
+        if(c.atd(r) == 0)continue;
         assert r > oldRow;
         oldRow = r;
         Row row = rows[r];
