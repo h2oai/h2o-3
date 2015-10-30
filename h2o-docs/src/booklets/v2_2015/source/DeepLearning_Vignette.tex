@@ -391,7 +391,7 @@ Here, the weights and bias updates follow the asynchronous  $\textsc{Hogwild!}$ 
 H2O Deep Learning is scalable and can take advantage of large clusters of compute nodes. There are three operating modes.
 The default behavior allows every node to train on the entire (replicated) dataset but automatically  shuffling (and/or using a subset of) the training examples for each iteration locally. 
 
-For datasets that don't fit into each node's memory (depending on the amount of heap memory specified by the \texttt{-XmX} Java %(or \texttt{max\_mem\_size} in R) 
+For datasets that don't fit into each node's memory (depending on the amount of heap memory specified by the \texttt{-Xmx} Java %(or \texttt{max\_mem\_size} in R)
 option), it might not be possible to replicate the data, so each compute node can be specified to train only with local data. An experimental single node mode is available for cases where final convergence is slow due to the presence of too many nodes, but this has not been necessary in our testing.
 
 To specify the global number of training examples shared with the distributed SGD worker nodes between model averaging, use the \\ \texttt{train\_samples\_per\_iteration} parameter. If the specified value is \texttt{-1}, all nodes process all their local training data on each iteration. 
@@ -489,7 +489,7 @@ One nice feature for finding the optimal number of epochs is early stopping base
 
 \begin{itemize}
 \item To stop model building if misclassification improves (goes down) by less than one percent between individual scoring events, specify \\\texttt{stopping\_rounds=1}, \texttt{stopping\_tolerance=0.01} and \\\texttt{stopping\_metric="misclassification"}.
-\item To stop model building if the moving average of the (window 5) AUC improves (goes up) by less than 0.001 for 5 consecutive scoring events, specify \texttt{stopping\_rounds=5}, \texttt{stopping\_tolerance=0.001} and \texttt{stopping\_metric="AUC"}.
+\item To stop model building if the simple moving average (window length 5) of the AUC improves (goes up) by less than 0.1 percent for 5 consecutive scoring events, specify \texttt{stopping\_rounds=5}, \texttt{stopping\_tolerance=0.001} and \texttt{stopping\_metric="AUC"}.
 \item To stop model building if the logloss on the validation set does not improve at all for 3 consecutive scoring events, specify a \texttt{validation\_frame}, \texttt{stopping\_rounds=3}, \texttt{stopping\_tolerance=0} and \\\texttt{stopping\_metric="logloss"}.
 \item To not stop model building even after metrics have converged, disable this feature with \texttt{stopping\_rounds=0}.
 \item To compute the best number of epochs with cross-validation, simply specify \texttt{stopping\_rounds>0} as in the examples above, in combination with \texttt{nfolds>1}, and the main model will pick the ideal number of epochs from the convergence behavior of the \texttt{nfolds} cross-validation models.
@@ -543,7 +543,7 @@ To perform the trial run in Python, use the following:
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_examplerun.py}
 
 \noindent
-The model runs for only 10 epochs since it is just meant  as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to (or instead of) using a validation set, another option to estimate generalization error is N-fold cross-validation.  
+The model runs for only 10 epochs since it is just meant as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to (or instead of) using a validation set, another option to estimate generalization error is N-fold cross-validation.
 
 \subsubsection{N-fold Cross-Validation} 
 
@@ -642,7 +642,7 @@ In this example, three different network topologies and two different $\ell_1$ n
 Grid search provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to {\textbf{\nameref{sec:Parameters}}} for parameter descriptions and configurable values. 
 
 \waterExampleInR
-To run a grid search in R, use the following: 
+To run a grid search in R, use the following:
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R}
 
 %\medskip
@@ -836,7 +836,7 @@ Logical indicates the parameter requires a value of either \texttt{TRUE} or \tex
 
 \item \texttt{hidden}: Specifies the number and size of each hidden layer in the model. For example, if \texttt{c(100,200,100)} is specified, a model with 3 hidden layers is generated. The middle hidden layer will have 200 neurons and the first and third hidden layers will have 100 neurons each. The default is \texttt{c(200,200)}. For grid search, use the following format: \texttt{list(c(10,10), c(20,20))}. Refer to the section on  {\textbf{\nameref{ssec:TrialRun}}} for more details. 
 
-\item \texttt{epochs}: Specifies the number of iterations or passes over the training dataset (can be fractional). For initial grid searches, we recommend starting with lower values. The value allows continuation of selected models and can be modified during checkpoint restarts. The default is 10.
+\item \texttt{epochs}: Specifies the number of iterations or passes over the training dataset (can be fractional). For initial grid searches, we recommend starting with lower values. The value allows continuation of selected models and can be modified during checkpoint restarts. The default is 1000.
 
 \item \texttt{train\_samples\_per\_iteration}: Specifies the number of training samples (globally) per MapReduce iteration. The following special values are also supported: 
 \begin{itemize}

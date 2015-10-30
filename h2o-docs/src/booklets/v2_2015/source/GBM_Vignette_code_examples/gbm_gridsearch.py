@@ -1,3 +1,4 @@
+#Define parameters for gridsearch
 ntrees_opt = [5,10,15]
 max_depth_opt = [2,3,4]
 learn_rate_opt = [0.1,0.2]

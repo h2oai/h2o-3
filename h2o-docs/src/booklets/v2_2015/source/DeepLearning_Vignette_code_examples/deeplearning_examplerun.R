@@ -14,7 +14,7 @@ model <- h2o.deeplearning(
         validation_frame = test,   
         distribution = "multinomial",
         activation = "RectifierWithDropout", 
-        hidden = c(200,200,200), 
+        hidden = c(32,32,32),
         input_dropout_ratio = 0.2, 
         sparse = TRUE,
         l1 = 1e-5, 
