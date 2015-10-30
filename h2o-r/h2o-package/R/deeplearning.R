@@ -66,13 +66,13 @@
 #' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to
 #'        disable)
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric.
-#'        Stop if simple moving average of length k of the metric does not improve
+#'        Stop if simple moving average of length k of the stopping_metric does not improve
 #'        (by stopping_tolerance) for k=stopping_rounds scoring events.
 #'        Can only trigger after at least 2k scoring events. Use 0 to disable.
 #' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
 #'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
-#'        improvement is less than this value, stop)
+#'        improvement is not at least this much, stop)
 #' @param quiet_mode Enable quiet mode for less output to standard output
 #' @param max_confusion_matrix_size Max. size (number of classes) for confusion matrices to be shown
 #' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ratio computation(for
@@ -137,7 +137,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              use_all_factor_levels = TRUE,
                              activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
                              hidden= c(200, 200),
-                             epochs = 10.0,
+                             epochs = 1000,
                              train_samples_per_iteration = -2,
                              target_ratio_comm_to_comp = 0.05,
                              seed,
@@ -167,7 +167,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              score_duty_cycle,
                              classification_stop,
                              regression_stop,
-                             stopping_rounds=0,
+                             stopping_rounds=5,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
                              stopping_tolerance=0,
                              quiet_mode,

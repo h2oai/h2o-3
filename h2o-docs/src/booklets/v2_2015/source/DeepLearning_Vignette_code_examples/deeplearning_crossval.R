@@ -5,7 +5,7 @@ model_cv <- h2o.deeplearning(
         training_frame = train, 
         distribution = "multinomial",
         activation = "RectifierWithDropout", 
-        hidden = c(200,200,200), 
+        hidden = c(32,32,32),
         input_dropout_ratio = 0.2, 
         sparse = TRUE,
         l1 = 1e-5, 

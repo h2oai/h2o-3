@@ -45,13 +45,13 @@
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric.
-#'        Stop if simple moving average of length k of the metric does not improve
+#'        Stop if simple moving average of length k of the stopping_metric does not improve
 #'        (by stopping_tolerance) for k=stopping_rounds scoring events.
 #'        Can only trigger after at least 2k scoring events. Use 0 to disable.
 #' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
 #'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
-#'        improvement is less than this value, stop)
+#'        improvement is not at least this much, stop)
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.

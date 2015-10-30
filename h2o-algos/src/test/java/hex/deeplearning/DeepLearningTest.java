@@ -4,6 +4,7 @@ package hex.deeplearning;
 import hex.Distribution;
 import hex.ModelMetricsAutoEncoder;
 import hex.ModelMetricsRegression;
+import hex.ScoreKeeper;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -1349,6 +1350,175 @@ public class DeepLearningTest extends TestUtil {
       } finally {
         job2.remove();
       }
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+
+  @Test
+  public void testConvergenceLogloss() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 1000000;
+      parms._response_column = "C5";
+      parms._reproducible = true;
+      parms._hidden = new int[]{2,2};
+      parms._seed = 0xdecaf;
+      parms._variable_importances = true;
+      parms._model_id = Key.make();
+
+      parms._score_duty_cycle = 0.1;
+      parms._score_interval = 0;
+      parms._classification_stop = -1; //don't stop based on absolute classification error
+      parms._stopping_rounds = 5; //don't stop based on absolute classification error
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.logloss; //don't stop based on absolute classification error
+      parms._stopping_tolerance = 0.03;
+
+      DeepLearning job = new DeepLearning(parms);
+      try {
+        dl = job.trainModel().get();
+      } finally {
+        job.remove();
+      }
+
+      Assert.assertTrue(dl.epoch_counter < parms._epochs);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+  @Test
+  public void testConvergenceMisclassification() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 1000000;
+      parms._response_column = "C5";
+      parms._reproducible = true;
+      parms._hidden = new int[]{2,2};
+      parms._seed = 0xdecaf;
+      parms._variable_importances = true;
+      parms._model_id = Key.make();
+
+      parms._score_duty_cycle = 1.0;
+      parms._score_interval = 0;
+      parms._classification_stop = -1; //don't stop based on absolute classification error
+      parms._stopping_rounds = 2; //don't stop based on absolute classification error
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.misclassification; //don't stop based on absolute classification error
+      parms._stopping_tolerance = 0.0;
+
+      DeepLearning job = new DeepLearning(parms);
+      try {
+        dl = job.trainModel().get();
+      } finally {
+        job.remove();
+      }
+
+      Assert.assertTrue(dl.epoch_counter < parms._epochs);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+  @Test
+  public void testConvergenceDeviance() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 1000000;
+      parms._response_column = "AGE";
+      parms._reproducible = true;
+      parms._hidden = new int[]{2,2};
+      parms._seed = 0xdecaf;
+      parms._variable_importances = true;
+      parms._model_id = Key.make();
+
+      parms._score_duty_cycle = 1.0;
+      parms._score_interval = 0;
+      parms._classification_stop = -1; //don't stop based on absolute classification error
+      parms._stopping_rounds = 2; //don't stop based on absolute classification error
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.deviance; //don't stop based on absolute classification error
+      parms._stopping_tolerance = 0.0;
+
+      DeepLearning job = new DeepLearning(parms);
+      try {
+        dl = job.trainModel().get();
+      } finally {
+        job.remove();
+      }
+
+      Assert.assertTrue(dl.epoch_counter < parms._epochs);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+  @Test
+  public void testConvergenceAUC() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      for (String s : new String[]{
+              "CAPSULE"
+      }) {
+        Vec resp = tfr.vec(s).toCategoricalVec();
+        tfr.remove(s).remove();
+        tfr.add(s, resp);
+        DKV.put(tfr);
+      }
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 1000000;
+      parms._response_column = "CAPSULE";
+      parms._reproducible = true;
+      parms._hidden = new int[]{2,2};
+      parms._seed = 0xdecaf;
+      parms._variable_importances = true;
+      parms._model_id = Key.make();
+
+      parms._score_duty_cycle = 1.0;
+      parms._score_interval = 0;
+      parms._classification_stop = -1; //don't stop based on absolute classification error
+      parms._stopping_rounds = 2; //don't stop based on absolute classification error
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC; //don't stop based on absolute classification error
+      parms._stopping_tolerance = 0.0;
+
+      DeepLearning job = new DeepLearning(parms);
+      try {
+        dl = job.trainModel().get();
+      } finally {
+        job.remove();
+      }
+
+      Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
     } finally {
       if (tfr != null) tfr.delete();
