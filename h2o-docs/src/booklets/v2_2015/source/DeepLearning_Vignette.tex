@@ -196,11 +196,15 @@ H2O's Deep Learning functionalities include:
 
 \item regularization options such as L1, L2, dropout, \textsc{Hogwild!}, and model averaging to prevent model overfitting
 
-\item elegant and intuitive web interface
+\item elegant and intuitive web interface (Flow)
 
 \item fully scriptable R API from H2O's CRAN package
 
+\item fully scriptable Python API
+
 \item grid search for hyperparameter optimization and model selection
+
+\item automatic early stopping based on convergence of user-specified metrics to user-specified tolerance
 
 \item model checkpointing for reduced run times and model tuning
 
@@ -478,12 +482,20 @@ For autoencoding, the data is normalized (instead of standardized) to the compac
 
 Since there are dozens of possible parameter arguments when creating models, configuring H2O Deep Learning models may seem daunting. However, most parameters do not need to be modified; the default settings are recommended for most use cases. 
 
-There is no default setting for the hidden layer size, number, or epochs. Experimenting by building Deep Learning models using different network topologies and different datasets will lead to insights about these parameters, but two general guidelines should be applied: 
+There is no general rule for setting the number of hidden layers, their sizes or the number of epochs. Experimenting by building Deep Learning models using different network topologies and different datasets will lead to insights about these parameters.
+
+\subsubsection{Convergence-based Early Stopping}
+One nice feature for finding the optimal number of epochs is early stopping based on convergence of a user-specified metric. By default, it uses the metrics on the validation dataset, if provided. Otherwise, training metrics are used.
 
 \begin{itemize}
-\item First, select larger network sizes to perform higher-level feature extraction; techniques like dropout may train only subsets of the network.
-\item Second, use more epochs for greater predictive accuracy only when the computational cost is affordable.
+\item To stop model building if misclassification improves (goes down) by less than one percent between individual scoring events, specify \\\texttt{stopping\_rounds=1}, \texttt{stopping\_tolerance=0.01} and \\\texttt{stopping\_metric="misclassification"}.
+\item To stop model building if the moving average of the (window 5) AUC improves (goes up) by less than 0.001 for 5 consecutive scoring events, specify \texttt{stopping\_rounds=5}, \texttt{stopping\_tolerance=0.001} and \texttt{stopping\_metric="AUC"}.
+\item To stop model building if the logloss on the validation set does not improve at all for 3 consecutive scoring events, specify a \texttt{validation\_frame}, \texttt{stopping\_rounds=3}, \texttt{stopping\_tolerance=0} and \\\texttt{stopping\_metric="logloss"}.
+\item To not stop model building even after metrics have converged, disable this feature with \texttt{stopping\_rounds=0}.
+\item To compute the best number of epochs with cross-validation, simply specify \texttt{stopping\_rounds>0} as in the examples above, in combination with \texttt{nfolds>1}, and the main model will pick the ideal number of epochs from the convergence behavior of the \texttt{nfolds} cross-validation models.
 \end{itemize}
+
+\subsubsection{Additional Parameters}
 
 For pointers on specific values and results for these (and other) parameters, many example tests are available in the H2O \href{https://github.com/h2oai/h2o-3/}{GitHub} repository. For a full list of H2O Deep Learning model parameters and default values, refer to {\textbf{\nameref{sec:Parameters}}. 
 
@@ -652,6 +664,20 @@ To view the results of the grid search in R, use the following:
 \subsection{Checkpoint Model}
 
 To resume model training, use checkpoint model keys (\texttt{model\_id}) to incrementally train a specific model using more iterations, more data, different data, and so forth. To further train the initial model, use it (or its key) as a checkpoint argument for a new model.
+
+In general, to get the best possible model in a multi-node setup, we recommend building a model with \texttt{train\_samples\_per\_iteration=-2} (default, auto-tuning) and saving that to disk. Either way, you’ll have at least one model for later.
+To improve this initial model, you can start from the previous model and add iterations. You simply build another model and set \texttt{checkpoint=previous\_model\_id}, and change \texttt{train\_samples\_per\_iteration} or \texttt{target\_ratio\_comm\_to\_comp},
+or other parameters. You are allowed to change many parameters between checkpoints, especially those that affect regularization or performance tuning.
+
+Checkpoint restart suggestions:
+
+\begin{enumerate}
+\item For multi-node only: Leave \texttt{train\_samples\_per\_iteration=-2}, increase \texttt{target\_ratio\_comm\_to\_comp} from 0.05 to 0.25 or 0.5 (more communication). This should lead to a better model when using multiple nodes. Note: this doesn’t affect single-node performance at all (no actual communication needed).
+\item For both single and multi-node (bagging-like): Explicitly set \texttt{train\_samples\_per\_iteration=N}, where N is the number of training samples that you want the whole cluster to train with for one iteration. Every of the n nodes will then train on N/n randomly chosen rows for every iteration. Obviously, a good choice N depends on the dataset size and the model complexity. You can look in the logs to see what values of N are used in Option 1, when auto-tuning is enabled. Typically, Option 1 is enough though.
+\item For both single and multi-node: Change regularization parameters such as \texttt{l1}, \texttt{l2}, \texttt{max\_w2}, \texttt{input\_dropout\_ratio}, \texttt{hidden\_dropout\_ratios}. To be safe, you’d build the first model with \texttt{RectifierWithDropout} and \texttt{input\_dropout\_ratio=0} and \texttt{hidden\_dropout\_ratios} of all 0s, just to be able to later turn on dropout regularization. We often use Dropout for our first model already, at least hidden dropout. Input dropout only if there’s suspected noise in the input.
+\end{enumerate}
+
+With options 1 and 3, you should be able to reach your goals of finding a good model. Of course, you can use grid search with checkpoint restarts, to scan a broad range of good continuation models.
 
 In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the highest-performing model from the grid search used for additional training. For checkpoint restarts, the response column, training, and validation datasets must match.  In addition, any non-default model parameters, such as \texttt{hidden = c(200,200)} in the example below, must match. 
 
@@ -874,7 +900,13 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 
 \item \texttt{classification\_stop}: Specifies the stopping criterion for classification error (1 - accuracy) on the training data scoring dataset.  When the error is at or below this threshold, training stops.  The default is 0.  To disable, specify \texttt{-1}. 
 
-\item \texttt{regression\_stop}: Specifies the stopping criterion for regression error (MSE) on the training data scoring dataset. When the error is at or below this threshold, training stops. The default is 1e-6.  To disable, specify \texttt{-1}. 
+\item \texttt{regression\_stop}: Specifies the stopping criterion for regression error (MSE) on the training data scoring dataset. When the error is at or below this threshold, training stops. The default is 1e-6.  To disable, specify \texttt{-1}.
+
+\item \texttt{stopping\_rounds}: Early stopping based on convergence of \\\texttt{stopping\_metric}. Stop if simple moving average of length k of the \texttt{stopping\_metric} does not improve for k:=\texttt{stopping\_rounds} scoring events. Can only trigger after at least 2k scoring events. To disable, specify \texttt{0}.
+
+\item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO, deviance, logloss, MSE, AUC, r2, misclassification}.
+
+\item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
 
 \item \texttt{quiet\_mode}: Logical. Enables quiet mode for less output to standard output. The default is false.
 
