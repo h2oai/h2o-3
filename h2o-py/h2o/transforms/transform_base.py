@@ -48,7 +48,10 @@ class H2OTransformer(object):
 
   @staticmethod
   def _dummy_frame():
-    return  H2OFrame(expr.ExprNode('dummy'))
+    fr = H2OFrame._expr(expr.ExprNode())
+    fr._ex._children = None
+    fr._ex._cache.dummy_fill()
+    return fr
 
   def to_rest(self, args):
     return urllib.quote("{}__{}__{}__{}__{}".format(*args))

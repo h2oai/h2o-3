@@ -122,14 +122,17 @@ class ExprNode:
 
   @staticmethod
   def _collapse_sb(sb): return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
-  def _debug_print(self,pprint=True): return "".join(self._to_string(sb=[])) if pprint else ExprNode._collapse_sb(self._to_string(sb=[]))
-  def _to_string(self,depth=0,sb=None):
+  def _debug_print(self,pprint=True): return "".join(self._2_string(sb=[])) if pprint else ExprNode._collapse_sb(self._2_string(sb=[]))
+  def _to_string(self):
+    return ' '.join(["("+self._op] + [ExprNode._arg_to_expr(a) for a in self._children] + [")"])
+  def _2_string(self,depth=0,sb=None):
     sb += ['\n', " "*depth, "("+self._op, " "]
-    for child in self._children:
-      if isinstance(child, h2o.H2OFrame) and child._ex._cache._id is None:  child._ex._to_string(depth+2,sb)
-      elif isinstance(child, h2o.H2OFrame):                                 sb+=['\n', ' '*(depth+2), child._ex._cache._id]
-      elif isinstance(child, ExprNode):                                     child._to_string(depth+2,sb)
-      else:                                                                 sb+=['\n', ' '*(depth+2), str(child)]
+    if self._children is not None:
+      for child in self._children:
+        if isinstance(child, h2o.H2OFrame) and child._ex._cache._id is None:  child._ex._2_string(depth+2,sb)
+        elif isinstance(child, h2o.H2OFrame):                                 sb+=['\n', ' '*(depth+2), child._ex._cache._id]
+        elif isinstance(child, ExprNode):                                     child._2_string(depth+2,sb)
+        else:                                                                 sb+=['\n', ' '*(depth+2), str(child)]
     sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0
     return sb
 
@@ -247,3 +250,11 @@ class H2OCache(object):
     self.__dict__ = copy.deepcopy(cache.__dict__)
     self._data=None
     self._id = cur_id
+
+  def dummy_fill(self):
+    self._id = "dummy"
+    self._nrows=0
+    self._ncols=0
+    self._names=[]
+    self._types={}
+    self._data={}

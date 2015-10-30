@@ -946,55 +946,61 @@ class H2OFrame(object):
     return fr
 
   def _compute_ncol_update(self, item):  # computes new ncol, names, and types
-    new_ncols=-1
-    if isinstance(item, list):
-      new_ncols = len(item)
-      if _is_str_list(item):
-        new_types = {k:self.types[k] for k in item}
-        new_names = item
-      else:
-        new_names = [self.names[i] for i in item]
+    try :
+      new_ncols=-1
+      if isinstance(item, list):
+        new_ncols = len(item)
+        if _is_str_list(item):
+          new_types = {k:self.types[k] for k in item}
+          new_names = item
+        else:
+          new_names = [self.names[i] for i in item]
+          new_types = {name:self.types[name] for name in new_names}
+      elif isinstance(item, slice):
+        start = 0 if item.start is None else item.start
+        end   = min(self.ncol, self.ncol if item.stop is None else item.stop)
+        if end < 0:
+          end = self.ncol+end
+        if item.start is not None or item.stop is not None:
+          new_ncols = end - start
+        range_list = range(start,end)
+        new_names = [self.names[i] for i in range_list]
         new_types = {name:self.types[name] for name in new_names}
-    elif isinstance(item, slice):
-      start = 0 if item.start is None else item.start
-      end   = min(self.ncol, self.ncol if item.stop is None else item.stop)
-      if end < 0:
-        end = self.ncol+end
-      if item.start is not None or item.stop is not None:
-        new_ncols = end - start
-      range_list = range(start,end)
-      new_names = [self.names[i] for i in range_list]
-      new_types = {name:self.types[name] for name in new_names}
-      item = slice(start,end)
-    elif isinstance(item, (basestring,int)):
-      new_ncols = 1
-      if isinstance(item, basestring):
-        new_names = [item]
-        new_types = None if item not in self.types else {item:self.types[item]}
+        item = slice(start,end)
+      elif isinstance(item, (basestring,int)):
+        new_ncols = 1
+        if isinstance(item, basestring):
+          new_names = [item]
+          new_types = None if item not in self.types else {item:self.types[item]}
+        else:
+          new_names = [self.names[item]]
+          new_types = {new_names[0]:self.types[new_names[0]]}
       else:
-        new_names = [self.names[item]]
-        new_types = {new_names[0]:self.types[new_names[0]]}
-    else:
-      raise ValueError("Unexpected type: " + str(type(item)))
-    return [new_ncols,new_names,new_types,item]
+        raise ValueError("Unexpected type: " + str(type(item)))
+      return [new_ncols,new_names,new_types,item]
+    except:
+      return [-1,None,None,item]
 
   def _compute_nrow_update(self, item):
-    new_nrows=-1
-    if isinstance(item, list):
-      new_nrows = len(item)
-    elif isinstance(item, slice):
-      start = 0 if item.start is None else item.start
-      end   = self.nrow if item.stop is None else item.stop
-      if end < 0:
-        end = self.nrow+end
-      if item.start is not None or item.stop is not None:
-        new_nrows = end - start
-      item = slice(start,end)
-    elif isinstance(item, H2OFrame):
+    try:
       new_nrows=-1
-    else:
-      new_nrows=1
-    return [new_nrows,item]
+      if isinstance(item, list):
+        new_nrows = len(item)
+      elif isinstance(item, slice):
+        start = 0 if item.start is None else item.start
+        end   = self.nrow if item.stop is None else item.stop
+        if end < 0:
+          end = self.nrow+end
+        if item.start is not None or item.stop is not None:
+          new_nrows = end - start
+        item = slice(start,end)
+      elif isinstance(item, H2OFrame):
+        new_nrows=-1
+      else:
+        new_nrows=1
+      return [new_nrows,item]
+    except:
+      return [-1,item]
 
   def __setitem__(self, b, c):
     """Replace or update column(s) in an H2OFrame.
