@@ -56,8 +56,8 @@ def bernoulli_synthetic_data_gbm_medium():
     ytrain = y_train.tolist()
     xtest = np.transpose(X_test).tolist()
     ytest = y_test.tolist()
-    train_h2o = H2OFrame.fromPython([ytrain]+xtrain)
-    test_h2o = H2OFrame.fromPython([ytest]+xtest)
+    train_h2o = H2OFrame([ytrain]+xtrain)
+    test_h2o = H2OFrame([ytest]+xtest)
 
     train_h2o["C1"] = train_h2o["C1"].asfactor()
     test_h2o["C1"] = test_h2o["C1"].asfactor()
