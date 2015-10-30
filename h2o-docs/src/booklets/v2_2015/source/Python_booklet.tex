@@ -629,9 +629,21 @@ These can then be added as a new column on the original dataframe:
 \lstinputlisting[style=python, firstline=573, lastline=585]{python/ipython_dataprep_output.txt}
 
 \subsection{Loading and Saving Data}
-File types supported
-From disk
-Also from local computer (upload), from URI, from Python local
+In addition to supporting loading data from Python objects, H2O can load data directly from
+disk, network file systems (nfs, s3), distributed file systems (hdfs), and {\texttt{http}}.  H2O currently supports
+CSV (delimited) files, ORC, SVMLite, ARFF, XLS, and XLST file types.
+
+To load data from disk on the same machine running H2O:
+\lstinputlisting[style=python, firstline=591, lastline=592]{python/ipython_dataprep_output.txt}
+
+To load data from disk on the machine running Python to the machine running H2O:
+\lstinputlisting[style=python, firstline=593, lastline=594]{python/ipython_dataprep_output.txt}
+
+To save an H2OFrame to disk on the machine running H2O:
+\lstinputlisting[style=python, firstline=595, lastline=596]{python/ipython_dataprep_output.txt}
+
+To save an H2OFrame to disk on the machine running Python:
+\lstinputlisting[style=python, firstline=597, lastline=598]{python/ipython_dataprep_output.txt}
 
 
 \section{Machine Learning}
