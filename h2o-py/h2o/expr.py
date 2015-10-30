@@ -50,7 +50,7 @@ class ExprNode:
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
-  MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
+  MAGIC_REF_COUNT = 6 if sys.gettrace() is None else 8  # M = debug ? 8 : 6
 
   def __init__(self, op="", *args):
     assert isinstance(op,str), op

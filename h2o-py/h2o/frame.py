@@ -647,7 +647,7 @@ class H2OFrame(object):
     -------
       The cumulative sum over the column.
     """
-    return H2OFrame._expr(expr=ExprNode("cumsum",self))
+    return H2OFrame._expr(expr=ExprNode("cumsum",self), cache=self._ex._cache)
 
   def cumprod(self):
     """
@@ -655,7 +655,7 @@ class H2OFrame(object):
     -------
       The cumulative product over the column.
     """
-    return H2OFrame._expr(expr=ExprNode("cumprod",self))
+    return H2OFrame._expr(expr=ExprNode("cumprod",self), cache=self._ex._cache)
 
   def cummin(self):
     """
@@ -663,7 +663,7 @@ class H2OFrame(object):
     -------
       The cumulative min over the column.
     """
-    return H2OFrame._expr(expr=ExprNode("cummin",self))
+    return H2OFrame._expr(expr=ExprNode("cummin",self), cache=self._ex._cache)
 
   def cummax(self):
     """
@@ -671,7 +671,7 @@ class H2OFrame(object):
     -------
       The cumulative max over the column.
     """
-    return H2OFrame._expr(expr=ExprNode("cummax",self))
+    return H2OFrame._expr(expr=ExprNode("cummax",self), cache=self._ex._cache)
 
   def prod(self,na_rm=False):
     """
@@ -1021,7 +1021,8 @@ class H2OFrame(object):
     colname=None  # When set, we are doing an append
 
     if isinstance(b, basestring):  # String column name, could be new or old
-      if b in self.names: col_expr = self.names.index(b)  # Old, update
+      if b in self.names:
+        col_expr = self.names.index(b)  # Old, update
       else:
         col_expr = self.ncol
         colname = b  # New, append
@@ -1043,11 +1044,13 @@ class H2OFrame(object):
     old_cache = self._ex._cache
     if colname is None:
       self._ex = ExprNode(":=",self,src,col_expr,row_expr)
-      self._frame()._ex._cache.fill_from(old_cache)
+      self._ex._cache.fill_from(old_cache)
+      # self._frame()._ex._cache.fill_from(old_cache)
       self._ex._cache.types = None  # invalidate
     else:
       self._ex = ExprNode("append",self,src,colname)
-      self._frame()._ex._cache.fill_from(old_cache)
+      self._ex._cache.fill_from(old_cache)
+      # self._frame()._ex._cache.fill_from(old_cache)
       self._ex._cache.names = self.names + [colname]
       self._ex._cache.types = None  # invalidate
 
@@ -1665,10 +1668,7 @@ class H2OFrame(object):
     -------
       H2OFrame
     """
-    fr = H2OFrame._expr(expr=ExprNode("toupper", self))
-    fr._ex._cache.nrows = self.nrow
-    fr._ex._cache.ncols = self.ncol
-    return fr
+    return H2OFrame._expr(expr=ExprNode("toupper", self), cache=self._ex._cache)
 
   def tolower(self):
     """Translate characters from upper to lower case for a particular column
@@ -1677,10 +1677,7 @@ class H2OFrame(object):
     -------
       H2OFrame
     """
-    fr = H2OFrame._expr(expr=ExprNode("tolower", self))
-    fr._ex._cache.nrows = self.nrow
-    fr._ex._cache.ncols = self.ncol
-    return fr
+    return H2OFrame._expr(expr=ExprNode("tolower", self), cache=self._ex._cache)
 
   def rep_len(self, length_out):
     """Replicates the values in `data` in the H2O backend
@@ -1713,7 +1710,7 @@ class H2OFrame(object):
     -------
       H2OFrame
     """
-    return H2OFrame._expr(expr=ExprNode("scale", self, center, scale))
+    return H2OFrame._expr(expr=ExprNode("scale", self, center, scale), cache=self._ex._cache)
 
   def signif(self, digits=6):
     """Round doubles/floats to the given number of significant digits.
@@ -1727,7 +1724,7 @@ class H2OFrame(object):
     -------
       H2OFrame
     """
-    return H2OFrame._expr(expr=ExprNode("signif", self, digits))
+    return H2OFrame._expr(expr=ExprNode("signif", self, digits), cache=self._ex._cache)
 
   def round(self, digits=0):
     """Round doubles/floats to the given number of digits.
@@ -1740,7 +1737,7 @@ class H2OFrame(object):
     -------
       H2OFrame
     """
-    return H2OFrame._expr(expr=ExprNode("round", self, digits))
+    return H2OFrame._expr(expr=ExprNode("round", self, digits), cache=self._ex._cache)
 
   def asnumeric(self):
     """All factor columns converted to numeric.
@@ -1749,7 +1746,9 @@ class H2OFrame(object):
     -------
       H2OFrame
     """
-    return H2OFrame._expr(expr=ExprNode("as.numeric", self))
+    fr = H2OFrame._expr(expr=ExprNode("as.numeric", self), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"real" for k in fr._ex._cache.types.keys()}
+    return fr
 
   def ascharacter(self):
     """All columns converted to String columns
@@ -1758,66 +1757,112 @@ class H2OFrame(object):
     -------
       H2OFrame
     """
-    return H2OFrame._expr(expr=ExprNode("as.character", self))
+    fr = H2OFrame._expr(expr=ExprNode("as.character", self), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"string" for k in fr._ex._cache.types.keys()}
+    return fr
 
   def na_omit(self):
+    """Remove rows with NAs from the H2OFrame.
+
+    Returns
+    -------
+      H2OFrame
     """
-    :return: Removes rows with NAs
-    """
-    return H2OFrame._expr(expr=ExprNode("na.omit", self))
+    fr = H2OFrame._expr(expr=ExprNode("na.omit", self), cache=self._ex._cache)
+    fr._ex._cache.nrows=-1
+    return fr
 
   def isna(self):
+    """For each row in a column, determine if it is NA or not.
+
+    Returns
+    -------
+      Single-column H2OFrame of 1s and 0s. 1 means the value was NA.
     """
-    :return: Returns a new boolean H2OVec.
-    """
-    return H2OFrame._expr(expr=ExprNode("is.na", self))
+    fr = H2OFrame._expr(expr=ExprNode("is.na", self))
+    fr._ex._cache.nrows = self._ex._cache.nrows
+    return fr
 
   def year(self):
     """
-    :return: Returns a new year column from a msec-since-Epoch column
+    Returns
+    -------
+      Year column from a msec-since-Epoch column
     """
-    return H2OFrame._expr(expr=ExprNode("year", self))
+    fr = H2OFrame._expr(expr=ExprNode("year", self), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    return fr
 
   def month(self):
     """
-    :return: Returns a new month column from a msec-since-Epoch column
+    Returns
+    -------
+      Month column from a msec-since-Epoch column
     """
-    return H2OFrame._expr(expr=ExprNode("month", self))
+    fr = H2OFrame._expr(expr=ExprNode("month", self), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    return fr
 
   def week(self):
     """
-    :return: Returns a new week column from a msec-since-Epoch column
+    Returns
+    -------
+      Week column from a msec-since-Epoch column
     """
-    return H2OFrame._expr(expr=ExprNode("week", self))
+    fr = H2OFrame._expr(expr=ExprNode("week", self), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    return fr
 
   def day(self):
     """
-    :return: Returns a new day column from a msec-since-Epoch column
+    Returns
+    -------
+      Day column from a msec-since-Epoch column
     """
-    return H2OFrame._expr(expr=ExprNode("day", self))
+    fr = H2OFrame._expr(expr=ExprNode("day", self), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    return fr
 
   def dayOfWeek(self):
     """
-    :return: Returns a new Day-of-Week column from a msec-since-Epoch column
+    Returns
+    -------
+      Day-of-Week column from a msec-since-Epoch column
     """
-    return H2OFrame._expr(expr=ExprNode("dayOfWeek", self))
+    fr = H2OFrame._expr(expr=ExprNode("dayOfWeek", self), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    return fr
 
   def hour(self):
     """
-    :return: Returns a new Hour-of-Day column from a msec-since-Epoch column
+    Returns
+    -------
+      Hour-of-Day column from a msec-since-Epoch column
     """
-    return H2OFrame._expr(expr=ExprNode("hour", self))
+    fr = H2OFrame._expr(expr=ExprNode("hour", self), cache=self._ex._cache)
+    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    return fr
 
   def runif(self, seed=None):
+    """Generate a column of random numbers drawn from a uniform distribution [0,1) and
+    having the same data layout as the calling H2OFrame instance.
+
+    Parameters
+    ----------
+    seed : int, optional
+      A random seed. If None, then one will be generated.
+
+    Returns
+    -------
+      Single-column H2OFrame filled with doubles sampled uniformly from [0,1).
     """
-    :param seed: A random seed. If None, then one will be generated.
-    :return: A new H2OVec filled with doubles sampled uniformly from [0,1).
-    """
-    return H2OFrame._expr(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
+    fr = H2OFrame._expr(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
+    fr._ex._cache.ncols=1
+    fr._ex._cache.nrows=self.nrow
+    return fr
 
   def stratified_split(self,test_frac=0.2,seed=-1):
-    """
-    Construct a column that can be used to perform a random stratified split.
+    """Construct a column that can be used to perform a random stratified split.
 
     Parameters
     ----------
@@ -1855,22 +1900,37 @@ class H2OFrame(object):
     return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, None))
 
   def cut(self, breaks, labels=None, include_lowest=False, right=True, dig_lab=3):
+    """Cut a numeric vector into factor "buckets". Similar to R's cut method.
+
+    Parameters
+    ----------
+    breaks : list
+      The cut points in the numeric vector (must span the range of the col.)
+    labels: list
+      Factor labels, defaults to set notation of intervals defined by breaks.
+    include_lowest : bool
+      By default,  cuts are defined as (lo,hi]. If True, get [lo,hi].
+    right : bool
+      Include the high value: (lo,hi]. If False, get (lo,hi).
+    dig_lab: int
+      Number of digits following the decimal point to consider.
+
+    Returns
+    -------
+      Single-column H2OFrame of categorical data.
     """
-    Cut a numeric vector into factor "buckets". Similar to R's cut method.
-    :param breaks: The cut points in the numeric vector (must span the range of the col.)
-    :param labels: Factor labels, defaults to set notation of intervals defined by breaks.s
-    :param include_lowest: By default,  cuts are defined as (lo,hi]. If True, get [lo,hi].
-    :param right: Include the high value: (lo,hi]. If False, get (lo,hi).
-    :param dig_lab: Number of digits following the decimal point to consider.
-    :return: A factor column.
-    """
-    return H2OFrame._expr(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
+    fr = H2OFrame._expr(expr=ExprNode("cut",self,breaks,labels,include_lowest,right,dig_lab))
+    fr._ex._cache.ncols = 1
+    fr._ex._cache.nrows = self.nrow
+    return fr
 
   def which(self):
-    """
-    Equivalent to [ index for index,value in enumerate(self) if value ]
-    :return: A H2OFrame of 1 column filled with 0-based indices for which the
-    elements are not zero
+    """Equivalent to [ index for index,value in enumerate(self) if value ]
+
+    Returns
+    -------
+    Single-column H2OFrame filled with 0-based indices for which the elements are not
+    zero.
     """
     return H2OFrame._expr(expr=ExprNode("which",self))
 
@@ -1881,20 +1941,35 @@ class H2OFrame(object):
     yes and no vectors interleaved (or merged together).  All Frames must have
     the same row count.  Single column frames are broadened to match wider
     Frames.  Scalars are allowed, and are also broadened to match wider frames.
-    :param test: Frame of values treated as booleans; may be a single column
-    :param yes: Frame to use if [test] is true ; may be a scalar or single column
-    :param no:  Frame to use if [test] is false; may be a scalar or single column
-    :return: A H2OFrame
+
+    Parameters
+    ----------
+    test : H2OFrame (self)
+      Frame of values treated as booleans; may be a single column
+    yes : H2OFrame
+      Frame to use if [test] is true ; may be a scalar or single column
+    no : H2OFrame
+      Frame to use if [test] is false; may be a scalar or single column
+
+    Returns
+    -------
+      H2OFrame of the merged yes/no Frames/scalars according to the test input frame.
     """
     return H2OFrame._expr(expr=ExprNode("ifelse",self,yes,no))
 
   def apply(self, fun=None, axis=0):
-    """
-    Apply a lambda expression to an self._newExpr.
+    """Apply a lambda expression to an H2OFrame.
 
-    :param fun: A lambda expression to be applied per row or per column
-    :param axis: 0: apply to each column; 1: apply to each row
-    :return: An self._newExpr
+    Parameters
+    ----------
+      fun: lambda
+        A lambda expression to be applied per row or per column
+    axis: int
+      0: apply to each column; 1: apply to each row
+
+    Returns
+    -------
+      H2OFrame
     """
     if axis not in [0,1]:
       raise ValueError("margin must be either 0 (cols) or 1 (rows).")
