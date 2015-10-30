@@ -21,7 +21,7 @@ public class GridTestUtils {
   public static Map<String, Set<Object>> initMap(String[] paramNames) {
     Map<String, Set<Object>> modelParams = new HashMap<>();
     for (String name : paramNames) {
-      modelParams.put(name, new HashSet<Object>());
+      modelParams.put(name, new HashSet<>());
     }
     return modelParams;
   }

@@ -445,6 +445,8 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
     if( object@algorithm == "glrm" ) {
       cat("Sum of Squared Error (Numeric): ", m$numerr)
       cat("\nMisclassification Error (Categorical): ", m$caterr)
+      cat("\nNumber of Numeric Entries: ", m$numcnt)
+      cat("\nNumber of Categorical Entries: ", m$catcnt)
     }
   } else print(NULL)
 })
