@@ -403,7 +403,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           if (!mp._quiet_mode)
             Log.info("Scoring the null model of the autoencoder.");
-          model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0); //get the null model reconstruction error
+          model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0, false); //get the null model reconstruction error
         }
         // put the initial version of the model into DKV
         model.update(self());
@@ -419,7 +419,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model), iteration).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepLearningTask (self(),        model.model_info(), rowFraction(train, mp, model), iteration).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
         }
-        while (isRunning() && model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration++));
+        while (isRunning() && model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration++, false));
 
         // replace the model with the best model so far (if it's better)
         if (isRunning() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
@@ -433,7 +433,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             mi.set_processed_local(model.model_info().get_processed_local());
             model.set_model_info(mi);
             model.update(self());
-            model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration);
+            model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration, true);
             assert(best_model.loss() == model.loss());
           }
         }

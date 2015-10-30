@@ -108,6 +108,7 @@ public class ScoreKeeper extends Iced {
       // movingAvg[2] is based on scoring events indices 16,17 <- second "new" smooth score
 
       int startIdx = sk.length-2*k+i;
+      boolean zeroCrossing = false;
       for (int j = 0; j < k; ++j) {
         ScoreKeeper skj = sk[startIdx+j];
         double val;
@@ -144,11 +145,8 @@ public class ScoreKeeper extends Iced {
     }
     assert(lastBeforeK != Double.MAX_VALUE);
     assert(bestInLastK != Double.MAX_VALUE);
-    Log.info("Moving averages (length " + k + ") of last " + (k+1) + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
+    Log.info("Moving averages (length " + k + ") of last " + (k+1) + " " + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
 
-//    boolean improved = moreIsBetter ? bestInLastK > lastBeforeK
-//            :
-//            bestInLastK < lastBeforeK;
     boolean improved = moreIsBetter ? bestInLastK/lastBeforeK > 1+rel_improvement
             :
             bestInLastK/lastBeforeK < 1-rel_improvement;

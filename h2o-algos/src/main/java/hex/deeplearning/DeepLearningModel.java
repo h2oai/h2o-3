@@ -460,7 +460,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration, boolean finalScoring) {
     final long now = System.currentTimeMillis();
     final double time_since_last_iter = now - _timeLastIterationEnter;
     total_run_time +=  time_since_last_iter;
@@ -629,31 +629,33 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       _output._model_summary = model_info.createSummaryTable();
 
       // always keep a copy of the best model so far (based on the following criterion)
-      if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
-              // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
-              (DKV.get(actual_best_model_key) != null && (loss() < DKV.get(actual_best_model_key).<DeepLearningModel>get().loss() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
-                      ||
-                      // otherwise, compare against our own _bestError
-                      (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
-      ) ) {
-        _bestLoss = loss();
-        putMeAsBestModel(actual_best_model_key);
+      if (!finalScoring) {
+        if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
+                // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
+                (DKV.get(actual_best_model_key) != null && (loss() < DKV.get(actual_best_model_key).<DeepLearningModel>get().loss() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
+                        ||
+                        // otherwise, compare against our own _bestError
+                        (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
+        ) ) {
+          _bestLoss = loss();
+          putMeAsBestModel(actual_best_model_key);
+        }
+        // print the freshly scored model to ASCII
+        if (keep_running && printme)
+          Log.info(toString());
+        if ((_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
+                || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop)) {
+          Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
+          stopped_early = true;
+        }
+        if (ScoreKeeper.earlyStopping(scoreKeepers(),
+                get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric, get_params()._stopping_tolerance
+        )) {
+          Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
+          stopped_early = true;
+        }
+        if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
       }
-      // print the freshly scored model to ASCII
-      if (keep_running && printme)
-        Log.info(toString());
-      if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
-              || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
-        Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
-        stopped_early = true;
-      }
-      if (ScoreKeeper.earlyStopping(scoreKeepers(),
-              get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric, get_params()._stopping_tolerance
-      )) {
-        Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
-        stopped_early = true;
-      }
-      if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
     }
     if (stopped_early) {
       // pretend as if we finished all epochs to get the progress bar pretty (especially for N-fold and grid-search)
