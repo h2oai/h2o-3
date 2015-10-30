@@ -818,7 +818,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
     Metric to use for convergence checking, only for _stopping_rounds > 0
     Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
   stopping_tolerance : float
-    Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
+    Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
   quiet_mode : bool
     Enable quiet mode for less output to standard output
   max_confusion_matrix_size : int
@@ -990,7 +990,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
       Metric to use for convergence checking, only for _stopping_rounds > 0
       Can be one of "AUTO", "MSE".
     stopping_tolerance : float
-      Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
+      Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
     quiet_mode : bool
       Enable quiet mode for less output to standard output
     max_confusion_matrix_size : int
@@ -1126,7 +1126,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
     Metric to use for convergence checking, only for _stopping_rounds > 0
     Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
   stopping_tolerance : float
-    Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
+    Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
   :return: A new classifier or regression model.
   """
@@ -1371,7 +1371,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
     Metric to use for convergence checking, only for _stopping_rounds > 0
     Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
   stopping_tolerance : float
-    Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
+    Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
   :return: A new classifier or regression model.
   """
