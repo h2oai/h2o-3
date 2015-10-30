@@ -640,7 +640,8 @@ class H2OFrame(object):
       An H2OFrame instance.
     """
     fr = H2OFrame._expr(expr=ExprNode("as.Date",self,format), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
     return fr
 
   def cumsum(self):
@@ -1750,7 +1751,8 @@ class H2OFrame(object):
       H2OFrame
     """
     fr = H2OFrame._expr(expr=ExprNode("as.numeric", self), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"real" for k in fr._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"real" for k in fr._ex._cache.types.keys()}
     return fr
 
   def ascharacter(self):
@@ -1761,7 +1763,8 @@ class H2OFrame(object):
       H2OFrame
     """
     fr = H2OFrame._expr(expr=ExprNode("as.character", self), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"string" for k in fr._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"string" for k in fr._ex._cache.types.keys()}
     return fr
 
   def na_omit(self):
@@ -1793,7 +1796,8 @@ class H2OFrame(object):
       Year column from a msec-since-Epoch column
     """
     fr = H2OFrame._expr(expr=ExprNode("year", self), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
     return fr
 
   def month(self):
@@ -1803,7 +1807,8 @@ class H2OFrame(object):
       Month column from a msec-since-Epoch column
     """
     fr = H2OFrame._expr(expr=ExprNode("month", self), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
     return fr
 
   def week(self):
@@ -1813,7 +1818,8 @@ class H2OFrame(object):
       Week column from a msec-since-Epoch column
     """
     fr = H2OFrame._expr(expr=ExprNode("week", self), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
     return fr
 
   def day(self):
@@ -1823,7 +1829,8 @@ class H2OFrame(object):
       Day column from a msec-since-Epoch column
     """
     fr = H2OFrame._expr(expr=ExprNode("day", self), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
     return fr
 
   def dayOfWeek(self):
@@ -1833,7 +1840,8 @@ class H2OFrame(object):
       Day-of-Week column from a msec-since-Epoch column
     """
     fr = H2OFrame._expr(expr=ExprNode("dayOfWeek", self), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
     return fr
 
   def hour(self):
@@ -1843,7 +1851,8 @@ class H2OFrame(object):
       Hour-of-Day column from a msec-since-Epoch column
     """
     fr = H2OFrame._expr(expr=ExprNode("hour", self), cache=self._ex._cache)
-    fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {k:"int" for k in self._ex._cache.types.keys()}
     return fr
 
   def runif(self, seed=None):
