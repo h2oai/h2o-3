@@ -131,18 +131,15 @@ localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num
 
 
 # Import a sample binary outcome train/test set into R
-train <- read.table("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv", sep=",")
-test <- read.table("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv", sep=",")
-
-
-# Convert R data.frames into H2O parsed data objects
-training_frame <- as.h2o(train)
-validation_frame <- as.h2o(test)
-y <- "V1"
-x <- setdiff(names(training_frame), y)
+train <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv")
+test <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv")
+y <- "C1"
+x <- setdiff(names(train), y)
 family <- "binomial"
-training_frame[,c(y)] <- as.factor(training_frame[,c(y)])  #Force Binary classification
-validation_frame[,c(y)] <- as.factor(validation_frame[,c(y)])
+
+#For binary classification, response should be a factor
+train[,y] <- as.factor(train[,y])  
+test[,y] <- as.factor(test[,y])
 
 
 # Specify the base learner library & the metalearner
@@ -154,7 +151,7 @@ metalearner <- "h2o.deeplearning.wrapper"
 # Train the ensemble using 5-fold CV to generate level-one data
 # More CV folds will take longer to train, but should increase performance
 fit <- h2o.ensemble(x = x, y = y, 
-                    training_frame = training_frame, 
+                    training_frame = train, 
                     family = family, 
                     learner = learner, 
                     metalearner = metalearner,
@@ -162,19 +159,19 @@ fit <- h2o.ensemble(x = x, y = y,
 
 
 # Generate predictions on the test set
-pred <- predict.h2o.ensemble(fit, validation_frame)
-predictions <- as.data.frame(pred$pred)[,3]  #third column, p1 is P(Y==1)
-labels <- as.data.frame(validation_frame[,c(y)])[,1]
+pp <- predict(fit, test)
+predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
+labels <- as.data.frame(test[,y])[,1]
 
 
 # Ensemble test AUC 
-cvAUC::AUC(predictions = predictions , labels = labels)
+cvAUC::AUC(predictions = predictions, labels = labels)
 # 0.7888723
 
 
 # Base learner test AUC (for comparison)
 L <- length(learner)
-auc <- sapply(seq(L), function(l) cvAUC::AUC(predictions = as.data.frame(pred$basepred)[,l], labels = labels)) 
+auc <- sapply(seq(L), function(l) cvAUC::AUC(predictions = as.data.frame(pp$basepred)[,l], labels = labels)) 
 data.frame(learner, auc)
 #                   learner       auc
 #1          h2o.glm.wrapper 0.6871288
@@ -183,12 +180,13 @@ data.frame(learner, auc)
 #4 h2o.deeplearning.wrapper 0.7425813
 
 # Note that the ensemble results above are not reproducible since 
-# h2o.deeplearning is not reproducible when using multiple cores.
+# h2o.deeplearning is not reproducible when using multiple cores,
+# and we did not set a seed for h2o.randomForest.wrapper or h2o.gbm.wrapper.
 
-# Additional note: In a future version, performance metrics will be 
-# computed automatically, as in the other H2O algos.
+# Additional note: In a future version, performance metrics such as AUC
+# will be computed automatically, as in the other H2O algos.
 
-# Here is an example of how to generate a custom learner library:
+# Here is an example of how to generate a base learner library using custom base learners:
 h2o.randomForest.1 <- function(..., ntrees = 1000, nbins = 100, seed = 1) {
 h2o.randomForest.wrapper(..., ntrees = ntrees, nbins = nbins, seed = seed)
 }

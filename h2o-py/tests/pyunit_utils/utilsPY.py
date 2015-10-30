@@ -123,7 +123,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         h2o_val = h2o_data[r,c]
         np_val = np_data[r,c] if len(np_data.shape) > 1 else np_data[r]
         if isinstance(np_val, np.bool_): np_val = bool(np_val)  # numpy haz special bool type :(
-        assert np.absolute(h2o_val - np_val) < 1e-6, \
+        assert np.absolute(h2o_val - np_val) < 1e-5, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
 def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs):
@@ -341,12 +341,20 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
 # Validate given models' parameters against expected values
 def expect_model_param(models, attribute_name, expected_values):
     print "param: {0}".format(attribute_name)
-    actual_values = list(set([m.params[attribute_name]['actual'] for m in models.models]))
+    actual_values = list(set([m.params[attribute_name]['actual'] \
+                                  if type(m.params[attribute_name]['actual']) != list
+                                  else m.params[attribute_name]['actual'][0] for m in models.models]))
+                                  # possible for actual to be a list (GLM)
+    if type(expected_values) != list:
+        expected_values = [expected_values]
+    # limit precision. Rounding happens in some models like RF
+    actual_values = [x if isinstance(x,basestring) else round(float(x),5) for x in actual_values]
+    expected_values = [x if isinstance(x,basestring) else round(float(x),5) for x in expected_values]
     print "actual values: {0}".format(actual_values)
-    print "expected values: {0}".format(actual_values)
+    print "expected values: {0}".format(expected_values)
     actual_values_len = len(actual_values)
     expected_values_len = len(expected_values)
     assert actual_values_len == expected_values_len, "Expected values len: {0}. Actual values len: " \
                                                      "{1}".format(expected_values_len, actual_values_len)
-    diff = set(actual_values) - set(actual_values)
+    diff = set(actual_values) - set(expected_values)
     assert len(diff) == 0, "Difference between actual and expected values: {0}".format(diff)

@@ -33,12 +33,12 @@ transformData <- function(df, transform = "NONE") {
   return(df_trans)
 }
 
-checkError <- function(dataR, imputeR, metricsH2O, transform = "NONE", tolerance = 1e-6) {
+checkError <- function(dataR, imputeR, metricsH2O, transform = "NONE", impute_original = FALSE, tolerance = 1e-6) {
   NUM <- function(x) { x[,sapply(x, is.numeric)] }
   FAC <- function(x) { x[,sapply(x, is.factor)]  }
   
   # Transform data in R to match what H2O processed and compute errors
-  dataR_trans <- transformData(dataR, transform = transform)
+  dataR_trans <- transformData(dataR, transform = ifelse(impute_original, "NONE", transform))
   numerrR <- sum((NUM(dataR_trans) - NUM(imputeR))^2, na.rm = TRUE)
   caterrR <- compareCats(FAC(imputeR), FAC(dataR_trans))
   
@@ -48,11 +48,11 @@ checkError <- function(dataR, imputeR, metricsH2O, transform = "NONE", tolerance
 }
 
 checkTrainErr <- function(fitH2O, trainR, imputeR, tolerance = 1e-6) {
-  checkError(trainR, imputeR, fitH2O@model$training_metrics@metrics, fitH2O@parameters$transform, tolerance)
+  checkError(trainR, imputeR, fitH2O@model$training_metrics@metrics, fitH2O@allparameters$transform, fitH2O@allparameters$impute_original, tolerance)
 }
 
 checkValidErr <- function(fitH2O, testR, imputeR, tolerance = 1e-6) {
-  checkError(testR, imputeR, fitH2O@model$validation_metrics@metrics, fitH2O@parameters$transform, tolerance)
+  checkError(testR, imputeR, fitH2O@model$validation_metrics@metrics, fitH2O@allparameters$transform, fitH2O@allparameters$impute_original, tolerance)
 }
 
 checkGLRMPredErr <- function(fitH2O, trainH2O, validH2O = NULL, tolerance = 1e-6) {

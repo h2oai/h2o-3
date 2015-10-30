@@ -886,18 +886,10 @@ class H2OFrame:
 
   def mean(self,na_rm=False):
     """
-    :param na_rm: True or False to remove NAs from computation.
-    :return: The mean of the column.
+    :param na_rm: boolean, Flag to remove NAs from computation.
+    :return: list, means of the columns of the frame
     """
-    if self.ncol > 1: raise ValueError("Only one column allowed, use col_means to return a list of results")
     return self._scalar("mean", self, na_rm)
-
-  def col_means(self,na_rm=False):
-    """
-    :param na_rm: True or False to remove NAs from computation.
-    :return: A float list of means of all columns
-    """
-    return self._scalar("colMeans", self, na_rm)
 
   def median(self, na_rm=False):
     """
@@ -915,12 +907,12 @@ class H2OFrame:
     if self.nrow==1 or (self.ncol==1 and y.ncol==1): return self._scalar("var",self,y,use)
     return self._newExpr("var",self,y,use)
 
-  def sd(self):
+  def sd(self, na_rm=False):
     """
-    :param na_rm: True or False to remove NAs from computation.
-    :return: Standard deviation of the H2OVec elements.
+    :param na_rm: bool, Flag to remove NAs from computation.
+    :return: list, Standard deviation of the H2OVec elements.
     """
-    return self._scalar("sd", self)
+    return self._scalar("sd", self, na_rm)
 
   def asfactor(self):
     """

@@ -190,7 +190,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   # Build the AST; this will assign a name as needed
   exec_str <- .eval.impl(x)
   # Execute the AST on H2O
-  print(paste0("EXPR: ",exec_str))
+  #print(paste0("EXPR: ",exec_str))
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   if( !is.null(res$scalar) ) { # Fetch out a scalar answer
@@ -211,7 +211,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   .clear.impl(x)
   # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
   # temps... to help debug GC issues.
-  .h2o.gc()
+  #.h2o.gc()
   x
 }
 
@@ -1776,15 +1776,14 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' }
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
-  if( na.rm ) stop("na.rm versions not impl")
-  if( ncol(x)==1L ) .eval.scalar(.newExpr("sd",x))
-  else .fetch.data(.newExpr("sd",x),1L)
+  if( ncol(x)==1L ) .eval.scalar(.newExpr("sd",x, na.rm))
+  else .fetch.data(.newExpr("sd",x,na.rm),1L)
 }
 
 #' @rdname h2o.sd
 #' @export
 sd <- function(x, na.rm=FALSE) {
-  if( is.Frame(x) ) h2o.sd(x)
+  if( is.Frame(x) ) h2o.sd(x,na.rm)
   else stats::sd(x,na.rm)
 }
 

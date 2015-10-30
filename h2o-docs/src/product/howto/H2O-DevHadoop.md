@@ -7,6 +7,7 @@ Currently supported versions:
 - CDH 5.4.2
 - HDP 2.1
 - HDP 2.2
+- HDP 2.3
 - MapR 3.1.1
 - MapR 4.0.1
 - MapR 5.0
@@ -55,7 +56,8 @@ The following tutorial will walk the user through the download or build of H2O a
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
+	    wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
 		

@@ -1,10 +1,6 @@
 # Re-start the training process on a saved DL model
 # using the `checkpoint` argument
-model_chkp = h2o.deeplearning(
-        x=x,
-        y=y,
-        training_frame=train,
-        validation_frame=test,
+model_chkp = H2ODeepLearningEstimator(
         checkpoint=model,
         distribution="multinomial",
         activation="RectifierWithDropout",
@@ -13,3 +9,9 @@ model_chkp = h2o.deeplearning(
         sparse=True,
         l1=1e-5,
         epochs=20)
+
+model_chkp.train(        
+        x=x,
+        y=y,
+        training_frame=train,
+        validation_frame=test)

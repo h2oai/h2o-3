@@ -115,7 +115,7 @@ class ExprNode:
     self._clear_impl()
     # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
     # temps... to help debug GC issues.
-    gc.collect()
+    #gc.collect()
     return self
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
@@ -152,7 +152,7 @@ class ExprNode:
     elif isinstance(arg, (int, long, float)):     return "{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, basestring):             return '"'+arg+'"'
     elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start) )
-    elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if isinstance(arg[0], basestring) else ("[" + " ".join(["NaN" if math.isnan(i) else str(i) for i in arg])+"]")
+    elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if all(isinstance(i, basestring) for i in arg) else ("[" + " ".join(["NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg])+"]")
     elif arg is None:                             return "[]"  # empty list
     raise ValueError("Unexpected arg type: " + str(type(arg))+" "+str(arg.__class__)+" "+arg.__repr__())
 
