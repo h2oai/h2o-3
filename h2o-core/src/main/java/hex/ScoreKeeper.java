@@ -1,7 +1,11 @@
 package hex;
 
+import water.H2O;
 import water.Iced;
+import water.util.Log;
 import water.util.MathUtils;
+
+import java.util.Arrays;
 
 /**
  * Low-weight keeper of scores
@@ -66,4 +70,80 @@ public class ScoreKeeper extends Iced {
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
             && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6);
   }
+
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, AUC, r2, misclassification}
+
+  public static boolean earlyStopping(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion) {
+    if (k == 0) return false;
+    int len = sk.length - 1; //how many "full"/"conservative" scoring events we have (skip the first)
+    if (len < 2*k) return false; //need at least k for SMA and another k to tell whether the model got better or not
+
+
+    boolean moreIsBetter = (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2);
+    double movingAvg[] = new double[k+1]; //need one moving average value for the last k+1 scoring events
+    double lastBeforeK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
+    double bestInLastK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
+    for (int i=0;i<movingAvg.length;++i) {
+      movingAvg[i] = 0;
+      // compute k+1 simple moving averages of window size k
+      // need to go back 2*k steps
+
+      // Example: 20 scoring events, k=3
+      // need to go back from idx 19 to idx 14
+      // movingAvg[0] is based on scoring events indices 14,15,16 <- reference
+      // movingAvg[1] is based on scoring events indices 15,16,17 <- first "new" smooth score
+      // movingAvg[2] is based on scoring events indices 16,17,18 <- second "new" smooth score
+      // movingAvg[3] is based on scoring events indices 17,18,19 <- third "new" smooth score
+
+      // Example: 18 scoring events, k=2
+      // need to go back from idx 17 to idx 14
+      // movingAvg[0] is based on scoring events indices 14,15 <- reference
+      // movingAvg[1] is based on scoring events indices 15,16 <- first "new" smooth score
+      // movingAvg[2] is based on scoring events indices 16,17 <- second "new" smooth score
+
+      int startIdx = sk.length-2*k+i;
+      for (int j = 0; j < k; ++j) {
+        ScoreKeeper skj = sk[startIdx+j];
+        double val;
+        switch (criterion) {
+          case AUC:
+            val = skj._AUC;
+            break;
+          case MSE:
+            val = skj._mse;
+            break;
+          case AUTO:
+            val = classification ? skj._logloss : skj._mean_residual_deviance;
+            break;
+          case logloss:
+            val = skj._logloss;
+            break;
+          case r2:
+            val = skj._r2;
+            break;
+          case misclassification:
+            val = skj._classError;
+            break;
+          default:
+            throw H2O.unimpl("Undefined stopping criterion.");
+        }
+        movingAvg[i] += val;
+      }
+      movingAvg[i]/=k;
+      assert(!Double.isNaN(movingAvg[i]));
+      if (i==0)
+        lastBeforeK = movingAvg[i];
+      else
+        bestInLastK = moreIsBetter ? Math.max(movingAvg[i], bestInLastK) : Math.min(movingAvg[i], bestInLastK);
+    }
+    assert(lastBeforeK != Double.MAX_VALUE);
+    assert(bestInLastK != Double.MAX_VALUE);
+    Log.info("Moving averages (length " + k + ") of last " + (k+1) + " metrics: " + Arrays.toString(movingAvg));
+
+    boolean improved = moreIsBetter ? bestInLastK > lastBeforeK : bestInLastK < lastBeforeK;
+    Log.info("Checking convergence of " + criterion.getClass().getSimpleName() + ": " + lastBeforeK + " --> " + bestInLastK + (improved ? " (improved)." : " (got worse)."));
+    return !improved;
+  }
+
+
 }

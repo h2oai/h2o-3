@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import hex.Distribution;
 import hex.Model;
+import hex.ScoreKeeper;
 import water.H2O;
 import static water.H2O.technote;
 import water.exceptions.H2OIllegalArgumentException;
@@ -59,7 +60,7 @@ public class DeepLearningParameters extends Model.Parameters {
    * This value can be modified during checkpoint restarts and allows continuation
    * of selected models.
    */
-  public double _epochs = 10;
+  public double _epochs = 1000;
 
   /**
    * The number of training data rows to be processed per iteration. Note that
@@ -303,6 +304,18 @@ public class DeepLearningParameters extends Model.Parameters {
    * stops.
    */
   public double _regression_stop = 1e-6;
+
+  /**
+   * Early stopping based on convergence of stopping_metric.
+   * Stop if simple moving average of length k of the metric does not improve for k:=stopping_rounds scoring events."
+   * Can only trigger after at least 2k scoring events. Use 0 to disable.
+   */
+  public int _stopping_rounds = 5;
+
+  /**
+   * Metric to use for convergence checking, only for _stopping_rounds > 0
+   */
+  public ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
 
   /**
    * Enable quiet mode for less output to standard output.
@@ -614,6 +627,27 @@ public class DeepLearningParameters extends Model.Parameters {
       if (_elastic_averaging_regularization < 0)
         dl.error("_elastic_averaging_regularization", "Elastic averaging regularization strength must be >= 0.");
     }
+    if (_stopping_rounds == 0) {
+      dl.hide("_stopping_metric", "Stopping metric is not needed for _stopping_rounds=0.");
+    } else if (_stopping_rounds < 0) {
+      dl.error("_stopping_rounds", "Stopping rounds must be >= 0.");
+    } else {
+      if (classification) {
+        if (_stopping_metric == ScoreKeeper.StoppingMetric.deviance) {
+          dl.error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
+        }
+        if (dl.nclasses()!=2 && _stopping_metric == ScoreKeeper.StoppingMetric.AUC) {
+          dl.error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
+        }
+      } else {
+        if (_stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
+                _stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
+                _stopping_metric == ScoreKeeper.StoppingMetric.logloss)
+        {
+          dl.error("_stopping_metric", "Stopping metric cannot be " + _stopping_metric.getClass().getSimpleName() + " for regression.");
+        }
+      }
+    }
   }
 
   static class Sanity {
@@ -631,6 +665,7 @@ public class DeepLearningParameters extends Model.Parameters {
             "_score_validation_sampling",
             "_classification_stop",
             "_regression_stop",
+            "_stopping_rounds",
             "_quiet_mode",
             "_max_confusion_matrix_size",
             "_max_hit_ratio_k",

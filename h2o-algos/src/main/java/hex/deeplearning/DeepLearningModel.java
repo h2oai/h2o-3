@@ -108,9 +108,16 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   private DeepLearningScoring[] errors;
   public DeepLearningScoring[] scoring_history() { return errors; }
+  public ScoreKeeper[] scoreKeepers() {
+    ScoreKeeper[] sk = new ScoreKeeper[scoring_history().length];
+    for (int i=0;i<sk.length;++i) {
+      sk[i] = errors[i].validation ? errors[i].scored_valid : errors[i].scored_train;
+    }
+    return sk;
+  }
 
   // Keep the best model so far, based on a single criterion (overall class. error or MSE)
-  private float _bestError = Float.POSITIVE_INFINITY;
+  private float _bestLoss = Float.POSITIVE_INFINITY;
 
   public Key actual_best_model_key;
   public Key model_info_key;
@@ -126,8 +133,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public final DeepLearningParameters get_params() { return model_info.get_params(); }
 
   // Lower is better
-  public float error() {
-    return (float) (_output.isClassifier() ? classification_error() : deviance());
+  public float loss() {
+    return (float) (_output.isClassifier() ? logloss() : deviance());
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -143,7 +150,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public int compareTo(DeepLearningModel o) {
     if (o._output.isClassifier() != _output.isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
     if (o._output.nclasses() != _output.nclasses()) throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
-    return (error() < o.error() ? -1 : error() > o.error() ? 1 : 0);
+    return (loss() < o.loss() ? -1 : loss() > o.loss() ? 1 : 0);
   }
 
   public static class DeepLearningScoring extends Iced {
@@ -356,7 +363,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     total_scoring_time = cp.total_scoring_time;
     training_rows = cp.training_rows; //copy the value to display the right number on the model page before training has started
     validation_rows = cp.validation_rows; //copy the value to display the right number on the model page before training has started
-    _bestError = cp._bestError;
+    _bestLoss = cp._bestLoss;
     epoch_counter = cp.epoch_counter;
 
     // deep clone scoring history
@@ -602,14 +609,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         // always keep a copy of the best model so far (based on the following criterion)
         if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
             // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
-            (DKV.get(actual_best_model_key) != null && (error() < DKV.get(actual_best_model_key).<DeepLearningModel>get().error() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
+            (DKV.get(actual_best_model_key) != null && (loss() < DKV.get(actual_best_model_key).<DeepLearningModel>get().loss() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
                 ||
                 // otherwise, compare against our own _bestError
-                (DKV.get(actual_best_model_key) == null && error() < _bestError)
+                (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
         ) ) {
           if (!get_params()._quiet_mode)
-            Log.info("Error reduced from " + _bestError + " to " + error() + ".");
-          _bestError = error();
+            Log.info("Loss reduced from " + _bestLoss + " to " + loss() + ".");
+          _bestLoss = loss();
           putMeAsBestModel(actual_best_model_key);
         }
       }
@@ -621,6 +628,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if ( (_output.isClassifier() && last_scored().scored_train._classError <= get_params()._classification_stop)
         || (!_output.isClassifier() && last_scored().scored_train._mse <= get_params()._regression_stop) ) {
       Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
+      stopped_early = true;
+      keep_running = false;
+    }
+    if (ScoreKeeper.earlyStopping(scoreKeepers(),
+            get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric
+    )) {
+      Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
       stopped_early = true;
       keep_running = false;
     }

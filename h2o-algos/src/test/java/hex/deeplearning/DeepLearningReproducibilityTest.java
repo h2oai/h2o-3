@@ -91,7 +91,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           Log.info("Prediction:\n" + FrameUtils.chunkSummary(preds[repeat]).toString());
           numbers[repeat] = mymodel.model_info().get_weights(0).get(23,4);
           checksums[repeat] = mymodel.model_info().checksum_impl(); //check that the model state is consistent
-          repeatErrs.put(repeat, mymodel.error());
+          repeatErrs.put(repeat, mymodel.loss());
 
         } catch (Throwable t) {
           t.printStackTrace();
@@ -107,7 +107,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
         }
       }
       sb.append("Reproducibility: ").append(repro ? "on" : "off").append("\n");
-      sb.append("Repeat # --> Validation Error\n");
+      sb.append("Repeat # --> Validation Loss\n");
       for (String s : Arrays.toString(repeatErrs.entrySet().toArray()).split(","))
         sb.append(s.replace("=", " --> ")).append("\n");
       sb.append('\n');

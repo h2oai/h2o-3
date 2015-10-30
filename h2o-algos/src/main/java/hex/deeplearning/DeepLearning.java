@@ -12,6 +12,7 @@ import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.init.Linpack;
 import water.init.NetworkTest;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;
@@ -152,12 +153,26 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   }
 
   @Override
-  public void modifyParmsForCrossValidationMainModel(int N) {
-    super.modifyParmsForCrossValidationMainModel(N);
+  public void modifyParmsForCrossValidationMainModel(int N, Key<Model>[] cvModelBuilderKeys) {
+    super.modifyParmsForCrossValidationMainModel(N, cvModelBuilderKeys);
     if (_parms._overwrite_with_best_model) {
       if (!_parms._quiet_mode)
         warn("_overwrite_with_best_model", "Disabling overwrite_with_best_model for cross-validation main model: No early stopping.");
       _parms._overwrite_with_best_model = false;
+    }
+    if (cvModelBuilderKeys !=null) {
+      if (_parms._stopping_rounds > 0) {
+        double[] epochs = new double[cvModelBuilderKeys.length];
+        for (int i=0;i<epochs.length;++i) {
+          epochs[i] = ((DeepLearningModel)DKV.getGet((((DeepLearning)DKV.getGet(cvModelBuilderKeys[i])).dest()))).last_scored().epoch_counter;
+        }
+        _parms._epochs = ArrayUtils.sum(epochs)/epochs.length;
+        if (!_parms._quiet_mode)
+          warn("_epochs", "Setting optimal _epochs to " + _parms._epochs + " for cross-validation main model based on early stopping of cross-validation models.");
+        _parms._stopping_rounds = 0;
+        if (!_parms._quiet_mode)
+          warn("_stopping_rounds", "Disabling early stopping based on convergence for cross-validation main model.");
+      }
     }
   }
 
@@ -409,7 +424,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         // replace the model with the best model so far (if it's better)
         if (isRunning() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
-          if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
+          if (best_model != null && best_model.loss() < model.loss() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             if (!_parms._quiet_mode)
               Log.info("Setting the model to be the best model so far (based on scoring history).");
             DeepLearningModelInfo mi = best_model.model_info().deep_clone();
@@ -419,7 +434,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             model.set_model_info(mi);
             model.update(self());
             model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration);
-            assert(best_model.error() == model.error());
+            assert(best_model.loss() == model.loss());
           }
         }
 

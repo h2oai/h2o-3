@@ -1,6 +1,7 @@
 package hex.schemas;
 
 import hex.Distribution;
+import hex.ScoreKeeper;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningParameters;
 import water.api.API;
@@ -65,6 +66,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "score_duty_cycle",
         "classification_stop",
         "regression_stop",
+        "stopping_rounds",
+        "stopping_metric",
         "score_validation_sampling",
         "diagnostics",
         "fast_mode",
@@ -446,6 +449,20 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      */
     @API(help = "Stopping criterion for regression error (MSE) on training data (-1 to disable)", /* dmin=-1, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double regression_stop;
+
+    /**
+     * Early stopping based on convergence of stopping_metric.
+     * Stop if simple moving average of length k of the metric does not improve for k:=stopping_rounds scoring events."
+     * Can only trigger after at least 2k scoring events. Use 0 to disable.
+     */
+    @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public int stopping_rounds;
+
+    /**
+     * Metric to use for convergence checking, only for _stopping_rounds > 0
+     */
+    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public ScoreKeeper.StoppingMetric stopping_metric;
 
     /**
      * Enable quiet mode for less output to standard output.

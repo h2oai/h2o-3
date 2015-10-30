@@ -441,7 +441,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
 
-      modifyParmsForCrossValidationMainModel(N); //tell the main model that it shouldn't stop early either
+      modifyParmsForCrossValidationMainModel(N, async ? null : cvModelBuilderKeys); //tell the main model that it shouldn't stop early either
 
       trainModelImpl(-1, false); //non-blocking
       if (!async)
@@ -537,7 +537,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * For example, the model might need to be told to not do early stopping.
    * @param N Total number of cross-validation folds
    */
-  public void modifyParmsForCrossValidationMainModel(int N) {
+  public void modifyParmsForCrossValidationMainModel(int N, Key<Model>[] cvModelKeys) {
 
   }
 
