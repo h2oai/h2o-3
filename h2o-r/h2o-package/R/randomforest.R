@@ -43,6 +43,15 @@
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
+#' @param score_each_iteration Attempts to score each tree.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric.
+#'        Stop if simple moving average of length k of the stopping_metric does not improve
+#'        (by stopping_tolerance) for k=stopping_rounds scoring events.
+#'        Can only trigger after at least 2k scoring events. Use 0 to disable.
+#' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
+#'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
+#'        improvement is not at least this much, stop)
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -69,7 +78,12 @@ h2o.randomForest <- function(x, y, training_frame,
                              nfolds = 0,
                              fold_column = NULL,
                              fold_assignment = c("AUTO","Random","Modulo"),
-                             keep_cross_validation_predictions = FALSE)
+                             keep_cross_validation_predictions = FALSE,
+                             score_each_iteration = FALSE,
+                             stopping_rounds=0,
+                             stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
+                             stopping_tolerance=1e-3
+                             )
 {
   # Training_frame and validation_frame may be a key or a Frame object
   if (!is.Frame(training_frame))
@@ -133,6 +147,11 @@ h2o.randomForest <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if(!missing(stopping_rounds)) parms$stopping_rounds <- stopping_rounds
+  if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
+  if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
 
   .h2o.modelJob('drf', parms)
 }

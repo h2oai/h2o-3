@@ -123,7 +123,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /**
      * Early stopping based on convergence of stopping_metric.
-     * Stop if simple moving average of length k of the metric does not improve (by relative _stopping_tolerance) for k=stopping_rounds scoring events."
+     * Stop if simple moving average of length k of the stopping_metric does not improve (by stopping_tolerance) for k=stopping_rounds scoring events."
      * Can only trigger after at least 2k scoring events. Use 0 to disable.
      */
     public int _stopping_rounds = 0;
@@ -134,7 +134,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
 
     /**
-     * Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
+     * Relative tolerance for metric-based stopping criterion (if relative improvement is not at least this much, stop)
      */
     public double _stopping_tolerance = 1e-3;
 
