@@ -121,6 +121,23 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
 
+    /**
+     * Early stopping based on convergence of stopping_metric.
+     * Stop if simple moving average of length k of the metric does not improve (by relative _stopping_tolerance) for k=stopping_rounds scoring events."
+     * Can only trigger after at least 2k scoring events. Use 0 to disable.
+     */
+    public int _stopping_rounds = 0;
+
+    /**
+     * Metric to use for convergence checking, only for _stopping_rounds > 0
+     */
+    public ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
+
+    /**
+     * Relative tolerance for metric-based stopping criterion (if relative improvement is less than this value, stop)
+     */
+    public double _stopping_tolerance = 1e-3;
+
     /** Supervised models have an expected response they get to train with! */
     public String _response_column; // response column name
 

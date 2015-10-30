@@ -583,3 +583,5 @@ Out[171]: H2OFrame with 8 rows and 5 columns:
 5  bar    two  0.758202  0.521504    two
 6  foo    one  0.098259 -1.391587    one
 7  foo  three  0.412450 -0.050374  other
+
+In[2]: h2o.init(ip="123.45.67.89", port=54321)

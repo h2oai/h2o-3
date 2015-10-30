@@ -12,6 +12,7 @@ import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.init.Linpack;
 import water.init.NetworkTest;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;
@@ -152,12 +153,26 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   }
 
   @Override
-  public void modifyParmsForCrossValidationMainModel(int N) {
-    super.modifyParmsForCrossValidationMainModel(N);
+  public void modifyParmsForCrossValidationMainModel(int N, Key<Model>[] cvModelBuilderKeys) {
+    super.modifyParmsForCrossValidationMainModel(N, cvModelBuilderKeys);
     if (_parms._overwrite_with_best_model) {
       if (!_parms._quiet_mode)
         warn("_overwrite_with_best_model", "Disabling overwrite_with_best_model for cross-validation main model: No early stopping.");
       _parms._overwrite_with_best_model = false;
+    }
+    if (cvModelBuilderKeys !=null) {
+      if (_parms._stopping_rounds > 0) {
+        double[] epochs = new double[cvModelBuilderKeys.length];
+        for (int i=0;i<epochs.length;++i) {
+          epochs[i] = ((DeepLearningModel)DKV.getGet((((DeepLearning)DKV.getGet(cvModelBuilderKeys[i])).dest()))).last_scored().epoch_counter;
+        }
+        _parms._epochs = ArrayUtils.sum(epochs)/epochs.length;
+        if (!_parms._quiet_mode)
+          warn("_epochs", "Setting optimal _epochs to " + _parms._epochs + " for cross-validation main model based on early stopping of cross-validation models.");
+        _parms._stopping_rounds = 0;
+        if (!_parms._quiet_mode)
+          warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
+      }
     }
   }
 
@@ -388,7 +403,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           if (!mp._quiet_mode)
             Log.info("Scoring the null model of the autoencoder.");
-          model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0); //get the null model reconstruction error
+          model.doScoring(trainScoreFrame, validScoreFrame, self(), null, 0, false); //get the null model reconstruction error
         }
         // put the initial version of the model into DKV
         model.update(self());
@@ -404,12 +419,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model), iteration).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepLearningTask (self(),        model.model_info(), rowFraction(train, mp, model), iteration).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
         }
-        while (isRunning() && model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration++));
+        while (isRunning() && model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration++, false));
 
         // replace the model with the best model so far (if it's better)
         if (isRunning() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
-          if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
+          if (best_model != null && best_model.loss() < model.loss() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             if (!_parms._quiet_mode)
               Log.info("Setting the model to be the best model so far (based on scoring history).");
             DeepLearningModelInfo mi = best_model.model_info().deep_clone();
@@ -418,8 +433,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
             mi.set_processed_local(model.model_info().get_processed_local());
             model.set_model_info(mi);
             model.update(self());
-            model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration);
-            assert(best_model.error() == model.error());
+            model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey, iteration, true);
+            assert(best_model.loss() == model.loss());
           }
         }
 
