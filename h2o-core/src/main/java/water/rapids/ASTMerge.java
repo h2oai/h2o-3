@@ -168,10 +168,10 @@ public class ASTMerge extends ASTPrim {
    *  categorical column to another; the width is ncols
    */
 
-  private ValFrame sortingMerge( Frame walked, Frame hashed, boolean all_x, boolean all_y, int ncols, int[][] id_maps) {
+  private ValFrame sortingMerge( Frame left, Frame right, boolean all_left, boolean all_right, int ncols, int[][] id_maps) {
     int cols[] = new int[ncols];
     for (int i=0; i<ncols; i++) cols[i] = i;
-    return new ValFrame(Merge.merge(walked, hashed, cols, cols));
+    return new ValFrame(Merge.merge(left, right, cols, cols, all_left));
   }
 
   // One Row object per row of the hashed dataset, so kept as small as

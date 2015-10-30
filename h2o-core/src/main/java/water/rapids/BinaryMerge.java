@@ -12,6 +12,8 @@ import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import java.util.Arrays;
+
 public class BinaryMerge extends DTask<BinaryMerge> {
   long _retFirst[/*n2GB*/][];  // The row number of the first right table's index key that matches
   long _retLen[/*n2GB*/][];    // How many rows does it match to?
@@ -29,19 +31,70 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   long _leftBatchSize, _rightBatchSize;
   Frame _leftFrame, _rightFrame;
   long _ansN=0;   // the number of rows in the resulting dataset
-  final boolean _outerJoin = true; // TODO: add the option to do inner join (currently this flag just used to count a 1 for the NA for nomatch=NA)
   long _perNodeNumRowsToFetch[] = new long[H2O.CLOUD.size()];
   int _leftMSB, _rightMSB;
   int _chunkSizes[];
+  boolean _allLeft, _allRight;
 
-  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[]) {   // In X[Y], 'left'=i and 'right'=x
+  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
     _leftFrame = leftFrame;
     _rightFrame = rightFrame;
     _leftMSB = leftMSB;
     _rightMSB = rightMSB;
+    _allLeft = allLeft;
+    _allRight = false;
     SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_leftFrame._key, _leftMSB));
     SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_rightFrame._key, _rightMSB));
-    if (leftSortedOXHeader == null || rightSortedOXHeader == null) return;
+    if (leftSortedOXHeader == null) {
+      if (_allRight) throw H2O.unimpl();  // TO DO pass through _allRight and implement
+      return;
+    }
+    if (rightSortedOXHeader == null) {
+      if (_allLeft == false) return;
+
+      // TODO? : create a dummy header with 0's to reuse and fall through general case code below.  However, gets tough to fall
+      //         through most efficiently so we'll do a separate code block to allocate the NA Frame most efficiently.
+      // rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // TODO: reuse a single global here
+
+      // construct NA frame as big as left table and return it
+      {
+      // compute the number of rows per chunk
+        _ansN = leftSortedOXHeader._numRows;
+        int batchSize = 1<<22; //32MB for doubles, 64MB for UUIDs to fit into 256MB DKV Value limit
+        int nbatch = (int) (_ansN-1)/batchSize +1;  // TODO: wrap in class to avoid this boiler plate
+        int lastSize = (int)(_ansN - (nbatch-1)*batchSize);
+        assert nbatch >= 1;
+        assert lastSize > 0;
+        _chunkSizes = new int[nbatch];
+
+        // batch chunks (per column), each chunk has up to batchSize rows
+        double[][][] frameLikeChunks = new double[_rightFrame.numCols()/*cols*/][nbatch/*batch*/][]; //TODO: compression via int types
+        for (int col=0; col<_rightFrame.numCols(); ++col) {   // TO DO: NA will appear for the join columns. Need to change join columns to populate from leftFrame
+          int b;
+          for (b = 0; b < nbatch - 1; b++) {
+            frameLikeChunks[col][b] = new double[batchSize];
+            Arrays.fill(frameLikeChunks[col][b], Double.NaN);
+            _chunkSizes[b] = batchSize;
+          }
+          frameLikeChunks[col][b] = new double[lastSize];
+          Arrays.fill(frameLikeChunks[col][b], Double.NaN);
+          _chunkSizes[b] = lastSize;
+        }
+
+        // compress all chunks and store them
+        Futures fs = new Futures();
+        for (int col=0; col<_rightFrame.numCols(); ++col) {
+          for (int b = 0; b < nbatch; b++) {
+            Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
+            DKV.put(getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _leftMSB, _rightMSB, col, b), ck, fs, true);
+            frameLikeChunks[col][b]=null; //free mem as early as possible (it's now in the store)
+          }
+        }
+        fs.blockForPending();
+        return;   // _allLeft true and no contents of right MSB to match to
+      }
+    }
+    // both left and right MSB have some data to match
     _leftBatchSize = leftSortedOXHeader._batchSize;
     _rightBatchSize = rightSortedOXHeader._batchSize;
 
@@ -77,6 +130,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _leftKeySize = ArrayUtils.sum(leftFieldSizes);
     _rightKeySize = ArrayUtils.sum(rightFieldSizes);
     _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
+    _allLeft = allLeft;
   }
 
   @Override
@@ -184,7 +238,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         Log.info(sb);
       }
     } else {
-      if (_outerJoin) _ansN++;   // 1 NA row
+      if (_allLeft) _ansN++;   // 1 NA row
     }
     // TO DO: check assumption that retFirst and retLength are initialized to 0, for case of no match
     // Now branch (and TO DO in parallel) to merge below and merge above
@@ -228,8 +282,12 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         for (int jo=0; jo<_retFirst[jb].length; ++jo) {        // jo = j offset
           long a = _retFirst[jb][jo];
           if (a==0) {
-            if (_outerJoin) ansLoc++;  // TODO: NA to be placed in the result in this case
-            // We don't request NA
+            // left row matches to no right row
+            if (_allLeft) {
+              // insert NA for the no match i.e. left outer join
+              ansLoc++;
+              assert _retLen[jb][jo] == 0;
+            }
             continue;
           }
           for (int r=0; r<_retLen[jb][jo]; ++r) {
@@ -269,9 +327,11 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         int b;
         for (b = 0; b < nbatch - 1; b++) {
           frameLikeChunks[col][b] = new double[batchSize];
+          Arrays.fill(frameLikeChunks[col][b], Double.NaN);   //
           _chunkSizes[b] = batchSize;
         }
         frameLikeChunks[col][b] = new double[lastSize];
+        Arrays.fill(frameLikeChunks[col][b], Double.NaN);
         _chunkSizes[b] = lastSize;
       }
 
@@ -285,19 +345,13 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           Chunk[] chk = grrr._chk;
           for (int col = 0; col < chk.length; ++col) {
             Chunk colForBatch = chk[col];
-            //HACK START
-//          Vec.Writer w = fr.vec(col).open();
-
             for (int row = 0; row < colForBatch.len(); ++row) {
               double val = colForBatch.atd(row); //TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
               long actualRowInMSBCombo = perNodeRowFrom[node.index()][b][row];
               int whichChunk = (int) (actualRowInMSBCombo / batchSize);
               int offset = (int) (actualRowInMSBCombo % batchSize);
               frameLikeChunks[col][whichChunk][offset] = val;
-//              w.set(actualRowInMSBCombo, val); //writes into fr.vec(col)
             }
-//            w.close();
-            //HACK END
           }
         }
       }

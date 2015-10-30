@@ -58,8 +58,8 @@ public class MungingTest extends TestUtil {
     //   Log.info("Chunk " + i + " is on node " + rightFrame.anyVec().chunkKey(i).home_node().index());
     // }
 
-    Frame fr1 = Merge.merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1});  // 0==id, 1==date  (no dups)
-    Frame fr2 = Merge.merge(leftFrame, rightFrame, new int[] {0},   new int[] {0}  );  // 0==id           (many dups)
+    Frame fr1 = Merge.merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1}, false);  // 0==id, 1==date  (no dups)
+    Frame fr2 = Merge.merge(leftFrame, rightFrame, new int[] {0},   new int[] {0}, false  );  // 0==id           (many dups)
 
 
     Log.info(fr1.toString(0,(int)fr1.numRows()));

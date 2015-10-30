@@ -32,7 +32,7 @@ public class Merge {
   }
 
   // single-threaded driver logic
-  static Frame merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[]) {
+  static Frame merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[], boolean allLeft) {
 
     // each of those launches an MRTask
     RadixOrder leftIndex = new RadixOrder(leftFrame, leftCols);
@@ -82,7 +82,8 @@ public class Merge {
                         leftMSB, rightMSB,
                         //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
                         leftIndex._bytesUsed,   // field sizes for each column in the key
-                        rightIndex._bytesUsed
+                        rightIndex._bytesUsed,
+                        allLeft
                 )
         );
         bmList.add(bm);
@@ -111,7 +112,7 @@ public class Merge {
     for (i=0; i<bmList.size(); i++) {
       BinaryMerge thisbm = bmResults[i];
       if (thisbm._ansN == 0) continue;
-      int thisChunkSizes[] = thisbm._chunkSizes;  // TODO: change chunkSizes to int[]
+      int thisChunkSizes[] = thisbm._chunkSizes;
       for (int j=0; j<thisChunkSizes.length; j++) {
         chunkSizes[k] = thisChunkSizes[j];
         chunkLeftMSB[k] = thisbm._leftMSB;
