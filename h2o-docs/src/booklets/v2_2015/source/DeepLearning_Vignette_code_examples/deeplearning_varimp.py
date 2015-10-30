@@ -3,7 +3,7 @@
 model_vi = H2ODeepLearningEstimator(        
         distribution="multinomial",
         activation="RectifierWithDropout", 
-        hidden=[200,200,200], 
+        hidden=[32,32,32],
         input_dropout_ratio=0.2, 
         sparse=True,
         l1=1e-5, 
