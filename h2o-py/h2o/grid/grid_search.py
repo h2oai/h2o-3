@@ -6,9 +6,10 @@ import h2o
 from metrics import *
 import itertools
 
+
 class H2OGridSearch(object):
   def __init__(self, model, hyper_params, grid_id=None):
-    """Grid Search of a Hyperparameter Space for a Model
+    """Grid Search of a Hyper-Parameter Space for a Model
 
      Parameters
      ----------
@@ -20,9 +21,9 @@ class H2OGridSearch(object):
        The unique id assigned to the resulting grid object. If none is given, an id will
        automatically be generated.
 
- """
+    """
     self._id = grid_id
-    self.model = model() if model.__class__.__name__ == 'type' else model# H2O Estimator child class
+    self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
     self.hyper_params = hyper_params
     self._grid_json = None
     self.models = None # list of H2O Estimator instances
@@ -332,6 +333,7 @@ class H2OGridSearch(object):
         for i in range(len(self.failed_raw_params)):
           print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
       print self.sort_by('mse')
+
   def varimp(self, return_list=False):
     """
     Pretty print the variable importances, or return them in a list

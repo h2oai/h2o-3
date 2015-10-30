@@ -528,7 +528,7 @@ class H2OFrame(object):
       H2OFrame of one column containing the date in millis since the epoch.
 
     """
-    return H2OFrame._expr(expr=ExprNode("mktime", year,month,day,hour,minute,second,msec))._frame()
+    return ExprNode("mktime", year,month,day,hour,minute,second,msec)._eager_frame()
 
   def unique(self):
     """Extract the unique values in the column.
@@ -1430,7 +1430,8 @@ class H2OFrame(object):
       H2Oframe of one column converted to a factor.
     """
     fr = H2OFrame._expr(expr=ExprNode("as.factor",self), cache=self._ex._cache)
-    fr._ex._cache.types = {fr._ex._cache.types.keys()[0]:"enum"}
+    if fr._ex._cache.types_valid():
+      fr._ex._cache.types = {fr._ex._cache.types.keys()[0]:"enum"}
     return fr
 
   def isfactor(self):

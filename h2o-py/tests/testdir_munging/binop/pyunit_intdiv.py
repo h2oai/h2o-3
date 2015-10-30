@@ -4,8 +4,6 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
 def intdiv():
 
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))

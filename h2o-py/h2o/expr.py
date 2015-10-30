@@ -147,7 +147,7 @@ class H2OCache(object):
     self._types = None  # col types
     self._names = None  # col names
     self._data  = None  # ordered dict of cached rows, or a scalar
-    self._l     = -1    # nrows cached
+    self._l     = 0     # nrows cached
 
   @property
   def nrows(self): return self._nrows
@@ -217,7 +217,7 @@ class H2OCache(object):
 
   def _tabulate(self,tablefmt,rollups):
     """Pretty tabulated string of all the cached data, and column names"""
-    if not isinstance(self._data,dict):  return str(self._data)  # Scalars print normally
+    if not self.is_valid(): self.fill()
     # Pretty print cached data
     d = collections.OrderedDict()
     # If also printing the rollup stats, build a full row-header

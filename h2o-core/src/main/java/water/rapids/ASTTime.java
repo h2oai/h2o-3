@@ -59,8 +59,7 @@ class ASTSetTimeZone extends ASTPrim {
 /** Basic time accessors; extract hours/days/years/etc from H2O's internal
  *  msec-since-Unix-epoch time */
 abstract class ASTTime extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"time"}; }
+  @Override public String[] args() { return new String[]{"time"}; }
   @Override int nargs() { return 1+1; } // (op time)
   // Override for e.g. month and day-of-week
   protected String[][] factors() { return null; }
@@ -161,8 +160,8 @@ class ASTMktime extends ASTPrim {
     int   is[] = new int  [nargs()-1];
     Frame x = null;             // Sample frame (for auto-expanding constants)
     for( int i=1; i<nargs(); i++ )
-      if( asts[i] instanceof ASTId )    fs[i-1] = x = stk.track(asts[i].exec(env)).getFrame();
-      else                              is[i-1] = (int)asts[i].exec(env).getNum();
+      if( asts[i] instanceof ASTId || asts[i] instanceof ASTExec )    fs[i-1] = x = stk.track(asts[i].exec(env)).getFrame();
+      else                                                            is[i-1] = (int)asts[i].exec(env).getNum();
 
     if( x==null ) {                            // Single point
       long msec = new MutableDateTime(
