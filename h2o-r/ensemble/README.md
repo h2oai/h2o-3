@@ -7,7 +7,7 @@ The `h2oEnsemble` R package provides functionality to create ensembles from the 
 
 ### Prerequisites
 The current version of `h2oEnsemble` requires the latest version of the `h2o` R package to run.  If it's your first time installing the `h2o` package, you can download the required R dependencies as follows:
-```
+```r
 if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
 if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
 if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
@@ -19,7 +19,7 @@ if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils")
 ```
 
 To update or download the latest version of the `h2o` package, type these commands into your R shell:
-```
+```r
 # The following two commands remove any previously installed H2O packages for R.
 if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
 if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
@@ -34,13 +34,13 @@ The `h2oEnsemble` package can be installed using either of the following methods
 
 Recommended:
 - Install in R using `devtools::install_github`:
-```
+```r
 library(devtools)
 install_github("h2oai/h2o-3/h2o-r/ensemble/h2oEnsemble-package")
 ```
 If you cloned the main h2o-3 repo:
 - Clone the main h2o repository and install the package:
-```
+```bash
 git clone https://github.com/h2oai/h2o-3.git
 R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
 ```
