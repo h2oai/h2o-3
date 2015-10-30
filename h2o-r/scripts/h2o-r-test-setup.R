@@ -54,7 +54,7 @@ function() {
         sb <- sandbox(create=TRUE)
         Log.info(paste0("Created sandbox for runit test ",test.name()," in directory ",sb,".\n"))
 
-        master_seed_dir <- locate("tests", "h2o-r")
+        master_seed_dir <- getwd() 
         ms <- paste(master_seed_dir, "/master_seed", sep = "")
         seed <- NULL
         if (file.exists(ms)) seed <- read.table(ms)[[1]]
