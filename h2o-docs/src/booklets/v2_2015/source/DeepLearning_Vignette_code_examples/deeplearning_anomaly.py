@@ -9,7 +9,6 @@ test_ecg = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smallda
 # training data, y ignored
 anomaly_model = H2OAutoEncoderEstimator( 
         activation="Tanh", 
-        autoencoder=True,
         hidden=[50,50,50], 
         sparse=True,
         l1=1e-4, 
