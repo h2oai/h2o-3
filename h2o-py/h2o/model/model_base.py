@@ -110,7 +110,6 @@ class ModelBase(object):
     :param layer: 0 index hidden layer
     """
     if test_data is None: raise ValueError("Must specify test data")
-    test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id, deep_features_hidden_layer=layer)
     return h2o.get_frame(j["predictions_frame"]["name"])
 
