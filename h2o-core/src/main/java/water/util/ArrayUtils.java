@@ -1058,6 +1058,20 @@ public class ArrayUtils {
     return result;
   }
 
+  public static double[] flat(double[][] arr) {
+    if (arr == null) return null;
+    if (arr.length == 0) return null;
+    int tlen = 0;
+    for (double[] t : arr) tlen += t.length;
+    double[] result = Arrays.copyOf(arr[0], tlen);
+    int j = arr[0].length;
+    for (int i = 1; i < arr.length; i++) {
+      System.arraycopy(arr[i], 0, result, j, arr[i].length);
+      j += arr[i].length;
+    }
+    return result;
+  }
+
   public static Object[][] zip(Object[] a, Object[] b) {
     if (a.length != b.length) throw new IllegalArgumentException("Cannot zip arrays of different lenghts!");
     Object[][] result = new Object[a.length][2];

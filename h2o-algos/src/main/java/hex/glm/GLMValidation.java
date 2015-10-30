@@ -139,11 +139,11 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
     _wcount += weight;
     ++_nobs;
     int c = (int)yreal;
-    residual_deviance -= weight * Math.log(ymodel[c+1]);
+    residual_deviance -= 2 * weight * Math.log(ymodel[c+1]);
     if(offset != 0)
-      null_deviance -= weight * Math.log(offset + (_intercept?Math.exp(_ymus[c]):0));
+      null_deviance -= 2 * weight * Math.log(offset + (_intercept?Math.exp(_ymus[c]):0));
     else
-      null_deviance -= weight * Math.log(_intercept?_ymus[c]:0);
+      null_deviance -= 2 * weight * Math.log(_intercept?_ymus[c]:0);
   }
   private void add2(double yreal, double ymodel, double weight, double offset) {
     _wcount += weight;

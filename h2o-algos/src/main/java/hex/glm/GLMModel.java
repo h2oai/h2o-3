@@ -65,6 +65,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return new GLMValidation(domain, _ymu, _parms, _output.bestSubmodel().rank(), _output._threshold, true, _parms._intercept);
   }
 
+  protected double [] beta_internal(){
+    if(_parms._family == Family.multinomial)
+      return ArrayUtils.flat(_output._global_beta_multinomial);
+    return _output._global_beta;
+  }
   public double [] beta() { return _output._global_beta;}
   public String [] names(){ return _output._names;}
 
@@ -748,12 +753,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         eta[j] += b[j][noff + i] * d;
     }
     double sumExp = 0;
+    double max_row = 0;
+    for (int j = 0; j < _output.nclasses(); ++j) {
+      eta[j] += b[j][P - 1];
+      if(eta[j] > max_row)
+        max_row = eta[j];
+    }
     for (int j = 0; j < _output.nclasses(); ++j)
-      sumExp += eta[j] = Math.exp(eta[j] + b[j][P - 1]); // intercept
+      sumExp += eta[j] = Math.exp(eta[j]-max_row); // intercept
     sumExp = 1.0 / sumExp;
-    preds[0] = ArrayUtils.maxIndex(eta);
     for (int i = 0; i < eta.length; ++i)
       preds[i + 1] = eta[i] * sumExp;
+    preds[0] = ArrayUtils.maxIndex(eta);
     return preds;
   }
 
@@ -848,8 +859,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         eta[j] += b[j][noff + i] * d;
     }
     double sumExp = 0;
+    double max_row = 0;
+    for (int j = 0; j < eta.length; ++j) {
+      eta[j] += b[j][P - 1];
+      if(eta[j] > max_row)
+        max_row = eta[j];
+    }
     for (int j = 0; j < eta.length; ++j)
-      sumExp += eta[j] = Math.exp(eta[j] + b[j][P-1]);
+      sumExp += (eta[j] = Math.exp(eta[j]-max_row));
     sumExp = 1.0/sumExp;
     preds[0] = ArrayUtils.maxIndex(eta);
     for(int i = 0; i < eta.length; ++i)
@@ -905,42 +922,80 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     classCtx.add(new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
-        JCodeGen.toClassWithArray(out, "static", "BETA", beta()); // "The Coefficients"
+        JCodeGen.toClassWithArray(out, "static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");
       }
     });
 
-    body.ip("double eta = 0.0;").nl();
     body.ip("final double [] b = BETA.VALUES;").nl();
-    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
-      body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
-      body.ip("  int ival = (int)data[i] - 1;").nl();
-      body.ip("  if(ival != data[i] - 1) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
-      body.ip("  ival += CATOFFS[i];").nl();
-      body.ip("  if(ival < CATOFFS[i + 1])").nl();
-      body.ip("    eta += b[ival];").nl();
-    } else { // do not skip any levels
-      body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) {").nl();
-      body.ip("  int ival = (int)data[i];").nl();
-      body.ip("  if(ival != data[i]) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
-      body.ip("  ival += CATOFFS[i];").nl();
-      body.ip("  if(ival < CATOFFS[i + 1])").nl();
-      body.ip("    eta += b[ival];").nl();
-    }
-    body.ip("}").nl();
-    final int noff = dinfo().numStart() - dinfo()._cats;
-    body.ip("for(int i = ").p(dinfo()._cats).p("; i < b.length-1-").p(noff).p("; ++i)").nl();
-    body.ip("  eta += b[").p(noff).p("+i]*data[i];").nl();
-    body.ip("eta += b[b.length-1]; // reduce intercept").nl();
-    body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
+
+    if(_parms._family != Family.multinomial) {
+      body.ip("double eta = 0.0;").nl();
+      if (!_parms._use_all_factor_levels) { // skip level 0 of all factors
+        body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
+        body.ip("  int ival = (int)data[i] - 1;").nl();
+        body.ip("  if(ival != data[i] - 1) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+        body.ip("  ival += CATOFFS[i];").nl();
+        body.ip("  if(ival < CATOFFS[i + 1])").nl();
+        body.ip("    eta += b[ival];").nl();
+      } else { // do not skip any levels
+        body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) {").nl();
+        body.ip("  int ival = (int)data[i];").nl();
+        body.ip("  if(ival != data[i]) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+        body.ip("  ival += CATOFFS[i];").nl();
+        body.ip("  if(ival < CATOFFS[i + 1])").nl();
+        body.ip("    eta += b[ival];").nl();
+      }
+      body.ip("}").nl();
+      final int noff = dinfo().numStart() - dinfo()._cats;
+      body.ip("for(int i = ").p(dinfo()._cats).p("; i < b.length-1-").p(noff).p("; ++i)").nl();
+      body.ip("  eta += b[").p(noff).p("+i]*data[i];").nl();
+      body.ip("eta += b[b.length-1]; // reduce intercept").nl();
+      body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
 //    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
-    body.p(");").nl();
-    if( _parms._family == Family.binomial ) {
-      body.ip("preds[0] = (mu > ").p(_output._threshold).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
-      body.ip("preds[1] = 1.0 - mu; // class 0").nl();
-      body.ip("preds[2] =       mu; // class 1").nl();
+      body.p(");").nl();
+      if (_parms._family == Family.binomial) {
+        body.ip("preds[0] = (mu > ").p(_output._threshold).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
+        body.ip("preds[1] = 1.0 - mu; // class 0").nl();
+        body.ip("preds[2] =       mu; // class 1").nl();
+      } else {
+        body.ip("preds[0] = mu;").nl();
+      }
     } else {
-      body.ip("preds[0] = mu;").nl();
+      int P = _output._global_beta_multinomial[0].length;
+      body.ip("preds[0] = 0;").nl();
+      body.ip("for(int c = 0; c < " + _output._nclasses + "; ++c){").nl();
+      body.ip("  preds[c+1] = 0;").nl();
+      if(dinfo()._cats > 0) {
+        if (!_parms._use_all_factor_levels) { // skip level 0 of all factors
+          body.ip("  for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
+          body.ip("    int ival = (int)data[i] - 1;").nl();
+          body.ip("    if(ival != data[i] - 1) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+          body.ip("    ival += CATOFFS[i];").nl();
+          body.ip("    if(ival < CATOFFS[i + 1])").nl();
+          body.ip("      preds[c+1] += b[ival+c*" + P + "];").nl();
+        } else { // do not skip any levels
+          body.ip("  for(int i = 0; i < CATOFFS.length-1; ++i) {").nl();
+          body.ip("    int ival = (int)data[i];").nl();
+          body.ip("    if(ival != data[i]) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+          body.ip("    ival += CATOFFS[i];").nl();
+          body.ip("    if(ival < CATOFFS[i + 1])").nl();
+          body.ip("      preds[c+1] += b[ival+c*" + P + "];").nl();
+        }
+        body.ip("  }").nl();
+      }
+      final int noff = dinfo().numStart();
+      body.ip("  for(int i = 0; i < " + dinfo()._nums + "; ++i)").nl();
+      body.ip("    preds[c+1] += b[" + noff + "+i + c*" + P + "]*data[i];").nl();
+      body.ip("  preds[c+1] += b[" + (P-1) +" + c*" + P + "]; // reduce intercept").nl();
+      body.ip("}").nl();
+      body.ip("double max_row = 0;").nl();
+      body.ip("for(int c = 1; c < preds.length; ++c) if(preds[c] > max_row) max_row = preds[c];").nl();
+      body.ip("double sum_exp = 0;").nl();
+      body.ip("for(int c = 1; c < preds.length; ++c) { sum_exp += (preds[c] = Math.exp(preds[c]-max_row));}").nl();
+      body.ip("sum_exp = 1/sum_exp;").nl();
+      body.ip("double max_p = 0;").nl();
+      body.ip("for(int c = 1; c < preds.length; ++c) if((preds[c] *= sum_exp) > max_p){ max_p = preds[c]; preds[0] = c-1;};").nl();
     }
   }
 

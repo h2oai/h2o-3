@@ -67,9 +67,9 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial {
     }
 
     @Override public boolean equals(Object o) {
-      if(!(o instanceof ModelMetricsBinomialGLM))
+      if(!(o instanceof ModelMetricsMultinomialGLM))
         return false;
-      ModelMetricsBinomialGLM mm = (ModelMetricsBinomialGLM)o;
+      ModelMetricsMultinomialGLM mm = (ModelMetricsMultinomialGLM)o;
       return
         _residualDegressOfFreedom == mm._residualDegressOfFreedom &&
           _nullDegressOfFreedom     == mm._nullDegressOfFreedom     &&
