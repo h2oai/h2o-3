@@ -293,8 +293,8 @@ One nice feature for finding the optimal number of trees is early stopping based
 
 \begin{itemize}
 \item To stop model building if misclassification improves (goes down) by less than one percent between individual scoring events, specify \\\texttt{stopping\_rounds=1}, \texttt{stopping\_tolerance=0.01} and \\\texttt{stopping\_metric="misclassification"}.
-\item To stop model building if the moving average of the (window 5) AUC improves (goes up) by less than 0.001 for 5 consecutive scoring events, specify \texttt{stopping\_rounds=5}, \texttt{stopping\_tolerance=0.001} and \texttt{stopping\_metric="AUC"}.
 \item To stop model building if the logloss on the validation set does not improve at all for 3 consecutive scoring events, specify a \texttt{validation\_frame}, \texttt{stopping\_rounds=3}, \texttt{stopping\_tolerance=0} and \\\texttt{stopping\_metric="logloss"}.
+\item To stop model building if the simple moving average (window length 5) of the AUC improves (goes up) by less than 0.001 for 5 consecutive scoring events, specify \texttt{stopping\_rounds=5}, \texttt{stopping\_tolerance=0.001} and \texttt{stopping\_metric="AUC"}.
 \item To not stop model building even after metrics have converged, disable this feature with \texttt{stopping\_rounds=0}.
 \item To compute the best number of trees with cross-validation, simply specify \texttt{stopping\_rounds>0} as in the examples above, in combination with \texttt{nfolds>1}, and the main model will pick the ideal number of trees from the convergence behavior of the \texttt{nfolds} cross-validation models.
 \end{itemize}
