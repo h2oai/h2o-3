@@ -30,14 +30,14 @@ def cv_cars_dl():
   ## cross-validation
   # 1. basic
   from h2o.estimators.deeplearning import H2ODeepLearningEstimator
-  dl = H2ODeepLearningEstimator(nfolds=random.randint(3,10), fold_assignment="Modulo")
+  dl = H2ODeepLearningEstimator(nfolds=random.randint(3,10),fold_assignment="Modulo",hidden=[20,20],epochs=10)
   dl.train(x=predictors, y=response_col, training_frame=cars)
 
   # 2. check that cv metrics are different over repeated "Random" runs
   nfolds = random.randint(3,10)
-  dl1 = H2ODeepLearningEstimator(nfolds=nfolds,fold_assignment="Random")
+  dl1 = H2ODeepLearningEstimator(nfolds=nfolds,fold_assignment="Random",hidden=[20,20],epochs=10)
   dl1.train(x=predictors,y=response_col,training_frame=cars)
-  dl2 = H2ODeepLearningEstimator(nfolds=nfolds, fold_assignment="Random")
+  dl2 = H2ODeepLearningEstimator(nfolds=nfolds,fold_assignment="Random",hidden=[20,20],epochs=10)
   try:
     pyunit_utils.check_models(dl1, dl2, True)
     assert False, "Expected models to be different over repeated Random runs"
@@ -50,7 +50,7 @@ def cv_cars_dl():
   fold_assignments.set_names(["fold_assignments"])
   cars = cars.cbind(fold_assignments)
 
-  dl = H2ODeepLearningEstimator(keep_cross_validation_predictions=True)
+  dl = H2ODeepLearningEstimator(keep_cross_validation_predictions=True,hidden=[20,20],epochs=10)
   dl.train(x=predictors,y=response_col,training_frame=cars,fold_column="fold_assignments")
 
   num_cv_models = len(dl._model_json['output']['cross_validation_models'])
@@ -67,22 +67,22 @@ def cv_cars_dl():
 
   ## boundary cases
   # 1. nfolds = number of observations (leave-one-out cross-validation)
-  dl = H2ODeepLearningEstimator(nfolds=cars.nrow, fold_assignment="Modulo")
+  dl = H2ODeepLearningEstimator(nfolds=cars.nrow, fold_assignment="Modulo",hidden=[20,20],epochs=10)
   dl.train(x=predictors,y=response_col,training_frame=cars)
 
   # 2. nfolds = 0
-  dl = H2ODeepLearningEstimator(nfolds=0)
+  dl = H2ODeepLearningEstimator(nfolds=0,hidden=[20,20],epochs=10)
   dl.train(x=predictors,y=response_col,training_frame=cars)
 
   # 3. cross-validation and regular validation attempted
-  dl = H2ODeepLearningEstimator(nfolds=random.randint(3,10))
+  dl = H2ODeepLearningEstimator(nfolds=random.randint(3,10),hidden=[20,20],epochs=10)
   dl.train(x=predictors, y=response_col, training_frame=cars, validation_frame=cars)
 
 
   ## error cases
   # 1. nfolds == 1 or < 0
   try:
-    dl = H2ODeepLearningEstimator(nfolds=random.sample([-1,1], 1)[0])
+    dl = H2ODeepLearningEstimator(nfolds=random.sample([-1,1], 1)[0],hidden=[20,20],epochs=10)
     dl.train(x=predictors, y=response_col, training_frame=cars)
     assert False, "Expected model-build to fail when nfolds is 1 or < 0"
   except EnvironmentError:
@@ -90,7 +90,7 @@ def cv_cars_dl():
 
   # 2. more folds than observations
   try:
-    dl = H2ODeepLearningEstimator(nfolds=cars.nrow+1, fold_assignment="Modulo")
+    dl = H2ODeepLearningEstimator(nfolds=cars.nrow+1,fold_assignment="Modulo",hidden=[20,20],epochs=10)
     dl.train(x=predictors, y=response_col, training_frame=cars)
     assert False, "Expected model-build to fail when nfolds > nobs"
   except EnvironmentError:
@@ -99,7 +99,7 @@ def cv_cars_dl():
   # 3. fold_column and nfolds both specified
   try:
     dl = H2ODeepLearningEstimator(nfolds=3)
-    dl.train(x=predictors, y=response_col, fold_column="fold_assignments", training_frame=cars)
+    dl.train(x=predictors, y=response_col, fold_column="fold_assignments", training_frame=cars, hidden=[20,20],epochs=10)
     assert False, "Expected model-build to fail when fold_column and nfolds both specified"
   except EnvironmentError:
     assert True

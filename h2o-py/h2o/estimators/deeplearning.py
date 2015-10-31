@@ -118,6 +118,16 @@ class H2ODeepLearningEstimator(H2OEstimator):
       (-1 to disable)
     regression_stop : float
       Stopping criterion for regression error (MSE) on training data (-1 to disable)
+    stopping_rounds : int
+      Early stopping based on convergence of stopping_metric.
+      Stop if simple moving average of length k of the stopping_metric does not improve
+      (by stopping_tolerance) for k=stopping_rounds scoring events.
+      Can only trigger after at least 2k scoring events. Use 0 to disable.
+    stopping_metric : str
+      Metric to use for convergence checking, only for _stopping_rounds > 0
+      Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+    stopping_tolerance : float
+      Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
     quiet_mode : bool
       Enable quiet mode for less output to standard output
     max_confusion_matrix_size : int
@@ -178,17 +188,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
       Must be "AUTO", "Random" or "Modulo"
     keep_cross_validation_predictions : bool
       Whether to keep the predictions of the cross-validation models
-    stopping_rounds : int
-      Early stopping based on convergence of stopping_metric.
-      Stop if simple moving average of length k of the stopping_metric does not improve
-      (by stopping_tolerance) for k=stopping_rounds scoring events.
-      Can only trigger after at least 2k scoring events. Use 0 to disable.
-    stopping_metric : str
-      Metric to use for convergence checking, only for _stopping_rounds > 0
-      Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
-    stopping_tolerance : float
-      Relative tolerance for metric-based stopping criterion (stop if relative improvement
-      is not at least this much)
 
     Examples
     --------
@@ -477,6 +476,30 @@ class H2ODeepLearningEstimator(H2OEstimator):
   @regression_stop.setter
   def regression_stop(self, value):
     self._parms["regression_stop"] = value
+
+  @property
+  def stopping_rounds(self):
+    return self._parms["stopping_rounds"]
+
+  @stopping_rounds.setter
+  def stopping_rounds(self, value):
+    self._parms["stopping_rounds"] = value
+
+  @property
+  def stopping_metric(self):
+    return self._parms["stopping_metric"]
+
+  @stopping_metric.setter
+  def stopping_metric(self, value):
+    self._parms["stopping_metric"] = value
+
+  @property
+  def stopping_tolerance(self):
+    return self._parms["stopping_tolerance"]
+
+  @stopping_tolerance.setter
+  def stopping_tolerance(self, value):
+    self._parms["stopping_tolerance"] = value
 
   @property
   def quiet_mode(self):

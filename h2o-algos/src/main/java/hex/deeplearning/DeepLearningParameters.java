@@ -65,7 +65,7 @@ public class DeepLearningParameters extends Model.Parameters {
    * This value can be modified during checkpoint restarts and allows continuation
    * of selected models.
    */
-  public double _epochs = 1000;
+  public double _epochs = 10;
 
   /**
    * The number of training data rows to be processed per iteration. Note that

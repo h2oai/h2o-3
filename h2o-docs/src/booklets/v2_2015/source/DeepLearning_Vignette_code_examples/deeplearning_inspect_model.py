@@ -1,11 +1,11 @@
-# View the specified parameters of your deep learning model
+# View specified parameters of the Deep Learning model
 model.params
 
 # Examine the performance of the trained model
 model  # display all performance metrics
 
-model.model_performance(train=True)  # training set metrics
-model.model_performance(valid=True)  # validation set metrics
+model.model_performance(train=True)  # training metrics
+model.model_performance(valid=True)  # validation metrics
 
 # Get MSE only
 model.mse(valid=True)

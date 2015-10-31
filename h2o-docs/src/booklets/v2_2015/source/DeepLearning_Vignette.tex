@@ -11,13 +11,13 @@
 % Many of the params in the arglist are shared with other algos, let's make sure those definitions are identical between booklets.
 % Maybe move the Load Data section to the Use Case section (like GBM)
 
+
 \input{common/conf_top.tex}
 %\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
-
+\usepackage{bibentry}
 \input{common/conf_titles.tex}
 
 \begin{document}
-
 %\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
 \input{common/conf_listings_colorized.tex}  %Use this for online version
 
@@ -121,18 +121,14 @@ as well as various implementation details.
 
 \input{common/what_is_h2o.tex}
 
-\newcommand{\waterVersion}{3.0.1.4}
+\input{generated_buildinfo.tex}
 \input{common/installation.tex}
 
 \subsection{Example Code}
 
-R code for the examples in this document are available here:
+R and Python code for the examples in this document can be found here:
 
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/DeepLearning_Vignette.R}
-
-Python code for the examples in this document can be found here:
-
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/DeepLearning_Vignette.py}
+\url{https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/booklets/v2_2015/source/DeepLearning_Vignette_code_examples}
 
 The document source itself can be found here:
 
@@ -525,6 +521,7 @@ To run the MNIST example in R, use the following:
 To run the MNIST example in Python, use the following: 
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_importfile_example.py}
 
+\newpage
 \subsection{Performing a Trial Run}
 \label{ssec:TrialRun} 
 
@@ -637,7 +634,7 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 
 H2O supports model tuning in  grid search by allowing users to specify sets of values for parameter arguments and observe changes in model behavior. An example in R is provided below; the Python grid search API is currently in development.   
 
-In this example, three different network topologies and two different $\ell_1$ norm weights are specified. This grid search model trains six different models using all possible combinations of these parameters; other parameter combinations can be specified for a larger space of models. Note that the models will most likely converge before the default value of \texttt{epochs} of 1000, since early stopping is enabled.
+In this example, three different network topologies and two different $\ell_1$ norm weights are specified. This grid search model trains six different models using all possible combinations of these parameters; other parameter combinations can be specified for a larger space of models. Note that the models will most likely converge before the default value of \texttt{epochs}, since early stopping is enabled.
 
 Grid search provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to {\textbf{\nameref{sec:Parameters}}} for parameter descriptions and configurable values. 
 
@@ -645,20 +642,21 @@ Grid search provides more subtle insights into the model tuning and selection pr
 To run a grid search in R, use the following:
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R}
 
-%\medskip
-%\waterExampleInPython
-%\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py}
+\newpage
+\waterExampleInPython
+To run a grid search in Python, use the following:
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py}
 
 \normalsize
 \noindent
-\newpage
 \waterExampleInR
 To view the results of the grid search in R, use the following: 
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R}
 
-%\medskip
-%\waterExampleInPython
-%\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py}
+\medskip
+\waterExampleInPython
+To view the results of the grid search in Python, use the following: 
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py}
 
 
 \subsection{Checkpoint Model}
@@ -685,7 +683,7 @@ In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the high
 To restart training in R using a checkpoint model, use the following: 
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_checkpoint.R}
 
-\newpage
+\medskip
 \waterExampleInPython
 For the Python example, we will use the original ``trial run'' model previously trained as the checkpoint model.
 \medskip
@@ -698,7 +696,7 @@ Checkpointing can also be used to reload existing models that were saved to disk
 To save a model in R, use the following: 
 \medskip
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_savemodel.R}
-\newpage
+\medskip
 \waterExampleInPython
 To save a model in Python, use the following: 
 \medskip
@@ -732,14 +730,14 @@ To retrieve a model in Python using its key, use the following:
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_getmodel.py}
 
 
-
+\newpage
 \subsection{Achieving World-Record Performance}
 
 Without distortions, convolutions, or other advanced image processing techniques, the best-ever published test set error for the MNIST dataset is $0.83$\% by Microsoft. After training for $2,000$ epochs (which took about four hours) on four compute nodes, we obtain a test set error of $0.87\%$. 
 
-After training for $8,000$ epochs (which took about ten hours) on ten nodes, we obtain a test set error of $0.83\%$, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R. 
-
-Details can be found in our hands-on tutorial available at \url{http://learn.h2o.ai/content/hands-on_training/deep_learning.html}. Accuracies of around $1\%$ test set error are typically achieved within one hour when running on one node.
+\waterExampleInR
+After training for $8,000$ epochs (which took about ten hours) on ten nodes, we obtain a test set error of $0.83\%$, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R:
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_mnist_record.R}
 
 \subsection{Computational Performance}
 There are many parameters that affect the computational performance of H2O Deep Learning, but the default values should result in good performance for most problems. 
@@ -841,7 +839,7 @@ Logical indicates the parameter requires a value of either \texttt{TRUE} or \tex
 
 \item \texttt{hidden}: Specifies the number and size of each hidden layer in the model. For example, if \texttt{c(100,200,100)} is specified, a model with 3 hidden layers is generated. The middle hidden layer will have 200 neurons and the first and third hidden layers will have 100 neurons each. The default is \texttt{c(200,200)}. For grid search, use the following format: \texttt{list(c(10,10), c(20,20))}. Refer to the section on  {\textbf{\nameref{ssec:TrialRun}}} for more details. 
 
-\item \texttt{epochs}: Specifies the number of iterations or passes over the training dataset (can be fractional). For initial grid searches, we recommend starting with lower values. The value allows continuation of selected models and can be modified during checkpoint restarts. The default is 1000.
+\item \texttt{epochs}: Specifies the number of iterations or passes over the training dataset (can be fractional). For initial grid searches, we recommend starting with lower values. The value allows continuation of selected models and can be modified during checkpoint restarts. The default is 10.
 
 \item \texttt{train\_samples\_per\_iteration}: Specifies the number of training samples (globally) per MapReduce iteration. The following special values are also supported: 
 \begin{itemize}
@@ -996,9 +994,9 @@ The default is 0, which disables cross-validation.
 
 \item \texttt{h2o.importFile(path)}: Imports a file into H2O.
 
-\item \texttt{h2o.deeplearning(x, y, training\_frame, hidden, epochs)}:\\ Creates a Deep Learning model.
+\item \texttt{h2o.deeplearning(x,y,training\_frame,hidden,epochs)}:\\ Creates a Deep Learning model.
 
-\item \texttt{h2o.grid(algorithm, grid\_id, ..., hyper\_params = list())}: Starts H2O grid support and gives results.
+\item \texttt{h2o.grid(algorithm,grid\_id,...,hyper\_params = list())}: Starts H2O grid support and gives results.
 
 \item \texttt{h2o.predict(model, newdata)}: Generate predictions from an H2O model on a test set.
 
@@ -1017,7 +1015,9 @@ The default is 0, which disables cross-validation.
 
 \item \texttt{h2o.import\_file(path)}: Imports a file into H2O.
 
-\item \texttt{h2o.deeplearning(x, y, training\_frame, hidden, epochs)}: \\ Creates a Deep Learning model.
+\item \texttt{model = H2ODeepLearningEstimator(hidden, epochs)}: \\ Creates a Deep Learning model.
+
+\item \texttt{model.train(x, y, training\_frame)}: \\ Trains our Deep Learning model.
 
 %\item \texttt{h2o.grid} (not yet available): Starts H2O grid support and gives results.
 

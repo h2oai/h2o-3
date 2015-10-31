@@ -1,11 +1,7 @@
 import expr
 from opcode import *
 import frame
-
 import inspect
-
-# a = inspect.getargspec(eat_dog)
-# zip(a.args[-len(a.defaults):],a.defaults)
 
 BYTECODE_INSTRS = {
   "BINARY_SUBSCR"      : "cols",  # column slice; could be row slice?
@@ -109,46 +105,32 @@ def _binop_bc(op,idx,ops,keys):
   left,idx= _opcode_read_arg(idx,ops,keys)
   return [expr.ExprNode(op,left,rite),idx]
 
-
 def _unop_bc(op,idx,ops,keys):
   arg,idx= _opcode_read_arg(idx,ops,keys)
   return [expr.ExprNode(op,arg),idx]
 
-
 def _func_bc(nargs,idx,ops,keys):
-  args=[]
-  named_args=[]
-  all_named=True
+  named_args = {}
+  unnamed_args = []
   while nargs > 0:
     if nargs >=256:  # named args ( foo(50,True,x=10) ) read first  ( right -> left )
       arg,idx=_opcode_read_arg(idx,ops,keys)
-      args.insert(0,arg)  # push arg
-      named_args.insert(0,ops[idx][1][0])
+      named_args[ops[idx][1][0]] = arg
       idx-=1      # skip the LOAD_CONST for the named args
       nargs-=256  # drop 256
     else:
-      all_named=False
       arg,idx=_opcode_read_arg(idx,ops,keys)
-      args.insert(0, arg)
+      unnamed_args.insert(0, arg)
       nargs-=1
   op = ops[idx][1][0]
-  if not op in dir(frame.H2OFrame):
+  if op not in dir(frame.H2OFrame):
     raise ValueError("Unimplemented: op not bound in H2OFrame")
   if is_attr(ops[idx][0]):
     argspec = inspect.getargspec(getattr(frame.H2OFrame, op))
     argnames = argspec.args[1:]
-    argdefs  = argspec.defaults
-    new_args=[]
-    if all_named:
-      if len(args)==0:  # all defaults
-        new_args = list(argdefs)
-      else:  # the defaults padded in between all other args
-        for i in range(len(argnames)):
-          if argnames[i] in named_args: new_args.append(args[named_args.index(argnames[i])])
-          else:                         new_args.append(argdefs[i])
-    else:
-      new_args = args + list(argdefs[len(args):])
-    args = new_args
+    argdefs  = argspec.defaults or ()
+    args = unnamed_args + list(argdefs[len(unnamed_args):])
+    for a in named_args: args[argnames.index(a)] = named_args[a]
   if op=="ceil": op = "ceiling"
   if op=="sum" and len(args) > 0 and args[0]: op="sumNA"
   if op=="min" and len(args) > 0 and args[0]: op="minNA"

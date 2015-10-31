@@ -11,6 +11,7 @@ model_grid <- h2o.grid(
         training_frame = train, 
         validation_frame = test,
         score_interval = 2,
+        epochs = 1000,
         stopping_rounds = 3,
         stopping_tolerance = 0.05,
         stopping_metric = "misclassification")

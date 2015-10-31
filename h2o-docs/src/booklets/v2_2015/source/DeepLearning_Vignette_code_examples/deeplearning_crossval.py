@@ -1,4 +1,4 @@
-# Perform 5-fold cross-validation on the training_frame
+# Perform 5-fold cross-validation on training_frame
 model_cv = H2ODeepLearningEstimator(
         distribution="multinomial",
         activation="RectifierWithDropout", 
