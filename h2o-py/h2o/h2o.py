@@ -652,18 +652,23 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
 
 
 def export_file(frame,path,force=False):
-  """Export a given H2OFrame to a path on the machine this python session is currently
-  connected to. To view the current session, call h2o.cluster_info().
+  """
+  Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
 
   Parameters
   ----------
+
   frame : H2OFrame
     The Frame to save to disk.
   path : str
     The path to the save point on disk.
   force : bool
     Overwrite any preexisting file with the same path
+
+  :return: None
+
   """
+  #frame._eager()
   H2OJob(H2OConnection.get_json("Frames/"+frame.frame_id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
@@ -1298,7 +1303,8 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
                   build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_top_level=None,
                   nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
                   max_after_balance_size=None,seed=None,offset_column=None,weights_column=None,nfolds=None,
-                  fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,checkpoint=None,
+                  fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
+                  score_each_iteration=None,checkpoint=None,
                   stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
   """
   Build a Big Data Random Forest Model
@@ -1357,6 +1363,8 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
     Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
   keep_cross_validation_predictions : bool
     Whether to keep the predictions of the cross-validation models
+  score_each_iteration : bool
+    Attempts to score each tree.
   stopping_rounds : int
     Early stopping based on convergence of stopping_metric.
     Stop if simple moving average of length k of the stopping_metric does not improve

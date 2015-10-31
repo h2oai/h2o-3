@@ -35,19 +35,19 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"grid_id\":\"gbm_grid\", \"model_id\":\"gbm-grid-model\",\"training_frame\":\"arrhythmia.hex\",\"nfolds\":5,\"response_column\":\"C1\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"min_rows\":5,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-30479230732262292,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"build_tree_one_node\":false,\"checkpoint\":\"\",\"nbins_top_level\":1024,\"hyper_parameters\":{\"ntrees\":[\"20\",\"50\",\"100\"],\"max_depth\":[\"3\",\"5\",\"7\"]}}"
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm_naive_grid\",\"training_frame\":\"arrhythmia.hex\",\"nfolds\":5,\"response_column\":\"C1\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"min_rows\":5,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-30479230732262292,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"build_tree_one_node\":false,\"checkpoint\":\"\",\"nbins_top_level\":1024,\"hyper_parameters\":{\"ntrees\":[\"20\",\"50\",\"100\"],\"max_depth\":[\"3\",\"5\",\"7\"]}}"
     },
     {
       "type": "md",
-      "input": "### Viewing GBM Results\n\nTo view all models built, click the **View** button."
+      "input": "### Viewing GBM Results\n\nTo view all models built, click the **View** button or display a list of all grids with 'getGrids'"
     },
     {
       "type": "cs",
-      "input": "getGrid \"gbm_grid\""
+      "input": "getGrids"
     },
     {
       "type": "md",
-      "input": "### \"Smart\" grid search with convergence-based early stopping (auto-tune the number of trees)\n\n0. Do the same as above, but this time, do not specify a grid search over the number of trees. Instead, we specify a large number of trees and enable early stopping using 5-fold cross-validation.\n0. Select `Gradient Boosting Machine` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. \n0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. \n0. In the **Nfolds** field, specify the number of cross-validation models to build to find the optimal model parameters (for this example, `5`). \n0. From the drop-down **Response** list, select column 1 (`C1`).  \n0. In the **Ntrees** field, specify the maximum number of trees to build (for this example, `10000`). The models should hopefully converge earlier than that.\n0. In the **Max_depth** field, click the Grid checkbox on the right, then specify the maximum number of edges between the top node and the furthest node as a stopping criteria (for this example, use values of `3;5;7`).\n0. Enable the **Score_each_iteration** checkbox, as we want to have enough scoring events to base our early stopping on.\n0. In the **Stopping_rounds** field, specify the number of scoring events with which the model convergence should be determined. For this example, enter `2`. \n0. Click the **Build Model** button. "
+      "input": "### \"Smart\" grid search with early stopping to auto-tune the number of trees\n\n0. Do the same as above, but this time, do not specify a grid search over the number of trees. Instead, we specify a large number of trees and enable early stopping using 5-fold cross-validation.\n0. Select `Gradient Boosting Machine` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. \n0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. \n0. In the **Nfolds** field, specify the number of cross-validation models to build to find the optimal model parameters (for this example, `5`). \n0. From the drop-down **Response** list, select column 1 (`C1`).  \n0. In the **Ntrees** field, specify the maximum number of trees to build (for this example, `10000`). The models should hopefully converge earlier than that.\n0. In the **Max_depth** field, click the Grid checkbox on the right, then specify the maximum number of edges between the top node and the furthest node as a stopping criteria (for this example, use values of `3;5;7`).\n0. Enable the **Score_each_iteration** checkbox, as we want to have enough scoring events to base our early stopping on.\n0. In the **Stopping_rounds** field, specify the number of scoring events with which the model convergence should be determined. For this example, enter `2`. \n0. Click the **Build Model** button. "
     },
     {
       "type": "cs",
@@ -55,11 +55,11 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"grid_id\":\"gbm_grid_earlystopping_nfold\", \"model_id\":\"gbm_grid_earlystopping_nfold_models\",\"training_frame\":\"arrhythmia.hex\",\"nfolds\":\"5\",\"response_column\":\"C1\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"ntrees\":\"10000\",\"min_rows\":\"5\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-30479230732262292,\"learn_rate\":\"0.1\",\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":true,\"fold_assignment\":\"AUTO\",\"r2_stopping\":0.999999,\"stopping_rounds\":\"2\",\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"build_tree_one_node\":false,\"checkpoint\":\"\",\"keep_cross_validation_predictions\":false,\"nbins_top_level\":1024,\"hyper_parameters\":{\"max_depth\":[\"3\",\"5\",\"7\"]}}"
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm_smart_grid\",\"training_frame\":\"arrhythmia.hex\",\"nfolds\":\"5\",\"response_column\":\"C1\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"ntrees\":\"10000\",\"min_rows\":\"5\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-30479230732262292,\"learn_rate\":\"0.1\",\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":true,\"fold_assignment\":\"AUTO\",\"r2_stopping\":0.999999,\"stopping_rounds\":\"2\",\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"build_tree_one_node\":false,\"checkpoint\":\"\",\"keep_cross_validation_predictions\":false,\"nbins_top_level\":1024,\"hyper_parameters\":{\"max_depth\":[\"3\",\"5\",\"7\"]}}"
     },
     {
       "type": "cs",
-      "input": "getGrid \"gbm_grid_earlystopping_nfold\""
+      "input": "getGrids"
     },
     {
       "type": "md",

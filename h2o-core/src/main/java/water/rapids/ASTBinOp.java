@@ -31,16 +31,31 @@ abstract class ASTBinOp extends ASTPrim {
       final double dlf = left.getNum();
       switch( rite.type() ) {
       case Val.NUM:  return new ValNum( op (dlf,rite.getNum()));
+      case Val.NUMS: return new ValNum(op(dlf,rite.getNums()[0]));
       case Val.FRM:  return scalar_op_frame(dlf,rite.getFrame());
       case Val.STR:  throw H2O.unimpl();
+      case Val.STRS: throw H2O.unimpl();
       default: throw H2O.fail();
       }
+      
+    case Val.NUMS:
+      final double ddlf = left.getNums()[0];
+      switch( rite.type() ) {
+        case Val.NUM:  return new ValNum( op (ddlf,rite.getNum()));
+        case Val.NUMS: return new ValNum(op(ddlf,rite.getNums()[0]));
+        case Val.FRM:  return scalar_op_frame(ddlf,rite.getFrame());
+        case Val.STR:  throw H2O.unimpl();
+        case Val.STRS: throw H2O.unimpl();
+        default: throw H2O.fail();
+      }  
 
     case Val.FRM: 
       Frame flf = left.getFrame();
       switch( rite.type() ) {
       case Val.NUM:  return frame_op_scalar(flf,rite.getNum());
-      case Val.STR:  return frame_op_scalar(flf,rite.getStr());
+      case Val.NUMS: return frame_op_scalar(flf,rite.getNums()[0]);
+      case Val.STR:  return frame_op_scalar(flf, rite.getStr());
+      case Val.STRS: return frame_op_scalar(flf,rite.getStrs()[0]);
       case Val.FRM:  return frame_op_frame (flf,rite.getFrame());
       default: throw H2O.fail();
       }
@@ -49,11 +64,24 @@ abstract class ASTBinOp extends ASTPrim {
       String slf = left.getStr();
       switch( rite.type() ) {
       case Val.NUM:  throw H2O.unimpl();
+      case Val.NUMS: throw H2O.unimpl();  
       case Val.STR:  throw H2O.unimpl();
-      case Val.FRM:  return scalar_op_frame(slf,rite.getFrame());
+      case Val.STRS: throw H2O.unimpl();  
+      case Val.FRM:  return scalar_op_frame(slf, rite.getFrame());
       default: throw H2O.fail();
       }
 
+    case Val.STRS:
+      String sslf = left.getStrs()[0];
+      switch( rite.type() ) {
+        case Val.NUM:  throw H2O.unimpl();
+        case Val.NUMS: throw H2O.unimpl();
+        case Val.STR:  throw H2O.unimpl();
+        case Val.STRS: throw H2O.unimpl();
+        case Val.FRM:  return scalar_op_frame(sslf,rite.getFrame());
+        default: throw H2O.fail();
+      }
+      
     case Val.ROW:
       double dslf[] = left.getRow();
       switch( rite.type() ) {
