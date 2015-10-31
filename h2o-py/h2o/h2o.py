@@ -1298,7 +1298,8 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
                   build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_top_level=None,
                   nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
                   max_after_balance_size=None,seed=None,offset_column=None,weights_column=None,nfolds=None,
-                  fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,checkpoint=None,
+                  fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
+                  score_each_iteration=None,checkpoint=None,
                   stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
   """
   Build a Big Data Random Forest Model
@@ -1357,6 +1358,8 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
     Cross-validation fold assignment scheme, if fold_column is not specified Must be "AUTO", "Random" or "Modulo"
   keep_cross_validation_predictions : bool
     Whether to keep the predictions of the cross-validation models
+  score_each_iteration : bool
+    Attempts to score each tree.
   stopping_rounds : int
     Early stopping based on convergence of stopping_metric.
     Stop if simple moving average of length k of the stopping_metric does not improve
