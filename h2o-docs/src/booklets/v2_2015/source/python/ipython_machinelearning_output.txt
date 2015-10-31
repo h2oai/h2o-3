@@ -51,13 +51,13 @@ max              1.1 KB  150               1                              5
 stddev           0  B    0                 0                              0
 total            1.1 KB  150               1                              5
 
-In [7]: gbm_regessor = H2OGradientBoostingEstimator(distribution="gaussian", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
+In [7]: gbm_regressor = H2OGradientBoostingEstimator(distribution="gaussian", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
 
-In [8]: gbm_regessor.train(x=range(1,iris_df.ncol), y=0, training_frame=iris_df)
+In [8]: gbm_regressor.train(x=range(1,iris_df.ncol), y=0, training_frame=iris_df)
 
 gbm Model Build Progress: [##################################################] 100%
 
-In [9]: gbm_regessor
+In [9]: gbm_regressor
 Out[9]: Model Details
 =============
 H2OGradientBoostingEstimator :  Gradient Boosting Machine
