@@ -1,4 +1,4 @@
-# Download and import ECG train and test data into the H2O cluster
+# Import ECG train and test data into the H2O cluster
 from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
 
 train_ecg = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv")
@@ -18,7 +18,7 @@ anomaly_model.train(
         training_frame=train_ecg)                
 
 # Compute reconstruction error with the Anomaly 
-# detection app (MSE between output layer and input layer)
+# detection app (MSE between output and input layers)
 recon_error = anomaly_model.anomaly(test_ecg)
 
 
