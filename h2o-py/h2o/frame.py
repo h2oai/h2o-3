@@ -1992,7 +1992,6 @@ class H2OFrame(object):
     -------
       H2OFrame
     """
-    import dis
     if axis not in [0,1]:
       raise ValueError("margin must be either 0 (cols) or 1 (rows).")
     if fun is None:
@@ -2007,9 +2006,6 @@ class H2OFrame(object):
   def temp_ctr():
     global _id_ctr
     return _id_ctr
-
-  def method(self, arg1=None, arg2=None, arg3=None, arg4=None):
-    pass
 
 # private static methods
 _id_ctr = 0

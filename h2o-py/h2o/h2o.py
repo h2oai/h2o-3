@@ -652,18 +652,23 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
 
 
 def export_file(frame,path,force=False):
-  """Export a given H2OFrame to a path on the machine this python session is currently
-  connected to. To view the current session, call h2o.cluster_info().
+  """
+  Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
 
   Parameters
   ----------
+
   frame : H2OFrame
     The Frame to save to disk.
   path : str
     The path to the save point on disk.
   force : bool
     Overwrite any preexisting file with the same path
+
+  :return: None
+
   """
+  #frame._eager()
   H2OJob(H2OConnection.get_json("Frames/"+frame.frame_id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
