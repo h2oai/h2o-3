@@ -6,7 +6,8 @@ class H2ORandomForestEstimator(H2OEstimator):
                ntrees=None, max_depth=None, min_rows=None, nbins=None, nbins_cats=None,
                binomial_double_trees=None, balance_classes=None, max_after_balance_size=None,
                seed=None, nfolds=None, fold_assignment=None,
-               keep_cross_validation_predictions=None, checkpoint=None):
+               keep_cross_validation_predictions=None, checkpoint=None,
+              stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
     """Builds a Random Forest Model on an H2OFrame
 
     Parameters
@@ -59,6 +60,17 @@ class H2ORandomForestEstimator(H2OEstimator):
       Must be "AUTO", "Random" or "Modulo"
     keep_cross_validation_predictions : bool
       Whether to keep the predictions of the cross-validation models
+    stopping_rounds : int
+      Early stopping based on convergence of stopping_metric.
+      Stop if simple moving average of length k of the stopping_metric does not improve
+      (by stopping_tolerance) for k=stopping_rounds scoring events.
+      Can only trigger after at least 2k scoring events. Use 0 to disable.
+    stopping_metric : str
+      Metric to use for convergence checking, only for _stopping_rounds > 0
+      Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+    stopping_tolerance : float
+      Relative tolerance for metric-based stopping criterion (stop if relative improvement
+      is not at least this much)
     """
     super(H2ORandomForestEstimator, self).__init__()
     self._parms = locals()

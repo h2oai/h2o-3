@@ -25,7 +25,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   min_rows : int
     Minimum number of rows to assign to terminal nodes.
   learn_rate : float
-    A value from 0.0 to 1.0
+    Learning rate (from 0.0 to 1.0)
+  sample_rate : float
+    Row sample rate (from 0.0 to 1.0)
+  col_sample_rate : float
+    Column sample rate (from 0.0 to 1.0)
   nbins : int
     For numerical columns (real/int), build a histogram of (at least) this many bins, then
     split at the best point.
@@ -63,11 +67,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     A new H2OGradientBoostedEstimator object.
   """
   def __init__(self, model_id=None, distribution=None, tweedie_power=None, ntrees=None,
-               max_depth=None, min_rows=None, learn_rate=None, nbins=None,
-               nbins_top_level=None, nbins_cats=None, balance_classes=None,
-               max_after_balance_size=None, seed=None, build_tree_one_node=None,
-               nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
-               score_each_iteration=None, checkpoint=None):
+               max_depth=None, min_rows=None, learn_rate=None,sample_rate=None,
+               col_sample_rate=None, nbins=None, nbins_top_level=None, nbins_cats=None,
+               balance_classes=None, max_after_balance_size=None, seed=None,
+               build_tree_one_node=None, nfolds=None, fold_assignment=None,
+               keep_cross_validation_predictions=None, score_each_iteration=None,
+               checkpoint=None):
     super(H2OGradientBoostingEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
