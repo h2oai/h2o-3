@@ -78,7 +78,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   """
   def __init__(self, model_id=None, distribution=None, tweedie_power=None, ntrees=None,
                max_depth=None, min_rows=None, learn_rate=None, nbins=None,
-               sample_rate=None,col_sample_rate=None,nbins=None,
+               sample_rate=None,col_sample_rate=None,
                nbins_top_level=None, nbins_cats=None, balance_classes=None,
                max_after_balance_size=None, seed=None, build_tree_one_node=None,
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
