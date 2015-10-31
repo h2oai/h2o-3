@@ -117,7 +117,9 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     offset_column = NULL,
                     weights_column = NULL,
                     intercept = TRUE,
-                    max_active_predictors = -1)
+                    max_active_predictors = -1,
+                    objective_epsilon = -1,
+                    gradient_epsilon = -1)
 {
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
