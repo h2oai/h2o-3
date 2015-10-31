@@ -26,33 +26,36 @@ public class Session {
   // can happen.  Otherwise a true data copy is made, and the private copy is
   // modified.
 
-  // TODO: Make this private per-session, along with all temp keys
-
   // Ref-cnts per-Vec.  Always positive; zero is removed from the table;
   // negative is an error.  At the end of any given Rapids expression the
   // counts should match all the Vecs in the FRAMES set.
-  static NonBlockingHashMap<Vec,Integer> REFCNTS = new NonBlockingHashMap<>();
+  NonBlockingHashMap<Vec,Integer> REFCNTS = new NonBlockingHashMap<>();
 
   // Frames tracked by this Session and alive to the next Rapids call.  When
   // the whole session ends, these frames can be removed from the DKV.  These
   // Frames can share Vecs amongst themselves (tracked by the REFCNTS) and also
   // with other global frames.
-  static NonBlockingHashMap<Key,Frame> FRAMES = new NonBlockingHashMap<>();
+  NonBlockingHashMap<Key,Frame> FRAMES = new NonBlockingHashMap<>();
 
   // Vec that came from global frames, and are considered immutable.  Rapids
   // will always copy these Vecs before mutating or deleting.
-  static NonBlockingHashSet<Vec> GLOBALS = new NonBlockingHashSet<>();
+  NonBlockingHashSet<Vec> GLOBALS = new NonBlockingHashSet<>();
 
   Session() { cluster_init(); }
-  
-  Val exec(String rapids) { 
+
+  // Parse and execute
+  Val exec(String rapids) { return exec(new Exec(rapids).parse(), null);  }
+
+  // Execute an AST in the current Session with much assertion-checking
+  Val exec(AST ast, ASTFun scope) {
     String sane ;
     assert (sane=sanity_check_refs())==null : sane;
 
-    // Parse
-    AST ast = new Exec(rapids).parse();
     // Execute
-    Val val = ast.exec(new Env(this));
+    Env env = new Env(this);
+    env._scope = scope;
+    Val val = ast.exec(env);
+    assert env.sp()==0;         // Stack balanced at end
     // This value is being returned of session scope; we are no longer tracking
     // it so on the internal ref-cnts, so lower them - but do not delete if
     // cnts go to zero, this is the return value and it's lifetime is the
@@ -216,7 +219,7 @@ public class Session {
       Vec vec = vecs[cols[i]];
       int refcnt = getRefCnt(vec);
       assert refcnt > 0;
-      if( refcnt > 1 )
+      if( refcnt > 1 )          // If refcnt is 1, we allow the update to take in-place
         fr.replace(cols[i],(did_copy = vec.makeCopy()));
     }
     if( did_copy != null && fr._key != null ) DKV.put(fr); // Then update frame in the DKV
