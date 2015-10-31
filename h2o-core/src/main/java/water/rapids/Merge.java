@@ -4,9 +4,11 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Merge {
@@ -98,9 +100,9 @@ public class Merge {
     for (RPC rpc : bmList) {
       BinaryMerge thisbm;
       bmResults[i++] = thisbm = (BinaryMerge)rpc.get(); //block
-      if (thisbm._ansN == 0) continue;
+      if (thisbm._numRowsInResult == 0) continue;
       numChunks += thisbm._chunkSizes.length;
-      ansN += thisbm._ansN;
+      ansN += thisbm._numRowsInResult;
     }
     assert(i == bmList.size());
 
@@ -111,7 +113,7 @@ public class Merge {
     int k = 0;
     for (i=0; i<bmList.size(); i++) {
       BinaryMerge thisbm = bmResults[i];
-      if (thisbm._ansN == 0) continue;
+      if (thisbm._numRowsInResult == 0) continue;
       int thisChunkSizes[] = thisbm._chunkSizes;
       for (int j=0; j<thisChunkSizes.length; j++) {
         chunkSizes[k] = thisChunkSizes[j];
@@ -135,15 +137,26 @@ public class Merge {
     assert(sum==ansN);
 
     // Allocate dummy vecs/chunks, to be filled in MRTask below
-    int num = rightFrame.numCols();
-    final byte[] types = new byte[num];
-    int j=0;
-    for (Vec v : rightFrame.vecs()) types[j++] = v.get_type();
+    int numJoinCols = leftIndex._bytesUsed.length;
+    int numLeftCols = leftFrame.numCols();
+    int numColsInResult = numLeftCols + rightFrame.numCols() - numJoinCols ;
+    final byte[] types = new byte[numColsInResult];
+    final String[][] doms = new String[numColsInResult][];
+    final String[] names = new String[numColsInResult];
+    for (int j=0; j<numLeftCols; j++) {
+      types[j] = leftFrame.vec(j).get_type();
+      doms[j] = leftFrame.domains()[j];
+      names[j] = leftFrame.names()[j];
+    }
+    for (int j=0; j<rightFrame.numCols()-numJoinCols; j++) {
+      types[numLeftCols + j] = rightFrame.vec(j+numJoinCols).get_type();
+      doms[numLeftCols + j] = rightFrame.domains()[j+numJoinCols];
+      names[numLeftCols + j] = rightFrame.names()[j+numJoinCols];
+    }
     Key key = Vec.newKey();
-    Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(num, 0, rightFrame.domains(), types);
-    String[] names = rightFrame.names().clone();
+    Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
+    // to delete ... String[] names = ArrayUtils.append(leftFrame.names(), ArrayUtils.select(rightFrame.names(),  ArrayUtils.seq(numJoinCols, rightFrame.numCols() - 1)));
 
-    //TODO add left half
     // Now we can stitch together the final frame from the raw chunks that were put into the store
     Frame fr = new Frame(Key.make(rightFrame._key.toString() + "_joined_with_" + leftFrame._key.toString()), names, vecs);
     ChunkStitcher ff = new ChunkStitcher(leftFrame, rightFrame, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);

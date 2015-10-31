@@ -21,17 +21,18 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   byte _rightKey[][];
   long _leftOrder[/*n2GB*/][/*i mod 2GB * _keySize*/];
   long _rightOrder[][];
-  boolean _allLen1 = true;
+  boolean _oneToManyMatch = false;   // does any left row match to more than 1 right row?  If not, can allocate and loop more efficiently, and mark the resulting key'd frame with a 'unique' index.
+                                     // TODO: implement
   int _leftFieldSizes[], _rightFieldSizes[];  // the widths of each column in the key
   int _leftKeyNCol, _rightKeyNCol;  // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
   int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
   int _numJoinCols;
-  int _leftNodeIdx;
   long _leftN, _rightN;
   long _leftBatchSize, _rightBatchSize;
   Frame _leftFrame, _rightFrame;
-  long _ansN=0;   // the number of rows in the resulting dataset
-  long _perNodeNumRowsToFetch[] = new long[H2O.CLOUD.size()];
+  long _numRowsInResult=0;
+  long _perNodeNumRightRowsToFetch[] = new long[H2O.CLOUD.size()];
+  long _perNodeNumLeftRowsToFetch[] = new long[H2O.CLOUD.size()];
   int _leftMSB, _rightMSB;
   int _chunkSizes[];
   boolean _allLeft, _allRight;
@@ -51,48 +52,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     if (rightSortedOXHeader == null) {
       if (_allLeft == false) return;
-
-      // TODO? : create a dummy header with 0's to reuse and fall through general case code below.  However, gets tough to fall
-      //         through most efficiently so we'll do a separate code block to allocate the NA Frame most efficiently.
-      // rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // TODO: reuse a single global here
-
-      // construct NA frame as big as left table and return it
-      {
-      // compute the number of rows per chunk
-        _ansN = leftSortedOXHeader._numRows;
-        int batchSize = 1<<22; //32MB for doubles, 64MB for UUIDs to fit into 256MB DKV Value limit
-        int nbatch = (int) (_ansN-1)/batchSize +1;  // TODO: wrap in class to avoid this boiler plate
-        int lastSize = (int)(_ansN - (nbatch-1)*batchSize);
-        assert nbatch >= 1;
-        assert lastSize > 0;
-        _chunkSizes = new int[nbatch];
-
-        // batch chunks (per column), each chunk has up to batchSize rows
-        double[][][] frameLikeChunks = new double[_rightFrame.numCols()/*cols*/][nbatch/*batch*/][]; //TODO: compression via int types
-        for (int col=0; col<_rightFrame.numCols(); ++col) {   // TO DO: NA will appear for the join columns. Need to change join columns to populate from leftFrame
-          int b;
-          for (b = 0; b < nbatch - 1; b++) {
-            frameLikeChunks[col][b] = new double[batchSize];
-            Arrays.fill(frameLikeChunks[col][b], Double.NaN);
-            _chunkSizes[b] = batchSize;
-          }
-          frameLikeChunks[col][b] = new double[lastSize];
-          Arrays.fill(frameLikeChunks[col][b], Double.NaN);
-          _chunkSizes[b] = lastSize;
-        }
-
-        // compress all chunks and store them
-        Futures fs = new Futures();
-        for (int col=0; col<_rightFrame.numCols(); ++col) {
-          for (int b = 0; b < nbatch; b++) {
-            Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
-            DKV.put(getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _leftMSB, _rightMSB, col, b), ck, fs, true);
-            frameLikeChunks[col][b]=null; //free mem as early as possible (it's now in the store)
-          }
-        }
-        fs.blockForPending();
-        return;   // _allLeft true and no contents of right MSB to match to
-      }
+      rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // enables general case code to run below without needing new special case code
     }
     // both left and right MSB have some data to match
     _leftBatchSize = leftSortedOXHeader._batchSize;
@@ -135,8 +95,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   @Override
   protected void compute2() {
-    if (_leftN != 0 && _rightN != 0) {
-      // do the work
+    if ((_leftN != 0 || _allRight) && (_rightN != 0 || _allLeft)) {
       bmerge_r(-1, _leftN, -1, _rightN);
       createChunksInDKV();
     }
@@ -215,29 +174,34 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // lLow and lUpp now surround the group in the left table.  If left key is unique then lLow==lr-1 and lUpp==lr+1.
 
     long len = rUpp - rLow - 1;  // if value found, rLow and rUpp surround it, unlike standard binary search where rLow falls on it
-    if (len > 0) {
-      _ansN += len;
-      if (len > 1) _allLen1 = false;
+    if (len > 0 || _allLeft) {
+      if (len > 1) _oneToManyMatch = true;
+      _numRowsInResult += Math.max(1,len) * (lUpp-lLow-1);   // 1 for NA row when _allLeft
       for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
+        {
+          long globalRowNumber = _leftOrder[(int)(lr / _leftBatchSize)][(int)(lr % _leftBatchSize)];
+          int chkIdx = _leftFrame.anyVec().elem2ChunkIdx(globalRowNumber); //binary search in espc
+          H2ONode node = _leftFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
+          _perNodeNumLeftRowsToFetch[node.index()]++;  // the key is the same within this left dup range, but still need to fetch left non-join columns
+        }
+        if (len==0) continue;  // _allLeft must be true if len==0
         int jb = (int)(j/_leftBatchSize);
         int jo = (int)(j%_leftBatchSize);
         _retFirst[jb][jo] = rLow + 2;  // rLow surrounds row, so +1.  Then another +1 for 1-based row-number. 0 (default) means nomatch and saves extra set to -1 for no match.  Could be significant in large edge cases by not needing to write at all to _retFirst if it has no matches.
         _retLen[jb][jo] = len;
-        StringBuilder sb = new StringBuilder();
-        sb.append("Left row " + _leftOrder[jb][jo] + " matches to " + _retLen[jb][jo] + " right rows: ");
+        //StringBuilder sb = new StringBuilder();
+        //sb.append("Left row " + _leftOrder[jb][jo] + " matches to " + _retLen[jb][jo] + " right rows: ");
         long a = _retFirst[jb][jo] -1;
-        for (int i=0; i<_retLen[jb][jo]; ++i) {
+        for (int i=0; i<_retLen[jb][jo]; i++) {
           long loc = a+i;
-          sb.append(_rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)] + " ");
+          //sb.append(_rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)] + " ");
           long globalRowNumber = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];
           int chkIdx = _rightFrame.anyVec().elem2ChunkIdx(globalRowNumber); //binary search in espc
           H2ONode node = _rightFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
-          _perNodeNumRowsToFetch[node.index()]++;  // just count the number per node. So we can allocate arrays precisely up front, and also to return early to use in case of memory errors or other distribution problems
+          _perNodeNumRightRowsToFetch[node.index()]++;  // just count the number per node. So we can allocate arrays precisely up front, and also to return early to use in case of memory errors or other distribution problems
         }
-        Log.info(sb);
+        //Log.info(sb);
       }
-    } else {
-      if (_allLeft) _ansN++;   // 1 NA row
     }
     // TO DO: check assumption that retFirst and retLength are initialized to 0, for case of no match
     // Now branch (and TO DO in parallel) to merge below and merge above
@@ -254,79 +218,110 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   private void createChunksInDKV() {
 
     // Collect all matches
-    // Create the final frame (part) for this MSB
+    // Create the final frame (part) for this MSB combination
     // Cannot use a List<Long> as that's restricted to 2Bn items and also isn't an Iced datatype
-    long perNodeRows[][][] = new long[H2O.CLOUD.size()][][];
-    long perNodeRowFrom[][][] = new long[H2O.CLOUD.size()][][];
-    long perNodeLoc[] = new long[H2O.CLOUD.size()];
+    long perNodeRightRows[][][] = new long[H2O.CLOUD.size()][][];
+    long perNodeRightRowsFrom[][][] = new long[H2O.CLOUD.size()][][];
+    long perNodeRightLoc[] = new long[H2O.CLOUD.size()];
+
+    long perNodeLeftRows[][][] = new long[H2O.CLOUD.size()][][];
+    long perNodeLeftRowsFrom[][][] = new long[H2O.CLOUD.size()][][];
+    long perNodeLeftRowsRepeat[][][] = new long[H2O.CLOUD.size()][][];
+    long perNodeLeftLoc[] = new long[H2O.CLOUD.size()];
+
+    // Allocate memory to split this MSB combn's left and right matching rows into contiguous batches sent to the nodes they reside on
     int batchSize = (int) _leftBatchSize;  // TODO: what's the right batch size here. And why is _leftBatchSize type long?
     for (int i = 0; i < H2O.CLOUD.size(); i++) {
-      if (_perNodeNumRowsToFetch[i] == 0) continue;
-      int nbatch = (int) ((_perNodeNumRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
-      int lastSize = (int) (_perNodeNumRowsToFetch[i] - (nbatch - 1) * batchSize);
-      assert nbatch >= 1;
-      assert lastSize > 0;
-      perNodeRows[i] = new long[nbatch][];
-      perNodeRowFrom[i] = new long[nbatch][];
-      int b;
-      for (b = 0; b < nbatch - 1; b++) {
-        perNodeRows[i][b] = new long[batchSize];  // TO DO?: use MemoryManager.malloc()
-        perNodeRowFrom[i][b] = new long[batchSize];
+      if (_perNodeNumRightRowsToFetch[i] > 0) {
+        int nbatch = (int) ((_perNodeNumRightRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
+        int lastSize = (int) (_perNodeNumRightRowsToFetch[i] - (nbatch - 1) * batchSize);
+        assert nbatch >= 1;
+        assert lastSize > 0;
+        perNodeRightRows[i] = new long[nbatch][];
+        perNodeRightRowsFrom[i] = new long[nbatch][];
+        int b;
+        for (b = 0; b < nbatch - 1; b++) {
+          perNodeRightRows[i][b] = new long[batchSize];  // TO DO?: use MemoryManager.malloc()
+          perNodeRightRowsFrom[i][b] = new long[batchSize];
+        }
+        perNodeRightRows[i][b] = new long[lastSize];
+        perNodeRightRowsFrom[i][b] = new long[lastSize];
       }
-      perNodeRows[i][b] = new long[lastSize];
-      perNodeRowFrom[i][b] = new long[lastSize];
+      if (_perNodeNumLeftRowsToFetch[i] > 0) {
+        int nbatch = (int) ((_perNodeNumLeftRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
+        int lastSize = (int) (_perNodeNumLeftRowsToFetch[i] - (nbatch - 1) * batchSize);
+        assert nbatch >= 1;
+        assert lastSize > 0;
+        perNodeLeftRows[i] = new long[nbatch][];
+        perNodeLeftRowsFrom[i] = new long[nbatch][];
+        perNodeLeftRowsRepeat[i] = new long[nbatch][];
+        int b;
+        for (b = 0; b < nbatch - 1; b++) {
+          perNodeLeftRows[i][b] = new long[batchSize];  // TO DO?: use MemoryManager.malloc()
+          perNodeLeftRowsFrom[i][b] = new long[batchSize];
+          perNodeLeftRowsRepeat[i][b] = new long[batchSize];
+        }
+        perNodeLeftRows[i][b] = new long[lastSize];
+        perNodeLeftRowsFrom[i][b] = new long[lastSize];
+        perNodeLeftRowsRepeat[i][b] = new long[lastSize];
+      }
     }
 
-    // Loop over _retFirst and _retLen and assign the matching rows to the right node request so as to make one batched call
+    // Loop over _retFirst and _retLen and populate the batched requests for each node helper
     // _retFirst and _retLen are the same shape
-    long ansLoc=0;
+    long resultLoc=0;  // sweep upwards through the final result, filling it in
+    long leftLoc=-1;   // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
     for (int jb=0; jb<_retFirst.length; ++jb) {              // jb = j batch
       for (int jo=0; jo<_retFirst[jb].length; ++jo) {        // jo = j offset
-        long a = _retFirst[jb][jo];
-        if (a==0) {
+        leftLoc++;  // to save jb*_retFirst[0].length + jo;
+        long f = _retFirst[jb][jo];
+        long l = _retLen[jb][jo];
+        if (f==0) {
           // left row matches to no right row
-          if (_allLeft) {
-            // insert NA for the no match i.e. left outer join
-            ansLoc++;
-            assert _retLen[jb][jo] == 0;
-          }
-          continue;
+          assert l == 0;  // doesn't have to be 0 (could be 1 already if allLeft==true) but currently it should be, so check it
+          if (!_allLeft) continue;
+          // now insert the left row once and NA for the right columns i.e. left outer join
         }
-        for (int r=0; r<_retLen[jb][jo]; ++r) {
-          long loc = a+r-1;
+        { // new scope so 'row' can be declared in the for() loop below and registerized (otherwise 'already defined in this scope' in that scope)
+          // Fetch the left rows and mark the contiguous from-ranges each left row should be recycled over
+          long row = _leftOrder[(int)(leftLoc / _leftBatchSize)][(int)(leftLoc % _leftBatchSize)];
+          int chkIdx = _leftFrame.anyVec().elem2ChunkIdx(row); //binary search in espc
+          H2ONode node = _leftFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
+          long pnl = perNodeLeftLoc[node.index()]++;   // pnl = per node location
+          perNodeLeftRows[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
+          perNodeLeftRowsFrom[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
+          perNodeLeftRowsRepeat[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = Math.max(1,l);
+        }
+        if (f==0) { resultLoc++; continue; }
+        assert l > 0;
+        for (int r=0; r<l; r++) {
+          long loc = f+r-1;  // -1 because these are 0-based where 0 means no-match and 1 refers to the first row
           long row = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];   // TODO: could take / and % outside loop in cases where it doesn't span a batch boundary
           // find the owning node for the row, using local operations here
           int chkIdx = _rightFrame.anyVec().elem2ChunkIdx(row); //binary search in espc
           H2ONode node = _rightFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
-          long pnl = perNodeLoc[node.index()]++;   // pnl = per node location
-          perNodeRows[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
-          perNodeRowFrom[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = ansLoc++;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
+          long pnl = perNodeRightLoc[node.index()]++;   // pnl = per node location
+          perNodeRightRows[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
+          perNodeRightRowsFrom[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc++;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
         }
       }
     }
 
-    // Fill the output columns coming from the right frame
-//    Vec[] vecs = new Vec[_rightFrame.numCols()];
-//    for (int i=0; i<vecs.length; ++i) {
-//      vecs[i] = Vec.makeCon(0, _ansN);
-//    }
-//    String[] names = _rightFrame.names().clone();
-//    Frame fr = new Frame(Key.make(_rightFrame._key.toString() + "_joined_with_" + _leftFrame._key.toString() + " on_some_columns_right_half_forLeftMSB_"+_leftMSB + "_RightMSB_" + _rightMSB), names, vecs);
-    // compute the number of rows per chunk
-    batchSize = 1<<22; //32MB for doubles, 64MB for UUIDs to fit into 256MB DKV Value limit
-    int nbatch = (int) (_ansN-1)/batchSize +1;  // TODO: wrap in class to avoid this boiler plate
-    int lastSize = (int)(_ansN - (nbatch-1)*batchSize);
+    // Create the chunks for the final frame from this MSB pair.
+    batchSize = 1<<22; // number of rows per chunk.  32MB for doubles, 64MB for UUIDs to fit into 256MB DKV Value limit
+    int nbatch = (int) (_numRowsInResult-1)/batchSize +1;  // TODO: wrap in class to avoid this boiler plate
+    int lastSize = (int)(_numRowsInResult - (nbatch-1)*batchSize);
     assert nbatch >= 1;
     assert lastSize > 0;
     _chunkSizes = new int[nbatch];
-
-    // batch chunks (per column), each chunk has up to batchSize rows
-    double[][][] frameLikeChunks = new double[_rightFrame.numCols()/*cols*/][nbatch/*batch*/][]; //TODO: compression via int types
-    for (int col=0; col<_rightFrame.numCols(); ++col) {
+    int _numLeftCols = _leftFrame.numCols();
+    int _numColsInResult = _leftFrame.numCols() + _rightFrame.numCols() - _numJoinCols;
+    double[][][] frameLikeChunks = new double[_numColsInResult][nbatch][]; //TODO: compression via int types
+    for (int col=0; col<_numColsInResult; col++) {
       int b;
       for (b = 0; b < nbatch - 1; b++) {
         frameLikeChunks[col][b] = new double[batchSize];
-        Arrays.fill(frameLikeChunks[col][b], Double.NaN);   //
+        Arrays.fill(frameLikeChunks[col][b], Double.NaN);   // NA by default to save filling with NA for nomatches when allLeft
         _chunkSizes[b] = batchSize;
       }
       frameLikeChunks[col][b] = new double[lastSize];
@@ -335,21 +330,42 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
 
     for (H2ONode node : H2O.CLOUD._memary) {
-      int bUpp = perNodeRows[node.index()] == null ? 0 : perNodeRows[node.index()].length;
+      int bUpp = perNodeRightRows[node.index()] == null ? 0 : perNodeRightRows[node.index()].length;
+      for (int b = 0; b < bUpp; b++) {
+        GetRawRemoteRows grrr = new GetRawRemoteRows(_rightFrame, perNodeRightRows[node.index()][b]);
+        H2O.submitTask(grrr);
+        grrr.join();
+        assert (grrr._rows == null);
+        Chunk[] chk = grrr._chk;
+        for (int col = _numJoinCols; col < chk.length; col++) {   // TODO: currently join columns must be the first _numJoinCols. Relax.
+          Chunk colForBatch = chk[col];
+          for (int row = 0; row < colForBatch.len(); row++) {
+            double val = colForBatch.atd(row); //TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
+            long actualRowInMSBCombo = perNodeRightRowsFrom[node.index()][b][row];
+            int whichChunk = (int) (actualRowInMSBCombo / batchSize);
+            int offset = (int) (actualRowInMSBCombo % batchSize);
+            frameLikeChunks[_numLeftCols - 1 + col][whichChunk][offset] = val;
+          }
+        }
+      }
+      bUpp = perNodeLeftRows[node.index()] == null ? 0 : perNodeLeftRows[node.index()].length;
       for (int b = 0; b < bUpp; ++b) {
-        GetRawRemoteRows grrr = new GetRawRemoteRows(_rightFrame, perNodeRows[node.index()][b]);
+        GetRawRemoteRows grrr = new GetRawRemoteRows(_leftFrame, perNodeLeftRows[node.index()][b]);
         H2O.submitTask(grrr);
         grrr.join();
         assert (grrr._rows == null);
         Chunk[] chk = grrr._chk;
         for (int col = 0; col < chk.length; ++col) {
           Chunk colForBatch = chk[col];
-          for (int row = 0; row < colForBatch.len(); ++row) {
+          for (int row = 0; row < colForBatch.len(); row++) {
             double val = colForBatch.atd(row); //TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
-            long actualRowInMSBCombo = perNodeRowFrom[node.index()][b][row];
-            int whichChunk = (int) (actualRowInMSBCombo / batchSize);
-            int offset = (int) (actualRowInMSBCombo % batchSize);
-            frameLikeChunks[col][whichChunk][offset] = val;
+            long actualRowInMSBCombo = perNodeLeftRowsFrom[node.index()][b][row];
+            for (int rep = 0; rep < perNodeLeftRowsRepeat[node.index()][b][row]; rep++) {
+              long a = actualRowInMSBCombo + rep;
+              int whichChunk = (int) (a / batchSize);  // TO DO: loop into batches to save / and % for each repeat and still cater for crossing multiple batch boundaries
+              int offset = (int) (a % batchSize);
+              frameLikeChunks[col][whichChunk][offset] = val;
+            }
           }
         }
       }
@@ -357,7 +373,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
     // compress all chunks and store them
     Futures fs = new Futures();
-    for (int col=0; col<_rightFrame.numCols(); ++col) {
+    for (int col=0; col<_numColsInResult; col++) {
       for (int b = 0; b < nbatch; b++) {
         Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
         DKV.put(getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _leftMSB, _rightMSB, col, b), ck, fs, true);
