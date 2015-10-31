@@ -661,6 +661,9 @@ or \texttt{fold\_column} parameters.
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_cross_validation.R}
 
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_cross_validation.py}
+
 \subsubsection{Grid Search Over Alpha}
 
 Alpha search is not always needed and simply changing its value to 0.5 (or 0 or 1 if we only want Ridge or Lasso,
@@ -678,7 +681,10 @@ it is therefore less numerically stable and can be very slow as well due to slow
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_alpha.R}
 
-\subsubsection{Grid Search Over Lambda}
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_grid_search_over_alpha.py}
+
+%\subsubsection{Grid Search Over Lambda}
 
 % While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
 % by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
@@ -688,8 +694,10 @@ it is therefore less numerically stable and can be very slow as well due to slow
 % \waterExampleInR
 % \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.R}
 
-Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the built-in lambda
-search capability in GLM.
+%\waterExampleInPython
+%\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.py}
+
+%Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the built-in lambda search capability in GLM.
 
 \subsubsection{Offsets}
 
@@ -805,6 +813,10 @@ Maximum Metrics:
 7 max min_per_class_accuracy  0.482906 0.692308  36
 \end{lstlisting}
 
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_model_output.py}
+
+
 \subsection{Coefficients and Normalized Coefficients}
 
 Coefficients are the predictor weights (i.e. the actual model used for prediction).  Coefficients should be used to
@@ -874,13 +886,21 @@ Various model statistics are available:
 
 Retrieve these statistics using the following accessor functions:
 
+\waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_accessors.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_accessors.py}
 
 \subsection{Confusion Matrix}
 
 Fetch the confusion matrix directly using the following accessor function:
 
+\waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_confusion_matrix.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_confusion_matrix.py}
 
 \subsection{Scoring History}
 
@@ -897,6 +917,9 @@ Scoring History:
 5 2015-08-13 19:05:17  0.005 sec         4      153.51723   0.51590
 6 2015-08-13 19:05:17  0.006 sec         5      153.51723   0.51590
 \end{lstlisting}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_scoring_history.py}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -915,6 +938,9 @@ In addition to predictions, you can view metrics such as area under curve (AUC) 
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_with_response.R}
 
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_predictions_with_response.py}
+
 Here is an example of making predictions on new data:
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.R}
@@ -928,6 +954,9 @@ Here is an example of making predictions on new data:
 5       0 0.5044669 0.4955331
 6       0 0.7272743 0.2727257
 \end{lstlisting}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.py}
 
 The three columns in the prediction file are the predicted class, the probability that the prediction is class 0,
 and the probability that the prediction is class 1. The predicted class is chosen based on the maximum-F1 threshold.
@@ -944,6 +973,9 @@ You can change the threshold manually, for example to 0.3, and recalculate the p
 5       1 0.5044669 0.4955331
 6       0 0.7272743 0.2727257
 \end{lstlisting}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_recalculate_predict.py}
 
 \subsection{Low-latency Predictions using POJOs}
 
@@ -989,6 +1021,9 @@ To determine the accuracy of your model, use the following guidelines:
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_compare_cross_validation_folds.R}
 
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_compare_cross_validation_folds.py}
 
 \item Look for explained deviance ($1 - {NullDev - ResDev \over NullDev}$) 
       \begin{itemize}
