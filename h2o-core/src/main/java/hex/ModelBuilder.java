@@ -371,9 +371,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Training/Validation share the same data, but will have exclusive weights
       cvTrain[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      if (origWeightsName!=null) cvTrain[i].remove(origWeightsName);
       cvTrain[i].add(weightName, weights[2*i]);
       DKV.put(cvTrain[i]);
       cvValid[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      if (origWeightsName!=null) cvValid[i].remove(origWeightsName);
       cvValid[i].add(weightName, weights[2*i+1]);
       DKV.put(cvValid[i]);
     }
