@@ -561,6 +561,15 @@ class H2OConnection(object):
   def rest_ctr(): global _rest_ctr; return _rest_ctr
 
 
+# On exit, close the session to allow H2O to cleanup any temps
+def end_session():
+  print("===== ATTEMPTING SESSION END =====")
+  H2OConnection.delete(url_suffix="InitID")
+
+import atexit
+atexit.register(end_session)
+
+
 def get_human_readable_size(num):
   exp_str = [(0, 'B'), (10, 'KB'), (20, 'MB'), (30, 'GB'), (40, 'TB'), (50, 'PB'), ]
   i = 0

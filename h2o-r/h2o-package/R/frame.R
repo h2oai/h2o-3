@@ -65,7 +65,8 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
     cat("=== Finalizer on ",attr(x, "id"),"\n")
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", attr(x, "id")), method = "DELETE")
+    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), method = "POST")
+    #.h2o.__remoteSend(paste0(.h2o.__DKV, "/", ), method = "DELETE")
   }
 }
 
@@ -282,7 +283,7 @@ h2o.assign <- function(data, key) {
   .key.validate(key)
   id <- h2o.getId(data)
   if( key == id ) stop("Destination key must differ from input frame ", key)
-  x = .eval.driver(.newExpr("tmp=", key, id)) # Eager eval, so can see it in cluster
+  x = .eval.driver(.newExpr("assign", key, id)) # Eager eval, so can see it in cluster
   .set(x,"id",key)
   x
 }

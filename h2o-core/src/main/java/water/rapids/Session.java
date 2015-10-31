@@ -41,10 +41,10 @@ public class Session {
   // will always copy these Vecs before mutating or deleting.
   NonBlockingHashSet<Vec> GLOBALS = new NonBlockingHashSet<>();
 
-  Session() { cluster_init(); }
+  public Session() { cluster_init(); }
 
   // Parse and execute
-  Val exec(String rapids) { return exec(new Exec(rapids).parse(), null);  }
+  public Val exec(String rapids) { return exec(new Exec(rapids).parse(), null);  }
 
   // Execute an AST in the current Session with much assertion-checking
   Val exec(AST ast, ASTFun scope) {
@@ -68,7 +68,7 @@ public class Session {
   }
 
   // Normal session exit.
-  void end() {
+  public void end() {
     String sane;
     assert (sane=sanity_check_refs())==null : sane;
     GLOBALS.clear();
@@ -84,7 +84,7 @@ public class Session {
   }
 
   // The Exec call threw an exception.  Best-effort cleanup, no more exceptions
-  RuntimeException endQuietly(Throwable ex) {
+  public RuntimeException endQuietly(Throwable ex) {
     try { 
       GLOBALS.clear();
       Futures fs = new Futures();

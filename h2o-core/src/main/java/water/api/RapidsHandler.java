@@ -8,12 +8,17 @@ class RapidsHandler extends Handler {
   public RapidsSchema exec(int version, RapidsSchema rapids) {
     if( rapids == null ) return null;
     if( rapids.ast == null || rapids.ast.equals("") ) return rapids;
+    
+    if( InitIDHandler.SESSION == null ) {
+      InitIDHandler.SESSION = new water.rapids.Session();
+    }
+
     Val val;
     try {
       // No locking, no synchronization - since any local locking is NOT a
       // cluster-wide lock locking, which just provides the illusion of safety
       // but not the actuality.
-      val = water.rapids.Exec.exec(rapids.ast);
+      val = InitIDHandler.SESSION.exec(rapids.ast);
     } catch( IllegalArgumentException e ) {
       throw e;
     } catch( Throwable e ) {

@@ -306,7 +306,7 @@ def _quoted(key):
 
 def assign(data,xid):
   if data.frame_id == xid: ValueError("Desination key must differ input frame")
-  data._ex = expr.ExprNode("tmp=",xid,data)._eval_driver(False)
+  data._ex = expr.ExprNode("assign",xid,data)._eval_driver(False)
   data._ex._id = xid
   return data
 

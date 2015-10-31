@@ -115,7 +115,7 @@ class ExprNode:
     self._clear_impl()
     # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
     # temps... to help debug GC issues.
-    gc.collect()
+    #gc.collect()
     return self
 
   # Magical count-of-5:   (get 2 more when looking at it in debug mode)
@@ -166,7 +166,7 @@ class ExprNode:
 
   def __del__(self):
     if( isinstance(self._ast,bool) and self._ast ):
-      h2o.H2OConnection.delete("DKV/"+self._id)
+      h2o.rapids("(rm "+self._id+")")
 
   def _tabulate(self,tablefmt,rollups):
     """
