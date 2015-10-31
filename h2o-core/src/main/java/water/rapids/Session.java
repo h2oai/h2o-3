@@ -241,9 +241,11 @@ public class Session {
     // Vec is in REFCNTS with equal counts.
     for( Vec vec : refcnts.keySet() ) {
       Integer I = REFCNTS.get(vec);
-      if( I==null ) return "REFCNTS missing vec "+vec;
+      if( I==null )
+        return "REFCNTS missing vec "+vec;
       Integer II = refcnts.get(vec);
-      if( (int)II != (int)I ) return "Mismatch vec "+vec+", computed refcnts: "+II+", cached REFCNTS: "+I;
+      if( (int)II != (int)I )
+        return "Mismatch vec "+vec+", computed refcnts: "+II+", cached REFCNTS: "+I;
     }
     // Every cached REFCNT is in the computed set as well... ie the two
     // hashmaps are equal.

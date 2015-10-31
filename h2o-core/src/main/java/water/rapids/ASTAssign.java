@@ -29,6 +29,12 @@ class ASTRectangleAssign extends ASTPrim {
     ASTNumList cols_numlist = check(dst.numCols(), asts[3], dst);
     int[] cols = ASTColSlice.col_select(dst.names(),cols_numlist);
 
+    // Any COW optimized path changes Vecs in dst._vecs, and so needs a
+    // defensive copy.  Any update-in-place path updates Chunks instead of
+    // dst._vecs, and does not need a defensive copy.  To make life easier,
+    // just make the copy now.
+    dst = new Frame(dst._names,dst.vecs().clone());
+
     // Assign over the column slice
     if( asts[4] instanceof ASTNum || asts[4] instanceof ASTNumList ) { // Explictly named row assignment
       ASTNumList rows = asts[4] instanceof ASTNum ? new ASTNumList(((ASTNum)asts[4])._v.getNum()) : ((ASTNumList)asts[4]);

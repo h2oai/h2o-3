@@ -240,6 +240,19 @@ public class RapidsTest extends TestUtil {
     }
   }
 
+  @Test public void testCombo() {
+    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
+    //String tree = "(tmp= py_2 (:= (tmp= py_1 (cbind a.hex (== (cols_py a.hex 4.0 ) \"Iris-setosa\" ) ) ) (as.factor (cols_py py_1 5.0 ) ) 5.0 [] ) )";
+    String tree = "(:= (tmp= py_1 a.hex) (h2o.runif a.hex -1) 4 [])";
+    Val val = Exec.exec(tree);
+    if( val instanceof ValFrame ) {
+      Frame fr2= ((ValFrame)val)._fr;
+      System.out.println(fr2.vec(0));
+      fr2.remove();
+    }
+    fr.delete();
+  }
+
   @Test public void testMerge() {
     Frame l=null,r=null,f=null;
     try {
