@@ -737,9 +737,9 @@ To retrieve a model in Python using its key, use the following:
 
 Without distortions, convolutions, or other advanced image processing techniques, the best-ever published test set error for the MNIST dataset is $0.83$\% by Microsoft. After training for $2,000$ epochs (which took about four hours) on four compute nodes, we obtain a test set error of $0.87\%$. 
 
-After training for $8,000$ epochs (which took about ten hours) on ten nodes, we obtain a test set error of $0.83\%$, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R. 
-
-Details can be found in our hands-on tutorial available at \url{http://learn.h2o.ai/content/hands-on_training/deep_learning.html}. Accuracies of around $1\%$ test set error are typically achieved within one hour when running on one node.
+\waterExampleInR
+After training for $8,000$ epochs (which took about ten hours) on ten nodes, we obtain a test set error of $0.83\%$, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R:
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_mnist_record.R}
 
 \subsection{Computational Performance}
 There are many parameters that affect the computational performance of H2O Deep Learning, but the default values should result in good performance for most problems. 
