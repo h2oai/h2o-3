@@ -65,6 +65,7 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
   }
 
   private ModelParametersSchema[] toModelParametersSchema(Model.Parameters[] modelParameters) {
+    if (modelParameters==null) return null;
     ModelParametersSchema[] result = new ModelParametersSchema[modelParameters.length];
     for (int i = 0; i < modelParameters.length; i++) {
       if (modelParameters[i] != null) {
