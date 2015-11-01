@@ -71,6 +71,8 @@ class H2ORandomForestEstimator(H2OEstimator):
       Metric to use for convergence checking, only for _stopping_rounds > 0
       Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
     stopping_tolerance : float
+      Relative tolerance for metric-based stopping criterion (stop if relative improvement
+      is not at least this much)
       Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
     """
     super(H2ORandomForestEstimator, self).__init__()

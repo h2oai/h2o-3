@@ -25,7 +25,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   min_rows : int
     Minimum number of rows to assign to terminal nodes.
   learn_rate : float
-    A value from 0.0 to 1.0
+    Learning rate (from 0.0 to 1.0)
   sample_rate : float
     Row sample rate (from 0.0 to 1.0)
   col_sample_rate : float
