@@ -126,18 +126,15 @@ Topics include:
 
 \subsection{Example Code}
 
-R code for the examples in this document are available here:
+Python and R code for the examples in this document can be found here:
 
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GLM_Vignette.R}
-
-Python code for the examples in this document can be found here:
-
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GLM_Vignette.py}
+\url{https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/booklets/v2_2015/source/GLM_Vignette_code_examples}
 
 The document source itself can be found here:
 
 \url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GLM_Vignette.tex}
 
+\newpage
 \subsection{Citation}
 
 To cite this booklet, use the following: 
@@ -367,7 +364,6 @@ function. Change the regression by changing the family to binomial.
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_example.R}
 
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_example.py}
 
@@ -426,6 +422,13 @@ argument.
 Tweedie distributions are a family of distributions which include gamma, normal, Poisson and their combination. It is especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the $p$-th power of the mean $var(y_i)=\phi \mu_i^p$. 
 
 The Tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
+
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_tweedie_example.R}
+
+\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_example.py}
 
 \begin{itemize}
 \item  $p=0$: Normal
@@ -678,26 +681,28 @@ Use caution when including $\alpha=0$ or $\alpha=1$ in the grid search. $\alpha=
 and it can be very slow (or even impossible) to compute in large $N$ situations. $\alpha=1$ has no  $\ell_2$ penalty, so
 it is therefore less numerically stable and can be very slow as well due to slower convergence. In general, we recommend running with $alpha=1-\epsilon$ instead.
 
+\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_alpha.R}
 
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_grid_search_over_alpha.py}
 
-%\subsubsection{Grid Search Over Lambda}
+\subsubsection{Grid Search Over Lambda}
 
-% While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
-% by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
-% search, except H2O will use a user-supplied list of lambdas instead (still capped at $\lambda_{max}$).
+ While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
+ by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
+ search, except H2O will use a user-supplied list of lambdas instead (still capped at $\lambda_{max}$).
 
-% \bigskip
-% \waterExampleInR
-% \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.R}
+\bigskip
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.R}
 
-%\waterExampleInPython
-%\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.py}
+\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.py}
 
-%Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the built-in lambda search capability in GLM.
+Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the built-in lambda search capability in GLM.
 
 \subsubsection{Offsets}
 
@@ -738,6 +743,8 @@ The following sections explain the output produced by logistic regression (i.e. 
 \bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_10.R}
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_model_output.py}
 \begin{lstlisting}[style=output]
 Model Details:
 ==============
@@ -813,16 +820,13 @@ Maximum Metrics:
 7 max min_per_class_accuracy  0.482906 0.692308  36
 \end{lstlisting}
 
-\waterExampleInPython
-\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_model_output_10.py}
-
-
 \subsection{Coefficients and Normalized Coefficients}
 
 Coefficients are the predictor weights (i.e. the actual model used for prediction).  Coefficients should be used to
 make predictions for new data points:
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_20.R}
+\lstinputlisting[style=Python]{GLM_Vignette_code_examples/glm_model_output_20.py}
 \begin{lstlisting}[style=output]
   Intercept         AGE        RACE         PSA     GLEASON 
 -6.46739299 -0.02198278 -0.29576986  0.02855057  1.15680761 
@@ -842,6 +846,7 @@ Standardized coefficients are useful for comparing the relative contribution of 
 model:
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_30.R}
+\lstinputlisting[style=Python]{GLM_Vignette_code_examples/glm_model_output_30.py}
 \begin{lstlisting}[style=output]
 Coefficients:
       names coefficients standardized_coefficients
@@ -855,6 +860,7 @@ Coefficients:
 This view provides a sorted list of standardized coefficients in descending order for easy comparison:
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_40.R}
+\lstinputlisting[style=Python]{GLM_Vignette_code_examples/glm_model_output_40.py}
 \begin{lstlisting}[style=output]
 Standardized Coefficient Magnitudes:
           names coefficients sign
@@ -907,6 +913,8 @@ Fetch the confusion matrix directly using the following accessor function:
 The following output example represents a sample scoring history: 
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_scoring_history.R}
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_scoring_history.py}
 \begin{lstlisting}[style=output]
 Scoring History:
             timestamp   duration iteration log_likelihood objective
@@ -918,8 +926,7 @@ Scoring History:
 6 2015-08-13 19:05:17  0.006 sec         5      153.51723   0.51590
 \end{lstlisting}
 
-\waterExampleInPython
-\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_scoring_history.py}
+
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -944,7 +951,7 @@ In addition to predictions, you can view metrics such as area under curve (AUC) 
 Here is an example of making predictions on new data:
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.R}
-
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.py}
 \begin{lstlisting}[style=output]
   predict        p0        p1
 1       1 0.1676892 0.8323108
@@ -955,8 +962,6 @@ Here is an example of making predictions on new data:
 6       0 0.7272743 0.2727257
 \end{lstlisting}
 
-\waterExampleInPython
-\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.py}
 
 The three columns in the prediction file are the predicted class, the probability that the prediction is class 0,
 and the probability that the prediction is class 1. The predicted class is chosen based on the maximum-F1 threshold.
@@ -964,6 +969,7 @@ and the probability that the prediction is class 1. The predicted class is chose
 You can change the threshold manually, for example to 0.3, and recalculate the predict column like this:
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_recalculate_predict.R}
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_recalculate_predict.py}
 \begin{lstlisting}[style=output]
   predict        p0        p1
 1       1 0.1676892 0.8323108
@@ -973,9 +979,6 @@ You can change the threshold manually, for example to 0.3, and recalculate the p
 5       1 0.5044669 0.4955331
 6       0 0.7272743 0.2727257
 \end{lstlisting}
-
-\waterExampleInPython
-\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_recalculate_predict.py}
 
 \subsection{Low-latency Predictions using POJOs}
 
@@ -992,6 +995,8 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_download_pojo.R}
+\waterExampleInPython
+\lstinputlisting[style=Python]{GLM_Vignette_code_examples/glm_download_pojo.py}
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -1048,7 +1053,7 @@ To determine the accuracy of your model, use the following guidelines:
       \item If you have many columns with small fraction of uniformly-distributed missing values, every row will likely have at least one missing value. In this case, impute the NAs (e.g. substituted with mean values) before modeling.
       \end{itemize}
 \end{itemize}
-
+\newpage
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 \section{Implementation Details}

@@ -12,7 +12,7 @@ binomial_fit.train(y = "CAPSULE", x = ["AGE", "RACE", "PSA", "GLEASON"], trainin
 
 # Make and export predictions.
 pred = binomial_fit.predict(test)
-h2o.exportFile(pred, "/tmp/pred.csv", force = TRUE)
+h2o.export_file(pred, "/tmp/pred.csv", force = True)
 # Or you can export the predictions to hdfs:
 #   h2o.exportFile(pred, "hdfs://namenode/path/to/file.csv")
 
