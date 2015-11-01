@@ -1019,6 +1019,7 @@ class H2OFrame(object):
     -------
       Returns this H2OFrame.
     """
+    import gc
     col_expr=None
     row_expr=None
     colname=None  # When set, we are doing an append
@@ -1064,6 +1065,7 @@ class H2OFrame(object):
           self._ex._cache.types = None
       else:
         self._ex._cache._types[colname] = src._ex._cache.types.values()[0]
+    if isinstance(src, H2OFrame): src._ex=None  # wipe out to keep ref counts correct
     self._frame()  # setitem is eager
 
   def __int__(self):
