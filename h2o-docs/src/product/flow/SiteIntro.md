@@ -117,6 +117,7 @@ Sparkling Water is a gradle project with the following submodules:
 - Examples: Application, demos, examples
 - ML: Implementation of MLLib pipelines for H2O algorithms
 - Assembly: Creates "fatJar" composed of all other modules
+- py: Implementation of (h2o) Python binding to Sparkling Water
 
 The best way to get started is to modify the core module or create a new module, which extends a project. 
 
@@ -127,6 +128,7 @@ Sparkling Water is versioned according to the Spark versioning:
 - Use [Sparkling Water 1.2](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.2/6/index.html) for Spark 1.2
 - Use [Sparkling Water 1.3](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.3/7/index.html) for Spark 1.3+
 - Use [Sparkling Water 1.4](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.4/3/index.html) for Spark 1.4
+- Use [Sparkling Water 1.5](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html) for Spark 1.5
 
 ###Getting Started with Sparkling Water
 
