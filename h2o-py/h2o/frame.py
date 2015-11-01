@@ -1044,7 +1044,7 @@ class H2OFrame(object):
     elif isinstance(b, ExprNode): row_expr = b # Row slicing
 
     src = float("nan") if c is None else c
-
+    src_in_self = self.is_src_in_self(src)
     old_cache = self._ex._cache
     if colname is None:
       self._ex = ExprNode(":=",self,src,col_expr,row_expr)
@@ -1065,8 +1065,26 @@ class H2OFrame(object):
           self._ex._cache.types = None
       else:
         self._ex._cache._types[colname] = src._ex._cache.types.values()[0]
-    if isinstance(src, H2OFrame): src._ex=None  # wipe out to keep ref counts correct
+    if isinstance(src, H2OFrame) and src_in_self:
+      src._ex=None  # wipe out to keep ref counts correct
     self._frame()  # setitem is eager
+
+  def is_src_in_self(self,src):
+    # src._ex._children[0]._children[0] is self._ex
+    if isinstance(src, H2OFrame):
+      if self._ex is src._ex:
+        return True
+      else:
+        if src._ex._children is not None:
+          for ch in src._ex._children:
+            if self.is_src_in_self(ch): return True
+    elif isinstance(src, ExprNode):
+      if self._ex is src: return True
+      else:
+        if src._children is not None:
+          for ch in src._children:
+            if self.is_src_in_self(ch): return True
+    return False
 
   def __int__(self):
     if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
