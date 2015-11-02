@@ -97,7 +97,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   protected void compute2() {
     if ((_leftN != 0 || _allRight) && (_rightN != 0 || _allLeft)) {
       bmerge_r(-1, _leftN, -1, _rightN);
-      createChunksInDKV();
+      if (_numRowsInResult > 0) createChunksInDKV();
     }
 
     //null out members before returning to calling node
