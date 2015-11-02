@@ -15,7 +15,7 @@ import java.io.File;
 import java.util.Arrays;
 
 public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void bigSlice() {
     // check that large slices do something sane
@@ -189,6 +189,11 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
 
     tree = "(apply a.hex 1 {x . (sum (* x x))})";
+    checkTree(tree);
+
+    // require lookup of 'y' outside the scope of the applied function.
+    // doubles all values.
+    tree = "({y . (apply a.hex 1 {x . (sum (* x y))})} 2)";
     checkTree(tree);
   }
 

@@ -77,20 +77,26 @@ class ASTApply extends ASTPrim {
   }
 
   // --------------------------------------------------------------------------
-  private Val rowwise( final Env env, Frame fr, final AST fun ) {
+  // Break each row into it's own Row, then execute the function passing the
+  // 1 argument.  All rows are independent, and run in parallel
+  private Val rowwise( Env env, Frame fr, final AST fun ) {
     final String[] names = fr._names;
-    // Break each row into it's own Row, then execute the function passing the
-    // 1 argument.  All rows are independent, and run in parallel
+
+    final ASTFun scope = env._scope;  // Current execution scope; needed to lookup variables
 
     // do a single row of the frame to determine the size of the output.
     double[] ds = new double[fr.numCols()];
     for(int col=0;col<fr.numCols();++col)
       ds[col] = fr.vec(col).at(0);
     int noutputs = fun.apply(env,env.stk(),new AST[]{fun,new ASTRow(ds,fr.names())}).getRow().length;
+
     Frame res = new MRTask() {
         @Override public void map( Chunk chks[], NewChunk[] nc ) {
           double ds[] = new double[chks.length]; // Working row
           AST[] asts = new AST[]{fun,new ASTRow(ds,names)}; // Arguments to be called; they are reused endlessly
+          Session ses = new Session();                      // Session, again reused endlessly
+          Env env = new Env(ses);
+          env._scope = scope;                               // For proper namespace lookup
           for( int row=0; row<chks[0]._len; row++ ) {
             for( int col=0; col<chks.length; col++ ) // Fill the row
               ds[col] = chks[col].atd(row);
@@ -100,6 +106,7 @@ class ASTApply extends ASTPrim {
                 nc[newCol].addNum(valRow[newCol]);
               }
           }
+          ses.end(null);        // Mostly for the sanity checks
         }
       }.doAll(noutputs, Vec.T_NUM, fr).outputFrame();
     return new ValFrame(res);
