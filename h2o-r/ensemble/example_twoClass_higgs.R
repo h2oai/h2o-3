@@ -23,7 +23,7 @@ test[,y] <- as.factor(test[,y])
 # Specify the base learner library & the metalearner
 learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
              "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
-metalearner <- "SL.glm"
+metalearner <- "h2o.deeplearning.wrapper"
 
 
 # Train the ensemble using 5-fold CV to generate level-one data
