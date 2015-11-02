@@ -40,7 +40,7 @@ def javapredict_dynamic_data():
 
     # Save dataset to results directory
     results_dir = pyunit_utils.locate("results")
-    h2o.download_csv(train,os.path.join(results_dir,"training_dataset.log"))
+    h2o.download_csv(train,os.path.join(results_dir,"drf_dynamic_training_dataset.log"))
 
     # Generate random parameters
     params = {}
