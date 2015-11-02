@@ -64,7 +64,7 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
 .nodeFinalizer <- function(x) {
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
-    cat("=== Finalizer on ",attr(x, "id"),"\n")
+    #cat("=== Finalizer on ",attr(x, "id"),"\n")
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", attr(x, "id")), method = "DELETE")
   }
 }
