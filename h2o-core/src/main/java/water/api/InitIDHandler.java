@@ -17,7 +17,7 @@ public class InitIDHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public InitIDV3 endSession(int version, InitIDV3 p) {
     if( SESSION != null ) {
-      try { SESSION.end(); } 
+      try { SESSION.end(null); }
       catch( Throwable ex ) { throw SESSION.endQuietly(ex); }
     }
     SESSION = null;

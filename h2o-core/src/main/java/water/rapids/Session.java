@@ -7,6 +7,7 @@ import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.*;
+import water.util.ArrayUtils;
 import water.util.Log;
 
 /**
@@ -38,49 +39,56 @@ public class Session {
   NonBlockingHashMap<Key,Frame> FRAMES = new NonBlockingHashMap<>();
 
   // Vec that came from global frames, and are considered immutable.  Rapids
-  // will always copy these Vecs before mutating or deleting.
+  // will always copy these Vecs before mutating or deleting.  Total visible
+  // refcnts are effectively the normal refcnts plus 1 for being in the GLOBALS
+  // set.
   NonBlockingHashSet<Vec> GLOBALS = new NonBlockingHashSet<>();
 
   public Session() { cluster_init(); }
 
-  // Parse and execute
-  public Val exec(String rapids) { return exec(new Exec(rapids).parse(), null);  }
-
   // Execute an AST in the current Session with much assertion-checking
   public Val exec(AST ast, ASTFun scope) {
     String sane ;
-    assert (sane=sanity_check_refs())==null : sane;
+    assert (sane=sanity_check_refs(null))==null : sane;
 
     // Execute
     Env env = new Env(this);
     env._scope = scope;
-    Val val = ast.exec(env);
+    Val val = ast.exec(env);    // Execute
     assert env.sp()==0;         // Stack balanced at end
-    // This value is being returned of session scope; we are no longer tracking
-    // it so on the internal ref-cnts, so lower them - but do not delete if
-    // cnts go to zero, this is the return value and it's lifetime is the
-    // responsibility of the caller... AND the caller is not allowed to
-    // directly delete this frame, but must ask the session to delete - since
-    // the frame contains session-shared Vecs.
-    if( val.isFrame() ) addRefCnt(val.getFrame(),-1);
-    assert (sane=sanity_check_refs())==null : sane;
-    return val;
+    assert (sane=sanity_check_refs(val))==null : sane;
+    return val;                 // Can return a frame, which may point to session-shared Vecs
   }
 
-  // Normal session exit.
-  public void end() {
+  // Normal session exit.  Returned Frames are fully deep-copied, are are
+  // responsibility of the caller to delete.  Returned Frames have their
+  // refcnts currently up by 1 (for the returned value itself).
+  public Val end(Val returning) {
     String sane;
-    assert (sane=sanity_check_refs())==null : sane;
-    GLOBALS.clear();
+    assert (sane=sanity_check_refs(returning))==null : sane;
+    // Remove all temp frames
     Futures fs = new Futures();
     for( Frame fr : FRAMES.values() ) {
       fs = downRefCnt(fr,fs);   // Remove internal Vecs one by one
       DKV.remove(fr._key,fs);   // Shallow remove, internal Vecs removed 1-by-1
     }
     fs.blockForPending();
-    FRAMES.clear();
-    assert (sane=sanity_check_refs())==null : sane;
+    FRAMES.clear();             // No more temp frames
+    // Copy (as needed) so the returning Frame is completely independent of the
+    // (disappearing) session.
+    if( returning != null && returning.isFrame() ) {
+      Frame fr = returning.getFrame();
+      Vec[] vecs = fr.vecs();
+      for( int i=0; i<vecs.length; i++ ) {
+        _addRefCnt(vecs[i],-1); // Returning frame has refcnt +1, lower it now; should go to zero internal refcnts.
+        if( GLOBALS.contains(vecs[i]) ) // Copy if shared with globals
+          fr.replace(i,vecs[i].makeCopy());
+      }
+    }
+    GLOBALS.clear();            // No longer tracking globals
+    assert (sane=sanity_check_refs(null))==null : sane;
     REFCNTS.clear();
+    return returning;
   }
 
   // The Exec call threw an exception.  Best-effort cleanup, no more exceptions
@@ -228,12 +236,17 @@ public class Session {
 
   // Check that ref cnts are sane.  Only callable between calls to Rapids
   // expressions (otherwise may blow false-positives).
-  String sanity_check_refs() {
+  String sanity_check_refs( Val returning ) {
     // Compute refcnts from tracked frames only.  Since we are between Rapids
     // calls the only tracked Vecs should be those from tracked frames.
     NonBlockingHashMap<Vec,Integer> refcnts = new NonBlockingHashMap<>();
     for( Frame fr : FRAMES.values() )
       for( Vec vec : fr.vecs() ) {
+        Integer I = refcnts.get(vec);
+        refcnts.put(vec,I==null ? 1 : I+1);
+      }
+    if( returning != null && returning.isFrame() ) // One more (nameless) returning frame
+      for( Vec vec : returning.getFrame().vecs() ) {
         Integer I = refcnts.get(vec);
         refcnts.put(vec,I==null ? 1 : I+1);
       }

@@ -38,19 +38,43 @@ public class Exec {
 
   public Exec(String str) { _str = str; }
 
-  public static Val exec( String str ) {
+  public static Val exec( String rapids ) {
     // Execute a single rapids call in a short-lived session
     Session ses = new Session();
-    try { 
-      Val val = ses.exec(str);
-      ses.end();
-      return val;
+    try {
+      AST ast = new Exec(rapids).parse();
+      Val val = ses.exec(ast,null);
+      // Any returned Frame has it's REFCNT raised by +1, and the end(val) call
+      // will account for that, copying Vecs as needed so that the returned
+      // Frame is independent of the Session (which is disappearing).
+      return ses.end(val);
     } catch( Throwable ex ) {
       throw ses.endQuietly(ex);
     }
   }
 
-  static Val exec( String str, Session ses ) { return ses.exec(str); }
+  // Compute and return a value in this session.  Any returned frame shares
+  // Vecs with the session (is not deep copied), and so must be deleted by the
+  // caller (with a Rapids "rm" call) or will disappear on session exit, or is
+  // a normal global frame.
+  static public Val exec( String rapids, Session ses ) {
+    AST ast = new Exec(rapids).parse();
+    Val val = ses.exec(ast, null);
+    // Any returned Frame has it's REFCNT raised by +1, but is exiting the
+    // session.  If it's a global, we simply need to lower the internal refcnts
+    // (which won't delete on zero cnts because of the global).  If it's a
+    // named temp, the ref cnts are accounted for by being in the temp table.
+    if( val.isFrame() ) {
+      Frame fr = val.getFrame();
+      assert fr._key != null; // No nameless Frame returns, as these are hard to cleanup
+      if( ses.FRAMES.containsKey(fr) ) {
+        throw water.H2O.unimpl();
+      } else {
+        ses.addRefCnt(fr, -1);
+      }
+    }
+    return val;
+  }
 
   // Parse an expression
   //   '('   a nested function application expression ')

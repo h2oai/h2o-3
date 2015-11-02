@@ -174,7 +174,7 @@ class ASTDdply extends ASTPrim {
       Session ses = new Session();
       // Build an environment with proper lookup scope, and execute in a temp session
       Val val = ses.exec(new ASTExec( new AST[]{_fun,new ASTFrame(groupFrame)}), _scope);
-      ses.end();
+      val = ses.end(val);
       
       // Result into a double[]
       if( val.isFrame() ) {
