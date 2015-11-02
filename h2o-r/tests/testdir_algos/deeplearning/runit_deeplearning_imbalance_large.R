@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.deeplearning_imbalanced <- function() {
   Log.info("Test checks if Deep Learning works fine with an imbalanced dataset")
@@ -31,7 +31,7 @@ check.deeplearning_imbalanced <- function() {
   }
   checkTrue(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Imbalanced Test", check.deeplearning_imbalanced)

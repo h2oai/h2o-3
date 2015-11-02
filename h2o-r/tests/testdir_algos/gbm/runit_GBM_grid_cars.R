@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.gbm.grid.cars <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
@@ -75,7 +75,7 @@ check.gbm.grid.cars <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  testEnd()
+  
 }
 
 doTest("GBM Grid Search using cars dataset", check.gbm.grid.cars)

@@ -1,29 +1,32 @@
+import sys
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
 # Check to make sure the small and large citibike demos have not diverged
-import sys, os
-sys.path.insert(1, "../../")
-import h2o, tests
+import os
 
 def consistency_check():
 
     try:
-        small = h2o.locate("h2o-py/demos/citi_bike_small.ipynb")
+        small = pyunit_utils.locate("h2o-py/demos/citi_bike_small.ipynb")
     except ValueError:
-        small = h2o.locate("h2o-py/demos/citi_bike_small_NOPASS.ipynb")
+        small = pyunit_utils.locate("h2o-py/demos/citi_bike_small_NOPASS.ipynb")
 
     try:
-        large = h2o.locate("h2o-py/demos/citi_bike_large.ipynb")
+        large = pyunit_utils.locate("h2o-py/demos/citi_bike_large.ipynb")
     except ValueError:
-        large = h2o.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
+        large = pyunit_utils.locate("h2o-py/demos/citi_bike_large_NOPASS.ipynb")
 
-    tests.ipy_notebook_exec(small, save_and_norun=True)
-    tests.ipy_notebook_exec(large, save_and_norun=True)
+    results_dir = pyunit_utils.locate("results")
+    s = os.path.join(results_dir, os.path.basename(small).split('.')[0]+".py")
+    l = os.path.join(results_dir, os.path.basename(large).split('.')[0]+".py")
 
-    s = os.path.basename(small).split('.')[0]+".py"
-    l = os.path.basename(large).split('.')[0]+".py"
+    from tests import pydemo_utils
+    pydemo_utils.ipy_notebook_exec(small, save_and_norun = s)
+    pydemo_utils.ipy_notebook_exec(large, save_and_norun = l)
+
     small_list = list(open(s, 'r'))
     large_list = list(open(l, 'r'))
-    os.remove(h2o.locate(s))
-    os.remove(h2o.locate(l))
 
     for s, l in zip(small_list, large_list):
         if s != l:
@@ -32,5 +35,9 @@ def consistency_check():
                 "This difference is not allowed between the small and large citibike demos.\nCitibike small: {0}" \
                 "Citibike large: {1}".format(s,l)
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, consistency_check)
+    pyunit_utils.standalone_test(consistency_check)
+else:
+    consistency_check()

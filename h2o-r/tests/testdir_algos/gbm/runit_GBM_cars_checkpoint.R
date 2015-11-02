@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.checkpointing <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
@@ -62,7 +62,7 @@ test.checkpointing <- function() {
   } else if ( problem == 1) { expect_mm_binomial_equal(a, b)
   } else {                    expect_mm_multinomial_equal(a, b) }
 
-  testEnd()
+  
 }
 
 expect_mm_regression_equal <- function(a, b, msg) {

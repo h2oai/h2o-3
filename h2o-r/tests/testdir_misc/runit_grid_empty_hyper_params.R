@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.grid.empty.hyper.parameter.space <- function(conn) {
 
@@ -47,7 +47,7 @@ test.grid.empty.hyper.parameter.space <- function(conn) {
   print(g)
   expect_equal(length(g@model_ids),1)
 
-  testEnd()
+  
 }
 
 doTest("All grid algos with empty hyper parameter space", test.grid.empty.hyper.parameter.space)

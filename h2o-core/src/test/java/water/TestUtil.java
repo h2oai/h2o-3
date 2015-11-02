@@ -8,9 +8,9 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.parser.ValueString;
 import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
@@ -47,23 +47,28 @@ public class TestUtil extends Iced {
   @AfterClass
   public static void checkLeakedKeys() {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
+    int cnt=0;
     if( leaked_keys > 0 ) {
-      int cnt=0;
       for( Key k : H2O.localKeySet() ) {
-        Value value = H2O.raw_get(k);
+        Value value = Value.STORE_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value.isVecGroup() || k == Job.LIST ||
+        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
             // Also leave around all attempted Jobs for the Jobs list
-            (value.isJob() && value.<Job>get().isStopped()) ) 
+            (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
-        else {
+        } else {
           if( cnt++ < 10 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
       }
       if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
     }
-    assertTrue("No keys leaked", leaked_keys <= 0);
+    assertTrue("No keys leaked", leaked_keys <= 0 || cnt == 0);
+    // Bulk brainless key removal.  Completely wipes all Keys without regard.
+    new MRTask(){
+      @Override public byte priority() { return H2O.GUI_PRIORITY; }
+      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
+    }.doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
 
@@ -170,48 +175,22 @@ public class TestUtil extends Iced {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(int...rows) { return vec(null, rows); }
-  /** A Categorical/Factor Vec from an array of ints - with enum/domain mapping
+  /** A Categorical/Factor Vec from an array of ints - with categorical/domain mapping
    *  @param domain Categorical/Factor names, mapped by the data values
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(String[] domain, int ...rows) { 
     Key k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k);
+    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
     avec.setDomain(domain);
     NewChunk chunk = new NewChunk(avec, 0);
     for( int r : rows ) chunk.addNum(r);
     chunk.close(0, fs);
-    Vec vec = avec.close(fs);
+    Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
     return vec;
   }
-
-  /** Create a new frame based on given row data.
-   *  @param key   Key for the frame
-   *  @param names names of frame columns
-   *  @param rows  data given in the form of rows
-   *  @return new frame which contains columns named according given names and including given data */
-  public static Frame frame(Key key, String[] names, double[]... rows) {
-    assert names == null || names.length == rows[0].length;
-    Futures fs = new Futures();
-    Vec[] vecs = new Vec[rows[0].length];
-    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
-    for( int c = 0; c < vecs.length; c++ ) {
-      AppendableVec vec = new AppendableVec(keys[c]);
-      NewChunk chunk = new NewChunk(vec, 0);
-      for (double[] row : rows) chunk.addNum(row[c]);
-      chunk.close(0, fs);
-      vecs[c] = vec.close(fs);
-    }
-    fs.blockForPending();
-    Frame fr = new Frame(key, names, vecs);
-    if( key != null ) DKV.put(key,fr);
-    return fr;
-  }
-  public static Frame frame(double[]... rows) { return frame(null, rows); }
-  public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(), names, rows); }
-  public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
 
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
@@ -323,9 +302,9 @@ public class TestUtil extends Iced {
             }
           } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
             if (!(c0.isNA(rows) && c1.isNA(rows))) {
-              ValueString v0 = new ValueString(), v1 = new ValueString();
-              c0.atStr(v0, rows); c1.atStr(v1, rows);
-              if (v0.compareTo(v1) != 0) {
+              BufferedString s0 = new BufferedString(), s1 = new BufferedString();
+              c0.atStr(s0, rows); c1.atStr(s1, rows);
+              if (s0.compareTo(s1) != 0) {
                 _unequal = true;
                 return;
               }

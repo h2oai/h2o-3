@@ -1,0 +1,6 @@
+testdir_demos/pyunit_assembly_demo.py  
+testdir_demos/pyunit_lending_club_munging_assembly.py  
+
+testdir_golden/pyunit_quantile_1_golden.py  
+testdir_pipeline/pyunit_scale_pca_rf.py
+testdir_scikit_grid/pyunit_scal_pca_rf_grid.py  

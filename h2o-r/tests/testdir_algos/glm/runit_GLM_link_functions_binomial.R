@@ -4,8 +4,8 @@
 #				  log
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 
 test.linkFunctions <- function() {
@@ -27,13 +27,11 @@ test.linkFunctions <- function() {
 
 	print("Compare model deviances for link function logit")
 	print(model.h2o.binomial.logit)
-	print('gaga')
 	res_dev = model.h2o.binomial.logit@model$training_metrics@metrics$residual_deviance
 	print(res_dev)
 	null_dev = model.h2o.binomial.logit@model$training_metrics@metrics$null_deviance
 	print(null_dev)
 	deviance.h2o.logit <-  res_dev / null_dev
-	print('haha')
 	deviance.R.logit <- deviance(model.R.binomial.logit)  / model.h2o.binomial.logit@model$training_metrics@metrics$null_deviance
 	difference <- deviance.R.logit - deviance.h2o.logit
 	if (difference > 0.01) {
@@ -65,7 +63,7 @@ test.linkFunctions <- function() {
 	# 	checkTrue(difference <= 0.01, "h2o's model's residualDeviance/nullDeviance is more than 0.01 lower than R's model's")
 	# }
 
-testEnd()
+
 }
 
 doTest("Comparison of H2O to R with varying link functions for the BINOMIAL family", test.linkFunctions)

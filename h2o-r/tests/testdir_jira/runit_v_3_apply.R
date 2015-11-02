@@ -2,8 +2,8 @@
 # apply
 #
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 applytest <- function(){
   Log.info('uploading apply testing dataset')
@@ -30,7 +30,7 @@ applytest <- function(){
 #  expect_that(all( df.3[,1] == c(2,4,6) ))
 #  expect_that(all( df.3[,2] == c(3,5,7) ))
 
-  testEnd()
+  
 }
 
 doTest('apply', applytest)

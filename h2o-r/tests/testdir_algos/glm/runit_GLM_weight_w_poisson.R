@@ -1,7 +1,7 @@
 ### This tests weights in glm on real data ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 	#read in data
@@ -24,7 +24,7 @@ test <- function() {
 	expect_less_than(hh@model$training_metrics@metrics$null_deviance, no_weight_hh@model$training_metrics@metrics$null_deviance)
 
 	print("test ends")
-	testEnd()
+	
 }
 
 

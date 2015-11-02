@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.pca.score <- function() {
   Log.info("Importing arrests.csv data...") 
@@ -12,7 +12,7 @@ test.pca.score <- function() {
   Log.info("Project training data into eigenvector subspace")
   predH2O <- predict(fitH2O, arrestsH2O)
   Log.info("H2O Projection:"); print(head(predH2O))
-  testEnd()
+  
 }
 
 doTest("PCA Test: USArrests with Scoring", test.pca.score)

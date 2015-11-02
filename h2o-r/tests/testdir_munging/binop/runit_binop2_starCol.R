@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 toDouble <- function(r) ifelse(is.integer(r), as.numeric(r), r)
 
@@ -40,7 +40,7 @@ test.slice.star <- function() {
  
   Log.info("as.data.frame(fiveStarSliced) * as.data.frame(fiveStarSliced)")
 
-  testEnd()
+  
 }
 
 doTest("BINOP2 EXEC2 TEST: *", test.slice.star)

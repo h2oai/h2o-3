@@ -89,8 +89,8 @@ public class DeepLearningMissingTest extends TestUtil {
           // Convert response to categorical
           int ri = train.numCols()-1;
           int ci = test.find(p._response_column);
-          Scope.track(train.replace(ri, train.vecs()[ri].toEnum())._key);
-          Scope.track(test .replace(ci, test.vecs()[ci].toEnum())._key);
+          Scope.track(train.replace(ri, train.vecs()[ri].toCategoricalVec())._key);
+          Scope.track(test .replace(ci, test.vecs()[ci].toCategoricalVec())._key);
           DKV.put(train);
           DKV.put(test);
 
@@ -106,9 +106,9 @@ public class DeepLearningMissingTest extends TestUtil {
           }
 
           // Extract the scoring on validation set from the model
-          double err = mymodel.error();
+          double err = mymodel.loss();
 
-          Log.info("Missing " + missing_fraction * 100 + "% -> Err: " + err);
+          Log.info("Missing " + missing_fraction * 100 + "% -> logloss: " + err);
           map.put(missing_fraction, err);
           sumerr += err;
           Scope.exit();
@@ -134,8 +134,8 @@ public class DeepLearningMissingTest extends TestUtil {
       sumErr.put(mvh, sumerr);
     }
     Log.info(sb.toString());
-    Assert.assertTrue(sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip) > 2.3);
-    Assert.assertTrue(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation) < 1.2);
+    Assert.assertTrue(sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip) > 4.9);
+    Assert.assertTrue(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation) < 4.0);
   }
 }
 

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.deeplearning_autoencoder <- function() {
      Log.info("Deep Learning Autoencoder MNIST)")
@@ -60,9 +60,9 @@ check.deeplearning_autoencoder <- function() {
      cm <- h2o.confusionMatrix(drf_model, test_features)
      print(cm)
 
-     expect_equal(cm$Error[11], 0.0814, tolerance = 0.001)
+     expect_equal(cm$Error[11], 0.0810, tolerance = 0.001, scale = 1) # absolute difference: scale = 1
 
-     testEnd()
+     
 }
 
 doTest("Deep Learning AutoEncoder MNIST", check.deeplearning_autoencoder)

@@ -11,7 +11,8 @@ Wrapper functions for h2o algorithms
 This is an example h2o algorithm wrapper function.
 }
 \usage{
-h2o.example.wrapper(x, y, training_frame, model_id = "", family = "binomial", ...)
+h2o.example.wrapper(x, y, training_frame, model_id = "", 
+  family = c("gaussian", "binomial"), ...)
 }
 
 \arguments{
@@ -22,7 +23,7 @@ A vector containing the names of the predictors in the model.
 The name of the response variable in the model.
 }
   \item{training_frame}{
-An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+An H2O Frame object containing the variables in the model.
 }
   \item{model_id}{
 (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.

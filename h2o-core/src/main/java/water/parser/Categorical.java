@@ -9,7 +9,7 @@ import water.util.PrettyPrint;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Class for tracking categorical (enum) columns.
+/** Class for tracking categorical (factor) columns.
  *
  *  Basically a wrapper around non blocking hash map.
  *  In the first pass, we just collect set of unique strings per column
@@ -28,57 +28,57 @@ public final class Categorical extends Iced {
   public static final int MAX_CATEGORICAL_COUNT = 10000000;
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
-  volatile NonBlockingHashMap<ValueString, Integer> _map;
-  boolean maxEnumExceeded = false;
+  volatile NonBlockingHashMap<BufferedString, Integer> _map;
+  boolean maxDomainExceeded = false;
 
   Categorical() { _map = new NonBlockingHashMap<>(); }
 
   /** Add key to this map (treated as hash set in this case). */
-  int addKey(ValueString str) {
-    // _map is shared and be cast to null (if enum is killed) -> grab local copy
-    NonBlockingHashMap<ValueString, Integer> m = _map;
+  int addKey(BufferedString str) {
+    // _map is shared and be cast to null (if categorical is killed) -> grab local copy
+    NonBlockingHashMap<BufferedString, Integer> m = _map;
     if( m == null ) return Integer.MAX_VALUE;     // Nuked already
     Integer res = m.get(str);
     if( res != null ) return res; // Recorded already
     assert str.length() < 65535; // Length limit so 65535 can be used as a sentinel
     int newVal = _id.incrementAndGet();
-    res = m.putIfAbsent(new ValueString(str), newVal);
+    res = m.putIfAbsent(new BufferedString(str), newVal);
     if( res != null ) return res;
-    if( m.size() > MAX_CATEGORICAL_COUNT) maxEnumExceeded = true;
+    if( m.size() > MAX_CATEGORICAL_COUNT) maxDomainExceeded = true;
     return newVal;
   }
-  final boolean containsKey(ValueString key){ return _map.containsKey(key); }
+  final boolean containsKey(BufferedString key){ return _map.containsKey(key); }
   @Override public String toString() {
     return "{"+_map+" }";
   }
 
-  int getTokenId( ValueString str ) { return _map.get(str); }
+  int getTokenId( BufferedString str ) { return _map.get(str); }
   
   int maxId() { return _maxId == -1 ? _id.get() : _maxId; }
   int size() { return _map.size(); }
-  boolean isMapFull() { return maxEnumExceeded; }
+  boolean isMapFull() { return maxDomainExceeded; }
 
-  ValueString [] getColumnDomain() {
-    return  _map.keySet().toArray(new ValueString[_map.size()]);
+  BufferedString[] getColumnDomain() {
+    return  _map.keySet().toArray(new BufferedString[_map.size()]);
   }
 
   public static final int MAX_EXAMPLES = 10;
   public void convertToUTF8(int col){
     int hexConvCnt = 0;
-    ValueString[] vs = _map.keySet().toArray(new ValueString[_map.size()]);
+    BufferedString[] bStrs = _map.keySet().toArray(new BufferedString[_map.size()]);
     StringBuilder hexSB = new StringBuilder();
-    for (int i =0; i < vs.length; i++) {
-      String s = vs[i].toString();
-      if (!vs[i].equals(s)) {
+    for (int i =0; i < bStrs.length; i++) {
+      String s = bStrs[i].toString();
+      if (!bStrs[i].equals(s)) {
         if (s.contains("\uFFFD")) { // make weird chars into hex
-          s = vs[i].bytesToString();
+          s = bStrs[i].bytesToString();
           if (hexConvCnt++ < MAX_EXAMPLES) hexSB.append(s +", ");
           if (hexConvCnt == MAX_EXAMPLES) hexSB.append("...");
         }
-        int val = _map.get(vs[i]);
-        _map.remove(vs[i]);
-        vs[i] = new ValueString(s);
-        _map.put(vs[i], val);
+        int val = _map.get(bStrs[i]);
+        _map.remove(bStrs[i]);
+        bStrs[i] = new BufferedString(s);
+        _map.put(bStrs[i], val);
       }
     }
     if (hexConvCnt > 0) Log.info("Found categoricals with non-UTF-8 characters in the "
@@ -97,7 +97,7 @@ public final class Categorical extends Iced {
     if( _map == null ) return ab.put1(1); // Killed map marker
     ab.put1(0);                           // Not killed
     ab.put4(maxId());
-    for( ValueString key : _map.keySet() )
+    for( BufferedString key : _map.keySet() )
       ab.put2((char)key.length()).putA1(key.getBuffer(),key.length()).put4(_map.get(key));
     return ab.put2((char)65535); // End of map marker
   }
@@ -110,7 +110,7 @@ public final class Categorical extends Iced {
     _map = new NonBlockingHashMap<>();
     int len;
     while( (len = ab.get2()) != 65535 ) // Read until end-of-map marker
-      _map.put(new ValueString(ab.getA1(len)),ab.get4());
+      _map.put(new BufferedString(ab.getA1(len)),ab.get4());
     return this;
   }
   @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) {

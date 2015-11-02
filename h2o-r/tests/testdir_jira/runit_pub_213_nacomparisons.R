@@ -3,8 +3,8 @@
 #
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 na_comparisons <- function(){
@@ -27,7 +27,7 @@ na_comparisons <- function(){
   print(is.na(loc[,3]))
   
   #expect_true(all(is.na(loc[,3]) == c(FALSE,FALSE,FALSE,TRUE,FALSE,TRUE,FALSE)))
-  testEnd()
+  
 }
 
 if(F){

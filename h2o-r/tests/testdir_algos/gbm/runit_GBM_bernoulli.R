@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.GBM.bernoulli <- function() {
   Log.info("Importing prostate.csv data...\n")
@@ -53,7 +53,7 @@ test.GBM.bernoulli <- function() {
   print(prostate.h2o@model$init_f)
   expect_equal(prostate.h2o@model$init_f, f0, tolerance=1e-4) ## check the intercept term
 
-  testEnd()
+  
 }
 
 doTest("GBM Test: prostate.csv with Bernoulli distribution", test.GBM.bernoulli)

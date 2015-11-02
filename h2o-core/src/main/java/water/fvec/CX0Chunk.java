@@ -13,6 +13,7 @@ public final class CX0Chunk extends CXIChunk {
   @Override protected final boolean isNA_impl( int i ) { return false; }
   @Override double min() { return 0; }
   @Override double max() { return 1; }
+  @Override public boolean hasNA() { return false; }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();

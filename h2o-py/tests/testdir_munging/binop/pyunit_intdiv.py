@@ -1,10 +1,12 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
 
 def intdiv():
 
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     iris = iris[:,0:4]
     rows, cols = iris.dim
 
@@ -18,19 +20,13 @@ def intdiv():
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #frame/col
-    try:
-        res = iris // iris[0]
-        res.show()
-        assert False, "expected error. objects of different dimensions not supported."
-    except EnvironmentError:
-        pass
+    res = iris // iris[0]
+    res_rows, res_cols = res.dim
+    assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
-    try:
-      res = iris[2] // iris
-      res.show()
-      assert False, "expected error. objects of different dimensions not supported."
-    except EnvironmentError:
-      pass
+    res = iris[2] // iris
+    res_rows, res_cols = res.dim
+    assert res_rows == rows and res_cols == 1, "dimension mismatch"
 
     #col/col
     res = iris[0] // iris[1]
@@ -49,12 +45,16 @@ def intdiv():
     assert res_rows == 150 and res_cols == 2, "dimension mismatch"
 
     try:
-      res = iris[:,0:2] // iris[:,0:1]
+      res = iris[:,0:3] // iris[:,0:2]
       res.show()
       assert False, "expected error. frames are different dimensions."
     except EnvironmentError:
       pass
 
-if __name__ == "__main__":
-    tests.run_test(sys.argv, intdiv)
 
+
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(intdiv)
+else:
+    intdiv()

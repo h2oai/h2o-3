@@ -35,6 +35,9 @@ abstract public class AST extends Iced<AST> {
   // binary operator like '+' actually has 3 nargs.
   abstract int nargs();
 
+  // Select columns by number or String.
+  int[] columns( String[] names ) {  throw new IllegalArgumentException("Requires a number-list, but found a "+getClass()); }
+
   // Built-in primitives, done after other namespace lookups happen
   static final HashMap<String,AST> PRIMS = new HashMap<>();
   static void init(AST ast) { PRIMS.put(ast.str(),ast); }
@@ -75,7 +78,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTNcol  ());
     init(new ASTNot   ());
     init(new ASTNrow  ());
-    init(new ASTPop());
     init(new ASTRound ());
     init(new ASTSgn());
     init(new ASTSignif());
@@ -93,7 +95,9 @@ abstract public class AST extends Iced<AST> {
     init(new ASTAnd ());
     init(new ASTDiv ());
     init(new ASTIntDiv());
+    init(new ASTIntDivR());
     init(new ASTMod ());
+    init(new ASTModR());
     init(new ASTMul ());
     init(new ASTOr  ());
     init(new ASTPlus());
@@ -165,15 +169,16 @@ abstract public class AST extends Iced<AST> {
     // Generic data mungers
     init(new ASTAnyFactor());
     init(new ASTAsFactor());
-    init(new ASTCharacter());
+    init(new ASTAsCharacter());
     init(new ASTAsNumeric());
     init(new ASTCBind());
     init(new ASTColNames());
     init(new ASTColSlice());
+    init(new ASTColPySlice());
     init(new ASTFilterNACols());
     init(new ASTFlatten());
     init(new ASTIsFactor());
-    init(new ASTAnyFactor());
+    init(new ASTRename());
     init(new ASTRBind());
     init(new ASTRowSlice());
     init(new ASTSetDomain());
@@ -186,6 +191,7 @@ abstract public class AST extends Iced<AST> {
 
     // Complex data mungers
     init(new ASTAssign());
+    init(new ASTAppend());
     init(new ASTCut());
     init(new ASTDdply());
     init(new ASTGroup());
@@ -194,12 +200,13 @@ abstract public class AST extends Iced<AST> {
 
     // String Ops
     init(new ASTStrSplit());
-    init(new ASTStrSub());
-    init(new ASTGSub());
+    init(new ASTReplaceFirst());
+    init(new ASTReplaceAll());
     init(new ASTTrim());
     init(new ASTToLower());
     init(new ASTCountMatches());
     init(new ASTToUpper());
+    init(new ASTStrLength());
 
     // Functional data mungers
     init(new ASTApply());
@@ -223,7 +230,8 @@ abstract public class AST extends Iced<AST> {
     init(new ASTStratifiedKFold());
   }
 
-  public static ASTId newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
+  public static ASTId  newASTFrame(Frame f){ return new ASTId(f._key.toString()); }
+  public static ASTStr newASTStr  (String s) { return new ASTStr(s); }
 }
 
 /** A number.  Execution is just to return the constant. */
@@ -231,6 +239,7 @@ class ASTNum extends ASTParameter {
   ASTNum( Exec e ) { super(e); }
   ASTNum( double d ) { super(d); }
   @Override public Val exec(Env env) { return _v; }
+  @Override int[] columns( String[] names ) { return new int[]{(int)_v.getNum()}; }
 }
 
 /** A String.  Execution is just to return the constant. */
@@ -240,6 +249,11 @@ class ASTStr extends ASTParameter {
   @Override public String str() { return _v.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override public Val exec(Env env) { return _v; }
   @Override public String toJavaString() { return "\"" + str() + "\""; }
+  @Override int[] columns( String[] names ) {
+    int i = water.util.ArrayUtils.find(names,_v.getStr());
+    if( i == -1 ) throw new IllegalArgumentException("Column "+_v.getStr()+" not found");
+    return new int[]{i};
+  }
 }
 
 /** A Frame.  Execution is just to return the constant. */
@@ -254,20 +268,21 @@ class ASTFrame extends AST {
 /** A Row.  Execution is just to return the constant. */
 class ASTRow extends AST {
   final ValRow _row;
-  ASTRow(double[] ds) { _row = new ValRow(ds); }
+  ASTRow(double[] ds, String[] names) { _row = new ValRow(ds,names); }
   @Override public String str() { return _row.toString(); }
   @Override public ValRow exec(Env env) { return _row; }
   @Override int nargs() { return 1; }
 }
 
 /** An ID.  Execution does lookup in the current scope. */
-class ASTId extends AST {
+class ASTId extends ASTParameter {
   final String _id;
   ASTId(Exec e) { _id = e.token(); }
   ASTId(String id) { _id=id; }
   @Override public String str() { return _id; }
   @Override public Val exec(Env env) { return env.lookup(_id); }
   @Override int nargs() { return 1; }
+  @Override public String toJavaString() { return "\"" + str() + "\""; }
 }
 
 /** A primitive operation.  Execution just returns the function.  *Application*

@@ -1,23 +1,10 @@
 #----------------------------------------------------------------------
 # Purpose:  This test exercises HDFS operations from R.
 #----------------------------------------------------------------------
-
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R')
-
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-myIP   <- ipPort[[1]]
-myPort <- ipPort[[2]]
+test <-
+function() {
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
-
-library(RCurl)
-library(testthat)
-library(h2o)
-
-heading("BEGIN TEST")
-h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
-h2o.removeAll()
 
 hdfs_data_file = "/datasets/airlinesbillion.csv"
 
@@ -54,4 +41,6 @@ data1.gbm
 print("Time it took to build GBM")
 print(gbm_10tree_time)
 
-PASS_BANNER()
+}
+
+doTest("Test", test)

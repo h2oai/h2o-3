@@ -27,6 +27,7 @@ import water.exceptions.H2OKeysNotFoundArgumentException;
 import water.fvec.Frame;
 import water.serial.ObjectTreeBinarySerializer;
 import water.util.FileUtils;
+import water.util.JCodeGen;
 
 class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
   /** Class which contains the internal representation of the models list and params. */
@@ -133,9 +134,9 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
 
   /** Return a single model. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelsV3 fetchPreview(int version, ModelsV3 s) {
+  public StreamingSchema fetchPreview(int version, ModelsV3 s) {
     s.preview = true;
-    return fetch(version, s);
+    return fetchJavaCode(version, s);
   }
 
   /** Return a single model. */
@@ -163,6 +164,13 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
     }
 
     return s;
+  }
+
+  public StreamingSchema fetchJavaCode(int version, ModelsV3 s) {
+    final Model model = getFromDKV("key", s.model_id.key());
+    final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".java";
+    // Return stream writer for given model
+    return new StreamingSchema(model.new JavaModelStreamWriter(s.preview), filename);
   }
 
   /** Remove an unlocked model.  Fails if model is in-use. */

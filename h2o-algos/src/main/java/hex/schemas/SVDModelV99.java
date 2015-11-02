@@ -6,8 +6,8 @@ import water.api.*;
 public class SVDModelV99 extends ModelSchema<SVDModel, SVDModelV99, SVDModel.SVDParameters, SVDV99.SVDParametersV99, SVDModel.SVDOutput, SVDModelV99.SVDModelOutputV99> {
   public static final class SVDModelOutputV99 extends ModelOutputSchema<SVDModel.SVDOutput, SVDModelOutputV99> {
     // Output fields; input fields are in the parameters list
-    @API(help = "Right singular vectors")
-    public double[][] v;
+    @API(help = "Frame key of right singular vectors")
+    public KeyV3.FrameKeyV3 v_key;
 
     @API(help = "Singular values")
     public double[] d;

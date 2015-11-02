@@ -36,7 +36,7 @@ import water.util.*;
 */
 public final class DHistogram extends Iced {
   public final transient String _name; // Column name (for debugging)
-  public final byte  _isInt;    // 0: float col, 1: int col, 2: enum & int col
+  public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
   public final char  _nbin;     // Bin count
   public final float _step;     // Linear interpolation step per bin
   public final float _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
@@ -173,7 +173,7 @@ public final class DHistogram extends Iced {
       final float maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
       final long vlen = v.length();
       hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null :
-        make(fr._names[c],nbins, nbins_cats, (byte)(v.isEnum() ? 2 : (v.isInt()?1:0)), minIn, maxEx);
+        make(fr._names[c],nbins, nbins_cats, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx);
       assert (hs[c] == null || vlen > 0);
     }
     return hs;
@@ -274,7 +274,7 @@ public final class DHistogram extends Iced {
     int idxs[] = null;          // and a reverse index mapping
 
     // For categorical (unordered) predictors, sort the bins by average
-    // prediction then look for an optimal split.  Currently limited to enums
+    // prediction then look for an optimal split.  Currently limited to categoricals
     // where we're one-per-bin.  No point for 3 or fewer bins as all possible
     // combinations (just 3) are tested without needing to sort.
     if( _isInt == 2 && _step == 1.0f && nbins >= 4 ) {

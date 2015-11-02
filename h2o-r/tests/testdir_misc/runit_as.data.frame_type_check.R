@@ -11,8 +11,8 @@
 #
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 # setupRandomSeed(1994831827)
 
@@ -46,7 +46,7 @@ data.frame.type.test <- function() {
    expect_that(typeof(df.prostate.FV[,8]), equals("double"))
    expect_that(typeof(df.prostate.FV[,9]), equals("integer"))
 
-   testEnd()
+   
 }
 
 doTest("Type check data frame", data.frame.type.test)

@@ -165,6 +165,22 @@ https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslist
 
 ---
 
+**Most machine learning tools cannot predict with a new categorical level that was not included in the training set. How does H2O make predictions in this scenario?**
+
+Here is an example of how the prediction process works in H2O: 
+
+0. Train a model using data that has a categorical predictor column with levels B,C, and D (no other levels); this level will be the "training set domain": {B,C,D}
+0. During scoring, the test set has only rows with levels A,C, and E for that column; this is the "test set domain": {A,C,E}
+0. For scoring, a combined "scoring domain" is created, which is the training domain appended with the extra test set domain entries: {B,C,D,A,E} 
+0. Each model can handle these extra levels {A,E} separately during scoring. 
+
+The behavior for unseen categorical levels depends on the algorithm and how it handles missing levels (NA values): 
+
+- DRF and GBM treat missing or NA factor levels as the smallest value present (left-most in the bins), which can go left or right for any split. Unseen factor levels always go left in any split. 
+- Deep Learning creates an extra input neuron for missing and unseen categorical levels, which can remain untrained if there were no missing or unseen categorical levels in the training data, resulting in a random contribution to the next layer during testing. 
+- GLM skips unseen levels in the beta*x dot product. 
+
+---
 
 ##Building H2O
 
@@ -272,6 +288,29 @@ To avoid using 127.0.0.1 on servers with multiple local IP addresses, run the co
 
 ---
 
+**How does the timeline tool work?**
+
+The timeline is a debugging tool that provides information on the current communication between H2O nodes. It shows a snapshot of the most recent messages passed between the nodes. Each node retains its own history of messages sent to or received from other nodes. 
+
+H2O collects these messages from all the nodes and orders them by whether they were sent or received. Each node has an implicit internal order where sent messages must precede received messages on the other node. 
+
+The following information displays for each message: 
+
+- `HH:MM:SS:MS` and `nanosec`: The local time of the event
+- `Who`: The endpoint of the message; can be either a source/receiver node or source node and multicast for broadcasted messages
+- `I/O Type`: The type of communication (either UDP for small messages or TCP for large messages)
+   >**Note**: UDP messages are only sent if the UDP option was enabled when launching H2O or for multicast when a flatfile is not used for configuration. 
+- `Event`: The type of H2O message. The most common type is a distributed task, which displays as `exec` (the requested task) -> `ack` (results of the processed task) -> `ackck` (sender acknowledges receiving the response, task is completed and removed)
+- `rebooted`: Sent during node startup 
+- `heartbeat`: Provides small message tracking information about node health, exchanged periodically between nodes
+- `fetchack`: Aknowledgement of the `Fetch` type task, which retrieves the ID of a previously unseen type
+- `bytes`: Information extracted from the message, including the type of the task and the unique task number 
+
+
+
+---
+
+
 ##Data
 
 **How should I format my SVMLight data before importing?**
@@ -311,6 +350,15 @@ Currently, H2O supports:
 - String
 
 ---
+
+**I am trying to parse a Gzip data file containing multiple files, but it does not parse as quickly as the uncompressed files. Why is this?**
+
+Parsing Gzip files is not done in parallel, so it is sequential and uses only one core. Other parallel parse compression schemes are on the roadmap. 
+
+
+
+---
+
 
 ##General
 
@@ -529,6 +577,14 @@ In-H2O scoring is triggered on an existing H2O cluster, typically using a REST A
 
 ---
 
+**I am using an older version of H2O (2.8 or prior) - where can I find documentation for this version?**
+
+If you are using H2O 2.8 or prior, we strongly recommend <a href="http://h2o.ai/download/" target="_blank">upgrading to the latest version of H2O</a> if possible. 
+
+If you do not wish to upgrade to the latest version, documentation for H2O Classic is available [here](http://docs.h2o.ai/h2oclassic/index.html). 
+
+---
+
 ##Hadoop
 
 
@@ -551,7 +607,16 @@ h2o.saveModel(model, dir = model_path, name = “mymodel")
 
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
-Currently, this is not yet supported. To provide resource isolation (for example, to isolate H2O to the worker nodes, rather than the master nodes), use YARN Nodemanagers to specify the nodes to use. 
+After creating and applying the desired node labels and associating them with specific queues as described in the [Hadoop documentation](http://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.2.0/YARN_RM_v22/node_labels/index.html#Item1.1), launch H2O using the following command: 
+
+`hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName`
+
+
+- `-Dmapreduce.job.queuename=<my-h2o-queue>` represents the queue name
+- `-nodes <num-nodes>` represents the number of nodes
+- `-mapperXmx 6g` launches H2O with 6g of memory
+- `-output hdfsOutputDirName` specifies the HDFS output directory as `hdfsOutputDirName`
+
 
 ---
 
@@ -756,12 +821,40 @@ After completing this procedure, go to Python and use `h2o.init()` to start H2O 
 Refer to the following example: 
 
 ```
-fraw = h2o.import_file("smalldata/logreg/prostate.csv") 
+#Let's say you want to change the second column "CAPSULE" of prostate.csv
+#to categorical. You have 3 options.
+
+#Option 1. Use a dictionary of column names to types. 
+fr = h2o.import_file("smalldata/logreg/prostate.csv", col_types = {"CAPSULE":"Enum"})
+fr.describe()
+
+#Option 2. Use a list of column types.
+c_types = [None]*9
+c_types[1] = "Enum"
+fr = h2o.import_file("smalldata/logreg/prostate.csv", col_types = c_types)
+fr.describe()
+
+#Option 3. Use parse_setup().
+fraw = h2o.import_file("smalldata/logreg/prostate.csv", parse = False)
 fsetup = h2o.parse_setup(fraw) 
-fsetup["column_types"][1] = "Enum" # change second column "CAPSULE" to categorical 
+fsetup["column_types"][1] = '"Enum"'
 fr = h2o.parse_raw(fsetup) 
 fr.describe()
 ```
+
+---
+
+**How do I view a list of variable importances in Python?**
+
+Use `model.varimp(return_list=True)` as shown in the following example:
+
+```
+model = h2o.gbm(y = "IsDepDelayed", x = ["Month"], training_frame = df)
+vi = model.varimp(return_list=True)
+Out[26]:
+[(u'Month', 69.27436828613281, 1.0, 1.0)]
+```
+
 
 
 ---
@@ -812,15 +905,8 @@ Look for the following output to confirm the changes:
 **I received the following error message after launching H2O in RStudio and using `h2o.init` - what should I do to resolve this error?**
 
 ```
-> localH2O = h2o.init()
-Successfully connected to http://127.0.0.1:54321/
- 
-ERROR: Unexpected HTTP Status code: 301 Moved Permanently (url = http://127.0.0.
-1:54321/3/Cloud?skip_ticks=true)
- 
-Error in fromJSON(rv$payload) : unexpected character '<'
-Calls: h2o.init ... gsub -> .h2o.doSafeGET -> .h2o.doSafeREST -> fromJSON
-Execution halted 
+Error in h2o.init() : 
+Version mismatch! H2O is running version 3.2.0.9 but R package is version 3.2.0.3
 ```
 
 This error is due to a version mismatch between the H2O package and the running H2O instance. Make sure you are using the latest version of both files by downloading H2O from the [downloads page](http://h2o.ai/download/) and installing the latest version and that you have removed any previous H2O R package versions by running: 
@@ -849,7 +935,7 @@ Finally, install the latest version of the H2O package for R:
 ```
 install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/R")))
 library(h2o)
-localH2O = h2o.init()
+localH2O = h2o.init(nthreads=-1)
 ```
 
 ---
@@ -1033,6 +1119,47 @@ You need to add the `col.names` inside the `gb.control` list. Refer to the follo
 newframe <- h2o.group_by(dd, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"),
     sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
 newframe$avg_email_event_click_ct2 = newframe$total_email_event_click_ct / newframe$count
+```
+
+---
+
+**How are the results of `h2o.predict` displayed?**
+
+
+The order of the rows in the results for `h2o.predict` is the same as the order in which the data was loaded, even if some rows fail (for example, due to missing values or unseen factor levels). To bind a per-row identifier, use `cbind`. 
+
+---
+
+**How do I view all the variable importances for a model?**
+
+By default, H2O returns the top five and lowest five variable importances. 
+To view all the variable importances, use the following: 
+
+```
+model <- h2o.getModel(model_id = "my_H2O_modelID",conn=localH2O)
+
+varimp<-as.data.frame(h2o.varimp(model))
+```
+
+
+---
+
+**How do I add random noise to a column in an H2O frame?**
+
+To add random noise to a column in an H2O frame, refer to the following example: 
+
+```
+h2o.init()
+
+fr <- as.h2o(iris)
+
+  |======================================================================| 100%
+
+random_column <- h2o.runif(fr)
+
+new_fr <- h2o.cbind(fr,random_column)
+
+new_fr
 ```
 
 

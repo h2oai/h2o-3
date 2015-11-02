@@ -371,9 +371,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Training/Validation share the same data, but will have exclusive weights
       cvTrain[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      if (origWeightsName!=null) cvTrain[i].remove(origWeightsName);
       cvTrain[i].add(weightName, weights[2*i]);
       DKV.put(cvTrain[i]);
       cvValid[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      if (origWeightsName!=null) cvValid[i].remove(origWeightsName);
       cvValid[i].add(weightName, weights[2*i+1]);
       DKV.put(cvValid[i]);
     }
@@ -392,7 +394,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for (int i=0; i<N; ++i) {
       if (isCancelledOrCrashed()) break;
-      Log.info("Building cross-validation model " + (i+1) + " / " + N + ".");
 
       // Shallow clone - not everything is a private copy!!!
       cvModelBuilders[i] = (ModelBuilder<M, P, O>) this.clone();
@@ -403,12 +404,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cvModelBuilders[i].cvModelBuilderKeys = null; //children cannot have children
       cvModelBuilders[i]._dest = modelKeys[i]; // the model_id gets updated as well in modifyParmsForCrossValidationSplits (must be consistent)
       cvModelBuilders[i]._state = JobState.CREATED;
-      cvModelBuilders[i]._parms =  (P)_parms.clone();
+      cvModelBuilders[i]._parms = (P) _parms.clone();
       cvModelBuilders[i]._parms._weights_column = weightName;
       cvModelBuilders[i]._parms._train = cvTrain[i]._key;
       cvModelBuilders[i]._parms._valid = cvValid[i]._key;
       cvModelBuilders[i]._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
       cvModelBuilders[i].modifyParmsForCrossValidationSplits(i, N, _parms._model_id);
+    }
+    for (int i=0; i<N; ++i) {
+      cvModelBuilders[i].init(false);
+      if (cvModelBuilders[i].error_count() > 0) {
+        _messages = cvModelBuilders[i]._messages; //bail out on first failure -> main job gets the failed N-fold CV job's error message
+        updateValidationMessages();
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(cvModelBuilders[i]);
+      }
+    }
+    for (int i=0; i<N; ++i) {
+      if (isCancelledOrCrashed()) break;
+      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
       cvModelBuilders[i]._start_time = System.currentTimeMillis();
       cvModelBuilders[i].trainModelImpl(-1, true); //non-blocking
       if (!async)
@@ -430,7 +443,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
 
-      modifyParmsForCrossValidationMainModel(N); //tell the main model that it shouldn't stop early either
+      modifyParmsForCrossValidationMainModel(N, async ? null : cvModelBuilderKeys); //tell the main model that it shouldn't stop early either
 
       trainModelImpl(-1, false); //non-blocking
       if (!async)
@@ -526,7 +539,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * For example, the model might need to be told to not do early stopping.
    * @param N Total number of cross-validation folds
    */
-  public void modifyParmsForCrossValidationMainModel(int N) {
+  public void modifyParmsForCrossValidationMainModel(int N, Key<Model>[] cvModelKeys) {
 
   }
 
@@ -589,7 +602,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public int nclasses(){return _nclass;}
 
-  public final boolean isClassifier() { return _nclass > 1; }
+  public final boolean isClassifier() { return nclasses() > 1; }
 
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
@@ -684,6 +697,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   protected  boolean ignoreStringColumns(){return true;}
+  protected  boolean ignoreConstColumns(){return true;}
 
   /**
    * Ignore constant columns, columns with all NAs and strings.
@@ -692,9 +706,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected void ignoreBadColumns(int npredictors, boolean expensive){
     // Drop all-constant and all-bad columns.
-    if( _parms._ignore_const_cols)
+    if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad() || (ignoreStringColumns() && v.isString()); }
+        @Override protected boolean filter(Vec v) {
+          return (ignoreConstColumns() && v.isConst()) || v.isBad() || (ignoreStringColumns() && v.isString()); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
   }
   /**
@@ -801,9 +816,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_train","There are no usable columns to generate model");
 
     if(isSupervised()) {
-
       if(_response != null) {
-        _nclass = _response.isEnum() ? _response.cardinality() : 1;
+        _nclass = _response.isCategorical() ? _response.cardinality() : 1;
         if (_response.isConst())
           error("_response","Response cannot be constant.");
       }
@@ -821,7 +835,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column parameter not set.");
           return;
         }
-
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
             MRUtils.ClassDist cdmt =
@@ -866,7 +879,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // Build the validation set to be compatible with the training set.
-    // Toss out extra columns, complain about missing ones, remap enums
+    // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
@@ -894,12 +907,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_checkpoint", "Checkpoint has to point to existing model!");
     }
 
-    assert(_weights != null == hasWeightCol());
-    assert(_parms._weights_column != null == hasWeightCol());
-    assert(_offset != null == hasOffsetCol());
-    assert(_parms._offset_column != null == hasOffsetCol());
-    assert(_fold != null == hasFoldCol());
-    assert(_parms._fold_column != null == hasFoldCol());
+    if (_parms._stopping_tolerance < 0) {
+      error("_stopping_tolerance", "Stopping tolerance must be >= 0.");
+    }
+    if (_parms._stopping_tolerance >= 1) {
+      error("_stopping_tolerance", "Stopping tolerance must be < 1.");
+    }
+    if (_parms._stopping_rounds == 0) {
+      hide("_stopping_metric", "Stopping metric is ignored for _stopping_rounds=0.");
+      hide("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
+    } else if (_parms._stopping_rounds < 0) {
+      error("_stopping_rounds", "Stopping rounds must be >= 0.");
+    } else {
+      if (isClassifier()) {
+        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance) {
+          error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
+        }
+        if (nclasses()!=2 && _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC) {
+          error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
+        }
+      } else {
+        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss)
+        {
+          error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+        }
+      }
+    }
   }
 
   public void checkDistributions() {

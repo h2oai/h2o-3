@@ -1,12 +1,16 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def multi_dim_slicing():
     # Connect to a pre-existing cluster
     
 
-    prostate = h2o.import_file(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
     # prostate[int,int] case
     # 48,0,68,1,2,1,12.3,16.3,8
@@ -53,5 +57,9 @@ def multi_dim_slicing():
     assert pros[2,1] == 75, "Incorrect slicing result"
     assert pros[2,2] == 1, "Incorrect slicing result"
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, multi_dim_slicing)
+    pyunit_utils.standalone_test(multi_dim_slicing)
+else:
+    multi_dim_slicing()

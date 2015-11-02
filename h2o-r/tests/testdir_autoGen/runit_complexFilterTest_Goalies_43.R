@@ -3,8 +3,8 @@
 # gitHash: 2581a0dfa12a51892283830529a5126ea49f0cb9
 # SEED: 2481425483200553751
 ##
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 complexFilterTest_Goalies_43 <- function() {
     Log.info("A munge-task R unit test on data <Goalies> testing the functional unit <['!', '!=', '&', '>=', '|', '>=']> ")
     Log.info("Uploading Goalies")
@@ -13,6 +13,6 @@ complexFilterTest_Goalies_43 <- function() {
     filterHex <- hex[!( ( hex[,c("PostSHO")] != 5.86538292444 ) & ( hex[,c("W")] >= 5.12738355475 ) | ( ( hex[,c("PostGA")] >= 31.6363447616 )) ),]
     filterHex <- hex[!( ( hex[,c("ENG")] != 9.78570671214 ) & ( hex[,c("PostENG")] >= 0.175569994546 ) | ( ( hex[,c("GA")] >= 8.04089068384 )) ), c("GA","PostT","L","PostMin","PostW","PostENG","ENG","PostSHO","PostL","GP","PostGA","year")]
     filterHex <- hex[!( ( hex[,c("ENG")] != 9.78570671214 ) & ( hex[,c("PostENG")] >= 0.175569994546 ) | ( ( hex[,c("GA")] >= 8.04089068384 )) ), c("tmID","lgID","T/OL","Min","stint","PostSA","PostGP","W","SHO","playerID","SA")]
-testEnd()
+
 }
 doTest("compoundFilterTest_ on data Goalies unit= ['!', '!=', '&', '>=', '|', '>=']", complexFilterTest_Goalies_43)

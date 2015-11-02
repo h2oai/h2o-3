@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub_208 <- function() {
 
@@ -24,7 +24,7 @@ expect_true(is.factor(hex$col1))
 expect_true(is.factor(hex$col2))
 expect_true(is.factor(hex$col5))
 
-testEnd()
+
 
 }
 

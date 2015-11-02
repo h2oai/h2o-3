@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub_636_column_references <- function() {
 
@@ -56,7 +56,7 @@ expect_equal(as.data.frame(prostate.hex$VOL[100])[[1]], as.data.frame(prostate.h
 expect_equal(as.data.frame(prostate.hex$GLEASON[100])[[1]], as.data.frame(prostate.hex$AGE[100])[[1]])
 
 
-testEnd()
+
 
 }
 

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.nbayes.init_err <- function() {
   Log.info("Importing iris_wheader.csv data...\n")
@@ -16,7 +16,7 @@ test.nbayes.init_err <- function() {
   Log.info("Response column is not categorical")
   expect_error(h2o.naiveBayes(x = 1:3, y = 4, training_frame = iris.hex))
   
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Test: Test handling of bad initial parameters", test.nbayes.init_err)

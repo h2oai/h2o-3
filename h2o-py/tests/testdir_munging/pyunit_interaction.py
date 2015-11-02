@@ -1,12 +1,12 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
 
 def interaction_check():
     # Connect to a pre-existing cluster
-    
-
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
     # add a couple of factor columns to iris
     iris = iris.cbind(iris[4] == "Iris-setosa")
@@ -22,9 +22,9 @@ def interaction_check():
     assert two_way_interactions.nrow == 150 and two_way_interactions.ncol == 3, \
         "Expected 150 rows and 3 columns, but got {0} rows and {1} " \
         "columns".format(two_way_interactions.nrow, two_way_interactions.ncol)
-    levels1 = two_way_interactions[0].levels()
-    levels2 = two_way_interactions[1].levels()
-    levels3 = two_way_interactions[2].levels()
+    levels1 = two_way_interactions.levels()[0]
+    levels2 = two_way_interactions.levels()[1]
+    levels3 = two_way_interactions.levels()[2]
 
     assert levels1 == ["Iris-setosa_1", "Iris-versicolor_0", "Iris-virginica_0"], \
         "Expected the following levels {0}, but got {1}".format(["Iris-setosa_1", "Iris-versicolor_0", "Iris-virginica_0"],
@@ -41,9 +41,9 @@ def interaction_check():
     assert two_way_interactions.nrow == 150 and two_way_interactions.ncol == 3, \
         "Expected 150 rows and 3 columns, but got {0} rows and {1} " \
         "columns".format(two_way_interactions.nrow, two_way_interactions.ncol)
-    levels1 = two_way_interactions[0].levels()
-    levels2 = two_way_interactions[1].levels()
-    levels3 = two_way_interactions[2].levels()
+    levels1 = two_way_interactions.levels()[0]
+    levels2 = two_way_interactions.levels()[1]
+    levels3 = two_way_interactions.levels()[2]
 
     assert levels1 == ["Iris-setosa_1", "Iris-versicolor_0", "Iris-virginica_0"], \
         "Expected the following levels {0}, but got {1}".format(["Iris-setosa_1", "Iris-versicolor_0", "Iris-virginica_0"],
@@ -56,5 +56,9 @@ def interaction_check():
 
     #TODO: allow factors to be list of lists
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, interaction_check)
+    pyunit_utils.standalone_test(interaction_check)
+else:
+    interaction_check()

@@ -1,6 +1,6 @@
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # use this for interactive setup
 #        library(h2o)
@@ -22,7 +22,7 @@ test.null_tofrom <- function() {
     b.h2o <- a.h2o$"3" # doesn't exist
     expect_that(is.null(b.h2o), equals(T))
 
-    testEnd()
+    
 }
 
 doTest("Test null_tofrom.", test.null_tofrom)

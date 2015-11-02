@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.parse.mismatching.col.length <- function(){
 
@@ -9,7 +9,7 @@ test.parse.mismatching.col.length <- function(){
 
   expect_equal(expected, actual)
 
-  testEnd()
+  
 }
 
 doTest("Testing Parsing of Mismatching Header and Data length", test.parse.mismatching.col.length)

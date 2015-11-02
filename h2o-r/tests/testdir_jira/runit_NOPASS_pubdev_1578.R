@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pubdev.1578 <- function() {
   Log.info("Importing prostate data...")
@@ -9,7 +9,7 @@ test.pubdev.1578 <- function() {
 
   expect_equal(glm.model.A@model, glm.model.B@model)
 
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1578: GLM models are different", test.pubdev.1578)

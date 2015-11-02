@@ -3,9 +3,9 @@
 # Ensure that the number of rows scored in the CM for binary classes is == number of rows in the dataset
 ######################################################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-source('../h2o-runit.R')
+
 
 test.pub.767 <- function() {
   Log.info('Importing the altered prostatetype data from smalldata.')
@@ -27,7 +27,7 @@ test.pub.767 <- function() {
 
 
   expect_equal(sum(h2o.confusionMatrix(m)[3,1:2]), nrow(prostate))
-  testEnd()
+  
 }
 
 doTest("PUB-767: randomForest on discontinuous integer classes.", test.pub.767)

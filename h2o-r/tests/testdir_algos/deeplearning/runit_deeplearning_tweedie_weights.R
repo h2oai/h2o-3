@@ -1,7 +1,7 @@
 ####### This tests weights in deeplearning for tweedie by comparing results with expected behaviour  ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 
@@ -65,7 +65,7 @@ test <- function() {
 	expect_equal(0.02265921, min(ph[,1]), tolerance=1e-1 )
 	expect_equal(0.0717, max(ph[,1]), tolerance=1e-1 )
 		
-	testEnd()
+	
 }
 doTest("Deeplearning weight Test: deeplearning w/ weights for tweedie distribution", test)
 

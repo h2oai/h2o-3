@@ -45,7 +45,7 @@ class SVMLightParser extends Parser {
 
   @SuppressWarnings("fallthrough")
   @Override public final ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
-      ValueString _str = new ValueString();
+      BufferedString _str = new BufferedString();
       byte[] bits = din.getChunkData(cidx);
       if( bits == null ) return dout;
       final byte[] bits0 = bits;  // Bits for chunk0

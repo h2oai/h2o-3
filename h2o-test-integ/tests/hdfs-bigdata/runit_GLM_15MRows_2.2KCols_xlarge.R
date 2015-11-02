@@ -3,22 +3,10 @@
 # Purpose:  This test exercises building 15MRows2KCols
 #             
 #----------------------------------------------------------------------
-
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R') 
-
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-myIP   <- ipPort[[1]]
-myPort <- ipPort[[2]]
+test <-
+function() {
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
-
-library(RCurl)
-library(h2o)
-
-heading("BEGIN TEST")
-h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
-h2o.removeAll()
 
 hdfs_data_file = "/datasets/15Mx2.2k.csv"
 #----------------------------------------------------------------------
@@ -40,5 +28,7 @@ mdl.glm
 print("Time it took to build GLM")
 print(glm_time)
 
-PASS_BANNER()
+}
+
+doTest("Test", test)
 

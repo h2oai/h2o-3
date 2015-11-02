@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.cm.valid <- function() {
   Log.info("Creating a binomial GBM model...")
@@ -55,7 +55,7 @@ test.cm.valid <- function() {
   Log.info("Negative testcases...")
   expect_error(h2o.confusionMatrix(pros.gbm, valid = TRUE, newdata = pros.test))
   expect_error(h2o.confusionMatrix(iris.glm, thresholds = 0.5))
-  testEnd()
+  
 }
 
 doTest("Testing h2o.confusionMatrix on a model with validation frame", test.cm.valid)

@@ -1,10 +1,14 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def test_as_data():
-  hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
-  print hdf.head()
+  hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
+  hdf.head()
 
   # NB: columns 1,5 are currently unsupported as date types
   # that is, h2o cannot understand:
@@ -51,7 +55,7 @@ def test_as_data():
   hdf["idx10"] = hdf["ds10"].year() * 12 + hdf["ds10"].month()
 
   # frames
-  hdf = h2o.import_file(path=h2o.locate("smalldata/jira/v-11.csv"))
+  hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
   hdf["ds9"] = hdf["ds9"].asfactor()
 
   hdf5 = hdf["ds5"]
@@ -68,5 +72,9 @@ def test_as_data():
   hdf9 = hdf9.as_date("%Y%m%d")
   hdf10 = hdf10.as_date("%Y_%m_%d")
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, test_as_data)
+  pyunit_utils.standalone_test(test_as_data)
+else:
+  test_as_data()

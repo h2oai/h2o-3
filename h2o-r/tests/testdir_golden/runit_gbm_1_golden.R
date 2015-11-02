@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.gbmMSEgauss.golden <- function() {
 	
@@ -31,7 +31,7 @@ expect_equal(fith2o@model$init_f, mean(smtreesH2O$vol), tolerance=1e-4) ## check
 expect_equal(REPMSE, EXPMSE, tolerance=1e-4)
 expect_equal(REPMSE>0, TRUE);
 
-testEnd()
+
 }
 
 doTest("GBM Test: Golden GBM - MSE for GBM Regression", test.gbmMSEgauss.golden)

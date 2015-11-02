@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.gbm.imbalanced <- function() {
   covtype <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
@@ -22,7 +22,7 @@ test.gbm.imbalanced <- function() {
 
   expect_true(class_6_err_imbalanced >= 0.99*class_6_err_balanced, "balance_classes makes it at least 1% worse!")
 
-  testEnd()
+  
 }
 
 doTest("GBM imbalanced", test.gbm.imbalanced)

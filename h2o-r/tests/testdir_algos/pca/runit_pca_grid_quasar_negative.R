@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.pca.grid.quasar.negative <- function() {
   quasar <- h2o.importFile(locate("smalldata/pca_test/SDSS_quasar.txt.zip"), header = TRUE)
@@ -45,7 +45,7 @@ check.pca.grid.quasar.negative <- function() {
                   " (1:pca_method, 2:seed, 3:use_all_factor_levels). Expecting failure..."))
   expect_error(quasar_pca_grid <- h2o.grid("pca", grid_id="pca_grid_quasar_test", x=1:22, k=3, training_frame=quasar, hyper_params=grid_space, do_hyper_params_check=TRUE))
 
-  testEnd()
+  
 }
 
 doTest("PCA Grid Search using bad parameters", check.pca.grid.quasar.negative)

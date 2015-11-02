@@ -1,13 +1,10 @@
 package water.util;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-
+import org.eclipse.jetty.io.EofException;
 import water.Key;
+
+import java.io.*;
+import java.net.URI;
 
 /**
  * File utilities.
@@ -26,13 +23,16 @@ public class FileUtils {
   public static void copyStream(InputStream is, OutputStream os, final int buffer_size) {
     try {
       byte[] bytes=new byte[buffer_size];
-      for(;;)
+      while( is.available() > 0 )
       {
         int count=is.read(bytes, 0, buffer_size);
         if(count<=0)
           break;
         os.write(bytes, 0, count);
       }
+    }
+    catch(EofException eofe) {
+      // no problem
     }
     catch(Exception ex) {
       throw new RuntimeException(ex);

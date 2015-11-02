@@ -303,7 +303,7 @@ public class JettyHTTPD {
           throw new Exception("NPS value size exceeds Integer.MAX_VALUE");
         }
         response.setContentType("application/octet-stream");
-        response.setContentLength((int)length.get());
+        response.setContentLength((int) length.get());
         response.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
         setResponseStatus(response, HttpServletResponse.SC_OK);
         OutputStream os = response.getOutputStream();
@@ -633,8 +633,13 @@ public class JettyHTTPD {
         }
 
         OutputStream os = response.getOutputStream();
-        InputStream is = resp.data;
-        FileUtils.copyStream(is, os, 1024);
+        if (resp instanceof NanoHTTPD.StreamResponse) {
+          NanoHTTPD.StreamResponse ssr = (NanoHTTPD.StreamResponse) resp;
+          ssr.streamWriter.writeTo(os);
+        } else {
+          InputStream is = resp.data;
+          FileUtils.copyStream(is, os, 1024);
+        }
       } finally {
         logRequest(method, request, response);
         // Handle shutdown if it was requested.
@@ -642,7 +647,9 @@ public class JettyHTTPD {
           (new Thread() {
             public void run() {
               boolean [] confirmations = new boolean[H2O.CLOUD.size()];
-              confirmations[H2O.SELF.index()] = true;
+              if (H2O.SELF.index() >= 0) {
+                confirmations[H2O.SELF.index()] = true;
+              }
               for(H2ONode n:H2O.CLOUD._memary) {
                 if(n != H2O.SELF)
                   new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call();

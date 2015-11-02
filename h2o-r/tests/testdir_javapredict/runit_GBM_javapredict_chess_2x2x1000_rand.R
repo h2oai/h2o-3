@@ -7,45 +7,31 @@
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
 
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
 
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
+test.gbm.javapredict.chess <-
+function() {
+    #----------------------------------------------------------------------
+    # Parameters for the test.
+    #----------------------------------------------------------------------
+    training_file <- locate("smalldata/chess/chess_2x2x1000/train.csv")
+    test_file <- locate("smalldata/chess/chess_2x2x1000/test.csv")
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
 
-heading("Choose random parameters")
+    params                 <- list()
+    params$ntrees          <- sample(100, 1)
+    params$max_depth       <- sample(10, 1)
+    params$min_rows        <- sample(5, 1)
+    params$learn_rate      <- sample(c(0.001, 0.002, 0.01, 0.02, 0.1, 0.2), 1)
+    params$x               <- c("x", "y")
+    params$y               <- "color"
+    params$training_frame  <- training_frame
 
-n.trees <- sample(100, 1)
-print(paste("n.trees", n.trees))
+    #----------------------------------------------------------------------
+    # Run the test
+    #----------------------------------------------------------------------
+    doJavapredictTest("gbm",test_file,test_frame,params)
+}
 
-interaction.depth <- sample(10, 1)
-print(paste("interaction.depth", interaction.depth))
-
-n.minobsinnode <- sample(5, 1)
-print(paste("n.minobsinnode", n.minobsinnode))
-
-shrinkage <- sample(c(0.001, 0.002, 0.01, 0.02, 0.1, 0.2), 1)
-print(paste("shrinkage", shrinkage))
-
-train <- locate("smalldata/chess/chess_2x2x1000/train.csv")
-print(paste("train", train))
-
-test <- locate("smalldata/chess/chess_2x2x1000/test.csv")
-print(paste("test", test))
-
-x = c("x", "y")
-print("x")
-print(x)
-
-y = "color"
-print(paste("y", y))
-
-
-#----------------------------------------------------------------------
-# Run the test
-#----------------------------------------------------------------------
-source('../Utils/shared_javapredict_GBM.R')
+doTest("GBM test", test.gbm.javapredict.chess)

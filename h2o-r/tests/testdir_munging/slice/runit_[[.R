@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.columndereference <- function() {
   Log.info('test column dereference')
@@ -21,7 +21,7 @@ test.columndereference <- function() {
   ldf <- as.data.frame( hdf[[ column ]] )[,1]
   expect_that(ldf, equals(c(2,4,6,11,3,4,6,11,2,4,6,11)) )
 
-  testEnd()
+  
 }
 
 doTest("test column dereference and assignment", test.columndereference)

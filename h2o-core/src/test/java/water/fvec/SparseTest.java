@@ -19,7 +19,7 @@ public class SparseTest extends TestUtil {
     int j = 0;
     for(double d:vals)if(d != 0)nonzeros[nzs++] = j++;
     Key key = Vec.newKey();
-    AppendableVec av = new AppendableVec(key);
+    AppendableVec av = new AppendableVec(key, Vec.T_NUM);
     NewChunk nv = new NewChunk(av,0);
     for(double d:vals){
       if(Double.isNaN(d))nv.addNA();
@@ -27,7 +27,7 @@ public class SparseTest extends TestUtil {
       else nv.addNum(d);
     }
     nv.close(0,fs);
-    Vec vec = av.close(fs);
+    Vec vec = av.layout_and_close(fs);
     return vec.chunkForChunkIdx(0);
   }
 

@@ -6,7 +6,7 @@
 
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_http_daemon")
 
-source('../h2o-runit.R')
+
 
 check.log_and_echo <- function() {
 
@@ -38,7 +38,7 @@ check.log_and_echo <- function() {
       stop("Not 10000")
   }
 
-  testEnd()
+  
 }
 
 doTest("POST log and echo tests", check.log_and_echo)

@@ -1,19 +1,23 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def vec_scaler_comparisons():
     # Connect to a pre-existing cluster
-    
 
-    air = h2o.import_file(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
+
+    air = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
     rows, cols = air.dim
 
     ## H2OVec/scaler
     # ==
     row_sum = 0
-    levels = air.levels(16)
-    for level in levels:
+    levels = air[16].levels()
+    for level in levels[0]:
        r, c = air[air["Origin"] == str(level)].dim
        row_sum += r
     assert row_sum == rows, "expected equal number of rows"
@@ -42,7 +46,7 @@ def vec_scaler_comparisons():
     ## scaler/H2OVec
     # ==
     row_sum = 0
-    for level in levels:
+    for level in levels[0]:
        r, c = air[str(level) == air["Origin"]].dim
        row_sum += r
     assert row_sum == rows, "expected equal number of rows"
@@ -68,5 +72,9 @@ def vec_scaler_comparisons():
     l_rows, l_cols = l.dim
     assert (l_rows + G_rows) == rows and l_cols == G_cols == cols, "expected equal number of rows and cols"
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, vec_scaler_comparisons)
+    pyunit_utils.standalone_test(vec_scaler_comparisons)
+else:
+    vec_scaler_comparisons()

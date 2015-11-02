@@ -8,7 +8,15 @@ package water.api;
  * request.
  */
 enum RequestType {
-  json , // json type request, a result is a JSON structure
+  json {
+    @Override
+    String requestName(String url) {
+      String s = "." + toString();
+      int i = url.indexOf(s);
+      if( i== -1 ) return url;    // No, or default, type
+      return url.substring(0,i)+url.substring(i+s.length());
+    }
+  }, // json type request, a result is a JSON structure
   html , // webpage request
   help , // should display the help on the given request
   query, // Displays the query for the argument in html mode
@@ -38,9 +46,6 @@ enum RequestType {
   /** Returns the name of the request, that is the request url without the
    *  request suffix.  E.g. converts "/GBM.html/crunk" into "/GBM/crunk" */
   String requestName(String url) {
-    String s = "."+toString();
-    int i = url.indexOf(s);
-    if( i== -1 ) return url;    // No, or default, type
-    return url.substring(0,i)+url.substring(i+s.length());
+    return url;
   }
 }

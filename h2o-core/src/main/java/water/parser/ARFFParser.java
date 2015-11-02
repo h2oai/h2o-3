@@ -147,7 +147,7 @@ class ARFFParser extends CsvParser {
           continue;
         }
         else if (type.equalsIgnoreCase("ENUM")) {
-          ctypes[i] = Vec.T_ENUM;
+          ctypes[i] = Vec.T_CAT;
           continue;
         }
         else if (type.equalsIgnoreCase("STRING")) {
@@ -169,7 +169,7 @@ class ARFFParser extends CsvParser {
           domains[i] = builder.toString().replaceAll("[{}]", "").split(",");
           if (domains[i][0].length() > 0) {
             // case of {A,B,C} (valid list of factors)
-            ctypes[i] = Vec.T_ENUM;
+            ctypes[i] = Vec.T_CAT;
             continue;
           }
         }

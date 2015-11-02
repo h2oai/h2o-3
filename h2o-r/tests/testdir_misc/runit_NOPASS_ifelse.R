@@ -3,7 +3,7 @@
 # Description: push a dataset into H2O and convert column using ifelse
 ##
 
-source('../h2o-runit.R')
+
 
 test.ifelse <- function() {
   
@@ -16,7 +16,7 @@ test.ifelse <- function() {
   
   if(!all(heart$surgery == as.data.frame(heart.hex$surgery))) stop("Conversion of column different between h2o and base ifelse function!")
   
-  testEnd()
+  
 }
 
 doTest("R and H2O ifelse Function", test.ifelse)

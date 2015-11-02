@@ -1,6 +1,6 @@
 ### This tests observation weights in glm ######
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 # TODO: Deduplicate code for lambda=0 and lambda>=0 cases
 
 test_weights_vs_glmnet <- function() {
@@ -127,7 +127,7 @@ test_weights_vs_glmnet <- function() {
                 type = "response")
   expect_equal(mean(pr), mean(ph3$predict), tolerance = 0.01)
   
-  testEnd()
+  
 }
 
 doTest("GLM weight Test: GLM w/ weights vs glmnet", test_weights_vs_glmnet)

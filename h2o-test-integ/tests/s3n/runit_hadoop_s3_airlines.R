@@ -1,13 +1,9 @@
 #-----------------------------------------------------------------------
 # Purpose:  This test shows import from s3 and hdfs from Hadoop cluster.
 #-----------------------------------------------------------------------
+test <-
+function() {
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R')
-
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-myIP   <- ipPort[[1]]
-myPort <- ipPort[[2]]
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
 aws_id <- Sys.getenv(c("AWS_ID"))
@@ -15,13 +11,6 @@ aws_key <- Sys.getenv(c("AWS_Key"))
 print(aws_id)
 print(aws_key)
 
-library(RCurl)
-library(h2o)
-
-#----------------------------------------------------------------------
-
-heading("BEGIN TEST")
-h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 s3_airlines_file <- "h2o-airlines-unpacked/allyears2k.csv"
 hdfs_airlines_file <- "/datasets/allyears2k_headers.zip"
 s3_url <- paste0("s3n://", aws_id, ":", aws_key, "@", s3_airlines_file)
@@ -48,4 +37,6 @@ data.gbm <- h2o.gbm(y = myY, x = myX, balance_classes = T,
 if(nrow(airlines.hex)!=nrow(airlines_hdfs.hex)) stop("# rows are not equal!")
 if(ncol(airlines.hex)!=ncol(airlines_hdfs.hex)) stop("# columns not equal!")
 
-PASS_BANNER()
+}
+
+doTest("Test", test)

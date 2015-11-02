@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.GBM <- function() {
   library(gbm)
@@ -26,7 +26,9 @@ test.GBM <- function() {
   df$CAPSULE <- as.factor(df$CAPSULE)
 
   gbm <- h2o.gbm(x=3:8,y="CAPSULE",training_frame=df)
-  model <- gbm(CAPSULE~.-CAPSULE-ID, data=as.data.frame(df), distribution="bernoulli")
+  ldf <- as.data.frame(df)
+  ldf$CAPSULE <- as.integer(ldf$CAPSULE) - 1
+  model <- gbm(CAPSULE~.-CAPSULE-ID, data=ldf, distribution="bernoulli")
 
   expect_true(h2o.mse(gbm) < 0.11, "MSE too big without offset")
   expect_true(abs((gbm@model$init_f - model$initF)/model$initF) < 1e-6, "initF mismatch without offset for bernoulli")
@@ -35,9 +37,9 @@ test.GBM <- function() {
   gbm <- h2o.gbm(x=3:8,y="CAPSULE",training_frame=df, offset_column="offset", distribution="bernoulli")
   expect_true(h2o.mse(gbm) < 0.11, "MSE too big with offset for bernoulli")
 
-  model <- gbm(CAPSULE~.-CAPSULE-ID + offset(offset), data=as.data.frame(df), distribution="bernoulli")
+  model <- gbm(CAPSULE~.-CAPSULE-ID + offset(offset), data=ldf, distribution="bernoulli")
   expect_true(abs((gbm@model$init_f - model$initF)/model$initF) < 1e-6, "initF mismatch with offset for bernoulli")
 
-  testEnd()
+  
 }
 doTest("GBM Test: offset", test.GBM)

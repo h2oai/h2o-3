@@ -45,7 +45,7 @@ public class MRUtils {
             }
           }
       }
-    }.doAll(fr.numCols(), fr).outputFrame(newKey, fr.names(), fr.domains());
+    }.doAll(fr.types(), fr).outputFrame(newKey, fr.names(), fr.domains());
     if (r.numRows() == 0) {
       Log.warn("You asked for " + rows + " rows (out of " + fr.numRows() + "), but you got none (seed=" + seed + ").");
       Log.warn("Let's try again. You've gotta ask yourself a question: \"Do I feel lucky?\"");
@@ -72,7 +72,7 @@ public class MRUtils {
           }
         }
       }
-    }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(), fr.domains());
   }
 
   /**
@@ -82,7 +82,7 @@ public class MRUtils {
    * Usage 1: Label vector is categorical
    * ------------------------------------
    * Vec label = ...;
-   * assert(label.isEnum());
+   * assert(label.isCategorical());
    * double[] dist = new ClassDist(label).doAll(label).dist();
    *
    * Usage 2: Label vector is numerical
@@ -162,7 +162,7 @@ public class MRUtils {
   /**
    * Stratified sampling for classifiers - FIXME: For weights, this is not accurate, as the sampling is done with uniform weights
    * @param fr Input frame
-   * @param label Label vector (must be enum)
+   * @param label Label vector (must be categorical)
    * @param weights Weights vector, can be null
    * @param sampling_ratios Optional: array containing the requested sampling ratios per class (in order of domains), will be overwritten if it contains all 0s
    * @param maxrows Maximum number of rows in the returned frame
@@ -173,7 +173,7 @@ public class MRUtils {
    */
   public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, float[] sampling_ratios, long maxrows, final long seed, final boolean allowOversampling, final boolean verbose) {
     if (fr == null) return null;
-    assert(label.isEnum());
+    assert(label.isCategorical());
     if (maxrows < label.domain().length) {
       Log.warn("Attempting to do stratified sampling to fewer samples than there are class labels - automatically increasing to #rows == #labels (" + label.domain().length + ").");
       maxrows = label.domain().length;
@@ -248,7 +248,7 @@ public class MRUtils {
   // currently hardcoded to do up to 10 tries to get a row from each class, which can be impossible for certain wrong sampling ratios
   private static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug, int count) {
     if (fr == null) return null;
-    assert(label.isEnum());
+    assert(label.isCategorical());
     assert(sampling_ratios != null && sampling_ratios.length == label.domain().length);
     final int labelidx = fr.find(label); //which column is the label?
     assert(labelidx >= 0);
@@ -280,7 +280,7 @@ public class MRUtils {
           }
         }
       }
-    }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains());
 
     // Confirm the validity of the distribution
     Vec lab = r.vecs()[labelidx];

@@ -2,8 +2,8 @@
 # Generate lots of keys then remove them
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test <- function() {
   arrests.hex = h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"), "arrests.hex")
@@ -25,7 +25,7 @@ test <- function() {
   Log.info("h2o.ls() should return an empty list")
   expect_equal(length(h2o.ls()$key), 0)
 
-  testEnd()
+  
 }
 
 doTest("Many Keys Test: Removing", test)

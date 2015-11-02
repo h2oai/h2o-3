@@ -36,8 +36,25 @@ trap cleanup SIGTERM SIGINT
 # Also, sometimes see test files in the main-class directory, so put the test
 # classpath before the main classpath.
 # kbn: Rather than let it default heap to 1/4 of available dram,
+# ece: use default heap size until PUBDEV-2142 resolved
 # make it consistent for test. It's 2G is h2o-algos. So mimic that.
-JVM="nice java -ea -Xmx2g -Xms2g -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+
+# Find java command
+if [ -z "$TEST_JAVA_HOME" ]; then
+  # Use default
+  JAVA_CMD="java"
+else
+  # Use test java home
+  JAVA_CMD="$TEST_JAVA_HOME/bin/java"
+  # Increase XMX since JAVA_HOME can point to java6
+  JAVA6_REGEXP=".*1\.6.*"
+  if [[ $TEST_JAVA_HOME =~ $JAVA6_REGEXP ]]; then
+    JAVA_CMD="${JAVA_CMD} -Xmx2g"
+  fi
+fi
+# Command to invoke test
+JVM="nice $JAVA_CMD -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)

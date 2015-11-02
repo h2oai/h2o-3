@@ -1,7 +1,7 @@
 ####### This tests offset in gbm for bernoulli by comparing results with R ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 
@@ -23,6 +23,6 @@ test <- function() {
 	expect_equal(min(pr), min(ph[,3]),tolerance=1e-6 )
 	expect_equal(max(pr), max(ph[,3]),tolerance=1e-6 )
 	
-	testEnd()
+	
 }
 doTest("GBM offset Test: GBM w/ offset for bernoulli distribution", test)

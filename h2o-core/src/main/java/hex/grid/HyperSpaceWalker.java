@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 
 import hex.Model;
 import hex.ModelParametersBuilderFactory;
+import water.Key;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters> {
 
@@ -146,6 +147,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
             MP params = getModelParams(commonModelParams, hypers);
+            // We have another model parameters
             return params;
           } else {
             throw new NoSuchElementException("No more elements to explore in hyper-space!");

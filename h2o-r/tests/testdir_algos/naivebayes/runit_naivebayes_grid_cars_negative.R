@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.naivebayes.grid.cars.negative <- function(conn) {
   train <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
@@ -54,7 +54,7 @@ check.naivebayes.grid.cars.negative <- function(conn) {
   expect_error(cars_naivebayes_grid <- h2o.grid("naivebayes", grid_id="naivebayes_grid_cars_test", x=predictors, y=response_col,
                                                 training_frame=train, hyper_params=grid_space, do_hyper_params_check=TRUE))
 
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Grid Search using bad parameters", check.naivebayes.grid.cars.negative)

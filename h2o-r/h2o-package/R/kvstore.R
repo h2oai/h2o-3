@@ -22,47 +22,6 @@
 }
 
 
-#` Fetch the first N rows on demand, caching them in x$data; also cache x$nrow
-.fetch.data <- function(x,N) {
-  stopifnot(!missing(N))
-  .eval.frame(chk.Frame(x))
-  if( is.null( attr(x, "data")) || (is.data.frame( attr(x, "data")) && nrow( attr(x, "data")) < N) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id"), "?row_count=",N))$frames[[1]]
-    # Convert to data.frame, handling short data (trailing NAs)
-    # Numeric data is OK, but can be short if e.g., there are trailing NAs
-    # String data is a list form; convert to a vector (and convert NULL to NA)
-    L <- lapply(res$columns, function(c) {
-      if( c$type!="string" )  c$data
-      else  sapply(c$string_data, function(str) { if(is.null(str)) NA_character_ else str }); 
-    })
-    # Pad out to same length (square up ragged data), and convert to data.frame
-    if( length(L) > 0 ) maxlen <- max(sapply(L,length)) else 0
-    data <- do.call(data.frame,lapply(L,function(row) c(row,rep(NA,maxlen-length(row)))))
-    # Zero rows?  Then force a zero-length full width data.frame
-    if( length(data)==0 ) data <- as.data.frame(matrix(NA,ncol=length(res$columns),nrow=0L))
-    colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
-    if( nrow(data) > 0 ) {
-      for( i in 1:length(data) ) {  # Set factor levels
-        dom <- res$columns[[i]]$domain
-        if( !is.null(dom) ) # H2O has a domain; force R to do so also
-          data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
-        else if( is.factor(data[,i]) ) # R has a domain, but H2O does not
-          data[,i] <- as.character(data[,i]) # Force to string type
-      }
-    }
-    .set(x,"data",data)
-    .set(x,"nrow",res$rows)
-  }
-  attr(x,"data")
-}
-
-#` Flush any cached data
-.flush.data <- function(x) {
-  rm("data",envir=x);
-  rm("nrow",envir=x);
-  x
-}
-
 #'
 #' List Keys on an H2O Cluster
 #'
@@ -80,7 +39,7 @@
 #' @export
 h2o.ls <- function() {
   .h2o.gc()
-  .fetch.data(.newExpr("ls"),10L)
+  .fetch.data(.newExpr("ls"),10000L)
 }
 
 #'
@@ -132,33 +91,13 @@ h2o.rm <- function(ids) {
 }
 
 #'
-#' Rename an H2O object.
-#'
-#' Makes a copy of the data frame and gives it the desired the key.
-#'
-#' @param data An Frame object
-#' @param key The hex key to be associated with the H2O parsed data object
-#'
-#' @export
-h2o.assign <- function(data, key) {
-  .key.validate(key)
-  if( !is.null( attr(data, "id")) && key == attr(data, "id") ) stop("Destination key must differ from input frame ", key)
-  # Eager evaluate, copied from .eval.frame
-  exec_str <- .eval.impl(data);
-  #print(paste0("ASSIGN ",key," = EXPR: ",exec_str))
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id=key, method = "POST")
-  if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-  .newFrame("h2o.assign",key)
-}
-
-#'
 #' Get an R Reference to an H2O Dataset, that will NOT be GC'd by default
 #'
 #' Get the reference to a frame with the given id in the H2O instance.
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(id) .eval.frame(.newFrame("getFrame",id))
+h2o.getFrame <- function(id) .eval.driver(.newFrame(id,id,-1,-1))
 
 #' Get an R reference to an H2O model
 #'

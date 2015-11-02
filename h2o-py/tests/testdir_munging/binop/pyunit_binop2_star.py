@@ -1,12 +1,16 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 def binop_star():
     
     
 
-    iris = h2o.import_file(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     rows, cols = iris.dim
     iris.show()
 
@@ -61,5 +65,9 @@ def binop_star():
     #except EnvironmentError:
     #    pass
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, binop_star)
+    pyunit_utils.standalone_test(binop_star)
+else:
+    binop_star()

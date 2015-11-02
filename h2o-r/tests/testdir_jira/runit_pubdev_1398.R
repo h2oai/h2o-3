@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pubdev.1398 <- function() {
   k <- 13
@@ -30,7 +30,7 @@ test.pubdev.1398 <- function() {
   Log.info("H2O Predictions:"); print(head(predH2O))
   checkSignedCols(as.data.frame(predH2O), predR[,1:k], tolerance = 2e-5)
   
-  testEnd()
+  
 }
 
 doTest("PUBDEV-1398: Compare projections of R and H2O PCA", test.pubdev.1398)

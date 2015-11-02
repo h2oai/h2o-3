@@ -1,6 +1,6 @@
 ### This tests offsets in glm ######
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 
@@ -53,7 +53,7 @@ test <- function() {
 	expect_equal(max(pr),max(ph$p1),tolerance = 0.0001)
 	expect_equal(mean(pr),mean(ph$p1),tolerance = 0.0001)
 
-	testEnd()
+	
 }
 
 

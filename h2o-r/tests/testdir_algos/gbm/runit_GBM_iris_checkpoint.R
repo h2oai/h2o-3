@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.GBM.checkpoint_on_iris <- function() {
   train.hex <- h2o.uploadFile(locate("smalldata/iris/iris_train.csv"), "train.hex")
@@ -40,7 +40,7 @@ test.GBM.checkpoint_on_iris <- function() {
   b <- iris.gbm.total@model$validation_metrics
   expect_mm_equal(a, b)
 
-  testEnd()
+  
 }
 
 expect_mm_equal <- function(a, b, msg) {

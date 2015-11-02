@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub_699_negative_indexes <- function() {
 
@@ -40,7 +40,7 @@ test.pub_699_negative_indexes <- function() {
 
   print(covtype)
 
-  slice_range_across_chunks <- c(-1:-50, -400000:-450000)
+  slice_range_across_chunks <- c(-1:-50, -40000:-45000)
 
   Log.info("Number of rows to slice out")
   print(length(slice_range_across_chunks))
@@ -55,7 +55,7 @@ test.pub_699_negative_indexes <- function() {
 
   expect_equal(length(slice_range_across_chunks), nrow(covtype) - nrow(sliced_cov))
 
-testEnd()
+
 
 }
 

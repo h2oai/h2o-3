@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub_174_cut <- function() {
   Log.info('Uploading allyears2k_header.csv to H2O...')
@@ -16,7 +16,7 @@ test.pub_174_cut <- function() {
   print(air.table)
   # expect_true(all(air.table == c(1326, 18211, 5797, 302, 8048, 256, 7245, 1598)))
   
-  testEnd()
+  
 }
 
 doTest("PUB-174 h2o.cut on airlines data with NAs", test.pub_174_cut)

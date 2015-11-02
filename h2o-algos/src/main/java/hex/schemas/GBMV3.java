@@ -35,16 +35,21 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
         "nbins_top_level",
 				"nbins_cats",
 				"r2_stopping",
+        "stopping_rounds",
+        "stopping_metric",
+        "stopping_tolerance",
 				"seed",
 				"build_tree_one_node",
         "learn_rate",
         "distribution",
         "tweedie_power",
-        "checkpoint"
+        "checkpoint",
+        "sample_rate",
+        "col_sample_rate",
     };
 
     // Input fields
-    @API(help="Learning rate from 0.0 to 1.0", gridable = true)
+    @API(help="Learning rate (from 0.0 to 1.0)", gridable = true)
     public float learn_rate;
 
     @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, gridable = true)
@@ -52,5 +57,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help = "Tweedie Power (between 1 and 2)", level = API.Level.secondary, gridable = true)
     public double tweedie_power;
+
+    @API(help="Column sample rate (from 0.0 to 1.0)", gridable = true)
+    public float col_sample_rate;
   }
 }

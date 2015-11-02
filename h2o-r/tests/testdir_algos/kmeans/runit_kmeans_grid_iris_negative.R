@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.kmeans.grid.iris.negative <- function(conn) {
   iris <- h2o.uploadFile(locate("smalldata/iris/iris.csv"))
@@ -42,7 +42,7 @@ check.kmeans.grid.iris.negative <- function(conn) {
   Log.info(paste0("Constructing the grid of kmeans models with non-gridable parameter user_points"))
   expect_error(iris_kmeans_grid <- h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space, do_hyper_params_check=TRUE))
 
-  testEnd()
+  
 }
 
 doTest("K-Means Grid Search using bad parameters", check.kmeans.grid.iris.negative)

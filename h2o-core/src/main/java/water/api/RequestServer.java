@@ -101,10 +101,10 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Cloud",      "GET", CloudHandler.class,  "status", null, "Determine the status of the nodes in the H2O cloud.");
     register("/3/Cloud",                  "HEAD",CloudHandler.class, "head", null, "Determine the status of the nodes in the H2O cloud.");
     register("/3/Jobs"       ,"GET", JobsHandler.class,   "list", null,   "Get a list of all the H2O Jobs (long-running actions).");
-    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       , null,"Something something something.");
-    register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       , null,"Something something something.");
-    register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       , null,"Something something something.");
-    register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       , null,"Something something something.");
+    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       , null,"Debugging tool that provides information on current communication between nodes.");
+    register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       , null,"Report real-time profiling information for all nodes (sorted, aggregated stack traces).");
+    register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       , null,"Report stack traces for all threads on all nodes.");
+    register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       , null,"Run a network test to measure the performance of the cluster interconnect.");
     register("/3/UnlockKeys", "POST", UnlockKeysHandler.class, "unlock", null, "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
     register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    , null,"Shut down the cluster");
 
@@ -148,7 +148,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Frames/(?<frame_id>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs",
              "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
     register("/3/Frames/(?<frame_id>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain", null,
-            "Return the domains for the specified column. \"null\" if the column is not an Enum.");
+            "Return the domains for the specified column. \"null\" if the column is not a categorical.");
     register("/3/Frames/(?<frame_id>.*)/columns/(?<column>.*)"        ,"GET"   ,FramesHandler.class, "column", null,
       "Return the specified column from a Frame.");
     register("/3/Frames/(?<frame_id>.*)/columns"                      ,"GET"   ,FramesHandler.class, "columns", null,
@@ -163,16 +163,23 @@ public class RequestServer extends NanoHTTPD {
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll", null,
       "Delete all Frames from the H2O distributed K/V store.");
-    register("/3/Models/(?<model_id>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview", null,
-      "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
-    register("/3/Models/(?<model_id>.*?)(\\.java)?"                  ,"GET"   ,ModelsHandler.class, "fetch", null,
+    // Handle models
+    register("/3/Models/(?<model_id>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch", null,
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
-    register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list", null,
+    register("/3/Models"                                              ,"GET"   ,ModelsHandler.class, "list", null,
       "Return all Models from the H2O distributed K/V store.");
     register("/3/Models/(?<model_id>.*)"                              ,"DELETE",ModelsHandler.class, "delete", null,
       "Delete the specified Model from the H2O distributed K/V store.");
-    register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll", null,
+    register("/3/Models"                                              ,"DELETE",ModelsHandler.class, "deleteAll", null,
       "Delete all Models from the H2O distributed K/V store.");
+
+    // Get java code for models as
+    register("/3/Models.java/(?<model_id>.*)/preview"                 ,"GET"   ,ModelsHandler.class, "fetchPreview", null,
+             "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
+    // Register resource also with .java suffix since we do not want to break API
+    // FIXME: remove in new REST API version
+    register("/3/Models.java/(?<model_id>.*)"                 ,"GET"   ,ModelsHandler.class, "fetchJavaCode", null,
+             "Return the stream containing model implementation in Java code.");
 
     // Model serialization - import/export calls
     register("/99/Models.bin/(?<model_id>.*)"                        ,"POST"  ,ModelsHandler.class, "importModel", null,
@@ -262,10 +269,10 @@ public class RequestServer extends NanoHTTPD {
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
     register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", null, "Kill minus 3 on *this* node");
     register("/99/Rapids"                                          ,"POST"  ,RapidsHandler.class, "exec", null, "Execute an Rapids AST.");
-    register("/99/Assembly/(?<assembly_id>.*)/(?<pojo_name>.*?)(\\.java)?"   ,"GET"   ,AssemblyHandler.class, "toJava", null, "Generate a Java POJO from the Assembly");
+    register("/99/Assembly.java/(?<assembly_id>.*)/(?<pojo_name>.*)"   ,"GET"   ,AssemblyHandler.class, "toJava", null, "Generate a Java POJO from the Assembly");
     register("/99/Assembly"                                        ,"POST"  ,AssemblyHandler.class, "fit", null, "Fit an assembly to an input frame");
-    register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download something something.");
-    register("/3/DownloadDataset.bin"                              ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download something something via streaming response");
+    register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", null, "Download dataset as a CSV.");
+    register("/3/DownloadDataset.bin"                              ,"GET"   ,DownloadDataHandler.class, "fetchStreaming", null, "Download dataset as a CSV.");
     register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", null, "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", null, "Remove all keys from the H2O distributed K/V store.");
     register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", null, "Save a message to the H2O logfile.");
@@ -570,9 +577,6 @@ public class RequestServer extends NanoHTTPD {
         } else {
           return response404(method + " " + uri, type);
         }
-      } else if(route._handler_class ==  water.api.DownloadDataHandler.class) {
-        // DownloadDataHandler will throw H2ONotFoundException if the resource is not found
-        return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         logged = maybeLogRequest(method, uri, route._url_pattern.namedPattern(), parms, header);
@@ -670,35 +674,23 @@ public class RequestServer extends NanoHTTPD {
       if (s instanceof H2OErrorV3) {
         return new Response(http_response_header, MIME_JSON, s.toJsonString());
       }
-      if( s instanceof AssemblyV99 ) {
+      if (s instanceof AssemblyV99) {
         Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
         Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
         r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
         return r;
-      }
-      if (! (s instanceof ModelsBase)) {
+      } else if (s instanceof StreamingSchema) {
+        StreamingSchema ss = (StreamingSchema) s;
+        Response r = new StreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
+        // Needed to make file name match class name
+        r.addHeader("Content-Disposition", "attachment; filename=\"" + ss.getFilename() + "\"");
+        return r;
+      } else {
         throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());
       }
-      ModelsBase mb = (ModelsBase) s;
-      if (mb.models.length != 1) {
-        throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
-      }
-      ModelSchema ms = (ModelSchema)mb.models[0];
-      Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
-
-      // Needed to make file name match class name
-      r.addHeader("Content-Disposition", "attachment; filename=\"" + JCodeGen.toJavaId(ms.model_id.key().toString()) + ".java\"");
-      return r;
     default:
       throw H2O.unimpl("Unknown type to wrap(): " + type);
     }
-  }
-
-  private Response wrapDownloadData(String http_code, Schema s) {
-    DownloadDataV3 dd = (DownloadDataV3)s;
-    Response res = new Response(http_code, MIME_DEFAULT_BINARY, dd.csv);
-    res.addHeader("Content-Disposition", "filename=" + dd.filename);
-    return res;
   }
 
 

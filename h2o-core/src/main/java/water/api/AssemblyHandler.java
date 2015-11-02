@@ -14,17 +14,18 @@ public class AssemblyHandler extends Handler {
     if( ass==null ) return null;
     if( ass.steps == null ) return ass;
     // process assembly:
-    //   of the form [name__class__ast__inplace, name__class__ast__inplace, ...]
+    //   of the form [name__class__ast__inplace__names, name__class__ast__inplace__names, ...]
     // s[0] : stepName
     // s[1] : transform class
     // s[2] : ast (can be noop)
     // s[3] : inplace
+    // s[4] : names
     ArrayList<Transform> steps = new ArrayList<>();
     for(String step: ass.steps) {
       String[] s = step.split("__");
       Class transformClass = Class.forName("water.rapids.transforms."+s[1]);
-      Class[] constructorTypes = new Class[]{String.class /*name*/, String.class /*ast*/, boolean.class /*inplace*/};
-      Object[] constructorArgs = new Object[]{s[0], s[2], Boolean.valueOf(s[3])};
+      Class[] constructorTypes = new Class[]{String.class /*name*/, String.class /*ast*/, boolean.class /*inplace*/, String[].class /*newNames*/};
+      Object[] constructorArgs = new Object[]{s[0], s[2], Boolean.valueOf(s[3]), s[4].equals("|")?null:s[4].split("\\|")};
       steps.add((Transform) transformClass.getConstructor(constructorTypes).newInstance(constructorArgs));
     }
     Assembly assembly = new Assembly(Key.make("assembly_"+Key.make().toString()), steps.toArray(new Transform[steps.size()]));

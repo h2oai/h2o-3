@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.head_tail <- function() {
   Log.info("Uploading iris/iris_wheader.csv")
@@ -23,7 +23,7 @@ test.head_tail <- function() {
     expect_equivalent(as.data.frame(head(iris.hex, n = s)), head(iris.dat, n = s))
     expect_equivalent(as.data.frame(tail(iris.hex, n = s)), tail(iris.dat, n = s))
   }
-  testEnd()
+  
 }
 
 doTest("Test out head() and tail() functionality", test.head_tail)

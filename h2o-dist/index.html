@@ -681,7 +681,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     <em># Now we download, install and initialize the H<sub>2</sub>O package for R.</em><br/>
                     install.packages("h2o", type="source", repos=(c("<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/R")))<br/>
                     library(h2o)<br/>
-                    localH2O = h2o.init()<br/>
+                    localH2O = h2o.init(nthreads=-1)<br/>
                     <br/>
                     <em># Finally, let's run a demo to see H<sub>2</sub>O at work.</em><br/>
                     demo(h2o.kmeans)

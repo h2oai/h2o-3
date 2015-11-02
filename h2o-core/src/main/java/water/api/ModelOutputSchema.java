@@ -18,7 +18,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Column names", direction=API.Direction.OUTPUT)
   public String[] names;
 
-  @API(help="Domains for categorical (enum) columns", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  @API(help="Domains for categorical columns", direction=API.Direction.OUTPUT, level=API.Level.expert)
   public String[][] domains;
 
   @API(help="Cross-validation models (model ids)", direction=API.Direction.OUTPUT, level=API.Level.expert)

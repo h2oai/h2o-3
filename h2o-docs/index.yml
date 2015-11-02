@@ -13,6 +13,7 @@ sources:
   - src/product/tutorials/GridSearch.md
   - src/product/security/Security.md
   - src/product/howto/FAQ.md
+  - src/product/tutorials/glossary.md
   - src/product/howto/Videos.md
 
 assets:

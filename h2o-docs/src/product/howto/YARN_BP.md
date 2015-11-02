@@ -76,13 +76,13 @@ To limit the number of CPUs used by H2O, use the `-nthreads` option and specify 
 
 If you do not specify a queue when launching H2O, H2O jobs are submitted to the default queue. Jobs submitted to the default queue have a lower priority than jobs submitted to a specific queue. 
 
-To specify a queue with Hadoop, enter `-Dmapreduce.job.queuename=<queue name>` 
+To specify a queue with Hadoop, enter `-Dmapreduce.job.queuename=<my-h2o-queue>` 
 
-(where `<queue name>` is the name of the queue) when launching Hadoop. 
+(where `<my-h2o-queue>` is the name of the queue) when launching Hadoop. 
 
 For example, 
 
-`hadoop jar h2odriver.jar -Dmapreduce.job.queuename=default -nodes 1 -mapperXmx 6g -output hdfsOutputDirName` 
+`hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName` 
 
 
 

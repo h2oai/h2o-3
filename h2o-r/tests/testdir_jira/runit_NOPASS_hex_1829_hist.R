@@ -3,9 +3,9 @@
 # histograms in R
 ######################################################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-source('../h2o-runit.R')
+
 
 test.hex_1829 <- function(){
 
@@ -45,7 +45,7 @@ test.hex_1829 <- function(){
   run_check_hist(age, age.R, "AGE", breaks = c(43, 60, 70, 80))
   run_check_hist(vol, vol.R, "VOL", breaks = as.numeric(qx))
   
-  testEnd()
+  
 }
 
 doTest("HEX-1829 Test: Create histograms in R from H2OFrame objects", test.hex_1829)

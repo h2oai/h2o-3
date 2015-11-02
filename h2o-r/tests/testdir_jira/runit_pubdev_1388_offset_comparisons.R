@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.offset.comparison <- function() {
   Log.info("Loading datasets...")
@@ -63,7 +63,7 @@ test.offset.comparison <- function() {
                    expected.label = paste(fam, "R aic"), tolerance = 0.1)
   }
 
-  testEnd()
+  
 }
 
 doTest("Testing Offsets in GLM", test.offset.comparison)

@@ -5,24 +5,24 @@ h2o.ensemble <- function(x, y, training_frame,
                          metalearner = "h2o.glm.wrapper",
                          cvControl = list(V = 5, shuffle = TRUE),  #maybe change this to cv_control
                          seed = 1,
-                         parallel = "seq",
-                         ...) 
+                         parallel = "seq",  #only seq implemented
+                         keep_levelone_data = TRUE) 
 {
   
   starttime <- Sys.time()
   runtime <- list()
   
-  # Training_frame may be a key or an H2OFrame object
-  if (!inherits(training_frame, "H2OFrame"))
+  # Training_frame may be a key or an H2O Frame object
+  if ((!inherits(training_frame, "Frame") && !inherits(training_frame, "H2OFrame")))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+               stop("argument \"training_frame\" must be a valid H2O Frame or id")
              })
   if (!is.null(validation_frame)) {
-    if (!inherits(validation_frame, "H2OFrame"))
+    if (is.character(validation_frame))
       tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                error = function(err) {
-                 stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                 stop("argument \"validation_frame\" must be a valid H2O Frame or id")
                })
   }
   N <- dim(training_frame)[1L]  #Number of observations in training set
@@ -36,8 +36,8 @@ h2o.ensemble <- function(x, y, training_frame,
     family <- match.arg(family)
   }
   if (family == "AUTO") {
-    if (is.factor(training_frame[,c(y)])) {
-      numcats <- length(unique(as.data.frame(training_frame)[,c(y)]))
+    if (is.factor(training_frame[,y])) {
+      numcats <- length(h2o.levels(training_frame[,y]))
       if (numcats == 2) {
         family <- "binomial" 
       } else {
@@ -47,13 +47,20 @@ h2o.ensemble <- function(x, y, training_frame,
       family <- "gaussian"
     }
   }
+  # Check that if specified, family matches data type for response
+  # binomial must be factor/enum and gaussian must be numeric
   if (family == c("gaussian")) {
-    # TO DO: (CHECK THIS UPDATE) Update this when h2o.range method gets implemented for H2OFrame cols
-    ylim <- c(min(training_frame[,c(y)]), max(training_frame[,c(y)]))  #Used to enforce bounds  
+    if (!is.numeric(training_frame[,y])) {
+      stop("When `family` is gaussian, the repsonse column must be numeric.")
+    }
+    # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OFrame cols
+    ylim <- c(min(training_frame[,y]), max(training_frame[,y]))  #Used to enforce bounds  
   } else {
+    if (!is.factor(training_frame[,y])) {
+      stop("When `family` is binomial, the repsonse column must be a factor.")
+    }
     ylim <- NULL
   }
-  
   
   # Update control args by filling in missing list elements
   cvControl <- do.call(".cv_control", cvControl)
@@ -89,11 +96,10 @@ h2o.ensemble <- function(x, y, training_frame,
   if (is.numeric(seed)) set.seed(seed)  #If seed is specified, set seed prior to next step
   folds <- sample(rep(seq(V), ceiling(N/V)))[1:N]  # Cross-validation folds (stratified folds not yet supported)
   training_frame$fold_id <- as.h2o(folds)  # Add a fold_id column for each observation so we can subset by row later
-  #training_frame <- h2o.cbind(training_frame, as.h2o(folds))
-  
+
   # What type of metalearning function do we have?
   # The h2o version is memory-optimized (the N x L level-one matrix, Z, never leaves H2O memory);
-  # SuperLearner metalearners provide expanded functionality, but has a much bigger memory footprint
+  # SuperLearner metalearners provide additional metalearning algos, but has a much bigger memory footprint
   if (grepl("^SL.", metalearner)) {
     metalearner_type <- "SuperLearner"
   } else if (grepl("^h2o.", metalearner)){
@@ -120,13 +126,14 @@ h2o.ensemble <- function(x, y, training_frame,
   print("Metalearning")
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
   if (grepl("^SL.", metalearner)) {
-    # this is very hacky and should be used only for testing until we get the h2o metalearner functions sorted out...
+    # this is very hacky and should be used only for testing
     if (is.character(family)) {
       familyFun <- get(family, mode = "function", envir = parent.frame())
       #print(familyFun$family)  #does not work for SL.glmnet
     } 
     Zdf <- as.data.frame(Z)
     Y <- as.data.frame(training_frame[,c(y)])[,1]
+    # TO DO: for parity, need to add y col to Z like we do below
     runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(Y = Y, 
                                                                           X = Zdf, 
                                                                           newX = Zdf, 
@@ -134,7 +141,7 @@ h2o.ensemble <- function(x, y, training_frame,
                                                                           id = seq(N), 
                                                                           obsWeights = rep(1,N)), gcFirst = FALSE)
   } else {
-    Z$y <- training_frame[,c(y)]
+    Z$y <- training_frame[,c(y)]  # do we want to add y to the Z frame?  
     runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner, 
                                                                           y = "y", 
                                                                           training_frame = Z, 
@@ -146,10 +153,17 @@ h2o.ensemble <- function(x, y, training_frame,
   runtime$baselearning <- NULL
   runtime$total <- Sys.time() - starttime
   
+  # Keep level-one data?
+  if (!keep_levelone_data) {
+    Z <- NULL
+  }
+  
   # Ensemble model
   out <- list(x = x,
               y = y, 
               family = family, 
+              learner = learner,
+              metalearner = metalearner,
               cvControl = cvControl,
               folds = folds,
               ylim = ylim, 
@@ -157,7 +171,7 @@ h2o.ensemble <- function(x, y, training_frame,
               parallel = parallel,
               basefits = basefits, 
               metafit = metafit,
-              Z = Z, 
+              levelone = Z,  #levelone = cbind(Z, y)
               runtime = runtime,
               h2o_version = packageVersion(pkg = "h2o"),
               h2oEnsemble_version = packageVersion(pkg = "h2oEnsemble"))
@@ -191,15 +205,14 @@ h2o.ensemble <- function(x, y, training_frame,
     } else {
       predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
     }
-    cvpred_sparse <- do.call("h2o.cbind", predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
+    cvpred_sparse <- h2o.cbind(predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
     cvpred_col <- apply(cvpred_sparse, 1, sum)
-    return(cvpred_col@frame_id)
+    return(cvpred_col)
   } 
-  cvpred_framelist <- sapply(1:L, function(l) h2o.getFrame(.compress_cvpred_into_1col(l, family)))
-  Zhf <- do.call(h2o.cbind, cvpred_framelist)
-  names(Zhf) <- learner
-
-  return(list(Z = Zhf, basefits = basefits))
+  cvpred_framelist <- sapply(1:L, function(l) .compress_cvpred_into_1col(l, family))
+  Z <- h2o.cbind(cvpred_framelist)
+  names(Z) <- learner
+  return(list(Z = Z, basefits = basefits))
 }
 
 
@@ -208,6 +221,7 @@ h2o.ensemble <- function(x, y, training_frame,
   if (!is.null(fold_column)) cv = TRUE
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
   fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
+  #fit <- get(learner[l], mode = "function", envir = parent.frame())(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
   return(fit)
 }
 
@@ -239,8 +253,7 @@ h2o.ensemble <- function(x, y, training_frame,
 }
 
 
-# TO DO:check if this is working
-predict.h2o.ensemble <- function(object, newdata) {
+predict.h2o.ensemble <- function(object, newdata, ...) {
   
   L <- length(object$basefits)
   basepreddf <- as.data.frame(matrix(NA, nrow = nrow(newdata), ncol = L))
@@ -268,5 +281,21 @@ predict.h2o.ensemble <- function(object, newdata) {
 }
 
 
+print.h2o.ensemble <- function(x, ...) {
+  cat("\nH2O Ensemble fit")
+  cat("\n----------------")
+  cat("\nfamily: ")
+  cat(x$family)
+  cat("\nlearner: ")
+  cat(x$learner)
+  cat("\nmetalearner: ")
+  cat(x$metalearner)
+  cat("\n\n")
+}
+
+
+# plot.h2o.ensemble <- function(x, ...) {
+#   cat("\nPlotting for an H2O Ensemble fit is not implemented at this time.")
+# }
 
 

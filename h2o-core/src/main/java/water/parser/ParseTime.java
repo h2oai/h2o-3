@@ -22,7 +22,7 @@ public abstract class ParseTime {
   // ClassCastException deep in the SimpleDateFormat code:
   // "sun.util.calendar.Gregorian$Date cannot be cast to sun.util.calendar.JulianCalendar$Date"
 
-  public static final boolean isTime(ValueString str) {
+  public static final boolean isTime(BufferedString str) {
     return attemptTimeParse(str) != Long.MIN_VALUE;
   }
 
@@ -41,7 +41,7 @@ public abstract class ParseTime {
     {"dec".getBytes(),"december" .getBytes()}
   };
 
-  public static long attemptTimeParse( ValueString str ) {
+  public static long attemptTimeParse( BufferedString str ) {
     try {
       long t0 = attemptYearFirstTimeParse(str); // "yyyy-MM-dd" and time if present
       if( t0 != Long.MIN_VALUE ) return t0;
@@ -53,7 +53,7 @@ public abstract class ParseTime {
     return Long.MIN_VALUE;
   }
   // Tries to parse "yyyy-MM-dd [HH:mm:ss.SSS aa]"
-  private static long attemptYearFirstTimeParse(ValueString str) {
+  private static long attemptYearFirstTimeParse(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     final int end = i+str.length();
@@ -85,7 +85,7 @@ public abstract class ParseTime {
 
   // Tries to parse "dd[-]MMM[-]yy[yy][:' '][HH:mm:ss.SSS aa]"
   // where MMM is a text representation of the month (e.g. Jul or July)
-  private static long attemptDayFirstTimeParse(ValueString str) {
+  private static long attemptDayFirstTimeParse(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     final int end = i+str.length();

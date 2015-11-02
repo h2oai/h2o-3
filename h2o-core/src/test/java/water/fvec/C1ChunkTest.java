@@ -3,6 +3,7 @@ package water.fvec;
 import org.junit.*;
 
 import water.Futures;
+import water.Key;
 import water.TestUtil;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -56,7 +57,8 @@ public class C1ChunkTest extends TestUtil {
 
   @Test public void test_setNA() {
     // Create a vec with one chunk, and set its numbers
-    Vec vec = new Vec(Vec.newKey(), new long[]{0,15}).makeZero();
+    Key key = Vec.newKey();
+    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key, new long[]{0,15})).makeZero();
     int[] vals = new int[]{0, 1, 0, 5, 0, 0, 0, 21, 0, 111, 0, 8, 0, 1};
     Vec.Writer w = vec.open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);

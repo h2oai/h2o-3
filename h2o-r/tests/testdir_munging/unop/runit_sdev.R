@@ -5,8 +5,8 @@
 # If any categorical columns, throw an error
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.sdev <- function() {
   Log.info("Uploading iris/iris_wheader.csv")
@@ -21,7 +21,7 @@ test.sdev <- function() {
     expect_equal(iris_Rsd, iris_H2Osd)
   }
   
-  testEnd()
+  
 }
 
 doTest("Test out the sd() functionality", test.sdev)

@@ -1,4 +1,6 @@
 from .transform_base import H2OTransformer
+import warnings
+from ..assembly import H2OCol
 
 
 class H2OScaler(H2OTransformer):
@@ -62,7 +64,7 @@ class H2OScaler(H2OTransformer):
     :param params: (Ignored)
     :return: A scaled H2OFrame.
     """
-    return X.scale(self.means,self.stds)._frame()
+    return X.scale(self.means, self.stds)
 
   def inverse_transform(self,X,y=None,**params):
     """
@@ -74,7 +76,7 @@ class H2OScaler(H2OTransformer):
     :return: An H2OFrame
     """
     for i in X.ncol:
-      X[i] = self.means[i] + self.stds[i]*X[i]
+      X[i] = self.means[i] + self.stds[i] * X[i]
     return X
 
 
@@ -86,22 +88,26 @@ class H2OColSelect(H2OTransformer):
     return self
 
   def transform(self,X,y=None,**params):
-    return X[self.cols]._frame()
+    return X[self.cols]
 
   def to_rest(self, step_name):
-    ast = self._dummy_frame()[self.cols]._ast._debug_print(pprint=False)
-    return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False])
+    ast = self._dummy_frame()[self.cols]._ex._to_string()
+    return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False,"|"])
+
 
 class H2OColOp(H2OTransformer):
   """
-  Perform a column operation. If append is True, then cbind the result onto original frame,
+  Perform a column operation. If inplace is True, then cbind the result onto original frame,
   otherwise, perform the operation in place.
   """
-  def __init__(self, fun, col=None,inplace=True, **params):
-    self.fun=fun
+  def __init__(self,op,col=None,inplace=True,new_col_name=None,**params):
+    self.fun=op
     self.col=col
     self.inplace=inplace
     self.params=params
+    self.new_col_name=new_col_name
+    if inplace and new_col_name is not None:
+      warnings.warn("inplace was False, but new_col_name was not empty. Ignoring new_col_name.")
     if isinstance(col, (list,tuple)): raise ValueError("col must be None or a single column.")
 
   def fit(self,X,y=None,**params):
@@ -110,11 +116,11 @@ class H2OColOp(H2OTransformer):
   def transform(self,X,y=None,**params):
     res = H2OColOp._transform_helper(X,params)
     if self.inplace:  X[self.col] = res
-    else:             return X.cbind(res)._frame()
+    else:             return X.cbind(res)
     return X
 
-  def _transform_helper(self,X,**params):
-    if self.params == None or self.params == {}:
+  def _transform_helper(self, X, **params):
+    if self.params is None or self.params == {}:
       if self.col is not None: res = self.fun(X[self.col])
       else:                    res = self.fun(X)
     else:
@@ -123,5 +129,31 @@ class H2OColOp(H2OTransformer):
     return res
 
   def to_rest(self, step_name):
-    ast = self._transform_helper(self._dummy_frame())._ast._debug_print(pprint=False)
-    return super(H2OColOp, self).to_rest([step_name,"H2OColOp",ast,self.inplace])
+    ast = self._transform_helper(self._dummy_frame())._ex._to_string()
+    new_col_names = self.new_col_name
+    if new_col_names is None: new_col_names=["|"]
+    elif not isinstance(new_col_names, (list,tuple)): new_col_names = [new_col_names]
+    return super(H2OColOp, self).to_rest([step_name,self.__class__.__name__,ast,self.inplace,"|".join(new_col_names)])
+
+
+class H2OBinaryOp(H2OColOp):
+  """ Perform a binary operation on a column.
+
+  If left is None, then the column will appear on the left in the operation; otherwise
+  it will be appear on the right.
+
+  A ValueError is raised if both left and right are None.
+  """
+
+  def __init__(self, op, col, inplace=True, new_col_name=None, left=None, right=None, **params):
+    super(H2OBinaryOp, self).__init__(op,col,inplace, new_col_name, **params)
+    self.left_is_col  = isinstance(left, H2OCol)
+    self.right_is_col = isinstance(right,H2OCol)
+    self.left = left
+    self.right = right
+    if left is None and right is None:
+      raise ValueError("left and right cannot both be None")
+
+  def _transform_helper(self,X,**params):
+    if self.left is None: return self.fun(X[self.col],X[self.right.col] if self.right_is_col else self.right)
+    return self.fun(X[self.left.col] if self.left_is_col else self.left,X[self.col])

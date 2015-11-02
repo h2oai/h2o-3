@@ -1,5 +1,15 @@
 # Set of default wrappers to create a uniform interface for h2o supervised ML functions (H2O 3.0 and above)
-# Wrappers for: h2o.glm, h2o.randomForest, h2o.gbm, h2o.deeplearning
+
+# Example of a wrapper function:
+h2o.example.wrapper <- function(x, y, training_frame, model_id = "", family = c("gaussian", "binomial"), ...) {
+  # This function is just an example.  
+  # You can wrap any H2O learner inside a wrapper function, example: h2o.glm
+  h2o.glm(x = x, y = y, training_frame = training_frame, family = family)
+}
+
+
+
+# Wrappers for: h2o.glm, h2o.randomForest, h2o.gbm, h2o.deeplearning:
 
 
 # This is a version of the h2o.glm.wrapper which doesn't pass along all the args
@@ -34,7 +44,8 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = "", validation_fram
 h2o.gbm.wrapper <- function(x, y, training_frame, model_id = "", #checkpoint
                             family = c("AUTO", "gaussian", "bernoulli", "binomial", "multinomial", "poisson", "gamma", "tweedie"),
                             tweedie_power = 1.5, ntrees = 50, max_depth = 5, min_rows = 10,
-                            learn_rate = 0.1, nbins = 20, nbins_cats = 1024,
+                            learn_rate = 0.1, sample_rate = 1, col_sample_rate = 1,
+                            nbins = 20, nbins_cats = 1024,
                             validation_frame = NULL, balance_classes = FALSE,
                             max_after_balance_size = 1, seed, build_tree_one_node = FALSE,
                             nfolds = 0, fold_column = NULL,
@@ -53,12 +64,12 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = "", #checkpoint
   }
   h2o.gbm(x = x, y = y, training_frame = training_frame, model_id = model_id, 
           distribution = distribution, tweedie_power = tweedie_power, ntrees = ntrees, max_depth = max_depth, min_rows = min_rows, 
-          learn_rate = learn_rate, nbins = nbins, nbins_cats = nbins_cats, 
+          learn_rate = learn_rate, sample_rate = sample_rate, col_sample_rate = col_sample_rate,
+          nbins = nbins, nbins_cats = nbins_cats, 
           validation_frame = validation_frame, balance_classes = balance_classes, 
           max_after_balance_size = max_after_balance_size, seed = seed, build_tree_one_node = build_tree_one_node, 
           nfolds = nfolds, fold_column = fold_column, fold_assignment = match.arg(fold_assignment), 
           keep_cross_validation_predictions = keep_cross_validation_predictions, 
-          #keep_cross_validation_predictions = TRUE, 
           score_each_iteration = score_each_iteration)#, #offset_column = offset_column,
           #weights_column = weights_column)
 }
@@ -97,7 +108,9 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = "",
                                      autoencoder = FALSE, use_all_factor_levels = TRUE,
                                      activation = c("Rectifier", "Tanh", "TanhWithDropout",
                                                    "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 
-                                     hidden = c(200, 200), epochs = 10, train_samples_per_iteration = -2, seed, 
+                                     hidden = c(200, 200), epochs = 10, train_samples_per_iteration = -2, 
+                                     #target_ratio_comm_to_comp = 0.05,  #not on stable yet
+                                     seed, 
                                      adaptive_rate = TRUE, rho = 0.99, epsilon = 1e-08, rate = 0.005,
                                      rate_annealing = 1e-06, rate_decay = 1, momentum_start = 0,
                                      momentum_ramp = 1e+06, momentum_stable = 0,
@@ -105,7 +118,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = "",
                                      hidden_dropout_ratios, l1 = 0, l2 = 0, max_w2 = Inf,
                                      initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                                      initial_weight_scale = 1,
-                                     loss = c("Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"), 
+                                     loss = c("Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"), 
                                      distribution = c("AUTO", "gaussian", "bernoulli", "multinomial", 
                                                       "poisson", "gamma", "tweedie", "laplace", "huber"),
                                      tweedie_power = 1.5, score_interval = 5,
@@ -128,6 +141,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = "",
                    autoencoder = autoencoder, use_all_factor_levels = use_all_factor_levels, 
                    activation = match.arg(activation), 
                    hidden = hidden, epochs = epochs, train_samples_per_iteration = train_samples_per_iteration, 
+                   #target_ratio_comm_to_comp = target_ratio_comm_to_comp, 
                    seed = seed, 
                    adaptive_rate = adaptive_rate, rho = rho, epsilon = epsilon, rate = rate,
                    rate_annealing = rate_annealing, rate_decay = rate_decay, momentum_start = momentum_start,

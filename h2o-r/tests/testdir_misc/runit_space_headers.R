@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.bad.headers <- function() {
   citibikePath <- locate("smalldata/jira/citibike_head.csv")
@@ -20,7 +20,7 @@ test.bad.headers <- function() {
    
   if(h2o.median != r.median) stop("Medians in R and H2O unequal!!")
 
-  testEnd()
+  
 }
 
 doTest("Run summary on dataset with spaces : ", test.bad.headers)

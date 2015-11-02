@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.minus <- function() {
   hex <- as.h2o( iris)
@@ -37,7 +37,7 @@ test.minus <- function() {
   Log.info("fiveMinusSliced - slicedMinusFive: ")
   print(head(hexMinusHex))
 
-  testEnd()
+  
 }
 
 doTest("BINOP2 EXEC2 TEST: '-'", test.minus)

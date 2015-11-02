@@ -3,8 +3,8 @@
 ## runs glm with and without beta contraints which will be checked
 ## against glmnet's results.
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.LR.betaConstraints <- function(){
 
@@ -58,7 +58,7 @@ test.LR.betaConstraints <- function(){
 
   full_test <- sapply(c("binomial", "gaussian"), run_glm)
   print(full_test)
-  testEnd()
+  
 }
 
 doTest("GLM Test: LR w/ Beta Constraints", test.LR.betaConstraints)

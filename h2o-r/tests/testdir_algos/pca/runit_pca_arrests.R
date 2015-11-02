@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # Test PCA on USArrests.csv
 test.pca.arrests <- function() {
@@ -15,7 +15,7 @@ test.pca.arrests <- function() {
     print(arrests.pca.h2o)
   }
   
-  testEnd()
+  
 }
 
 doTest("PCA Test: USArrests Data", test.pca.arrests)

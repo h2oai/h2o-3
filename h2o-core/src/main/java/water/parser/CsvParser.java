@@ -21,7 +21,7 @@ class CsvParser extends Parser {
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
-    ValueString str = new ValueString();
+    BufferedString str = new BufferedString();
     byte[] bits = din.getChunkData(cidx);
     if( bits == null ) return dout;
     int offset  = din.getChunkDataStart(cidx); // General cursor into the giant array of bytes
@@ -30,6 +30,7 @@ class CsvParser extends Parser {
     byte[] bits1 = null;        // Bits for chunk1, loaded lazily.
     int state;
     boolean isNa = false;
+    boolean isAllASCII = true;
     // If handed a skipping offset, then it points just past the prior partial line.
     if( offset >= 0 ) state = WHITESPACE_BEFORE_TOKEN;
     else {
@@ -75,7 +76,7 @@ class CsvParser extends Parser {
     final boolean forceable = dout instanceof FVecParseWriter && ((FVecParseWriter)dout)._ctypes != null && _setup._column_types != null;
 MAIN_LOOP:
     while (true) {
-      boolean forcedEnum = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_ENUM;
+      boolean forcedCategorical = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_CAT;
       boolean forcedString = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_STR;
 
       switch (state) {
@@ -101,6 +102,8 @@ MAIN_LOOP:
           }
           if (!isEOL(c) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
             str.addChar();
+            if ((c & 0x80) == 128) //value beyond std ASCII
+              isAllASCII = false;
             break;
           }
           // fallthrough to STRING_END
@@ -108,7 +111,7 @@ MAIN_LOOP:
         case STRING_END:
           if ((c != CHAR_SEPARATOR) && (c == CHAR_SPACE))
             break;
-          // we have parsed the string enum correctly
+          // we have parsed the string categorical correctly
           if((str.getOffset() + str.length()) > str.getBuffer().length){ // crossing chunk boundary
             assert str.getBuffer() != bits;
             str.addBuff(bits);
@@ -125,11 +128,14 @@ MAIN_LOOP:
           }
           if (!isNa) {
             dout.addStrCol(colIdx, str);
+            if (!isAllASCII)
+              dout.setIsAllASCII(colIdx, isAllASCII);
           } else {
             dout.addInvalidCol(colIdx);
             isNa = false;
           }
           str.set(null, 0, 0);
+          isAllASCII = true;
           ++colIdx;
           state = SEPARATOR_OR_EOL;
           // fallthrough to SEPARATOR_OR_EOL
@@ -271,7 +277,7 @@ MAIN_LOOP:
         case NUMBER_END:
 
           // forced
-          if (forcedString || forcedEnum ) {
+          if (forcedString || forcedCategorical ) {
             state = STRING;
             offset = tokenStart - 1;
             str.set(bits, tokenStart, 0);
@@ -635,13 +641,13 @@ MAIN_LOOP:
           if (NumberUtils.isNumber(data[0][0])) {
             ctypes[0] = Vec.T_NUM;
           } else { // non-numeric
-            ValueString str = new ValueString(data[0][0]);
+            BufferedString str = new BufferedString(data[0][0]);
             if (ParseTime.isTime(str))
               ctypes[0] = Vec.T_TIME;
             else if (ParseUUID.isUUID(str))
                 ctypes[0] = Vec.T_UUID;
-            else { // give up and guess enum
-                ctypes[0] = Vec.T_ENUM;
+            else { // give up and guess categorical
+                ctypes[0] = Vec.T_CAT;
                 domains[0] = new String[]{data[0][0]};
             }
           }

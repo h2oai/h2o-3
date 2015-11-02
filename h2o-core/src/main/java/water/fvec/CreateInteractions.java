@@ -10,7 +10,7 @@ import water.util.IcedLong;
 import java.util.*;
 
 /**
- * Helper to create interaction features between enum columns
+ * Helper to create interaction features between categorical columns
  */
 public class CreateInteractions extends H2O.H2OCountedCompleter {
 
@@ -42,8 +42,8 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     return sortedMap;
   }
 
-  // Create a combined domain from the enum values that map to domain A and domain B
-  // Both enum integers are combined into a long = (int,int), and the unsortedMap keeps the occurrence count for each pair-wise interaction
+  // Create a combined domain from the categorical values that map to domain A and domain B
+  // Both categorical integers are combined into a long = (int,int), and the unsortedMap keeps the occurrence count for each pair-wise interaction
   protected String[] makeDomain(Map<IcedLong, IcedLong> unsortedMap, String[] dA, String[] dB) {
     String[] _domain;
 //    Log.info("Collected hash table");
@@ -66,7 +66,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
       final long count = (Long)kv.getValue();
       if (factorCount < _ci._max_factors && count >= _ci._min_occurrence) {
         factorCount++;
-        // extract the two original factor enums
+        // extract the two original factor categoricals
         String feature = "";
         if (dA != dB) {
           int a = (int)(ab >> 32);
@@ -169,7 +169,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
         }
         final Vec C = _out.lastVec();
 
-        // Create array of enum pairs, in the same (sorted) order as in the _domain map -> for linear lookup
+        // Create array of categorical pairs, in the same (sorted) order as in the _domain map -> for linear lookup
         // Note: "other" is not mapped in keys, so keys.length can be 1 less than domain.length
         long[] keys = new long[_sortedMap.size()];
         int pos = 0;
@@ -179,7 +179,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
         assert (C.domain().length == keys.length || C.domain().length == keys.length + 1); // domain might contain _other
 
         // Pass 2: fill Vec values
-        new fillInteractionEnums(idx1 == idx2, keys).doAll(A, B, C);
+        new fillInteractionCategoricals(idx1 == idx2, keys).doAll(A, B, C);
         tmp = C;
 
         // remove temporary vec
@@ -265,14 +265,14 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     }
   }
 
-  // Fill interaction enums in last Vec in Frame
-  private static class fillInteractionEnums extends MRTask<fillInteractionEnums> {
+  // Fill interaction categoricals in last Vec in Frame
+  private static class fillInteractionCategoricals extends MRTask<fillInteractionCategoricals> {
     // INPUT
     boolean _same;
     final long[] _keys; //minimum information to be sent over the wire
     transient private java.util.List<java.util.Map.Entry<Long,Integer>> _valToIndex; //node-local shared helper for binary search
 
-    public fillInteractionEnums(boolean same, long[] keys) {
+    public fillInteractionCategoricals(boolean same, long[] keys) {
       _same = same; _keys = keys;
     }
 

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 #setupRandomSeed(1193410486)
 test.slice.rows <- function() {
@@ -36,7 +36,7 @@ test.slice.rows <- function() {
   print(head(R[I,2:6]))
   DSlice <- as.data.frame(H[I, 2:6])
   
-  testEnd()
+  
 }
 
 doTest("Slice Tests: Row slice using R index", test.slice.rows)

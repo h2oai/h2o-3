@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.gbm.bin.accessors <- function() {
   Log.info("Making gbm with and without validation_frame...")
@@ -89,7 +89,7 @@ test.gbm.bin.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.gbm))
 
-  testEnd()
+  
 }
 
 doTest("Testing model accessors for GBM", test.gbm.bin.accessors)

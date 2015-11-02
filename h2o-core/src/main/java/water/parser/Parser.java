@@ -14,7 +14,7 @@ import water.*;
  *           starts.  Sometimes the data comes from an InputStream - probably a
  *           GZIP stream.
  *  DataOut- Interface for writing results of parsing, accumulating numbers and
- *           strings (enums) or handling invalid lines &amp; parse errors.
+ *           strings or handling invalid lines &amp; parse errors.
  *
  *  static classes:
  *  StreamData  - Class implementing DataIn from a Stream (probably a GZIP stream)

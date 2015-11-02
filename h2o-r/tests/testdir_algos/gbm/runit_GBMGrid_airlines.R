@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 gbm.grid.test <- function() {
     air.hex <- h2o.uploadFile(locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="air.hex")
@@ -29,7 +29,7 @@ gbm.grid.test <- function() {
     expect_model_param(grid_models, "max_depth", max_depth_opts)
     expect_model_param(grid_models, "learn_rate", learn_rate_opts)
 
-    testEnd()
+    
 }
 
 doTest("GBM Grid Test: Airlines Smalldata", gbm.grid.test)

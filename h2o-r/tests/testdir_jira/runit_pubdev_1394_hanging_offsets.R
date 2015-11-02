@@ -2,8 +2,8 @@
 ## Offsets are hanging
 ######################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.hanging.offset <- function() {
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
@@ -15,7 +15,7 @@ test.hanging.offset <- function() {
 
   myglm <- h2o.glm(x = 3:9, y = 2, training_frame = pros.hex, family = "binomial", offset = "PSA")
 
-  testEnd()
+  
 }
 
 doTest("Testing GLM Offsets that Hang", test.hanging.offset)

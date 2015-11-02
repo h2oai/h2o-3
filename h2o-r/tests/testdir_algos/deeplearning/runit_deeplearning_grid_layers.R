@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.deeplearning.gridlayers <- function() {
   iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
@@ -10,7 +10,7 @@ check.deeplearning.gridlayers <- function() {
     paste(str, collapse = ",")
   }
   hidden_opts <- list(c(20, 20), c(50, 50, 50))
-  loss_opts <- c("MeanSquare", "CrossEntropy")
+  loss_opts <- c("Quadratic", "CrossEntropy")
   hyper_params <- list(loss = loss_opts, hidden = hidden_opts)
   Log.info(paste("Deep Learning grid search over hidden layers:", pretty.list(hyper_params)))
   hh <- h2o.grid("deeplearning", x=1:4, y=5, training_frame=iris.hex, hyper_params = hyper_params)
@@ -46,7 +46,7 @@ check.deeplearning.gridlayers <- function() {
   cat("\n\n Defined hidden parameters for grid search:")
   print(hidden_opts)
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Grid Search: Hidden Layers", check.deeplearning.gridlayers)

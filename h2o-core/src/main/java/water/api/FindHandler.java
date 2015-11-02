@@ -3,7 +3,7 @@ package water.api;
 import water.H2O;
 import water.MRTask;
 import water.exceptions.H2OColumnNotFoundArgumentException;
-import water.exceptions.H2OEnumLevelNotFoundArgumentException;
+import water.exceptions.H2OCategoricalLevelNotFoundArgumentException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -27,9 +27,9 @@ class FindHandler extends Handler {
     Vec[] vecs = frame.vecs();
     double ds[] = new double[vecs.length];
     for( int i=0; i<vecs.length; i++ ) {
-      if( vecs[i].isEnum() ) {
+      if( vecs[i].isCategorical() ) {
         int idx = ArrayUtils.find(vecs[i].domain(),find.match);
-        if( idx==-1 && vecs.length==1 ) throw new H2OEnumLevelNotFoundArgumentException("match", find.match, frame._key.toString(), frame.name(i));
+        if( idx==-1 && vecs.length==1 ) throw new H2OCategoricalLevelNotFoundArgumentException("match", find.match, frame._key.toString(), frame.name(i));
         ds[i] = idx;
       } else if( vecs[i].isUUID() ) {
         throw H2O.unimpl();

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.nbayes.golden <- function() {
   Log.info("Importing titanic_sub.csv data...") 
@@ -24,7 +24,7 @@ test.nbayes.golden <- function() {
   #print(summary(predH2O))
   checkNaiveBayesPrediction(predH2O, predR, tolerance = 1e-6)
   
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Golden Test: Titanic without Laplace Smoothing", test.nbayes.golden)

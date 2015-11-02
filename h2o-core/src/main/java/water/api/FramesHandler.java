@@ -25,7 +25,7 @@ import java.util.*;
  * <p> columnSummary(): Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.
  * <p>
  * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)/domain
- * <p> columnDomain(): Return the domains for the specified column. \"null\" if the column is not an Enum.
+ * <p> columnDomain(): Return the domains for the specified column. \"null\" if the column is not an categorical.
  * <p>
  * GET /3/Frames/(?<frameid>.*)/columns/(?<column>.*)
  * <p> column(): Return the specified column from a Frame.
@@ -69,12 +69,22 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     protected static Frame[] fetchAll() {
       // Get all the frames.
       final Key[] frameKeys = KeySnapshot.globalKeysOfClass(Frame.class);
-      Frame[] frames = new Frame[frameKeys.length];
+      List<Frame> frames = new ArrayList<Frame>(frameKeys.length);
       for (int i = 0; i < frameKeys.length; i++) {
         Frame frame = getFromDKV("(none)", frameKeys[i]);
-        frames[i] = frame;
+        // Weed out frames with vecs that are no longer in DKV
+        Vec[] vs = frame.vecs();
+        boolean skip = false;
+        for (int j=0; j < vs.length; j++) {
+          if (DKV.get(vs[j]._key) == null) {
+            Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
+            skip = true;
+            break;
+          }
+        }
+        if (!skip) frames.add(frame);
       }
-      return frames;
+      return frames.toArray(new Frame[frames.size()]);
     }
 
     /**
@@ -204,13 +214,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
-    if (!vec.isString()) {
-      vec.bins();
-    }
+    vec.bins();
 
     // Cons up our result
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count, true);
+    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count);
     return s;
   }
 
@@ -223,7 +231,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 fetch(int version, FramesV3 s) {
-    FramesV3 frames = doFetch(version, s, FrameV3.ColV3.NO_SUMMARY);
+    FramesV3 frames = doFetch(version, s);
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
@@ -234,12 +242,12 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     return frames;
   }
 
-  private FramesV3 doFetch(int version, FramesV3 s, boolean force_summary) {
+  private FramesV3 doFetch(int version, FramesV3 s) {
     Frames f = s.createAndFillImpl();
 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count, force_summary);  // TODO: Refactor with FrameBase
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count);  // TODO: Refactor with FrameBase
 
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
@@ -374,18 +382,14 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 summary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
 
-    if (null != frame) {
+    if( null != frame) {
       Futures fs = new Futures();
-      Vec[] vecArr = frame.vecs();
-      for (Vec v : vecArr) {
-        if (! v.isString()) {
-          v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
-        }
-      }
+      for( Vec v : frame.vecs() )
+        v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
       fs.blockForPending();
     }
 
-    return doFetch(version, s, FrameV3.ColV3.FORCE_SUMMARY);
+    return doFetch(version, s);
   }
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */

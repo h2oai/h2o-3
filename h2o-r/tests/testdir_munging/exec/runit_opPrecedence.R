@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.op.precedence <- function() {
     a = sample(10)
@@ -43,7 +43,7 @@ test.op.precedence <- function() {
     S6 <- as.data.frame(A | B & C)
     expect_that(all(S6 == s6), equals(T))
 
-    testEnd()
+    
 }
 
 doTest("Test operator precedence.", test.op.precedence)

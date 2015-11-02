@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.h2o.cbind <- function() {
   Log.info('test h2o.cbind')
@@ -35,7 +35,7 @@ test.h2o.cbind <- function() {
   # h2o.cbind a df to a slice
   expect_that( dim(h2o.cbind(hdf, hdf[,1])), equals(c(12,5)) )
 
-  testEnd()
+  
 }
 
 doTest("test h2o.cbind", test.h2o.cbind)

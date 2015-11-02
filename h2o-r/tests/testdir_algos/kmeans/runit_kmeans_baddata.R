@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.km.bad_data <- function() {
   prop <- 0.1
@@ -42,7 +42,7 @@ test.km.bad_data <- function() {
   expect_equal(dim(getCenters(fitH2O)), c(5,5))
   # expect_error(h2o.kmeans(iris.hex, k = 5))
   
-  testEnd()
+  
 }
 
 doTest("KMeans Test: Test handling of bad training data", test.km.bad_data)

@@ -1,6 +1,5 @@
 package hex;
 
-import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.FJWThr;
 import water.H2O.H2OCallback;
@@ -48,7 +47,9 @@ public class DMatrix  {
       espc[i] = sum;
       sum += s;
     }
-    return transpose(src, new Frame(new Vec(Vec.newKey(),espc).makeZeros((int)src.numRows())));
+    Key key = Vec.newKey();
+    int rowLayout = Vec.ESPC.rowLayout(key,espc);
+    return transpose(src, new Frame(new Vec(key,rowLayout).makeZeros((int)src.numRows())));
   }
 
   /**
@@ -64,7 +65,7 @@ public class DMatrix  {
     if(src.numRows() != tgt.numCols() || src.numCols() != tgt.numRows())
       throw new IllegalArgumentException("dimension do not match!");
     for(Vec v:src.vecs()) {
-      if (v.isEnum())
+      if (v.isCategorical())
         throw new IllegalArgumentException("transpose can only be applied to all-numeric frames (representing a matrix)");
       if(v.length() > 1000000)
         throw new IllegalArgumentException("too many rows, transpose only works for frames with < 1M rows.");
@@ -87,7 +88,7 @@ public class DMatrix  {
     public TransposeTsk(Frame tgt){ _tgt = tgt;}
     public void map(final Chunk[] chks) {
       final Frame tgt = _tgt;
-      final long [] espc = tgt.anyVec()._espc;
+      final long [] espc = tgt.anyVec().espc();
       final int colStart = (int)chks[0].start();
 //      addToPendingCount(espc.length - 2);
       for (int i = 0; i < espc.length - 1; ++i) {

@@ -2,7 +2,7 @@
 import sys, pprint, argparse, string, errno, sets
 
 sys.path.extend(['.','py'])
-import h2o, h2o_util
+import h2o, h2o_test_utils
 import os
 
 # print "ARGV is:", sys.argv

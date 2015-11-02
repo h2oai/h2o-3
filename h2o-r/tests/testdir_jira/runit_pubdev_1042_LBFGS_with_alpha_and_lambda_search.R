@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 ## ---------------------------------------------------- ##
@@ -20,7 +20,7 @@ test.pubdev1042 <- function(){
   h2o.glm(x = 3:9, y = 2, training_frame = pros.train, family = "binomial", solver = "L_BFGS",
     max_iterations = 25, alpha = 0.5, lambda_search = TRUE)
 
-  testEnd()
+  
 }
 
 doTest("Testing LBFGS with alpha and lambda search", test.pubdev1042)

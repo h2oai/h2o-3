@@ -5,8 +5,8 @@
 # If any categorical columns, throw an error
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.var <- function() {
   hex <- as.h2o(iris)  
@@ -31,7 +31,7 @@ test.var <- function() {
 
   expect_equal(h2o_vec, r_vec, tol=1e-6)
 
-  testEnd()
+  
 }
 
 doTest("Test out the var() functionality", test.var)

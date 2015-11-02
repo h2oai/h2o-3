@@ -28,11 +28,14 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     public long _numcnt;      // Number of observed numeric entries
     public long _catcnt;     // Number of observed categorical entries
     public int[] _permutation;  // Permutation array for shuffling cols
+    public boolean _impute_original;
 
-    public GLRMModelMetrics(int dims, int[] permutation) {
+    public GLRMModelMetrics(int dims, int[] permutation) { this(dims, permutation, false); }
+    public GLRMModelMetrics(int dims, int[] permutation, boolean impute_original) {
       _work = new double[dims];
       _miscls = _numcnt = _catcnt = 0;
       _permutation = permutation;
+      _impute_original = impute_original;
     }
 
     @Override
@@ -56,7 +59,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       for (int i = ncats; i < dataRow.length; i++) {
         int idx = _permutation[i];
         if (Double.isNaN(dataRow[idx])) { c++; continue; }
-        double diff = (dataRow[idx] - sub[c]) * mul[c] - preds[idx];
+        double diff = (_impute_original ? dataRow[idx] : (dataRow[idx] - sub[c]) * mul[c]) - preds[idx];
         _sumsqe += diff * diff;
         _numcnt++;
         c++;

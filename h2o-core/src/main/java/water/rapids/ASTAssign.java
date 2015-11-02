@@ -1,49 +1,41 @@
 package water.rapids;
 
+import hex.Model;
 import water.*;
 import water.fvec.*;
 
-/** Assign into a row slice */
+/** Assign into a row slice.  The destination must already exist, and is updated in-place */
 class ASTAssign extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"dst", "src", "col_expr", "row_expr", "colNames"}; }
-  @Override int nargs() { return -1; } // (= dst src col_expr row_expr {"colname"})
-  @Override
-  public String str() { return "=" ; }
+  @Override public String[] args() { return new String[]{"dst", "src", "col_expr", "row_expr"}; }
+  @Override int nargs() { return 5; } // (:= dst src col_expr row_expr)
+  @Override public String str() { return ":=" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
     ASTNumList cols = check(dst.numCols(), asts[3], dst);
 
-    // Check for append; add a col of NAs if appending
-    if( cols.cnt()==1 && cols.max()-1==dst.numCols() ) {  // -1 since max is exclusive
-      String newColName =  asts.length==6?asts[5].exec(env).getStr():Frame.defaultColName(dst.numCols());
-      dst = new Frame(dst._names.clone(),dst.vecs().clone());
-      dst.add(newColName, dst.anyVec().makeCon(Double.NaN));
-      // DKV update on dst happens in RapidsHandler
-    } else {
-      if( asts.length!=5 ) throw new IllegalArgumentException("assign requires args (= dst src col_expr row_expr)");
-    }
+    if( asts.length!=5 ) throw new IllegalArgumentException("assign requires args (:= dst src col_expr row_expr)");
 
     // Slice out cols for mutation
     Frame slice = new ASTColSlice().apply(env,stk,new AST[]{null,new ASTFrame(dst),cols}).getFrame();
 
     // Assign over the column slice
     if( asts[4] instanceof ASTNum || asts[4] instanceof ASTNumList ) { // Explictly named row assignment
-      ASTNumList rows = check( dst.numRows(), asts[4], dst );
+      ASTNumList rows = asts[4] instanceof ASTNum ? new ASTNumList(((ASTNum)asts[4])._v.getNum()) : ((ASTNumList)asts[4]);
+      if( rows.isEmpty() ) rows = new ASTNumList(0,dst.numRows());
       switch( vsrc.type() ) {
-      case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
-      case Val.STR:  assign_frame_scalar(slice,rows,vsrc.getStr()  );  break;
-      case Val.FRM:  assign_frame_frame (slice,rows,vsrc.getFrame());  break;
-      default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+        case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
+        case Val.STR:  assign_frame_scalar(slice,rows,vsrc.getStr()  );  break;
+        case Val.FRM:  assign_frame_frame (slice,rows,vsrc.getFrame());  break;
+        default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
       }
     } else {                    // Boolean assignment selection?
       Frame rows = stk.track(asts[4].exec(env)).getFrame();
       switch( vsrc.type() ) {
-      case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
-      case Val.STR:  throw H2O.unimpl();
-      case Val.FRM:  throw H2O.unimpl();
-      default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+        case Val.NUM:  assign_frame_scalar(slice,rows,vsrc.getNum()  );  break;
+        case Val.STR:  throw H2O.unimpl();
+        case Val.FRM:  throw H2O.unimpl();
+        default:       throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
       }
     }
     return new ValFrame(dst);
@@ -51,16 +43,11 @@ class ASTAssign extends ASTPrim {
 
   private ASTNumList check( long dstX, AST ast, Frame dst ) {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
-    ASTNumList dim;
-    if( ast instanceof ASTNumList  )    dim = (ASTNumList)ast;
-    else if( ast instanceof ASTNum )    dim = new ASTNumList(((ASTNum)ast)._v.getNum());
-    else if( ast instanceof ASTStr )    dim = new ASTNumList(dst.find(ast.str()));
-    else if( ast instanceof ASTStrList) dim = new ASTNumList(dst.find( ((ASTStrList)ast)._strs));
-    else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
+    ASTNumList dim = new ASTNumList(ast.columns(dst.names()));
     // Special for ASTAssign: "empty" really means "all"
     if( dim.isEmpty() ) return new ASTNumList(0,dstX);
     if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&
-        !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
+            !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
       throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
     return dim;
   }
@@ -89,7 +76,7 @@ class ASTAssign extends ASTPrim {
           }
         }
       }.doAll(new Frame().add(dst).add(src));
-      // Now update all the header info; enums & types
+      // Now update all the header info; categoricals & types
       Futures fs = new Futures();
       for( int col=0; col<dvecs.length; col++ )
         dvecs[col].copyMeta(svecs[col],fs);
@@ -102,7 +89,7 @@ class ASTAssign extends ASTPrim {
     for( int col=0; col<dvecs.length; col++ )
       if( dvecs[col].get_type() != svecs[col].get_type() )
         throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[col]+"\', is of type "+dvecs[col].get_type_str()+" and the source is "+svecs[col].get_type_str());
-    
+
     // Frame fill
     // Handle fast small case
     if( nrows==1 ) {
@@ -220,19 +207,60 @@ class ASTAssign extends ASTPrim {
   }
 }
 
+class ASTAppend extends ASTPrim {
+  @Override public String[] args() { return new String[]{"dst", "src", "colName"}; }
+  @Override int nargs() { return 1+3; } // (append dst src "colName")
+  @Override public String str() { return "append"; }
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame dst = stk.track(asts[1].exec(env)).getFrame();
+    Val vsrc  = stk.track(asts[2].exec(env));
+    String newColName =  asts[3].exec(env).getStr();
+
+    Vec vec = dst.anyVec();
+    switch( vsrc.type() ) {
+    case Val.NUM: vec = vec.makeCon(vsrc.getNum()); break;
+    case Val.STR: throw H2O.unimpl();
+    case Val.FRM: vec = vsrc.getFrame().anyVec();   break;
+    default:  throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
+    }
+    dst = new Frame(dst._names.clone(),dst.vecs().clone());
+    dst.add(newColName, vec);
+    return new ValFrame(dst);
+  }
+}
+
 /** Assign a temp.  All such assignments are final (cannot change), but the
  *  temp can be deleted.  Temp is returned for immediate use, and also set in
  *  the DKV.  Must be globally unique in the DKV.  */
 class ASTTmpAssign extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"id", "frame"}; }
+  @Override public String[] args() { return new String[]{"id", "frame"}; }
   @Override int nargs() { return 1+2; } // (tmp= id frame)
-  @Override
-  public String str() { return "tmp=" ; }
+  @Override public String str() { return "tmp=" ; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
-    String id = ((ASTId)asts[1])._id;
+    Key id = Key.make( asts[1].str() );
     Frame src = stk.track(asts[2].exec(env)).getFrame();
-    Frame dst = src.deepCopy(id);  // Stomp temp down
+    // TODO: COW optimization
+    Frame dst = src.deepCopy(null);  // Make nameless copy
+    Keyed.remove(id);  // Remove anything under prior name (probably pretty heavily shared with src)
+    DKV.put(new Frame(id,dst._names,dst.vecs()));
     return env.addGlobals(dst);
+  }
+}
+
+class ASTRename extends ASTPrim {
+  @Override public String[] args() { return new String[]{"oldId", "newId"}; }
+  @Override int nargs() { return 1+2; } // (rename oldId newId)
+  @Override public String str() { return "rename" ; }
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Key oldKey = Key.make(asts[1].exec(env).getStr());
+    Key newKey = Key.make(asts[2].exec(env).getStr());
+    Iced o = DKV.remove(oldKey).get();
+    if( o instanceof Frame )     DKV.put(newKey, new Frame(newKey, ((Frame)o)._names, ((Frame)o).vecs()));
+    else if( o instanceof Model) {
+      ((Model) o)._key = newKey;
+      DKV.put(newKey, o);
+    }
+    else throw new IllegalArgumentException("Trying to rename Value of type " + o.getClass());
+    return new ValNum(Double.NaN);
   }
 }

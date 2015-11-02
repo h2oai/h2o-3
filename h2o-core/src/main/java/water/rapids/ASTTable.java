@@ -46,7 +46,7 @@ class ASTTable extends ASTPrim {
   private ValFrame fast_table( Vec v1, int ncols, String colname ) {
     if( ncols != 1 || !v1.isInt() ) return null;
     long spanl = (long)v1.max()-(long)v1.min()+1;
-    if( spanl > 100000 ) return null; // Cap at decent array size, for performance
+    if( spanl > 1000000 ) return null; // Cap at decent array size, for performance
 
     // First fast-pass counting
     final long cnts[] = new FastCnt((long)v1.min(),(int)spanl).doAll(v1)._cnts;
@@ -64,7 +64,7 @@ class ASTTable extends ASTPrim {
             }
           }
         }
-      }.doAll(2, dataLayoutVec).outputFrame(new String[]{colname, "Count"},
+      }.doAll(new byte[]{Vec.T_NUM,Vec.T_NUM}, dataLayoutVec).outputFrame(new String[]{colname, "Count"},
                                             new String[][]{v1.domain(),null});
     dataLayoutVec.remove();
     return new ValFrame(fr);
@@ -144,7 +144,7 @@ class ASTTable extends ASTPrim {
         cnts[row] = al==null ? 0 : al.get();
       }
       Vec vec = Vec.makeVec(cnts,null,Vec.VectorGroup.VG_LEN1.addVec());
-      res.add(vx.isEnum() ? vx.domain()[col] : Double.toString(dcols[col]),vec);
+      res.add(vx.isCategorical() ? vx.domain()[col] : Double.toString(dcols[col]),vec);
     }
 
     return new ValFrame(res);
@@ -272,7 +272,7 @@ class ASTUnique extends ASTPrim {
     Vec v;
     if( fr.numCols()!=1 )
       throw new IllegalArgumentException("Unique applies to a single column only.");
-    if( fr.anyVec().isEnum() ) {
+    if( fr.anyVec().isCategorical() ) {
       v = Vec.makeSeq(0, (long)fr.anyVec().domain().length, true);
       v.setDomain(fr.anyVec().domain());
       DKV.put(v);

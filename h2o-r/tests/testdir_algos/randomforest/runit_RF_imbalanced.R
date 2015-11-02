@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.rf.imbalanced <- function() {
   covtype <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
@@ -26,7 +26,7 @@ test.rf.imbalanced <- function() {
 
   expect_true(class_6_err_imbalanced >= 0.9*class_6_err_balanced, "balance_classes makes it at least 10% worse!")
 
-  testEnd()
+  
 }
 
 doTest("rf imbalanced", test.rf.imbalanced)

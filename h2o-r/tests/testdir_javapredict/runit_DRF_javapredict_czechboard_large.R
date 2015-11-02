@@ -9,40 +9,29 @@
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
 
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
 
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
+test.drf.javapredict.czech <-
+function() {
+    #----------------------------------------------------------------------
+    # Parameters for the test.
+    #----------------------------------------------------------------------
+    training_file <- test_file <- locate("smalldata/gbm_test/czechboard_300x300.csv")
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
 
-ntree <- 100
-print(paste(    "ntrees"     , ntree))
+    params                 <- list()
+    params$ntrees          <- 100
+    params$max_depth       <- 5
+    params$min_rows        <- 10
+    params$x               <- c("C1", "C2")
+    params$y               <- "C3"
+    params$training_frame  <- training_frame
 
-depth <- 5
-print(paste(    "depth"     , depth))
+    #----------------------------------------------------------------------
+    # Run the test
+    #----------------------------------------------------------------------
+    doJavapredictTest("randomForest",test_file,test_frame,params)
+}
 
-nodesize <- 10
-print(paste( "nodesize", nodesize))
-
-train <- locate("smalldata/gbm_test/czechboard_300x300.csv")
-print(paste(    "train"     , train))
-
-test <- locate("smalldata/gbm_test/czechboard_300x300.csv")
-print(paste(    "test"     , test))
-
-x = c("C1", "C2")
-print(    "x"     )
-print(x)
-
-y = "C3"
-print(paste(    "y" , y))
-
-
-#----------------------------------------------------------------------
-# Run the test
-#----------------------------------------------------------------------
-source('../Utils/shared_javapredict_RF.R')
+doTest("RF test", test.drf.javapredict.czech)

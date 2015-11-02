@@ -1,7 +1,7 @@
 ####### This tests offset in gbm for bernoulli by comparing results with R ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
     cars = h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
@@ -11,6 +11,7 @@ test <- function() {
     names(offset) = "x1"
     cars = h2o.cbind(cars,offset)
     df = as.data.frame(cars)
+    df$economy_20mpg <- as.integer(df$economy_20mpg) - 1
 
 	gg = gbm(formula = economy_20mpg~cylinders+displacement+power+weight+acceleration+year+offset(rep(.5,398)),distribution = "bernoulli",data = df,n.trees = 1,interaction.depth = 1,n.minobsinnode = 1,shrinkage = 1,train.fraction = 1,bag.fraction = 1)
 	hh = h2o.gbm(x = 3:8,y = "economy_20mpg",training_frame = cars,distribution = "bernoulli",ntrees = 1,max_depth = 1,min_rows = 1,learn_rate = 1,offset_column = "x1")
@@ -26,6 +27,6 @@ test <- function() {
 	expect_equal(min(pr), min(ph[,3]),tolerance=1e-6 )
 	expect_equal(max(pr), max(ph[,3]),tolerance=1e-6 )
 
-	testEnd()
+	
 }
 doTest("GBM offset Test: GBM w/ offset for bernoulli distribution", test)

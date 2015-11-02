@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.head_empty_frame <- function() {
 
@@ -13,7 +13,7 @@ test.head_empty_frame <- function() {
   head(b.h2o[,1]) 
   head(b.h2o[1,]) 
   
-  testEnd()
+  
 }
 
 doTest("Test frame add.", test.head_empty_frame)

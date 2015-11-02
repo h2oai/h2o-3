@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.pub_507_parse_fail <- function() {
 
@@ -15,7 +15,7 @@ print(hex)
 
 expect_equal(as.data.frame(hex[2,1])[1,1], rdat[2,1])
 
-testEnd()
+
 
 }
 

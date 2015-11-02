@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
+
+
 
 #-----------------#
 # Testing on HTTP #
@@ -12,7 +12,7 @@ test.import.http <- function() {
   print(aa)
   print(t)
 
-  testEnd()
+  
 }
 
 doTest("Testing HTTP File Import", test.import.http)

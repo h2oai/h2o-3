@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.deeplearning.grid.cars <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
@@ -80,7 +80,7 @@ check.deeplearning.grid.cars <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Grid Search using cars dataset", check.deeplearning.grid.cars)

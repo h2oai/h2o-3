@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.nbayes.prostate <- function() {
   Log.info("Importing prostate.csv data...") 
@@ -18,7 +18,7 @@ test.nbayes.prostate <- function() {
   Log.info("Predict on training data")
   prostate.pred <- predict(prostate.nb, prostate.hex)
   print(head(prostate.pred))
-  testEnd()
+  
 }
 
 doTest("Naive Bayes Test: Prostate without Laplace Smoothing", test.nbayes.prostate)

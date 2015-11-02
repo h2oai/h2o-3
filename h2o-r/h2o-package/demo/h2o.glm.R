@@ -3,9 +3,9 @@
 # Then, it runs GLM with a binomial link function using 10-fold cross-validation
 # Note: This demo runs H2O on localhost:54321
 library(h2o)
-localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+h2o.init()
 
-prostate.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
+prostate.hex = h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
 summary(prostate.hex)
 prostate.glm = h2o.glm(x = c("AGE","RACE","PSA","DCAPS"), y = "CAPSULE", training_frame = prostate.hex, family = "binomial", alpha = 0.5)
 print(prostate.glm)

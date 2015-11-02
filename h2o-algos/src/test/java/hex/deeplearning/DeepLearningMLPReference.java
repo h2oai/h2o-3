@@ -4,7 +4,6 @@ import org.junit.Ignore;
 import hex.deeplearning.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningParameters.Loss;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.RandomUtils;
 
 import java.text.DecimalFormat;
@@ -597,7 +596,7 @@ public class DeepLearningMLPReference {
         double derivative = (1 - outputs[i]) * outputs[i];
         if (loss == Loss.CrossEntropy) {
           oGrads[i] = tValues[i] - outputs[i];
-        } else if (loss == Loss.MeanSquare) {
+        } else if (loss == Loss.Quadratic) {
           // 'mean squared error version'. research suggests cross-entropy is better here . . .
           oGrads[i] = derivative * (tValues[i] - outputs[i]);
         } else throw new RuntimeException("invalid loss function");

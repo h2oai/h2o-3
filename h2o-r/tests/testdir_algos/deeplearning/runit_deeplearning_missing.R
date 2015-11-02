@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.deeplearning_missing <- function() {
   Log.info("Test checks if Deep Learning works fine with a categorical dataset that has many missing values (in both train & test splits)")
@@ -48,7 +48,7 @@ check.deeplearning_missing <- function() {
   }
   checkTrue(sum(errors) < 2.2, "Sum of classification errors is too large!")
 
-  testEnd()
+  
 }
 
 doTest("Deep Learning Missing Values Test", check.deeplearning_missing)

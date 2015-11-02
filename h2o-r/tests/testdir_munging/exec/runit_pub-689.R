@@ -1,6 +1,6 @@
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 # use this for interactive setup
 #      library(h2o)
@@ -46,7 +46,7 @@ test.nonexistent_rhs_col <- function() {
     # expect_that(all(b == b.h2o.R), equals(T))
     # This doesn't work in R
 
-    testEnd()
+    
 }
 
 doTest("Test nonexistent rhs col.", test.nonexistent_rhs_col)

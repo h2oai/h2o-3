@@ -14,7 +14,7 @@ import java.util.Random;
  * This class contains the state of the Deep Learning model
  * This will be shared: one per node
  */
-public class DeepLearningModelInfo extends Iced {
+final public class DeepLearningModelInfo extends Iced {
 
   public TwoDimTable summaryTable;
 
@@ -51,7 +51,7 @@ public class DeepLearningModelInfo extends Iced {
 
   /**
    * Check whether a missing value was found for every categorical predictor
-   * @param cats
+   * @param cats activation of categorical buckets for a given row
    */
   void checkMissingCats(int[] cats)  {
     if (cats == null) return;
@@ -301,7 +301,7 @@ public class DeepLearningModelInfo extends Iced {
 
   /**
    * Create a summary table
-   * @return
+   * @return TwoDimTable with the summary of the model
    */
   TwoDimTable createSummaryTable() {
     computeStats();
@@ -433,7 +433,7 @@ public class DeepLearningModelInfo extends Iced {
    * Add another model info into this
    * This will add the weights/biases/learning rate helpers, and the number of processed training samples
    * Note: It will NOT add the elastic averaging helpers, which are always kept constant (they already are the result of a reduction)
-   * @param other
+   * @param other Other DeepLearningModelInfo to add into this one
    */
   public void add(DeepLearningModelInfo other) {
     for (int i = 0; i < dense_row_weights.length; ++i)
@@ -460,7 +460,7 @@ public class DeepLearningModelInfo extends Iced {
 
   /**
    * Multiply all weights/biases by a real-valued number
-   * @param N
+   * @param N multiplication factor
    */
   protected void mult(double N) {
     div(1 / N);
@@ -468,7 +468,7 @@ public class DeepLearningModelInfo extends Iced {
 
   /**
    * Divide all weights/biases by a real-valued number
-   * @param N
+   * @param N divisor
    */
   protected void div(double N) {
     for (int i = 0; i < dense_row_weights.length; ++i)
@@ -732,4 +732,5 @@ public class DeepLearningModelInfo extends Iced {
     }
   }
   static public GradientCheck gradientCheck = null;
+  static public GradientCheck gradientCheckBias = null;
 }

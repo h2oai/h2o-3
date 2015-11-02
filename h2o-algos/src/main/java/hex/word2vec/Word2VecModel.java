@@ -13,7 +13,7 @@ import water.fvec.NewChunk;
 import water.fvec.AppendableVec;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
-import water.parser.ValueString;
+import water.parser.BufferedString;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -57,13 +57,13 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    *  the word isn't present in the vocabulary.
    */
   public float[] transform(String target) {
-    NonBlockingHashMap<ValueString, Integer> vocabHM = buildVocabHashMap();
+    NonBlockingHashMap<BufferedString, Integer> vocabHM = buildVocabHashMap();
     Vec[] vs = ((Frame) _w2vKey.get()).vecs();
-    ValueString tmp = new ValueString(target);
+    BufferedString tmp = new BufferedString(target);
     return transform(tmp, vocabHM, vs);
   }
 
-  private float[] transform(ValueString tmp, NonBlockingHashMap<ValueString, Integer> vocabHM, Vec[] vs) {
+  private float[] transform(BufferedString tmp, NonBlockingHashMap<BufferedString, Integer> vocabHM, Vec[] vs) {
     final int vecSize = vs.length-1;
     float[] vec = new float[vecSize];
     if (!vocabHM.containsKey(tmp)) {
@@ -85,9 +85,9 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public HashMap<String, Float> findSynonyms(String target, int cnt) {
     if (cnt > 0) {
-      NonBlockingHashMap<ValueString, Integer> vocabHM = buildVocabHashMap();
+      NonBlockingHashMap<BufferedString, Integer> vocabHM = buildVocabHashMap();
       Vec[] vs = ((Frame) _w2vKey.get()).vecs();
-      ValueString tmp = new ValueString(target);
+      BufferedString tmp = new BufferedString(target);
       float[] tarVec = transform(tmp, vocabHM, vs);
       return findSynonyms(tarVec, cnt, vs);
     } else {
@@ -142,7 +142,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       }
     }
     for (int i=0; i < cnt; i++)
-      res.put(vs[0].atStr(new ValueString(), matches[i]).toString(), scores[i]);
+      res.put(vs[0].atStr(new BufferedString(), matches[i]).toString(), scores[i]);
 
     return res;
   }
@@ -165,12 +165,12 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   /**
    * Hashmap for quick lookup of a word's row number.
    */
-  private  NonBlockingHashMap<ValueString, Integer>  buildVocabHashMap() {
-    NonBlockingHashMap<ValueString, Integer> vocabHM;
+  private  NonBlockingHashMap<BufferedString, Integer>  buildVocabHashMap() {
+    NonBlockingHashMap<BufferedString, Integer> vocabHM;
     Vec word = ((Frame) _w2vKey.get()).vec(0);
     final int vocabSize = (int) ((Frame) _w2vKey.get()).numRows();
     vocabHM = new NonBlockingHashMap<>(vocabSize);
-    for(int i=0; i < vocabSize; i++) vocabHM.put(word.atStr(new ValueString(),i),i);
+    for(int i=0; i < vocabSize; i++) vocabHM.put(word.atStr(new BufferedString(),i),i);
     return vocabHM;
   }
 
@@ -185,7 +185,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     NewChunk cs[] = new NewChunk[vecs.length];
     AppendableVec avs[] = new AppendableVec[vecs.length];
     for (int i = 0; i < vecs.length; i++) {
-      avs[i] = new AppendableVec(keys[i]);
+      avs[i] = new AppendableVec(keys[i], Vec.T_NUM);
       cs[i] = new NewChunk(avs[i], 0);
     }
     //fill in vector values
@@ -196,10 +196,11 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     }
 
     //finalize vectors
+    final int rowLayout = avs[0].compute_rowLayout();
     for (int i = 0; i < vecs.length; i++) {
       colNames[i] = new String("V"+i);
       cs[i].close(0, fs);
-      vecs[i] = avs[i].close(fs);
+      vecs[i] = avs[i].close(rowLayout,fs);
     }
 
     fs.blockForPending();

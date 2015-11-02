@@ -4,8 +4,8 @@
 ##
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 test <- function() {
@@ -32,7 +32,7 @@ test <- function() {
   } else {
     print("skipping test in client mode...")
   }
-  testEnd()
+  
 }
 
 doTest("Testing memory performance of Strong Rules", test)

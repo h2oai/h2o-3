@@ -38,7 +38,7 @@ public class Tabulate extends Job<Tabulate> {
     Stats(Vec v) {
       _min = v.min();
       _max = v.max();
-      _isEnum = v.isEnum();
+      _isCategorical = v.isCategorical();
       _isInt = v.isInt();
       _cardinality = v.cardinality();
       _missing = v.naCnt() > 0 ? 1 : 0;
@@ -46,7 +46,7 @@ public class Tabulate extends Job<Tabulate> {
     }
     final double _min;
     final double _max;
-    final boolean _isEnum;
+    final boolean _isCategorical;
     final boolean _isInt;
     final int _cardinality;
     final int _missing; //0 or 1
@@ -64,7 +64,7 @@ public class Tabulate extends Job<Tabulate> {
 
   private int res(final int v) {
     final int missing = _stats[v]._missing;
-    if (_stats[v]._isEnum)
+    if (_stats[v]._isCategorical)
       return _stats[v]._cardinality + missing;
     return bins(v) + missing;
   }
@@ -75,7 +75,7 @@ public class Tabulate extends Job<Tabulate> {
     }
     int b;
     int bins = bins(v);
-    if (_stats[v]._isEnum) {
+    if (_stats[v]._isCategorical) {
       assert((int)val == val);
       b = (int) val;
     } else {
@@ -91,7 +91,7 @@ public class Tabulate extends Job<Tabulate> {
     int missing = _stats[v]._missing;
     if (missing == 1 && b==0) return "missing(NA)";
     if (missing == 1) b--;
-    if (_stats[v]._isEnum)
+    if (_stats[v]._isCategorical)
       return _stats[v]._domain[b];
     int bins = bins(v);
     if (_stats[v]._isInt && (_stats[v]._max - _stats[v]._min + 1) <= bins)
@@ -120,7 +120,7 @@ public class Tabulate extends Job<Tabulate> {
       x = ((Frame)DKV.getGet(in._dest)).anyVec();
       in.remove();
     } else if (x.isInt() && (x.max() - x.min() + 1) <= _nbins_predictor) {
-      x = x.toEnum();
+      x = x.toCategoricalVec();
     }
     Vec y = _dataset.vec(_response);
     if (y == null)
@@ -135,7 +135,7 @@ public class Tabulate extends Job<Tabulate> {
       y = ((Frame)DKV.getGet(in._dest)).anyVec();
       in.remove();
     } else if (y.isInt() && (y.max() - y.min() + 1) <= _nbins_response) {
-      y = y.toEnum();
+      y = y.toCategoricalVec();
     }
     if (y!=null && y.cardinality() > 2)
       warn("_response", "Response column has more than two factor levels - mean response depends on lexicographic order of factors!");

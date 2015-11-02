@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.summary.factor <- function() {
   Log.info("Importing airlines data...\n")
@@ -26,7 +26,7 @@ test.summary.factor <- function() {
 #   Log.info("H2O Summary:"); print(sumH2O)
 #   checkSummary(sumH2O, sumR)
   
-  testEnd()
+  
 }
 
 doTest("Summary Test: Prostate with Conversion of Cols to Factors", test.summary.factor)
