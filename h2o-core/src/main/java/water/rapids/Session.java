@@ -47,7 +47,7 @@ public class Session {
   public Val exec(String rapids) { return exec(new Exec(rapids).parse(), null);  }
 
   // Execute an AST in the current Session with much assertion-checking
-  Val exec(AST ast, ASTFun scope) {
+  public Val exec(AST ast, ASTFun scope) {
     String sane ;
     assert (sane=sanity_check_refs())==null : sane;
 

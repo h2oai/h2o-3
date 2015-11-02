@@ -50,7 +50,7 @@ public class ASTExec extends AST {
   // No expected argument count
   @Override int nargs() { return -1; }
   public String[] getArgs() { 
-    throw water.H2O.unimpl();
-    //return ((ValFun)_asts[0].exec(new Env())).getArgs(); 
+//    throw water.H2O.unimpl();
+    return ((ValFun)_asts[0].exec(new Env(null))).getArgs();
   }
 }
