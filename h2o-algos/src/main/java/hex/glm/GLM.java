@@ -1168,18 +1168,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double[] nullBeta = MemoryManager.malloc8d(beta.length); // compute ginfo at null beta to get estimate for rho
             if (_dinfo._intercept) {
               if (_parms._family == Family.multinomial) {
-
                 for (int c = 0; c < _nclass; c++)
                   nullBeta[(c + 1) * (P + 1) - 1] = _parms.link(_taskInfo._ymu[c]);
               } else
                 nullBeta[nullBeta.length - 1] = _parms.link(_taskInfo._ymu[0]);
             }
-
             GradientInfo ginfo = solver.getGradient(nullBeta);
             double [] direction = ArrayUtils.mult(ginfo._gradient.clone(), -1);
-            MoreThuente mt = new MoreThuente();
-            mt.evaluate(solver, ginfo, nullBeta, direction, 1e-12, 1000, 10);
-            double t = mt.step();
+            double t = 1;
+            if(l1pen > 0) {
+              MoreThuente mt = new MoreThuente();
+              mt.evaluate(solver, ginfo, nullBeta, direction, 1e-12, 1000, 10);
+              t = mt.step();
+            }
             double[] rho = MemoryManager.malloc8d(beta.length);
             // compute rhos
             for (int i = 0; i < rho.length - 1; ++i)
