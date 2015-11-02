@@ -16,7 +16,7 @@ def vec_scaler_comparisons():
     ## H2OVec/scaler
     # ==
     row_sum = 0
-    levels = air.levels(16)
+    levels = air[16].levels()
     for level in levels[0]:
        r, c = air[air["Origin"] == str(level)].dim
        row_sum += r

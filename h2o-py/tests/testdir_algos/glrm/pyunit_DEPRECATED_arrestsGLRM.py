@@ -16,7 +16,7 @@ def glrm_arrests():
                  [2.212,  92.24, -17.54, 23.268],
                  [0.312, 123.24,  14.46,  9.768],
                  [1.012,  19.24, -15.54, -1.732]]
-    initial_y_h2o = h2o.H2OFrame.fromPython(initial_y)
+    initial_y_h2o = h2o.H2OFrame(initial_y)
     initial_y_h2o.show()
 
     print "H2O GLRM on de-meaned data with quadratic loss:\n"

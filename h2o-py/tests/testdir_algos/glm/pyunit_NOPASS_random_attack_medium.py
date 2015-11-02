@@ -43,7 +43,7 @@ def random_attack():
           upper_bound = lower_bound + random.random()
           bc.append([name, lower_bound, upper_bound])
       if len(bc) > 0:
-        beta_constraints = h2o.H2OFrame.fromPython(bc)
+        beta_constraints = h2o.H2OFrame(bc)
         beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
         kwargs['beta_constraints'] = beta_constraints.frame_id
 

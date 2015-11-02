@@ -17,11 +17,11 @@ def vec_math_ops():
     zero_one_data = [random.randint(0,1) for c in range(10)]
     zero_one_data = [zero_one_data, zero_one_data]
 
-    h2o_data1 = h2o.H2OFrame.fromPython(zip(*sin_cos_tan_atan_sinh_cosh_tanh_asinh_data))
-    h2o_data2 = h2o.H2OFrame.fromPython(zip(*asin_acos_atanh_data))
-    h2o_data3 = h2o.H2OFrame.fromPython(zip(*acosh_data))
-    h2o_data4 = h2o.H2OFrame.fromPython(zip(*abs_data))
-    h2o_data5 = h2o.H2OFrame.fromPython(zip(*zero_one_data))
+    h2o_data1 = h2o.H2OFrame(zip(*sin_cos_tan_atan_sinh_cosh_tanh_asinh_data))
+    h2o_data2 = h2o.H2OFrame(zip(*asin_acos_atanh_data))
+    h2o_data3 = h2o.H2OFrame(zip(*acosh_data))
+    h2o_data4 = h2o.H2OFrame(zip(*abs_data))
+    h2o_data5 = h2o.H2OFrame(zip(*zero_one_data))
 
     np_data1 = np.array(sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
     np_data2 = np.array(asin_acos_atanh_data)

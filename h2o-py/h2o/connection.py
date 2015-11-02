@@ -560,15 +560,10 @@ class H2OConnection(object):
   @staticmethod
   def rest_ctr(): global _rest_ctr; return _rest_ctr
 
-
 # On exit, close the session to allow H2O to cleanup any temps
 def end_session():
-  print("===== ATTEMPTING SESSION END =====")
   H2OConnection.delete(url_suffix="InitID")
-
-import atexit
-atexit.register(end_session)
-
+  print "Sucessfully closed the H2O Session."
 
 def get_human_readable_size(num):
   exp_str = [(0, 'B'), (10, 'KB'), (20, 'MB'), (30, 'GB'), (40, 'TB'), (50, 'PB'), ]
@@ -618,3 +613,4 @@ def _kill_jvm_fork():
       print "Successfully stopped H2O JVM started by the h2o python module."
 
 atexit.register(_kill_jvm_fork)
+atexit.register(end_session)

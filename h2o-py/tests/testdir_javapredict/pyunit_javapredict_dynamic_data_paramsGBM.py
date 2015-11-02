@@ -32,7 +32,7 @@ def javapredict_dynamic_data():
     elif distribution == 'multinomial': dataset_params['response_factors'] = random.randint(3,100)
     else:
         dataset_params['has_response'] = False
-        response = h2o.H2OFrame.fromPython([random.randint(1,1000) for r in range(0,dataset_params['rows'])])
+        response = h2o.H2OFrame([random.randint(1,1000) for r in range(0,dataset_params['rows'])])
         append_response = True
     print "Distribution: {0}".format(distribution)
 

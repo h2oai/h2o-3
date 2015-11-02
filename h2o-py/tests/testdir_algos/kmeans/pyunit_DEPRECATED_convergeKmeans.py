@@ -31,14 +31,14 @@ def convergeKmeans():
   centers = start
   for i in range(miters):
     rep_fit = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=centers, max_iterations=1)
-    centers = h2o.H2OFrame.fromPython(rep_fit.centers())
+    centers = h2o.H2OFrame(rep_fit.centers())
 
   # Log.info(paste("Run k-means with max_iter=miters"))
   all_fit = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=start, max_iterations=miters)
   assert rep_fit.centers() == all_fit.centers(), "expected the centers to be the same"
 
   # Log.info("Check cluster centers have converged")
-  all_fit2 = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=h2o.H2OFrame.fromPython(all_fit.centers()),
+  all_fit2 = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=h2o.H2OFrame(all_fit.centers()),
                         max_iterations=1)
   avg_change = sum([sum([pow((e1 - e2),2) for e1, e2 in zip(c1,c2)]) for c1, c2 in zip(all_fit.centers(),
                                                                                        all_fit2.centers())]) / ncent
