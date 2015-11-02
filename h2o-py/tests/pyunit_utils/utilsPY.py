@@ -322,7 +322,7 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
         if random.randint(0,1): grid_space['activation'] = \
             random.sample(["Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "MaxoutWithDropout"],
                           random.randint(2,3))
-        if random.randint(0,1): grid_space['epochs'] = random.sample(range(1,10),random.randint(2,3))
+        if random.randint(0,1): grid_space['l2'] = [0.001*random.random() for r in range(random.randint(2,3))]
         grid_space['distribution'] = random.sample(['bernoulli','multinomial','gaussian','poisson','tweedie','gamma'],1)
         return grid_space
     elif algo == "naiveBayes":
