@@ -1,7 +1,7 @@
 % -*- mode: tex; fill-column: 115; -*-
 
-\input{common/conf_top.tex}
-%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
+%\input{common/conf_top.tex}
+\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \defcitealias{glmnet}{Regularization Paths for Generalized Linear Models via Coordinate Descent by Friedman et. al}
 
@@ -12,8 +12,8 @@
 \defcitealias{prox}{Proximal Algorithms by Boyd et. al}
 
 \input{common/conf_titles.tex}
-%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
-\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
+\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+%\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
 \begin{document}
 
@@ -29,14 +29,15 @@
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
 
-\textsc{Nadine Hussami  \hspace{10pt} Tom Kraljevic \hspace{10pt} \hspace{10pt} Jessica Lanford}
+\textsc{\small{Tomas Nykodym \hspace{10pt} Tom Kraljevic \hspace{10pt} Nadine Hussami   \hspace{10pt}}}
 
-\textsc{Tomas Nykodym \hspace{10pt} Ariel Rao \hspace{10pt} Amy Wang }
+\textsc{\small{ Ariel Rao \hspace{10pt} Amy Wang }}
+
+\textsc{\small{Edited by: Jessica Lanford}}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
 
-\normalsize
 
 {\url{http://h2o.ai/resources/}}
 
@@ -66,7 +67,10 @@
 
 Generalized Linear Modeling with H2O\\
 
-by Nadine Hussami, Tom Kraljevic, \\ Jessica Lanford, Tomas Nykodym, \\ Ariel Rao,  \& \ Amy Wang \\
+by Tomas Nykodym, Tom Kraljevic, \\
+Nadine Hussami, Ariel Rao,  \& \ Amy Wang \\
+Edited by: Jessica Lanford
+
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -139,7 +143,7 @@ The document source itself can be found here:
 
 To cite this booklet, use the following: 
 
-Hussami, N., Kraljevic, T., Lanford, J., Nykodym, T., Rao, A., and Wang, A. (Aug. 2015). {\textit{Generalized Linear Modeling with H2O}}. {\url{http://h2o.ai/resources/}}. 
+Nykodym, T.,  Kraljevic, T., Hussami, N., Rao, A.,  and Wang, A. (Nov. 2015). {\textit{Generalized Linear Modeling with H2O}}. {\url{http://h2o.ai/resources/}}. 
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -320,13 +324,13 @@ $$ \max_{\beta,\beta_0} \ - \frac{1}{2N} \sum_{i=1}^N  (x_i^{\top}\beta + \beta_
 The deviance is the sum of the squared prediction errors: 
 $$ D = \sum_{i=1}^{N} (y_i - \hat{y}_i)^2 . $$
 
-\waterExampleInR
 
 Included in the H2O package is a prostate cancer dataset. The data was collected by Dr. Donn Young at the Ohio State
 University Comprehensive Cancer Center for a study of patients with varying degrees of prostate cancer. The
 following example illustrates how to build a model to predict the volume (VOL) of tumors obtained from ultrasounds
 based on features such as age and race.
-\bigskip
+
+\waterExampleInR
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_gaussian_example.R}
 
@@ -356,12 +360,13 @@ $$  \max_{\beta,\beta_0} \  \frac{1}{N} \sum_{i=1}^{N} \left( \ y_i (x_i^{\top}\
 The corresponding deviance is equal to 
 $$D = -2\sum_{i=1}^{n} \left(y_i \log(\hat{y}_i) + (1 - y_i)\log(1-\hat{y}_i)  \right).$$
 
-\waterExampleInR
+
 
 Using the prostate dataset, this example builds a binomial model that classifies the incidence of penetration of the prostatic
 capsule (CAPSULE). Confirm the entries in the CAPSULE column are binary using the \texttt{h2o.table()}
 function. Change the regression by changing the family to binomial.
 
+\waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_example.R}
 
 \waterExampleInPython
@@ -384,16 +389,17 @@ The corresponding deviance is equal to:
 
 $$D = -2\sum_{i=1}^{N} \left( y_i \log(y_i/\hat{y}_i) - ( y_i - \hat{y}_i  ) \right)$$
 
-\waterExampleInR
 
 This example loads the Insurance data from the MASS library, imports it into H2O, and runs a Poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they
 own (Group).
-\bigskip
+
+\waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_poisson_example.R}
 
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_poisson_example.py}
 
+\newpage
 \subsubsection{Gamma Models}
 The gamma distribution is useful for modeling a positive continuous response variable, where the conditional
 variance of the response grows with its mean but the coefficient of variation of the response $\sigma^2(y_i)/\mu_i$ is
@@ -408,12 +414,14 @@ The corresponding deviance is equal to:
 
 $$D = 2\sum_{i=1}^{N} - \log\left({\frac{ y_i }{\hat{y}_i}}\right) + \frac{(y_i - \hat{y}_i)}{\hat{y}_i} $$
 
-\waterExampleInR
 To change the link function from the default inverse function to the log link function, modify the \texttt{link}
 argument. 
 
+\waterExampleInR
+
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_gamma_example.R}
 
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_gamma_example.py}
 
@@ -423,13 +431,6 @@ Tweedie distributions are a family of distributions which include gamma, normal,
 
 The Tweedie distribution is parametrized by variance power $p$. It is defined for all $p$ values except in the $(0,1)$ interval, and has the following distributions as special cases.
 
-\waterExampleInR
-\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_tweedie_example.R}
-
-\medskip
-\waterExampleInPython
-\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_example.py}
-
 \begin{itemize}
 \item  $p=0$: Normal
 \item  $p=1$: Poisson
@@ -438,6 +439,14 @@ The Tweedie distribution is parametrized by variance power $p$. It is defined fo
 \item $p=3$: Inverse-Gaussian
 \item $p>2$:  Stable, with support on the positive reals % (was 2?)
 \end{itemize}
+
+\newpage
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_tweedie_example.R}
+
+\medskip
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_example.py}
 
 The normal and Poisson examples have already been covered in the previous sections. For $p>1$, the model likelihood to maximize has the form: 
 $$  \max_{\beta,\beta_0} \ \sum_{i=1}^N \log(a(y_i,\phi)) + \left( \frac{1}{\phi}\left( \frac{y_i\mu_i^{1-p}}{1-p} - \kappa(\mu_i,p) \right)  \right) -\lambda  \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right), $$
@@ -483,6 +492,7 @@ The following examples show how to coerce the data type of a column to a factor.
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/coerce_column_to_factor.R}
 
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/coerce_column_to_factor.py}
 
@@ -621,16 +631,14 @@ In summary, the solver options for fitting a GLM in H2O are:
 
 %\textbf{Note}: The coordinate descent implementations are experimental and their performance characteristics are still being evaluated. 
 
-\subsubsection{Stopping criteria}
+\subsubsection{Stopping Criteria}
 
 When using the $\ell_1$ penalty with lambda search, specify a value for the \\ \texttt{max\_active\_predictors} parameter to stop the search before it completes.  
 
 Models built at the beginning of the lambda search have higher lambda values, consider fewer predictors, and take less time to calculate the model. 
 
 Models built at the end of the lambda search have
-lower lambda values, incorporate more predictors, and take a longer time to calculate the model. 
-
-Set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
+lower lambda values, incorporate more predictors, and take a longer time to calculate the model. Set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
 
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_stopping_criteria.R}
@@ -648,17 +656,16 @@ H2O's GLM has several advanced features to help build better models.
 The \texttt{standardize} parameter, which is enabled by default, standardizes numeric columns to have zero mean and
 unit variance.  This parameter must be enabled (using \texttt{standardize=TRUE}) to produce standardized coefficient magnitudes in the model output.
 
-We recommend enabling standardization when using regularization (i.e. \texttt{lambda} is chosen by H2O or set by
-the user to be greater than 0). Only advanced users should disable standardization.
+We recommend enabling standardization when using regularization (i.e. \texttt{lambda} is chosen by H2O or greater than 0). Only advanced users should disable standardization.
 
 \subsubsection{K-fold Cross-Validation}
 
 All validation values can be computed using either the training dataset (the default option) or using K-fold
 cross-validation (\texttt{kfolds $> 1$)}. When $K$-fold cross-validation is enabled, H2O randomly splits data into $K$
-equally-sized parts, trains each of the $K$ models on $K-1$ parts, and computes validation on the part that was not
+equally-sized sections, trains each of the $K$ models on $K-1$ sections, and computes validation on the section that was not
 used for training.
 
-You can also specify the rows that are assigned to each fold using the\\ \texttt{fold\_assignment}
+You can also specify the rows assigned to each fold using the\\ \texttt{fold\_assignment}
 or \texttt{fold\_column} parameters.
 
 \waterExampleInR
@@ -669,8 +676,8 @@ or \texttt{fold\_column} parameters.
 
 \subsubsection{Grid Search Over Alpha}
 
-Alpha search is not always needed and simply changing its value to 0.5 (or 0 or 1 if we only want Ridge or Lasso,
-respectively) works in most cases. If $\alpha$ search is needed, specifying only a few values is typically sufficient. Alpha
+Alpha search is not always necessary; changing its value to 0.5 (or 0 or 1 if we only want Ridge or Lasso,
+respectively) works in most cases. If $\alpha$ search is required, specifying only a few values is typically sufficient. Alpha
 search is invoked by supplying a list of values for $\alpha$ instead of a single value. H2O then produces one model
 per $\alpha$ value. 
 
@@ -679,7 +686,7 @@ is generally more efficient than computing different models separately from R.
 
 Use caution when including $\alpha=0$ or $\alpha=1$ in the grid search. $\alpha=0$ will produce a dense solution
 and it can be very slow (or even impossible) to compute in large $N$ situations. $\alpha=1$ has no  $\ell_2$ penalty, so
-it is therefore less numerically stable and can be very slow as well due to slower convergence. In general, we recommend running with $alpha=1-\epsilon$ instead.
+it is therefore less numerically stable and can be very slow as well due to slower convergence. In general, we recommend using $alpha=1-\epsilon$ instead.
 
 \newpage
 \waterExampleInR
@@ -690,25 +697,25 @@ it is therefore less numerically stable and can be very slow as well due to slow
 
 \subsubsection{Grid Search Over Lambda}
 
- While automatic lambda search is the preferred method, it is also possible to do a grid search over lambda values
- by passing in vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
- search, except H2O will use a user-supplied list of lambdas instead (still capped at $\lambda_{max}$).
+ While automatic lambda search is the preferred method,  a grid search over lambda values is also supported
+ by passing in a vector of lambdas and disabling the lambda-search option. The behavior will be identical to lambda
+ search, except H2O will use the specified list of lambdas instead (still capped at $\lambda_{max}$).
 
-\bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.R}
 
-\medskip
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_grid_search_over_lambda.py}
 
-Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the built-in lambda search capability in GLM.
+%Grid search over lambda is a feature from H2O-2 that is not currently supported in H2O-3.  Instead, use the built-in lambda search capability in GLM.
 
 \subsubsection{Offsets}
 
 \texttt{offset\_column} is an optional column name or index referring to a column in the training frame. This column specifies a prior known component to be included in the linear predictor during training. Offsets are per-row “bias values” that are used during model training. 
 
-For Gaussian distributions, they can be seen as simple corrections to the response (\texttt{y}) column. Instead of learning to predict the response (\texttt{y}-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.  
+For Gaussian distributions, they can be seen as simple corrections to the response (\texttt{y}) column. Instead of learning to predict the response (\texttt{y}-row), the model learns to predict the (row) offset of the response column. 
+
+For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values.  
 
 \subsubsection{Row Weights}
 \texttt{weights\_column} is an optional column name or index referring to a column in the training frame. This column specifies on a per-row basis the weight of that row.  If no weight column is specified, a default value of 1 is used for each row. Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
@@ -738,13 +745,13 @@ to obtain a unified solution over separate H2O clouds or in Bayesian regression 
 
 \section{GLM Model Output}
 
-The following sections explain the output produced by logistic regression (i.e. binomial classification).
+The following sections represent the output produced by logistic regression (i.e. binomial classification).
 
-\bigskip
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_10.R}
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_model_output_10.py}
+\newpage
 \begin{lstlisting}[style=output]
 Model Details:
 ==============
@@ -905,6 +912,7 @@ Fetch the confusion matrix directly using the following accessor function:
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_confusion_matrix.R}
 
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_confusion_matrix.py}
 
@@ -940,11 +948,11 @@ Once you have built a model, you can use it to make predictions using two differ
 Batch in-H2O predictions are made using a normal H2O cluster on a new H2OFrame.  When you use \texttt{h2o.predict()}, the order of the rows in the results is the same as the order in which the data was loaded, even if some rows fail (for example, due to missing values or unseen factor levels). 
 In addition to predictions, you can view metrics such as area under curve (AUC) if you include the response column in the new data.  The following example represents a logistic regression model (i.e. binomial classification).
 
-\newpage
 \waterExampleInR
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_with_response.R}
 
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_predictions_with_response.py}
 
@@ -1053,7 +1061,6 @@ To determine the accuracy of your model, use the following guidelines:
       \item If you have many columns with small fraction of uniformly-distributed missing values, every row will likely have at least one missing value. In this case, impute the NAs (e.g. substituted with mean values) before modeling.
       \end{itemize}
 \end{itemize}
-\newpage
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 \section{Implementation Details}
@@ -1251,21 +1258,18 @@ H2O supports binomial models only; any extra levels in the test response will ge
 
 \section{Authors}
 
-\textbf{Nadine Hussami}
+\textbf{Tomas Nykodym}
 
-Nadine is a math hacker intern at H2O. She is a PhD student at Stanford University. Her main research interests include statistical learning and convex optimization. Before Stanford, she worked as an algorithm development engineer at Bina Technologies. She holds a Master’s degree from Stanford in Electrical Engineering. 
+Tomas is our resident Software Engineer. He received his Masters degree from the Czech Technical University. Tomas has worked at IBM-research and Agent-Technology Group. Tomas also created a sandbox with simulated user activity for safe execution of malware with advanced behavior extraction algorithms to extract behavior of malware injected into other processes. 
 
 \textbf{Tom Kraljevic}
 
 Tom is VP of Engineering of Customer and Pre-Sales Engineering at H2O and key to the magic of engineering and customer happiness. Tom has an MS degree in Electrical Engineering from the University of Illinois (at Urbana-Champaign), and a BSE degree in Computer Engineering from the University of Michigan (at Ann Arbor).
 
-\textbf{Jessica Lanford}
 
-Jessica is a word hacker and seasoned technical communicator at H2O.ai. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+\textbf{Nadine Hussami}
 
-\textbf{Tomas Nykodym}
-
-Tomas is our resident Software Engineer. He received his Masters degree from the Czech Technical University. Tomas has worked at IBM-research and Agent-Technology Group. Tomas also created a sandbox with simulated user activity for safe execution of malware with advanced behavior extraction algorithms to extract behavior of malware injected into other processes. 
+Nadine is a math hacker intern at H2O. She is a PhD student at Stanford University. Her main research interests include statistical learning and convex optimization. Before Stanford, she worked as an algorithm development engineer at Bina Technologies. She holds a Master’s degree from Stanford in Electrical Engineering. 
 
 \textbf{Ariel Rao}
 
@@ -1275,5 +1279,8 @@ Ariel is a data and math hacker intern at H2O. She is currently an undergraduate
 
 Amy is the Sales Engineering Lead at H2O. She graduated from Hunter College in NYC with a Masters in Applied Mathematics and Statistics with a heavy concentration on numerical analysis and financial mathematics. Her interest in applicable math eventually lead her to big data and finding the appropriate mediums for data analysis.
 
+\textbf{Jessica Lanford}
+
+Jessica is a word hacker and seasoned technical communicator at H2O.ai. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
 
 \end{document}

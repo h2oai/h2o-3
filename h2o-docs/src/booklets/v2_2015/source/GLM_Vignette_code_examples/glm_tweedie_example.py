@@ -1,4 +1,3 @@
-# TODO
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 h2o.init()

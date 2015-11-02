@@ -1,14 +1,14 @@
 % -*- mode: tex; fill-column: 115; -*-  
 
-\input{common/conf_top.tex}
-%\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
+%\input{common/conf_top.tex}
+\input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
 
 \begin{document}
 
-%\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
-\input{common/conf_listings_colorized.tex}  %Use this for online version
+\input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
+%\input{common/conf_listings_colorized.tex}  %Use this for online version
 
 
 \thispagestyle{empty} %removes page number
@@ -23,9 +23,11 @@
 \\
 \bigskip
 \small
-\textsc{Cliff Click \hspace{10pt} Jessica Lanford \hspace{10pt} Michal Malohlava}
+\textsc{Cliff Click  \hspace{10pt} Michal Malohlava \hspace{10pt} Viraj Parmar}
 
-\textsc{Viraj Parmar \hspace{10pt} Hank Roark \hspace{10pt} Arno Candel}
+\textsc{Hank Roark \hspace{10pt} Arno Candel}
+
+\textsc{Edited by: Jessica Lanford}
 
 \normalsize
 
@@ -58,9 +60,10 @@
 
 Gradient Boosted Models with H2O\\
 
-  by Cliff Click, Jessica Lanford, \\
-Michal Malohlava, Viraj Parmar, Hank Roark\\
-\&\  Arno Candel\\
+  by Cliff Click, Michal Malohlava, \\
+Viraj Parmar, Hank Roark \&\  Arno Candel\\
+Edited by: Jessica Lanford
+
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
@@ -125,15 +128,11 @@ Topics include:
 R and Python code for the examples in this document are available here:\\
 \url{https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/booklets/v2_2015/source/GBM_Vignette_code_examples}
 
-The document source itself can be found here:\\
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/GBM_Vignette.tex}
-
-\newpage
 \subsection{Citation}
 
 To cite this booklet, use the following: 
 
-Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Aug. 2015). \textit{Gradient Boosted Models with H2O}. \url{http://h2o.ai/resources/}. 
+Click, C., Malohlava, M., Parmar, V., Roark, H., and Candel, A. (Nov. 2015). \textit{Gradient Boosted Models with H2O}. \url{http://h2o.ai/resources/}. 
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -165,9 +164,7 @@ H2O's GBM functionalities include:
 \end{itemize}
 
 
-Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. 
-
-Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
+Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
 
 
 \subsection{Theory and Framework}
@@ -224,21 +221,20 @@ The final procedure in the inner loop is to add the current model to the fitted 
 \subsection{Distributed Trees}
 
 H2O's implementation of GBM uses distributed trees. H2O overlays trees on the data by assigning a tree node to each row.
-The nodes are numbered and the number of each node is stored as {\texttt{Node\_ID}} in a temporary vector for each row. H2O makes a pass over all the rows using the most efficient method, which may not necessarily be  numerical order. 
+The nodes are numbered and the number of each node is stored as {\texttt{Node\_ID}} in a temporary vector for each row. H2O makes a pass over all the rows using the most efficient method (not necessarily  numerical order). 
 
 A local
 histogram using only local data is created in parallel for each row on each node. The histograms are then assembled and a split column is selected to make the decision. The rows are re-assigned to nodes and the entire process is repeated.
 
-For example, with an initial tree, all rows start on node 0. An in-memory MapReduce (MR) task computes the statistics and uses
+With an initial tree, all rows start on node 0. An in-memory MapReduce (MR) task computes the statistics and uses
 them to make an algorithmically-based decision, such as lowest mean squared error (MSE). In the next layer in the
 tree (and the next MR task), a decision is made for each row: if X $<$ 1.5, go right in the tree; otherwise, go left.
 H2O computes the stats for each new leaf in the tree, and each pass across all the rows builds the entire layer.
 
-For multinomial or binomial, the split is determined by the number of bins. The number of bins is evaluated to
-find the best split out of the possible combinations. For example, for a hundred-column dataset that uses twenty bins,
+For multinomial or binomial models, each bin is inspected as a potential split point. The best split point is selected after evaluating all bins. For example, for a hundred-column dataset that uses twenty bins,
 there are 2000 (20x100) possible split points.
 
-Each layer represents another MR task: a tree that is five layers deep requires five passes. Each tree
+Each layer is computed using another MR task: a tree that is five layers deep requires five passes. Each tree
 level is fully data-parallelized. Each pass  builds a per-node histogram in the MR call over one layer in the tree.  During each pass, H2O analyzes the tree level and decides how to build the next level. In another pass, H2O reassigns rows to new levels by merging the two passes and then builds a histogram for each node. Each per-level histogram is done in parallel.
 
 Scoring and building is done in the same pass. Each row is tested against the decision from the previous pass and assigned
@@ -247,8 +243,7 @@ tree is compressed to a smaller object that can still be traversed, scored, and 
 
 Although the GBM algorithm builds each tree one level at a time, H2O is able to quickly run the entire level in
 parallel and distributed. The processing requirements for more data can be offset by more CPUs or nodes.
-Since H2O does the per-level compute in parallel, which requires sending histograms over the network, the amount
-of data can become very large for a very deep tree.
+The data can be very large for deep trees. Large trees that need to be sent over the network can be expensive, due to the size of the dataset, which can lead to slow model build times. 
 
 
 For the MSE reports, the zero-tree report uses the class distribution as the prediction. The one-tree report
@@ -256,7 +251,7 @@ uses the first tree, so the first two reports are not equal. The reported MSE is
 prior trees and generally decreases monotonically on the training dataset. However, the curve will generally
 bottom out and then begin to slowly rise on the validation set as overfitting sets in.
 
-The computing cost is based on the number of leaves, but depending on the dataset, the number of leaves can be
+The computing cost is based on a number of factors, including the final count of leaves in all trees. Depending on the dataset, the number of leaves can be
 difficult to predict. The maximum number of leaves is $2^d$, where $d$ represents the tree depth.
 
 \subsection{Treatment of Factors}
@@ -275,9 +270,9 @@ For columns with many factors, a small \texttt{nbins\_cats} value can add random
 \subsection{Key Parameters}
 \label{ssec:Key parameters}
 \raggedbottom
-In the above example, an important user-specified value is $N$, which represents the number of bins used to partition the data before the tree's best split point is determined. To model all factors individually, specify high $N$ values, but this will slow down the modeling process. For shallow trees, we recommend keeping the total count of bins across all splits at 1024  for numerical columns (so that a top-level split uses 1024, but a second-level split uses 512 bins, and so forth). This value is then maxed with the input bin count.
+In the above example, an important user-specified value is $N$, which represents the number of bins used to partition the data before the tree's best split point is determined. To model all factors individually, specify high $N$ values, but this will slow down the modeling process. For shallow trees,  the total count of bins across all splits is kept at 1024  for numerical columns (so that a top-level split uses 1024, but a second-level split uses 512 bins, and so forth). This value is then maxed with the input bin count.
 
-Specify the size of the trees ($J$) to avoid overfitting. Increasing $J$ results in larger variable interaction effects. Large values of $J$ have also been found to have an excessive computational cost,
+Specify the depth of the trees ($J$) to avoid overfitting. Increasing $J$ results in larger variable interaction effects. Large values of $J$ have also been found to have an excessive computational cost,
 since Cost = \#columns $\cdot N \cdot K \cdot 2^{J}$. Lower values generally have the highest
 performance. 
 
@@ -288,8 +283,9 @@ To control the learning rate of the model, specify the \texttt{learn\_rate} cons
 form of regularization. Shrinkage modifies the algorithm's update of $f_{km}(x)$ with the scaled
 addition $\nu \cdot \sum_{j=1}^{J_m} \gamma_{jkm} I(x \in R_{jkm})$, where the constant $\nu$ is between 0 and 1. 
 
-Smaller values of $\nu$ lead to greater rates of training errors, assuming that $M$ is constant. In general, $\nu$ and $M$ are inversely related when the error rate is  constant. However, despite the greater rate of training error with small values of $\nu$, very small ($\nu < 0.1$) values typically lead to better generalization and performance on test data.
+Smaller values of $\nu$ learn more slowly and need more trees to reach the same overall error rate but typically result in a better model, assuming that $M$ is constant. In general, $\nu$ and $M$ are inversely related when the error rate is  constant. However, despite the greater rate of training error with small values of $\nu$, very small ($\nu < 0.1$) values typically lead to better generalization and performance on test data.
 
+\newpage
 \subsubsection{Convergence-based Early Stopping}
 One nice feature for finding the optimal number of trees is early stopping based on convergence of a user-specified metric. By default, it uses the metrics on the validation dataset, if provided. Otherwise, training metrics are used.
 
@@ -302,7 +298,7 @@ One nice feature for finding the optimal number of trees is early stopping based
 \end{itemize}
 
 \subsubsection{Stochastic GBM}
-Stochastic GBM is a way to improve generalization of the method by sampling columns (per split) and rows (per-tree) during the model building process. The parameters to control the sampling ratios are \texttt{sample\_rate} (rows) and \texttt{col\_sample\_rate} (columns). Both parameters must range from 0 to 1.
+Stochastic GBM is a way to improve generalization by sampling columns (per split) and rows (per tree) during the model building process. To control the sampling ratios use \texttt{sample\_rate} for rows and \texttt{col\_sample\_rate} for columns. Both parameters must range from 0 to 1.
 
 \section{Use Case: Airline Data Classification}
 Download the Airline dataset from: {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/airlines/allyears2k_headers.zip}} and save the .csv file to your working directory. 
@@ -312,15 +308,14 @@ Download the Airline dataset from: {\url{https://github.com/h2oai/h2o-2/blob/mas
 Loading a dataset in R or Python for use with H2O is slightly different from the usual methodology because the datasets must be converted into \texttt{H2OParsedData} objects. For this example, download the toy weather dataset from
 {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/weather.csv}}.
 
-
-\waterExampleInR
 Load the data to your current working directory in your R Console (do this for any future dataset downloads), and then run the following command.
 
+\waterExampleInR
 \lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_uploadfile_example.R}
-\medskip
-\waterExampleInPython
+
 Load the data to your current working directory in Python (do this for any future dataset downloads), and then run the following command.
 
+\waterExampleInPython
 \lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_uploadfile_example.py}
 
 
@@ -442,7 +437,7 @@ Of course, sets of other parameters can be specified for a larger space of model
 \end{minipage}
 
 
-
+\newpage
 \subsection{ Model Parameters}
 \label{ssec:Model Parameters}
 This section describes the functions of the parameters for GBM. 
@@ -530,26 +525,28 @@ This section describes the functions of the parameters for GBM.
 
 \textbf{Cliff Click}
 
-Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff wrote his first compiler when he was 15 (Pascal to TRS Z-80!), although Cliff`s most famous compiler is the HotSpot Server Compiler (the Sea of Nodes IR). Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
+Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
+
+
+\textbf{Michal Malohlava}
+
+Michal is a geek, developer, Java, Linux, programming languages enthusiast developing software for over 10 years. He obtained PhD from the Charles University in Prague in 2012 and post-doc at Purdue University. He participated in design and development of various systems including SOFA and Fractal component systems or jPapabench control system.
+
+\textbf{Viraj Parmar}
+
+Prior to joining H2O as a data and math hacker intern, Viraj worked in a research group at the MIT Center for Technology and Design. His interests are in software engineering and large-scale machine learning. 
+
+\textbf{Hank Roark}
+
+Hank is a Data Scientist and Hacker at H2O. Hank comes to H2O with a background turning data into products and system solutions and loves helping others find value in their data.  Hank has an SM from MIT in Engineering and Management and BS Physics from Georgia Tech.
+
+\textbf{Arno Candel}
+
+Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform and the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named “2014 Big Data All-Star” by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
 
 \textbf{Jessica Lanford}
 
 Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
 
-\textbf{Michal Malohlava}
-
-Michal is a geek, developer, Java, Linux, programming languages enthusiast developing software for over 10 years. He obtained PhD from the Charles University in Prague in 2012 and post-doc at Purdue University. During his studies he was interested in construction of not only distributed but also embedded and real-time component-based systems using model-driven methods and domain-specific languages. He participated in design and development of various systems including SOFA and Fractal component systems or jPapabench control system.
-
-\textbf{Viraj Parmar}
-
-Viraj is currently an undergraduate at Princeton studying applied mathematics. Prior to joining H2O as a data and math hacker intern, Viraj worked in a research group at the MIT Center for Technology and Design. His interests are in software engineering and large-scale machine learning. 
-
-\textbf{Hank Roark}
-
-Hank is a Data Scientist and Hacker at H2O. Hank comes to H2O with a background turning data into products and system solutions and loves helping others find value in their data. He has a deep background in the the application domains of telematics, remote sensing, logistics, manufacturing, agriculture, and the Internet of Things. Hank has an SM from MIT in Engineering and Management and BS Physics from Georgia Tech.
-
-\textbf{Arno Candel}
-
-Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform. He is also the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named “2014 Big Data All-Star” by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
 
 \end{document}
