@@ -132,10 +132,6 @@ Sparkling Water is versioned according to the Spark versioning:
 
 ###Getting Started with Sparkling Water
 
-The following video provides step-by-step instructions on how to start H2O using Sparkling Water:
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ypka6eX1G14?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
-
 - <a href="http://h2o.ai/download/" target="_blank">Download Sparkling Water</a>: Go here to download Sparkling Water. 
 
 - <a href="https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md" target="_blank">Sparkling Water Development Documentation</a>: Read this document first to get started with Sparkling Water.  
