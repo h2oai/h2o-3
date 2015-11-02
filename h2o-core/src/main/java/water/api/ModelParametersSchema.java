@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import hex.Model;
+import hex.ScoreKeeper;
 import water.AutoBuffer;
 import water.DKV;
 import water.H2O;
@@ -92,6 +93,23 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
    */
   @API(help = "Model checkpoint to resume training with", level = API.Level.secondary, direction=API.Direction.INOUT)
   public ModelKeyV3 checkpoint;
+
+  /**
+   * Early stopping based on convergence of stopping_metric.
+   * Stop if simple moving average of length k of the stopping_metric does not improve (by stopping_tolerance) for k=stopping_rounds scoring events."
+   * Can only trigger after at least 2k scoring events. Use 0 to disable.
+   */
+  @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  public int stopping_rounds;
+
+  /**
+   * Metric to use for convergence checking, only for _stopping_rounds > 0
+   */
+  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  public ScoreKeeper.StoppingMetric stopping_metric;
+
+  @API(help = "Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  public double stopping_tolerance;
 
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];

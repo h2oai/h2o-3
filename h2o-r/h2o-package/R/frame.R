@@ -191,7 +191,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   # Build the AST; this will assign a name as needed
   exec_str <- .eval.impl(x)
   # Execute the AST on H2O
-  print(paste0("EXPR: ",exec_str))
+  #print(paste0("EXPR: ",exec_str))
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   if( !is.null(res$scalar) ) { # Fetch out a scalar answer
@@ -212,7 +212,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   .clear.impl(x)
   # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
   # temps... to help debug GC issues.
-  .h2o.gc()
+  #.h2o.gc()
   x
 }
 
@@ -285,6 +285,7 @@ h2o.assign <- function(data, key) {
   if( key == id ) stop("Destination key must differ from input frame ", key)
   x = .eval.driver(.newExpr("assign", key, id)) # Eager eval, so can see it in cluster
   .set(x,"id",key)
+  .set(x,"eval",NULL)
   x
 }
 

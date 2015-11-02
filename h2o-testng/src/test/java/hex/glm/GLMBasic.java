@@ -95,7 +95,7 @@ public class GLMBasic extends TestNGUtil {
                 //GLMTest.residualDeviance(model);
                 //GLMTest.nullDOF(model);
                 //GLMTest.resDOF(model);
-                //GLMTest.aic(model);
+                //GLMTest._aic(model);
 
                 // Score the model
                 score = model.score(_airquality);

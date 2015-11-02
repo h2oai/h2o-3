@@ -1,5 +1,6 @@
 package water.rapids;
 
+import hex.Model;
 import water.*;
 import water.fvec.*;
 
@@ -280,5 +281,23 @@ class ASTRm extends ASTPrim {
     Frame fr = DKV.getGet(id);
     env._ses.remove(fr);        // Remove unshared Vecs
     return new ValNum(fr == null ? 0 : 1);
+  }
+}
+
+class ASTRename extends ASTPrim {
+  @Override public String[] args() { return new String[]{"oldId", "newId"}; }
+  @Override int nargs() { return 1+2; } // (rename oldId newId)
+  @Override public String str() { return "rename" ; }
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Key oldKey = Key.make(asts[1].exec(env).getStr());
+    Key newKey = Key.make(asts[2].exec(env).getStr());
+    Iced o = DKV.remove(oldKey).get();
+    if( o instanceof Frame )     DKV.put(newKey, new Frame(newKey, ((Frame)o)._names, ((Frame)o).vecs()));
+    else if( o instanceof Model) {
+      ((Model) o)._key = newKey;
+      DKV.put(newKey, o);
+    }
+    else throw new IllegalArgumentException("Trying to rename Value of type " + o.getClass());
+    return new ValNum(Double.NaN);
   }
 }

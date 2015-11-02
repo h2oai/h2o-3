@@ -67,6 +67,13 @@ public class ArrayUtils {
   }
 
   public static double l2norm2(double [] x){ return l2norm2(x, false); }
+
+  public static double l2norm2(double [][] xs, boolean skipLast){
+    double res = 0;
+    for(double [] x:xs)
+      res += l2norm2(x,skipLast);
+    return res;
+  }
   public static double l2norm2(double [] x, boolean skipLast){
     double sum = 0;
     int last = x.length - (skipLast?1:0);
@@ -228,12 +235,12 @@ public class ArrayUtils {
     return ds;
   }
   public static float[] mult(float[] nums, float n) {
-    assert !Float.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
+//    assert !Float.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
   }
   public static double[] mult(double[] nums, double n) {
-    assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
+//    assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
   }
@@ -572,13 +579,15 @@ public class ArrayUtils {
   }
 
   // Find an element with linear search & return it's index, or -1
-  public static <T> int find(T[] ts, T elem) {
-    for( int i=0; i<ts.length; i++ )
-      if( elem==ts[i] || elem.equals(ts[i]) )
+  public static <T> int find(T[] ts, T elem) {return find(ts,elem,0);}
+
+  // Find an element with linear search & return it's index, or -1
+  public static <T> int find(T[] ts, T elem, int off) {
+    for (int i = off; i < ts.length; i++)
+      if (elem == ts[i] || elem.equals(ts[i]))
         return i;
     return -1;
   }
-
   public static int find(long[] ls, long elem) {
     for(int i=0; i<ls.length; ++i )
       if( elem==ls[i] ) return i;
@@ -1049,6 +1058,20 @@ public class ArrayUtils {
     return result;
   }
 
+  public static double[] flat(double[][] arr) {
+    if (arr == null) return null;
+    if (arr.length == 0) return null;
+    int tlen = 0;
+    for (double[] t : arr) tlen += t.length;
+    double[] result = Arrays.copyOf(arr[0], tlen);
+    int j = arr[0].length;
+    for (int i = 1; i < arr.length; i++) {
+      System.arraycopy(arr[i], 0, result, j, arr[i].length);
+      j += arr[i].length;
+    }
+    return result;
+  }
+
   public static Object[][] zip(Object[] a, Object[] b) {
     if (a.length != b.length) throw new IllegalArgumentException("Cannot zip arrays of different lenghts!");
     Object[][] result = new Object[a.length][2];
@@ -1091,6 +1114,23 @@ public class ArrayUtils {
     return result;
   }
 
+  public static String [] remove(String [] ary, String s) {
+    if(s == null)return ary;
+    int cnt = 0;
+    int idx = find(ary,s);
+    while(idx > 0) {
+      ++cnt;
+      idx = find(ary,s,++idx);
+    }
+    if(cnt == 0)return ary;
+    String [] res = new String[ary.length-cnt];
+    int j = 0;
+    for(String x:ary)
+      if(!x.equals(s))
+        res[j++] = x;
+    return res;
+  }
+
   /** Create a new frame based on given row data.
    *  @param key   Key for the frame
    *  @param names names of frame columns
@@ -1118,4 +1158,5 @@ public class ArrayUtils {
   public static Frame frame(double[]... rows) { return frame(null, rows); }
   public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(), names, rows); }
   public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
+
 }

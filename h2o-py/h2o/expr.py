@@ -82,7 +82,6 @@ class ExprNode:
     if 'key'    in res:
       self._cache.nrows = res['num_rows']
       self._cache.ncols = res['num_cols']
-    # gc.collect()  # clean temps...
     return self
 
   # Recursively build a rapids execution string.  Any object with more than
@@ -119,7 +118,6 @@ class ExprNode:
   def __del__(self):
     if self._cache._id is not None and self._children is not None:
       h2o.rapids("(rm {})".format(self._cache._id))
-      # h2o.H2OConnection.delete("DKV/"+self._cache._id)
 
   @staticmethod
   def _collapse_sb(sb): return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")

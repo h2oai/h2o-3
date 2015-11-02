@@ -1,10 +1,11 @@
 package water.api;
 
+import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import water.util.TwoDimTable;
 
-public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMultinomial, ModelMetricsMultinomialV3> {
+public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S extends ModelMetricsMultinomialV3<I, S>> extends ModelMetricsBase<ModelMetricsMultinomial, ModelMetricsMultinomialV3<I,S>> {
   @API(help="The R^2 for this scoring run.", direction=API.Direction.OUTPUT)
   public double r2;
 

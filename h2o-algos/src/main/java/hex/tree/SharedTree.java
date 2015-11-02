@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
+import hex.schemas.SharedTreeModelV3;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -128,7 +129,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
         error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
-              + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
+                + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
     }
     if( _train != null )
       _ncols = _train.numCols()-1-numSpecialCols();
@@ -164,9 +165,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           // Compute the zero-tree error - guessing only the class distribution.
           // MSE is stddev squared when guessing for regression.
           // For classification, guess the largest class.
-          _model = makeModel(_dest, _parms, 
-                             initial_MSE(_response, _response),
-                             _valid == null ? Double.NaN : initial_MSE(_response,_vresponse)); // Make a fresh model
+          _model = makeModel(_dest, _parms,
+                  initial_MSE(_response, _response),
+                  _valid == null ? Double.NaN : initial_MSE(_response,_vresponse)); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
           _model._output._init_f = _initialPrediction;
         }
@@ -199,7 +200,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
               _weights = stratified.vec(_parms._weights_column);
               // Recompute distribution since the input frame was modified
               MRUtils.ClassDist cdmt2 = _weights != null ?
-                  new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
+                      new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
               _model._output._distribution = cdmt2.dist();
               _model._output._modelClassDist = cdmt2.rel_dist();
             }
@@ -296,7 +297,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           double training_r2 = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
           if( training_r2 >= _parms._r2_stopping ) {
             doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
+            update(_ntrees-_model._output._ntrees); //finish
             return;             // Stop when approaching round-off error
+          }
+          if (!Double.isNaN(training_r2)  //HACK to detect whether we scored at all
+                  && ScoreKeeper.earlyStopping(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance)) {
+            doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
+            update(_ntrees-_model._output._ntrees); //finish
+            return;
           }
         }
         Timer kb_timer = new Timer();
@@ -384,7 +392,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final boolean _build_tree_one_node;
     float[] _improvPerVar;      // Squared Error improvement per variable per split
     Distribution.Family _family;
-    
+
     boolean _did_split;
     ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar, Distribution.Family family) {
       _st   = st;
@@ -520,11 +528,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     new ProgressUpdate("Built " + _model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").").fork(_progressKey);
     // Now model already contains tid-trees in serialized form
     if( _parms._score_each_iteration ||
-        finalScoring ||
-        (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
-        // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
-        (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
-         (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
+            finalScoring ||
+            (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
+            // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+            (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
+                    (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
 
       checkMemoryFootPrint();
 
@@ -820,4 +828,20 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
   }
 
+  @Override
+  public void modifyParmsForCrossValidationMainModel(int N, Key<Model>[] cvModelBuilderKeys) {
+    super.modifyParmsForCrossValidationMainModel(N, cvModelBuilderKeys);
+    if (cvModelBuilderKeys !=null) {
+      if (_parms._stopping_rounds > 0) {
+        int[] ntrees = new int[cvModelBuilderKeys.length];
+        for (int i=0;i<ntrees.length;++i) {
+          ntrees[i] = ((SharedTreeModel.SharedTreeOutput)((SharedTreeModel)DKV.getGet((((SharedTree)DKV.getGet(cvModelBuilderKeys[i])).dest())))._output)._ntrees;
+        }
+        _parms._ntrees = ArrayUtils.sum(ntrees)/ntrees.length;
+        warn("_epochs", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
+        _parms._stopping_rounds = 0;
+        warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
+      }
+    }
+  }
 }

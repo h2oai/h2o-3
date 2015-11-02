@@ -1,5 +1,6 @@
 package water.rapids;
 
+import water.H2O;
 import water.fvec.*;
 import water.MRTask;
 
@@ -62,6 +63,12 @@ class ASTApply extends ASTPrim {
         ovecs[i] = res.vec(0);
       }
       break;
+    case Val.NUMS:
+      for( int i=0; i<vecs.length; i++ )
+        ovecs[i] = Vec.makeCon(vals[i].getNums()[0],1L);
+      break;
+    case Val.STRS:
+      throw H2O.unimpl();
     case Val.FUN:  throw water.H2O.unimpl();
     case Val.STR:  throw water.H2O.unimpl();
     default:       throw water.H2O.unimpl();

@@ -8,9 +8,9 @@ import water.api.API;
 import water.api.KeyV3;
 import water.api.ModelParametersSchema;
 
-public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParametersV99> {
+public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
 
-  public static final class GLRMParametersV99 extends ModelParametersSchema<GLRMParameters, GLRMParametersV99> {
+  public static final class GLRMParametersV3 extends ModelParametersSchema<GLRMParameters, GLRMParametersV3> {
     static public String[] fields = new String[] {
 				"model_id",
 				"training_frame",
@@ -36,8 +36,9 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
                 "svd_method",
 				"user_y",
                 "user_x",
-				"recover_svd",
-                "expand_user_y"
+                "expand_user_y",
+                "impute_original",
+				"recover_svd"
 		};
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true)  // TODO: pull out of categorical class
@@ -101,10 +102,13 @@ public class GLRMV99 extends ModelBuilderSchema<GLRM,GLRMV99,GLRMV99.GLRMParamet
     public String loading_name;
     // public KeyV3.FrameKeyV3 loading_key;
 
-    @API(help = "Recover singular values and eigenvectors of XY")
-    public boolean recover_svd;
-
     @API(help = "Expand categorical columns in user-specified initial Y")
     public boolean expand_user_y;
+
+    @API(help = "Reconstruct original training data by reversing transform")
+    public boolean impute_original;
+
+    @API(help = "Recover singular values and eigenvectors of XY")
+    public boolean recover_svd;
   }
 }

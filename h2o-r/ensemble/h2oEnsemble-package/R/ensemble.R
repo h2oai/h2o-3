@@ -36,9 +36,8 @@ h2o.ensemble <- function(x, y, training_frame,
     family <- match.arg(family)
   }
   if (family == "AUTO") {
-    # TO DO: Change this... numcats way to expensive
-    if (is.factor(training_frame[,c(y)])) {
-      numcats <- length(unique(as.data.frame(training_frame)[,c(y)]))
+    if (is.factor(training_frame[,y])) {
+      numcats <- length(h2o.levels(training_frame[,y]))
       if (numcats == 2) {
         family <- "binomial" 
       } else {
@@ -48,10 +47,18 @@ h2o.ensemble <- function(x, y, training_frame,
       family <- "gaussian"
     }
   }
+  # Check that if specified, family matches data type for response
+  # binomial must be factor/enum and gaussian must be numeric
   if (family == c("gaussian")) {
-    # TO DO: (CHECK THIS UPDATE) Update this when h2o.range method gets implemented for H2OFrame cols
-    ylim <- c(min(training_frame[,c(y)]), max(training_frame[,c(y)]))  #Used to enforce bounds  
+    if (!is.numeric(training_frame[,y])) {
+      stop("When `family` is gaussian, the repsonse column must be numeric.")
+    }
+    # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OFrame cols
+    ylim <- c(min(training_frame[,y]), max(training_frame[,y]))  #Used to enforce bounds  
   } else {
+    if (!is.factor(training_frame[,y])) {
+      stop("When `family` is binomial, the repsonse column must be a factor.")
+    }
     ylim <- NULL
   }
   

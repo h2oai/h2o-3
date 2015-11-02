@@ -102,7 +102,7 @@ public class Handler extends H2OCountedCompleter {
   }
   public static <T extends Keyed> T getFromDKV(String param_name, Key key, Class<T> klazz) {
     if (null == key)
-      throw new H2OIllegalArgumentException(param_name, "Models.getFromDKV()", key);
+      throw new H2OIllegalArgumentException(param_name, "Handler.getFromDKV()", key);
 
     Value v = DKV.get(key);
     if (null == v)
