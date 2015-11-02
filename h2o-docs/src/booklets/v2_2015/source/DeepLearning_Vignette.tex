@@ -338,9 +338,9 @@ Stochastic gradient descent is fast and memory-efficient but not easily parallel
 
 \textsc{Hogwild!} follows a shared memory model where multiple cores (where each core handles separate subsets or all of the training data) are able to make independent contributions to the gradient updates $\nabla L(W,B$ $ |$ $j)$ asynchronously. 
 
-In a multi-node system, this parallelization scheme works on top of H2O's distributed setup that distributes the training data across the cluster. Each node operates in parallel on its local data until the final parameters $W,B$ are obtained by averaging. A rough summary is provided below. 
+In a multi-node system, this parallelization scheme works on top of H2O's distributed setup that distributes the training data across the cluster. Each node operates in parallel on its local data until the final parameters $W,B$ are obtained by averaging. 
 \\
-\noindent
+\newpage
 {\bf{\footnotesize{Parallel distributed and multi-threaded training with SGD in H2O Deep Learning}}}
 \\
 \line(1,0){350}
@@ -382,6 +382,7 @@ In a multi-node system, this parallelization scheme works on top of H2O's distri
 \\
 Here, the weights and bias updates follow the asynchronous  $\textsc{Hogwild!}$ procedure to incrementally adjust each node's parameters $W_n,B_n$ after seeing the example $i$. The Avg$_n$ notation represents the final averaging of these local parameters across all nodes to obtain the global model parameters and complete training.
 
+\newpage
 \subsubsection{Specifying the Number of Training Samples} 
 \label{sssec:TrainSamplesPerIter}
 H2O Deep Learning is scalable and can take advantage of large clusters of compute nodes. There are three operating modes.
@@ -401,7 +402,7 @@ For example, if the training data contains $10$ million rows, and the number of 
 If the value is too high, it might take too long between synchronization and model convergence may be slow.  If the value is too low, network communication overhead will dominate the runtime and computational performance will suffer. 
 
 
-\noindent
+\newpage
 \subsection{Regularization} 
 \label{ssec:Regularization}
 H2O's Deep Learning framework supports regularization techniques to prevent overfitting.  $\ell_1$(L1: Lasso) and $\ell_2$ (L2: Ridge) regularization enforce the same penalties as they do with other models: modifying the loss function so as to minimize loss: %%incomplete sentence? or referring to the equation below? should specify what is minimized (loss?)
@@ -452,6 +453,7 @@ During training, the chance of oscillation or ``optimum skipping" creates the ne
 
 For H2O, the annealing rate (\texttt{rate\_annealing}) is the inverse of the number of training samples required to divide the learning rate in half (e.g., $10^{-6}$ means that it takes $10^6$ training samples to halve the learning rate).
 
+\newpage
 \subsubsection{Adaptive Learning} 
 \label{sssec:AdaptiveLearning}
 The implemented adaptive learning rate algorithm ADADELTA (\href{http://arxiv.org/pdf/1212.5701v1.pdf}{Zeiler, 2012})  automatically combines the benefits of learning rate annealing and momentum training to avoid slow convergence. To simplify hyper parameter search, specify only $\rho$ and $\epsilon$. 
@@ -474,13 +476,14 @@ Since the activation function generally does not  map into the full spectrum of 
 For autoencoding, the data is normalized (instead of standardized) to the compact interval of $\mathcal{U}(-0.5,0.5)$ to allow bounded activation functions like $\tanh$ to better reconstruct the data.
 
 \subsubsection{Convergence-based Early Stopping}
-One nice feature for finding the optimal number of epochs is early stopping based on convergence of a user-specified metric. By default, it uses the metrics on the validation dataset, if provided. Otherwise, training metrics are used.
+
+Early stopping based on convergence of a user-specified metric is an especially helpful feature for finding the optimal number of epochs. By default, it uses the metrics on the validation dataset, if provided. Otherwise, training metrics are used.
 
 \begin{itemize}
-\item To stop model building if misclassification improves (goes down) by less than one percent between individual scoring events, specify \\\texttt{stopping\_rounds=1}, \texttt{stopping\_tolerance=0.01} and \\\texttt{stopping\_metric="misclassification"}.
-\item To stop model building if the simple moving average (window length 5) of the AUC improves (goes up) by less than 0.1 percent for 5 consecutive scoring events, specify \texttt{stopping\_rounds=5}, \texttt{stopping\_tolerance=0.001} and \texttt{stopping\_metric="AUC"}.
-\item To stop model building if the logloss on the validation set does not improve at all for 3 consecutive scoring events, specify a \texttt{validation\_frame}, \texttt{stopping\_rounds=3}, \texttt{stopping\_tolerance=0} and \\\texttt{stopping\_metric="logloss"}.
-\item To not stop model building even after metrics have converged, disable this feature with \texttt{stopping\_rounds=0}.
+\item To stop model building if misclassification improves (is reduced) by less than one percent between individual scoring epochs, specify \\\texttt{stopping\_rounds=1}, \texttt{stopping\_tolerance=0.01} and \\\texttt{stopping\_metric="misclassification"}.
+\item To stop model building if the simple moving average (window length 5) if the AUC improves (increases) by less than 0.1 percent for 5 consecutive scoring epochs, use \texttt{stopping\_rounds=5},  \texttt{stopping\_metric="AUC"}, and  \texttt{stopping\_tolerance=0.001}.
+\item To stop model building if the logloss on the validation set does not improve at all for 3 consecutive scoring epochs, specify a \texttt{validation\_frame}, \texttt{stopping\_rounds=3}, \texttt{stopping\_tolerance=0} and \\\texttt{stopping\_metric="logloss"}.
+\item To continue model building even after metrics have converged, disable this feature using \texttt{stopping\_rounds=0}.
 \item To compute the best number of epochs with cross-validation, simply specify \texttt{stopping\_rounds>0} as in the examples above, in combination with \texttt{nfolds>1}, and the main model will pick the ideal number of epochs from the convergence behavior of the \texttt{nfolds} cross-validation models.
 \end{itemize}
 
@@ -526,48 +529,58 @@ The example below illustrates how the default settings provide the relative simp
 
 Rectified linear activation is popular with image processing and has previously performed well on the MNIST database. Dropout has been known to enhance performance on this dataset as well, so we train our model accordingly. 
 
-\waterExampleInR
+
 To perform the trial run in R, use the following: 
-To perform the trial run in R, use the following:
+
+\waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_examplerun.R}
 
 \newpage
-\waterExampleInPython
+
 To perform the trial run in Python, use the following: 
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_examplerun.py}
 
 \noindent
 The model runs for only 10 epochs since it is just meant as a trial run. In this trial run, we also specified the validation set as the test set.  In addition to (or instead of) using a validation set, another option to estimate generalization error is N-fold cross-validation.
 
+\newpage
 \subsubsection{N-fold Cross-Validation} 
 
 If the value specified for \texttt{nfolds} is a positive integer, N-fold cross-validation is performed on the \texttt{training\_frame} and the cross-validation metrics are computed and stored as model output.  To disable cross-validation, use \texttt{nfolds=0}, which is the default value.  
 
-To save the predicted values generated during cross-validation, set the\\ \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables the user to calculate custom cross-validated performance metrics for their model in R or Python.  
+To save the predicted values generated during cross-validation, set the\\ \texttt{keep\_cross\_validation\_predictions} parameter to true.  This enables calculation of custom cross-validated performance metrics for the R or Python model.  
 
-Advanced users can also specify a \texttt{fold\_column} that specifies the holdout fold associated with each row. By default, the holdout \texttt{fold\_assignment} is random, but other schemes such as round-robin assignment using the modulo operator are also supported. An example for generic N-fold cross-validation is provided below.  
+Advanced users can also specify a \texttt{fold\_column} that specifies the holdout fold associated with each row. By default, the holdout \texttt{fold\_assignment} is random, but other schemes such as round-robin assignment using the modulo operator are also supported.  
+
+To run the cross-validation example in R, use the following: 
 
 \waterExampleInR
-To run the cross-validation example in R, use the following: 
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_crossval.R}
 
-\waterExampleInPython
+\newpage
 To run the cross-validation example in Python, use the following: 
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_crossval.py}
 
 \subsubsection{Extracting and Handling the Results} 
 
-We can now extract the parameters of our model, examine the scoring process, and make predictions on new data.  The \texttt{h2o.performance} function in R returns all pre-computed performance metrics for the training set or validation set or returns cross-validated metrics for the training set, depending on model configuration. 
+We can now extract the parameters of our model, examine the scoring process, and make predictions on new data.  The \texttt{h2o.performance} function in R returns all pre-computed performance metrics for the training/validation set or returns cross-validated metrics for the training set, depending on model configuration. 
 
-An equivalent \texttt{model\_performance} method is available in Python.  Utility functions that return specific metrics, such as mean square error (MSE) or area under curve (AUC), are also available.  Examples shown below use the previously trained \texttt{model} and \texttt{model\_cv} objects.
-
-\waterExampleInR
-To view the model results in R, use the following: 
-\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.R}
+An equivalent \texttt{model\_performance} method is available in Python, as well as utility functions that return specific metrics, such as mean square error (MSE) or area under curve (AUC).  Examples shown below use the previously-trained \texttt{model} and \texttt{model\_cv} objects.
 
 \newpage
-\waterExampleInPython
+To view the model results in R, use the following: 
+
+\waterExampleInR
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.R}
+
+
 To view the model results in Python, use the following: 
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.py}
 
 
@@ -578,14 +591,17 @@ In general, choosing a greater number of sampled points leads to a better unders
 
 If the parameter \texttt{overwrite\_with\_best\_model} is enabled, these scoring parameters also affect the final model. This option selects the model that achieved the lowest validation error during training (based on the sampled points used for scoring) as the final model after training. If a dataset is not specified as the validation set, the training data is used by default; in this case, either the \texttt{score\_training\_samples} or \texttt{score\_validation\_samples} parameter will control the error computation during training and consequently, which model is selected as the best model.
 
-Once we have a satisfactory model (as determined by the validation or cross-validation metrics), use the \texttt{h2o.predict()} command to compute and store predictions on new data for additional refinements in the interactive data science process.
+Once we have a satisfactory model (as determined by the validation or cross-validation metrics), use the \texttt{h2o.predict()} command to compute and store predictions on new data for additional refinements in the interactive data science process.\nowidow[4]
+
+To view the predictions in R, use the following: 
 
 \waterExampleInR
-To view the predictions in R, use the following: 
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_predict.R}
 
-\waterExampleInPython
+\newpage
 To view the predictions in Python, use the following: 
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_predict.py}
 
 \subsection{Web Interface} 
@@ -593,7 +609,7 @@ To view the predictions in Python, use the following:
 H2O R users have access to an intuitive web interface for H2O, Flow, to mirror the model building process in R. After loading data or training a model in R, point your browser to your IP address and port number (e.g., localhost:54321) to launch the web interface. From here, you can click on \textsc{Admin} $>$ \textsc{Jobs} to view specific details about your model. You can also click on \textsc{Data} $>$ \textsc{List All Frames} to view all current H2O frames. 
 
 H2O Python users can connect to Flow the same way as R users: launch an instance of H2O, then launch your browser and enter \texttt{localhost:54321} (or your custom IP address) in the address bar. Python users can also use iPython notebook to run examples. Launch iPython notebook in Terminal using \texttt{ipython notebook}, and a browser window should automatically launch the iPython interface. Otherwise, launch your browser and enter \texttt{localhost:8888} in the address bar. 
-\newpage
+
 \subsubsection{Variable Importances} 
 
 To enable variable importances, setting the \texttt{variable\_importances} to true. This feature allows us to view the absolute and relative predictive strength of each feature in the prediction task.  Each H2O algorithm class has its own methodology for computing variable importance.  
@@ -606,7 +622,7 @@ The following code demonstrates training using the \texttt{variable\_importances
 To generate variable importances in R, use the following: 
 
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_varimp.R}
-\newpage
+
 \waterExampleInPython
 To generate variable importances in Python, use the following: 
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_varimp.py}
@@ -635,95 +651,107 @@ In this example, three different network topologies and two different $\ell_1$ n
 
 Grid search provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to {\textbf{\nameref{sec:Parameters}}} for parameter descriptions and configurable values. 
 
-\waterExampleInR
+
 To run a grid search in R, use the following:
+
+\waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R}
 
-\newpage
-\waterExampleInPython
+
+
 To run a grid search in Python, use the following:
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py}
 
 \normalsize
 \noindent
-\waterExampleInR
+
 To view the results of the grid search in R, use the following: 
+
+\waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R}
 
 \medskip
-\waterExampleInPython
+
 To view the results of the grid search in Python, use the following: 
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py}
 
 
-\subsection{Checkpoint Modesl}
+\subsection{Checkpoint Models}
 
 To resume model training, use checkpoint model keys (\texttt{model\_id}) to incrementally train a specific model using more iterations, more data, different data, and so forth. To further train the initial model, use it (or its key) as a checkpoint argument for a new model.
 
-In general, to get the best possible model in a multi-node setup, we recommend building a model with \texttt{train\_samples\_per\_iteration=-2} (default, auto-tuning) and saving that to disk. Either way, you’ll have at least one model for later.
-To improve this initial model, you can start from the previous model and add iterations. You simply build another model and set \texttt{checkpoint=previous\_model\_id}, and change \\\texttt{train\_samples\_per\_iteration} or \texttt{target\_ratio\_comm\_to\_comp},
-or other parameters. You are allowed to change many parameters between checkpoints, especially those that affect regularization or performance tuning.
+To get the best possible model in a general multi-node setup, we recommend building a model with \texttt{train\_samples\_per\_iteration=-2} (default, auto-tuning) and saving it to disk so that you’ll have at least one saved model.
+
+To improve this initial model, start from the previous model and add iterations by building another model, specifying \texttt{checkpoint=previous\_model\_id}, and changing \texttt{train\_samples\_per\_iteration}, \texttt{target\_ratio\_comm\_to\_comp},
+or other parameters. Many parameters can be changed between checkpoints, especially those that affect regularization or performance tuning.
 
 Checkpoint restart suggestions:
 
 \begin{enumerate}
-\item For multi-node only: Leave \texttt{train\_samples\_per\_iteration=-2}, increase \texttt{target\_ratio\_comm\_to\_comp} from 0.05 to 0.25 or 0.5 (more communication). This should lead to a better model when using multiple nodes. Note: this doesn’t affect single-node performance at all (no actual communication needed).
-\item For both single and multi-node (bagging-like): Explicitly set \\\texttt{train\_samples\_per\_iteration=N}, where N is the number of training samples that you want the whole cluster to train with for one iteration. Every of the n nodes will then train on N/n randomly chosen rows for every iteration. Obviously, a good choice N depends on the dataset size and the model complexity. You can look in the logs to see what values of N are used in Option 1, when auto-tuning is enabled. Typically, Option 1 is enough though.
-\item For both single and multi-node: Change regularization parameters such as \texttt{l1}, \texttt{l2}, \texttt{max\_w2}, \texttt{input\_dropout\_ratio}, \texttt{hidden\_dropout\_ratios}. To be safe, you’d build the first model with \texttt{RectifierWithDropout} and \texttt{input\_dropout\_ratio=0} and \texttt{hidden\_dropout\_ratios} of all \texttt{0}s, just to be able to later turn on dropout regularization. We often use hidden Dropout for our first model already, since it often improves generalization. Input dropout is especially useful if there’s some noise in the input.
+\item For multi-node only: Leave \texttt{train\_samples\_per\_iteration=-2}, increase \texttt{target\_ratio\_comm\_to\_comp} from 0.05 to 0.25 or 0.5 (more communication). This should lead to a better model when using multiple nodes. Note: No affect on single-node performance at all, since there is no actual communication needed.
+\item For both single and multi-node (bagging-like): Explicitly set \\\texttt{train\_samples\_per\_iteration=N}, where $N$ is the number of training samples for the whole cluster to train with for one iteration. Each of the $n$ nodes will then train on $N/n$ randomly chosen rows for each iteration. Obviously, a good choice for $N$ depends on the dataset size and the model complexity. Refer to the logs to see what values of $N$ are used in option 1 (when auto-tuning is enabled). Typically, option 1 is sufficient.
+\item For both single and multi-node: Change regularization parameters such as \texttt{l1}, \texttt{l2}, \texttt{max\_w2}, \texttt{input\_dropout\_ratio}, \texttt{hidden\_dropout\_ratios}. For best results, build the first model with \texttt{RectifierWithDropout} and \texttt{input\_dropout\_ratio=0} and \texttt{hidden\_dropout\_ratios} of all \texttt{0}s, just to be able to enable dropout regularization later. Hidden dropout is often used for initial models, since it often improves generalization. Input dropout is especially useful if there is some noise in the input.
 \end{enumerate}
 
-With options 1 and 3, you should be able to reach your goals of finding a good model. Of course, you can use grid search with checkpoint restarts, to scan a broad range of good continuation models.
+Options 1 and 3 should result in a good model. Of course, grid search can be used with checkpoint restarts to scan a broad range of good continuation models.
 
 In the R example below, \texttt{model\_grid@model\_ids[[1]]} represents the highest-performing model from the grid search used for additional training. For checkpoint restarts, the response column, training, and validation datasets must match.  In addition, the model architecture, such as \texttt{hidden = c(32,32,32)} in the example below, must match.
 
-\waterExampleInR
 To restart training in R using a checkpoint model, use the following: 
+
+\waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_checkpoint.R}
 
-\medskip
+The Python example uses the ``trial run'' model  as the checkpoint model.
+
 \waterExampleInPython
-For the Python example, we will use the original ``trial run'' model previously trained as the checkpoint model.
-\medskip
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_checkpoint.py}
 
 \noindent
 Checkpointing can also be used to reload existing models that were saved to disk in a previous session. For example, we can save and reload a model by running the following commands.
 
-\waterExampleInR
+
 To save a model in R, use the following: 
-\medskip
+
+\waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_savemodel.R}
-\medskip
-\waterExampleInPython
+
+
 To save a model in Python, use the following: 
-\medskip
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_savemodel.py}
-
-
-\normalsize
 
 \noindent
 After restarting  H2O, load the saved model by specifying the host and saved model file path. \textbf{Note}: The saved model must be reloaded using a compatible H2O version (i.e., the same version used to save the model).
 
-\normalsize
-\waterExampleInR
+\newpage
 To load a saved model in R, use the following: 
+
+\waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.R}
 
-\waterExampleInPython
 To load a saved model in Python, use the following: 
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.py}
 
 
 \noindent
 You can also use the following commands to retrieve a model from its H2O key. This is useful if you have created an H2O model using the web interface and want to continue the modeling process in R.
 
-\waterExampleInR
 To retrieve a model in R using its key, use the following: 
+
+\waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_getmodel.R}
 
-\waterExampleInPython
 To retrieve a model in Python using its key, use the following: 
+
+\waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_getmodel.py}
 
 \subsection{Achieving World-Record Performance}
@@ -732,7 +760,6 @@ Without distortions, convolutions, or other advanced image processing techniques
 
 After training for $8,000$ epochs (which took about ten hours) on ten nodes, we obtain a test set error of $0.83\%$, which is the current world-record, notably achieved using a distributed configuration and with a simple 1-liner from R:
 
-\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_mnist_record.R}
 
@@ -744,7 +771,7 @@ An in-depth study of the computational performance characteristics of H2O Deep L
 The parallel scalability of H2O for the MNIST dataset on 1 to 63 compute nodes is shown in the figure below.
 \begin{figure}[h!]
 \centering
-\includegraphics[scale=0.7]{scalability_new.png}
+\includegraphics[scale=0.6]{scalability_new.png}
 \end{figure}
 
 \newpage
@@ -758,7 +785,7 @@ Based on the diagram of a three-layer neural network with one hidden layer below
 
 \begin{figure}[h!]
 \centering
-\includegraphics[scale=0.6]{autoencoder.png}
+\includegraphics[scale=0.5]{autoencoder.png}
 \end{figure}
 
 This type of algorithm, called a deep autoencoder, has been used extensively for unsupervised, layer-wise pre-training of supervised Deep Learning tasks. Here we discuss the autoencoder's ability to discover anomalies in data. 
@@ -768,7 +795,7 @@ This type of algorithm, called a deep autoencoder, has been used extensively for
 \subsection{Use Case: Anomaly Detection} %%TODO: do we still want to use this example?
 For the deep autoencoder model described above, if enough training data resembling some underlying pattern is provided, the network will train itself to easily learn the identity when confronted with that pattern. However, if an anomalous test point does not match the learned pattern, the autoencoder will likely have a high error rate in reconstructing this data, indicating anomalous data.
 
-This framework is used to develop an anomaly detection demonstration using a deep autoencoder. The dataset is an ECG time series of heartbeats and the goal is to determine which heartbeats are outliers. The training data (20 ``good" heartbeats) and the test data (training data with 3 ``bad" heartbeats appended for simplicity) can be downloaded directly into the H2O cluster, as shown below.  Each row represents a single heartbeat. The autoencoder is trained as follows: 
+This framework is used to develop an anomaly detection demonstration using a deep autoencoder. The dataset is an ECG time series of heartbeats and the goal is to determine which heartbeats are outliers. The training data (20 ``good" heartbeats) and the test data (training data with 3 ``bad" heartbeats appended for simplicity) can be downloaded directly into the H2O cluster, as shown below.  Each row represents a single heartbeat. 
 
 %\begin{lstlisting}[style=R]
 %train_ecg.hex = h2o.uploadFile(h2o_server, path="ecg_train.csv", header=F, sep=",", key="train_ecg.hex") 
@@ -791,17 +818,19 @@ This framework is used to develop an anomaly detection demonstration using a dee
 %head(test_recon.hex)              
 %
 %\end{lstlisting}
+
+\newpage
 \waterExampleInR
-To run the anomaly detection example in R, use the following: 
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_anomaly.R}
 
-%\medskip
+\newpage
+
+To run the anomaly detection example in Python, use the following:
+ 
 \waterExampleInPython
-To run the anomaly detection example in Python, use the following: 
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_anomaly.py}
 
-\noindent
-
+\newpage
 \subsubsection{Stacked Autoencoder}
 It can be difficult to obtain convergence for deep autoencoders, especially since H2O attempts to train all layers at once without imposing symmetry conditions on the network topology (arbitrary configuration of layers is allowed). To train a deep autoencoder layer by layer, follow the \texttt{R} code example here:
 
@@ -1088,17 +1117,9 @@ The default is 0, which disables cross-validation.
 \newpage
 \section{Authors}
 
-\textbf{Anisha Arora}
-
-Anisha is a software intern who is a senior at Cupertino High School. She enjoys programming and is interested in machine learning. She likes to swim, play the piano and violin, and tutor in science and math subjects at her school.
-
 \textbf{Arno Candel}
 
 Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform. He is also the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named “2014 Big Data All-Star” by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
-
-\textbf{Jessica Lanford}
-
-Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
 
 \textbf{Erin LeDell}
 
@@ -1108,5 +1129,14 @@ Erin received her Ph.D. in Biostatistics with a Designated Emphasis in Computati
 \textbf{Viraj Parmar}
 
 Viraj is studying applied mathematics at Princeton. Prior to joining H2O.ai as a former data and math hacker intern, Viraj worked in a research group at the MIT Center for Technology and Design. His interests are in software engineering and large-scale machine learning. Apart from work, Viraj enjoys reading, sampling new cuisines, and traveling with his family.
+
+\textbf{Anisha Arora}
+
+Anisha is a software intern who is a senior at Cupertino High School. She enjoys programming and is interested in machine learning. She likes to swim, play the piano and violin, and tutor in science and math subjects at her school.
+
+
+\textbf{Jessica Lanford}
+
+Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
 
 \end{document}
