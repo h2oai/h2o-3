@@ -356,8 +356,11 @@ def expect_model_param(models, attribute_name, expected_values):
     expected_values_len = len(expected_values)
     assert actual_values_len == expected_values_len, "Expected values len: {0}. Actual values len: " \
                                                      "{1}".format(expected_values_len, actual_values_len)
-    diff = set(actual_values) - set(expected_values)
-    assert len(diff) == 0, "Difference between actual and expected values: {0}".format(diff)
-
+    actual_values = sorted(actual_values)
+    expected_values = sorted(expected_values)
+    for i in range(len(actual_values)):
+        assert abs(actual_values[i]-expected_values[i]) < 1e-5, "Too large of a difference betewen actual and " \
+                                                                "expected value. Actual value: {}. Expected value: {}"\
+                                                                .format(actual_values[i], expected_values[i])
 def temp_ctr():  return H2OFrame.temp_ctr()
 def rest_ctr():  return h2o.H2OConnection.rest_ctr()
