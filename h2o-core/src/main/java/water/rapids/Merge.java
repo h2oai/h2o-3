@@ -37,8 +37,15 @@ public class Merge {
   static Frame merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[], boolean allLeft) {
 
     // each of those launches an MRTask
+    System.out.println("Creating left index ...");
+    long t0 = System.nanoTime();
     RadixOrder leftIndex = new RadixOrder(leftFrame, leftCols);
+    System.out.println("Creating left index took: " + (System.nanoTime() - t0) / 1e9);
+
+    System.out.println("Creating right index ...");
+    t0 = System.nanoTime();
     RadixOrder rightIndex = new RadixOrder(rightFrame, rightCols);
+    System.out.println("Creating right index took: " + (System.nanoTime() - t0) / 1e9);
 
     // Align MSB locations between the two keys
     // If the 1st join column has range < 256 (e.g. test cases) then <=8 bits are used and there's a floor of 8 to the shift.
@@ -62,7 +69,8 @@ public class Merge {
     //   We hope most common case. Common width keys (e.g. ids, codes, enums, integers, etc) both sides over similar range
     //   Left msb will match exactly to right msb one-to-one, without any alignment needed.
 
-
+    System.out.println("Sending BinaryMerge async RPC calls ...");
+    t0 = System.nanoTime();
     List<RPC> bmList = new ArrayList<>();
     for (int leftMSB =0; leftMSB <leftExtent; leftMSB++) { // each of left msb values.  TO DO: go parallel
 //      long leftLen = leftIndex._MSBhist[i];
@@ -92,20 +100,27 @@ public class Merge {
         bm.call(); //async
       }
     }
+    System.out.println("Sending BinaryMerge async RPC calls took: " + (System.nanoTime() - t0) / 1e9);
 
+    System.out.print("Summing BinaryMerge._numChunks ... ");
+    t0 = System.nanoTime();
     long ansN = 0;
     int numChunks = 0;
     BinaryMerge bmResults[] = new BinaryMerge[bmList.size()];
     int i=0;
     for (RPC rpc : bmList) {
+      System.out.print(i);  // seems like inserting this print fixes the pause.  // TODO: remove and see if it hangs again
       BinaryMerge thisbm;
       bmResults[i++] = thisbm = (BinaryMerge)rpc.get(); //block
       if (thisbm._numRowsInResult == 0) continue;
       numChunks += thisbm._chunkSizes.length;
       ansN += thisbm._numRowsInResult;
     }
+    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
     assert(i == bmList.size());
 
+    System.out.print("Allocating and populating chunk info (e.g. size and batch number) ...");
+    t0 = System.nanoTime();
     long chunkSizes[] = new long[numChunks];
     int chunkLeftMSB[] = new int[numChunks];  // using too much space repeating the same value here, but, limited
     int chunkRightMSB[] = new int[numChunks];
@@ -123,9 +138,12 @@ public class Merge {
         k++;
       }
     }
+    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
     // Now we can stitch together the final frame from the raw chunks that were put into the store
-    //First, create espc array
+
+    System.out.print("Allocating and populated espc ...");
+    t0 = System.nanoTime();
     long espc[] = new long[chunkSizes.length+1];
     i=0;
     long sum=0;
@@ -134,9 +152,11 @@ public class Merge {
       sum+=s;
     }
     espc[espc.length-1] = sum;
+    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
     assert(sum==ansN);
 
-    // Allocate dummy vecs/chunks, to be filled in MRTask below
+    System.out.print("Allocating dummy vecs/chunks of the final frame ...");
+    t0 = System.nanoTime();
     int numJoinCols = leftIndex._bytesUsed.length;
     int numLeftCols = leftFrame.numCols();
     int numColsInResult = numLeftCols + rightFrame.numCols() - numJoinCols ;
@@ -156,11 +176,15 @@ public class Merge {
     Key key = Vec.newKey();
     Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
     // to delete ... String[] names = ArrayUtils.append(leftFrame.names(), ArrayUtils.select(rightFrame.names(),  ArrayUtils.seq(numJoinCols, rightFrame.numCols() - 1)));
+    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
-    // Now we can stitch together the final frame from the raw chunks that were put into the store
+    System.out.print("Finally stitch together by overwriting dummies ...");
+    t0 = System.nanoTime();
     Frame fr = new Frame(Key.make(rightFrame._key.toString() + "_joined_with_" + leftFrame._key.toString()), names, vecs);
     ChunkStitcher ff = new ChunkStitcher(leftFrame, rightFrame, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     ff.doAll(fr);
+    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+
     return fr;
   }
 

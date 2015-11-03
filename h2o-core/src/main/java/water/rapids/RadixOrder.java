@@ -559,7 +559,7 @@ public class RadixOrder {
   byte[][][] _x;
 
   RadixOrder(Frame DF, int whichCols[]) {
-    System.out.println("Calling RadixCount ...");
+    //System.out.println("Calling RadixCount ...");
     long t0 = System.nanoTime();
     _biggestBit = new int[whichCols.length];   // currently only biggestBit[0] is used
     _bytesUsed = new int[whichCols.length];

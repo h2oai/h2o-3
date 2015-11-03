@@ -179,7 +179,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       _numRowsInResult += Math.max(1,len) * (lUpp-lLow-1);   // 1 for NA row when _allLeft
       for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
         {
-          long globalRowNumber = _leftOrder[(int)(lr / _leftBatchSize)][(int)(lr % _leftBatchSize)];
+          // may be a range of left dup'd join-col values, but we need to fetch each one since the left non-join columns are likely not dup'd and may be the reason for the cartesian join
+          long globalRowNumber = _leftOrder[(int)(j / _leftBatchSize)][(int)(j % _leftBatchSize)];
           int chkIdx = _leftFrame.anyVec().elem2ChunkIdx(globalRowNumber); //binary search in espc
           H2ONode node = _leftFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
           _perNodeNumLeftRowsToFetch[node.index()]++;  // the key is the same within this left dup range, but still need to fetch left non-join columns
