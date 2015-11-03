@@ -262,10 +262,10 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 
 #` Flush any cached data
 .flush.data <- function(x) {
-  rm("data" ,envir=x)
-  rm("types",envir=x)
-  rm("nrow" ,envir=x)
-  rm("ncol" ,envir=x)
+  if( !is.null(attr(x,"data")) ) rm("data" ,envir=x)
+  if( !is.null(attr(x,"data")) ) rm("types",envir=x)
+  if( !is.null(attr(x,"data")) ) rm("nrow" ,envir=x)
+  if( !is.null(attr(x,"data")) ) rm("ncol" ,envir=x)
   x
 }
 

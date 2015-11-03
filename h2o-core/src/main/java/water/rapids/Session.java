@@ -210,7 +210,16 @@ public class Session {
           vec.remove(fs);       // Remove unused global vec
       }
     }
-    Frame fr2 = new Frame(id,src._names.clone(),src.vecs().clone());
+    // Copy (defensive) the base vecs array.  Then copy any vecs which are
+    // already globals - this new global must be independent of any other
+    // global Vecs - because global Vecs get side-effected by unrelated
+    // operations.
+    Vec[] svecs = src.vecs().clone();
+    for( int i=0; i<svecs.length; i++ )
+      if( GLOBALS.contains(svecs[i]) )
+        svecs[i] = svecs[i].makeCopy();
+    // Make and install new global Frame
+    Frame fr2 = new Frame(id,src._names.clone(),svecs);
     DKV.put(fr2,fs);
     addGlobals(fr2);
     fs.blockForPending();
