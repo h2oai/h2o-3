@@ -97,24 +97,23 @@ class ASTRectangleAssign extends ASTPrim {
 
     // Partial update; needs to preserve type, and may need to copy to support
     // copy-on-write
-    dst = slice(dst,cols);
     Vec[] dvecs = dst.vecs();
     Vec[] svecs = src.vecs();
-    for( int col=0; col<dvecs.length; col++ )
-      if( dvecs[col].get_type() != svecs[col].get_type() )
-        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[col]+"\', is of type "+dvecs[col].get_type_str()+" and the source is "+svecs[col].get_type_str());
+    for( int col=0; col<cols.length; col++ )
+      if( dvecs[cols[col]].get_type() != svecs[col].get_type() )
+        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[cols[col]]+"\', is of type "+dvecs[cols[col]].get_type_str()+" and the source is "+svecs[col].get_type_str());
 
-    // Check for needing to copy before updating
-    throw H2O.unimpl();
-
-    //// Frame fill
-    //// Handle fast small case
-    //if( nrows==1 ) {
-    //  long drow = (long)rows.expand()[0];
-    //  for( int col=0; col<dvecs.length; col++ )
-    //    dvecs[col].set(drow, svecs[col].at(0));
-    //  return;
-    //}
+    // Frame fill
+    // Handle fast small case
+    if( nrows<= 1 || (cols.length*nrows)<=1000 ) { // Go parallel for more than 1000 random updates
+      // Copy dst columns as-needed to allow update-in-place
+      dvecs = ses.copyOnWrite(dst,cols); // Update dst columns
+      long[] rownums = rows.expand8();   // Just these rows
+      for( int col=0; col<svecs.length; col++ )
+        for( int ridx=0; ridx<rownums.length; ridx++ )
+          dvecs[cols[col]].set(rownums[ridx], svecs[col].at(ridx));
+      return;
+    }
     // Handle large case
     //throw H2O.unimpl();
   }
