@@ -33,11 +33,6 @@ plot_scoring <- function(model) {
   }
 }
 
-clean_up <- function() {
-  keys <- as.vector(h2o.ls())
-  sapply(keys[grep("subset|nary|group|rapids|file", keys)], function (x) h2o.rm(x))
-}
-
 # Pick either the big or the small demo.
 small_test <-  locate_source("bigdata/laptop/lending-club/LoanStats3a.csv")
 big_test <-  c(locate_source("bigdata/laptop/lending-club/LoanStats3a.csv"),
@@ -46,99 +41,96 @@ big_test <-  c(locate_source("bigdata/laptop/lending-club/LoanStats3a.csv"),
              locate_source("bigdata/laptop/lending-club/LoanStats3d.csv"))
 
 print("Import approved loan requests for Lending Club...")
-loanStats <- h2o.importFile(path = big_test, destination_frame = "LoanStats")
+loanStats <- h2o.importFile(path = big_test, parse = F)
+col_types <- c('numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'enum', 'string', 'numeric',
+               'enum', 'enum', 'enum', 'string', 'enum', 'numeric', 'enum', 'enum', 'enum', 'enum',
+               'string', 'enum', 'enum', 'enum', 'enum', 'enum', 'numeric', 'numeric', 'enum',
+               'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'string', 'numeric',
+               'enum', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric',
+               'numeric', 'numeric', 'enum', 'numeric', 'enum', 'enum', 'numeric', 'enum', 'numeric')
+loanStats <- h2o.parseRaw(data = loanStats, destination_frame = "loanStats", col.types = col_types)
 
 print("Create bad loan label, this will include charged off, defaulted, and late repayments on loans...")
-loanStats$complete <- !(loanStats$loan_status %in% c("Current", "In Grace Period", "Late (16-30 days)", "Late (31-120 days)"))
-loanStats$bad_loan <-   loanStats$loan_status %in% c("Charged Off", "Default", "Does not meet the credit policy.  Status:Charged Off")
-loanStats$complete <- as.factor(loanStats$complete)
+loanStats <- loanStats[!(loanStats$loan_status %in% c("Current", "In Grace Period", "Late (16-30 days)", "Late (31-120 days)")), ]
+loanStats <- loanStats[!is.na(loanStats$id),]
+loanStats$bad_loan <- loanStats$loan_status %in% c("Charged Off", "Default", "Does not meet the credit policy.  Status:Charged Off")
 loanStats$bad_loan <- as.factor(loanStats$bad_loan)
+print(paste(nrow(loanStats), "of 550573 loans have either been paid off or defaulted..."))
+
+print("Turn string interest rate and revoling util columns into numeric columns...")
+loanStats$int_rate <- h2o.strsplit(loanStats$int_rate, split = "%")
+loanStats$int_rate <- h2o.trim(loanStats$int_rate)
+loanStats$int_rate <- as.h2o(as.numeric(as.matrix(loanStats$int_rate)))
+# loanStats$int_rate <- as.numeric(loanStats$int_rate)
+loanStats$revol_util <- h2o.strsplit(loanStats$revol_util, split = "%")
+loanStats$revol_util <- h2o.trim(loanStats$revol_util)
+loanStats$revol_util <- as.h2o(as.numeric(as.matrix(loanStats$revol_util)))
+# loanStats$revol_util <- as.numeric(loanStats$revol_util)
+
+print("Calculate the longest credit length in years...")
+time1 <- as.Date(h2o.strsplit(x = loanStats$earliest_cr_line, split = "-")[,2], format = "%Y") 
+time2 <- as.Date(h2o.strsplit(x = loanStats$issue_d, split = "-")[,2], format = "%Y")
+loanStats$credit_length_in_years <- year(time2) - year(time1)
+## Ideally you can parse the column as a Date column immediately
+## loanStats$earliest_cr_line <- as.Date(x = loanStats$earliest_cr_line, format = "%b-%Y")
+## loanStats$issue_d          <- as.Date(x = loanStats$issue_d, format = "%b-%Y")
+## loanStats$credit_length_in_years <- year(loanStats$earliest_cr_line) - year(loanStats$issue_d)
 
 
-print("Turn string interest rate column into numeric...")
-int_rate.hex <- loanStats$int_rate
-int_rate.hex$int_rate <- h2o.strsplit(x = int_rate.hex$int_rate, split = "%")
-r_frame   <- as.data.frame(int_rate.hex)
-hex_frame <- as.h2o(r_frame)
-loanStats$int_rate2 <- hex_frame$int_rate
+print("Convert emp_length column into numeric...")
+## remove " year" and " years", also translate n/a to ""
+loanStats$emp_length <- h2o.sub(x = loanStats$emp_length, pattern = "([ ]*+[a-zA-Z].*)|(n/a)", replacement = "")
+loanStats$emp_length <- h2o.trim(loanStats$emp_length)
+loanStats$emp_length <- h2o.sub(x = loanStats$emp_length, pattern = "< 1", replacement = "0")
+loanStats$emp_length <- h2o.sub(x = loanStats$emp_length, pattern = "10\\+", replacement = "10")
+loanStats$emp_length <- as.h2o(as.numeric(as.matrix(loanStats$emp_length)))
+# loanStats$emp_length <- as.numeric(loanStats$emp_length)
 
-earliest_cr_line.hex <- loanStats$earliest_cr_line
-earliest_cr_line.hex <- h2o.strsplit(x = earliest_cr_line.hex$earliest_cr_line, split = "-")
-r_frame   <- as.data.frame(earliest_cr_line.hex)
-hex_frame <- as.h2o(r_frame)
-names(hex_frame) <- c("earliest_cr_line_Month", "earliest_cr_line_Year")
-loanStats  <- h2o.cbind(loanStats, hex_frame)
-loanStats  <- h2o.assign(data = loanStats, key = "LoanStats")
+print("Map multiple levels into one factor level for verification_status...")
+loanStats$verification_status <- h2o.sub(x = loanStats$verification_status, pattern = "VERIFIED - income source", replacement = "verified")
+loanStats$verification_status <- h2o.sub(x = loanStats$verification_status, pattern = "VERIFIED - income", replacement = "verified")
+loanStats$verification_status <- as.h2o(as.matrix(loanStats$verification_status))
+#h2o.setLevels(x = loanStats$verification_status, levels = c("not verified", "verified", ""))
 
-issue_date.hex <- loanStats$issue_d
-issue_date.hex <- h2o.strsplit(x = issue_date.hex$issue_d, split = "-")
-r_frame   <- as.data.frame(issue_date.hex)
-hex_frame <- as.h2o(r_frame)
-names(hex_frame) <- c("issue_d_Month", "issue_d_Year")
-loanStats  <- h2o.cbind(loanStats, hex_frame)
-loanStats  <- h2o.assign(data = loanStats, key = "LoanStats")
+## Check to make sure all the string/enum to numeric conversion completed correctly
+x <- c("int_rate", "revol_util", "credit_length_in_years", "emp_length", "verification_status")
+c1 <- as.data.frame(loanStats[1,x])
+c2 <- data.frame(int_rate = 10.65, revol_util = 83.7, credit_length_in_years = 26,
+                 emp_length = 10, verification_status = "verified")
+if(!all(c1 == c2)) {
+  print(c1)
+  print(c2)
+  stop("Conversion column(s) did not run correctly.")
+  }
 
-revol_util.hex <- loanStats$revol_util
-revol_util.hex <- h2o.strsplit(x = revol_util.hex$revol_util, split = "%")
-r_frame   <- as.data.frame(revol_util.hex)
-hex_frame <- as.h2o(r_frame)
-names(hex_frame) <- c("revol_util2")
-loanStats  <- h2o.cbind(loanStats, hex_frame)
-loanStats  <- h2o.assign(data = loanStats, key = "LoanStats")
-
-emp_length.hex <- loanStats$emp_length
-r_frame <- as.data.frame(emp_length.hex)
-r_frame <- gsub(pattern = " years", replacement = "", x = r_frame$emp_length)
-r_frame <- gsub(pattern = " year", replacement = "", x = r_frame)
-r_frame <- gsub(pattern = "< 1", replacement = "0.5", x = r_frame)
-# Does not work
-# r_frame <- gsub(pattern = "10+", replacement = "10", x = r_frame)
-r_frame[which(r_frame == "10+")] = "10"
-r_frame[which(r_frame == "n/a")] = NA
-r_frame[which(r_frame == "")] = NA
-r_frame   <- as.numeric(r_frame)
-hex_frame <- as.h2o(r_frame)
-names(hex_frame) = "emp_length2"
-loanStats  <- h2o.cbind(loanStats, hex_frame)
-loanStats  <- h2o.assign(data = loanStats, key = "LoanStats")
-
-loanStats$longest_credit_length <- loanStats$issue_d_Year - loanStats$earliest_cr_line_Year
-loanStats$issue_d_Year_factor   <- as.factor(loanStats$issue_d_Year)
-# Clean up the KV Store
-clean_up()
+print("Calculate the total amount of money earned or lost per loan...")
+loanStats$earned <- loanStats$total_pymnt - loanStats$loan_amnt
 
 print("Set variables to predict bad loans...")
 myY <- "bad_loan"
-myX <- setdiff(names(loanStats),
-             c(myY, "id", "member_id", "loan_status", "url", "policy_code", "last_fico_range_high",
-               "last_fico_range_low", "recoveries", "total_rec_prncp", "last_pymnt_amnt",
-               "last_credit_pull_d", "collection_recovery_fee", "total_pymnt", "last_pymnt_d",
-               "total_rec_int", "funded_amnt_inv", "total_pymnt_inv", "next_pymnt_d",
-               "total_rec_late_fee", "out_prncp", "out_prncp_inv", "issue_d", "int_rate","desc",
-               "earliest_cr_line", "sub_grade", "grade", "issue_d_Month", "issue_d_Year",
-               "earliest_cr_line_Month", "title", "emp_length", "revol_util", "emp_title",
-               "earliest_cr_line_Year", "funded_amnt", "pymnt_plan", "complete", "fico_range_low", "fico_range_high"))
+myX <-  c("loan_amnt", "term", "home_ownership", "annual_inc", "verification_status", "purpose",
+          "addr_state", "dti", "delinq_2yrs", "open_acc", "pub_rec", "revol_bal", "total_acc",
+          "emp_length", "collections_12_mths_ex_med", "credit_length_in_years", "inq_last_6mths", "revol_util")
 
-# Filter out only loans that have been completed
-loanStats_complete <- loanStats[loanStats$complete == "1", ]
-loanStats_complete <- h2o.assign(data = loanStats_complete, key = "loanStats_complete")
-loanStats_complete$earned <- loanStats_complete$total_pymnt - loanStats_complete$loan_amnt
+loanStats$inq_last_6mths <- as.factor(loanStats$inq_last_6mths)
+loanStats$collections_12_mths_ex_med <- as.factor(loanStats$collections_12_mths_ex_med)
+loanStats$pub_rec <- as.factor(loanStats$pub_rec)
 
-data  <- loanStats_complete
+data  <- loanStats
 rand  <- h2o.runif(data)
 train <- data[rand$rnd <= 0.8, ]
 valid <- data[rand$rnd > 0.8, ]
 
 models <- c()
-for(i in 3:5){
+for(i in 4:5){
 start     <- Sys.time()
 gbm_model <- h2o.gbm(x = myX, y = myY, training_frame = train, validation_frame = valid, balance_classes = T,
-                     learn_rate = 0.05, score_each_iteration = T, ntrees = 200, max_depth = i)
+                     learn_rate = 0.05, score_each_iteration = T, ntrees = 100, max_depth = i)
 end       <- Sys.time()
 gbmBuild  <- end - start
-print(paste("Took", gbmBuild, units(gbmBuild), "to build a GBM Model with 200 trees and a AUC of :",
-            h2o.auc(gbm_model, valid = T) , "on the validation set and",
-            h2o.auc(gbm_model), "on the training set."))
+print(paste("Took", gbmBuild, units(gbmBuild), "to build a GBM Model with 100 trees and a AUC of :",
+            h2o.auc(gbm_model) , "on the training set and",
+            h2o.auc(gbm_model, valid = T), "on the validation set."))
 gbm_score <- plot_scoring(model = gbm_model)
 models <- c(models, gbm_model)
 }
@@ -161,36 +153,37 @@ print(h2o.confusionMatrix(gbm_model, valid = T))
 h2o.auc(gbm_model)
 h2o.auc(gbm_model, valid = T)
 
-## Credit Score of bad vs good completed loans
-
-bad_loans  <- loanStats_complete[loanStats_complete$bad_loan == "1", ]
-good_loans <- loanStats_complete[loanStats_complete$bad_loan == "0", ]
-bad_loans  <- h2o.assign(data = bad_loans, key = "bad_loans")
-good_loans <- h2o.assign(data = good_loans, key = "good_loans")
-
-
 ## Do a post - analysis of how much money we would've saved with this model...
-pred <- h2o.predict(gbm_model, loanStats_complete)
-loanStats_w_pred <- h2o.cbind(loanStats_complete, pred)
-bad_predicted  <- loanStats_w_pred[loanStats_w_pred$predict == "1", ]
-good_predicted <- loanStats_w_pred[loanStats_w_pred$predict == "0", ]
-bad_predicted  <- h2o.assign(data = bad_predicted, key = "bad_predicted")
-good_predicted <- h2o.assign(data = good_predicted, key = "good_predicted")
+printMoney <- function(x){
+  x <- round(abs(x),2)
+  format(x, digits=10, nsmall=2, decimal.mark=".", big.mark=",")
+  }
 
 ## Calculate how much money will be lost to false negative, vs how much will be saved due to true positives
-printMoney <- function(x){
-x <- round(abs(x),2)
-format(x, digits=10, nsmall=2, decimal.mark=".", big.mark=",")
-}
-sum_loss <- as.data.frame(h2o.group_by(data = bad_predicted, by = c("bad_loan", "predict"), sum("earned")))
-sum_gain <- as.data.frame(h2o.group_by(data = good_predicted, by = c("bad_loan", "predict"), sum("earned")))
+loanStats$pred <- h2o.predict(gbm_model, loanStats)[,1]
+net <- as.data.frame(h2o.group_by(data = loanStats, by = c("bad_loan", "pred"), sum("earned")))
+n1  <- net[ net$bad_loan == 0 & net$pred == 0, 3]
+n2  <- net[ net$bad_loan == 0 & net$pred == 1, 3]
+n3  <- net[ net$bad_loan == 1 & net$pred == 1, 3]
+n4  <- net[ net$bad_loan == 1 & net$pred == 0, 3]
 
 ## Calculate the amount of earned
-print(paste0("Total amount of loss that could have been prevented : $", printMoney(sum_loss$sum_earned[1]) , ""))
-print(paste0("Total amount of loss that still would've accrued : $", printMoney(sum_gain$sum_earned[2]) , ""))
-print(paste0("Total amount of profit still earned using the model : $", printMoney(sum_gain$sum_earned[1]) , ""))
-print(paste0("Total amount of profit forfeitted using the model : $", printMoney(sum_loss$sum_earned[2]) , ""))
+print(paste0("Total amount of profit still earned using the model : $", printMoney(n1) , ""))
+print(paste0("Total amount of profit forfeitted using the model : $", printMoney(n2) , ""))
+print(paste0("Total amount of loss that could have been prevented : $", printMoney(n3) , ""))
+print(paste0("Total amount of loss that still would've accrued : $", printMoney(n4) , ""))
 
 ## Value of the GBM Model
-diff <- - sum_loss$sum_earned[1] - sum_loss$sum_earned[2]
+diff <- n3 + n2
 print(paste0("Total immediate gain the implementation of the model would've had on completed approved loans : $",printMoney(diff),""))
+
+## Run prediction of two similar applicants
+a1 <- as.h2o(data.frame(loan_amnt = 25000, term = "36 months", home_ownership = "RENT", annual_inc = 70000, purpose = "credit card"))
+a2 <- as.h2o(data.frame(loan_amnt = 25000, term = "36 months", home_ownership = "RENT", annual_inc = 70000, purpose = "medical"))
+
+p1 <- h2o.predict(object = gbm_model, newdata = a1)
+p2 <- h2o.predict(object = gbm_model, newdata = a2)
+
+if(sum(p1$predict == 1)) stop("Loan for credit card debt should be approved")
+if(sum(p2$predict == 0)) stop("Loan for medical bills should not be approved")
+

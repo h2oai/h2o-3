@@ -2231,7 +2231,11 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
   a[[1]] <- NULL  # drop the wrapping list()
   nAggs <- length(a)  # the number of aggregates
   # for each aggregate, build this list: (agg,col.idx,na.method)
-  agg.methods <- unlist(lapply(a, function(agg) as.character(agg[[1]]) ))
+  agg.methods <- unlist(lapply(a, function(agg) {
+    ag <- as.character(agg[[1]])
+    if( ag=="sd" ) ag <- "\"sdev\""
+    ag
+  }))
   col.idxs    <- unlist(lapply(a, function(agg, envir) {
     # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
     # if numeric, then eval it and return
