@@ -97,7 +97,11 @@ h2o.rm <- function(ids) {
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(id) .fetch.data(.newFrame(id,id,-1,-1),1L)
+h2o.getFrame <- function(id) {
+  fr <- .newFrame(id,id,-1,-1)
+  .fetch.data(fr,1L)
+  fr
+}
 
 #' Get an R reference to an H2O model
 #'

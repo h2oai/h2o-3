@@ -134,7 +134,7 @@ function(create=FALSE) {
 sandboxMakeSubDir<-
 function(dirname) {
   if (!is.character(dirname)) Log.err("dirname argument must be of type character")
-  subdir <- paste(sandbox(),dirname,sep=.Platform$file.sep)
+  subdir <- file.path(sandbox(),dirname,fsep = "\\")
   dir.create(subdir, showWarnings=FALSE)
   return(subdir)
 }
@@ -144,8 +144,13 @@ sandboxRenameSubDir<-
 function(oldSubDir,newSubDirName) {
   if (!is.character(oldSubDir)) Log.err("oldSubDir argument must be of type character")
   if (!is.character(newSubDirName)) Log.err("newSubDirName argument must be of type character")
-  newSubDir <- sandboxMakeSubDir(dirname=newSubDirName)
-  file.rename(oldSubDir, newSubDir)
+  newSubDir <- file.path(sandbox(),newSubDirName)
+  # Real trouble deleting a prior-existing newSubDir on Windows, that was filled with crap.
+  # Calling system("rm -rf") seems to work, where calling unlink() would not.
+  # Also renaming to an existing but empty directory does not work on windows.
+  system(paste0("rm -rf ",newSubDir))
+  res <- file.rename(oldSubDir, newSubDir)
+  if( !res ) print(paste0("Warning: File rename failed FROM ",oldSubDir," TO ",newSubDir))
   return(newSubDir)
 }
 
