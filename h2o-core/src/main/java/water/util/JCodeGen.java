@@ -107,9 +107,13 @@ public class JCodeGen {
    * @param sb output
    * @param className name of generated class
    * @param values array holding values which should be hold in generated field VALUES.
+   * @param comment  comment to prefix the class with
    * @return output buffer
    */
-  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, String[] values) {
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, String[] values, String comment) {
+    if (comment != null) {
+      sb.p("// ").p(comment).nl();
+    }
     sb.ip(modifiers!=null ? modifiers+" ": "").p("class ").p(className).p(" implements java.io.Serializable {").nl().ii(1);
     sb.ip("public static final String[] VALUES = ");
     if (values==null)
@@ -136,7 +140,13 @@ public class JCodeGen {
     }
     return sb.di(1).p("}").nl();
   }
-  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, double[] values) {
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, String[] values) {
+    return toClassWithArray(sb, modifiers, className, values, null);
+  }
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, double[] values, String comment) {
+    if (comment != null) {
+      sb.p("// ").p(comment).nl();
+    }
     sb.ip(modifiers!=null ? modifiers+" ": "").p("class ").p(className).p(" implements java.io.Serializable {").nl().ii(1);
     sb.ip("public static final double[] VALUES = ");
     if (values==null)
@@ -163,13 +173,87 @@ public class JCodeGen {
     }
     return sb.di(1).p("}").nl();
   }
-  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, float[] values) {
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, double[] values) {
+    return toClassWithArray(sb, modifiers, className, values, null);
+  }
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, float[] values, String comment) {
+    if (comment != null) {
+      sb.p("// ").p(comment).nl();
+    }
     sb.ip(modifiers!=null ? modifiers+" ": "").p("class ").p(className).p(" implements java.io.Serializable {").nl().ii(1);
     sb.ip("public static final float[] VALUES = ");
     if (values==null)
       sb.p("null;").nl();
     else {
       sb.p("new float[").p(values.length).p("];").nl();
+
+      // Static part
+      int s = 0;
+      int remain = values.length;
+      int its = 0;
+      SB sb4fillers = new SB().ci(sb);
+      sb.ip("static {").ii(1).nl();
+      while (remain>0) {
+        String subClzName = className + "_" + its++;
+        int len = Math.min(MAX_STRINGS_IN_CONST_POOL, remain);
+        toClassWithArrayFill(sb4fillers, subClzName, values, s, len);
+        sb.ip(subClzName).p(".fill(VALUES);").nl();
+        s += len;
+        remain -= len;
+      }
+      sb.di(1).ip("}").nl();
+      sb.p(sb4fillers);
+    }
+    return sb.di(1).p("}").nl();
+  }
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, float[] values) {
+    return toClassWithArray(sb, modifiers, className, values, null);
+  }
+
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, int[] values, String comment) {
+    if (comment != null) {
+      sb.p("// ").p(comment).nl();
+    }
+    sb.ip(modifiers!=null ? modifiers+" ": "").p("class ").p(className).p(" implements java.io.Serializable {").nl().ii(1);
+    sb.ip("public static final int[] VALUES = ");
+    if (values==null)
+      sb.p("null;").nl();
+    else {
+      sb.p("new int[").p(values.length).p("];").nl();
+
+      // Static part
+      int s = 0;
+      int remain = values.length;
+      int its = 0;
+      SB sb4fillers = new SB().ci(sb);
+      sb.ip("static {").ii(1).nl();
+      while (remain>0) {
+        String subClzName = className + "_" + its++;
+        int len = Math.min(MAX_STRINGS_IN_CONST_POOL, remain);
+        toClassWithArrayFill(sb4fillers, subClzName, values, s, len);
+        sb.ip(subClzName).p(".fill(VALUES);").nl();
+        s += len;
+        remain -= len;
+      }
+      sb.di(1).ip("}").nl();
+      sb.p(sb4fillers);
+    }
+    return sb.di(1).p("}").nl();
+  }
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, int[] values) {
+    return toClassWithArray(sb, modifiers, className, values, null);
+  }
+
+  public static JCodeSB toClassWithArray(JCodeSB sb, String modifiers, String className, double[][] values, String comment) {
+    if (comment != null) {
+      sb.p("// ").p(comment).nl();
+    }
+    sb.ip(modifiers!=null ? modifiers+" ": "").p("class ").p(className).p(" implements java.io.Serializable {").nl().ii(1);
+    sb.ip("public static final double[][] VALUES = ");
+    if (values == null)
+      sb.p("null;").nl();
+    else {
+      sb.p("new double[").p(values.length).p("][];").nl();
 
       // Static part
       int s = 0;
@@ -219,6 +303,31 @@ public class JCodeGen {
     sb.ip("static final void fill(double[] sa) {").ii(1).nl();
     for (int i=0; i<len; i++) {
       sb.ip("sa[").p(start+i).p("] = ").pj(values[start+i]).p(";").nl();
+    }
+    sb.di(1).ip("}").nl();
+    sb.di(1).ip("}").nl();
+    return sb;
+  }
+  public static JCodeSB toClassWithArrayFill(JCodeSB sb, String clzName, int[] values, int start, int len) {
+    sb.ip("static final class ").p(clzName).p(" implements java.io.Serializable {").ii(1).nl();
+    sb.ip("static final void fill(int[] sa) {").ii(1).nl();
+    for (int i=0; i<len; i++) {
+      sb.ip("sa[").p(start+i).p("] = ").p(values[start + i]).p(";").nl();
+    }
+    sb.di(1).ip("}").nl();
+    sb.di(1).ip("}").nl();
+    return sb;
+  }
+  public static JCodeSB toClassWithArrayFill(JCodeSB sb, String clzName, double[][] values, int start, int len) {
+    for (int i  = 0; i < len; i++) {
+      int idx = start + i;
+      toClassWithArray(sb, "static", clzName + "_" + idx, values[i + start]);
+    }
+    sb.ip("static final class ").p(clzName).p(" implements java.io.Serializable {").ii(1).nl();
+    sb.ip("static final void fill(double[][] sa) {").ii(1).nl();
+    for (int i=0; i<len; i++) {
+      int idx = start + i;
+      sb.ip("sa[").p(start+i).p("] = ").p(clzName + "_" + idx).p(".VALUES;").nl();
     }
     sb.di(1).ip("}").nl();
     sb.di(1).ip("}").nl();

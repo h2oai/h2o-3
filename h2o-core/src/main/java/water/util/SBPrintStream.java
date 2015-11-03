@@ -142,6 +142,12 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return this;
   }
 
+  @Override
+  public SBPrintStream pj(String objectName, String fieldName) {
+    append(objectName).append('.').append(fieldName);
+    return this;
+  }
+
   public SBPrintStream p(IcedBitSet ibs) {
     SB sb = new SB();
     sb = ibs.toString(sb);
