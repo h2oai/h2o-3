@@ -270,16 +270,19 @@ class ASTTmpAssign extends ASTPrim {
   }
 }
 
-/** Remove a frame by ID.  Returns 1 for removing, 0 if id does not exist. */
+/** Remove an by ID.  Removing a Frame updates refcnts.  Returns 1 for
+ *  removing, 0 if id does not exist. */
 class ASTRm extends ASTPrim {
   @Override public String[] args() { return new String[]{"id"}; }
   @Override int nargs() { return 1+1; } // (rm id)
   @Override public String str() { return "rm" ; }
   @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Key id = Key.make( asts[1].str() );
-    Frame fr = DKV.getGet(id);
-    env._ses.remove(fr);        // Remove unshared Vecs
-    return new ValNum(fr == null ? 0 : 1);
+    Value val = DKV.get(id);
+    if( val == null ) return new ValNum(0);
+    if( val.isFrame() ) env._ses.remove(val.<Frame>get()); // Remove unshared Vecs
+    else                Keyed.remove(id);           // Normal (e.g. Model) remove
+    return new ValNum(1);
   }
 }
 
