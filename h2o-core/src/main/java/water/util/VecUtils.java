@@ -190,7 +190,7 @@ public class VecUtils {
    * @return a numeric {@link Vec}
    */
   public static Vec categoricalToInt(final Vec src) {
-    if( src.isInt() && src.domain()==null ) return copyOver(src, Vec.T_NUM, null);
+    if( src.isInt() && (src.domain()==null || src.domain().length == 0)) return copyOver(src, Vec.T_NUM, null);
     if( !src.isCategorical() ) throw new IllegalArgumentException("categoricalToInt conversion only works on categorical columns.");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;

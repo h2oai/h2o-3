@@ -17,10 +17,10 @@ import java.util.Arrays;
  * Deep Learning Parameters
  */
 public class DeepLearningParameters extends Model.Parameters {
+  @Override protected double defaultStoppingTolerance() { return 0; }
   public DeepLearningParameters() {
     super();
     _stopping_rounds = 5;
-    _stopping_tolerance = 0; //expect strict improvement, it's noisy anyway
   }
 
   @Override
