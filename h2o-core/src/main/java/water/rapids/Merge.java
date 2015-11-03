@@ -109,7 +109,7 @@ public class Merge {
     BinaryMerge bmResults[] = new BinaryMerge[bmList.size()];
     int i=0;
     for (RPC rpc : bmList) {
-      System.out.print(i);  // seems like inserting this print fixes the pause.  // TODO: remove and see if it hangs again
+      System.out.print(i + " ");  // seems like inserting this print fixes the pause.  // TODO: remove and see if it hangs again
       BinaryMerge thisbm;
       bmResults[i++] = thisbm = (BinaryMerge)rpc.get(); //block
       if (thisbm._numRowsInResult == 0) continue;
