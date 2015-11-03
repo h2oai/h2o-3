@@ -5,18 +5,18 @@ import java.net.URI
 
 import water._
 import water.parser.ParseSetup._
-import water.parser.{ParserType, ParseSetup}
+import water.parser.{ParseSetup, ParserType}
 import water.util.FrameUtils
 
 /**
  * Wrapper around Java H2O Frame to provide more Scala-like API.
  *
- * @param key  reference of new frame
+ * @param frameKey  reference of new frame
  * @param names  column names for new frame
  * @param vecs  vectors composing new frame
  */
-class H2OFrame private (key: Key[Frame], names: Array[String], vecs: Array[Vec])
-  extends Frame(key, names, vecs) with FrameOps {
+class H2OFrame private (frameKey: Key[Frame], names: Array[String], vecs: Array[Vec])
+  extends Frame(frameKey, names, vecs) with FrameOps {
 
   /** Create a new H2OFrame based on existing Java Frame.
     *
@@ -87,9 +87,15 @@ class H2OFrame private (key: Key[Frame], names: Array[String], vecs: Array[Vec])
 
   /* Constructor */
   // Force into K/V store
-  assert(key!=null)
-  DKV.put(key, new Value(key, this))
+  assert(frameKey != null)
+  DKV.put(frameKey, new Value(frameKey, this))
   /* ---- */
+
+  /** Expose internal key via a method.
+    *
+    * The motivation is to simplify manipulation with frame from Py4J (pySparkling)
+    */
+  def key: Key[Frame] = _key
 
   override def toString(): String = super[Frame].toString()
 
