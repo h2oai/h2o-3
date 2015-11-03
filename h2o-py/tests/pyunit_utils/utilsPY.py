@@ -17,6 +17,7 @@ from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.transforms.decomposition import H2OPCA
+from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 import urllib2
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -134,6 +135,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
     elif algo == "random_forest": model = H2ORandomForestEstimator(**kwargs)
     elif algo == "deeplearning": model = H2ODeepLearningEstimator(**kwargs)
     elif algo == "glm": model = H2OGeneralizedLinearEstimator(**kwargs)
+    elif algo == "naive_bayes": model = H2ONaiveBayesEstimator(**kwargs)
     elif algo == "kmeans": model = H2OKMeansEstimator(**kwargs)
     elif algo == "pca": model = H2OPCA(**kwargs)
     else: raise(ValueError, "algo {0} is not supported".format(algo))
