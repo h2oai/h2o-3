@@ -21,7 +21,8 @@ class GroupBy:
   The na parameter is one of ["all","ignore","rm"].
       "all"    - include NAs
       "rm"     - exclude NAs
-      "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
+
+  Variance (var) and standard deviation (sd) are the sample (not population) statistics.
   """
   def __init__(self,fr,by,order_by=None):
     self._fr=fr                 # IN
