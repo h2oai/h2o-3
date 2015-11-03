@@ -418,7 +418,11 @@ def remove(x):
   if isinstance(x, H2OFrame):
     x = x._ex._cache._id       # String or None
     if x is None: return       # Lazy frame, never evaluated, nothing in cluster
-  if isinstance(x, str): H2OConnection.delete("DKV/"+x)
+    rapids("(rm {})".format(x))
+  elif isinstance(x, H2OEstimator):
+    H2OConnection.delete("DKV/"+x.model_id)
+  elif isinstance(x, str):
+    H2OConnection.delete("DKV/"+x)
 
 
 def remove_all():
