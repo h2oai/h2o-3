@@ -4,13 +4,15 @@ import hex.DataInfo;
 import hex.glm.GLM.GLMGradientSolver;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
-import hex.optimization.L_BFGS.GradientInfo;
-import hex.optimization.L_BFGS.GradientSolver;
+import hex.optimization.OptimizationUtils.GradientInfo;
+import hex.optimization.OptimizationUtils.GradientSolver;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -45,20 +47,6 @@ public class L_BFGS_Test  extends TestUtil {
         double objVal = (a - x) * (a - x) + b * (y - xx) * (y - xx);
         return new GradientInfo(objVal, g);
       }
-
-      @Override
-      public double[] getObjVals(double[] beta, double[] pk, int nSteps, double initialStep, double stepDec) {
-        double [] res = new double[nSteps];
-        double step = initialStep;
-        for(int i = 0; i < res.length; ++i) {
-          double x = beta[0] + pk[0]*step;
-          double y = beta[1] + pk[1]*step;
-          double xx = x * x;
-          res[i] = (a - x) * (a - x) + b * (y - xx) * (y - xx);
-          step *= stepDec;
-        }
-        return res;
-      }
     };
     L_BFGS lbfgs = new L_BFGS().setGradEps(1e-12);
     L_BFGS.Result r = lbfgs.solve(gs, L_BFGS.startCoefs(2, 987654321));
@@ -79,7 +67,7 @@ public class L_BFGS_Test  extends TestUtil {
       Frame valid = new Frame(source._names.clone(),source.vecs().clone());
       dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
       DKV.put(dinfo._key,dinfo);
-      GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.vec("CAPSULE").mean(), source.numRows());
+      GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,new double[] {source.vec("CAPSULE").mean()}, 1.0/source.numRows());
       L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
 
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
@@ -116,7 +104,7 @@ public class L_BFGS_Test  extends TestUtil {
       glmp._alpha = new double[]{0};
       dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
       DKV.put(dinfo._key,dinfo);
-      GradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.lastVec().mean(), source.numRows());
+      GradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5, new double [] {source.lastVec().mean()}, source.numRows());
       L_BFGS lbfgs = new L_BFGS().setMaxIter(20);
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.lastVec().mean());

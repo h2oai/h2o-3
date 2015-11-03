@@ -178,7 +178,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTFilterNACols());
     init(new ASTFlatten());
     init(new ASTIsFactor());
-    init(new ASTAnyFactor());
+    init(new ASTRename());
     init(new ASTRBind());
     init(new ASTRowSlice());
     init(new ASTSetDomain());

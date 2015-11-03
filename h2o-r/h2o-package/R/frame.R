@@ -64,7 +64,7 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
 .nodeFinalizer <- function(x) {
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
-    cat("=== Finalizer on ",attr(x, "id"),"\n")
+    #cat("=== Finalizer on ",attr(x, "id"),"\n")
     .h2o.__remoteSend(paste0(.h2o.__DKV, "/", attr(x, "id")), method = "DELETE")
   }
 }
@@ -190,7 +190,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   # Build the AST; this will assign a name as needed
   exec_str <- .eval.impl(x)
   # Execute the AST on H2O
-  print(paste0("EXPR: ",exec_str))
+  #print(paste0("EXPR: ",exec_str))
   res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   if( !is.null(res$scalar) ) { # Fetch out a scalar answer
@@ -211,7 +211,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   .clear.impl(x)
   # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
   # temps... to help debug GC issues.
-  .h2o.gc()
+  #.h2o.gc()
   x
 }
 
@@ -282,8 +282,9 @@ h2o.assign <- function(data, key) {
   .key.validate(key)
   id <- h2o.getId(data)
   if( key == id ) stop("Destination key must differ from input frame ", key)
-  x = .eval.driver(.newExpr("tmp=", key, id)) # Eager eval, so can see it in cluster
+  x <- .eval.driver(.newExpr("tmp=", key, id)) # Eager eval, so can see it in cluster
   .set(x,"id",key)
+  .set(x,"eval",NULL)
   x
 }
 

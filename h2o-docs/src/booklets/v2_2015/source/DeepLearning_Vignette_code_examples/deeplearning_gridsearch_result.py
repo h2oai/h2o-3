@@ -1,2 +1,5 @@
-# TO DO: Add Python version
-# (Python Grid API is not complete yet)
+# print model grid search results
+model_grid
+
+for model in model_grid:
+    print model.model_id + " mse: " + str(model.mse())

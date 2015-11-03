@@ -31,20 +31,19 @@ acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZ
 acs_model
 
 print("Plot objective function value each iteration")
-acs_model_score <- acs_model@model$scoring_history
-plot(acs_model_score$iteration, acs_model_score$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
+plot(acs_model)
 
 ## Embedding of ZCTAs into archetypes (X)
 zcta_arch_x <- h2o.getFrame(acs_model@model$representation_name)
 head(zcta_arch_x)
 
 print("Plot a few ZCTAs on the first two archetypes")
-idx <- (acs_zcta_col == "10065" |   # Manhattan, NY (Upper East Side)
-        acs_zcta_col == "11219" |   # Manhattan, NY (East Harlem)
-        acs_zcta_col == "66753" |   # McCune, KS
-        acs_zcta_col == "84104" |   # Salt Lake City, UT
-        acs_zcta_col == "94086" |   # Sunnyvale, CA
-        acs_zcta_col == "95014")    # Cupertino, CA
+idx <- ((acs_zcta_col == "10065") |   # Manhattan, NY (Upper East Side)
+        (acs_zcta_col == "11219") |   # Manhattan, NY (East Harlem)
+        (acs_zcta_col == "66753") |   # McCune, KS
+        (acs_zcta_col == "84104") |   # Salt Lake City, UT
+        (acs_zcta_col == "94086") |   # Sunnyvale, CA
+        (acs_zcta_col == "95014"))    # Cupertino, CA
 
 city_arch <- as.data.frame(zcta_arch_x[idx,1:2])
 xeps <- (max(city_arch[,1]) - min(city_arch[,1])) / 10

@@ -119,8 +119,8 @@ class H2OColOp(H2OTransformer):
     else:             return X.cbind(res)
     return X
 
-  def _transform_helper(self,X,**params):
-    if self.params == None or self.params == {}:
+  def _transform_helper(self, X, **params):
+    if self.params is None or self.params == {}:
       if self.col is not None: res = self.fun(X[self.col])
       else:                    res = self.fun(X)
     else:

@@ -16,7 +16,7 @@ IS.RUNIT                    <<- FALSE
 IS.RBOOKLET                 <<- FALSE
 RESULTS.DIR                 <<- NULL
 TEST.NAME                   <<- NULL
-SEED                        <<- sample(.Machine$integer.max, 1)
+SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
 
 get.test.ip       <- function() return(H2O.IP)

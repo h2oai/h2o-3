@@ -9,12 +9,12 @@ def deeplearning_multi():
 
     # print(locate("smalldata/logreg/protstate.csv"))
     prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    prostate[1] = prostate[1].asfactor() #CAPSULE -> CAPSULE
-    prostate[2] = prostate[2].asfactor() #AGE -> Factor
-    prostate[3] = prostate[3].asfactor() #RACE -> Factor
-    prostate[4] = prostate[4].asfactor() #DPROS -> Factor
-    prostate[5] = prostate[5].asfactor() #DCAPS -> Factor
-    prostate = prostate.drop('ID')       #remove ID
+    prostate[1] = prostate[1].asfactor()  #CAPSULE -> CAPSULE
+    prostate[2] = prostate[2].asfactor()  #AGE -> Factor
+    prostate[3] = prostate[3].asfactor()  #RACE -> Factor
+    prostate[4] = prostate[4].asfactor()  #DPROS -> Factor
+    prostate[5] = prostate[5].asfactor()  #DCAPS -> Factor
+    prostate = prostate.drop('ID')        #remove ID
     prostate.describe()
 
 

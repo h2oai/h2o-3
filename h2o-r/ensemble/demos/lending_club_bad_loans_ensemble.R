@@ -34,7 +34,7 @@ fit <- h2o.ensemble(x = x, y = y,
 
 
 # Generate predictions on the test set
-pred <- predict.h2o.ensemble(fit, valid)
+pred <- predict(fit, valid)
 predictions <- as.data.frame(pred$pred)[,3]  #third column, p1 is P(Y==1)
 labels <- as.data.frame(valid[,c(y)])[,1]
 

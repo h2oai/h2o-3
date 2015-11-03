@@ -1,4 +1,4 @@
-# Download and import ECG train and test data into the H2O cluster
+# Import ECG train and test data into the H2O cluster
 train_ecg <- h2o.importFile(
         path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv", 
         header = FALSE, 
@@ -21,7 +21,7 @@ anomaly_model <- h2o.deeplearning(
         epochs = 100)                 
 
 # Compute reconstruction error with the Anomaly 
-# detection app (MSE between output layer and input layer)
+# detection app (MSE between output and input layers)
 recon_error <- h2o.anomaly(anomaly_model, test_ecg)
 
 # Pull reconstruction error data into R and 

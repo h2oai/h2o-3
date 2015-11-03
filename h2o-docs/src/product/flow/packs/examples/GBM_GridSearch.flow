@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "md",
+      "input": "# GBM Grid Search Tutorial\n\nThe purpose of this tutorial is to walk new users through a GBM analysis in H2O Flow. \n\nThose who have never used H2O before should refer to <a href=\"https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md\" target=\"_blank\">Getting Started</a> for additional instructions on how to run H2O Flow.\n\n## Getting Started\n\nThis tutorial uses a publicly available data set that can be found at:\n<ahref=\"http://archive.ics.uci.edu/ml/datasets/Arrhythmia\" target=\"_blank\">http://archive.ics.uci.edu/ml/datasets/Arrhythmia</a>.\n\n\nThe original data are the Arrhythmia data set made available by UCI\nMachine Learning repository. They are composed of\n452 observations and 279 attributes.\n\nIf you don't have any data of your own to work with, you can find some example datasets here: \n\n- <a href=\"http://docs.h2o.ai/h2oclassic/resources/publicdata.html\"  target=\"_blank\">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>\n- <a href=\"http://data.h2o.ai\" target=\"_blank\">http://data.h2o.ai</a>\n\n###Importing Data\nBefore creating a model, import data into H2O:\n\n0. Click the **Assist Me!** button (the last button in the row of buttons below the menus).\n  ![Assist Me](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/images/Flow_AssistMeButton.png) \n0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. For this example, the file path is http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz. \n0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. "
+    },
+    {
+      "type": "cs",
+      "input": "assist"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [\"http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz\"]"
+    },
+    {
+      "type": "md",
+      "input": "###Parsing Data\nNow, parse the imported data: \n\n0. Click the **Parse these files...** button. \n  \n   **Note**: The default options typically do not need to be changed unless the data does not parse correctly. \n0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). \n0. If the data uses a separator, select it from the drop-down **Separator** list. \n0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. \n0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. \n0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. \n  \n   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.\n0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.  \n\n  **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse."
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [\"http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz\"]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz\"]\n  destination_frame: \"arrhythmia.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 280\n  single_quotes: false\n  column_names: null\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: -1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "md",
+      "input": "### First, we build a \"naive\" grid search over the number of trees and max. depths\n\n0. Once data are parsed, click the **View** button, then click the **Build Model** button. \n0. Select `Gradient Boosting Machine` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. \n0. From the drop-down **Response** list, select column 1 (`C1`).\n0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. \n0. In the **Nfolds** field, specify the number of cross-validation models to build to find the optimal model parameters (for this example, `5`). \n0. In the **Ntrees** field, click the Grid checkbox on the right, then specify the number of trees to build (for this example, `20;50;100`). \n0. In the **Max_depth** field, click the Grid checkbox on the right, then specify the maximum number of edges between the top node and the furthest node as a stopping criteria (for this example, use values of `3;5;7`). \n0. Click the **Build Model** button. "
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"arrhythmia.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm_naive_grid\",\"training_frame\":\"arrhythmia.hex\",\"nfolds\":5,\"response_column\":\"C1\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"min_rows\":5,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-30479230732262292,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":false,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"build_tree_one_node\":false,\"checkpoint\":\"\",\"nbins_top_level\":1024,\"hyper_parameters\":{\"ntrees\":[\"20\",\"50\",\"100\"],\"max_depth\":[\"3\",\"5\",\"7\"]}}"
+    },
+    {
+      "type": "md",
+      "input": "### Viewing GBM Results\n\nTo view all models built, click the **View** button or display a list of all grids with 'getGrids'"
+    },
+    {
+      "type": "cs",
+      "input": "getGrids"
+    },
+    {
+      "type": "md",
+      "input": "### \"Smart\" grid search with early stopping to auto-tune the number of trees\n\n0. Do the same as above, but this time, do not specify a grid search over the number of trees. Instead, we specify a large number of trees and enable early stopping using 5-fold cross-validation.\n0. Select `Gradient Boosting Machine` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. \n0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. \n0. In the **Nfolds** field, specify the number of cross-validation models to build to find the optimal model parameters (for this example, `5`). \n0. From the drop-down **Response** list, select column 1 (`C1`).  \n0. In the **Ntrees** field, specify the maximum number of trees to build (for this example, `10000`). The models should hopefully converge earlier than that.\n0. In the **Max_depth** field, click the Grid checkbox on the right, then specify the maximum number of edges between the top node and the furthest node as a stopping criteria (for this example, use values of `3;5;7`).\n0. Enable the **Score_each_iteration** checkbox, as we want to have enough scoring events to base our early stopping on.\n0. In the **Stopping_rounds** field, specify the number of scoring events with which the model convergence should be determined. For this example, enter `2`. \n0. Click the **Build Model** button. "
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"arrhythmia.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm_smart_grid\",\"training_frame\":\"arrhythmia.hex\",\"nfolds\":\"5\",\"response_column\":\"C1\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"ntrees\":\"10000\",\"min_rows\":\"5\",\"nbins\":20,\"nbins_cats\":1024,\"seed\":-30479230732262292,\"learn_rate\":\"0.1\",\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":true,\"fold_assignment\":\"AUTO\",\"r2_stopping\":0.999999,\"stopping_rounds\":\"2\",\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"build_tree_one_node\":false,\"checkpoint\":\"\",\"keep_cross_validation_predictions\":false,\"nbins_top_level\":1024,\"hyper_parameters\":{\"max_depth\":[\"3\",\"5\",\"7\"]}}"
+    },
+    {
+      "type": "cs",
+      "input": "getGrids"
+    },
+    {
+      "type": "md",
+      "input": "### Inspecting the cross-validation models and their early stopping behavior\n\n0. You will notice that the 3 grid search models did not run all the way to 10,000 trees, and stopped early.\n0. The number of trees was determined by cross-validation. This is the *optimal* number of trees, based on holdout performance (holdout deviance converged).\n0. You can inspect the 5 cross-validation models for each grid saerch model, to see at how many trees they converged.\n0. Now you know how to automatically tune the number of trees via early stopping and cross-validation! This can save a lot of time for model tuning."
+    }
+  ]
+}

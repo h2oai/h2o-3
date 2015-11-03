@@ -371,9 +371,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Training/Validation share the same data, but will have exclusive weights
       cvTrain[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      if (origWeightsName!=null) cvTrain[i].remove(origWeightsName);
       cvTrain[i].add(weightName, weights[2*i]);
       DKV.put(cvTrain[i]);
       cvValid[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      if (origWeightsName!=null) cvValid[i].remove(origWeightsName);
       cvValid[i].add(weightName, weights[2*i+1]);
       DKV.put(cvValid[i]);
     }
@@ -441,7 +443,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
 
-      modifyParmsForCrossValidationMainModel(N); //tell the main model that it shouldn't stop early either
+      modifyParmsForCrossValidationMainModel(N, async ? null : cvModelBuilderKeys); //tell the main model that it shouldn't stop early either
 
       trainModelImpl(-1, false); //non-blocking
       if (!async)
@@ -537,7 +539,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * For example, the model might need to be told to not do early stopping.
    * @param N Total number of cross-validation folds
    */
-  public void modifyParmsForCrossValidationMainModel(int N) {
+  public void modifyParmsForCrossValidationMainModel(int N, Key<Model>[] cvModelKeys) {
 
   }
 
@@ -600,7 +602,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public int nclasses(){return _nclass;}
 
-  public final boolean isClassifier() { return _nclass > 1; }
+  public final boolean isClassifier() { return nclasses() > 1; }
 
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
@@ -695,6 +697,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   protected  boolean ignoreStringColumns(){return true;}
+  protected  boolean ignoreConstColumns(){return true;}
 
   /**
    * Ignore constant columns, columns with all NAs and strings.
@@ -703,9 +706,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected void ignoreBadColumns(int npredictors, boolean expensive){
     // Drop all-constant and all-bad columns.
-    if( _parms._ignore_const_cols)
+    if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad() || (ignoreStringColumns() && v.isString()); }
+        @Override protected boolean filter(Vec v) {
+          return (ignoreConstColumns() && v.isConst()) || v.isBad() || (ignoreStringColumns() && v.isString()); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
   }
   /**
@@ -812,7 +816,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_train","There are no usable columns to generate model");
 
     if(isSupervised()) {
-
       if(_response != null) {
         _nclass = _response.isCategorical() ? _response.cardinality() : 1;
         if (_response.isConst())
@@ -832,7 +835,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column parameter not set.");
           return;
         }
-
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
             MRUtils.ClassDist cdmt =
@@ -903,6 +905,37 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if (_parms._checkpoint != null && DKV.get(_parms._checkpoint) == null) {
       error("_checkpoint", "Checkpoint has to point to existing model!");
+    }
+
+    if (_parms._stopping_tolerance < 0) {
+      error("_stopping_tolerance", "Stopping tolerance must be >= 0.");
+    }
+    if (_parms._stopping_tolerance >= 1) {
+      error("_stopping_tolerance", "Stopping tolerance must be < 1.");
+    }
+    if (_parms._stopping_rounds == 0) {
+      if (_parms._stopping_metric != ScoreKeeper.StoppingMetric.AUTO)
+        warn("_stopping_metric", "Stopping metric is ignored for _stopping_rounds=0.");
+      if (_parms._stopping_tolerance != _parms.defaultStoppingTolerance())
+        warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
+    } else if (_parms._stopping_rounds < 0) {
+      error("_stopping_rounds", "Stopping rounds must be >= 0.");
+    } else {
+      if (isClassifier()) {
+        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance) {
+          error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
+        }
+        if (nclasses()!=2 && _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC) {
+          error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
+        }
+      } else {
+        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss)
+        {
+          error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+        }
+      }
     }
   }
 

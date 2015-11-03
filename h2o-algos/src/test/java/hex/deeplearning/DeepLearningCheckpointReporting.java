@@ -90,11 +90,15 @@ public class DeepLearningCheckpointReporting extends TestUtil {
           // Check that duration is growing monotonically
           String duration = (String)table.get(i,1);
           duration = duration.substring(0, duration.length()-4); //"x.xxxx sec"
-          double durationDouble = Double.parseDouble(duration);
-          Assert.assertTrue("Duration must be >0", durationDouble >= 0);
-          Assert.assertTrue("Duration must increase", durationDouble >= priorDurationDouble);
-          Assert.assertTrue("Duration cannot be more than outside timer delta", durationDouble <= (end-start)/1e3);
-          priorDurationDouble = durationDouble;
+          try {
+            double durationDouble = Double.parseDouble(duration);
+            Assert.assertTrue("Duration must be >0: " + durationDouble, durationDouble >= 0);
+            Assert.assertTrue("Duration must increase: " + priorDurationDouble + " -> " + durationDouble, durationDouble >= priorDurationDouble);
+            Assert.assertTrue("Duration cannot be more than outside timer delta", durationDouble <= (end - start) / 1e3);
+            priorDurationDouble = durationDouble;
+          } catch(NumberFormatException ex) {
+            //skip
+          }
 
           // Check that epoch counting is good
           Assert.assertTrue("Epoch counter must be contiguous", (Double)table.get(i,3) == i); //1 epoch per step

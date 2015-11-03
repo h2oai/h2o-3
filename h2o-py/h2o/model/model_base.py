@@ -68,7 +68,6 @@ class ModelBase(object):
     :return: A new H2OFrame filled with predictions.
     """
     if not isinstance(test_data, H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-    test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id)
     # prediction_frame_id = j["predictions_frame"] #j["model_metrics"][0]["predictions"]["frame_id"]["name"]
     return h2o.get_frame(j["predictions_frame"]["name"])
@@ -111,7 +110,6 @@ class ModelBase(object):
     :param layer: 0 index hidden layer
     """
     if test_data is None: raise ValueError("Must specify test data")
-    test_data._eager()
     j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id, deep_features_hidden_layer=layer)
     return h2o.get_frame(j["predictions_frame"]["name"])
 
@@ -186,8 +184,7 @@ class ModelBase(object):
     else:  # cases dealing with test_data not None
       if not isinstance(test_data, H2OFrame):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
-      test_data._eager()
-      res = H2OConnection.post_json("ModelMetrics/models/" + self._id + "/frames/" + test_data.frame_id)
+      res = H2OConnection.post_json("ModelMetrics/models/" + self.model_id + "/frames/" + test_data.frame_id)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None

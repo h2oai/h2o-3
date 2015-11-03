@@ -1,12 +1,15 @@
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
+from tests import pyunit_utils
+
 
 def date_munge():
-#  crimes_path = pyunit_utils.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
-  crimes_path = "smalldata/chicago/chicagoCrimes10k.csv.zip"
-  h2o.init()
+  crimes_path = pyunit_utils.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
+  # crimes_path = "smalldata/chicago/chicagoCrimes10k.csv.zip"
 
-  tmps0 = h2o.temp_ctr() # Expected 0
-  rest0 = h2o.rest_ctr() # Expected 0
+  tmps0 = pyunit_utils.temp_ctr() # Expected 0
+  rest0 = pyunit_utils.rest_ctr() # Expected 0
 
   # /3/ImportFiles
   # /3/ParseSetup
@@ -64,11 +67,15 @@ def date_munge():
 
   # DELETE /3/DKV/(?<key>.*), parms: {key=py_10}
 
-  tmps1 = h2o.temp_ctr(); ntmps = tmps1-tmps0
-  rest1 = h2o.rest_ctr(); nrest = rest1-rest0
+  tmps1 = pyunit_utils.temp_ctr(); ntmps = tmps1-tmps0
+  rest1 = pyunit_utils.rest_ctr(); nrest = rest1-rest0
   print("Number of temps used: ",ntmps)
   print("Number of RESTs used: ",nrest)
-  assert ntmps < 10
+  assert ntmps <= 10
   assert nrest < 30
 
-date_munge()
+if __name__ == "__main__":
+  pyunit_utils.standalone_test(date_munge)
+else:
+  date_munge()
+

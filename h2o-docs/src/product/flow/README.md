@@ -714,6 +714,22 @@ To generate a Plain Old Java Object (POJO) that can use the model outside of H2O
 
 ---
 
+###Using Grid Search 
+
+
+To include a parameter in a grid search in Flow, check the checkbox in the *Grid?* column to the right of the parameter name (highlighted in red in the image below). 
+
+  ![Grid Search Column](images/Flow_GridSearch.png)
+
+
+- If the parameter selected for grid search is Boolean (T/F or Y/N), both values are included when the *Grid?* checkbox is selected. 
+- If the parameter selected for grid search is a list of values, the values display as checkboxes when the *Grid?* checkbox is selected. More than one option can be selected. 
+- If the parameter selected for grid search is a numerical value, use a semicolon (;) to separate each additional value. 
+- To view a list of all grid searches, select the **Model** menu, then click **List All Grid Search Results**, or click the **Assist Me** button and select **getGrids**. 
+
+
+---
+
 ###Checkpointing Models
 
 Some model types, such as DRF, GBM, and Deep Learning, support checkpointing. A checkpoint resumes model training so that you can iterate your model. The dataset must be the same. The following  model parameters must be the same when restarting a model from a checkpoint:

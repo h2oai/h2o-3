@@ -6,7 +6,8 @@ class H2ORandomForestEstimator(H2OEstimator):
                ntrees=None, max_depth=None, min_rows=None, nbins=None, nbins_cats=None,
                binomial_double_trees=None, balance_classes=None, max_after_balance_size=None,
                seed=None, nfolds=None, fold_assignment=None,
-               keep_cross_validation_predictions=None, checkpoint=None):
+               stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
+               score_each_iteration=None, keep_cross_validation_predictions=None, checkpoint=None):
     """Builds a Random Forest Model on an H2OFrame
 
     Parameters
@@ -59,6 +60,20 @@ class H2ORandomForestEstimator(H2OEstimator):
       Must be "AUTO", "Random" or "Modulo"
     keep_cross_validation_predictions : bool
       Whether to keep the predictions of the cross-validation models
+    score_each_iteration : bool
+      Attempts to score each tree.
+    stopping_rounds : int
+      Early stopping based on convergence of stopping_metric.
+      Stop if simple moving average of length k of the stopping_metric does not improve
+      (by stopping_tolerance) for k=stopping_rounds scoring events.
+      Can only trigger after at least 2k scoring events. Use 0 to disable.
+    stopping_metric : str
+      Metric to use for convergence checking, only for _stopping_rounds > 0
+      Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+    stopping_tolerance : float
+      Relative tolerance for metric-based stopping criterion (stop if relative improvement
+      is not at least this much)
+      Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
     """
     super(H2ORandomForestEstimator, self).__init__()
     self._parms = locals()
@@ -183,6 +198,38 @@ class H2ORandomForestEstimator(H2OEstimator):
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
     self._parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def score_each_iteration(self):
+    return self._parms["score_each_iteration"]
+
+  @score_each_iteration.setter
+  def score_each_iteration(self, value):
+    self._parms["score_each_iteration"] = value
+
+  @property
+  def stopping_rounds(self):
+    return self._parms["stopping_rounds"]
+
+  @stopping_rounds.setter
+  def stopping_rounds(self, value):
+    self._parms["stopping_rounds"] = value
+
+  @property
+  def stopping_metric(self):
+    return self._parms["stopping_metric"]
+
+  @stopping_metric.setter
+  def stopping_metric(self, value):
+    self._parms["stopping_metric"] = value
+
+  @property
+  def stopping_tolerance(self):
+    return self._parms["stopping_tolerance"]
+
+  @stopping_tolerance.setter
+  def stopping_tolerance(self, value):
+    self._parms["stopping_tolerance"] = value
 
   @property
   def checkpoint(self):

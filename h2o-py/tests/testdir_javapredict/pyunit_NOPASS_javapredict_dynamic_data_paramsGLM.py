@@ -32,7 +32,7 @@ def javapredict_dynamic_data():
     elif family == 'gaussian':  dataset_params['response_factors'] = 1
     else:
         dataset_params['has_response'] = False
-        response = h2o.H2OFrame.fromPython([random.randint(1,1000) for r in range(0,dataset_params['rows'])])
+        response = h2o.H2OFrame([random.randint(1,1000) for r in range(0,dataset_params['rows'])])
         append_response = True
     print "Family: {0}".format(family)
 
@@ -41,13 +41,14 @@ def javapredict_dynamic_data():
         train = response.cbind(train)
         train.set_name(0,"response")
     if family == 'binomial': train['response'] = train['response'].asfactor()
+    results_dir = pyunit_utils.locate("results")
+    h2o.download_csv(train["response"],os.path.join(results_dir,"glm_dynamic_preimputed_response.log"))
     train = train.impute("response", method="mode")
     print "Training dataset:"
     print train
 
     # Save dataset to results directory
-    results_dir = pyunit_utils.locate("results")
-    h2o.download_csv(train,os.path.join(results_dir,"training_dataset.log"))
+    h2o.download_csv(train,os.path.join(results_dir,"glm_dynamic_training_dataset.log"))
 
     # Generate random parameters
     params = {}

@@ -2,7 +2,7 @@
 
 
 test.glrm.prostate_miss <- function() {
-  missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
+  missing_frac <- seq(from = 0.1, to = 0.8, by = 0.1)
   stats_names <- c("Fraction", "Objective", "AvgChangeObj", "Iterations", "StepSize", 
                    "TrainNumSSE", "ValidNumSSE", "TrainCatErr", "ValidCatErr", 
                    "MissingNumASE", "MissingCatErr")
