@@ -338,14 +338,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         grrr.join();
         assert (grrr._rows == null);
         Chunk[] chk = grrr._chk;
-        for (int col = _numJoinCols; col < chk.length; col++) {   // TODO: currently join columns must be the first _numJoinCols. Relax.
-          Chunk colForBatch = chk[col];
+        for (int col = 0; col < _numColsInResult - _numLeftCols; col++) {   // TODO: currently join columns must be the first _numJoinCols. Relax.
+          Chunk colForBatch = chk[_numJoinCols + col];
           for (int row = 0; row < colForBatch.len(); row++) {
             double val = colForBatch.atd(row); //TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
             long actualRowInMSBCombo = perNodeRightRowsFrom[node.index()][b][row];
             int whichChunk = (int) (actualRowInMSBCombo / batchSize);
             int offset = (int) (actualRowInMSBCombo % batchSize);
-            frameLikeChunks[_numLeftCols - 1 + col][whichChunk][offset] = val;
+            frameLikeChunks[_numLeftCols + col][whichChunk][offset] = val;
           }
         }
       }
