@@ -6,6 +6,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.MRUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,7 +84,7 @@ public class Merge {
         //System.out.print(i + " left " + lenx + " => right " + leny);
         // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node.
         //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
-        H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
+//        H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
         H2ONode rightNode = MoveByFirstByte.ownerOfMSB(rightMSB);
         //if (leftMSB!=73 || rightMSB!=73) continue;
         //Log.info("Calling BinaryMerge for " + leftMSB + " " + rightMSB);
@@ -102,7 +103,7 @@ public class Merge {
     }
     System.out.println("Sending BinaryMerge async RPC calls took: " + (System.nanoTime() - t0) / 1e9);
 
-    System.out.print("Summing BinaryMerge._numChunks ... ");
+    System.out.print("Summing BinaryMerge._numChunks (and waiting for RPCs to finish)... ");
     t0 = System.nanoTime();
     long ansN = 0;
     int numChunks = 0;

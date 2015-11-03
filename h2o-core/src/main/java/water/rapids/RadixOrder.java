@@ -600,16 +600,21 @@ public class RadixOrder {
 
     // dispatch in parallel
     RPC[] radixOrders = new RPC[256];
+    System.out.println("Calling RPC MoveByFirstByte ");
     for (int i = 0; i < 256; i++) {
+      System.out.print(i+" ");
       radixOrders[i] = new RPC<>(MoveByFirstByte.ownerOfMSB(i), new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call();
     }
+    System.out.println("\nWaiting for RPC MoveByFirstByte ");
     int i=0;
     for (RPC rpc : radixOrders) { //TODO: Use a queue to make this fully async
+      System.out.print(i+" ");
       SingleThreadRadixOrder radixOrder = (SingleThreadRadixOrder)rpc.get();
       _o[i] = radixOrder._o;
       _x[i] = radixOrder._x;
       i++;
     }
+    System.out.println("\n");
 
     // serial, do one at a time
 //    for (int i = 0; i < 256; i++) {
