@@ -1,5 +1,5 @@
 library(h2o)
-h2o.init()
+h2o.init(nthreads = -1, max_mem_size = "2G")
 
 ## Find and import data into H2O
 locate <- h2o:::.h2o.locate
@@ -7,7 +7,7 @@ pathToACSData <- locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
 pathToWHDData <- locate("bigdata/laptop/census/whd_zcta_cleaned.zip")
 
 print("Importing ACS 2013 5-year DP02 demographic dataset into H2O...")
-acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 149)))
+acs_orig <- h2o.importFile(pathToACSData, col.types = c("enum", rep("numeric", 149)))
 
 ## Save and drop zip code column from training frame
 acs_zcta_col <- acs_orig$ZCTA5
@@ -18,7 +18,7 @@ dim(acs_full)
 summary(acs_full)
 
 print("Importing WHD 2014-2015 labor violations dataset into H2O...")
-whd_zcta <- h2o.uploadFile(pathToWHDData, col.types = c(rep("enum", 7), rep("numeric", 97)))
+whd_zcta <- h2o.importFile(pathToWHDData, col.types = c(rep("enum", 7), rep("numeric", 97)))
 
 ## Grab a summary of WHD frame
 dim(whd_zcta)
