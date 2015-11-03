@@ -1,4 +1,5 @@
 import csv
+import subprocess
 
 
 def load_csv(filename, index_head_row, index_id_column):
@@ -48,22 +49,40 @@ def load_csv(filename, index_head_row, index_id_column):
 
 
 def append_csv(filename, row):
-    '''
+    """
     Open a csv to write a row in append
-    '''
+    """
     with open(filename, 'a') as f:
         f.write('%s\n' % row)
 
 
-def unit_test():
-    from pprint import pprint as pp
-    print
+def compare_string(str1, str2):
+    """
+    :param str1: string
+    :param str2: string
+    :return: -1 if str1 < str2, 0 if str1 == str2, 1 if str1 > str2
+    """
 
-    # test1: load deep_learning testcases and print out to the console
-    pp(load_csv(r'../test_data/gbmCases.csv', 4, 2))
-    #pp(load_dataset_characteristics(r'dataset_characteristics.csv'))
-    #pp(load_dataset_characteristics(r'dataset_characteristics.csv'))
+    # validate parameter
+    if type(str1) is not str or type(str2) is not str:
+        print 'Parameter required a string type'
+        raise TypeError('Parameter required a string type')
+
+    result = 0
+
+    if len(str1) > len(str2):
+        result = 1
+    elif len(str1) < len(str2):
+        result = -1
+    elif str1 > str2:
+        result = 1
+    elif str1 < str2:
+        result = -1
+
+    return result
 
 
-if __name__ == '__main__':
-    unit_test()
+def kill_phantomjs(phantomjs_location):
+    print 'kill phantomjs server'
+    command = "kill $(ps aux | grep '" + phantomjs_location + " --webdriver=65000' | awk '{print $2}')"
+    subprocess.Popen(command, shell=True)

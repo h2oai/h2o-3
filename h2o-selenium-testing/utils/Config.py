@@ -1,11 +1,17 @@
 __author__ = 'trang.huynh'
 
+###############
 #run.py
+###############
 results = r'results'
 results_logs = results + r'/logs'
 results_screenshots = results + r'/screenshots'
 result_filename = results + r'/testng-results.xml'
 temporary_log_file_name = results + r'/temporary_log_file_name.log'
+
+# number testcase that restart H2O server
+test_case_num = 50
+
 
 #util/common.py
 file_small_paths = r'../smalldata/testng/'

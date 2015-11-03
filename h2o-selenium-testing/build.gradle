@@ -26,13 +26,15 @@ task run_selenium(type: Exec){
 		}
 	} 
 
-task selenium()<<{ 
+task selenium()<<{
+/*
 	def startH2OServer = Thread.start { 
 		run_java.execute() 
 	}
 	println "Run java -jar h20: finished" 
 	println "Please wait 10 second to start selenium testing" 
-	sleep 10000 
+	sleep 10000
+*/
 	println "Run selenium testing" 
 	run_selenium.execute()
 } 

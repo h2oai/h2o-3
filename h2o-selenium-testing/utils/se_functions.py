@@ -14,23 +14,23 @@ from selenium.webdriver.common.by import By
 from utils import Config
 
 
-def check_website_connect(website = Config.h2o_website):
-    req = Request(website)
-    # Try to open the url
-    try:
-        urlopen(req)
-        print 'FlowUI is available'
-        return True
-    except HTTPError, e:
-        print e
-        print 'Cannot connect to ', website
-        # raise Exception(e)
-        return False
-    except URLError, e:
-        print e
-        print 'Cannot connect to ', website
-        # raise Exception(e)
-        return False
+# def check_website_connect(website = Config.h2o_website):
+#     req = Request(website)
+#     # Try to open the url
+#     try:
+#         urlopen(req)
+#         print 'FlowUI is available'
+#         return True
+#     except HTTPError, e:
+#         print e
+#         print 'Cannot connect to ', website
+#         # raise Exception(e)
+#         return False
+#     except URLError, e:
+#         print e
+#         print 'Cannot connect to ', website
+#         # raise Exception(e)
+#         return False
 
 
 def open_browser(agrs):

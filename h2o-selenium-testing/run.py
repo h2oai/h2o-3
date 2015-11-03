@@ -11,10 +11,12 @@ import sys
 
 
 from utils.common import load_csv
+from utils import common
 from utils import Constant
 from utils import Config
 from utils import ConfigAlgorithm
 from utils import DatasetCharacteristics as DS
+from utils import H2oServer as HS
 from utils import Logger
 from utils import se_functions
 from utils import TestNGResult
@@ -156,15 +158,19 @@ def run_testsuite(testsuite, dataset_characteristic, additional_configs):
       }
     '''
 
+    # start h2o server
+    h2o_server = HS.H2oServer()
+
     #are_headers_written = False
-    total_tc_pass = 0
-    total_tc_fail = 0
     total_tc_invalid = 0
+    total_tc_fail = 0
+    total_tc_pass = 0
+    total_tc = 0
 
     testng_results = TestNGResult.TestNGResult()
 
     list_testcase_id = list(testsuite.keys())
-    list_testcase_id.sort(key=len)
+    list_testcase_id.sort(cmp=common.compare_string)
     # for tc_id, testcase in testsuite.iteritems():
     for tc_id in list_testcase_id:
         testcase = testsuite.pop(tc_id)
@@ -186,6 +192,7 @@ def run_testsuite(testsuite, dataset_characteristic, additional_configs):
                 'mse' : 'N/A',
             }
 
+        total_tc += 1
         if Constant.testcase_result_status_pass == test_result['result']:
             total_tc_pass += 1
         elif Constant.testcase_result_status_fail == test_result['result']:
@@ -200,6 +207,17 @@ def run_testsuite(testsuite, dataset_characteristic, additional_configs):
         testng_results.set_summary_attribute(total_tc_invalid, total_tc_fail, total_tc_pass)
         testng_results.write()
 
+        # restart h2o server
+        if total_tc % Config.test_case_num == 0:
+            h2o_server.restart(additional_configs['args'])
+
+            if additional_configs['args'].location == 'phantomjs':
+                common.kill_phantomjs(additional_configs['args'].location)
+
+    # todo: refactor it
+    # stop h2o server
+    # h2o_server.stop_by_terminal()
+    h2o_server.stop_by_UI(additional_configs['args'])
 
 def parse_arguments():
     ''' define all arguments '''
@@ -235,9 +253,9 @@ def main():
     args = parse_arguments()
     print 'parse arguments: ', args
 
-    if not se_functions.check_website_connect():
-        print 'FlowUI is not available'
-        sys.exit(0)
+    # if not se_functions.check_website_connect():
+    #     print 'FlowUI is not available'
+    #     sys.exit(0)
 
     # Setup /results directory
     setup_ouput_directories()
