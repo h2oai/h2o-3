@@ -202,19 +202,19 @@ function() {
 PASS<-
 function() {
   PASS_BANNER()
-  q("no",0,FALSE)
+  q("no",0,TRUE)
 }
 
 FAIL<-
 function(e) {
   FAIL_BANNER()
   Log.err(e)
-  q("no",1,FALSE) #exit with nonzero exit code
+  q("no",1,TRUE) #exit with nonzero exit code
 }
 
 SKIP<-
 function() {
-  q("no",42,FALSE) #exit with nonzero exit code
+  q("no",42,TRUE) #exit with nonzero exit code
 }
 
 WARN<-
