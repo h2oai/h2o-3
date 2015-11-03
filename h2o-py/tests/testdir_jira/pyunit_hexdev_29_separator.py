@@ -26,6 +26,7 @@ def separator():
     fhex_wrong_separator = h2o.import_file(pyunit_utils.locate(path), sep=";")
     fhex_wrong_separator.summary()
     assert fhex_wrong_separator.ncol == 1
+    assert fhex_wrong_separator.nrow == 6
 
     try:
         h2o.import_file(pyunit_utils.locate(path), sep="--")
