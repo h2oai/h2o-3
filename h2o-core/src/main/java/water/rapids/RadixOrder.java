@@ -595,16 +595,29 @@ public class RadixOrder {
 
     long nGroup[] = new long[257];   // one extra for later to make undo of cumulate easier when finding groups.  TO DO: let grouper do that and simplify here to 256
 
-    Futures fs = new Futures();
     _o = new long[256][][];
     _x = new byte[256][][];
+
+    // dispatch in parallel
+    RPC[] radixOrders = new RPC[256];
     for (int i = 0; i < 256; i++) {
-      H2ONode node = MoveByFirstByte.ownerOfMSB(i);
-      SingleThreadRadixOrder radixOrder = new RPC<>(node, new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call().get(); //TODO: make async
+      radixOrders[i] = new RPC<>(MoveByFirstByte.ownerOfMSB(i), new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call();
+    }
+    int i=0;
+    for (RPC rpc : radixOrders) { //TODO: Use a queue to make this fully async
+      SingleThreadRadixOrder radixOrder = (SingleThreadRadixOrder)rpc.get();
       _o[i] = radixOrder._o;
       _x[i] = radixOrder._x;
+      i++;
     }
-    fs.blockForPending();
+
+    // serial, do one at a time
+//    for (int i = 0; i < 256; i++) {
+//      H2ONode node = MoveByFirstByte.ownerOfMSB(i);
+//      SingleThreadRadixOrder radixOrder = new RPC<>(node, new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call().get();
+//      _o[i] = radixOrder._o;
+//      _x[i] = radixOrder._x;
+//    }
     System.out.println("Time for all calls to SingleThreadRadixOrder: " + (System.nanoTime() - t0) / 1e9);
 
     // If sum(nGroup) == nrow then the index is unique.
