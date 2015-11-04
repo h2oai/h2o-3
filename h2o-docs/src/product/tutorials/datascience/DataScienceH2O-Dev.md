@@ -193,9 +193,10 @@ The GLM suite includes:
 - **weights_column**: Select a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`. *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`. 
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **family**: Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+- **family**: Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, or Tweedie).
 	> - If the family is **Gaussian**, the data must be numeric (**Real** or **Int**).
-	> - If the family is **Binomial**, the data can be numeric but cannot contain more than two levels/classes.
+	> - If the family is **Binomial**, the data must be categorical or numeric with exactly 2 levels/classes (**Enum** or **Int**).
+	> - If the family is **Multinomial**, the data can be categorical or numeric  (**Enum** or **Int**) with more than two levels/classes.
 	> - If the family is **Poisson**, the data must be numeric. 
 	> - If the family is **Gamma**, the data must be numeric and continuous (**Int**). 
 	> - If the family is **Tweedie**, the data must be numeric and continuous (**Int**). 

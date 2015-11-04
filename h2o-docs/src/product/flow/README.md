@@ -439,7 +439,7 @@ The available options vary depending on the selected model. If an option is only
 	- *Randomized*: Uses randomized subspace iteration method 
 	- *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
-- **family**: ([GLM](#GLM)) Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+- **family**: ([GLM](#GLM)) Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, or Tweedie).
 
 - **solver**: ([GLM](#GLM)) Select the solver to use (AUTO, IRLSM, L\_BFGS, COORDINATE\_DESCENT\_NAIVE, or COORDINATE\_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. COORDINATE\_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE and COORDINATE\_DESCENT are currently experimental. 
 
