@@ -8,7 +8,7 @@ class GroupBy:
   Sample usage:
 
          >>> my_frame = ...  # some existing H2OFrame
-         >>> grouped = my_frame.group_by(by=["C1","C2"],order_by="C1")
+         >>> grouped = my_frame.group_by(by=["C1","C2"])
          >>> grouped.sum(col="X1",na="all").mean(col="X5",na="all").max()
          >>> grouped.get_frame
 
@@ -24,17 +24,11 @@ class GroupBy:
 
   Variance (var) and standard deviation (sd) are the sample (not population) statistics.
   """
-  def __init__(self,fr,by,order_by=None):
+  def __init__(self,fr,by):
     self._fr=fr                 # IN
     self._by=by                 # IN
-    self._order_by = order_by   # IN
     self._aggs={}               # IN
     self._res=None              # OUT
-
-    if isinstance(order_by,basestring):  # sanitize order_by if str
-      idx = fr.names.index(order_by)     # must indirectly index into by columns
-      try: self._order_by = by.index(idx)
-      except ValueError: print "Invalid order_by: Must be a group by column."
 
     if isinstance(by,basestring):     self._by = [self._fr.names.index(by)]
     elif isinstance(by,(tuple,list)): self._by = [self._fr.names.index(b) if isinstance(b, basestring) else b for b in by]
@@ -67,7 +61,7 @@ class GroupBy:
     if not self._res:
       aggs=[]
       for k in self._aggs: aggs += (self._aggs[k])
-      self._res = h2o.H2OFrame._expr(expr=expr.ExprNode("GB", self._fr,self._by,self._order_by, *aggs))
+      self._res = h2o.H2OFrame._expr(expr=expr.ExprNode("GB", self._fr,self._by, *aggs))
     return self._res
 
   def _add_agg(self,op,col,na):
