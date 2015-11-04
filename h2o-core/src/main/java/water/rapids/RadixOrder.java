@@ -92,6 +92,12 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
               + " " + Arrays.toString(_MSBhist) + ")");
     }
+    System.out.println("_MSBhist with biggestBit " + _biggestBit + " ...");
+    int msb = 0;
+    for (int m=0; m<16; m++) {
+      for (int n=0; n<16; n++) System.out.print(_MSBhist[msb++] + " ");
+      System.out.println("");
+    }
     // shared between threads on the same node, all mappers write into distinct locations (no conflicts, no need to atomic updates, etc.)
     _o = new long[256][][];
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
