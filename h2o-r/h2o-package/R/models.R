@@ -2063,12 +2063,12 @@ plot.H2OTabulate <- function(x, xlab = x$cols[2], ylab = x$cols[1], base_size = 
   names(df) <- c("c1", "c2", "counts")
   
   # Reorder the levels for better plotting
-  if (suppressWarnings(is.na(as.numeric(df$c1[1])))) {
+  if (suppressWarnings(is.na(sum(as.numeric(df$c1))))) {
     c1_order <- order(unique(df$c1))
   } else {
     c1_order <- order(unique(as.numeric(df$c1)))
   }
-  if (suppressWarnings(is.na(as.numeric(df$c2[1])))) {
+  if (suppressWarnings(is.na(sum(as.numeric(df$c2))))) {
     c2_order <- order(unique(df$c2))
   } else {
     c2_order <- order(unique(as.numeric(df$c2)))
