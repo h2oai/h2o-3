@@ -29,7 +29,11 @@ test.pub_699_negative_indexes <- function() {
   expect_equal(6, dim(prostate.hex[,c(-1, -3, -5),])[2])
   
   Log.info("Check that OOB indexes are ignored...")
-  expect_equal(380, dim(prostate.hex[-1000:9230,])[1])
+  expect_equal(380, dim(prostate.hex[1:9820,])[1])
+  expect_equal(  0, dim(prostate.hex[-9820:-1,])[1])
+
+  Log.info("Check that mixed positive and negative is an error")
+  expect_error(dim(prostate.hex[-1000:9230,]))
 
   Log.info("Now trying with a multi-chunk data set")
 
