@@ -186,6 +186,7 @@ public class Merge {
     ff.doAll(fr);
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
+    Merge.cleanUp();
     return fr;
   }
 

@@ -15,26 +15,29 @@ import water.util.Log;
 import java.util.Arrays;
 
 public class BinaryMerge extends DTask<BinaryMerge> {
-  long _retFirst[/*n2GB*/][];  // The row number of the first right table's index key that matches
-  long _retLen[/*n2GB*/][];    // How many rows does it match to?
-  byte _leftKey[/*n2GB*/][/*i mod 2GB * _keySize*/];
-  byte _rightKey[][];
-  long _leftOrder[/*n2GB*/][/*i mod 2GB * _keySize*/];
-  long _rightOrder[][];
-  boolean _oneToManyMatch = false;   // does any left row match to more than 1 right row?  If not, can allocate and loop more efficiently, and mark the resulting key'd frame with a 'unique' index.
-                                     // TODO: implement
+  long _numRowsInResult=0;  // returned to caller, so not transient
+  int _chunkSizes[];      // TODO:  only _chunkSizes.length is needed by caller, so return that length only
+
+  transient long _retFirst[/*n2GB*/][];  // The row number of the first right table's index key that matches
+  transient long _retLen[/*n2GB*/][];    // How many rows does it match to?
+  transient byte _leftKey[/*n2GB*/][/*i mod 2GB * _keySize*/];
+  transient byte _rightKey[][];
+  transient long _leftOrder[/*n2GB*/][/*i mod 2GB * _keySize*/];
+  transient long _rightOrder[][];
+  transient boolean _oneToManyMatch = false;   // does any left row match to more than 1 right row?  If not, can allocate and loop more efficiently, and mark the resulting key'd frame with a 'unique' index.
+                                               //      TODO: implement
   int _leftFieldSizes[], _rightFieldSizes[];  // the widths of each column in the key
-  int _leftKeyNCol, _rightKeyNCol;  // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
-  int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
-  int _numJoinCols;
-  long _leftN, _rightN;
-  long _leftBatchSize, _rightBatchSize;
+  transient int _leftKeyNCol, _rightKeyNCol;  // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
+  transient int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
+  transient int _numJoinCols;
+  transient long _leftN, _rightN;
+  transient long _leftBatchSize, _rightBatchSize;
   Frame _leftFrame, _rightFrame;
-  long _numRowsInResult=0;
-  long _perNodeNumRightRowsToFetch[] = new long[H2O.CLOUD.size()];
-  long _perNodeNumLeftRowsToFetch[] = new long[H2O.CLOUD.size()];
+
+  transient long _perNodeNumRightRowsToFetch[];
+  transient long _perNodeNumLeftRowsToFetch[];
   int _leftMSB, _rightMSB;
-  int _chunkSizes[];
+
   boolean _allLeft, _allRight;
 
   BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
@@ -46,6 +49,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightFieldSizes = rightFieldSizes;
     _allLeft = allLeft;
     _allRight = false;  // TODO: pass through
+    // TODO: set 2 Frame and 2 int[] to NULL at the end of compute2 to save some traffic back, but should be small and insignificant
   }
 
   @Override
@@ -63,6 +67,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // both left and right MSB have some data to match
     _leftBatchSize = leftSortedOXHeader._batchSize;
     _rightBatchSize = rightSortedOXHeader._batchSize;
+    _perNodeNumRightRowsToFetch = new long[H2O.CLOUD.size()];
+    _perNodeNumLeftRowsToFetch = new long[H2O.CLOUD.size()];
 
     // get left batches
     _leftKey = new byte[leftSortedOXHeader._nBatch][];
