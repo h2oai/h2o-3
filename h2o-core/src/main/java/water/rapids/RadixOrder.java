@@ -60,7 +60,7 @@ class RadixCount extends MRTask<RadixCount> {
 }
 
 class MoveByFirstByte extends MRTask<MoveByFirstByte> {
-  long _counts[][];
+  private transient long _counts[][];
   long _MSBhist[];
   long _o[][][];
   byte _x[][][];
@@ -247,21 +247,22 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
 // General principle here is that several parallel, tight, branch free loops, faster than one heavy DKV pass per row
 
 class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
-  public long _o[/*batch*/][]; // output.  The gathered _o from all the nodes and concatenated in order of chunk number
-  public byte _x[/*batch*/][]; // same
-  long _otmp[][];
-  byte _xtmp[][];
-
-  // TEMPs
-  long _counts[][];
-  byte keytmp[];
-  //public long _groupSizes[][];
-
-  long _nGroup[];
+  //long _nGroup[];
   int _MSBvalue;  // only needed to be able to return the number of groups back to the caller RadixOrder
   int _keySize, _batchSize;
   long _numRows;
   Frame _fr;
+
+  private transient long _o[/*batch*/][];
+  private transient byte _x[/*batch*/][];
+  private transient long _otmp[][];
+  private transient byte _xtmp[][];
+
+  // TEMPs
+  private transient long counts[][];
+  private transient byte keytmp[];
+  //public long _groupSizes[][];
+
 
   // outputs ...
   // o and x are changed in-place always
@@ -273,19 +274,18 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   // Now taken out ... boolean groupsToo, long groupSize[][][], long nGroup[], int MSBvalue
   //long _len;
   //int _byte;
-  //int _keySize;   // bytes
 
-  SingleThreadRadixOrder(Frame fr, int batchSize, int keySize, long nGroup[], int MSBvalue) {
+  SingleThreadRadixOrder(Frame fr, int batchSize, int keySize, /*long nGroup[],*/ int MSBvalue) {
     _fr = fr;
     _batchSize = batchSize;
     _keySize = keySize;
-    _nGroup = nGroup;
+    //_nGroup = nGroup;
     _MSBvalue = MSBvalue;
   }
 
   @Override protected void compute2() {
     keytmp = new byte[_keySize];
-    _counts = new long[_keySize][256];
+    counts = new long[_keySize][256];
 
     MoveByFirstByte.MSBNodeHeader[] MSBnodeHeader = new MoveByFirstByte.MSBNodeHeader[H2O.CLOUD.size()];
     _numRows =0;
@@ -408,10 +408,14 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     //_groups[_whichGroup] = new long[(int)Math.min(MAXVECLONG, len) ];   // at most len groups (i.e. all groups are 1 row)
     assert(_o != null);
     assert(_numRows > 0);
+
+    // The main work. Radix sort this batch ...
     run(0, _numRows, _keySize-1);  // if keySize is 6 bytes, first byte is byte 5
-    _counts = null;
-    keytmp = null;
-    _nGroup = null;
+
+    // don't need to clear these now using private transient
+    // _counts = null;
+    // keytmp = null;
+    //_nGroup = null;
 
     // tell the world how many batches and rows for this MSB
     OXHeader msbh = new OXHeader(_o.length, _numRows, _batchSize);
@@ -456,7 +460,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     int batch0 = (int) (start / _batchSize);
     int batch1 = (int) (start+len-1) / _batchSize;
     assert batch0==0;
-    _nGroup[_MSBvalue]++;  // This is at least 1 group (if all keys in this len items are equal)
+    // _nGroup[_MSBvalue]++;  // TODO: reinstate.  This is at least 1 group (if all keys in this len items are equal)
     if (batch0 == batch1)  {
       // Within the same batch. Likely very often since len<=200
       byte _xbatch[] = _x[batch0];  // taking this outside the loop does indeed make quite a big different (hotspot isn't catching this, then)
@@ -476,7 +480,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
           System.arraycopy(keytmp, 0, _xbatch, (offset+j+1)*_keySize, _keySize);
           _obatch[offset + j + 1] = otmp;
         }
-        if (cmp>0) _nGroup[_MSBvalue]++;   // Saves sweep afterwards. Possible now that we don't maintain the group sizes in this deep pass, unlike data.table
+        //if (cmp>0) _nGroup[_MSBvalue]++;  //TODO: reinstate _nGroup. Saves sweep afterwards. Possible now that we don't maintain the group sizes in this deep pass, unlike data.table
         // saves call to push() and hop to _groups
         // _nGroup == nrow afterwards tells us if the keys are unique.
         // Sadly, it seems _nGroup += (cmp==0) isn't possible in Java even with explicit cast of boolean to int, so branch needed
@@ -504,7 +508,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     assert batch0==0;
     assert batch0==batch1;  // TO DO: count across batches of 2Bn.  Wish we had 64bit indexing in Java.
     byte _xbatch[] = _x[batch0];  // taking this outside the loop does indeed make quite a big different (hotspot isn't catching this, then)
-    long thisHist[] = _counts[Byte];
+    long thisHist[] = counts[Byte];
     // thisHist reused and carefully set back to 0 below so we don't need to clear it now
     int idx = (int)start*_keySize + _keySize-Byte-1;
     int bin=-1;  // the last bin incremented. Just to see if there is only one bin with a count.
@@ -517,7 +521,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     if (thisHist[bin] == len) {
       // one bin has count len and the rest zero => next byte quick
       thisHist[bin] = 0;  // important, clear for reuse
-      if (Byte == 0) _nGroup[_MSBvalue]++;
+      if (Byte == 0) ; // TODO: reinstate _nGroup[_MSBvalue]++;
       else run(start, len, Byte - 1);
       return;
     }
@@ -548,7 +552,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       if (thisHist[i]==0) continue;
       long thisgrpn = thisHist[i] - itmp;
       if (thisgrpn == 1 || Byte == 0) {
-        _nGroup[_MSBvalue]++;
+        //TODO reinstate _nGroup[_MSBvalue]++;
       } else {
         run(start+itmp, thisgrpn, Byte-1);
       }
@@ -562,8 +566,8 @@ public class RadixOrder {
   private static final int MAXVECBYTE = 1073741824;   // not 2^31 because that needs long to store it (could do)
   int _biggestBit[];
   int _bytesUsed[];
-  long[][][] _o;
-  byte[][][] _x;
+  //long[][][] _o;
+  //byte[][][] _x;
 
   RadixOrder(Frame DF, int whichCols[]) {
     //System.out.println("Calling RadixCount ...");
@@ -600,10 +604,7 @@ public class RadixOrder {
     System.out.println("***\n*** MoveByFirstByte MRTask took : " + (System.nanoTime() - t0) / 1e9 + "\n***");
     t0 = System.nanoTime();
 
-    long nGroup[] = new long[257];   // one extra for later to make undo of cumulate easier when finding groups.  TO DO: let grouper do that and simplify here to 256
-
-    _o = new long[256][][];
-    _x = new byte[256][][];
+    //long nGroup[] = new long[257];   // one extra for later to make undo of cumulate easier when finding groups.  TO DO: let grouper do that and simplify here to 256
 
     // dispatch in parallel
     RPC[] radixOrders = new RPC[256];
@@ -611,7 +612,7 @@ public class RadixOrder {
     t0 = System.nanoTime();
     for (int i = 0; i < 256; i++) {
       //System.out.print(i+" ");
-      radixOrders[i] = new RPC<>(MoveByFirstByte.ownerOfMSB(i), new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call();
+      radixOrders[i] = new RPC<>(MoveByFirstByte.ownerOfMSB(i), new SingleThreadRadixOrder(DF, batchSize, keySize, /*nGroup,*/ i)).call();
     }
     System.out.println("Sending SingleThreadRadixOrder async RPC calls took : " + (System.nanoTime() - t0) / 1e9);
     t0 = System.nanoTime();
@@ -622,8 +623,6 @@ public class RadixOrder {
     for (RPC rpc : radixOrders) { //TODO: Use a queue to make this fully async
       System.out.print(i+" ");
       SingleThreadRadixOrder radixOrder = (SingleThreadRadixOrder)rpc.get();
-      _o[i] = radixOrder._o;   // TODO ... why do we need _o and _x here?????
-      _x[i] = radixOrder._x;
       i++;
     }
     System.out.println("\n***\n*** Waiting for RPC SingleThreadRadixOrder to finish took : " + (System.nanoTime() - t0) / 1e9 + "\n***");
