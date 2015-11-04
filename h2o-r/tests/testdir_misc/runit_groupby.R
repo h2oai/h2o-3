@@ -26,12 +26,13 @@ test <- function(conn) {
   gp_mean <- as.data.frame(gp_mean)[,2]
   r_mean  <- sapply(races, mean)
   checkEqualsNumeric(r_mean, gp_mean)
-  
-  Log.info("Test method = median ...")
-  gp_median <- h2o.group_by(data = df.hex, by = "RACE", order.by = "RACE", median("VOL"))
-  gp_median <- as.data.frame(gp_median)[,2]
-  r_median  <- sapply(races, median)
-  checkEqualsNumeric(r_median, gp_median)
+
+#   Unimplemented at the moment - refer to jira: https://0xdata.atlassian.net/browse/PUBDEV-2319
+#   Log.info("Test method = median ...")
+#   gp_median <- h2o.group_by(data = df.hex, by = "RACE", order.by = "RACE", median("VOL"))
+#   gp_median <- as.data.frame(gp_median)[,2]
+#   r_median  <- sapply(races, median)
+#   checkEqualsNumeric(r_median, gp_median)
   
   Log.info("Test method = var ...")
   gp_var <- h2o.group_by(data = df.hex, by = "RACE", order.by = "RACE", var("VOL"))  
