@@ -2052,7 +2052,7 @@ h2o.tabulate <- function(data, x, y,
 #' plot(tab)              
 #' }
 #' @export
-plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 6, ...) {
+plot.H2OTabulate <- function(x, xlab = x$cols[2], ylab = x$cols[1], base_size = 12, ...) {
   
   if (!inherits(x, "H2OTabulate")) {
     stop("Must be an H2OTabulate object")
@@ -2063,8 +2063,16 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
   names(df) <- c("c1", "c2", "counts")
   
   # Reorder the levels for better plotting
-  c1_order <- order(unique(as.numeric(df$c1)))
-  c2_order <- order(unique(as.numeric(df$c2)))
+  if (suppressWarnings(is.na(as.numeric(df$c1[1])))) {
+    c1_order <- order(unique(df$c1))
+  } else {
+    c1_order <- order(unique(as.numeric(df$c1)))
+  }
+  if (suppressWarnings(is.na(as.numeric(df$c2[1])))) {
+    c2_order <- order(unique(df$c2))
+  } else {
+    c2_order <- order(unique(as.numeric(df$c2)))
+  }
   c1_labels <- unique(df$c1)
   c2_labels <- unique(df$c2)
   df$c1 <- factor(df$c1, levels = c1_labels[c1_order])
