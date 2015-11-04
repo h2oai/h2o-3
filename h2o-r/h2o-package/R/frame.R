@@ -1003,10 +1003,12 @@ h2o.anyFactor <- function(x) as.logical(.eval.scalar(.newExpr("any.factor", x)))
 # Convert a row or column selector to zero-based numbering and return a string
 .row.col.selector <- function( sel, raw_sel=NULL, envir=NULL ) {
   if( !is.symbol(sel) && is.language(sel) && sel[[1]] == ":" ) {
-    sub <- if( eval(sel[[2]], envir=envir) < 0 ) 0 else 1L
-    s <- paste0( "[", eval(sel[[2]], envir=envir) - sub, ":", abs(eval(sel[[3]], envir=envir) - eval(sel[[2]], envir=envir))+1L, "]")
-    return( s )
+    lo <- eval(sel[[2]], envir=envir)
+    hi <- eval(sel[[3]], envir=envir)
+    if( hi < lo ) { tmp <- hi; hi <- lo; lo <- tmp }
+    return(paste0("[", (if(lo<0) lo else (lo-1)), ":", hi-lo+1L, "]"))
   }
+
   sel <- if( !is.null(raw_sel) ) raw_sel else eval(sel)
   if( is.numeric(sel) ) { # number list for column selection; zero based
     sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)

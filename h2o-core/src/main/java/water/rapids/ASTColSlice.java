@@ -97,13 +97,15 @@ class ASTRowSlice extends ASTPrim {
     long nrows = fr.numRows();
     if( asts[2] instanceof ASTNumList ) {
       final ASTNumList nums = (ASTNumList)asts[2];
-      long[] rows = nums._isList?nums.expand8Sort():null;
+      long[] rows = (nums._isList || nums.min()<0) ? nums.expand8Sort() : null;
       if( rows!=null ) {
         if (rows.length == 0) {      // Empty inclusion list?
         } else if (rows[0] >= 0) { // Positive (inclusion) list
           if (rows[rows.length - 1] > nrows)
             throw new IllegalArgumentException("Row must be an integer from 0 to " + (nrows - 1));
         } else {                  // Negative (exclusion) list
+          if (rows[rows.length - 1] >= 0)
+            throw new IllegalArgumentException("Cannot mix negative and postive row selection");
           // Invert the list to make a positive list, ignoring out-of-bounds values
           BitSet bs = new BitSet((int) nrows);
           for (int i = 0; i < rows.length; i++) {
@@ -121,6 +123,7 @@ class ASTRowSlice extends ASTPrim {
       returningFrame = new MRTask(){
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
           if( nums.cnt()==0 ) return;
+          if( ls != null && ls.length == 0 ) return;
           long start = cs[0].start();
           long end   = start + cs[0]._len;
           long min = ls==null?(long)nums.min():ls[0], max = ls==null?(long)nums.max()-1:ls[ls.length-1]; // exclusive max to inclusive max when stride == 1
