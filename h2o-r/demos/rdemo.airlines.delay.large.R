@@ -41,7 +41,7 @@ scatter_plot(data = airlines.hex, x = "UniqueCarrier", y = "ArrDelay", max_point
 
 ## Flight by Month calculated using H2O's fast groupby
 print("Splitting data into groups of 12 month and aggregating on two columns...")
-flightByMonth   <- h2o.group_by(data = airlines.hex, by = "Month", nrow("Month"), sum("Cancelled"), order.by = "Month")
+flightByMonth   <- h2o.group_by(data = airlines.hex, by = "Month", nrow("Month"), sum("Cancelled"))
 flightByMonth.R <- as.data.frame(flightByMonth)
 
 ## Set Column Type for Enumerator or Factor Columns
