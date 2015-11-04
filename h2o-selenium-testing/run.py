@@ -95,25 +95,23 @@ def check_model_types(test_case, ds_chars):
     return result
 
 
-def run_testcase(testcase_id, testcase, args_params):
+def run_testcase(testcase_id, testcase, dataset_characteristic, args):
     '''
     create an instance of testclass and call setup, test and clean_up sequentially
     '''
 
     # set up testcase
-    driver = se_functions.open_browser(args_params['args'])
-    # todo: refactor it
-    args_params['driver'] = driver
-
     testscript = testcase.pop('testscript')
     classname = testcase.pop('classname')
 
     # use reflection to get CLASS for run testcase
     testclass = load_testclass(testscript, classname)
 
-    test_obj = testclass(testcase_id, testcase, args_params)
-
     try:
+        driver = se_functions.open_browser(args)
+
+        test_obj = testclass(testcase_id, testcase, driver, dataset_characteristic)
+
         # run testcase
         test_obj.setup()
         result = test_obj.test()
@@ -125,7 +123,7 @@ def run_testcase(testcase_id, testcase, args_params):
             Constant.train_dataset_id : testcase[Constant.train_dataset_id],
             Constant.validate_dataset_id : testcase[Constant.validate_dataset_id],
             'result' : Constant.testcase_result_status_invalid,
-            'message' : ex.message,
+            'message' : str(ex),
             'mse' : 'N/A',
         }
         # todo: do not handle it
@@ -141,7 +139,7 @@ def run_testcase(testcase_id, testcase, args_params):
     return result
 
 
-def run_testsuite(testsuite, dataset_characteristic, additional_configs):
+def run_testsuite(testsuite, dataset_characteristic, args):
     '''
     For each test case in the suite, run it.
 
@@ -182,7 +180,7 @@ def run_testsuite(testsuite, dataset_characteristic, additional_configs):
         validate_message = check_model_types(testcase, dataset_characteristic.get_dataset())
 
         if '' == validate_message:
-            test_result = run_testcase(tc_id, testcase, additional_configs)
+            test_result = run_testcase(tc_id, testcase, dataset_characteristic, args)
         else:
             test_result = {
                 Constant.train_dataset_id : testcase[Constant.train_dataset_id],
@@ -209,15 +207,16 @@ def run_testsuite(testsuite, dataset_characteristic, additional_configs):
 
         # restart h2o server
         if total_tc % Config.test_case_num == 0:
-            h2o_server.restart(additional_configs['args'])
+            h2o_server.restart(args)
 
-            if additional_configs['args'].location == 'phantomjs':
-                common.kill_phantomjs(additional_configs['args'].location)
+            if args.location == 'phantomjs':
+                common.kill_phantomjs(args.location)
 
     # todo: refactor it
     # stop h2o server
     # h2o_server.stop_by_terminal()
-    h2o_server.stop_by_UI(additional_configs['args'])
+    h2o_server.stop_by_UI(args)
+
 
 def parse_arguments():
     ''' define all arguments '''
@@ -265,15 +264,8 @@ def main():
     # load the dataset characteristic
     dataset_chars = DS.DatasetCharacteristics()
 
-    # Create web driver instance, load dataset characteristics and pass them in as
-    additional_configs = dict(
-        args = args,
-        # to use in tests folder
-        dataset_chars = dataset_chars
-    )
-
     # Run all its testcases
-    run_testsuite(testsuite, dataset_chars, additional_configs)
+    run_testsuite(testsuite, dataset_chars, args)
 
 
 if __name__ == '__main__':

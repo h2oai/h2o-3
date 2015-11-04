@@ -146,7 +146,8 @@ XPATHS = dict(
     next_button_ignored = xp("//button[contains(.,'Next 100')]", 'button', True),
     general_error =  xp("//span[contains(@style,'color: red')]", 'text', True),
     error_message_requirement = xp("//td[contains(.,'requires')]", 'text', True),
-    error_message_validate = xp("//td[contains(.,'must be')]", 'text', True)
+    error_message_validate = xp("//td[contains(.,'must be')]", 'text', True),
+    failure = xp("//div[contains(@class,'flow-failure')]", 'text', True)
 )
 
 
@@ -157,7 +158,7 @@ DEEP_LEARNING_XPATHS = dict(
     response_column = xp("//tr[th[contains(., 'response_column')]]//select", 'select', True),
     ignored_columns = xp("//tr[th[contains(., 'ignored_columns')]]//input", 'input', True),
     ignore_const_cols = xp("//tr[th[contains(., 'ignore_const_cols')]]//input", 'checkbox', True),
-    activation_select = xp("//tr[th[contains(., 'activation')]]//select", 'select', True),
+    activation = xp("//tr[th[contains(., 'activation')]]//select", 'select', True),
     hidden = xp("//tr[th[contains(., 'hidden')]]//input", 'input', True),
     epochs = xp("//tr[th[contains(., 'epochs')]]//input", 'input', True),
     variable_importances = xp("//tr[th[contains(., 'variable_importances')]]//input", 'checkbox', True),
@@ -176,8 +177,8 @@ DEEP_LEARNING_XPATHS = dict(
     adaptive_rate = xp("//tr[th[contains(., 'adaptive_rate')]]//input", 'checkbox', True),
     input_dropout_ratio = xp("//tr[th[contains(., 'input_dropout_ratio')]]//input", 'input', True),
     l1 = xp("//tr[th[contains(., 'l1')]]//input", 'input', True),
-    l2 = xp("//tr[th[contains(., 'l1')]]//input", 'input, True'),
-    loss = xp("//tr[th[contains(., 'loss')]]//select", 'select'),
+    l2 = xp("//tr[th[contains(., 'l2')]]//input", 'input', True),
+    loss = xp("//tr[th[contains(., 'loss')]]//select", 'select', True),
     distribution = xp("//tr[th[contains(., 'distribution')]]//select", 'select', True),
     tweedie_power = xp("//tr[th[contains(., 'tweedie_power')]]//input", 'input', True),
     score_interval = xp("//tr[th[contains(., 'score_interval')]]//input", 'input', True),
@@ -207,13 +208,14 @@ DEEP_LEARNING_XPATHS = dict(
     shuffle_training_data = xp("//tr[th[contains(., 'shuffle_training_data')]]//input", 'checkbox', True),
     missing_values_handling = xp("//tr[th[contains(., 'missing_values_handling')]]//select", 'select', True),
     quiet_mode = xp("//tr[th[contains(., 'quiet_mode')]]//input", 'select', True),
-    sparse = xp("//tr[th[contains(., 'sparse')]]//input", 'select', True),
-    col_major = xp("//tr[th[contains(., 'col_major')]]//input", 'select'),
+    sparse = xp("//tr[th[contains(., 'sparse')]]//input", 'checkbox', True),
+    col_major = xp("//tr[th[contains(., 'col_major')]]//input", 'select', True),
     average_activation = xp("//tr[th[contains(., 'average_activation')]]//input", 'input', True),
     sparsity_beta = xp("//tr[th[contains(., 'sparsity_beta')]]//input", 'input', True),
     max_categorical_features = xp("//tr[th[contains(., 'max_categorical_features')]]//input", 'input', True),
-    reproducible = xp("//tr[th[contains(., 'reproducible')]]//input", 'select'),
-    export_weights_and_biases = xp("//tr[th[contains(., 'export_weights_and_biases')]]//input", 'select'),
+    reproducible = xp("//tr[th[contains(., 'reproducible')]]//input", 'select', True),
+    export_weights_and_biases = xp("//tr[th[contains(., 'export_weights_and_biases')]]//input", 'select', True),
+    elastic_averaging = xp("//tr[th[contains(., 'elastic_averaging')]]//input", 'checkbox', True),
     build_model = xp("//button[text()='Build Model']", 'button', True),
 )
 

@@ -6,13 +6,18 @@ from utils import Constant
 
 
 class GlmBasic:
-    def __init__(self, tc_id, configs, additional_configs):
+    def __init__(self, tc_id, configs, driver, dataset_chars):
         #Init configs for model
         self.cfgs = configs
-        self.add_cfgs = additional_configs
         self.tc_id = tc_id
-        self.wd = self.add_cfgs['driver']
-        self.ds_chars = self.add_cfgs['dataset_chars']
+
+        # Helpers
+        self.wd = driver
+        self.ds_chars = dataset_chars
+
+        self.add_cfgs = dict(
+            dataset_chars = self.ds_chars
+        )
 
 
     def setup(self):

@@ -1,12 +1,12 @@
 from testlibs import common
-from testlibs.gbm import create_model_gbm
-from testlibs.gbm import ORDERS
-from utils.se_functions import get_auto_configs
+from testlibs.dl import ORDERS
+from testlibs.dl import create_model_dl
+from utils.se_functions import get_auto_configs, map_value_list_to_list
 from utils import Constant
 
-import sys
 
-class GbmBasic:
+class DlBasic:
+
     def __init__(self, tc_id, configs, driver, dataset_chars):
         #Init configs for model
         self.cfgs = configs
@@ -25,6 +25,7 @@ class GbmBasic:
         print 'Start running testcase:', self.tc_id
         print 'Start import dataset...'
         print '---Import train dataset:'
+
         train_fn = self.ds_chars.get_filepath(self.cfgs[Constant.train_dataset_id])
         print 'train file path: ', train_fn
         common.import_parse_file(self.wd, dict(file_path = train_fn,
@@ -45,54 +46,70 @@ class GbmBasic:
             print 'Test case', self.tc_id,': invalid'
             raise Exception('Test case invalid')
 
-        print 'Import dataset is successfully...'
+        print( 'Import dataset is successfully...')
 
 
     def test(self):
         #Build, predict model, get values and return result
-        print 'Test now:'
-        result_dict = dict( result = 'PASS', message = 'This tescase is passed', mse = '')
-        result_dict['train_dataset_id'] = self.cfgs['train_dataset_id']
-        result_dict['validate_dataset_id'] = self.cfgs['validate_dataset_id']
+        print 'Test now...'
+
+        result_dict = dict(train_dataset_id = self.cfgs[Constant.train_dataset_id],
+                           validate_dataset_id = self.cfgs[Constant.validate_dataset_id],
+                           result = Constant.testcase_result_status_pass,
+                           message = 'This tescase passed',
+                           mse = '',
+                           auc = '',
+                           distribution = '',
+                           sparse = ''
+                           )
+
         try:
             print 'Start build model...'
+
+            print 'Get loss from file: '
+            list_loss = ['Automatic', 'CrossEntropy', 'Quadratic', 'Huber', 'Absolute']
+            list_loss_file = [self.cfgs['automatic'], self.cfgs['crossentropy'], self.cfgs['meansquare'], self.cfgs['huber'], self.cfgs['absolute']]
+            print 'Get loss from file Done'
+
             print 'Get distribution from file: '
             list_distribution = ['AUTO', 'gaussian', 'bernoulli', 'multinomial', 'poisson', 'gamma', 'tweedie']
-            list_distribution_file = [self.cfgs['auto'], self.cfgs['gaussian'], self.cfgs['binomial'], self.cfgs['multinomial'], self.cfgs['poisson'], self.cfgs['gamma'], self.cfgs['tweedie']]
+            list_distribution_file = [self.cfgs['auto'], self.cfgs['gaussian'], self.cfgs['bernoulli'], self.cfgs['multinomial'], self.cfgs['poissan'], self.cfgs['gamma'], self.cfgs['tweedie']]
             print 'Get distribution from file Done'
-            print 'set list_distribution'
-            if 0 == list_distribution_file.count('x'):
-                distribution = list_distribution[0]
-            else:
-                distribution = list_distribution[list_distribution_file.index('x')]
-            print 'set distribution Done'
-            print self.cfgs
+
+            print 'Get activation from file: '
+            list_activation = ['Tanh', 'TanhWithDropout', 'Rectifier', 'RectifierWithDropout', 'Maxout', 'MaxoutWithDropout']
+            list_activation_file = [self.cfgs['tanh'], self.cfgs['tanhwithdropout'], self.cfgs['rectifier'], self.cfgs['rectifierwithdropout'], self.cfgs['maxout'], self.cfgs['maxoutwithdropout']]
+            print 'Get activation from file Done'
+
+            print 'Get auto configs '
             configs = get_auto_configs(ORDERS, self.cfgs)
-            configs['response_column'] = self.ds_chars.get_data_of_column(self.cfgs[Constant.train_dataset_id], 'target'),
-            configs['distribution'] = distribution
+            configs['response_column'] = self.ds_chars.get_data_of_column(self.cfgs[Constant.train_dataset_id],'target'),
+            configs['distribution'] = map_value_list_to_list(list_distribution, list_distribution_file)
+            configs['activation'] = map_value_list_to_list(list_activation, list_activation_file)
+            configs['loss'] = map_value_list_to_list(list_loss, list_loss_file)
             print "Get auto config Done"
 
-            create_model_gbm (self.wd, configs)
+            create_model_dl (self.wd, configs)
             print 'Model is built successfully...'
 
             print 'Start predict model...'
-            if not self.cfgs['validate_dataset_id'].strip() == '':
+            if not self.cfgs[Constant.validate_dataset_id].strip() == '':
                 common.predict_file(self.wd, dict(frame_select = self.cfgs[Constant.validate_dataset_id]))
             else:
                 common.predict_file(self.wd, dict(frame_select = self.cfgs[Constant.train_dataset_id]))
-            print 'Predict model is successfully...'
 
             print '---Getting value after predict model:'
             result_dict['mse'] = common.get_values(self.wd, ['mse'])
 
+            print 'Predict model is successfully...'
 
-            print 'Test case %s is passed' % self.tc_id
+            print 'Test case', self.tc_id, ': passed'
             return result_dict
 
         except Exception as e:
-            result_dict['result']= 'FAIL'
-            result_dict['message'] =  "Reason Failed: " + str(e.message)
-            print 'Test case %s is falied' % self.tc_id
+            result_dict['result']= Constant.testcase_result_status_fail
+            result_dict['message'] = "Reason Failed: " + str(e.message)
+            print 'Test case', self.tc_id,': falied'
             return result_dict
 
 
@@ -106,5 +123,3 @@ def unit_test():
 
 if __name__ == '__main__':
     unit_test()
-
-

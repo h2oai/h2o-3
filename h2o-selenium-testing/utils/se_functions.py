@@ -2,6 +2,7 @@
 SE advanced functions
 '''
 
+import time
 import logging
 from urllib2 import *
 
@@ -12,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from utils import Config
+from utils.xpaths import XPATHS
 
 
 # def check_website_connect(website = Config.h2o_website):
@@ -50,10 +52,21 @@ def get_web_driver(browser, location):
         raise Exception('Do not implemented for browser :' + browser)
 
     driver.implicitly_wait(60)
+    driver.set_page_load_timeout(60)
     driver.set_window_size(1124, 850)
-    driver.get(Config.h2o_website)
 
-    return driver
+    for i in range(3):
+        try:
+            driver.get(Config.h2o_website)
+            print 'Load page successfully'
+            return driver
+        except Exception as e:
+            print e.__doc__
+            print str(e)
+
+            time.sleep(5)
+    print "Can't load page:", Config.h2o_website
+    raise Exception(e)
 
 
 def wait_n_click(driver, xpath, timeout = 100):
@@ -290,3 +303,11 @@ def get_log(test_case_id):
 def get_screenshot(driver, test_case_id):
     screenshot = Config.screenshot % test_case_id
     driver.get_screenshot_as_file(screenshot)
+
+
+def map_value_list_to_list(list_value, list_value_file):
+    if 0 == list_value_file.count('x'):
+        value = list_value[0]
+    else:
+        value = list_value[list_value_file.index('x')]
+    return value
