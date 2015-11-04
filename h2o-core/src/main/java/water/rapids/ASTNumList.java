@@ -92,7 +92,7 @@ public class ASTNumList extends ASTParameter {
     _bases  = new double[]{d};
     _strides= new double[]{1};
     _cnts   = new long  []{1};
-    _isList = true;
+    _isList = _isSort = true;
   }
   // A simple dense range ASTNumList
   ASTNumList( long lo, long hi_exclusive ) {
@@ -100,6 +100,7 @@ public class ASTNumList extends ASTParameter {
     _strides= new double[]{1};
     _cnts   = new long  []{hi_exclusive-lo};
     _isList = false;
+    _isSort = true;
   }
 
   // An empty number list
@@ -107,7 +108,7 @@ public class ASTNumList extends ASTParameter {
     _bases  = new double[0];
     _strides= new double[0];
     _cnts   = new long  [0];
-    _isList = true;
+    _isList = _isSort = true;
   }
 
   ASTNumList(double[] list) {
@@ -221,12 +222,15 @@ public class ASTNumList extends ASTParameter {
   // check if n is in this list of numbers
   // NB: all contiguous ranges have already been checked to have stride 1
   boolean has(long v) {
-    assert _isList; // Only called on lists (cnt is 1, stride is ignored)
     assert _isSort; // Only called when already sorted
     // do something special for negative indexing... that does not involve
     // allocating arrays, once per list element!
     if( v < 0 )  throw H2O.unimpl();
-    return Arrays.binarySearch(_bases, v) >= 0;
+    int idx = Arrays.binarySearch(_bases, v);
+    if( idx >= 0 ) return true;
+    idx = -idx-2;  // See Arrays.binarySearch; returns (-idx-1), we want +idx-1
+    assert _bases[idx] < v;     // Sanity check binary search, AND idx >= 0
+    return v < _bases[idx]+_cnts[idx]*_strides[idx];
   }
 
   // Select columns by number.  Numbers are capped to the number of columns +1

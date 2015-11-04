@@ -111,7 +111,7 @@ class ASTGroup extends ASTPrim {
       if( fcn==FCN.mode && !fr.vec(agg_col).isCategorical() )
         throw new IllegalArgumentException("Mode only allowed on categorical columns");
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
-      aggs[(idx-4)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
+      aggs[(idx-3)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
     }
 
     // do the group by work now
@@ -125,7 +125,7 @@ class ASTGroup extends ASTPrim {
           // or _gs[i] < that._gs[i].  Order by various columns specified by
           // gbCols.  NaN is treated as least
           @Override public int compare( G g1, G g2 ) {
-            for( int i : gbCols ) {
+            for( int i=0; i<gbCols.length; i++ ) {
               if(  Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i]) ) return -1;
               if( !Double.isNaN(g1._gs[i]) &&  Double.isNaN(g2._gs[i]) ) return  1;
               if( g1._gs[i] != g2._gs[i] ) return g1._gs[i] < g2._gs[i] ? -1 : 1;
