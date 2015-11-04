@@ -7,7 +7,6 @@ import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.*;
-import water.util.ArrayUtils;
 import water.util.Log;
 
 /**

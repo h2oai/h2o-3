@@ -15,7 +15,7 @@ import java.io.File;
 import java.util.Arrays;
 
 public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void bigSlice() {
     // check that large slices do something sane
@@ -356,6 +356,24 @@ public class RapidsTest extends TestUtil {
       }
     }
     return true;
+  }
+
+  @Test public void testRowSlice() {
+    Session ses = new Session();
+    Frame fr = null;
+    try {
+      fr = parse_test_file(Key.make("a.hex"),"smalldata/airlines/AirlinesTrainMM.csv.zip");
+      System.out.printf(fr.toString());
+      Exec.exec("(tmp= flow_1 (h2o.runif a.hex -1))",ses);
+      Exec.exec("(tmp= f.25 (rows a.hex (<  flow_1 0.25) ) )",ses);
+      Exec.exec("(tmp= f.75 (rows a.hex (>= flow_1 0.25) ) )",ses);
+      Exec.exec("(tmp= flow_2 (h2o.runif a.hex -1))",ses);
+      ses.end(null);
+    } catch( Throwable ex ) {
+      throw ses.endQuietly(ex);
+    } finally {
+      fr.delete();
+    }
   }
 
   @Test public void testChicago() {

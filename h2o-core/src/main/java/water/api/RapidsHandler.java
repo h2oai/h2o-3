@@ -2,6 +2,7 @@ package water.api;
 
 import water.H2O;
 import water.rapids.Exec;
+import water.rapids.Session;
 import water.rapids.Val;
 import water.util.Log;
 
@@ -10,16 +11,16 @@ class RapidsHandler extends Handler {
     if( rapids == null ) return null;
     if( rapids.ast == null || rapids.ast.equals("") ) return rapids;
     
-    if( InitIDHandler.SESSION == null ) {
-      InitIDHandler.SESSION = new water.rapids.Session();
-    }
+    Session ses = InitIDHandler.SESSION;
+    if( ses == null )
+      InitIDHandler.SESSION = ses = new water.rapids.Session();
 
     Val val;
     try {
       // No locking, no synchronization - since any local locking is NOT a
       // cluster-wide lock locking, which just provides the illusion of safety
       // but not the actuality.
-      val = Exec.exec(rapids.ast, InitIDHandler.SESSION);
+      val = Exec.exec(rapids.ast, ses);
     } catch( IllegalArgumentException e ) {
       throw e;
     } catch( Throwable e ) {
