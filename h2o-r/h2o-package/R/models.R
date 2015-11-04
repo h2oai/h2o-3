@@ -307,19 +307,21 @@ h2o.getFutureModel <- function(object) {
         }
         # If there is no error then transform hyper values
         if (!nzchar(e)) {
-          transf_hyper_vals <- sapply(hyper_vals, function(hv) {
-                                      # R does not treat integers as numeric
-                                      if (is.integer(hv)) {
-                                        hv <- as.numeric(hv)
-                                      }
-                                      mapping <- .type.map[paramDef$type,]
-                                      type <- mapping[1L, 1L]
-                                      # Force evaluation of frames and fetch frame_id as
-                                      # a side effect
-                                      if (is.Frame(hv) )
-                                        hv <- h2o.getId(hv)
-                                      .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
-                                })
+          is_scalar <- .type.map[paramDef$type,][1L, 2L]
+          transf_fce <- function(hv) {
+                          # R does not treat integers as numeric
+                          if (is.integer(hv)) {
+                            hv <- as.numeric(hv)
+                          }
+                          mapping <- .type.map[paramDef$type,]
+                          type <- mapping[1L, 1L]
+                          # Force evaluation of frames and fetch frame_id as
+                          # a side effect
+                          if (is.Frame(hv) )
+                            hv <- h2o.getId(hv)
+                          .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
+                        }
+          transf_hyper_vals <- if (is_scalar) sapply(hyper_vals,transf_fce) else lapply(hyper_vals, transf_fce) 
           hyper_params[[name]] <<- transf_hyper_vals
         }
       }
