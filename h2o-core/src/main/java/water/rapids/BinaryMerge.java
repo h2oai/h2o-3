@@ -17,6 +17,7 @@ import java.util.Arrays;
 public class BinaryMerge extends DTask<BinaryMerge> {
   long _numRowsInResult=0;  // returned to caller, so not transient
   int _chunkSizes[];      // TODO:  only _chunkSizes.length is needed by caller, so return that length only
+  double _timings[];
 
   transient long _retFirst[/*n2GB*/][];  // The row number of the first right table's index key that matches
   transient long _retLen[/*n2GB*/][];    // How many rows does it match to?
@@ -54,6 +55,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   @Override
   protected void compute2() {
+    _timings = new double[12];
+    long t0 = System.nanoTime();
     SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_leftFrame._key, _leftMSB));
     if (leftSortedOXHeader == null) {
       if (_allRight) throw H2O.unimpl();  // TODO pass through _allRight and implement
@@ -100,8 +103,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightKeySize = ArrayUtils.sum(_rightFieldSizes);
     _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
 
+    _timings[0] = (System.nanoTime() - t0) / 1e9;
+
     if ((_leftN != 0 || _allRight) && (_rightN != 0 || _allLeft)) {
+
+      t0 = System.nanoTime();
       bmerge_r(-1, _leftN, -1, _rightN);
+      _timings[1] = (System.nanoTime() - t0) / 1e9;
+
       if (_numRowsInResult > 0) createChunksInDKV();
     }
 
@@ -226,6 +235,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // Collect all matches
     // Create the final frame (part) for this MSB combination
     // Cannot use a List<Long> as that's restricted to 2Bn items and also isn't an Iced datatype
+    long t0 = System.nanoTime();
     long perNodeRightRows[][][] = new long[H2O.CLOUD.size()][][];
     long perNodeRightRowsFrom[][][] = new long[H2O.CLOUD.size()][][];
     long perNodeRightLoc[] = new long[H2O.CLOUD.size()];
@@ -272,6 +282,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         perNodeLeftRowsRepeat[i][b] = new long[lastSize];
       }
     }
+    _timings[2] = (System.nanoTime() - t0) / 1e9;
+    t0 = System.nanoTime();
 
     // Loop over _retFirst and _retLen and populate the batched requests for each node helper
     // _retFirst and _retLen are the same shape
@@ -291,8 +303,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         { // new scope so 'row' can be declared in the for() loop below and registerized (otherwise 'already defined in this scope' in that scope)
           // Fetch the left rows and mark the contiguous from-ranges each left row should be recycled over
           long row = _leftOrder[(int)(leftLoc / _leftBatchSize)][(int)(leftLoc % _leftBatchSize)];
-          int chkIdx = _leftFrame.anyVec().elem2ChunkIdx(row); //binary search in espc
-          H2ONode node = _leftFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
+          Vec v = _leftFrame.anyVec();
+          int chkIdx = v.elem2ChunkIdx(row); //binary search in espc
+          H2ONode node = v.chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
           long pnl = perNodeLeftLoc[node.index()]++;   // pnl = per node location
           perNodeLeftRows[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
           perNodeLeftRowsFrom[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
@@ -304,14 +317,17 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           long loc = f+r-1;  // -1 because these are 0-based where 0 means no-match and 1 refers to the first row
           long row = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];   // TODO: could take / and % outside loop in cases where it doesn't span a batch boundary
           // find the owning node for the row, using local operations here
-          int chkIdx = _rightFrame.anyVec().elem2ChunkIdx(row); //binary search in espc
-          H2ONode node = _rightFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
+          Vec v = _rightFrame.anyVec();
+          int chkIdx = v.elem2ChunkIdx(row); //binary search in espc
+          H2ONode node = v.chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
           long pnl = perNodeRightLoc[node.index()]++;   // pnl = per node location
           perNodeRightRows[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
           perNodeRightRowsFrom[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc++;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
         }
       }
     }
+    _timings[3] = (System.nanoTime() - t0) / 1e9;
+    t0 = System.nanoTime();
 
     // Create the chunks for the final frame from this MSB pair.
     batchSize = 1<<22; // number of rows per chunk.  32MB for doubles, 64MB for UUIDs to fit into 256MB DKV Value limit
@@ -334,13 +350,17 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       Arrays.fill(frameLikeChunks[col][b], Double.NaN);
       _chunkSizes[b] = lastSize;
     }
+    _timings[4] = (System.nanoTime() - t0) / 1e9;
+    t0 = System.nanoTime();
 
     for (H2ONode node : H2O.CLOUD._memary) {
       int bUpp = perNodeRightRows[node.index()] == null ? 0 : perNodeRightRows[node.index()].length;
       for (int b = 0; b < bUpp; b++) {
-        GetRawRemoteRows grrr = new GetRawRemoteRows(_rightFrame, perNodeRightRows[node.index()][b]);
-        H2O.submitTask(grrr);
-        grrr.join();
+        t0 = System.nanoTime();
+        GetRawRemoteRows grrr = new RPC<>(node, new GetRawRemoteRows(_rightFrame, perNodeRightRows[node.index()][b])).call().get();
+        _timings[5] += (System.nanoTime() - t0) / 1e9;
+        _timings[6] += grrr.timeTaken;
+        t0 = System.nanoTime();
         assert (grrr._rows == null);
         Chunk[] chk = grrr._chk;
         for (int col = 0; col < _numColsInResult - _numLeftCols; col++) {   // TODO: currently join columns must be the first _numJoinCols. Relax.
@@ -353,12 +373,15 @@ public class BinaryMerge extends DTask<BinaryMerge> {
             frameLikeChunks[_numLeftCols + col][whichChunk][offset] = val;
           }
         }
+        _timings[7] += (System.nanoTime() - t0) / 1e9;
       }
       bUpp = perNodeLeftRows[node.index()] == null ? 0 : perNodeLeftRows[node.index()].length;
-      for (int b = 0; b < bUpp; ++b) {
-        GetRawRemoteRows grrr = new GetRawRemoteRows(_leftFrame, perNodeLeftRows[node.index()][b]);
-        H2O.submitTask(grrr);
-        grrr.join();
+      for (int b = 0; b < bUpp; b++) {
+        t0 = System.nanoTime();
+        GetRawRemoteRows grrr = new RPC<>(node, new GetRawRemoteRows(_leftFrame, perNodeLeftRows[node.index()][b])).call().get();
+        _timings[8] += (System.nanoTime() - t0) / 1e9;
+        _timings[9] += grrr.timeTaken;
+        t0 = System.nanoTime();
         assert (grrr._rows == null);
         Chunk[] chk = grrr._chk;
         for (int col = 0; col < chk.length; ++col) {
@@ -375,7 +398,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           }
         }
       }
+      _timings[10] += (System.nanoTime() - t0) / 1e9;
     }
+    t0 = System.nanoTime();
 
     // compress all chunks and store them
     Futures fs = new Futures();
@@ -386,6 +411,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         frameLikeChunks[col][b]=null; //free mem as early as possible (it's now in the store)
       }
     }
+    _timings[11] = (System.nanoTime() - t0) / 1e9;
+
     fs.blockForPending();
   }
 
@@ -400,22 +427,26 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   class GetRawRemoteRows extends DTask<GetRawRemoteRows> {
     Chunk[/*col*/] _chk; //null on the way to remote node, non-null on the way back
     long[/*rows*/] _rows; //which rows to fetch from remote node, non-null on the way to remote, null on the way back
-    Frame _rightFrame;
-    GetRawRemoteRows(Frame rightFrame, long[] rows) {
+    double timeTaken;
+    Frame _fr;
+    GetRawRemoteRows(Frame fr, long[] rows) {
       _rows = rows;
-      _rightFrame = rightFrame;
+      _fr = fr;
     }
 
     @Override
     protected void compute2() {
       assert(_rows!=null);
       assert(_chk ==null);
-      _chk  = new Chunk[_rightFrame.numCols()];
 
-      double[][] rawVals = new double[_rightFrame.numCols()][_rows.length];
-      for (int col=0; col<_rightFrame.numCols(); ++col) {
-        Vec v = _rightFrame.vec(col);
-        for (int row=0; row<_rows.length; ++row) {
+      long t0 = System.nanoTime();
+
+      _chk  = new Chunk[_fr.numCols()];
+      double[][] rawVals = new double[_fr.numCols()][_rows.length];
+      for (int col=0; col<_fr.numCols(); col++) {
+        Vec v = _fr.vec(col);
+        for (int row=0; row<_rows.length; row++) {
+          assert v.chunkKey(v.chunkForRow(_rows[row]).cidx()).home();
           rawVals[col][row] = v.at(_rows[row]); //local reads, random access //TODO: use chunk accessors by using indirection array
         }
         _chk[col] = new NewChunk(rawVals[col]);
@@ -425,6 +456,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 //      perNodeRows[node] has perNodeRows[node].length batches of row numbers to fetch
       _rows=null;
       assert(_chk !=null);
+
+      timeTaken = (System.nanoTime() - t0) / 1e9;
+
       tryComplete();
     }
   }
