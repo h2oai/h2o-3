@@ -193,9 +193,10 @@ The GLM suite includes:
 - **weights_column**: Select a column to use for the observation weights, which are used for bias correction. The specified `weights_column` must be included in the specified `training_frame`. *Python only*: To use a weights column when passing an H2OFrame to `x` instead of a list of column names, the specified `training_frame` must contain the specified `weights_column`. 
 	>*Note*: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.  
 
-- **family**: Select the model type (Gaussian, Binomial, Poisson, Gamma, or Tweedie).
+- **family**: Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, or Tweedie).
 	> - If the family is **Gaussian**, the data must be numeric (**Real** or **Int**).
-	> - If the family is **Binomial**, the data can be numeric but cannot contain more than two levels/classes.
+	> - If the family is **Binomial**, the data must be categorical or numeric with exactly 2 levels/classes (**Enum** or **Int**).
+	> - If the family is **Multinomial**, the data can be categorical or numeric  (**Enum** or **Int**) with more than two levels/classes.
 	> - If the family is **Poisson**, the data must be numeric. 
 	> - If the family is **Gamma**, the data must be numeric and continuous (**Int**). 
 	> - If the family is **Tweedie**, the data must be numeric and continuous (**Int**). 
@@ -657,6 +658,9 @@ By default, the following output displays:
 
   More memory will be allocated on each node to store the joint frequency count of each categorical predictor level with the response’s level.
 
+- **When running PCA, is it better to create a cluster that uses many smaller nodes or fewer larger nodes?** 
+
+For Naïve Bayes, we recommend using many smaller nodes because the distributed task doesn't require intensive computation. 
 
 
 ###Naïve Bayes Algorithm 
@@ -819,8 +823,16 @@ For the GramSVD and Power methods, all rows containing missing values are ignore
 
 - **How are categorical columns handled during model building?**
   
-  If the GramSVD or Power methods are used, the categorical columns are expanded into 0/1 indicator columns for each factor level. The algorithm is then performed on this expanded training frame. For GLRM, the multidimensional loss function for categorical columns is discussed in Section 6.1 of ["Generalized Low Rank Models"](https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf) by Boyd et al. 
+  If the GramSVD or Power methods are used, the categorical columns are expanded into 0/1 indicator columns for each factor level. The algorithm is then performed on this expanded training frame. For GLRM, the multidimensional loss function for categorical columns is discussed in Section 6.1 of ["Generalized Low Rank Models"](https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf) by Boyd et al.
 
+- **When running PCA, is it better to create a cluster that uses many smaller nodes or fewer larger nodes?** 
+
+For PCA, this is dependent on the selected `pca_method` parameter: 
+
+- For **GramSVD**, use fewer larger nodes for better performance. Forming the Gram matrix requires few intensive calculations and the main bottleneck is the JAMA library's SVD function, which is not parallelized and runs on a single machine. We do not recommend selecting GramSVD for datasets with many columns and/or categorical levels in one or more columns. 
+- For **Randomized**, use many smaller nodes for better performance, since H2O calls a few different distributed tasks in a loop, where each task does fairly simple matrix algebra computations. 
+- For **GLRM**, the number of nodes depends on whether the dataset contains many categorical columns with many levels. If this is the case, we recommend using fewer larger nodes, since computing the loss function for categoricals is an intensive task. If the majority of the data is numeric and the categorical columns have only a small number of levels (~10-20), we recommend using many small nodes in the cluster.
+- For **Power**, we recommend using fewer larger nodes because the intensive calculations are single-threaded. However, this method is only recommended for obtaining principal component values (such as `k << ncol(train))` because the other methods are far more efficient. 
 
 ###PCA Algorithm
 

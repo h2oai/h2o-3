@@ -307,19 +307,21 @@ h2o.getFutureModel <- function(object) {
         }
         # If there is no error then transform hyper values
         if (!nzchar(e)) {
-          transf_hyper_vals <- sapply(hyper_vals, function(hv) {
-                                      # R does not treat integers as numeric
-                                      if (is.integer(hv)) {
-                                        hv <- as.numeric(hv)
-                                      }
-                                      mapping <- .type.map[paramDef$type,]
-                                      type <- mapping[1L, 1L]
-                                      # Force evaluation of frames and fetch frame_id as
-                                      # a side effect
-                                      if (is.Frame(hv) )
-                                        hv <- h2o.getId(hv)
-                                      .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
-                                })
+          is_scalar <- .type.map[paramDef$type,][1L, 2L]
+          transf_fce <- function(hv) {
+                          # R does not treat integers as numeric
+                          if (is.integer(hv)) {
+                            hv <- as.numeric(hv)
+                          }
+                          mapping <- .type.map[paramDef$type,]
+                          type <- mapping[1L, 1L]
+                          # Force evaluation of frames and fetch frame_id as
+                          # a side effect
+                          if (is.Frame(hv) )
+                            hv <- h2o.getId(hv)
+                          .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
+                        }
+          transf_hyper_vals <- if (is_scalar) sapply(hyper_vals,transf_fce) else lapply(hyper_vals, transf_fce) 
           hyper_params[[name]] <<- transf_hyper_vals
         }
       }
@@ -2052,7 +2054,7 @@ h2o.tabulate <- function(data, x, y,
 #' plot(tab)              
 #' }
 #' @export
-plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 6, ...) {
+plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 12, ...) {
   
   if (!inherits(x, "H2OTabulate")) {
     stop("Must be an H2OTabulate object")
@@ -2063,8 +2065,16 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
   names(df) <- c("c1", "c2", "counts")
   
   # Reorder the levels for better plotting
-  c1_order <- order(unique(as.numeric(df$c1)))
-  c2_order <- order(unique(as.numeric(df$c2)))
+  if (suppressWarnings(is.na(sum(as.numeric(df$c1))))) {
+    c1_order <- order(unique(df$c1))
+  } else {
+    c1_order <- order(unique(as.numeric(df$c1)))
+  }
+  if (suppressWarnings(is.na(sum(as.numeric(df$c2))))) {
+    c2_order <- order(unique(df$c2))
+  } else {
+    c2_order <- order(unique(as.numeric(df$c2)))
+  }
   c1_labels <- unique(df$c1)
   c2_labels <- unique(df$c2)
   df$c1 <- factor(df$c1, levels = c1_labels[c1_order])
@@ -2072,7 +2082,7 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
   
   # Plot heatmap
   c1 <- c2 <- counts <- NULL #set these to pass CRAN checks w/o warnings
-  (p <- ggplot2::ggplot(df, ggplot2::aes(c2, c1)) 
+  (p <- ggplot2::ggplot(df, ggplot2::aes(c1, c2)) 
   + ggplot2::geom_tile(ggplot2::aes(fill = counts), colour = "white") + ggplot2::scale_fill_gradient(low = "white", high = "steelblue"))
   
   # Adjust the plot

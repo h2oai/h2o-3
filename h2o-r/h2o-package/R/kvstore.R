@@ -87,7 +87,7 @@ h2o.rm <- function(ids) {
   if(!is.character(ids)) stop("`ids` must be of class character")
 
   for(i in seq_len(length(ids)))
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", ids[[i]]), method = "DELETE")
+    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",ids[[i]],")"), method = "POST")
 }
 
 #'
@@ -97,7 +97,11 @@ h2o.rm <- function(ids) {
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
-h2o.getFrame <- function(id) .eval.driver(.newFrame(id,id,-1,-1))
+h2o.getFrame <- function(id) {
+  fr <- .newFrame(id,id,-1,-1)
+  .fetch.data(fr,1L)
+  fr
+}
 
 #' Get an R reference to an H2O model
 #'

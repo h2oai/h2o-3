@@ -49,3 +49,13 @@ def ipy_valid_lines(block):
 
     return lines
 
+def pydemo_exec(test_name):
+    with open (test_name, "r") as t: demo = t.read()
+    program = ''
+    for line in demo.split('\n'):
+        if "h2o.init" not in line:
+            program += line if '\n' in line else line + '\n'
+    demo_c = compile(program, '<string>', 'exec')
+    p = {}
+    exec demo_c in p
+

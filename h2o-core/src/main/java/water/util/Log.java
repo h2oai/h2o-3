@@ -51,12 +51,12 @@ abstract public class Log {
     _quiet = quiet;
   }
   
-  public static void trace( Object... objs ) { write(TRACE,objs); }
-  public static void debug( Object... objs ) { write(DEBUG,objs); }
-  public static void info ( Object... objs ) { write(INFO ,objs); }
-  public static void warn ( Object... objs ) { write(WARN, objs); }
-  public static void err  ( Object... objs ) { write(ERRR, objs); }
-  public static void fatal( Object... objs ) { write(FATAL, objs); }
+  public static void trace( Object... objs ) { if( _level >= TRACE ) write(TRACE,objs); }
+  public static void debug( Object... objs ) { if( _level >= DEBUG ) write(DEBUG,objs); }
+  public static void info ( Object... objs ) { if( _level >= INFO  ) write(INFO ,objs); }
+  public static void warn ( Object... objs ) { if( _level >= WARN  ) write(WARN, objs); }
+  public static void err  ( Object... objs ) { if( _level >= ERRR  ) write(ERRR, objs); }
+  public static void fatal( Object... objs ) { if( _level >= FATAL ) write(FATAL, objs); }
 
   public static void httpd( String msg ) {
     // This is never called anymore.
@@ -69,7 +69,7 @@ abstract public class Log {
     l.info(s);
   }
 
-  public static void info( String s, boolean stdout ) { write0(INFO, stdout, s); }
+  public static void info( String s, boolean stdout ) { if( _level >= INFO ) write0(INFO, stdout, s); }
 
   // This call *throws* an unchecked exception and never returns (after logging).
   public static RuntimeException throwErr( Throwable e ) {
@@ -209,7 +209,15 @@ abstract public class Log {
     String logPathFileName = getLogPathFileNameStem();
 
     // H2O-wide logging
-    p.setProperty("log4j.logger.water.default", "TRACE, R1, R2, R3, R4, R5, R6");
+    String appenders = new String[]{
+      "TRACE, R6",
+      "TRACE, R5, R6",
+      "TRACE, R4, R5, R6",
+      "TRACE, R3, R4, R5, R6",
+      "TRACE, R2, R3, R4, R5, R6",
+      "TRACE, R1, R2, R3, R4, R5, R6",
+    }[_level];
+    p.setProperty("log4j.logger.water.default", appenders);
     p.setProperty("log4j.additivity.water.default",   "false");
 
     p.setProperty("log4j.appender.R1",                          "org.apache.log4j.RollingFileAppender");

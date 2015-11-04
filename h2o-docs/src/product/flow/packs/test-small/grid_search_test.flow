@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "# Still need to build PCA and KMeans with grid search on \"k\".  See PUBDEV-2321"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"/home/mchan/H2O/h2o-3/smalldata/iris/iris_wheader.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"/home/mchan/H2O/h2o-3/smalldata/iris/iris_wheader.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"/home/mchan/H2O/h2o-3/smalldata/iris/iris_wheader.csv\"]\n  destination_frame: \"iris_wheader1.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 5\n  single_quotes: false\n  column_names: [\"sepal_len\",\"sepal_wid\",\"petal_len\",\"petal_wid\",\"class\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"iris_wheader1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"iris_wheader1.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-f0f5a671-4d8e-41dd-94cc-84e58b646f26\",\"training_frame\":\"iris_wheader1.hex\",\"nfolds\":\"3\",\"response_column\":\"class\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":5289484443421806000,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":false,\"fold_assignment\":\"AUTO\",\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"build_tree_one_node\":false,\"checkpoint\":\"\",\"keep_cross_validation_predictions\":false,\"nbins_top_level\":1024,\"hyper_parameters\":{\"ntrees\":[\"-5\",\"5\",\"10\",\"10\",\"15\"],\"max_depth\":[\"-2\",\"2\",\"2\",\"3\",\"5\",null]}}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-966f5fa8-3f43-45a4-9280-1dcc8a50ed57\",\"training_frame\":\"iris_wheader1.hex\",\"nfolds\":\"3\",\"response_column\":\"class\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"family\":\"multinomial\",\"solver\":\"AUTO\",\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"fold_assignment\":\"AUTO\",\"score_each_iteration\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"keep_cross_validation_predictions\":false,\"intercept\":true,\"objective_epsilon\":0.00001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.00001,\"prior\":-1,\"max_active_predictors\":-1,\"hyper_parameters\":{\"alpha\":[[-0.01],[0.01],[0.01],[0.5],null],\"lambda\":[[0.00001],[0.000001]]}}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-70ca9208-3bd8-4005-b6e2-ecaf00e0f847\",\"training_frame\":\"iris_wheader1.hex\",\"nfolds\":\"3\",\"response_column\":\"class\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"epochs\":10,\"variable_importances\":false,\"fold_assignment\":\"AUTO\",\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"train_samples_per_iteration\":-2,\"adaptive_rate\":true,\"input_dropout_ratio\":0,\"l1\":0,\"loss\":\"Automatic\",\"distribution\":\"AUTO\",\"score_interval\":5,\"score_training_samples\":10000,\"score_duty_cycle\":0.1,\"stopping_rounds\":5,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0,\"autoencoder\":false,\"keep_cross_validation_predictions\":false,\"target_ratio_comm_to_comp\":0.05,\"seed\":-2431832978871552000,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"classification_stop\":0,\"diagnostics\":true,\"fast_mode\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false,\"elastic_averaging\":false,\"hyper_parameters\":{\"activation\":[\"Tanh\",\"Rectifier\",\"RectifierWithDropout\",\"Maxout\"],\"hidden\":[[10,10],[20,20],[30,30]],\"l2\":[\"0.0005\",\"0.001\"]}}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-31c11f7a-c7de-4fac-b53f-ccac9eecf84b\",\"training_frame\":\"iris_wheader1.hex\",\"nfolds\":\"3\",\"response_column\":\"class\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"min_rows\":1,\"nbins\":20,\"nbins_cats\":1024,\"seed\":8250392250074580000,\"mtries\":-1,\"sample_rate\":0.632,\"score_each_iteration\":false,\"fold_assignment\":\"AUTO\",\"balance_classes\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"build_tree_one_node\":false,\"binomial_double_trees\":false,\"checkpoint\":\"\",\"keep_cross_validation_predictions\":false,\"nbins_top_level\":1024,\"hyper_parameters\":{\"ntrees\":[\"10\",\"20\",\"30\",null],\"max_depth\":[\"2\",\"3\",\"5\",null]}}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'kmeans', {\"model_id\":\"kmeans-e28cab35-9db2-408d-92af-b44255b22f08\",\"training_frame\":\"iris_wheader1.hex\",\"nfolds\":0,\"ignored_columns\":[],\"ignore_const_cols\":true,\"score_each_iteration\":false,\"standardize\":true,\"seed\":169965726468520,\"hyper_parameters\":{\"max_iterations\":[\"10\",\"15\",\"25\",null],\"init\":[\"Random\",\"PlusPlus\"]}}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'naivebayes', {\"model_id\":\"naivebayes-8db789ac-7c02-4cbc-b69b-80344f7b8ca7\",\"training_frame\":\"iris_wheader1.hex\",\"response_column\":\"class\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"min_prob\":0.001,\"eps_prob\":0,\"compute_metrics\":true,\"score_each_iteration\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"hyper_parameters\":{\"laplace\":[\"1.1234\",\"5.1234\"],\"min_sdev\":[\"0.2345\",\"0.6543\"],\"eps_sdev\":[\"0.65432\",\"0.23456\"]}}"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 library(h2o)
-h2o.init()
+h2o.init(nthreads = -1, max_mem_size = "2G")
 
 ## Find and import data into H2O
 locate     <- h2o:::.h2o.locate
@@ -80,6 +80,7 @@ gait.miss <- h2o.importFile(path = pathToMissingData, destination_frame = "gait.
 ## Grab a summary of imported frame
 dim(gait.miss)
 summary(gait.miss)
+sum(is.na(gait.miss))   # Total number of missing values
 
 ## Basic GLRM using quadratic loss and no regularization (PCA)
 gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, cols = 2:ncol(gait.miss), k = 10, init = "SVD", svd_method = "GramSVD",
@@ -92,6 +93,7 @@ plot(gait.glrm2)
 print("Impute missing data from X and Y")
 gait.pred2 <- predict(gait.glrm2, gait.miss)
 head(gait.pred2)
+sum(is.na(gait.pred2))   # No missing values!
 
 print(paste0("Plot original and imputed L.Acromium.X over time range [", time.df[1], ",", time.df[2], "]"))
 lacro.pred.df2 <- as.data.frame(gait.pred2$reconstr_L.Acromium.X[1:150])

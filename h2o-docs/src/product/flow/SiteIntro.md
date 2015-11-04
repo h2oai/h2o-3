@@ -81,10 +81,13 @@ If you've used previous versions of H2O, the following links will help guide you
 <a name="OS"></a>
 ##Enterprise Users
 
-If you're considering using H2O in an enterprise environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop, Kerberos, and EC2 (AWS). For more information, refer to the following links. For additional sales or marketing assistance, please email [sales@h2o.ai](mailto:sales@h2o.ai). 
+If you're considering using H2O in an enterprise environment, you'll be happy to know that the H2O platform is supported on all major Hadoop distributions including Cloudera Enterprise, Hortonworks Data Platform and the MapR Apache Hadoop Distribution. 
+
+H2O can be deployed in-memory directly on top of existing Hadoop clusters without the need for data transfers, allowing for unmatched speed and ease of use. To ensure the integrity of data stored in Hadoop clusters, the H2O platform supports native integration of the Kerberos protocol. 
+
+For additional sales or marketing assistance, please email [sales@h2o.ai](mailto:sales@h2o.ai). 
 
 - <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
-
 
 - <a href="http://h2o.ai/enterprise-edition/" target="_blank">H2O Enterprise Edition</a>: This web page describes the benefits of H2O Enterprise Edition. 
  

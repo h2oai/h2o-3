@@ -372,5 +372,6 @@ def expect_model_param(models, attribute_name, expected_values):
                                                                 .format(actual_values[i], expected_values[i])
         else:
             assert actual_values[i] == expected_values[i]
+
 def temp_ctr():  return H2OFrame.temp_ctr()
 def rest_ctr():  return h2o.H2OConnection.rest_ctr()
