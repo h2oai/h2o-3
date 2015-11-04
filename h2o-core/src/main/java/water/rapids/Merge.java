@@ -38,15 +38,15 @@ public class Merge {
   static Frame merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[], boolean allLeft) {
 
     // each of those launches an MRTask
-    System.out.println("Creating left index ...");
+    System.out.println("\nCreating left index ...");
     long t0 = System.nanoTime();
     RadixOrder leftIndex = new RadixOrder(leftFrame, leftCols);
     System.out.println("Creating left index took: " + (System.nanoTime() - t0) / 1e9);
 
-    System.out.println("Creating right index ...");
+    System.out.println("\nCreating right index ...");
     t0 = System.nanoTime();
     RadixOrder rightIndex = new RadixOrder(rightFrame, rightCols);
-    System.out.println("Creating right index took: " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n");
 
     // Align MSB locations between the two keys
     // If the 1st join column has range < 256 (e.g. test cases) then <=8 bits are used and there's a floor of 8 to the shift.
@@ -103,7 +103,7 @@ public class Merge {
     }
     System.out.println("Sending BinaryMerge async RPC calls took: " + (System.nanoTime() - t0) / 1e9);
 
-    System.out.print("Summing BinaryMerge._numChunks (and waiting for RPCs to finish)... ");
+    System.out.println("Summing BinaryMerge._numChunks (and waiting for RPCs to finish)... ");
     t0 = System.nanoTime();
     long ansN = 0;
     int numChunks = 0;
@@ -117,7 +117,7 @@ public class Merge {
       numChunks += thisbm._chunkSizes.length;
       ansN += thisbm._numRowsInResult;
     }
-    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("\ntook: " + (System.nanoTime() - t0) / 1e9);
     assert(i == bmList.size());
 
     System.out.print("Allocating and populating chunk info (e.g. size and batch number) ...");

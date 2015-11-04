@@ -580,24 +580,24 @@ public class RadixOrder {
       //colMin[i] = (long) col.min();   // TO DO: non-int/enum
     }
     if (_biggestBit[0] < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  // TODO: feeed back to R warnings()
-    new RadixCount(DF._key, _biggestBit[0], whichCols[0]).doAll(DF.vec(whichCols[0]));
-    System.out.println("Time of MSB count: " + (System.nanoTime() - t0) / 1e9);
-
-    // Create final result. TO DO: take this multi-node and leave it on each node
-    //_returnList = new ArrayList<>();
-
     int keySize = ArrayUtils.sum(_bytesUsed);   // The MSB is stored (seemingly wastefully on first glance) because we need it when aligning two keys in Merge()
     int batchSize = MAXVECBYTE / Math.max(keySize, 8);
     // The Math.max ensures that batches of o and x are aligned, even for wide keys. To save % and / in deep iteration; e.g. in insert().
+    System.out.println("Time to use rollup stats to determine biggestBit: " + (System.nanoTime() - t0) / 1e9);
 
-    System.out.println("Time to allocate o[][] and x[][]: " + (System.nanoTime() - t0) / 1e9);
     t0 = System.nanoTime();
+    new RadixCount(DF._key, _biggestBit[0], whichCols[0]).doAll(DF.vec(whichCols[0]));
+    System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + (System.nanoTime() - t0) / 1e9);
+
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
     // o is the full ordering vector of the right size
     // x is the byte key aligned with o
     // o AND x are what bmerge() needs. Pushing x to each node as well as o avoids inter-node comms.
+
+    System.out.println("Starting MSB hist reduce across nodes and MoveByFirstByte MRTask ...");
+    t0 = System.nanoTime();
     new MoveByFirstByte(DF._key, _biggestBit[0], keySize, batchSize, _bytesUsed, whichCols).doAll(DF.vecs(whichCols));   // postLocal needs DKV.put()
-    System.out.println("Time to MoveByFirstByte: " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("***\n*** MoveByFirstByte MRTask took : " + (System.nanoTime() - t0) / 1e9 + "\n***");
     t0 = System.nanoTime();
 
     long nGroup[] = new long[257];   // one extra for later to make undo of cumulate easier when finding groups.  TO DO: let grouper do that and simplify here to 256
@@ -607,21 +607,26 @@ public class RadixOrder {
 
     // dispatch in parallel
     RPC[] radixOrders = new RPC[256];
-    System.out.println("Calling RPC MoveByFirstByte ");
+    System.out.println("Sending SingleThreadRadixOrder async RPC calls ...");
+    t0 = System.nanoTime();
     for (int i = 0; i < 256; i++) {
-      System.out.print(i+" ");
+      //System.out.print(i+" ");
       radixOrders[i] = new RPC<>(MoveByFirstByte.ownerOfMSB(i), new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call();
     }
-    System.out.println("\nWaiting for RPC MoveByFirstByte ");
+    System.out.println("Sending SingleThreadRadixOrder async RPC calls took : " + (System.nanoTime() - t0) / 1e9);
+    t0 = System.nanoTime();
+
+    System.out.println("Waiting for RPC SingleThreadRadixOrder to finish ... ");
+    t0 = System.nanoTime();
     int i=0;
     for (RPC rpc : radixOrders) { //TODO: Use a queue to make this fully async
       System.out.print(i+" ");
       SingleThreadRadixOrder radixOrder = (SingleThreadRadixOrder)rpc.get();
-      _o[i] = radixOrder._o;
+      _o[i] = radixOrder._o;   // TODO ... why do we need _o and _x here?????
       _x[i] = radixOrder._x;
       i++;
     }
-    System.out.println("\n");
+    System.out.println("\n***\n*** Waiting for RPC SingleThreadRadixOrder to finish took : " + (System.nanoTime() - t0) / 1e9 + "\n***");
 
     // serial, do one at a time
 //    for (int i = 0; i < 256; i++) {
@@ -630,7 +635,6 @@ public class RadixOrder {
 //      _o[i] = radixOrder._o;
 //      _x[i] = radixOrder._x;
 //    }
-    System.out.println("Time for all calls to SingleThreadRadixOrder: " + (System.nanoTime() - t0) / 1e9);
 
     // If sum(nGroup) == nrow then the index is unique.
     // 1) useful to know if an index is unique or not (when joining to it we know multiples can't be returned so can allocate more efficiently)
