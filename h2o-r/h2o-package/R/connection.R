@@ -371,7 +371,7 @@ h2o.clusterStatus <- function() {
   .h2o.__remoteSend("InitID", method = "DELETE")
 }
 
-.Last <- function() { if ( .isConnected() ) .h2o.__remoteSend("InitID", method = "DELETE")}
+.Last <- function() { if ( .isConnected() ) tryCatch(.h2o.__remoteSend("InitID", method = "DELETE"),finally = function(){})}
 
 .h2o.startJar <- function(nthreads = -1, max_memory = NULL, min_memory = NULL, beta = FALSE, assertion = TRUE, forceDL = FALSE, license = NULL, ice_root, stdout) {
   command <- .h2o.checkJava()
