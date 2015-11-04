@@ -40,7 +40,7 @@ def missing():
     from h2o.estimators.deeplearning import H2ODeepLearningEstimator
     hh = H2ODeepLearningEstimator(epochs=5, reproducible=True, seed=12345,
                                   activation='RectifierWithDropout', l1=1e-5,
-                                  input_dropout_ratio=0.)
+                                  input_dropout_ratio=0.2)
     hh.train(x=range(2,22),y=23, training_frame=train, validation_frame=test)
     errors[i] = hh.error()[0][1]
 
