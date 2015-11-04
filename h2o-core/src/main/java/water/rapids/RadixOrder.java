@@ -62,8 +62,8 @@ class RadixCount extends MRTask<RadixCount> {
 class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   private transient long _counts[][];
   long _MSBhist[];
-  long _o[][][];
-  byte _x[][][];
+  transient long _o[][][];  // transient ok because there is no reduce here between nodes, and important to save shipping back to caller.
+  transient byte _x[][][];
   Key _frameKey;
   int _biggestBit, _batchSize, _bytesUsed[], _keySize;
   int[]_col;
