@@ -2052,7 +2052,7 @@ h2o.tabulate <- function(data, x, y,
 #' plot(tab)              
 #' }
 #' @export
-plot.H2OTabulate <- function(x, xlab = x$cols[2], ylab = x$cols[1], base_size = 12, ...) {
+plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 12, ...) {
   
   if (!inherits(x, "H2OTabulate")) {
     stop("Must be an H2OTabulate object")
@@ -2080,7 +2080,7 @@ plot.H2OTabulate <- function(x, xlab = x$cols[2], ylab = x$cols[1], base_size = 
   
   # Plot heatmap
   c1 <- c2 <- counts <- NULL #set these to pass CRAN checks w/o warnings
-  (p <- ggplot2::ggplot(df, ggplot2::aes(c2, c1)) 
+  (p <- ggplot2::ggplot(df, ggplot2::aes(c1, c2)) 
   + ggplot2::geom_tile(ggplot2::aes(fill = counts), colour = "white") + ggplot2::scale_fill_gradient(low = "white", high = "steelblue"))
   
   # Adjust the plot
