@@ -276,27 +276,31 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   //int _keySize;   // bytes
 
   SingleThreadRadixOrder(Frame fr, int batchSize, int keySize, long nGroup[], int MSBvalue) {
-    _keySize = keySize;
+    _fr = fr;
     _batchSize = batchSize;
+    _keySize = keySize;
     _nGroup = nGroup;
     _MSBvalue = MSBvalue;
+  }
+
+  @Override protected void compute2() {
     keytmp = new byte[_keySize];
-    _counts = new long[keySize][256];
-    _fr = fr;
+    _counts = new long[_keySize][256];
+
     MoveByFirstByte.MSBNodeHeader[] MSBnodeHeader = new MoveByFirstByte.MSBNodeHeader[H2O.CLOUD.size()];
     _numRows =0;
     for (int n=0; n<H2O.CLOUD.size(); n++) {
       // Log.info("Getting MSB " + MSBvalue + " Node Header from node " + n + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
       // Log.info("Getting");
-      MSBnodeHeader[n] = DKV.getGet(MoveByFirstByte.getMSBNodeHeaderKey(_fr._key, MSBvalue, n));
+      MSBnodeHeader[n] = DKV.getGet(MoveByFirstByte.getMSBNodeHeaderKey(_fr._key, _MSBvalue, n));
       if (MSBnodeHeader[n]==null) continue;
       _numRows += ArrayUtils.sum(MSBnodeHeader[n]._MSBnodeChunkCounts);   // This numRows is split into nbatch batches on that node.
       // This header has the counts of each chunk (the ordered chunk numbers on that node)
     }
-    if (_numRows == 0) return;
+    if (_numRows == 0) { tryComplete(); return; }
 
     // Allocate final _o and _x for this MSB which is gathered together on this node from the other nodes.
-    int nbatch = (int) (_numRows -1) / batchSize +1;   // at least one batch.    TO DO:  as Arno suggested, wrap up into class for fixed width batching (to save espc overhead)
+    int nbatch = (int) (_numRows -1) / _batchSize +1;   // at least one batch.    TO DO:  as Arno suggested, wrap up into class for fixed width batching (to save espc overhead)
     int lastSize = (int) (_numRows - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize, too if happens to be exact multiple of batchSize)
     _o = new long[nbatch][];
     _x = new byte[nbatch][];
@@ -313,18 +317,18 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     for (int node=0; node<H2O.CLOUD.size(); node++) {
       // Log.info("Getting OX MSB " + MSBvalue + " batch 0 from node " + node + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
       // Log.info("Getting");
-      ox[node] = DKV.getGet(MoveByFirstByte.getNodeOXbatchKey(_fr._key, MSBvalue, node, /*batch=*/0));   // get the first batch for each node for this MSB
+      ox[node] = DKV.getGet(MoveByFirstByte.getNodeOXbatchKey(_fr._key, _MSBvalue, node, /*batch=*/0));   // get the first batch for each node for this MSB
     }
     int oxOffset[] = new int[H2O.CLOUD.size()];
     int oxChunkIdx[] = new int[H2O.CLOUD.size()];  // that node has n chunks and which of those are we currently on?
 
-    int targetBatch = 0, targetOffset = 0, targetBatchRemaining = batchSize;
+    int targetBatch = 0, targetOffset = 0, targetBatchRemaining = _batchSize;
 
-    for (int c=0; c<fr.anyVec().nChunks(); c++) {   // TO DO: put this into class as well, to ArrayCopy into batched
-      int fromNode = fr.anyVec().chunkKey(c).home_node().index();
+    for (int c=0; c<_fr.anyVec().nChunks(); c++) {   // TO DO: put this into class as well, to ArrayCopy into batched
+      int fromNode = _fr.anyVec().chunkKey(c).home_node().index();
       if (MSBnodeHeader[fromNode] == null) continue;
       int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[oxChunkIdx[fromNode]++];
-      int sourceBatchRemaining = batchSize - oxOffset[fromNode];    // at most batchSize remaining.  No need to actually put the number of rows left in here
+      int sourceBatchRemaining = _batchSize - oxOffset[fromNode];    // at most batchSize remaining.  No need to actually put the number of rows left in here
       if (sourceBatchRemaining <= numRowsToCopy) {
         if (targetBatchRemaining <= sourceBatchRemaining) {
           System.arraycopy(ox[fromNode]._o, oxOffset[fromNode], _o[targetBatch], targetOffset, targetBatchRemaining);
@@ -335,7 +339,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
           numRowsToCopy -= targetBatchRemaining;
           targetBatch++;
           targetOffset = 0;
-          targetBatchRemaining = batchSize;
+          targetBatchRemaining = _batchSize;
           assert targetBatchRemaining >= sourceBatchRemaining;
         }
         if (sourceBatchRemaining <= numRowsToCopy) {
@@ -353,7 +357,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
           // Log.info("Getting");
           ox[fromNode] = DKV.getGet(MoveByFirstByte.getNodeOXbatchKey(_fr._key, _MSBvalue, fromNode, ++oxBatchNum[fromNode]));
           oxOffset[fromNode] = 0;
-          sourceBatchRemaining = batchSize;
+          sourceBatchRemaining = _batchSize;
         }
         assert sourceBatchRemaining >= numRowsToCopy;
       }
@@ -366,7 +370,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
         numRowsToCopy -= targetBatchRemaining;
         targetBatch++;
         targetOffset = 0;
-        targetBatchRemaining = batchSize;
+        targetBatchRemaining = _batchSize;
         assert targetBatchRemaining >= numRowsToCopy;
       }
       if (numRowsToCopy > 0) {
@@ -403,25 +407,22 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     //_whichGroup = whichGroup;
     //_groups[_whichGroup] = new long[(int)Math.min(MAXVECLONG, len) ];   // at most len groups (i.e. all groups are 1 row)
     assert(_o != null);
-  }
-  @Override protected void compute2() {
-    if (_numRows != 0) {
-      run(0, _numRows, _keySize-1);  // if keySize is 6 bytes, first byte is byte 5
-      _counts = null;
-      keytmp = null;
-      _nGroup = null;
+    assert(_numRows > 0);
+    run(0, _numRows, _keySize-1);  // if keySize is 6 bytes, first byte is byte 5
+    _counts = null;
+    keytmp = null;
+    _nGroup = null;
 
-      // tell the world how many batches and rows for this MSB
-      OXHeader msbh = new OXHeader(_o.length, _numRows, _batchSize);
-      // Log.info("Putting MSB header for Frame " + _fr._key + " for MSB " + _MSBvalue);
+    // tell the world how many batches and rows for this MSB
+    OXHeader msbh = new OXHeader(_o.length, _numRows, _batchSize);
+    // Log.info("Putting MSB header for Frame " + _fr._key + " for MSB " + _MSBvalue);
+    // Log.info("Putting");
+    DKV.put(getSortedOXHeaderKey(_fr._key, _MSBvalue), msbh);
+    for (b=0; b<_o.length; b++) {
+      MoveByFirstByte.OXbatch tmp = new MoveByFirstByte.OXbatch(_o[b], _x[b]);
+      // Log.info("Putting OX header for Frame " + _fr._key + " for MSB " + _MSBvalue);
       // Log.info("Putting");
-      DKV.put(getSortedOXHeaderKey(_fr._key, _MSBvalue), msbh);
-      for (int b=0;b<_o.length; ++b) {
-        MoveByFirstByte.OXbatch ox = new MoveByFirstByte.OXbatch(_o[b], _x[b]);
-        // Log.info("Putting OX header for Frame " + _fr._key + " for MSB " + _MSBvalue);
-        // Log.info("Putting");
-        DKV.put(MoveByFirstByte.getSortedOXbatchKey(_fr._key, _MSBvalue, b), ox);  // the OXbatchKey's on this node will be reused for the new keys
-      }
+      DKV.put(MoveByFirstByte.getSortedOXbatchKey(_fr._key, _MSBvalue, b), tmp);  // the OXbatchKey's on this node will be reused for the new keys
     }
     tryComplete();
   }

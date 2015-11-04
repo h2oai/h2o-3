@@ -42,16 +42,22 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightFrame = rightFrame;
     _leftMSB = leftMSB;
     _rightMSB = rightMSB;
+    _leftFieldSizes = leftFieldSizes;
+    _rightFieldSizes = rightFieldSizes;
     _allLeft = allLeft;
-    _allRight = false;
+    _allRight = false;  // TODO: pass through
+  }
+
+  @Override
+  protected void compute2() {
     SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_leftFrame._key, _leftMSB));
-    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_rightFrame._key, _rightMSB));
     if (leftSortedOXHeader == null) {
-      if (_allRight) throw H2O.unimpl();  // TO DO pass through _allRight and implement
-      return;
+      if (_allRight) throw H2O.unimpl();  // TODO pass through _allRight and implement
+      tryComplete(); return;
     }
+    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_rightFrame._key, _rightMSB));
     if (rightSortedOXHeader == null) {
-      if (_allLeft == false) return;
+      if (_allLeft == false) { tryComplete(); return; }
       rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // enables general case code to run below without needing new special case code
     }
     // both left and right MSB have some data to match
@@ -82,19 +88,12 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     _rightN = rightSortedOXHeader._numRows;
 
-    //_leftNodeIdx = leftNodeIdx;
-    _leftFieldSizes = leftFieldSizes;
-    _rightFieldSizes = rightFieldSizes;
     _leftKeyNCol = _leftFieldSizes.length;
     _rightKeyNCol = _rightFieldSizes.length;
-    _leftKeySize = ArrayUtils.sum(leftFieldSizes);
-    _rightKeySize = ArrayUtils.sum(rightFieldSizes);
+    _leftKeySize = ArrayUtils.sum(_leftFieldSizes);
+    _rightKeySize = ArrayUtils.sum(_rightFieldSizes);
     _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
-    _allLeft = allLeft;
-  }
 
-  @Override
-  protected void compute2() {
     if ((_leftN != 0 || _allRight) && (_rightN != 0 || _allLeft)) {
       bmerge_r(-1, _leftN, -1, _rightN);
       if (_numRowsInResult > 0) createChunksInDKV();
