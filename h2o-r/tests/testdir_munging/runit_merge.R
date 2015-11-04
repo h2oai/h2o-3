@@ -1,3 +1,5 @@
+library(testthat)
+
 makeXY <- function(base, num.common.cols, all.match, duplicates.in.x, duplicates.in.y) {
     int_set          = -10000:10000
     str_set          = combn(LETTERS, 5, paste, collapse = "")
@@ -72,6 +74,53 @@ checkMerge <- function(x, y, by.x, by.y, all.x, all.y) {
     #print(h2o_hash_merge_result)
 
     base_merge_result = merge(x=as.data.frame(x), y=as.data.frame(y), by.x=by.x, by.y=by.y, all.x=all.x, all.y=all.y)
+
+    # check dimensions
+    base_rows = nrow(base_merge_result)
+    base_cols = ncol(base_merge_result)
+    h2o_radix_rows = nrow(h2o_radix_merge_result)
+    h2o_radix_cols = ncol(h2o_radix_merge_result)
+    #h2o_hash_rows = nrow(h2o_hash_merge_result)
+    #h2o_hash_cols = ncol(h2o_hash_merge_result)
+
+    rows_equal_radix = base_rows == h2o_radix_rows
+    if (!rows_equal_radix) {
+        print(paste0("Base and H2O (radix) merge results have different number of rows! Base rows: ",base_rows,",
+                     H2O (radix) rows: ", h2o_radix_rows))
+    }
+    expect_true(rows_equal_radix)
+
+    #rows_equal_hash = base_rows == h2o_hash_rows
+    #if (!rows_equal_hash) {
+    #    print(paste0("Base and H2O (hash) merge results have different number of rows! Base rows: ",base_rows,",
+    #                 H2O (hash) rows: ", h2o_hash_rows))
+    #}
+    #expect_true(rows_equal_hash)
+
+    cols_equal_radix = base_cols == h2o_radix_cols
+    if (!cols_equal_radix) {
+        print(paste0("Base and H2O (radix) merge results have different number of cols! Base cols: ",base_cols,",
+                     H2O (radix) cols: ", h2o_radix_cols))
+    }
+    expect_true(cols_equal_radix)
+
+    #cols_equal_hash = base_cols == h2o_hash_cols
+    #if (!cols_equal_hash) {
+    #    print(paste0("Base and H2O (hash) merge results have different number of cols! Base cols: ",base_cols,",
+    #                 H2O (hash) cols: ", h2o_hash_cols))
+    #}
+    #expect_true(cols_equal_hash)
+
+    # compare the base R result with the h2o result: shared columns
+    for (c in grep("shared",names(h2o_radix_merge_result))) {
+        h = as.data.frame(h2o_radix_merge_result[[c]])
+        b = base_merge_result[[c]]
+        diff = setdiff(h[[1]],b)
+        if (!(length(diff) == 0)) {
+            print(paste0("Shared column ",c," of the base R result and the h2o result differ by: ", diff))
+        }
+        expect_true(length(diff) == 0)
+    }
 }
 
 test.merge <- function() {
@@ -89,12 +138,11 @@ test.merge <- function() {
             dataset_params$categorical_fraction = dataset_params$categorical_fraction - 0.1
         }
     }
-    #dataset_params$missing_fraction = runif(1,min=0.0,max=0.5)
+    dataset_params$missing_fraction = runif(1,min=0.0,max=0.5)
     dataset_params$randomize = TRUE
     dataset_params$factors = sample(2:100,1)
     print("Dataset parameters:"); print(dataset_params)
     fr = do.call(h2o.createFrame, dataset_params)
-    print("nrow: "); print(nrow(fr))
 
     for (nc in 1:1) {
         for (am in c(TRUE, FALSE)) {
