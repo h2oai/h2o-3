@@ -61,7 +61,6 @@ class RadixCount extends MRTask<RadixCount> {
 
 class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   private transient long _counts[][];
-  long _MSBhist[];
   transient long _o[][][];  // transient ok because there is no reduce here between nodes, and important to save shipping back to caller.
   transient byte _x[][][];
   boolean _left;
@@ -78,7 +77,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
     //Log.info("Getting RadixCounts for column " + _col[0] + " from myself (node " + H2O.SELF + ") for Frame " + _frameKey );
     //Log.info("Getting");
     _counts = ((RadixCount.Long2DArray)DKV.getGet(RadixCount.getKey(_left, _col[0], H2O.SELF)))._val;   // get the sparse spine for this node, created and DKV-put above
-    _MSBhist = new long[256];  // total across nodes but retain original spine as we need that below
+    long _MSBhist[] = new long[256];  // total across nodes but retain original spine as we need that below
     int nc = _fr.anyVec().nChunks();
     for (int c = 0; c < nc; c++) {
       if (_counts[c]!=null) {
@@ -92,13 +91,14 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
               + " " + Arrays.toString(_MSBhist) + ")");
     }
-    System.out.println("_MSBhist with biggestBit " + _biggestBit + " ...");
+    System.out.println("_MSBhist on this node (biggestBit==" + _biggestBit + ") ...");
     int msb = 0;
     for (int m=0; m<16; m++) {
       for (int n=0; n<16; n++) System.out.print(_MSBhist[msb++] + " ");
       System.out.println("");
     }
     // shared between threads on the same node, all mappers write into distinct locations (no conflicts, no need to atomic updates, etc.)
+    System.out.print("Allocating _o and _x buckets on this node ready for split by MSB ... ");
     _o = new long[256][][];
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
     for (int c = 0; c < 256; c++) {
@@ -117,10 +117,11 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
       _o[c][b] = new long[lastSize];
       _x[c][b] = new byte[lastSize * _keySize];
     }
+    System.out.println("done");
 
     // TO DO: otherwise, expand width. Once too wide (and interestingly large width may not be a problem since small buckets won't impact cache),
     // start rolling up bins (maybe into pairs or even quads)
-
+    System.out.print("Columwise cumulate of chunk level MSB hists ... ");
     for (int h = 0; h < 256; h++) {
       long rollSum = 0;  // each of the 256 columns starts at 0 for the 0th chunk. This 0 offsets into x[MSBvalue][batch div][mod] and o[MSBvalue][batch div][mod]
       for (int c = 0; c < nc; c++) {
@@ -130,14 +131,22 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
         rollSum += tmp;
       }
     }
+    System.out.println("done");
     // NB: no radix skipping in this version (unlike data.table we'll use biggestBit and assume further bits are used).
   }
 
+
   @Override public void map(Chunk chk[]) {
+    System.out.println("Starting MoveByFirstByte.map() for chunk " + chk[0].cidx());
     long myCounts[] = _counts[chk[0].cidx()]; //cumulative offsets into o and x
-    if (myCounts == null || _o==null || _x==null) return;
+    if (myCounts == null) {
+      System.out.println("myCounts empty for chunk " + chk[0].cidx());
+      return;  // TODO delete ... || _o==null || _x==null) return;
+    }
 
     //int leftAlign = (8-(_biggestBit % 8)) % 8;   // only the first column is left aligned, currently. But they all could be for better splitting.
+
+    long t0 = System.nanoTime();
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       long thisx = chk[0].at8(r);  // - _colMin[0]) << leftAlign;  (don't subtract colMin because it unlikely helps compression and makes joining 2 compressed keys more difficult and expensive).
       int shift = _biggestBit-8;
@@ -164,8 +173,8 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
         }
       }
     }
+    System.out.println("MoveByFirstByte.map() for chunk " + chk[0].cidx() + " took : " + (System.nanoTime() - t0) / 1e9);
   }
-
 
   static H2ONode ownerOfMSB(int MSBvalue) {
     // TO DO: this isn't properly working for efficiency. This value should pick the value of where it is, somehow.
@@ -207,6 +216,8 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
 
   // Push o/x in chunks to owning nodes
   @Override protected void postLocal() {
+    System.out.println("Starting MoveByFirstByte.postLocal() ... ");
+    long t0 = System.nanoTime();
     int nc = _fr.anyVec().nChunks();
     for (int msb =0; msb <_o.length /*256*/; ++msb) {
       if(_o[msb] == null) continue;
@@ -225,7 +236,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
           j++;
         }
       }
-      assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
+      //assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
       MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
       //Log.info("Putting MSB node headers for Frame " + _frameKey + " for MSB " + msb);
       //Log.info("Putting msb " + msb + " on node " + H2O.SELF.index());
@@ -237,6 +248,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
         DKV.put(getNodeOXbatchKey(_left, msb, H2O.SELF.index(), b), ox);
       }
     }
+    System.out.println("took " + (System.nanoTime() - t0) / 1e9);
   }
 }
 
