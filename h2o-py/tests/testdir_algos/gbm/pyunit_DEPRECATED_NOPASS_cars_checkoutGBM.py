@@ -48,24 +48,15 @@ def cars_checkpoint():
     print "*** ntrees model 1: {0}".format(ntrees1)
     print "*** max_depth model 1: {0}".format(max_depth1)
     print "*** min_rows model 1: {0}".format(min_rows1)
-
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
-    model1 = H2OGradientBoostingEstimator(ntrees=ntrees1,
-                                          max_depth=max_depth1,
-                                          min_rows=min_rows1,
-                                          score_each_iteration=True,
-                                          distribution=distribution)
-    model1.train(x=predictors, y=response_col,training_frame=train,validation_frame=valid)
-
-    # model1 = h2o.gbm(x=train[predictors],
-    #                  y=train[response_col],
-    #                  ntrees=ntrees1,
-    #                  max_depth=max_depth1,
-    #                  min_rows=min_rows1,
-    #                  score_each_iteration=True,
-    #                  distribution=distribution,
-    #                  validation_x=valid[predictors],
-    #                  validation_y=valid[response_col])
+    model1 = h2o.gbm(x=train[predictors],
+                     y=train[response_col],
+                     ntrees=ntrees1,
+                     max_depth=max_depth1,
+                     min_rows=min_rows1,
+                     score_each_iteration=True,
+                     distribution=distribution,
+                     validation_x=valid[predictors],
+                     validation_y=valid[response_col])
 
     # save the model, then load the model
     model_path = h2o.save_model(model1, name="delete_model", force=True)
@@ -80,25 +71,16 @@ def cars_checkpoint():
     print "*** ntrees model 2: {0}".format(ntrees2)
     print "*** max_depth model 2: {0}".format(max_depth2)
     print "*** min_rows model 2: {0}".format(min_rows2)
-
-    model2 = H2OGradientBoostingEstimator(ntrees=ntrees2,
-                                          max_depth=max_depth2,
-                                          min_rows=min_rows2,
-                                          distribution=distribution,
-                                          score_each_iteration=True,
-                                          checkpoint=restored_model._id)
-    model2.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
-
-    # model2 = h2o.gbm(x=train[predictors],
-    #                  y=train[response_col],
-    #                  ntrees=ntrees2,
-    #                  max_depth=max_depth2,
-    #                  min_rows=min_rows2,
-    #                  distribution=distribution,
-    #                  score_each_iteration=True,
-    #                  validation_x=valid[predictors],
-    #                  validation_y=valid[response_col],
-    #                  checkpoint=restored_model._id)
+    model2 = h2o.gbm(x=train[predictors],
+                     y=train[response_col],
+                     ntrees=ntrees2,
+                     max_depth=max_depth2,
+                     min_rows=min_rows2,
+                     distribution=distribution,
+                     score_each_iteration=True,
+                     validation_x=valid[predictors],
+                     validation_y=valid[response_col],
+                     checkpoint=restored_model._id)
 
     # continue building the model, but with different number of trees
     ntrees3 = ntrees2 + 50
@@ -108,45 +90,28 @@ def cars_checkpoint():
     print "*** ntrees model 3: {0}".format(ntrees3)
     print "*** max_depth model 3: {0}".format(max_depth3)
     print "*** min_rows model 3: {0}".format(min_rows3)
-
-    model3 = H2OGradientBoostingEstimator(ntrees=ntrees3,
-                                          max_depth=max_depth3,
-                                          min_rows=min_rows3,
-                                          distribution=distribution,
-                                          score_each_iteration=True,
-                                          checkpoint=restored_model._id)
-    model3.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
-
-    # model3 = h2o.gbm(x=train[predictors],
-    #                  y=train[response_col],
-    #                  ntrees=ntrees3,
-    #                  max_depth=max_depth3,
-    #                  min_rows=min_rows3,
-    #                  distribution=distribution,
-    #                  score_each_iteration=True,
-    #                  validation_x=valid[predictors],
-    #                  validation_y=valid[response_col],
-    #                  checkpoint=restored_model._id)
+    model3 = h2o.gbm(x=train[predictors],
+                     y=train[response_col],
+                     ntrees=ntrees3,
+                     max_depth=max_depth3,
+                     min_rows=min_rows3,
+                     distribution=distribution,
+                     score_each_iteration=True,
+                     validation_x=valid[predictors],
+                     validation_y=valid[response_col],
+                     checkpoint=restored_model._id)
 
     # build the equivalent of model 2 in one shot
     print "\n*** Building the equivalent of model 2 (called model 4) in one shot:"
-
-    model4 = H2OGradientBoostingEstimator(ntrees=ntrees2,
-                                          max_depth=max_depth2,
-                                          min_rows=min_rows2,
-                                          distribution=distribution,
-                                          score_each_iteration=True)
-    model4.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
-
-    # model4 = h2o.gbm(x=train[predictors],
-    #                  y=train[response_col],
-    #                  ntrees=ntrees2,
-    #                  max_depth=max_depth2,
-    #                  min_rows=min_rows2,
-    #                  distribution=distribution,
-    #                  score_each_iteration=True,
-    #                  validation_x=valid[predictors],
-    #                  validation_y=valid[response_col])
+    model4 = h2o.gbm(x=train[predictors],
+                     y=train[response_col],
+                     ntrees=ntrees2,
+                     max_depth=max_depth2,
+                     min_rows=min_rows2,
+                     distribution=distribution,
+                     score_each_iteration=True,
+                     validation_x=valid[predictors],
+                     validation_y=valid[response_col])
 
     print "\n*** Model Summary for model 2:"
     print model2.summary()
