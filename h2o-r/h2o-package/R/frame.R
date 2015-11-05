@@ -63,8 +63,8 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
 # GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
 .nodeFinalizer <- function(x) {
   eval <- attr(x, "eval")
-  cat("=== Finalizer on ",attr(x, "id"),"\n")
   if( is.logical(eval) && eval ) {
+    #cat("=== Finalizer on ",attr(x, "id"),"\n")
     .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), method = "POST")
   }
 }
@@ -372,7 +372,7 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
 #' h2o.init()
 #'
 #' # Create some random data
-#' myframe = h2o.createFrame('framekey', rows = 20, cols = 5,
+#' myframe = h2o.createFrame(rows = 20, cols = 5,
 #'                          seed = -12301283, randomize = TRUE, value = 0,
 #'                          categorical_fraction = 0.8, factors = 10, real_range = 1,
 #'                          integer_fraction = 0.2, integer_range = 10,

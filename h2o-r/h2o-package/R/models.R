@@ -315,6 +315,11 @@ h2o.getFutureModel <- function(object) {
                           }
                           mapping <- .type.map[paramDef$type,]
                           type <- mapping[1L, 1L]
+                          # Note: we apply this transformatio also for types 
+                          # reported by the backend as scalar because of PUBDEV-1955
+                          if (is.list(hv)) {
+                            hv <- as.vector(hv, mode=type)
+                          }
                           # Force evaluation of frames and fetch frame_id as
                           # a side effect
                           if (is.Frame(hv) )
@@ -2025,7 +2030,6 @@ h2o.tabulate <- function(data, x, y,
   parms$nbins_response <- nbins_y
 
   res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 99, page = "Tabulate", .params = parms)
-  print(res)
   count_table <- res$count_table
   response_table <- res$response_table
   out <- list(count_table = count_table, response_table = response_table, cols = args$cols)

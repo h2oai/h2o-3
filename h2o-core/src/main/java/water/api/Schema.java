@@ -658,7 +658,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     if (fclz.equals(int.class)) return parseInteger(s, int.class);
     if (fclz.equals(long.class)) return parseInteger(s, long.class);
     if (fclz.equals(short.class)) return parseInteger(s, short.class);
-    if (fclz.equals(boolean.class)) return Boolean.valueOf(s); // TODO: loosen up so 1/0 work?
+    if (fclz.equals(boolean.class)) {
+      if (s.equals("0")) return Boolean.FALSE;
+      if (s.equals("1")) return Boolean.TRUE;
+      return Boolean.valueOf(s);
+    }
     if (fclz.equals(byte.class)) return parseInteger(s, byte.class);
     if (fclz.equals(double.class)) return Double.valueOf(s);
     if (fclz.equals(float.class)) return Float.valueOf(s);
