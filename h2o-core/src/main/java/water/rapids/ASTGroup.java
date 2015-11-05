@@ -189,6 +189,7 @@ class ASTGroup extends ASTPrim {
     long start = System.currentTimeMillis();
     GBTask p1 = new GBTask(gbCols, aggs).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - start)/1000. + " (s)");
+    System.out.print(p1.profString());
     return p1._gss;
   }
 
@@ -253,7 +254,7 @@ class ASTGroup extends ASTPrim {
     final IcedHashMap<G,String> _gss; // Shared per-node, common, racy
     private final int[] _gbCols; // Columns used to define group
     private final AGG[] _aggs;   // Aggregate descriptions
-    GBTask(int[] gbCols, AGG[] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap<>(); }
+    GBTask(int[] gbCols, AGG[] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap<>(); setProfile(true); }
     @Override public void map(Chunk[] cs) {
       // Groups found in this Chunk
       IcedHashMap<G,String> gs = new IcedHashMap<>();
