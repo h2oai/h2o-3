@@ -453,7 +453,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       for (int col=0; col<_fr.numCols(); col++) {
         Vec v = _fr.vec(col);
         for (int row=0; row<_rows.length; row++) {
-          assert v.chunkKey(v.chunkForRow(_rows[row]).cidx()).home();
+          // assert v.chunkKey(v.chunkForRow(_rows[row]).cidx()).home();  Passes but very deep and expensive bin search on espc here so important to comment out
           //nc.addNum(v.at(_rows[row]));
           //rawVals[row] = v.at(_rows[row]); //local reads, random access //TODO: use chunk accessors by using indirection array
           _chk[col][row] = v.at(_rows[row]);
