@@ -62,26 +62,23 @@ public class ASTImpute extends ASTPrim {
     if( by.isEmpty() ) {        // Empty group?  Skip the grouping work
       double res = Double.NaN;
       if( method instanceof ASTMean   ) res = vec.mean();
-      if( method instanceof ASTMedian ) res = ASTMedian.median(stk.track(new Frame(vec)),combine);
+      if( method instanceof ASTMedian ) res = ASTMedian.median(new Frame(vec), combine);
       if( method instanceof ASTMode   ) res = ASTMode.mode(vec);
       (group_impute_map = new IcedHashMap<>()).put(new ASTGroup.G(0,null).fill(0,null,new int[0]),new IcedDouble(res));
 
     } else {                    // Grouping!
       // Build and run a GroupBy command
       AST ast_grp = new ASTGroup();
-      Frame imputes = ast_grp.apply(env,stk,new AST[]{ast_grp,new ASTFrame(fr),by,new ASTNumList(),method,new ASTNumList(col,col+1),new ASTStr("rm")}).getFrame();
+      Frame imputes = ast_grp.apply(env,stk,new AST[]{ast_grp,new ASTFrame(fr),by,method,new ASTNumList(col,col+1),new ASTStr("rm")}).getFrame();
      
       // Convert the Frame result to a group/imputation mapping
-      final int[] bycols = ArrayUtils.seq(0,imputes.numCols()-1);
+      final int[] bycols = ArrayUtils.seq(0, imputes.numCols() - 1);
       group_impute_map = new Gather(bycols).doAll(imputes)._group_impute_map;
       imputes.delete();
     }
 
-    // In not in-place, return a new frame which is the old frame cloned, but
-    // for the imputed column which is a copy.
-    // TODO: Note major COW optimization opportunity
-    fr = new Frame(fr);
-    stk.track(fr).replace(col,vec.makeCopy());
+    // Copy the target column as needed
+    env._ses.copyOnWrite(fr,new int[]{col});
 
     // Now walk over the data, replace NAs with the imputed results
     final IcedHashMap<ASTGroup.G,IcedDouble> final_group_impute_map = group_impute_map;

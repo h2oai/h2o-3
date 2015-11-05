@@ -15,6 +15,9 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+from h2o.estimators.kmeans import H2OKMeansEstimator
+from h2o.transforms.decomposition import H2OPCA
+from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 import urllib2
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -132,18 +135,27 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
     elif algo == "random_forest": model = H2ORandomForestEstimator(**kwargs)
     elif algo == "deeplearning": model = H2ODeepLearningEstimator(**kwargs)
     elif algo == "glm": model = H2OGeneralizedLinearEstimator(**kwargs)
+    elif algo == "naive_bayes": model = H2ONaiveBayesEstimator(**kwargs)
+    elif algo == "kmeans": model = H2OKMeansEstimator(**kwargs)
+    elif algo == "pca": model = H2OPCA(**kwargs)
     else: raise(ValueError, "algo {0} is not supported".format(algo))
-    model.train(x=x, y=y, training_frame=train)
+    if algo == "kmeans" or algo == "pca": model.train(x=x, training_frame=train)
+    else: model.train(x=x, y=y, training_frame=train)
     print model
 
+    # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
+    # TODO: clients should extract Java class name from header.
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    pojoname = regex.sub("_",model._id)
+
     print "Downloading Java prediction model code from H2O"
-    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",model._id))
+    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",pojoname))
     os.mkdir(tmpdir)
     h2o.download_pojo(model,path=tmpdir)
     h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
     print "h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar)
-    java_file = os.path.join(tmpdir,model._id+".java")
+    java_file = os.path.join(tmpdir,pojoname+".java")
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
     print "java code saved in {0}".format(java_file)
 
@@ -180,7 +192,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", model._id,
+                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", pojoname,
                     "--input", in_csv, "--output", out_pojo_csv]
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
@@ -322,7 +334,7 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
         if random.randint(0,1): grid_space['activation'] = \
             random.sample(["Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "MaxoutWithDropout"],
                           random.randint(2,3))
-        if random.randint(0,1): grid_space['epochs'] = random.sample(range(1,10),random.randint(2,3))
+        if random.randint(0,1): grid_space['l2'] = [0.001*random.random() for r in range(random.randint(2,3))]
         grid_space['distribution'] = random.sample(['bernoulli','multinomial','gaussian','poisson','tweedie','gamma'],1)
         return grid_space
     elif algo == "naiveBayes":
@@ -356,8 +368,15 @@ def expect_model_param(models, attribute_name, expected_values):
     expected_values_len = len(expected_values)
     assert actual_values_len == expected_values_len, "Expected values len: {0}. Actual values len: " \
                                                      "{1}".format(expected_values_len, actual_values_len)
-    diff = set(actual_values) - set(expected_values)
-    assert len(diff) == 0, "Difference between actual and expected values: {0}".format(diff)
+    actual_values = sorted(actual_values)
+    expected_values = sorted(expected_values)
+    for i in range(len(actual_values)):
+        if isinstance(actual_values[i], float):
+            assert abs(actual_values[i]-expected_values[i]) < 1e-5, "Too large of a difference betewen actual and " \
+                                                                "expected value. Actual value: {}. Expected value: {}"\
+                                                                .format(actual_values[i], expected_values[i])
+        else:
+            assert actual_values[i] == expected_values[i]
 
 def temp_ctr():  return H2OFrame.temp_ctr()
 def rest_ctr():  return h2o.H2OConnection.rest_ctr()

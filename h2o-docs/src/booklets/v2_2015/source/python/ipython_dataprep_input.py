@@ -129,3 +129,8 @@ bb_df = df12.interaction(['B','B'], pairwise=False, max_factors=2, min_occurrenc
 bb_df
 df15 = df12.cbind(bb_df)
 df15
+
+#### Saving and loading files section
+df = h2o.upload_file("/pathToFile/fileName")
+
+df = h2o.import_file("/pathToFile/fileName")

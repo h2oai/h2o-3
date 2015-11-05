@@ -29,45 +29,49 @@ In [4]: iris_data_path = h2o.system_file("iris.csv") # load demonstration data
 
 In [5]: iris_df = h2o.import_file(path=iris_data_path)
 
-Parse Progress: [##################################################] 100%
+Parse Progress: [###############################] 100%
 Imported /Users/hank/PythonEnvs/h2obleeding/bin/../h2o_data/iris.csv. Parsed 150 rows and 5 cols
 
 In [6]: iris_df.describe()
 Rows:150 Cols:5
 
 Chunk compression summary:
-chunk_type    chunk_name        count    count_percentage    size    size_percentage
-------------  ----------------  -------  ------------------  ------  -----------------
-C1            1-Byte Integers   1        20                  218  B  18.8908
-C1S           1-Byte Fractions  4        80                  936  B  81.1092
+chunktype  chunkname  count  count_%  size  size_%
+---------  ---------  -----  -------  ----  ------
+1-Byte Int   C1         1       20    218B  18.890
+1-Byte Flt   C2         4       80    936B  81.109
 
 Frame distribution summary:
-                 size    number_of_rows    number_of_chunks_per_column    number_of_chunks
----------------  ------  ----------------  -----------------------------  ------------------
-127.0.0.1:54321  1.1 KB  150               1                              5
-mean             1.1 KB  150               1                              5
-min              1.1 KB  150               1                              5
-max              1.1 KB  150               1                              5
+                 size  rows  chunks/col  chunks
+---------------  ----  ----  ----------  ------
+127.0.0.1:54321  1.1KB  150       1        5
+mean             1.1KB  150       1        5
+min              1.1KB  150       1        5
+max              1.1KB  150               1                              5
 stddev           0  B    0                 0                              0
 total            1.1 KB  150               1                              5
 
-In [7]: gbm_regessor = H2OGradientBoostingEstimator(distribution="gaussian", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
+In [7]: gbm_regressor = H2OGradientBoostingEstimator(distribution="gaussian", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
 
-In [8]: gbm_regessor.train(x=range(1,iris_df.ncol), y=0, training_frame=iris_df)
+In [8]: gbm_regressor.train(x=range(1,iris_df.ncol), y=0, training_frame=iris_df)
 
-gbm Model Build Progress: [##################################################] 100%
+gbm Model Build Progress: [#####################] 100%
 
-In [9]: gbm_regessor
+In [9]: gbm_regressor
 Out[9]: Model Details
 =============
-H2OGradientBoostingEstimator :  Gradient Boosting Machine
+H2OGradientBoostingEstimator: Gradient Boosting Machine
 Model Key:  GBM_model_python_1446220160417_2
 
 Model Summary:
-    number_of_trees    model_size_in_bytes    min_depth    max_depth    mean_depth    min_leaves    max_leaves    mean_leaves
---  -----------------  ---------------------  -----------  -----------  ------------  ------------  ------------  -------------
-    10                 1535                   3            3            3             7             8             7.8
-
+    number_of_trees           |         10
+    model_size_in_bytes       |         1535
+    min_depth                 |         3
+    max_depth                 |         3
+    mean_depth                |         3
+    min_leaves                |         7
+    max_leaves                |         8
+    mean_leaves               |         7.8
 
 ModelMetricsRegression: gbm
 ** Reported on train data. **

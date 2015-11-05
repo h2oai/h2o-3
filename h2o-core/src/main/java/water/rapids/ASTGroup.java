@@ -14,14 +14,13 @@ import water.util.Log;
 import java.util.Arrays;
 
 /** GroupBy
- *  Group the rows of 'data' by unique combinations of '[group-by-cols]',
- *  ordering the results by [order-by-cols].  Apply function 'fcn' to a Frame
- *  for each group, with a single column argument, and a NA-handling flag.
- *  Sets of tuples {fun,col,na} are allowed.
+ *  Group the rows of 'data' by unique combinations of '[group-by-cols]'.
+ *  Apply function 'fcn' to a Frame for each group, with a single column
+ *  argument, and a NA-handling flag.  Sets of tuples {fun,col,na} are allowed.
  *
  *  'fcn' must be a one of a small set of functions, all reductions, and 'GB'
  *  returns a row per unique group, with the first columns being the grouping
- *  column, and the last column the reduction result(s).
+ *  columns, and the last column(s) the reduction result(s).
  *
  *  The returned column(s).
  *  
@@ -54,13 +53,21 @@ class ASTGroup extends ASTPrim {
     var() {
       @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; d0s[1]+=d1; }
       @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
-      @Override double postPass( double ds[], long n) { return (ds[0] - ds[1]*ds[1]/n)/n; }
+      @Override double postPass( double ds[], long n) { 
+        double numerator = ds[0] - ds[1]*ds[1]/n;
+        if (Math.abs(numerator) < 1e-5) numerator = 0;
+        return numerator/(n-1); 
+      }
       @Override double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
     },
     sdev() {
       @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; d0s[1]+=d1; }
       @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
-      @Override double postPass( double ds[], long n) { return Math.sqrt((ds[0] - ds[1]*ds[1]/n)/n); }
+      @Override double postPass( double ds[], long n) { 
+        double numerator = ds[0] - ds[1]*ds[1]/n;
+        if (Math.abs(numerator) < 1e-5) numerator = 0;
+        return Math.sqrt(numerator/(n-1)); 
+      }
       @Override double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
     },
     min() { 
@@ -88,25 +95,21 @@ class ASTGroup extends ASTPrim {
     double[] initVal(int maxx) { return new double[]{0}; }
   }
 
-  @Override int nargs() { return -1; } // (GB data [group-by-cols] [order-by-cols] {fcn col "na"}...)
-  @Override
-  public String[] args() { return new String[]{"..."}; }
+  @Override int nargs() { return -1; } // (GB data [group-by-cols] {fcn col "na"}...)
+  @Override public String[] args() { return new String[]{"..."}; }
   @Override public String str() { return "GB"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 
     ASTNumList groupby = check(ncols, asts[2]);
-    int[] gbCols = groupby.expand4();
-
-    ASTNumList orderby = check(ncols, asts[3]);
-    final int[] ordCols = orderby.expand4();
+    final int[] gbCols = groupby.expand4();
 
     // Count of aggregates; knock off the first 4 ASTs (GB data [group-by] [order-by]...),
     // then count by triples.
-    int naggs = (asts.length-4)/3;
+    int naggs = (asts.length-3)/3;
     final AGG[] aggs = new AGG[naggs];
-    for( int idx = 4; idx < asts.length; idx += 3 ) {
+    for( int idx = 3; idx < asts.length; idx += 3 ) {
       Val v = asts[idx].exec(env);
       String fn = v instanceof ValFun ? v.getFun().str() : v.getStr();
       FCN fcn = FCN.valueOf(fn);
@@ -116,7 +119,7 @@ class ASTGroup extends ASTPrim {
       if( fcn==FCN.mode && !fr.vec(agg_col).isCategorical() )
         throw new IllegalArgumentException("Mode only allowed on categorical columns");
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
-      aggs[(idx-4)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
+      aggs[(idx-3)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
     }
 
     // do the group by work now
@@ -124,13 +127,13 @@ class ASTGroup extends ASTPrim {
     final G[] grps = gss.keySet().toArray(new G[gss.size()]);
 
     // apply an ORDER by here...
-    if( ordCols.length > 0 )
+    if( gbCols.length > 0 )
       Arrays.sort(grps,new java.util.Comparator<G>() {
           // Compare 2 groups.  Iterate down _gs, stop when _gs[i] > that._gs[i],
           // or _gs[i] < that._gs[i].  Order by various columns specified by
-          // _orderByCols.  NaN is treated as least
+          // gbCols.  NaN is treated as least
           @Override public int compare( G g1, G g2 ) {
-            for( int i : ordCols ) {
+            for( int i=0; i<gbCols.length; i++ ) {
               if(  Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i]) ) return -1;
               if( !Double.isNaN(g1._gs[i]) &&  Double.isNaN(g2._gs[i]) ) return  1;
               if( g1._gs[i] != g2._gs[i] ) return g1._gs[i] < g2._gs[i] ? -1 : 1;
@@ -172,9 +175,9 @@ class ASTGroup extends ASTPrim {
     else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._v.getNum());
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     if( dim.isEmpty() ) return dim; // Allow empty
-    if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&
-        !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
-      throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
+    for( int col : dim.expand4() )
+      if( !(0 <= col && col <  dstX) )
+        throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
     return dim;
   }
 
@@ -186,6 +189,7 @@ class ASTGroup extends ASTPrim {
     long start = System.currentTimeMillis();
     GBTask p1 = new GBTask(gbCols, aggs).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - start)/1000. + " (s)");
+    System.out.print(p1.profString());
     return p1._gss;
   }
 
@@ -250,7 +254,7 @@ class ASTGroup extends ASTPrim {
     final IcedHashMap<G,String> _gss; // Shared per-node, common, racy
     private final int[] _gbCols; // Columns used to define group
     private final AGG[] _aggs;   // Aggregate descriptions
-    GBTask(int[] gbCols, AGG[] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap<>(); }
+    GBTask(int[] gbCols, AGG[] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap<>(); setProfile(true); }
     @Override public void map(Chunk[] cs) {
       // Groups found in this Chunk
       IcedHashMap<G,String> gs = new IcedHashMap<>();

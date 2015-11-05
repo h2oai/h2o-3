@@ -51,6 +51,14 @@ public interface JCodeSB<T extends JCodeSB> {
   /* Append Java string - escape all " and \ */
   T pj(String s);
 
+  /** Append reference to object's field
+   *
+   * @param objectName  name of object
+   * @param fieldName  field name to reference
+   * @return
+   */
+  T pj(String objectName, String fieldName);
+
   T p(IcedBitSet ibs);
 
   /** Increase indentation counter */

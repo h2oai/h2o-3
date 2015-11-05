@@ -119,6 +119,10 @@ final public class H2O {
             "          The directory where H2O writes logs to disk.\n" +
             "          (This usually has a good default that you need not change.)\n" +
             "\n" +
+            "    -log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>\n" +
+            "          Write messages at this logging level, or above.  Default is INFO." +
+            "\n" +
+            "\n" +
             "    -flow_dir <server side directory or HDFS directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
             defaultFlowDirMessage +

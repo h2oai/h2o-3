@@ -2,10 +2,116 @@
 
 ##H2O
 
-###Slotnick (3.4.0.1)
+
+###Tibshirani (3.6.0.2) - 11/5/15
 
 ####New Features
 The following changes represent features that have been added since the previous release:
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/93cd9246762cab74008ae188e9dcad552978875a): Added support for grid search
+- [PUBDEV-2272](https://0xdata.atlassian.net/browse/PUBDEV-2272): Implemented GLRM grid search in R and Python
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ada571ee5bfc7d8e140ab3fd3d416a8246909201): PUBDEV-2289: Enabled early convergence-based stopping by default for Deep Learning
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/514aa26de192821f7f5c780caed561f2689761ab): Added L1+LBFGS solver for multinomial GLM
+
+#####Python 
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/33fdf12410bbe0fc294a848a6b37719fa05e6f9a): PUBDEV-2289: Added Python API for convergence-based stopping
+
+
+#####R
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1f9dbffbea6f648717889064a9b612ee0fbbd3ab): Added `.Last` to `Delete InitID`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/723d552f7f1a9977c6fc837704b73cf1b85f0524): PUBDEV-2289: Enabled convergence-based early stopping for R API of Deep Learning
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6e0c3575c2d5f07fcc9dacf51f76ec83279d1783): Enable grid search for Deep Learning parameters `overwrite_with_best_model`, `momentum_ramp`, `elastic_averaging`, `elastic_averaging_moving_rate`, & `elastic_averaging_regularization`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e69a8a5da0a738b1fa46fac5614171269e042f5a): PUBDEV-2289: Stopping tolerance and stopping metric are no longer hidden if `stopping_rounds` is 0
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/514adb7bd456bc2d0ed08eb62db450de3524b935): Added checks to verify the mean, median, nrow, var, and sd are calculated correctly in `groupby`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c2095f7ae5fafcb7e1bcc88c314005886725aba8): `mean` and `sd` now return lists
+
+
+
+#####Python 
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/3f0d0cb230aa047295524043dae46cc9cb19c7c5): [PUBDEV-2257] H2O now gives users [row x col] of Frame in `__str__`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/cde0510be3adc418b3595989761f3f5cdf513886): `sd`/`var` is now sampled for `group_by`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/30743335bf914af11d787bf9ec1961ac51ebde14): Parameter checking is now split between float and strings/unicode
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ba630573dbf4cb571302710698664f4fda51f0b6): H2O now only wipes `src._ex` if `src_in_self`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ebc53e6860028be1bcf220c9898863da0f915943): Refactored default arg handling in `astfun`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e9950c6ea7abaac46c9670ba02016aef529a14ec): Added new parameters to estimators
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fbfac8c6ed86cafe4b5f0b78f83e9c9c4e4221f4): Added session start/end; Python now ends the session on exit
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c73b988ebf30168ddb6c76b6ed51a3c011b6504a): `src` and `self` types are now checked for `None`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/94a90ea8b7b859f2909a0eadf37b5949e722f2ea): H2O now passes caches through all prefix ops
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/edd0c7feffb32249a1ba0e596685483e81bfd34a): H2O now pushes cached types, names, and ncols forward if possible
+
+#####R
+
+- [PUBDEV-1951](https://0xdata.atlassian.net/browse/PUBDEV-1951): Removed the R backward compatibility shim
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c7652e8c93384b1be38fb88da18e65f954b6373c): Added [rows x cols] to `print.Frame` in R
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a82297bd1f6c0e08722ac6671797fa0e41db77a8): `sd` can now alias `sdev` in `group_by`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/5c9bd93ec15f65658809def2634b13bd788ee7a1): Changed `.eval.driver` to `.fetch.data` in `h2o.getFrame`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e9608bfc696e1a64d9becf865571fe11da21ac93): Removed debug printing of `==Finalizer on` in R
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/d6bc387a3d0d5f830f053a8384062eccb8b96d74): Added metalearning function
+
+
+#####System 
+
+- [HEXDEV-475](https://0xdata.atlassian.net/browse/HEXDEV-475): Added EasyPOJO comments and improvements
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ba75b35fbc7498b3d0d3c0b1d362a44dba6f31bb): [PUBDEV-2204] Enabled `Vec#toCategoricalVec` to convert string columns to categorical columns
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/613e121e9ab13f32df4beffce1c2139607b5f64d): `apply` now works in 
+
+
+####Bug Fixes
+
+The following changes resolve incorrect software behavior: 
+
+
+#####Algorithms 
+
+- [PUBDEV-2317](https://0xdata.atlassian.net/browse/PUBDEV-2317): PCA: Could not compile POJO
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/545c00f9913b0fc586490ff391759f106228c121): [PUBDEV-2317] Incorrect PCA code was generated
+
+
+#####Python
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fc7e364c6c4cab889cbb5c8cab223ab092a301c5): PUBDEV-2297: Python was not updating exception on job update
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b5f81871265d5c3cab4788313a719460dff32dbc): Added missing arguments to DRF/GBM/DL in scikit-learn-like API
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fbe8275e1aec2ca930373fc18d65b11e706b88b5): Fixed `impute` in Python
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ce343692ce2382e789959e717bf7a3996b5d9fda): Restored `ASTRename` 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f55dc318d74352333c7f2ec4f54fffad3bb49529): Fixed reference to `_quoted` in H2O module
+
+#####R
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/cc34b88ff322ec829f3d52dca0d03b2c658dd6d6): [PUBDEV-2301, PUBDEV-2314] Hidden grid parameter was passed incorrectly from R
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1ac19955ca1b0ce72e794542d58b4625affae525): H2O now uses deep copy when using `assign` from one global to another 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/a0300b0b519d06707598a31cf8aaf168835f869f): Fixed `getFrame` and directory `unlink`
+
+
+#####System
+
+- [PUBDEV-1824](https://0xdata.atlassian.net/browse/PUBDEV-1824): `h2o.init()` failed to launch on the Docker image
+- [PUBDEV-2043](https://0xdata.atlassian.net/browse/PUBDEV-2043):  Deep Learning generated an assertion error
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/c3544016927d93695bed20969d8588f159b5797d): Fixed rm handling of non-frames
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/2285a7c89effd9c9be8d45b5899c7463c335006f): Fixed `log_level`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f0f3559bc00e9f1ef264138db75b3beade32d066): Fixed eq2 slot assign
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/150a29fce82f1e0c1450b0c653342fbdfabf326f): Fixed a bug found during benchmarking for small data
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/3097a0754b6f49a7358a5ea3a8150606f36d5172): PUBDEV-2295: User-given weights were accidentally passed to N-fold CV models
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/91d141f5dd574293ecce6336365ec56fb8007a2d): Fixed NPE in Grid Schema
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/41bf4a3c164734d1dd6d6ca010b1a3eac313cfdc): PUBDEV-2289: Convergence checks are now numerically stable
+
+---
+
+###Slotnick (3.4.0.1)
+
+####New Features
 
 #####API
 
@@ -55,7 +161,6 @@ The following changes represent features that have been added since the previous
 
 ####Enhancements
 
-The following changes are improvements to existing features (which includes changed default values):
 
 #####Algorithms
 
@@ -181,7 +286,6 @@ The following changes are improvements to existing features (which includes chan
 
 ####Bug Fixes
 
-The following changes are to resolve incorrect software behavior: 
 
 #####Algorithms
 

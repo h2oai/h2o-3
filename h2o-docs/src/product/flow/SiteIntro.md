@@ -81,10 +81,13 @@ If you've used previous versions of H2O, the following links will help guide you
 <a name="OS"></a>
 ##Enterprise Users
 
-If you're considering using H2O in an enterprise environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop, Kerberos, and EC2 (AWS). For more information, refer to the following links. For additional sales or marketing assistance, please email [sales@h2o.ai](mailto:sales@h2o.ai). 
+If you're considering using H2O in an enterprise environment, you'll be happy to know that the H2O platform is supported on all major Hadoop distributions including Cloudera Enterprise, Hortonworks Data Platform and the MapR Apache Hadoop Distribution. 
+
+H2O can be deployed in-memory directly on top of existing Hadoop clusters without the need for data transfers, allowing for unmatched speed and ease of use. To ensure the integrity of data stored in Hadoop clusters, the H2O platform supports native integration of the Kerberos protocol. 
+
+For additional sales or marketing assistance, please email [sales@h2o.ai](mailto:sales@h2o.ai). 
 
 - <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
-
 
 - <a href="http://h2o.ai/enterprise-edition/" target="_blank">H2O Enterprise Edition</a>: This web page describes the benefits of H2O Enterprise Edition. 
  
@@ -117,6 +120,7 @@ Sparkling Water is a gradle project with the following submodules:
 - Examples: Application, demos, examples
 - ML: Implementation of MLLib pipelines for H2O algorithms
 - Assembly: Creates "fatJar" composed of all other modules
+- py: Implementation of (h2o) Python binding to Sparkling Water
 
 The best way to get started is to modify the core module or create a new module, which extends a project. 
 
@@ -127,12 +131,9 @@ Sparkling Water is versioned according to the Spark versioning:
 - Use [Sparkling Water 1.2](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.2/6/index.html) for Spark 1.2
 - Use [Sparkling Water 1.3](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.3/7/index.html) for Spark 1.3+
 - Use [Sparkling Water 1.4](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.4/3/index.html) for Spark 1.4
+- Use [Sparkling Water 1.5](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html) for Spark 1.5
 
 ###Getting Started with Sparkling Water
-
-The following video provides step-by-step instructions on how to start H2O using Sparkling Water:
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ypka6eX1G14?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
 
 - <a href="http://h2o.ai/download/" target="_blank">Download Sparkling Water</a>: Go here to download Sparkling Water. 
 

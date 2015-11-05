@@ -12,5 +12,8 @@ air_test_hex  = airlines_hex[r  >= 0.9]
 
 myX = ["DayofMonth", "DayOfWeek"]
 
-air_model = H2OGradientBoostingEstimator(distribution='bernoulli', ntrees=100, max_depth=4, learn_rate=0.1)
-air_model.train(x=myX, y="IsDepDelayed",training_frame=air_train_hex)
+air_model = H2OGradientBoostingEstimator(
+               distribution='bernoulli', ntrees=100,
+               max_depth=4, learn_rate=0.1)
+air_model.train(x=myX, y="IsDepDelayed",
+                training_frame=air_train_hex)

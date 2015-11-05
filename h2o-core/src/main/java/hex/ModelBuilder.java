@@ -371,9 +371,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Training/Validation share the same data, but will have exclusive weights
       cvTrain[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
+      if (origWeightsName!=null) cvTrain[i].remove(origWeightsName);
       cvTrain[i].add(weightName, weights[2*i]);
       DKV.put(cvTrain[i]);
       cvValid[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
+      if (origWeightsName!=null) cvValid[i].remove(origWeightsName);
       cvValid[i].add(weightName, weights[2*i+1]);
       DKV.put(cvValid[i]);
     }
@@ -912,8 +914,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_stopping_tolerance", "Stopping tolerance must be < 1.");
     }
     if (_parms._stopping_rounds == 0) {
-      hide("_stopping_metric", "Stopping metric is ignored for _stopping_rounds=0.");
-      hide("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
+      if (_parms._stopping_metric != ScoreKeeper.StoppingMetric.AUTO)
+        warn("_stopping_metric", "Stopping metric is ignored for _stopping_rounds=0.");
+      if (_parms._stopping_tolerance != _parms.defaultStoppingTolerance())
+        warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
     } else {

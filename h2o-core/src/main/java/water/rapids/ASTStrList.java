@@ -97,11 +97,9 @@ class ASTAsCharacter extends ASTPrim {
 
 /** Convert to a factor/categorical */
 class ASTAsFactor extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (as.factor col)
-  @Override
-  public String str() { return "as.factor"; }
+  @Override public String str() { return "as.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
     Vec[] nvecs = new Vec[ary.numCols()];

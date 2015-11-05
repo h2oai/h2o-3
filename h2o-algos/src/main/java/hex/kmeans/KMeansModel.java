@@ -144,32 +144,41 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
                                              CodeGeneratorPipeline classCtx,
                                              CodeGeneratorPipeline fileCtx,
                                              final boolean verboseCode) {
+    // This is model name
+    final String mname = JCodeGen.toJavaId(_key.toString());
+
     if(_parms._standardize) {
-      classCtx.add(new CodeGenerator() {
+      fileCtx.add(new CodeGenerator() {
         @Override
         public void generate(JCodeSB out) {
-          JCodeGen.toStaticVar(out, "MEANS", _output._normSub,
-                               "Column means of training data");
-          JCodeGen.toStaticVar(out, "MULTS", _output._normMul,
-                               "Reciprocal of column standard deviations of training data");
-          JCodeGen.toStaticVar(out, "CENTERS", _output._centers_std_raw,
-                               "Normalized cluster centers[K][features]");
+          JCodeGen.toClassWithArray(out, null, mname + "_MEANS", _output._normSub,
+                                    "Column means of training data");
+          JCodeGen.toClassWithArray(out, null, mname + "_MULTS", _output._normMul,
+                                    "Reciprocal of column standard deviations of training data");
+          JCodeGen.toClassWithArray(out, null, mname + "_CENTERS", _output._centers_std_raw,
+                                    "Normalized cluster centers[K][features]");
         }
       });
 
       // Predict function body: main work function is a utility in GenModel class.
-      body.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,MEANS,MULTS);").nl(); // at function level
+      body.ip("preds[0] = KMeans_closest(")
+          .pj(mname + "_CENTERS", "VALUES")
+          .p(", data, DOMAINS, ")
+          .pj(mname + "_MEANS", "VALUES").p(", ")
+          .pj(mname + "_MULTS", "VALUES").p(");").nl(); // at function level
     } else {
-      classCtx.add(new CodeGenerator() {
+      fileCtx.add(new CodeGenerator() {
         @Override
         public void generate(JCodeSB out) {
-          JCodeGen.toStaticVar(out, "CENTERS", _output._centers_raw,
-                               "Denormalized cluster centers[K][features]");
+          JCodeGen.toClassWithArray(out, null, mname + "_CENTERS", _output._centers_raw,
+                                    "Denormalized cluster centers[K][features]");
         }
       });
 
       // Predict function body: main work function is a utility in GenModel class.
-      body.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,null,null);").nl(); // at function level
+      body.ip("preds[0] = KMeans_closest(")
+          .pj(mname + "_CENTERS", "VALUES")
+          .p(",data, DOMAINS, null, null);").nl(); // at function level
     }
   }
 

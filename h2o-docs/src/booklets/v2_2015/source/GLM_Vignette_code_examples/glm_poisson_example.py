@@ -1,5 +1,4 @@
-# Used swedish insurance data from smalldata instead of MASS/insurance due to the
-# license of the MASS R package.
+# Used swedish insurance data from smalldata instead of MASS/insurance due to the license of the MASS R package.
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 h2o.init()

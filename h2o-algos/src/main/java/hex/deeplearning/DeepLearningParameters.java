@@ -17,10 +17,10 @@ import java.util.Arrays;
  * Deep Learning Parameters
  */
 public class DeepLearningParameters extends Model.Parameters {
+  @Override protected double defaultStoppingTolerance() { return 0; }
   public DeepLearningParameters() {
     super();
     _stopping_rounds = 5;
-    _stopping_tolerance = 0; //expect strict improvement, it's noisy anyway
   }
 
   @Override
@@ -65,7 +65,7 @@ public class DeepLearningParameters extends Model.Parameters {
    * This value can be modified during checkpoint restarts and allows continuation
    * of selected models.
    */
-  public double _epochs = 1000;
+  public double _epochs = 10;
 
   /**
    * The number of training data rows to be processed per iteration. Note that

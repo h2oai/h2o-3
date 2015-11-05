@@ -28,7 +28,7 @@ for(j in 1:length(cols)) {
       print(paste('Vecs:', vecs[k]))
       names <- c(names, ncols * nvecs)    # set the name to be the problem size
 
-      sst <- system.time(myframe <- h2o.createFrame('myframe', rows = rows, cols = ncols, seed = SEED,
+      sst <- system.time(myframe <- h2o.createFrame(rows = rows, cols = ncols, seed = SEED,
                                                     randomize = TRUE, real_range = 100, categorical_fraction = 0.0,
                                                     integer_fraction = 0.4, integer_range = 100,
                                                     missing_fraction = 0, has_response = FALSE) )
@@ -54,7 +54,6 @@ for(j in 1:length(cols)) {
 
 myframe <- NULL
 gc()
-h2o.rm("myframe")
 
 # format timing data from h2o
 data <- algo_run_time

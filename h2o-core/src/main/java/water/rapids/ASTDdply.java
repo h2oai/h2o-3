@@ -171,11 +171,11 @@ class ASTDdply extends ASTPrim {
       Frame groupFrame = new Frame(_data._names,groupVecs);
 
       // Now run the function on the group frame
-      Env env = new Env();
-      env._scope = _scope;      // Build an environment with proper lookup scope
-      Val val = new ASTExec( new AST[]{_fun,new ASTFrame(groupFrame)}).exec(env);
-      assert env.sp()==0;
-
+      Session ses = new Session();
+      // Build an environment with proper lookup scope, and execute in a temp session
+      Val val = ses.exec(new ASTExec( new AST[]{_fun,new ASTFrame(groupFrame)}), _scope);
+      val = ses.end(val);
+      
       // Result into a double[]
       if( val.isFrame() ) {
         Frame res = val.getFrame();
@@ -189,8 +189,8 @@ class ASTDdply extends ASTPrim {
       } else if( val.isNums() ) {
         _result = val.getNums();
       } else throw new IllegalArgumentException("ddply must return either a number or a frame, not a "+val);
-
-
+      
+      
       // Cleanup
       groupFrame.delete();      // Delete the Frame holding WrappedVecs over SubsetChunks
       gvec.remove();            // Delete the group-defining Vec

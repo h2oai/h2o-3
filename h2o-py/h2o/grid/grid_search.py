@@ -10,7 +10,7 @@ import itertools
 class H2OGridSearch(object):
   def __init__(self, model, hyper_params, grid_id=None):
     """Grid Search of a Hyper-Parameter Space for a Model
-
+  
      Parameters
      ----------
      model : H2O Estimator model
@@ -20,7 +20,20 @@ class H2OGridSearch(object):
      grid_id : str, optional
        The unique id assigned to the resulting grid object. If none is given, an id will
        automatically be generated.
-
+       
+    Returns
+    -------
+      A new H2OGridSearch instance.
+    
+    Examples
+    --------
+      >>> from h2o.grid.grid_search import H2OGridSearch
+      >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+      >>> hyper_parameters = {'alpha': [0.01,0.5,'a'], 'lambda': [1e-5,1e-6]}
+      >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+      >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
+      >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
+      >>> gs.show()
     """
     self._id = grid_id
     self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
