@@ -59,9 +59,12 @@ def random_attack():
       else:
         print k + ": {0}".format(v)
     if do_validation:
-      m = H2OGeneralizedLinearEstimator(**kwargs)
-      h2o.glm(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
-    else: h2o.glm(x=train[x], y=train[y], **kwargs)
+      (H2OGeneralizedLinearEstimator(**kwargs)).train(x=x,y=y,training_frame=train,validation_frame=valid)
+
+#      h2o.glm(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
+    else:
+      (H2OGeneralizedLinearEstimator(**kwargs)).train(x=x,y=y,training_frame=train)
+      #h2o.glm(x=train[x], y=train[y], **kwargs)
     print "-----------------------"
 
   print "Import and data munging..."

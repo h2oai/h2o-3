@@ -228,12 +228,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
 
 
   if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
-  if header != (-1,0,1):
-    if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
-    j["check_header"] = header
-  if separator:
-    if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
-    j["separator"] = ord(separator)
+
   if column_names:
     if not isinstance(column_names, list): raise ValueError("col_names should be a list")
     if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
