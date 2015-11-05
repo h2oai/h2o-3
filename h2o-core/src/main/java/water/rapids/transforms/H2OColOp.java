@@ -4,10 +4,7 @@ import org.apache.commons.lang.ArrayUtils;
 import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
-import water.rapids.AST;
-import water.rapids.ASTExec;
-import water.rapids.ASTParameter;
-import water.rapids.Exec;
+import water.rapids.*;
 
 public class H2OColOp extends Transform<H2OColOp> {
   protected final String _fun;
@@ -38,7 +35,8 @@ public class H2OColOp extends Transform<H2OColOp> {
   @Override public Transform<H2OColOp> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
     ((ASTExec)_ast._asts[1])._asts[1] = AST.newASTFrame(f);
-    Frame fr = Exec.execute(_ast).getFrame();
+    Session ses = new Session();
+    Frame fr = ses.exec(_ast, null).getFrame();
     _newCol = _newNames==null?new String[fr.numCols()]:_newNames;
     _newColTypes = toJavaPrimitive(fr.anyVec().get_type_str());
     if( (_multiColReturn=fr.numCols() > 1) ) {
@@ -50,7 +48,7 @@ public class H2OColOp extends Transform<H2OColOp> {
     } else {
       _newCol = new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)};
       if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
-      else          f.add(_newNames==null?_newCol[0]:_newNames[0], fr.anyVec());
+      else          f.add(_newNames == null ? _newCol[0] : _newNames[0], fr.anyVec());
     }
     DKV.put(f);
     return f;

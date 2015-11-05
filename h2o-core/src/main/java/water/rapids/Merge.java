@@ -40,12 +40,12 @@ public class Merge {
     // each of those launches an MRTask
     System.out.println("\nCreating left index ...");
     long t0 = System.nanoTime();
-    RadixOrder leftIndex = new RadixOrder(leftFrame, leftCols);
+    RadixOrder leftIndex = new RadixOrder(leftFrame, /*left=*/true, leftCols);
     System.out.println("Creating left index took: " + (System.nanoTime() - t0) / 1e9);
 
     System.out.println("\nCreating right index ...");
     t0 = System.nanoTime();
-    RadixOrder rightIndex = new RadixOrder(rightFrame, rightCols);
+    RadixOrder rightIndex = new RadixOrder(rightFrame, /*left=*/false, rightCols);
     System.out.println("Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n");
 
     // Align MSB locations between the two keys
@@ -183,8 +183,8 @@ public class Merge {
 
     System.out.print("Finally stitch together by overwriting dummies ...");
     t0 = System.nanoTime();
-    Frame fr = new Frame(Key.make(rightFrame._key.toString() + "_joined_with_" + leftFrame._key.toString()), names, vecs);
-    ChunkStitcher ff = new ChunkStitcher(leftFrame, rightFrame, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+    Frame fr = new Frame(names, vecs);
+    ChunkStitcher ff = new ChunkStitcher(/*leftFrame, rightFrame,*/ chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     ff.doAll(fr);
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
@@ -193,21 +193,21 @@ public class Merge {
   }
 
   static class ChunkStitcher extends MRTask<ChunkStitcher> {
-    final Frame _leftFrame;
-    final Frame _rightFrame;
+    //final Frame _leftFrame;
+    //final Frame _rightFrame;
     final long _chunkSizes[];
     final int _chunkLeftMSB[];
     final int _chunkRightMSB[];
     final int _chunkBatch[];
-    public ChunkStitcher(Frame leftFrame,
-                         Frame rightFrame,
+    public ChunkStitcher(//Frame leftFrame,
+                         //Frame rightFrame,
                          long[] chunkSizes,
                          int[] chunkLeftMSB,
                          int[] chunkRightMSB,
                          int[] chunkBatch
     ) {
-      _leftFrame = leftFrame;
-      _rightFrame = rightFrame;
+      //_leftFrame = leftFrame;
+      //_rightFrame = rightFrame;
       _chunkSizes = chunkSizes;
       _chunkLeftMSB = chunkLeftMSB;
       _chunkRightMSB = chunkRightMSB;
@@ -220,7 +220,7 @@ public class Merge {
       for (int i=0;i<cs.length;++i) {
         Key destKey = cs[i].vec().chunkKey(chkIdx);
         assert(cs[i].len() == _chunkSizes[chkIdx]);
-        Key k = BinaryMerge.getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
+        Key k = BinaryMerge.getKeyForMSBComboPerCol(/*_leftFrame, _rightFrame,*/ _chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
         Chunk ck = DKV.getGet(k);
         DKV.put(destKey, ck, fs);
         DKV.remove(k);

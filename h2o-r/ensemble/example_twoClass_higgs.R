@@ -3,7 +3,6 @@
 
 
 library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-library(SuperLearner)  # For metalearner such as "SL.glm"
 library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
 localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 

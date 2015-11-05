@@ -57,12 +57,12 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   protected void compute2() {
     _timings = new double[12];
     long t0 = System.nanoTime();
-    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_leftFrame._key, _leftMSB));
+    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true, _leftMSB));
     if (leftSortedOXHeader == null) {
       if (_allRight) throw H2O.unimpl();  // TODO pass through _allRight and implement
       tryComplete(); return;
     }
-    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(_rightFrame._key, _rightMSB));
+    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/false, _rightMSB));
     if (rightSortedOXHeader == null) {
       if (_allLeft == false) { tryComplete(); return; }
       rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // enables general case code to run below without needing new special case code
@@ -79,7 +79,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _retFirst = new long[leftSortedOXHeader._nBatch][];
     _retLen = new long[leftSortedOXHeader._nBatch][];
     for (int b=0; b<leftSortedOXHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(_leftFrame._key, _leftMSB, b));
+      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(/*left=*/true, _leftMSB, b));
       _leftKey[b] = oxLeft._x;
       _leftOrder[b] = oxLeft._o;
       _retFirst[b] = new long[oxLeft._o.length];
@@ -91,7 +91,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightKey = new byte[rightSortedOXHeader._nBatch][];
     _rightOrder = new long[rightSortedOXHeader._nBatch][];
     for (int b=0; b<rightSortedOXHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(_rightFrame._key, _rightMSB, b));
+      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(/*left=*/false, _rightMSB, b));
       _rightKey[b] = oxRight._x;
       _rightOrder[b] = oxRight._o;
     }
@@ -362,15 +362,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         _timings[6] += grrr.timeTaken;
         t0 = System.nanoTime();
         assert (grrr._rows == null);
-        Chunk[] chk = grrr._chk;
+        double[][]/*Chunk[]*/ chks = grrr._chk;
         for (int col = 0; col < _numColsInResult - _numLeftCols; col++) {   // TODO: currently join columns must be the first _numJoinCols. Relax.
-          Chunk colForBatch = chk[_numJoinCols + col];
-          for (int row = 0; row < colForBatch.len(); row++) {
-            double val = colForBatch.atd(row); //TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
+          double chk[] = chks[_numJoinCols + col];
+          for (int row = 0; row < chk.length /*.len()*/; row++) {
             long actualRowInMSBCombo = perNodeRightRowsFrom[node.index()][b][row];
             int whichChunk = (int) (actualRowInMSBCombo / batchSize);
             int offset = (int) (actualRowInMSBCombo % batchSize);
-            frameLikeChunks[_numLeftCols + col][whichChunk][offset] = val;
+            frameLikeChunks[_numLeftCols + col][whichChunk][offset] = chk[row];  // colForBatch.atd(row); TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
           }
         }
         _timings[7] += (System.nanoTime() - t0) / 1e9;
@@ -383,17 +382,16 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         _timings[9] += grrr.timeTaken;
         t0 = System.nanoTime();
         assert (grrr._rows == null);
-        Chunk[] chk = grrr._chk;
-        for (int col = 0; col < chk.length; ++col) {
-          Chunk colForBatch = chk[col];
-          for (int row = 0; row < colForBatch.len(); row++) {
-            double val = colForBatch.atd(row); //TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
+        double[][]/*Chunk[]*/ chks = grrr._chk;
+        for (int col = 0; col < chks.length; ++col) {
+          double chk[] = chks[col];
+          for (int row = 0; row < chk.length; row++) {
             long actualRowInMSBCombo = perNodeLeftRowsFrom[node.index()][b][row];
             for (int rep = 0; rep < perNodeLeftRowsRepeat[node.index()][b][row]; rep++) {
               long a = actualRowInMSBCombo + rep;
               int whichChunk = (int) (a / batchSize);  // TO DO: loop into batches to save / and % for each repeat and still cater for crossing multiple batch boundaries
               int offset = (int) (a % batchSize);
-              frameLikeChunks[col][whichChunk][offset] = val;
+              frameLikeChunks[col][whichChunk][offset] = chk[row];  // colForBatch.atd(row); TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
             }
           }
         }
@@ -407,7 +405,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     for (int col=0; col<_numColsInResult; col++) {
       for (int b = 0; b < nbatch; b++) {
         Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
-        DKV.put(getKeyForMSBComboPerCol(_leftFrame, _rightFrame, _leftMSB, _rightMSB, col, b), ck, fs, true);
+        DKV.put(getKeyForMSBComboPerCol(/*_leftFrame, _rightFrame,*/ _leftMSB, _rightMSB, col, b), ck, fs, true);
         frameLikeChunks[col][b]=null; //free mem as early as possible (it's now in the store)
       }
     }
@@ -416,40 +414,51 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     fs.blockForPending();
   }
 
-  static Key getKeyForMSBComboPerCol(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int col /*final table*/, int batch) {
-    return Key.make("__binary_merge__Chunk_for_col_" + col + "_batch_" + batch
-            + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
-            + "_forLeftMSB_"+leftMSB + "_RightMSB_" + rightMSB,
+  static Key getKeyForMSBComboPerCol(/*Frame leftFrame, Frame rightFrame,*/ int leftMSB, int rightMSB, int col /*final table*/, int batch) {
+    return Key.make("__binary_merge__Chunk_for_col" + col + "_batch" + batch
+            // + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
+            + "_leftMSB"+leftMSB + "_rightMSB" + rightMSB,
             (byte)1, Key.HIDDEN_USER_KEY, false, MoveByFirstByte.ownerOfMSB(rightMSB)
             ); //TODO home locally
   }
 
   class GetRawRemoteRows extends DTask<GetRawRemoteRows> {
-    Chunk[/*col*/] _chk; //null on the way to remote node, non-null on the way back
+    double[/*col*/][] _chk; //null on the way to remote node, non-null on the way back
     long[/*rows*/] _rows; //which rows to fetch from remote node, non-null on the way to remote, null on the way back
     double timeTaken;
     Frame _fr;
     GetRawRemoteRows(Frame fr, long[] rows) {
       _rows = rows;
       _fr = fr;
+      _priority = nextThrPriority();  // bump locally AND ship this priority to the worker where the priority() getter will query it
     }
+    @Override public byte priority() { return _priority; }
+    private byte _priority;
+    // Raise the priority, so that if a thread blocks here, we are guaranteed
+    // the task completes (perhaps using a higher-priority thread from the
+    // upper thread pools).  This prevents thread deadlock.
+    // Remember that this gets queried on both the caller and the sender, of course.
 
     @Override
     protected void compute2() {
       assert(_rows!=null);
       assert(_chk ==null);
-
+      //_priority = nextThrPriority();
       long t0 = System.nanoTime();
 
-      _chk  = new Chunk[_fr.numCols()];
-      double[][] rawVals = new double[_fr.numCols()][_rows.length];
+      //_chk  = new Value[_fr.numCols()];
+      _chk  = new double[_fr.numCols()][_rows.length];
+
+      //double[] rawVals = new double[_rows.length];
       for (int col=0; col<_fr.numCols(); col++) {
         Vec v = _fr.vec(col);
         for (int row=0; row<_rows.length; row++) {
           assert v.chunkKey(v.chunkForRow(_rows[row]).cidx()).home();
-          rawVals[col][row] = v.at(_rows[row]); //local reads, random access //TODO: use chunk accessors by using indirection array
+          //nc.addNum(v.at(_rows[row]));
+          //rawVals[row] = v.at(_rows[row]); //local reads, random access //TODO: use chunk accessors by using indirection array
+          _chk[col][row] = v.at(_rows[row]);
         }
-        _chk[col] = new NewChunk(rawVals[col]);
+        //_chk[col] = (new NewChunk(rawVals).compress());  // NewChunk(rawVals[col]);
       }
 
       // tell remote node to fill up Chunk[/*batch*/][/*rows*/]

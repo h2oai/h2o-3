@@ -65,7 +65,7 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
     #cat("=== Finalizer on ",attr(x, "id"),"\n")
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", attr(x, "id")), method = "DELETE")
+    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), method = "POST")
   }
 }
 
@@ -262,10 +262,10 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 
 #` Flush any cached data
 .flush.data <- function(x) {
-  rm("data" ,envir=x)
-  rm("types",envir=x)
-  rm("nrow" ,envir=x)
-  rm("ncol" ,envir=x)
+  if( !is.null(attr(x,"data")) ) rm("data" ,envir=x)
+  if( !is.null(attr(x,"data")) ) rm("types",envir=x)
+  if( !is.null(attr(x,"data")) ) rm("nrow" ,envir=x)
+  if( !is.null(attr(x,"data")) ) rm("ncol" ,envir=x)
   x
 }
 
@@ -282,7 +282,7 @@ h2o.assign <- function(data, key) {
   .key.validate(key)
   id <- h2o.getId(data)
   if( key == id ) stop("Destination key must differ from input frame ", key)
-  x <- .eval.driver(.newExpr("tmp=", key, id)) # Eager eval, so can see it in cluster
+  x = .eval.driver(.newExpr("assign", key, id)) # Eager eval, so can see it in cluster
   .set(x,"id",key)
   .set(x,"eval",NULL)
   x
@@ -1337,7 +1337,10 @@ is.numeric <- function(x) {
 #' @param x An H2O Frame object
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
-print.Frame <- function(x, ...) { print(head(x)) }
+print.Frame <- function(x, ...) { 
+  print(head(x))
+  cat(paste0("[", nrow(x), " rows x ", ncol(x), " columns]"), "\n")
+}
 
 #' Display the structure of an H2O Frame object
 #'
@@ -2219,7 +2222,11 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
   a[[1]] <- NULL  # drop the wrapping list()
   nAggs <- length(a)  # the number of aggregates
   # for each aggregate, build this list: (agg,col.idx,na.method)
-  agg.methods <- unlist(lapply(a, function(agg) as.character(agg[[1]]) ))
+  agg.methods <- unlist(lapply(a, function(agg) {
+    ag <- as.character(agg[[1]])
+    if( ag=="sd" ) ag <- "\"sdev\""
+    ag
+  }))
   col.idxs    <- unlist(lapply(a, function(agg, envir) {
     # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
     # if numeric, then eval it and return

@@ -19,7 +19,9 @@ public class H2OColSelect extends Transform<H2OColSelect> {
   @Override public Transform<H2OColSelect> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
     _ast._asts[1] = AST.newASTFrame(f);
-    Frame fr = Exec.execute(_ast).getFrame();
+//    throw water.H2O.unimpl();
+    Session ses = new Session();
+    Frame fr = ses.exec(_ast,null).getFrame();
     if( fr._key==null ) fr = new Frame(Key.make("H2OColSelect_"+f._key.toString()),fr.names(),fr.vecs());
     DKV.put(fr);
     return fr;

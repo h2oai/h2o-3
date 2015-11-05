@@ -34,7 +34,7 @@ public class MungingTest extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1.csv"));
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
     System.out.println("Loaded file, now calling Query ...");
-    new RadixOrder(frame, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
+    new RadixOrder(frame, true, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
     // TO DO: change back to DoGroup(frame, new int[] {0,1}, frame.vec(3), true)
     frame.delete();
   }

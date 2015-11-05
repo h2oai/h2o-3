@@ -182,6 +182,18 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 #' @return Returns an \linkS4class{H2OConnection} object.
 #' @export
 h2o.getConnection <- function() {
+  conn <- .attemptConnection()
+  if (is.null(conn))
+    stop("no active connection to an H2O cluster")
+  conn
+}
+
+.isConnected <- function() {
+  conn <- .attemptConnection()
+  return ( !is.null(conn) )
+}
+
+.attemptConnection <- function() {
   conn <- get("SERVER", .pkg.env)
   if (is.null(conn)) {
     # Try to recover an H2OConnection object from a saved session
@@ -193,8 +205,6 @@ h2o.getConnection <- function() {
         break
       }
     }
-    if (is.null(conn))
-      stop("no active connection to an H2O cluster")
   }
   conn
 }
@@ -358,7 +368,10 @@ h2o.clusterStatus <- function() {
       warning(msg)
     })
   }
+  .h2o.__remoteSend("InitID", method = "DELETE")
 }
+
+.Last <- function() { if ( .isConnected() ) .h2o.__remoteSend("InitID", method = "DELETE")}
 
 .h2o.startJar <- function(nthreads = -1, max_memory = NULL, min_memory = NULL, beta = FALSE, assertion = TRUE, forceDL = FALSE, license = NULL, ice_root, stdout) {
   command <- .h2o.checkJava()

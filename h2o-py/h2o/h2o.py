@@ -36,7 +36,7 @@ def _import(path):
   return j['destination_frames']
 
 
-def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names=None, col_types=None, na_strings=None):
+def upload_file(path, destination_frame="", header=(-1,0,1), sep="", col_names=None, col_types=None, na_strings=None):
   """
   Upload a dataset at the path given from the local machine to the H2O cluster.
 
@@ -96,7 +96,7 @@ def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names
   return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), sep="",
+def import_file(path=None, destination_frame="", parse=True, header=(-1,0,1), sep="",
                 col_names=None, col_types=None, na_strings=None):
   """Have H2O import a dataset into memory. The path to the data must be a valid path for
   each node in the H2O cluster. If some node in the H2O cluster cannot see the file, then
@@ -157,7 +157,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
   return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
+def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="", column_names=None, column_types=None, na_strings=None):
   """
 
   During parse setup, the H2O cluster will make several guesses about the attributes of
@@ -217,10 +217,18 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
   # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, basestring): raw_frames = [raw_frames]
-  j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
+
+  # temporary dictionary just to pass the following information to the parser: header, separator, column_names, column_types, na_strings
+  kwargs = store_params_to_REST(header, separator)
+
+  if bool(kwargs):
+    j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], **kwargs)
+  else:
+    j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
+
 
   if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
-  if header != (-1, 0, 1):
+  if header != (-1,0,1):
     if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
     j["check_header"] = header
   if separator:
@@ -276,7 +284,44 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
   return j
 
 
-def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
+def store_params_to_REST(header, separator):
+
+  """
+
+  During parse setup, the H2O cluster will fill in the attributes of the data passed
+  in by the user.
+
+  Parameters
+  ----------
+
+    header : int, optional
+     -1 means the first line is data, 0 means guess, 1 means first line is header.
+    sep : str, optional
+      The field separator character. Values on each line of the file are separated by this
+       character. If sep = "", the parser will automatically detect the separator.
+
+  Returns
+  -------
+    A dictionary is returned containing all of the information entered by the user.
+  """
+
+  kwargs = {}
+
+  # set header
+  if header != (-1,0,1):
+    if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
+    kwargs["check_header"] = header
+
+  # set separator
+  if separator:
+    if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
+    kwargs["separator"] = ord(separator)
+
+  return kwargs
+
+
+
+def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   """
   Used in conjunction with lazy_import and parse_setup in order to make alterations before
   parsing.
@@ -294,7 +339,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
  :return: An H2OFrame object
   """
   if id: setup["destination_frame"] = _quoted(id).replace("%",".").replace("&",".")
-  if first_line_is_header != (-1, 0, 1):
+  if first_line_is_header != (-1,0,1):
     if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
     setup["check_header"] = first_line_is_header
   fr = H2OFrame()
@@ -314,7 +359,7 @@ def _quoted(key):
 
 def assign(data,xid):
   if data.frame_id == xid: ValueError("Desination key must differ input frame")
-  data._ex = ExprNode("tmp=",xid,data)._eval_driver(False)
+  data._ex = ExprNode("assign",xid,data)._eval_driver(False)
   data._ex._cache._id = xid
   data._ex._children = None
   return data
