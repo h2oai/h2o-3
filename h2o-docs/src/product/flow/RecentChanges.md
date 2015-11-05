@@ -8,10 +8,9 @@
 ####New Features
 The following changes represent features that have been added since the previous release:
 
-
-
 #####Algorithms
 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/93cd9246762cab74008ae188e9dcad552978875a): Added support for grid search
 - [PUBDEV-2272](https://0xdata.atlassian.net/browse/PUBDEV-2272): Implemented GLRM grid search in R and Python
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/ada571ee5bfc7d8e140ab3fd3d416a8246909201): PUBDEV-2289: Enabled early convergence-based stopping by default for Deep Learning
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/514aa26de192821f7f5c780caed561f2689761ab): Added L1+LBFGS solver for multinomial GLM
@@ -36,7 +35,6 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/6e0c3575c2d5f07fcc9dacf51f76ec83279d1783): Enable grid search for Deep Learning parameters `overwrite_with_best_model`, `momentum_ramp`, `elastic_averaging`, `elastic_averaging_moving_rate`, & `elastic_averaging_regularization`
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/e69a8a5da0a738b1fa46fac5614171269e042f5a): PUBDEV-2289: Stopping tolerance and stopping metric are no longer hidden if `stopping_rounds` is 0
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/514adb7bd456bc2d0ed08eb62db450de3524b935): Added checks to verify the mean, median, nrow, var, and sd are calculated correctly in `groupby`
-- [GitHub commit](https://github.com/h2oai/h2o-3/commit/93cd9246762cab74008ae188e9dcad552978875a): Added support for grid search
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/c2095f7ae5fafcb7e1bcc88c314005886725aba8): `mean` and `sd` now return lists
 
 
@@ -61,7 +59,6 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/a82297bd1f6c0e08722ac6671797fa0e41db77a8): `sd` can now alias `sdev` in `group_by`
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/5c9bd93ec15f65658809def2634b13bd788ee7a1): Changed `.eval.driver` to `.fetch.data` in `h2o.getFrame`
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/e9608bfc696e1a64d9becf865571fe11da21ac93): Removed debug printing of `==Finalizer on` in R
-- [GitHub commit](https://github.com/h2oai/h2o-3/commit/ef91911e12be0a6094053f5e25d5f7acb61d52eb): PUBDEV-2289: Changed the default number of epochs to 10 
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/d6bc387a3d0d5f830f053a8384062eccb8b96d74): Added metalearning function
 
 
