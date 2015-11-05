@@ -104,7 +104,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _objective_epsilon = 1e-5;
+    public double _objective_epsilon = 1e-4;
     public double _gradient_epsilon = 1e-5;
     public double _obj_reg = -1;
 
@@ -151,7 +151,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if (frame != null) {
           Vec response = frame.vec(_response_column);
           if (response != null) {
-            if (response.min() != 0 || response.max() != 1) {
+            if (response.min() < 0 || response.max() > 1) {
               glm.error("_response_column", "Illegal response for family binomial, must be binary, got min = " + response.min() + ", max = " + response.max() + ")");
             }
           }
