@@ -71,6 +71,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
     _left = left;
     _biggestBit = biggestBit; _batchSize=batchSize; _bytesUsed = bytesUsed; _col = col;
     _keySize = keySize;  // ArrayUtils.sum(_bytesUsed) -1;
+    setProfile(true);
   }
 
   @Override protected void setupLocal() {
@@ -622,8 +623,9 @@ public class RadixOrder {
 
     System.out.println("Starting MSB hist reduce across nodes and MoveByFirstByte MRTask ...");
     t0 = System.nanoTime();
-    new MoveByFirstByte(left, _biggestBit[0], keySize, batchSize, _bytesUsed, whichCols).doAll(DF.vecs(whichCols));   // postLocal needs DKV.put()
+    MoveByFirstByte tmp = new MoveByFirstByte(left, _biggestBit[0], keySize, batchSize, _bytesUsed, whichCols).doAll(DF.vecs(whichCols));   // postLocal needs DKV.put()
     System.out.println("***\n*** MoveByFirstByte MRTask took : " + (System.nanoTime() - t0) / 1e9 + "\n***");
+    System.out.print(tmp.profString());
     t0 = System.nanoTime();
 
     //long nGroup[] = new long[257];   // one extra for later to make undo of cumulate easier when finding groups.  TO DO: let grouper do that and simplify here to 256
