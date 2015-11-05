@@ -143,14 +143,19 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
     else: model.train(x=x, y=y, training_frame=train)
     print model
 
+    # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
+    # TODO: clients should extract Java class name from header.
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    pojoname = regex.sub("_",model._id)
+
     print "Downloading Java prediction model code from H2O"
-    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",model._id))
+    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",pojoname))
     os.mkdir(tmpdir)
     h2o.download_pojo(model,path=tmpdir)
     h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
     print "h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar)
-    java_file = os.path.join(tmpdir,model._id+".java")
+    java_file = os.path.join(tmpdir,pojoname+".java")
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
     print "java code saved in {0}".format(java_file)
 
@@ -187,7 +192,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", model._id,
+                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", pojoname,
                     "--input", in_csv, "--output", out_pojo_csv]
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
