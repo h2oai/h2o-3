@@ -834,6 +834,11 @@ For PCA, this is dependent on the selected `pca_method` parameter:
 - For **GLRM**, the number of nodes depends on whether the dataset contains many categorical columns with many levels. If this is the case, we recommend using fewer larger nodes, since computing the loss function for categoricals is an intensive task. If the majority of the data is numeric and the categorical columns have only a small number of levels (~10-20), we recommend using many small nodes in the cluster.
 - For **Power**, we recommend using fewer larger nodes because the intensive calculations are single-threaded. However, this method is only recommended for obtaining principal component values (such as `k << ncol(train))` because the other methods are far more efficient. 
 
+- **I ran PCA on my dataset - how do I input the new parameters into a model?**
+
+After the PCA model has been built using `h2o.prcomp`, use `h2o.predict` on the original data frame and the PCA model to produce the dimensionality-reduced representation. Use `cbind` to add the predictor column from the original data frame to the data frame produced by the output of `h2o.predict`. At this point, you can build supervised learning models on the new data frame. 
+
+
 ###PCA Algorithm
 
 Let \(X\) be an \(M\times N\) matrix where

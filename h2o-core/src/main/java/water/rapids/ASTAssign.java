@@ -27,7 +27,11 @@ class ASTRectangleAssign extends ASTPrim {
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
-    ASTNumList cols_numlist = check(dst.numCols(), asts[3], dst);
+    // Column selection
+    ASTNumList cols_numlist = new ASTNumList(asts[3].columns(dst.names()));
+    // Special for ASTAssign: "empty" really means "all"
+    if( cols_numlist.isEmpty() ) cols_numlist = new ASTNumList(0,dst.numCols());
+    // Allow R-like number list expansion: negative column numbers mean exclusion
     int[] cols = ASTColSlice.col_select(dst.names(),cols_numlist);
 
     // Any COW optimized path changes Vecs in dst._vecs, and so needs a
@@ -56,25 +60,6 @@ class ASTRectangleAssign extends ASTPrim {
       }
     }
     return new ValFrame(dst);
-  }
-
-  private ASTNumList check( long dstX, AST ast, Frame dst ) {
-    // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
-    ASTNumList dim = new ASTNumList(ast.columns(dst.names()));
-    // Special for ASTAssign: "empty" really means "all"
-    if( dim.isEmpty() ) return new ASTNumList(0,dstX);
-    if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&
-            !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
-      throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
-    return dim;
-  }
-
-  // Build the destination slice for mutation
-  private Frame slice( Frame fr, int[] cols ) {
-    Frame slice = new Frame();
-    Vec[] vecs = fr.vecs();
-    for( int col : cols )  slice.add(fr._names[col],vecs[col]);
-    return slice;
   }
 
   // Rectangular array copy from src into dst
@@ -115,7 +100,7 @@ class ASTRectangleAssign extends ASTPrim {
       return;
     }
     // Handle large case
-    //throw H2O.unimpl();
+    throw H2O.unimpl();
   }
 
   // Assign a scalar over some dst rows; optimize for all rows
@@ -125,7 +110,7 @@ class ASTRectangleAssign extends ASTPrim {
     long nrows = rows.cnt();
     if( nrows==1 ) {
       Vec[] vecs = ses.copyOnWrite(dst,cols);
-      long drow = (long)rows.expand()[0];
+      long drow = (long)rows._bases[0];
       for( int i=0; i<cols.length; i++ )
         vecs[cols[i]].set(drow, src);
       return;
@@ -141,28 +126,31 @@ class ASTRectangleAssign extends ASTPrim {
       return;
     }
     
-    throw H2O.unimpl();       // Check for needing to copy before updating
     // Handle large case
-    //new MRTask(){
-    //  @Override public void map(Chunk[] cs) {
-    //    long start = cs[0].start();
-    //    long end   = start + cs[0]._len;
-    //    double min = rows.min(), max = rows.max()-1; // exclusive max to inclusive max when stride == 1
-    //    //     [ start, ...,  end ]     the chunk
-    //    //1 []                          rows out left:  rows.max() < start
-    //    //2                         []  rows out rite:  rows.min() > end
-    //    //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
-    //    //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
-    //    //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
-    //    if( !(max<start || min>end) ) {   // not situation 1 or 2 above
-    //      int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
-    //      for(int i=startOffset;i<cs[0]._len;++i)
-    //        if( rows.has(start+i) )
-    //          for( Chunk chk : cs )
-    //            chk.set(i,src);
-    //    }
-    //  }
-    //}.doAll(dst);
+    Vec[] vecs = ses.copyOnWrite(dst,cols);
+    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
+    for( int i=0; i<cols.length; i++ ) vecs2[i] = vecs[cols[i]];
+    rows.sort();                // Side-effect internal sort; needed for fast row lookup
+    new MRTask(){
+      @Override public void map(Chunk[] cs) {
+        long start = cs[0].start();
+        long end   = start + cs[0]._len;
+        long min = (long)rows.min(), max = (long)rows.max()-1; // exclusive max to inclusive max when stride == 1
+        //     [ start, ...,  end ]     the chunk
+        //1 []                          rows out left:  rows.max() < start
+        //2                         []  rows out rite:  rows.min() > end
+        //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
+        //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
+        //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
+        if( !(max<start || min>end) ) {   // not situation 1 or 2 above
+          int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
+          for(int i=startOffset;i<cs[0]._len;++i)
+            if( rows.has(start+i) )
+              for( Chunk chk : cs )
+                chk.set(i,src);
+        }
+      }
+    }.doAll(vecs2);
   }
 
   // Assign a scalar over some dst rows; optimize for all rows

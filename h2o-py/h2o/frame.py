@@ -1268,23 +1268,22 @@ class H2OFrame(object):
     """Unimplemented"""
     raise ValueError("unimpl")
 
-  def group_by(self,by,order_by=None):
+  def group_by(self,by):
     """Returns a new GroupBy object using this frame and the desired grouping columns.
+       The returned groups are sorted by the natural group-by column sort.
 
     Parameters
     ----------
     by : list
         The columns to group on.
-    order_by: list
-      A list of column names or indices on which to order the results.
 
     Returns
     -------
       A new GroupBy object.
     """
-    return GroupBy(self,by,order_by)
+    return GroupBy(self,by)
 
-  def impute(self,column,method="mean",combine_method="interpolate",by=None,inplace=True):
+  def impute(self,column,method="mean",combine_method="interpolate",by=None):
     """Impute a column in this H2OFrame
 
     Parameters
@@ -1297,27 +1296,16 @@ class H2OFrame(object):
       For even samples and method="median", how to combine quantiles.
     by : list
       Columns to group-by for computing imputation value per groups of columns.
-    inplace : bool, default=False
-      True if the imputation should happen in place.
 
     Returns
     -------
       An H2OFrame with the desired column's NAs filled with imputed values.
+      Note that the returned Frame is in conceptually a new Frame, but due 
+      to back-end optimizations is frequently not actually a copy.
     """
     if isinstance(column, basestring): column = self.names.index(column)
     if isinstance(by, basestring):     by     = self.names.index(by)
-    fr = H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
-    if inplace:
-      self._ex = fr._ex
-      self._frame()
-      return self
-    return fr
-    # Note: if the backend does in-place imputation on demand, then we must be
-    # eager here because in-place implies side effects which need to be ordered
-    # with (possibly lazy posssible eager) readers
-    # if not inplace: return H2OFrame(ex)
-    # self._ex = ex
-    # return self
+    return H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
 
   def merge(self, other, allLeft=True, allRite=False):
     """Merge two datasets based on common column names
