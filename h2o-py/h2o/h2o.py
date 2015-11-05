@@ -218,8 +218,17 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
   # The H2O backend only accepts things that are quoted
   if isinstance(raw_frames, basestring): raw_frames = [raw_frames]
 
-  # temporary dictionary just to pass the following information to the parser: header, separator, column_names, column_types, na_strings
-  kwargs = store_params_to_REST(header, separator)
+  # temporary dictionary just to pass the following information to the parser: header, separator
+  kwargs = {}
+  # set header
+  if header != (-1,0,1):
+    if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
+    kwargs["check_header"] = header
+
+  # set separator
+  if separator:
+    if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
+    kwargs["separator"] = ord(separator)
 
   if bool(kwargs):
     j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], **kwargs)
@@ -277,43 +286,6 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
   if j["column_names"]: j["column_names"] = map(_quoted, j["column_names"])
   j["column_types"] = map(_quoted, j["column_types"])
   return j
-
-
-def store_params_to_REST(header, separator):
-
-  """
-
-  During parse setup, the H2O cluster will fill in the attributes of the data passed
-  in by the user.
-
-  Parameters
-  ----------
-
-    header : int, optional
-     -1 means the first line is data, 0 means guess, 1 means first line is header.
-    sep : str, optional
-      The field separator character. Values on each line of the file are separated by this
-       character. If sep = "", the parser will automatically detect the separator.
-
-  Returns
-  -------
-    A dictionary is returned containing all of the information entered by the user.
-  """
-
-  kwargs = {}
-
-  # set header
-  if header != (-1,0,1):
-    if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
-    kwargs["check_header"] = header
-
-  # set separator
-  if separator:
-    if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
-    kwargs["separator"] = ord(separator)
-
-  return kwargs
-
 
 
 def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
