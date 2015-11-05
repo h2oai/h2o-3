@@ -27,7 +27,7 @@ for(i in 1:length(rows)){ # changing number of rows
       ncols <- cols[j]
       col_grid[j] <- ncols
       names <- c(names, nrows * ncols) # set the name to be the problem size
-      sst <- system.time(myframe <- h2o.createFrame('myframe', rows = nrows, cols = ncols, seed = 12345,
+      sst <- system.time(myframe <- h2o.createFrame(rows = nrows, cols = ncols, seed = 12345,
   												 randomize = TRUE, real_range = 100, categorical_fraction = 0.0,
   												 integer_fraction = 0.4, integer_range = 100,
   												 missing_fraction = 0, has_response = FALSE) )
@@ -59,7 +59,6 @@ for(i in 1:length(rows)){ # changing number of rows
 
 myframe <- NULL
 gc()
-h2o.rm("myframe")
 #col_grid
 #row_grid
 #create_frm_time

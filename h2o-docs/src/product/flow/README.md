@@ -399,6 +399,9 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 <a name="GLM"></a>
 - **Generalized Linear Model**: Create a Generalized Linear model.
 
+<a name="GLRM"></a>
+- **Generalized Low Rank Model**: Create a Generalized Low Rank model (a generalized low-rank decomposition of an H2O dataset). 
+
 <a name="DRF"></a>
 - **Distributed RF**: Create a distributed Random Forest model.  
 
@@ -483,7 +486,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **score\_each\_iteration**: ([K-Means](#Kmeans), [DRF](#DRF), [Naïve Bayes](#NB), [PCA](#PCA), [GBM](#GBM), [GLM](#GLM)) To score during each iteration of the model training, check this checkbox. 
 
-- **k***: ([K-Means](#Kmeans), [PCA](#PCA)) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.  
+- **k***: ([K-Means](#Kmeans), [PCA](#PCA), [GLRM](#GLRM)) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.  
 
 - **user_points**: ([K-Means](#Kmeans)) For K-Means, specify the number of initial cluster centers.  
 
@@ -781,7 +784,7 @@ Can be modified | | |
 
   ![Scoring History example](images/Flow_ScoringHistory.png)
 
-**Variable importances**: [GBM](#GBM), [DL](#DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable. 
+**Variable importances**: [GBM](#GBM), [DL](#DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable's importance depends on the algorithm.  To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable. 
 
   ![Variable Importances example](images/Flow_VariableImportances.png)
 

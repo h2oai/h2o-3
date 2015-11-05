@@ -163,13 +163,13 @@ class ASTGroup extends ASTPrim {
   static ASTNumList check( long dstX, AST ast ) {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a ASTNumList
     ASTNumList dim;
-    if( ast instanceof ASTNumList  ) dim = ((ASTNumList)ast).sort();
+    if( ast instanceof ASTNumList  ) dim = (ASTNumList)ast;
     else if( ast instanceof ASTNum ) dim = new ASTNumList(((ASTNum)ast)._v.getNum());
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     if( dim.isEmpty() ) return dim; // Allow empty
-    if( !(0 <= dim.min() && dim.max()-1 <  dstX) &&
-        !(1 == dim.cnt() && dim.max()-1 == dstX) ) // Special case of append
-      throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
+    for( int col : dim.expand4() )
+      if( !(0 <= col && col <  dstX) )
+        throw new IllegalArgumentException("Selection must be an integer from 0 to "+dstX);
     return dim;
   }
 

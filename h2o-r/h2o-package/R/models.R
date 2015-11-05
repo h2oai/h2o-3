@@ -315,6 +315,11 @@ h2o.getFutureModel <- function(object) {
                           }
                           mapping <- .type.map[paramDef$type,]
                           type <- mapping[1L, 1L]
+                          # Note: we apply this transformatio also for types 
+                          # reported by the backend as scalar because of PUBDEV-1955
+                          if (is.list(hv)) {
+                            hv <- as.vector(hv, mode=type)
+                          }
                           # Force evaluation of frames and fetch frame_id as
                           # a side effect
                           if (is.Frame(hv) )

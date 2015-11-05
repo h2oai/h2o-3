@@ -315,7 +315,8 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
         _j = j;
       }
 
-      private void copyStream(OutputStream os, final int buffer_size) {
+      private long copyStream(OutputStream os, final int buffer_size) {
+        long len = 0;
         int curIdx = 0;
         try {
           byte[] bytes = new byte[buffer_size];
@@ -324,6 +325,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
             if (count <= 0) {
               break;
             }
+            len += count;
             os.write(bytes, 0, count);
             int workDone = ((Frame.CSVStream) _csv)._curChkIdx;
             if (curIdx != workDone) {
@@ -334,20 +336,23 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
         } catch (Exception ex) {
           throw new RuntimeException(ex);
         }
+        return len;
       }
 
       @Override
       public void compute2() {
         PersistManager pm = H2O.getPM();
         OutputStream os = null;
+        long written = -1;
         try {
           os = pm.create(_path, _overwrite);
-          copyStream(os, 4 * 1024 * 1024);
+          written = copyStream(os, 4 * 1024 * 1024);
         } finally {
           if (os != null) {
             try {
+              os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
               os.close();
-              Log.info("Key '" + _frameName + "' was written to " + _path + ".");
+              Log.info("Key '" + _frameName + "' of "+written+" bytes was written to " + _path + ".");
             } catch (Exception e) {
               Log.err(e);
             }
