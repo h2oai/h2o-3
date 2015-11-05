@@ -396,10 +396,7 @@ public class PersistManager {
           throw new IllegalArgumentException("File already exists (" + path + ")");
         }
       }
-
-      FileOutputStream fos;
-      fos = new FileOutputStream(path);
-      return fos;
+      return new FileOutputStream(path);
     }
     catch (Exception e) {
       throw new RuntimeException(e);
