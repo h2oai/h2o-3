@@ -1,4 +1,4 @@
-# Train a Deep Learning model and validate on a test set
+# Train Deep Learning model and validate on test set
 # and save the variable importances
 model_vi <- h2o.deeplearning(
         x = x, 
@@ -12,7 +12,7 @@ model_vi <- h2o.deeplearning(
         l1 = 1e-5, 
         validation_frame = test, 
         epochs = 10,
-        variable_importances = TRUE)  #added
+        variable_importances = TRUE)
 
 # Retrieve the variable importance
 h2o.varimp(model_vi)

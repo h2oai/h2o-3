@@ -4,11 +4,11 @@ from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 y = "C785"
 x = train.names[0:784]
 
-# We encode the response column as categorical for multinomial classification
+# Encode the response column as categorical for multinomial classification
 train[y] = train[y].asfactor()
 test[y] = test[y].asfactor()
 
-# Train a Deep Learning model and validate on a test set
+# Train Deep Learning model and validate on test set
 model = H2ODeepLearningEstimator(
         distribution="multinomial",
         activation="RectifierWithDropout", 

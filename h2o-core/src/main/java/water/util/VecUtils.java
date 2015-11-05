@@ -3,6 +3,7 @@ package water.util;
 import java.util.Arrays;
 
 import water.AutoBuffer;
+import water.DKV;
 import water.Futures;
 import water.MRTask;
 import water.MemoryManager;
@@ -12,6 +13,7 @@ import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.exceptions.H2OIllegalArgumentException;
+import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
@@ -43,9 +45,7 @@ public class VecUtils {
       case Vec.T_NUM:
         return numericToCategorical(src);
       case Vec.T_STR: // PUBDEV-2204
-        throw new H2OIllegalArgumentException("Changing string columns to a categorical"
-            + " column has not been implemented yet.");
-        //return stringToCategorical(src);
+        return stringToCategorical(src);
       case Vec.T_TIME: // PUBDEV-2205
         throw new H2OIllegalArgumentException("Changing time/date columns to a categorical"
             + " column has not been implemented yet.");
@@ -61,14 +61,43 @@ public class VecUtils {
   /**
    * Create a new {@link Vec} of categorical values from string {@link Vec}.
    *
-   * To be finished, PUBDEV-2204
+   * FIXME: implement in more efficient way with Brandon's primitives for BufferedString manipulation
    *
-   * @param src a string {@link Vec}
+   * @param vec a string {@link Vec}
    * @return a categorical {@link Vec}
    */
-  public static Vec stringToCategorical(Vec src) {
-    Vec res = null;
-    return res;
+  public static Vec stringToCategorical(Vec vec) {
+    final String[] vecDomain = new CollectStringVecDomain().domain(vec);
+
+    MRTask task = new MRTask() {
+      transient private java.util.HashMap<String, Integer> lookupTable;
+
+      @Override
+      protected void setupLocal() {
+        lookupTable = new java.util.HashMap<>(vecDomain.length);
+        for (int i = 0; i < vecDomain.length; i++) {
+          // FIXME: boxing
+          lookupTable.put(vecDomain[i], i);
+        }
+      }
+
+      @Override
+      public void map(Chunk c, NewChunk nc) {
+        BufferedString bs = new BufferedString();
+        for (int row = 0; row < c.len(); row++) {
+          if (c.isNA(row)) {
+            nc.addNA();
+          } else {
+            c.atStr(bs, row);
+            nc.addCategorical(lookupTable.get(bs.bytesToString()));
+          }
+        }
+      }
+    };
+    // Invoke tasks - one input vector, one ouput vector
+    task.doAll(new byte[] {Vec.T_CAT}, vec);
+    // Return result
+    return task.outputFrame(null, null, new String[][] {vecDomain}).vec(0);
   }
 
   /**
@@ -190,7 +219,7 @@ public class VecUtils {
    * @return a numeric {@link Vec}
    */
   public static Vec categoricalToInt(final Vec src) {
-    if( src.isInt() && src.domain()==null ) return copyOver(src, Vec.T_NUM, null);
+    if( src.isInt() && (src.domain()==null || src.domain().length == 0)) return copyOver(src, Vec.T_NUM, null);
     if( !src.isCategorical() ) throw new IllegalArgumentException("categoricalToInt conversion only works on categorical columns.");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;
@@ -465,6 +494,71 @@ public class VecUtils {
           nc.addNum(num);
         }
       }
+    }
+  }
+
+  private static class CollectStringVecDomain extends MRTask<CollectStringVecDomain> {
+
+    private static String PLACEHOLDER = "nothing";
+
+    transient private NonBlockingHashMap<String, Object> _uniques = null;
+
+    @Override
+    protected void setupLocal() {
+      _uniques = new NonBlockingHashMap<>();
+    }
+
+    @Override
+    public void map(Chunk c) {
+      BufferedString bs = new BufferedString();
+      for (int i = 0; i < c.len(); i++) {
+        if (!c.isNA(i)) {
+          c.atStr(bs, i);
+          _uniques.put(bs.bytesToString(), PLACEHOLDER);
+        }
+      }
+    }
+
+    @Override
+    public void reduce(CollectStringVecDomain mrt) {
+      if (_uniques != mrt._uniques) { // this is not local reduce
+        _uniques.putAll(mrt._uniques);
+      }
+    }
+
+    @Override
+    public AutoBuffer write_impl(AutoBuffer ab) {
+      return ab.putAStr(
+          (_uniques == null) ? null : _uniques.keySet().toArray(new String[_uniques.size()]));
+    }
+
+    @Override
+    public CollectStringVecDomain read_impl(AutoBuffer ab) {
+      String[] arys = ab.getAStr();
+      _uniques = new NonBlockingHashMap<String, Object>();
+      if (arys != null) {
+        for (String s : arys) {
+          _uniques.put(s, PLACEHOLDER);
+        }
+      }
+      return this;
+    }
+
+    @Override
+    protected void copyOver(CollectStringVecDomain src) {
+      _uniques = src._uniques;
+    }
+
+    public String[] domain(Vec vec) {
+      assert vec.isString() : "String vector expected. Unsupported vector type: " + vec.get_type_str();
+      this.doAll(vec);
+      return domain();
+    }
+
+    public String[] domain() {
+      String[] dom = _uniques.keySet().toArray(new String[_uniques.size()]);
+      Arrays.sort(dom);
+      return dom;
     }
   }
 }

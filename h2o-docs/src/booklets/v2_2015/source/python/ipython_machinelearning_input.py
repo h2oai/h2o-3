@@ -7,9 +7,9 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 iris_data_path = h2o.system_file("iris.csv") # load demonstration data
 iris_df = h2o.import_file(path=iris_data_path)
 iris_df.describe()
-gbm_regessor = H2OGradientBoostingEstimator(distribution="gaussian", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
-gbm_regessor.train(x=range(1,iris_df.ncol), y=0, training_frame=iris_df)
-gbm_regessor
+gbm_regressor = H2OGradientBoostingEstimator(distribution="gaussian", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
+gbm_regressor.train(x=range(1,iris_df.ncol), y=0, training_frame=iris_df)
+gbm_regressor
 
 gbm_classifier = H2OGradientBoostingEstimator(distribution="multinomial", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
 gbm_classifier.train(x=range(0,iris_df.ncol-1), y=iris_df.ncol-1, training_frame=iris_df)

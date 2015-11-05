@@ -2,11 +2,11 @@
 y <- "C785"
 x <- setdiff(names(train), y)
 
-# We encode the response column as categorical for multinomial classification
+# Encode the response column as categorical for multinomial classification
 train[,y] <- as.factor(train[,y])
 test[,y] <- as.factor(test[,y])
 
-# Train a Deep Learning model and validate on a test set
+# Train Deep Learning model and validate on test set
 model <- h2o.deeplearning(
         x = x, 
         y = y, 

@@ -90,8 +90,8 @@ class ASTFun extends AST {
     ASTFun old = env._scope;
     env._scope = new ASTFun(this,args,_parent); // Push a new lexical scope, extended from the old
     
-    Val res = _body.exec(env);
-    
+    Val res = stk.untrack(_body.exec(env));
+
     env._scope = old;           // Pop the lexical scope off (by restoring the old unextended scope)
     return res;
   }

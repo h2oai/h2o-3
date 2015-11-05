@@ -22,7 +22,7 @@ H2O 3.0 will soon provide feature parity with previous versions of H2O. Currentl
 
 ###Supervised 
 
-- **Generalized Linear Model (GLM)**: Binomial classification, regression (including logistic regression)
+- **Generalized Linear Model (GLM)**: Binomial classification, multinomial classification, regression (including logistic regression)
 - **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
 - **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
 - **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
@@ -37,7 +37,6 @@ H2O 3.0 will soon provide feature parity with previous versions of H2O. Currentl
 ###Still In Testing
 
 - Naive Bayes
-- GLRM 
 
 ##How to Update R Scripts
 

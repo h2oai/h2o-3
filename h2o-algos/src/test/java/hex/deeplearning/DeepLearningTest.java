@@ -451,6 +451,7 @@ public class DeepLearningTest extends TestUtil {
       dl._model_id = Key.make("DL_model_" + hexnametrain);
       dl._reproducible = true;
       dl._epochs = epochs;
+      dl._stopping_rounds = 0;
       dl._activation = activation;
       dl._export_weights_and_biases = true;
       dl._hidden = hidden;

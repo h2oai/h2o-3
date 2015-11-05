@@ -1,11 +1,12 @@
 package water.rapids;
 
-import water.MRTask;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 /**
  * Exec is an interpreter of abstract syntax trees.
+ *
+ * This file contains the AST parser and parser helper functions.  
+ * AST Execution starts in the ASTExec file, but spreads throughout Rapids.
  *
  * Trees have a Lisp-like structure with the following "reserved" special
  * characters:
@@ -35,30 +36,47 @@ public class Exec {
 
   public Exec(String str) { _str = str; }
 
-  public static Val exec( String str ) throws IllegalArgumentException {
-    cluster_init();
-    // Parse
-    AST ast = new Exec(str).parse();
-    // Execute
-    return execute(ast);
-  }
-
-  public static Val execute(AST ast) {
-    // Execute
-    Env env = new Env();
-    Val val = ast.exec(env);
-    // Results.  Deep copy returned Vecs.  Always return a key-less Frame
-    if( val.isFrame() ) {
-      Frame fr = val.getFrame();
-      if( fr._key != null ) val=new ValFrame(fr = new Frame(null,fr.names(),fr.vecs()));
-      Vec vecs[] = fr.vecs();
-      for( int i=0; i<vecs.length; i++ )
-        if( env.isPreExistingGlobal(vecs[i]) )
-          fr.replace(i,vecs[i].makeCopy());
+  public static Val exec( String rapids ) {
+    // Execute a single rapids call in a short-lived session
+    Session ses = new Session();
+    try {
+      AST ast = new Exec(rapids).parse();
+      Val val = ses.exec(ast,null);
+      // Any returned Frame has it's REFCNT raised by +1, and the end(val) call
+      // will account for that, copying Vecs as needed so that the returned
+      // Frame is independent of the Session (which is disappearing).
+      return ses.end(val);
+    } catch( Throwable ex ) {
+      throw ses.endQuietly(ex);
     }
-    return val;
   }
 
+  // Compute and return a value in this session.  Any returned frame shares
+  // Vecs with the session (is not deep copied), and so must be deleted by the
+  // caller (with a Rapids "rm" call) or will disappear on session exit, or is
+  // a normal global frame.
+  static public Val exec( String rapids, Session ses ) {
+    AST ast = new Exec(rapids).parse();
+    // Synchronize the session, to stop back-to-back overlapping Rapids calls
+    // on the same session, which Flow sometimes does
+    synchronized(ses) { 
+      Val val = ses.exec(ast, null);
+      // Any returned Frame has it's REFCNT raised by +1, but is exiting the
+      // session.  If it's a global, we simply need to lower the internal refcnts
+      // (which won't delete on zero cnts because of the global).  If it's a
+      // named temp, the ref cnts are accounted for by being in the temp table.
+      if( val.isFrame() ) {
+        Frame fr = val.getFrame();
+        assert fr._key != null; // No nameless Frame returns, as these are hard to cleanup
+        if( ses.FRAMES.containsKey(fr) ) {
+          throw water.H2O.unimpl();
+        } else {
+          ses.addRefCnt(fr, -1);
+        }
+      }
+      return val;
+    }
+  }
 
   // Parse an expression
   //   '('   a nested function application expression ')
@@ -151,15 +169,4 @@ public class Exec {
     throw new IllegalASTException(s);
   }
   static class IllegalASTException extends IllegalArgumentException { IllegalASTException(String s) {super(s);} }
-
-  // To avoid a class-circularity hang, we need to force other members of the
-  // cluster to load the Exec & AST classes BEFORE trying to execute code
-  // remotely, because e.g. ddply runs functions on all nodes.
-  private static volatile boolean _inited; // One-shot init
-  static void cluster_init() {
-    if( _inited ) return;
-    // Touch a common class to force loading
-    new MRTask() { @Override public void setupLocal() { new ASTPlus(); } }.doAllNodes();
-    _inited = true;
-  }
 }

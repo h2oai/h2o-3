@@ -92,8 +92,8 @@ public class DeepLearningCheckpointReporting extends TestUtil {
           duration = duration.substring(0, duration.length()-4); //"x.xxxx sec"
           try {
             double durationDouble = Double.parseDouble(duration);
-            Assert.assertTrue("Duration must be >0", durationDouble >= 0);
-            Assert.assertTrue("Duration must increase", durationDouble >= priorDurationDouble);
+            Assert.assertTrue("Duration must be >0: " + durationDouble, durationDouble >= 0);
+            Assert.assertTrue("Duration must increase: " + priorDurationDouble + " -> " + durationDouble, durationDouble >= priorDurationDouble);
             Assert.assertTrue("Duration cannot be more than outside timer delta", durationDouble <= (end - start) / 1e3);
             priorDurationDouble = durationDouble;
           } catch(NumberFormatException ex) {

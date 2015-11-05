@@ -1,4 +1,4 @@
-# Perform 5-fold cross-validation on the training_frame
+# Perform 5-fold cross-validation on training_frame
 model_cv <- h2o.deeplearning(
         x = x, 
         y = y, 

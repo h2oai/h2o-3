@@ -25,7 +25,7 @@ Most of the algorithms available in previous versions of H2O have been improved 
 
 ###Supervised 
 
-- **Generalized Linear Model (GLM)**: Binomial classification, regression (including logistic regression)
+- **Generalized Linear Model (GLM)**: Binomial classification, multinomial classification, regression (including logistic regression)
 - **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
 - **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
 - **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
@@ -41,7 +41,7 @@ There are a few algorithms that are still being refined to provide these same be
 Currently, the following algorithms and associated capabilities are still in development: 
 
 - Naïve Bayes
-- GLRM
+
 
 Check back for updates, as these algorithms will be re-introduced in an improved form in a future version of H2O. 
 
@@ -213,21 +213,34 @@ H2O Classic  | H2O 3.0
 `y,` |`y,` 
 `data,` | `training_frame,`
 `key = "",` | `model_id,` 
-`distribution = 'multinomial',` | `distribution = c("bernoulli", "multinomial", "gaussian"),` 
+&nbsp; | `checkpoint`
+`distribution = 'multinomial',` | `distribution = c("AUTO",
+"gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),` 
+&nbsp; | `tweedie_power = 1.5,`
 `n.trees = 10,` | `ntrees = 50`
 `interaction.depth = 5,` | `max_depth = 5,` 
 `n.minobsinnode = 10,` | `min_rows = 10,` 
 `shrinkage = 0.1,` | `learn_rate = 0.1,` 
 `n.bins = 20,`| `nbins = 20,` 
+&nbsp; | `nbins_top_level,`
+&nbsp; | `nbins_cats = 1024,`
 `validation,` | `validation_frame = NULL,` 
 `balance.classes = FALSE` | `balance_classes = FALSE,` 
 `max.after.balance.size = 5,` | `max_after_balance_size = 1,` 
  &nbsp; | `seed,` 
  &nbsp; | `build_tree_one_node = FALSE,`
- &nbsp; | `score_each_iteration)`
+ &nbsp; | `nfolds = 0,`
+ &nbsp; | `fold_column = NULL,`
+ &nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+ &nbsp; | `keep_cross_validation_predictions = FALSE,`
+ &nbsp; | `score_each_iteration = FALSE,`
+ &nbsp; | `stopping_rounds = 0,`
+ &nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),`
+ &nbsp; | `stopping_tolerance = 0.001,`
+ &nbsp; | `offset_column = NULL,`
+ &nbsp; | `weights_column = NULL,`
 `group_split = TRUE,` | 
 `importance = FALSE,` | 
-`nfolds = 0,` | 
 `holdout.fraction = 0,` | 
 `class.sampling.factors = NULL,` | 
 `grid.parallelism = 1)` | 
@@ -303,12 +316,12 @@ The following parameters have been removed:
 
 H2O Classic | H2O 3.0 
 ------------- | -------------
-`h2o.glm <- function(` | `h2o.startGLMJob <- function(`
+`h2o.glm <- function(` | `h2o.glm(`
 `x,` | `x,`
 `y,` | `y,` 
 `data,` |`training_frame,` 
 `key = "",` | `model_id,` 
- &nbsp; | `validation_frame`
+ &nbsp; | `validation_frame = NULL`
 `iter.max = 100,` |  `max_iterations = 50,` 
 `epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
@@ -317,7 +330,7 @@ H2O Classic | H2O 3.0
 `non_negative = FALSE,` | 
 &nbsp; | `solver = c("IRLSM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
-`family,` | `family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),` 
+`family,` | `family = c("gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie"),` 
 `link,` | `link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),`
 `tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` |  `tweedie_variance_power = NaN,`
 &nbsp; | `tweedie_link_power = NaN,`
@@ -329,12 +342,17 @@ H2O Classic | H2O 3.0
 `lambda.min.ratio = -1,` | `lambda_min_ratio = 1.0,` 
 `use_all_factor_levels = FALSE` | `use_all_factor_levels = FALSE,` 
 `nfolds = 0,` |  `nfolds = 0,`
-`beta_constraints = NULL,` | `beta_constraint = NULL)` 
+&nbsp; | `fold_column = NULL,`
+&nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+&nbsp; | `keep_cross_validation_predictions = FALSE,`
+`beta_constraints = NULL,` | `beta_constraints = NULL)` 
 `higher_accuracy = FALSE,` |  
 `variable_importances = FALSE,` | 
 `disable_line_search = FALSE,` | 
-`offset = NULL,` | 
-`max_predictors = -1)` |
+`offset = NULL,` | `offset_column = NULL,`
+&nbsp; | `weights_column = NULL,`
+&nbsp; | `intercept = TRUE,`
+`max_predictors = -1)` | `max_active_predictors = -1)`
 
 
 ###Output
@@ -391,7 +409,7 @@ The following parameters have been added:
 
 H2O Classic | H2O 3.0
 ------------- | -------------
-`h2o.kmeans <- function(` | `h2o.kmeans <- function(`
+`h2o.kmeans <- function(` | `h2o.kmeans(`
 `data,` | `training_frame,` 
 `cols = '',` | `x,`
 `centers,` | `k,`
@@ -399,7 +417,11 @@ H2O Classic | H2O 3.0
 `iter.max = 10,` | `max_iterations = 1000,`
 `normalize = FALSE,`  | `standardize = TRUE,`
 `init = "none",` | `init = c("Furthest","Random", "PlusPlus"),`
-`seed = 0,` | `seed)`
+`seed = 0,` | `seed,`
+&nbsp; | `nfolds = 0,`
+&nbsp; | `fold_column = NULL,` 
+&nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+&nbsp; | `keep_cross_validation_predictions = FALSE)`
 
 ###Output
 
@@ -460,7 +482,7 @@ The following options for the `loss` parameter have been added:
 
 H2O Classic  | H2O 3.0 
 ------------- | -------------
-`h2o.deeplearning <- function(x,` | `h2o.deeplearning <- function(x, `
+`h2o.deeplearning <- function(x,` | `h2o.deeplearning (x, `
 `y,` | `y,`
 `data,` | `training_frame,` 
 `key = "",` | `model_id = "",`
@@ -494,13 +516,21 @@ H2O Classic  | H2O 3.0
 `max_w2,` | `max_w2 = Inf,`
 `initial_weight_distribution,` | `initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
 `initial_weight_scale,` | `initial_weight_scale = 1.0,`
-`loss,` | `loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
+`loss,` | `loss = "Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"),`
+&nbsp; | ` distribution = c("AUTO",
+"gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
+"laplace", "huber"),`
+&nbsp; | `tweedie_power = 1.5,`
 `score_interval,` | `score_interval = 5,` 
 `score_training_samples,` | `score_training_samples = 10000l,` 
 `score_validation_samples,` | `score_validation_samples = 0l,`
 `score_duty_cycle,` | `score_duty_cycle = 0.1,` 
 `classification_stop,` | `classification_stop = 0`
 `regression_stop,` | `regression_stop = 1e-6,`
+&nbsp; | `stopping_rounds = 5,`
+&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2",
+"misclassification"),`
+&nbsp; | `stopping_tolerance = 0,`
 `quiet_mode,` | `quiet_mode = false,`
 `max_confusion_matrix_size,` | `max_confusion_matrix_size,`
 `max_hit_ratio_k,` | `max_hit_ratio_k,`
@@ -518,11 +548,17 @@ H2O Classic  | H2O 3.0
 `shuffle_training_data,` | `shuffle_training_data = false,`
 `sparse,` | `sparse = false,` 
 `col_major,` | `col_major = false,`
-`max_categorical_features,` | `max_categorical_features = Integer.MAX_VALUE,`
+`max_categorical_features,` | `max_categorical_features,`
 `reproducible)` | `reproducible=FALSE,` 
 `average_activation` | `average_activation = 0,`
  &nbsp; | `sparsity_beta = 0`
- &nbsp; | `export_weights_and_biases=FALSE)`
+ &nbsp; | `export_weights_and_biases=FALSE,`
+ &nbsp; | `offset_column = NULL,` 
+ &nbsp; | `weights_column = NULL,`
+ &nbsp; | `nfolds = 0,`
+ &nbsp; | `fold_column = NULL,`
+ &nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+ &nbsp; | `keep_cross_validation_predictions = FALSE)`
 
 ###Output
 
@@ -611,15 +647,25 @@ H2O Classic | H2O 3.0
 `depth=20,` | `max_depth = 20,` 
  &nbsp; | `min_rows = 1,`
 `nbins=20,` | `nbins = 20,` 
+&nbsp; | `nbins_top_level,`
+&nbsp; | `nbins_cats =1024,`
+&nbsp; | `binomial_double_trees = FALSE,`
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
-`score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
 `seed = -1,` | `seed` 
 `nodesize = 1,` |  
 `classification=TRUE,` | 
 `importance=FALSE,` | 
-`nfolds=0,` | 
+&nbsp; | `weights_column = NULL,`
+`nfolds=0,` | `nfolds = 0,`
+&nbsp; | `fold_column = NULL,`
+&nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),` 
+&nbsp; | `keep_cross_validation_predictions = FALSE,`
+&nbsp; | `score_each_iteration = FALSE,`
+&nbsp; | `stopping_rounds = 0,`
+&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"), `
+&nbsp; | `stopping_tolerance = 0.001)`
 `holdout.fraction = 0,` | 
-`max.after.balance.size = 5,` | `max_after_balance_size)` 
+`max.after.balance.size = 5,` | `max_after_balance_size,` 
 `class.sampling.factors = NULL,` | &nbsp; 
 `doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |

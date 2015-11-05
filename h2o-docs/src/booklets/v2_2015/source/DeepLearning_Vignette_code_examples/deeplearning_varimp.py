@@ -1,4 +1,4 @@
-# Train a Deep Learning model and validate on a test set
+# Train Deep Learning model and validate on test set
 # and save the variable importances
 model_vi = H2ODeepLearningEstimator(        
         distribution="multinomial",
@@ -8,7 +8,7 @@ model_vi = H2ODeepLearningEstimator(
         sparse=True,
         l1=1e-5, 
         epochs=10,
-        variable_importances=True)  #added
+        variable_importances=True)
 
 model_vi.train(
         x=x, 
