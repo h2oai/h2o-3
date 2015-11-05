@@ -63,8 +63,8 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
 # GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
 .nodeFinalizer <- function(x) {
   eval <- attr(x, "eval")
-  cat("=== Finalizer on ",attr(x, "id"),"\n")
   if( is.logical(eval) && eval ) {
+    #cat("=== Finalizer on ",attr(x, "id"),"\n")
     .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), method = "POST")
   }
 }

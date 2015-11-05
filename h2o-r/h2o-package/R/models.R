@@ -2030,7 +2030,6 @@ h2o.tabulate <- function(data, x, y,
   parms$nbins_response <- nbins_y
 
   res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 99, page = "Tabulate", .params = parms)
-  print(res)
   count_table <- res$count_table
   response_table <- res$response_table
   out <- list(count_table = count_table, response_table = response_table, cols = args$cols)

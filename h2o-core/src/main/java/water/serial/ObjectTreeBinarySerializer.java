@@ -71,7 +71,7 @@ public class ObjectTreeBinarySerializer implements Serializer<List<Key>, URI> {
         Log.warn("Directory " + outputDir + " already exists.");
       } else if (overrideFile && !targetExists || !overrideFile && !targetExists) {
         throw new IllegalArgumentException(
-            "Directory " + outputDir + " cannot be created! Check you access privileges!");
+            "Directory " + outputDir + " cannot be created! Check your access privileges!");
       } else {
         throw new IllegalArgumentException("Directory " + outputDir + " already exists but "
                                            + "the flag for force overwrite is `false`.");

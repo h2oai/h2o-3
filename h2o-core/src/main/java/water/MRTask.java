@@ -172,7 +172,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
 
-  public String profString() { return _profile.toString(); }
+  public String profString() { return _doProfile ? _profile.toString() : "Profiling turned off"; }
   MRProfile _profile;
 
   public void setProfile(boolean b) {_doProfile = b;}
@@ -314,7 +314,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     long sumTime() { return _onCdone - (_localstart==0 ? _mapstart : _localstart); }
     void gather( MRProfile p, int size_rez ) {
       p._clz=null;
-      if( _last == null ) _last=p;
+      if( _last == null ) { _last=p; _time1st = p.sumTime(); _done1st = p._onCdone; }
       else {
         MRProfile first = _last._onCdone <= p._onCdone ? _last : p;
         _last           = _last._onCdone >  p._onCdone ? _last : p;
@@ -323,6 +323,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       if( size_rez !=0 )        // Record i/o result size
         if( _size_rez0 == 0 ) {      _size_rez0=size_rez; }
         else { /*assert _size_rez1==0;*/ _size_rez1=size_rez; }
+      assert _userstart !=0 || _last != null;
       assert _last._onCdone >= _done1st;
     }
 
@@ -331,13 +332,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       if( d==0 ) sb.append(_clz).append("\n");
       for( int i=0; i<d; i++ ) sb.append("  ");
       if( _localstart != 0 ) sb.append("Node local ").append(_localdone - _localstart).append("ms, ");
-      if( _userstart == 0 ) {   // Forked job?
+      if( _last != null ) {   // Forked job?
         sb.append("Slow wait ").append(_mapstart-_localdone).append("ms + work ").append(_last.sumTime()).append("ms, ");
         sb.append("Fast work ").append(_time1st).append("ms + wait ").append(_onCstart-_done1st).append("ms\n");
         _last.print(sb,d+1); // Nested slow-path print
         for( int i=0; i<d; i++ ) sb.append("  ");
         sb.append("join-i/o ").append(_onCstart-_last._onCdone).append("ms, ");
-      } else {                  // Leaf map call?
+      }
+      if( _userstart != 0 ) {                  // Leaf map call?
         sb.append("Map ").append(_mapdone - _mapstart).append("ms (prep ").append(_userstart - _mapstart);
         sb.append("ms, user ").append(_closestart-_userstart);
         sb.append("ms, closeChk ").append(_mapdone-_closestart).append("ms), ");
@@ -528,12 +530,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * chunks; call user's init.
    */
   private void setupLocal0() {
-    assert _profile==null;
-    _fs = new Futures();
     if(_doProfile) {
       _profile = new MRProfile(this);
       _profile._localstart = System.currentTimeMillis();
     }
+    _fs = new Futures();
     _topLocal = true;
     // Check for global vs local work
     int selfidx = selfidx();
