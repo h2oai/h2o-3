@@ -56,6 +56,7 @@ class RadixCount extends MRTask<RadixCount> {
     DKV.put(getKey(_left, _col, H2O.SELF), _counts);
     // just the MSB counts per chunk on this node.  Most of this spine will be empty here.  TO DO: could condense to just the chunks on this node but for now, leave sparse.
     // We'll use this sparse spine right now on this node and the reduce happens on _o and _x later
+    super.postLocal();
   }
 }
 
@@ -77,6 +78,11 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
     //Log.info("Getting RadixCounts for column " + _col[0] + " from myself (node " + H2O.SELF + ") for Frame " + _frameKey );
     //Log.info("Getting");
     _counts = ((RadixCount.Long2DArray)DKV.getGet(RadixCount.getKey(_left, _col[0], H2O.SELF)))._val;   // get the sparse spine for this node, created and DKV-put above
+    //try {
+    //  Thread.sleep(10000);
+    //} catch (InterruptedException e) {
+    //  e.printStackTrace();
+    //}
     long _MSBhist[] = new long[256];  // total across nodes but retain original spine as we need that below
     int nc = _fr.anyVec().nChunks();
     for (int c = 0; c < nc; c++) {
@@ -248,6 +254,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
         DKV.put(getNodeOXbatchKey(_left, msb, H2O.SELF.index(), b), ox);
       }
     }
+    super.postLocal();
     System.out.println("took " + (System.nanoTime() - t0) / 1e9);
   }
 }
