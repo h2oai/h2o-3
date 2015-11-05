@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 import random
-
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 def covtype():
   covtype = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
@@ -17,7 +17,7 @@ def covtype():
 
   #covtype.summary()
 
-  from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
   # L2: alpha = 0, lambda = 0
   covtype_mod1 = H2OGeneralizedLinearEstimator(family="binomial", alpha=0, Lambda=0)
   covtype_mod1.train(x=myX, y=myY, training_frame=covtype)

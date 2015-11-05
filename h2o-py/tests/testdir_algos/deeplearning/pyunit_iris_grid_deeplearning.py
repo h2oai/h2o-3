@@ -4,13 +4,13 @@ import h2o
 from tests import pyunit_utils
 import itertools
 from h2o.grid.grid_search import H2OGridSearch
-
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def iris_dl_grid():
   train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
   # Run DL
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
   hidden_opts = [[20,20],[50,50,50]]
   loss_opts = ["Quadratic","CrossEntropy"]
   size_of_hyper_space = len(hidden_opts) * len(loss_opts)

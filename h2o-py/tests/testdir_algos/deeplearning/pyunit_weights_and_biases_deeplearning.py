@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def weights_and_biases():
 
@@ -12,7 +12,7 @@ def weights_and_biases():
   covtype = h2o.upload_file(pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
   covtype[54] = covtype[54].asfactor()
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
   dlmodel = H2ODeepLearningEstimator(hidden=[17,191],
                                      epochs=1,
                                      balance_classes=False,

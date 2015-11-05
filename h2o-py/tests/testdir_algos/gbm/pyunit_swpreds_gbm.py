@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def swpreds_gbm():
   # Training set has two predictor columns
@@ -15,7 +15,7 @@ def swpreds_gbm():
   #swpreds.summary()
 
   # Train H2O GBM without Noise Column
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   h2o_gbm_model1 = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=50, max_depth=20, nbins=500)
   h2o_gbm_model1.train(x="X1",y="y", training_frame=swpreds)
   h2o_gbm_model1.show()

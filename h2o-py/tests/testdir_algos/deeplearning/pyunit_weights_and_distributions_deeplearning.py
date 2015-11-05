@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def weights_and_distributions():
 
@@ -10,7 +11,7 @@ def weights_and_distributions():
   htable["moptva"] = htable["moptva"].asfactor()
   htable["zon"] = htable["zon"]
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
   # gamma
   dl = H2ODeepLearningEstimator(distribution="gamma")
   dl.train(x=range(3),y="medskad",training_frame=htable, weights_column="antskad")

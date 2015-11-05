@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 
@@ -14,7 +14,7 @@ def offset_poisson():
 
     insurance["offset"] = insurance["Holders"].log()
 
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
     gbm = H2OGradientBoostingEstimator(ntrees=600,learn_rate=.1,max_depth=1,min_rows=1,distribution="poisson")
     gbm.train(x=range(3),y="Claims",training_frame=insurance,offset_column="offset")
 

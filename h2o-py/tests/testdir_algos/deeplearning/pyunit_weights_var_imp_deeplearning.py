@@ -4,7 +4,7 @@ import h2o
 from tests import pyunit_utils
 import random
 import copy
-
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def weights_vi():
   random.seed(1234)
@@ -33,7 +33,6 @@ def weights_vi():
   dataset2_h2o = h2o.H2OFrame(dataset2_python)
   dataset2_h2o.set_names(["response", "p1", "p2", "p3"])
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
   ##### compute variable importances on dataset1 and dataset2
   model_dataset1 = H2ODeepLearningEstimator(variable_importances=True,

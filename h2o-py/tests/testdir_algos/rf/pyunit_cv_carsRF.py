@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 import random
@@ -30,7 +30,7 @@ def cv_carsRF():
 
   print "Response column: {0}".format(response_col)
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
 
 ## cross-validation

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 
 
 
@@ -14,7 +14,7 @@ def nb_init_err():
   iris.describe
 
   print "Laplace smoothing parameter is negative"
-  from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
+
   try:
     H2ONaiveBayesEstimator(laplace=-1).train(x=range(4), y=4, training_frame=iris)
     assert False, "Expected naive bayes algo to fail on negative laplace training parameter"

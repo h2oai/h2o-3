@@ -2,12 +2,12 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def imbalanced_gbm():
   covtype = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
   covtype[54] = covtype[54].asfactor()
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   hh_imbalanced = H2OGradientBoostingEstimator(ntrees=10,
                                                nfolds=3,
                                                distribution="multinomial",

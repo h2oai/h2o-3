@@ -8,6 +8,7 @@ import numpy.random
 import scipy.stats
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def bernoulli_synthetic_data_gbm_medium():
 
@@ -61,7 +62,7 @@ def bernoulli_synthetic_data_gbm_medium():
 
     train_h2o["C1"] = train_h2o["C1"].asfactor()
     test_h2o["C1"] = test_h2o["C1"].asfactor()
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
     gbm_h2o = H2OGradientBoostingEstimator(distribution=distribution,
                                            ntrees=ntrees,
                                            min_rows=min_rows,

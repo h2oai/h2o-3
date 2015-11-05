@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -17,7 +17,7 @@ def iris_nfolds():
 
   # Can specify both nfolds >= 2 and validation = H2OParsedData at once
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   try:
       H2ORandomForestEstimator(ntrees=50, nfolds=5).train(y=4, x=range(4), validation_frame=iris)

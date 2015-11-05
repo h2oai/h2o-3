@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 
 
 
@@ -19,7 +19,7 @@ def nb_prostate():
   prostate['DPROS'] = prostate['DPROS'].asfactor()
 
   print "Compare with Naive Bayes when x = 3:9, y = 2"
-  from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
+
   prostate_nb = H2ONaiveBayesEstimator(laplace = 0)
   prostate_nb.train(x=range(2,9), y=1, training_frame=prostate)
   prostate_nb.show()
