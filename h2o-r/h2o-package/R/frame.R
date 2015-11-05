@@ -914,6 +914,15 @@ hour <- function(x) UseMethod('hour', x)
 #' @export
 hour.Frame <- h2o.hour
 
+#' Compute msec since the Unix Epoch
+#'
+#' @param year Defaults to 1970
+#' @param month zero based (months are 0 to 11)
+#' @param day zero based (days are 0 to 30)
+#' @param hour hour
+#' @param minute minute
+#' @param second second
+#' @param msec msec
 #' @export
 h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) {
   # All units are zero-based (including months and days).  Missing year defaults to 1970.
