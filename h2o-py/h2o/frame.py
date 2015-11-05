@@ -1020,7 +1020,6 @@ class H2OFrame(object):
     -------
       Returns this H2OFrame.
     """
-    import gc
     col_expr=None
     row_expr=None
     colname=None  # When set, we are doing an append
@@ -1043,6 +1042,7 @@ class H2OFrame(object):
         if col_expr.start is None and col_expr.stop is None:
           col_expr = slice(0,self.ncol)    # Slice of all
     elif isinstance(b, ExprNode): row_expr = b # Row slicing
+    elif isinstance(b, list): col_expr = b
 
     src = float("nan") if c is None else c
     src_in_self = self.is_src_in_self(src)
