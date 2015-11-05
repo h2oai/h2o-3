@@ -53,13 +53,21 @@ class ASTGroup extends ASTPrim {
     var() {
       @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; d0s[1]+=d1; }
       @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
-      @Override double postPass( double ds[], long n) { return (ds[0] - ds[1]*ds[1]/n)/(n-1); }
+      @Override double postPass( double ds[], long n) { 
+        double numerator = ds[0] - ds[1]*ds[1]/n;
+        if (Math.abs(numerator) < 1e-5) numerator = 0;
+        return numerator/(n-1); 
+      }
       @Override double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
     },
     sdev() {
       @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; d0s[1]+=d1; }
       @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
-      @Override double postPass( double ds[], long n) { return Math.sqrt((ds[0] - ds[1]*ds[1]/n)/(n-1)); }
+      @Override double postPass( double ds[], long n) { 
+        double numerator = ds[0] - ds[1]*ds[1]/n;
+        if (Math.abs(numerator) < 1e-5) numerator = 0;
+        return Math.sqrt(numerator/(n-1)); 
+      }
       @Override double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
     },
     min() { 
