@@ -915,6 +915,14 @@ hour <- function(x) UseMethod('hour', x)
 hour.Frame <- h2o.hour
 
 #' @export
+h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) {
+  # All units are zero-based (including months and days).  Missing year defaults to 1970.
+  # H2OFrame of one column containing the date in millis since the epoch.
+  .newExpr("mktime", year,month,day,hour,minute,second,msec)
+}
+
+
+#' @export
 as.Date.Frame <- function(x, format, ...) {
   if(!is.character(format)) stop("format must be a string")
   .newExpr("as.Date", chk.Frame(x), .quote(format), ...)

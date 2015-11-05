@@ -50,24 +50,32 @@ data$age   <- data$year - data$"birth year"
 
 print ('Group data into station & day combinations...')
 start <- Sys.time()
-bpd <- h2o.group_by(data, by = c("days","start station name", "year","month", "day", "dayofweek"), nrow("day") , mean("tripduration"), mean("age"))
+bpd <- h2o.group_by(data, by = c("days","start station name"), nrow("day") , mean("tripduration"), mean("age"))
 groupTime <- Sys.time() - start
 print(paste("Took", round(groupTime, digits = 2), units(groupTime), "to group",
             nrow(data), "data points into", nrow(bpd), "points."))
-names(bpd) <- c("days","start station name", "year","month", "day","dayofweek", "bike_count", "mean_duree", "mean_age")
+names(bpd) <- c("Days","start station name", "bike_count", "mean_duration", "mean_age")
+
+# A little feature engineering
+# Add in month-of-year (seasonality; fewer bike rides in winter than summer)
+secs <- bpd$Days*secsPerDay
+bpd$Month = as.factor(h2o.month(secs))
+# Add in day-of-week (work-week; more bike rides on Sunday than Monday)
+bpd$DayOfWeek = h2o.dayOfWeek(secs)
+
 
 print('Examine the distribution of the number of bike rides as well as the average day of riders per day...')
-quantile(bpd$bike_count)
-quantile(bpd$mean_age)
-h2o.hist(bpd$bike_count)
-h2o.hist(bpd$mean_age)
-summary(bpd)
+print(quantile(bpd$bike_count))
+print(quantile(bpd$mean_age))
+print(h2o.hist(bpd$bike_count))
+print(h2o.hist(bpd$mean_age))
+print(summary(bpd))
 
 # 3- Fit a model on train; using test as validation
 
 # Function for doing class test/train/holdout split
 split_fit_predict <- function(data) {
-  r <- h2o.runif(data$day)
+  r <- h2o.runif(data$Days)
   train <- data[r < 0.6,]
   test  <- data[(r >= 0.6) & (r < 0.9),]
   hold  <- data[r >= 0.9,]
@@ -142,7 +150,7 @@ wthr1 <- h2o.importFile(path =
     locate_source("smalldata/demos/31081_New_York_City__Hourly_2014.csv")))
 
 # Peek at the data
-summary(wthr1)
+print(summary(wthr1))
 
 # Lots of columns in there!  Lets plan on converting to time-since-epoch to do
 # a 'join' with the bike data, plus gather weather info that might affect
@@ -154,13 +162,16 @@ wthr2 <- wthr1[, c("Year Local","Month Local","Day Local","Hour Local","Dew Poin
   "Weather Code 1/ Description")]
 colnames(wthr2)[match("Precipitation One Hour (mm)", colnames(wthr2))] <- "Rain (mm)" # Shorter column name
 names(wthr2)[match("Weather Code 1/ Description", colnames(wthr2))] <- "WC1" # Shorter column name
-summary(wthr2)
+print(summary(wthr2))
 # Much better!
 # Filter down to the weather at Noon
 wthr3 <- wthr2[ wthr2["Hour Local"]==12 ,]
 # Also, most rain numbers are missing - lets assume those are zero rain days
 wthr3[,"Rain (mm)"] <- ifelse(is.na(wthr3[,"Rain (mm)"]), 0, wthr3[,"Rain (mm)"])
 names(wthr3) = c("year", "month", "day", names(wthr3)[4:9])
+
+starttime = h2o.mktime(year=wthr3$year, month=wthr3$month-1, day=wthr3$day-1, hour=wthr3["Hour Local"])
+wthr3$Days = floor(starttime/secsPerDay)
 
 
 # 6 - Join the weather data-per-day to the bike-starts-per-day
