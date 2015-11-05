@@ -3,6 +3,8 @@
 ##H2O
 
 
+###Tibshirani (3.6.0.2) - 11/5/15
+
 ####New Features
 The following changes represent features that have been added since the previous release:
 
