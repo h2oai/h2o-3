@@ -172,7 +172,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
 
-  public String profString() { return _doProfile ? _profile.toString() : "MRTask profiling off"; }
+  public String profString() { return _doProfile ? _profile.toString() : "Profiling turned off"; }
   MRProfile _profile;
 
   public void setProfile(boolean b) {_doProfile = b;}
@@ -305,7 +305,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // do NOT split, then _rstart is 0 and _lstart is for the user map job(s).
     long _localstart, _rpcLstart, _rpcRstart, _rpcRdone, _localdone; // Local setup, RPC network i/o times
     long _mapstart, _userstart, _closestart, _mapdone; // MAP phase
-    long _onCstart, _reducedone, _remoteBlkDone, _localBlkDone, _onCdone; // REDUCE phase
+    long _onCstart, _reducedone, _remoteBlkDone, _localBlkDone, _onCdone, _closeLocalDone; // REDUCE phase
     // If we split the job left/right, then we get a total recording of the
     // last job, and the exec time & completion time of 1st job done.
     long _time1st, _done1st;
@@ -314,7 +314,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     long sumTime() { return _onCdone - (_localstart==0 ? _mapstart : _localstart); }
     void gather( MRProfile p, int size_rez ) {
       p._clz=null;
-      if( _last == null ) _last=p;
+      if( _last == null ) { _last=p; _time1st = p.sumTime(); _done1st = p._onCdone; }
       else {
         MRProfile first = _last._onCdone <= p._onCdone ? _last : p;
         _last           = _last._onCdone >  p._onCdone ? _last : p;
@@ -323,6 +323,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       if( size_rez !=0 )        // Record i/o result size
         if( _size_rez0 == 0 ) {      _size_rez0=size_rez; }
         else { /*assert _size_rez1==0;*/ _size_rez1=size_rez; }
+      assert _userstart !=0 || _last != null;
       assert _last._onCdone >= _done1st;
     }
 
@@ -331,24 +332,27 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       if( d==0 ) sb.append(_clz).append("\n");
       for( int i=0; i<d; i++ ) sb.append("  ");
       if( _localstart != 0 ) sb.append("Node local ").append(_localdone - _localstart).append("ms, ");
-      if( _userstart == 0 ) {   // Forked job?
+      if( _last != null ) {   // Forked job?
         sb.append("Slow wait ").append(_mapstart-_localdone).append("ms + work ").append(_last.sumTime()).append("ms, ");
         sb.append("Fast work ").append(_time1st).append("ms + wait ").append(_onCstart-_done1st).append("ms\n");
         _last.print(sb,d+1); // Nested slow-path print
         for( int i=0; i<d; i++ ) sb.append("  ");
         sb.append("join-i/o ").append(_onCstart-_last._onCdone).append("ms, ");
-      } else {                  // Leaf map call?
-        sb.append("Map ").append(_mapdone - _mapstart).append("ms (prep ").append(_userstart - _mapstart);
+      }
+      if( _userstart != 0 ) {                  // Leaf map call?
+        sb.append("Map ").append(_mapdone - _mapstart);
+        sb.append("ms (prep ").append(_userstart - _mapstart);
         sb.append("ms, user ").append(_closestart-_userstart);
         sb.append("ms, closeChk ").append(_mapdone-_closestart).append("ms), ");
       }
-      sb.append("Red ").append(_onCdone - _onCstart).append("ms (locRed ");
-      sb.append(_reducedone-_onCstart).append("ms");
+      sb.append("Red ").append(_onCdone - _onCstart);
+      sb.append("ms (locRed ").append(_reducedone-_onCstart).append("ms");
       if( _remoteBlkDone!=0 ) {
-        sb.append(", remBlk ").append(_remoteBlkDone-_reducedone).append("ms, locBlk ");
-        sb.append(_localBlkDone-_remoteBlkDone).append("ms, close ");
-        sb.append(_onCdone-_localBlkDone).append("ms, size ");
-        sb.append(PrettyPrint.bytes(_size_rez0)).append("+").append(PrettyPrint.bytes(_size_rez1));
+        sb.append(", closeLocal ").append(_closeLocalDone-_reducedone);
+        sb.append("ms, remBlk ").append(_remoteBlkDone-_closeLocalDone);
+        sb.append("ms, locBlk ").append(_localBlkDone-_remoteBlkDone);
+        sb.append("ms, postGlobal ").append(_onCdone - _localBlkDone);
+        sb.append("ms, size ").append(PrettyPrint.bytes(_size_rez0)).append("+").append(PrettyPrint.bytes(_size_rez1));
       }
       sb.append(")\n");
       return sb;
@@ -528,12 +532,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * chunks; call user's init.
    */
   private void setupLocal0() {
-    assert _profile==null;
-    _fs = new Futures();
     if(_doProfile) {
       _profile = new MRProfile(this);
       _profile._localstart = System.currentTimeMillis();
     }
+    _fs = new Futures();
     _topLocal = true;
     // Check for global vs local work
     int selfidx = selfidx();
@@ -695,7 +698,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // Only on the top local call, have more completion work
     if(_doProfile)
       _profile._reducedone = System.currentTimeMillis();
-    if( _topLocal ) postLocal();
+    if( _topLocal ) postLocal0();
     if(_doProfile)
       _profile._onCdone = System.currentTimeMillis();
   }
@@ -721,7 +724,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Gather/reduce remote work.
   // Block for other queued pending tasks.
   // Copy any final results into 'this', such that a return of 'this' has the results.
-  protected void postLocal() {
+  private void postLocal0() {
+    closeLocal();          // User's node-local cleanup
+    if(_doProfile)
+      _profile._closeLocalDone = System.currentTimeMillis();
     reduce3(_nleft);            // Reduce global results from neighbors.
     reduce3(_nrite);
     if(_doProfile)
@@ -738,7 +744,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       _res._profile = _profile; // Use my profile (not child's)
       copyOver(_res);           // So copy into self
     }
-    closeLocal();          // User's node-local cleanup
     if( _topGlobal ) {
       if (_fr != null)      // Do any post-writing work (zap rollup fields, etc)
         _fr.postWrite(_fs).blockForPending();

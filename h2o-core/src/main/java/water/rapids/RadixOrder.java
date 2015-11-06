@@ -6,6 +6,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.PrettyPrint;
 
 import java.util.Arrays;
 
@@ -50,13 +51,13 @@ class RadixCount extends MRTask<RadixCount> {
     }
   }
 
-  @Override protected void postLocal() {
+  @Override protected void closeLocal() {
     //Log.info("Putting MSB counts for column " + _col + " over my chunks (node " + H2O.SELF + ") for frame " + _frameKey);
     //Log.info("Putting");
     DKV.put(getKey(_left, _col, H2O.SELF), _counts);
     // just the MSB counts per chunk on this node.  Most of this spine will be empty here.  TO DO: could condense to just the chunks on this node but for now, leave sparse.
     // We'll use this sparse spine right now on this node and the reduce happens on _o and _x later
-    super.postLocal();
+    //super.postLocal();
   }
 }
 
@@ -180,7 +181,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
         }
       }
     }
-    System.out.println("MoveByFirstByte.map() for chunk " + chk[0].cidx() + " took : " + (System.nanoTime() - t0) / 1e9);
+    System.out.println(System.currentTimeMillis() + " MoveByFirstByte.map() for chunk " + chk[0].cidx() + " took : " + (System.nanoTime() - t0) / 1e9);
   }
 
   static H2ONode ownerOfMSB(int MSBvalue) {
@@ -222,11 +223,13 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   }
 
   // Push o/x in chunks to owning nodes
-  @Override protected void postLocal() {
-    System.out.println("Starting MoveByFirstByte.postLocal() ... ");
+  @Override protected void closeLocal() {
+    System.out.println(System.currentTimeMillis() + " Starting MoveByFirstByte.closeLocal() ... ");
     long t0 = System.nanoTime();
     int nc = _fr.anyVec().nChunks();
+    long forLoopTime = 0, DKVputTime = 0, sumSize = 0;
     for (int msb =0; msb <_o.length /*256*/; ++msb) {
+      long t00 = System.nanoTime();
       if(_o[msb] == null) continue;
       int numChunks = 0;  // how many of the chunks on this node had some rows with this MSB
       for (int c=0; c<nc; c++) {
@@ -243,20 +246,28 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
           j++;
         }
       }
+      forLoopTime += System.nanoTime() - t00;
+      t00 = System.nanoTime();
       //assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
       MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
       //Log.info("Putting MSB node headers for Frame " + _frameKey + " for MSB " + msb);
       //Log.info("Putting msb " + msb + " on node " + H2O.SELF.index());
-      DKV.put(getMSBNodeHeaderKey(_left, msb, H2O.SELF.index()), msbh);
+      DKV.put(getMSBNodeHeaderKey(_left, msb, H2O.SELF.index()), msbh, _fs);   // Just adding _fs makes it go in parallel
       for (int b=0;b<_o[msb].length; ++b) {
         OXbatch ox = new OXbatch(_o[msb][b], _x[msb][b]);
         //Log.info("Putting OX batch for Frame " + _frameKey + " for batch " + b + " for MSB " + msb);
         //Log.info("Putting");
-        DKV.put(getNodeOXbatchKey(_left, msb, H2O.SELF.index(), b), ox);
+        sumSize += _o[msb][b].length * 8 + _x[msb][b].length * _keySize + 64;
+        DKV.put(getNodeOXbatchKey(_left, msb, H2O.SELF.index(), b), ox, _fs);
       }
+      DKVputTime += System.nanoTime() - t00;
     }
-    super.postLocal();
+    //super.postLocal();
     System.out.println("took " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("The for loops look took " + forLoopTime / 1e9);
+    System.out.println("The DKV.put 's took " + DKVputTime / 1e9);
+    System.out.println("The DKV.put total size " + PrettyPrint.bytes(sumSize));
+
   }
 }
 

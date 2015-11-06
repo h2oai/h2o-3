@@ -149,13 +149,13 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * After all maps are done on a node, this is called to store the per-node model into DKV (for elastic averaging)
    * Otherwise, do nothing.
    */
-  @Override protected void postLocal() {
+  @Override protected void closeLocal() {
     if (_localmodel.get_params()._elastic_averaging) {
       // store local model, as it will be reduced in the following, and hence averaged with other models
       DKV.put(_localmodel.localModelInfoKey(H2O.SELF), _localmodel);
     }
     _sharedmodel = null; //avoid serialization overhead
-    super.postLocal();
+    //super.postLocal();
   }
 
   /**
