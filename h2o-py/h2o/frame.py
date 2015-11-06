@@ -335,7 +335,7 @@ class H2OFrame(object):
     return (self[i] for i in range(self.ncol))
   def __str__(self):
     if sys.gettrace() is None:
-      return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore") + '\n\n [' + str(self.nrow) \
+      return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore") + '\n\n[' + str(self.nrow) \
     + ' rows x ' + str(self.ncol) + ' columns]'
     return ""
   def __len__(self):
@@ -363,7 +363,7 @@ class H2OFrame(object):
       if use_pandas and h2o.can_use_pandas():
         print self.head().as_data_frame(True)
       else:
-        print self
+        print self,
 
   def summary(self):
     """Summary: show(), plus includes min/mean/max/sigma and other rollup data"""
