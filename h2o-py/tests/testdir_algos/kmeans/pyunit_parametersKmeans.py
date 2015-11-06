@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 
 
@@ -12,7 +12,7 @@ def parametersKmeans():
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
   print "Create and and duplicate..."
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
   iris_km = H2OKMeansEstimator(k=3, seed=1234)
   iris_km.train(x=range(4),training_frame=iris)
   parameters = iris_km._model_json['parameters']

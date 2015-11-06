@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def fiftycat_gbm():
   # Training set has only 45 categories cat1 through cat45
@@ -10,7 +10,7 @@ def fiftycat_gbm():
   train["y"] = train["y"].asfactor()
 
   # Train H2O GBM Model:
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   model = H2OGradientBoostingEstimator(distribution="bernoulli",
                                        ntrees=10,
                                        max_depth=5,

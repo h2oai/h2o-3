@@ -6,7 +6,7 @@ from tests import pyunit_utils
 
 def pyunit_asnumeric_string():
 
-  small_test = "bigdata/laptop/lending-club/LoanStats3a.csv"
+  small_test = [pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
 
   print "Import and Parse data"
 

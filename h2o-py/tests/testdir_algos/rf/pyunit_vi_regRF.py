@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -12,7 +12,7 @@ def vi_reg():
 
   data = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/BostonHousing.csv"))
   #data.summary()
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   rf = H2ORandomForestEstimator(ntrees=100, max_depth=20, nbins=100, seed=0)
   rf.train(x=range(13), y=13, training_frame=data)

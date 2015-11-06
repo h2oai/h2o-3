@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def offset_tweedie():
   # Connect to a pre-existing cluster
@@ -12,7 +12,7 @@ def offset_tweedie():
 
   insurance["offset"] = insurance["Holders"].log()
 
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   gbm = H2OGradientBoostingEstimator(distribution="tweedie",
                                      ntrees=600,
                                      max_depth=1,

@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def tweedie_weights():
 
@@ -20,7 +20,7 @@ def tweedie_weights():
   # Without weights
   myX = ["Merit","Class","C1M3","C4M3"]
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
   dl = H2ODeepLearningEstimator(distribution="tweedie",hidden=[1],epochs=1000,
                                 train_samples_per_iteration=-1,reproducible=True,
                                 activation="Tanh",balance_classes=False,

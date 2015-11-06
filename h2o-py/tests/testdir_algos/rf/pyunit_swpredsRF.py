@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -22,7 +22,7 @@ def swpredsRF():
   #swpreds.summary()
 
   # Train H2O DRF without Noise Column
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
 #Log.info("Distributed Random Forest with only Predictor Column")
   model1 = H2ORandomForestEstimator(ntrees=50, max_depth=20, nbins=500)

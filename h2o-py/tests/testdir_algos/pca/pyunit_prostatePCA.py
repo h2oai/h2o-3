@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.transforms.decomposition import H2OPCA
 
 
 
@@ -20,7 +20,7 @@ def pca_prostate():
   prostate.describe()
 
   print "PCA on columns 3 to 9 with k = 3, retx = FALSE, transform = 'STANDARDIZE'"
-  from h2o.transforms.decomposition import H2OPCA
+
 
   fitPCA = H2OPCA(k=3, transform="NONE", pca_method="Power")
   fitPCA.train(x=range(2,9), training_frame=prostate)
