@@ -273,23 +273,23 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   def checkpoint(self):
     return self._parms["checkpoint"]
 
-@checkpoint.setter
+  @checkpoint.setter
   def checkpoint(self, value):
     self._parms["checkpoint"] = value
 
- @property
+  @property
   def objective_epsilon(self):
     return self._parms["objective_epsilon"]
 
-@objective_epsilon.setter
+  @objective_epsilon.setter
   def objective_epsilon(self, value):
     self._parms["objective_epsilon"] = value
 
-@property
+  @property
   def gradient_epsilon(self):
     return self._parms["gradient_epsilon"]  
     
-@gradient_epsilon.setter
+  @gradient_epsilon.setter
   def gradient_epsilon(self, value):
     self._parms["gradient_epsilon"] = value
   
