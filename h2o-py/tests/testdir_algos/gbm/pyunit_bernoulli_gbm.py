@@ -5,7 +5,7 @@ from tests import pyunit_utils
 import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def bernoulli_gbm():
 
@@ -28,7 +28,7 @@ def bernoulli_gbm():
   depth = 5
   min_rows = 10
   # Build H2O GBM classification model:
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   gbm_h2o = H2OGradientBoostingEstimator(ntrees=ntrees, learn_rate=learning_rate,
                                          max_depth=depth,
                                          min_rows=min_rows,

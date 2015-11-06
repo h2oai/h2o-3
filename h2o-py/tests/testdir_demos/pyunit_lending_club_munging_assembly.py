@@ -77,7 +77,7 @@ def lending_club_munging_assembly():
 
   res = assembly.fit(data)
   res.show()
-  assembly.to_pojo("LendingClubMungingDemo") #, path="/Users/spencer/Desktop/munging_pojo/lending_club_demo", get_jar=True)
+  assembly.to_pojo("LendingClubMungingDemo")#, path="/Users/spencer/Desktop/munging_pojo/lending_club_demo", get_jar=True)
 
   # java api usage:
   #

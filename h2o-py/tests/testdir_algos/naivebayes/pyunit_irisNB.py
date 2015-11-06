@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 
 
 
@@ -13,7 +13,7 @@ def nb_iris():
   iris = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
   iris.describe()
 
-  from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
+
   laplace_range = [0, 1, 0.25]
   for i in laplace_range:
     print "H2O Naive Bayes with Laplace smoothing = {0}".format(i)

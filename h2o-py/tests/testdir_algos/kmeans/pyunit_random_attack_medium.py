@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 
 import random
@@ -10,7 +10,7 @@ import random
 def random_attack():
 
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
 
   def attack(train, x):
     kwargs = {}

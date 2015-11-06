@@ -525,11 +525,26 @@ class H2OGridSearch(object):
   def sort_by(self, metric, increasing=True):
     """
     Sort the models in the grid space by a metric.
-
-    :param metric: str, A metric ('logloss', 'auc', 'r2') by which to sort the models. If addtional arguments are desired,
-    they can be passed to the metric, for example 'logloss(valid=True)'
-    :param increasing: boolean, Sort the metric in increasing (True) (default) or decreasing (False) order.
-    :return: An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value
+    
+    Parameters
+    ----------
+    metric: str
+      A metric ('logloss', 'auc', 'r2') by which to sort the models. If addtional arguments are desired,
+      they can be passed to the metric, for example 'logloss(valid=True)'
+    increasing: boolean, optional
+      Sort the metric in increasing (True) (default) or decreasing (False) order.
+      
+    Returns
+    -------
+      An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value. The best model can 
+      be extracted and used for predictions.
+     
+    Examples
+    --------
+      >>> grid_search_results = gs.sort_by('F1', False)
+      >>> best_model_id = grid_search_results['Model Id'][0]
+      >>> best_model = h2o.get_model(best_model_id)
+      >>> best_model.predict(test_data)
     """
 
     if metric[-1] != ')': metric += '()'
@@ -545,9 +560,17 @@ class H2OGridSearch(object):
   def get_hyperparams(self, id, display=True):
     """
     Get the hyperparameters of a model explored by grid search.
-    :param id: int or str, either the index of desired model or its model id
-    :param display: boolean, flag whether to display hyperparameter names
-    :return: list, hyperparameters in the order displayed
+    
+    Parameters
+    ----------    
+    id: str
+      The model id of the model with hyperparameters of interest.
+    display: boolean 
+      Flag to indicate whether to display the hyperparameter names.
+      
+    Returns
+    -------
+      A list of the hyperparameters for the specified model.
     """
     idx = id if isinstance(id, int) else self.model_ids.index(id)
     model = self[idx]

@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def deeplearning_mean_residual_deviance():
 
@@ -13,7 +13,7 @@ def deeplearning_mean_residual_deviance():
   predictors = ["displacement","power","weight","acceleration","year"]
   response_col = "economy"
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
 
   dl = H2ODeepLearningEstimator(nfolds=3)
   dl.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)

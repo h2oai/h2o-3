@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def bigcat_gbm():
   #Log.info("Importing bigcat_5000x2.csv data...\n")
@@ -12,7 +12,7 @@ def bigcat_gbm():
   #bigcat.summary()
 
   # Train H2O GBM Model:
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   model = H2OGradientBoostingEstimator(distribution="bernoulli",
                                        ntrees=1,
                                        max_depth=1,

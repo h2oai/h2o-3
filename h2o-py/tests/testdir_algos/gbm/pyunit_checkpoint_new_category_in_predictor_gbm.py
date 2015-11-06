@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def checkpoint_new_category_in_predictor():
 
@@ -10,7 +10,7 @@ def checkpoint_new_category_in_predictor():
   sv2 = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))
   vir = h2o.upload_file(pyunit_utils.locate("smalldata/iris/virginica.csv"))
 
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
 
   m1 = H2OGradientBoostingEstimator(ntrees=100)
   m1.train(x=[0,1,2,4],y=3, training_frame=sv1)

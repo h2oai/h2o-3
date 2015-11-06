@@ -1353,7 +1353,7 @@ is.numeric <- function(x) {
 #' @export
 print.Frame <- function(x, ...) { 
   print(head(x))
-  cat(paste0("[", nrow(x), " rows x ", ncol(x), " columns]"), "\n")
+  cat(paste0("\n[", nrow(x), " rows x ", ncol(x), " columns]"), "\n")
 }
 
 #' Display the structure of an H2O Frame object

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 
 
 import random
@@ -16,7 +16,7 @@ def nb_baddata():
   print "Training data with all NA's"
   train = [["NA" for r in range(100)] for c in range(10)]
   train_h2o = h2o.H2OFrame(train)
-  from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
+
   try:
     H2ONaiveBayesEstimator().train(x=range(1,10), y=0, training_frame=train_h2o)
     assert False, "Expected naive bayes algo to fail on training data of all NA's"
