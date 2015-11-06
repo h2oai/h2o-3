@@ -55,12 +55,12 @@ def weights_var_imp():
                            y="cylinders",
                            weights_column="weights", training_frame=data2)
 
-    reg1_vi = gbm1_regression.varimp(return_list=True)
-    reg2_vi = gbm2_regression.varimp(return_list=True)
-    bin1_vi = gbm1_binomial.varimp(return_list=True)
-    bin2_vi = gbm2_binomial.varimp(return_list=True)
-    mul1_vi = gbm1_multinomial.varimp(return_list=True)
-    mul2_vi = gbm2_multinomial.varimp(return_list=True)
+    reg1_vi = gbm1_regression.varimp()
+    reg2_vi = gbm2_regression.varimp()
+    bin1_vi = gbm1_binomial.varimp()
+    bin2_vi = gbm2_binomial.varimp()
+    mul1_vi = gbm1_multinomial.varimp()
+    mul2_vi = gbm2_multinomial.varimp()
 
     print "Varimp (regresson)   no weights vs. weights: {0}, {1}".format(reg1_vi, reg2_vi)
     print "Varimp (binomial)    no weights vs. weights: {0}, {1}".format(bin1_vi, bin2_vi)

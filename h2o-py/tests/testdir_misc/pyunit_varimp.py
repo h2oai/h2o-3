@@ -17,7 +17,7 @@ def varimp_test():
     should_be_none = my_gbm.varimp()
     assert should_be_none is None, "expected varimp to return None, but returned {0}".format(should_be_none)
 
-    should_be_list = my_gbm.varimp(return_list=True)
+    should_be_list = my_gbm.varimp()
     assert len(should_be_list) == 3, "expected varimp list to contain 3 entries, but it has " \
                                      "{0}".format(len(should_be_list))
     assert len(should_be_list[0]) == 4, "expected varimp entry to contain 4 elements (variable, relative_importance, " \
