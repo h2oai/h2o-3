@@ -172,11 +172,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
 
-  public String profString() { return _doProfile ? _profile.toString() : "Profiling turned off"; }
+  public String profString() { return _profile != null ? _profile.toString() : "Profiling turned off"; }
   MRProfile _profile;
 
-  public void setProfile(boolean b) {_doProfile = b;}
-  private boolean _doProfile = false;
+  public void setProfile(boolean b) { if( b ) _profile = new MRProfile(this); }
 
   /**
    * @return priority of this MRTask
@@ -305,7 +304,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // do NOT split, then _rstart is 0 and _lstart is for the user map job(s).
     long _localstart, _rpcLstart, _rpcRstart, _rpcRdone, _localdone; // Local setup, RPC network i/o times
     long _mapstart, _userstart, _closestart, _mapdone; // MAP phase
-    long _onCstart, _reducedone, _remoteBlkDone, _localBlkDone, _onCdone; // REDUCE phase
+    long _onCstart, _reducedone, _closeLocalDone, _remoteBlkDone, _localBlkDone, _onCdone; // REDUCE phase
     // If we split the job left/right, then we get a total recording of the
     // last job, and the exec time & completion time of 1st job done.
     long _time1st, _done1st;
@@ -344,13 +343,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         sb.append("ms, user ").append(_closestart-_userstart);
         sb.append("ms, closeChk ").append(_mapdone-_closestart).append("ms), ");
       }
-      sb.append("Red ").append(_onCdone - _onCstart).append("ms (locRed ");
-      sb.append(_reducedone-_onCstart).append("ms");
+      sb.append("Red ").append(_onCdone - _onCstart);
+      sb.append("ms (locRed ").append(_reducedone-_onCstart).append("ms");
       if( _remoteBlkDone!=0 ) {
-        sb.append(", remBlk ").append(_remoteBlkDone-_reducedone).append("ms, locBlk ");
-        sb.append(_localBlkDone-_remoteBlkDone).append("ms, close ");
-        sb.append(_onCdone-_localBlkDone).append("ms, size ");
-        sb.append(PrettyPrint.bytes(_size_rez0)).append("+").append(PrettyPrint.bytes(_size_rez1));
+        sb.append(  ", close " ).append(_closeLocalDone-    _reducedone);
+        sb.append("ms, remBlk ").append( _remoteBlkDone-_closeLocalDone);
+        sb.append("ms, locBlk ").append(  _localBlkDone- _remoteBlkDone);
+        sb.append("ms, close " ).append(       _onCdone-  _localBlkDone);
+        sb.append("ms, size "  ).append(PrettyPrint.bytes(_size_rez0)).append("+").append(PrettyPrint.bytes(_size_rez1));
       }
       sb.append(")\n");
       return sb;
@@ -530,10 +530,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * chunks; call user's init.
    */
   private void setupLocal0() {
-    if(_doProfile) {
-      _profile = new MRProfile(this);
-      _profile._localstart = System.currentTimeMillis();
-    }
+    if(_profile != null)
+      (_profile = new MRProfile(this))._localstart = System.currentTimeMillis();
+    // Make a blockable Futures for both internal and user work to block on.
     _fs = new Futures();
     _topLocal = true;
     // Check for global vs local work
@@ -541,44 +540,32 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     int nlo = subShift(selfidx);
     assert nlo < _nhi;
     final int nmid = (nlo+_nhi)>>>1; // Mid-point
-    // Client mode: split left & right, but no local work
-    if( H2O.ARGS.client ) {
-      if(_doProfile)
-        _profile._rpcLstart = System.currentTimeMillis();
-      _nleft = _run_local ? null : remote_compute(nlo ,nmid);
-      if(_doProfile)
-        _profile._rpcRstart = System.currentTimeMillis();
-      _nrite = _run_local ? null : remote_compute(nmid,_nhi);
-      if(_doProfile)
-        _profile._rpcRdone  = System.currentTimeMillis();
-      setupLocal();               // Setup any user's shared local structures; want this for possible reduction ONTO client
-      if(_doProfile)
-        _profile._localdone = System.currentTimeMillis();
-      return;
-    }
-    // Normal server mode: split left & right excluding self
-    if( !_run_local && nlo+1 < _nhi ) { // Have global work?
-      if(_doProfile)
-        _profile._rpcLstart = System.currentTimeMillis();
+
+    // Run remote IF:
+    // - Not forced to run local (no remote jobs allowed) AND
+    // - - There's remote work, or Client mode (always remote work)
+    if( (!_run_local) && ((nlo+1 < _nhi) || H2O.ARGS.client) ) {
+      if(_profile!=null) _profile._rpcLstart = System.currentTimeMillis();
       _nleft = remote_compute(nlo+1,nmid);
-      if(_doProfile)
-        _profile._rpcRstart = System.currentTimeMillis();
+      if(_profile!=null) _profile._rpcRstart = System.currentTimeMillis();
       _nrite = remote_compute( nmid,_nhi);
-      if(_doProfile)
-        _profile._rpcRdone  = System.currentTimeMillis();
+      if(_profile!=null) _profile._rpcRdone  = System.currentTimeMillis();
+    } else {
+      if(_profile!=null) 
+        _profile._rpcLstart = _profile._rpcRstart = _profile._rpcRdone = System.currentTimeMillis();
     }
+
     if( _fr != null ) {                       // Doing a Frame
       _lo = 0;  _hi = _fr.numCols()==0 ? 0 : _fr.anyVec().nChunks(); // Do All Chunks
-      // If we have any output vectors, make a blockable Futures for them to
-      // block on.
       // get the Vecs from the K/V store, to avoid racing fetches from the map calls
       _fr.vecs();
     } else if( _keys != null ) {    // Else doing a set of Keys
       _lo = 0;  _hi = _keys.length; // Do All Keys
     }
-    setupLocal();               // Setup any user's shared local structures
-    if(_doProfile)
-      _profile._localdone = System.currentTimeMillis();
+    // Setup any user's shared local structures for both normal cluster nodes
+    // and any client; want this for possible reduction ONTO client
+    setupLocal();
+    if(_profile!=null) _profile._localdone = System.currentTimeMillis();
   }
 
   // Make an RPC call to some node in the middle of the given range.  Add a
@@ -589,9 +576,16 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       assert node != H2O.SELF.index(); // Not the same as selfidx() if this is a client
       T mrt = copyAndInit();
       mrt._nhi = (short) nhi;
-      addToPendingCount(1);       // Not complete until the RPC returns
+      addToPendingCount(1); // Not complete until the RPC returns
       // Set self up as needing completion by this RPC: when the ACK comes back
       // we'll get a wakeup.
+      // Note the subtle inter-play of onCompletion madness here: 
+      // - when run on the remote, the RPCCall (NOT RPC!) is completed by the
+      //   last map/compute2 call, signals end of the remote work, and ACK's
+      //   back the result. i.e., last-map calls RPCCall.onCompletion.
+      // - when launched on the local (right here, in this next line of code)
+      //   the completed RPC calls our self completion.  i.e. the completed RPC
+      //   calls MRTask.onCompletion
       return new RPC<>(H2O.CLOUD._memary[node], mrt).addCompleter(this).call();
     }
     return null; // nlo >= nhi => no remote work
@@ -602,7 +596,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  internal by F/J.  Not expected to be user-called.  */
   @Override public final void compute2() {
     assert _left == null && _rite == null && _res == null;
-    if(_doProfile) _profile._mapstart = System.currentTimeMillis();
+    if(_profile!=null) _profile._mapstart = System.currentTimeMillis();
     if( (_hi-_lo) >= 2 ) { // Multi-chunk case: just divide-and-conquer to 1 chunk
       final int mid = (_lo+_hi)>>>1; // Mid-point
       _left = copyAndInit();
@@ -612,17 +606,17 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       addToPendingCount(1);     // One fork awaiting completion
       _left.fork();             // Runs in another thread/FJ instance
       _rite.compute2();         // Runs in THIS F/J thread
-      if(_doProfile) _profile._mapdone = System.currentTimeMillis();
+      if(_profile!=null) _profile._mapdone = System.currentTimeMillis();
       return;                   // Not complete until the fork completes
     }
     // Zero or 1 chunks, and further chunk might not be homed here
     if( _fr==null ) {           // No Frame, so doing Keys?
       if( _keys == null ||     // Once-per-node mode
           _hi > _lo && _keys[_lo].home() ) {
-        if(_doProfile) _profile._userstart = System.currentTimeMillis();
+        if(_profile!=null) _profile._userstart = System.currentTimeMillis();
         if( _keys != null ) map(_keys[_lo]);
         _res = self();        // Save results since called map() at least once!
-        if(_doProfile) _profile._closestart = System.currentTimeMillis();
+        if(_profile!=null) _profile._closestart = System.currentTimeMillis();
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?
       Vec v0 = _fr.anyVec();
@@ -649,7 +643,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           }
         }
         // Call all the various map() calls that apply
-        if(_doProfile)
+        if(_profile!=null)
           _profile._userstart = System.currentTimeMillis();
         if( _fr.vecs().length == 1 ) map(bvs[0]);
         if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1]);
@@ -672,40 +666,38 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         map(bvs,appendableChunks);
         _res = self();          // Save results since called map() at least once!
         // Further D/K/V put any new vec results.
-        if(_doProfile)
+        if(_profile!=null)
           _profile._closestart = System.currentTimeMillis();
         for( Chunk bv : bvs )  bv.close(_lo,_fs);
         if( _output_types != null) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
       }
     }
-    if(_doProfile)
+    if(_profile!=null)
       _profile._mapdone = System.currentTimeMillis();
     tryComplete();
   }
 
-  /** OnCompletion - reduce the left &amp; right into self.  Called internal by
+  /** OnCompletion - reduce the left and right into self.  Called internal by
    *  F/J.  Not expected to be user-called. */
   @Override public final void onCompletion( CountedCompleter caller ) {
-    if(_doProfile)
-      _profile._onCstart = System.currentTimeMillis();
+    if(_profile!=null) _profile._onCstart = System.currentTimeMillis();
     // Reduce results into 'this' so they collapse going up the execution tree.
     // NULL out child-references so we don't accidentally keep large subtrees
     // alive since each one may be holding large partial results.
     reduce2(_left); _left = null;
     reduce2(_rite); _rite = null;
+    if(_profile!=null) _profile._reducedone = System.currentTimeMillis();
     // Only on the top local call, have more completion work
-    if(_doProfile)
-      _profile._reducedone = System.currentTimeMillis();
-    if( _topLocal ) postLocal();
-    if(_doProfile)
-      _profile._onCdone = System.currentTimeMillis();
+    if( _topLocal ) postLocal0();
+    if(_profile!=null) _profile._onCdone = System.currentTimeMillis();
   }
+
 
   // Call 'reduce' on pairs of mapped MRTask's.
   // Collect all pending Futures from both parties as well.
   private void reduce2( MRTask<T> mrt ) {
     if( mrt == null ) return;
-    if(_doProfile)
+    if(_profile!=null)
       _profile.gather(mrt._profile,0);
     if( _res == null ) _res = mrt._res;
     else if( mrt._res != null ) _res.reduce4(mrt._res);
@@ -715,33 +707,28 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   protected void postGlobal(){}
 
-  /**
-   * Override to perform cleanup of large input arguments before sending over the wire.
-   */
   // Work done after all the main local work is done.
   // Gather/reduce remote work.
+  // User cleanup.
   // Block for other queued pending tasks.
   // Copy any final results into 'this', such that a return of 'this' has the results.
-  protected void postLocal() {
+  private void postLocal0() {
+    closeLocal();               // User's node-local cleanup
+    if(_profile!=null) _profile._closeLocalDone = System.currentTimeMillis();
     reduce3(_nleft);            // Reduce global results from neighbors.
     reduce3(_nrite);
-    if(_doProfile)
-      _profile._remoteBlkDone = System.currentTimeMillis();
-    _fs.blockForPending();
-    if(_doProfile)
-      _profile._localBlkDone = System.currentTimeMillis();
+    if(_profile!=null) _profile._remoteBlkDone = System.currentTimeMillis();
+    _fs.blockForPending();      // Block any pending user tasks
+    if(_profile!=null) _profile._localBlkDone = System.currentTimeMillis();
     // Finally, must return all results in 'this' because that is the API -
     // what the user expects
-    int nlo = subShift(selfidx());
-    int nhi = _nhi;             // Save before copyOver crushes them
     if( _res == null ) _nhi=-1; // Flag for no local results *at all*
     else if( _res != this ) {   // There is a local result, and its not self
       _res._profile = _profile; // Use my profile (not child's)
       copyOver(_res);           // So copy into self
     }
-    closeLocal();          // User's node-local cleanup
     if( _topGlobal ) {
-      if (_fr != null)      // Do any post-writing work (zap rollup fields, etc)
+      if (_fr != null)     // Do any post-writing work (zap rollup fields, etc)
         _fr.postWrite(_fs).blockForPending();
       postGlobal();             // User's continuation work
     }
@@ -756,7 +743,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // Because the MRT object is a clone of 'self' it's likely to contain a ptr
     // to the self _fs which will be not-null and still have local pending
     // blocks.  Not much can be asserted there.
-    if(_doProfile)
+    if(_profile!=null)
       _profile.gather(mrt._profile, rpc.size_rez());
     // Unlike reduce2, results are in mrt directly not mrt._res.
     if( mrt._nhi != -1L ) {     // Any results at all?
@@ -813,8 +800,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     x._nleft = x._nrite = null;
     x. _left = x. _rite = null;
     x._fs = _fs;
-    if( _doProfile )  x._profile = new MRProfile(this);
-    else              x._profile = null;    // Clone needs its own profile
+    if( _profile!=null )  x._profile = new MRProfile(this);
+    else                  x._profile = null;    // Clone needs its own profile
     x.setPendingCount(0); // Volatile write for completer field; reset pending count also
     return x;
   }
