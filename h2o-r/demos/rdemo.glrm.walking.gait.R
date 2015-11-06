@@ -13,15 +13,6 @@ gait.hex <- h2o.importFile(path = pathToData, destination_frame = "gait.hex")
 dim(gait.hex)
 summary(gait.hex)
 
-print("Plot first row on x- vs. y-coordinate locations")
-gait.row <- as.matrix(gait.hex[1,2:ncol(gait.hex)])
-x_coords <- seq(1, ncol(gait.row), by = 3)
-y_coords <- seq(2, ncol(gait.row), by = 3)
-feat_nams <- sapply(colnames(gait.row), function(nam) { substr(nam, 1, nchar(nam)-2) })
-feat_nams <- as.character(feat_nams[x_coords])
-plot(gait.row[x_coords], gait.row[y_coords], xlab = "X-Coordinate", ylab = "Y-Coordinate", main = paste("Location of Body Parts at Time 0"), col = "blue", pch = 19, lty = "solid")
-text(gait.row[x_coords], gait.row[y_coords], labels = feat_nams, cex = 0.7, pos = 3)
-
 #---------------------------------------#
 #          Matrix Decomposition         #
 #---------------------------------------#
