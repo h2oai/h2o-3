@@ -9,6 +9,7 @@ import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.util.Arrays;
+import java.util.Hashtable;
 
 class RadixCount extends MRTask<RadixCount> {
   public static class Long2DArray extends Iced {
@@ -68,23 +69,27 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   boolean _left;
   int _biggestBit, _batchSize, _bytesUsed[], _keySize;
   int[]_col;
-  MoveByFirstByte(boolean left, int biggestBit, int keySize, int batchSize, int bytesUsed[], int[] col) {
+  Key _linkTwoMRTask;
+
+  static Hashtable<Key,MoveByFirstByte> MOVESHASH = new Hashtable<>();
+  MoveByFirstByte(boolean left, int biggestBit, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask) {
     _left = left;
     _biggestBit = biggestBit; _batchSize=batchSize; _bytesUsed = bytesUsed; _col = col;
     _keySize = keySize;  // ArrayUtils.sum(_bytesUsed) -1;
+    _linkTwoMRTask = linkTwoMRTask;
     setProfile(true);
   }
 
   @Override protected void setupLocal() {
-    // First accumulate counts across chunks in this node into histograms for most significant 8 bits
-    //Log.info("Getting RadixCounts for column " + _col[0] + " from myself (node " + H2O.SELF + ") for Frame " + _frameKey );
-    //Log.info("Getting");
+    // First cumulate MSB count histograms across the chunks in this node
+    // Log.info("Getting RadixCounts for column " + _col[0] + " from myself (node " + H2O.SELF + ") for Frame " + _frameKey );
+    // Log.info("Getting");
     _counts = ((RadixCount.Long2DArray)DKV.getGet(RadixCount.getKey(_left, _col[0], H2O.SELF)))._val;   // get the sparse spine for this node, created and DKV-put above
-    //try {
-    //  Thread.sleep(10000);
-    //} catch (InterruptedException e) {
-    //  e.printStackTrace();
-    //}
+    // try {
+    //   Thread.sleep(10000);
+    // } catch (InterruptedException e) {
+    //   e.printStackTrace();
+    // }
     long _MSBhist[] = new long[256];  // total across nodes but retain original spine as we need that below
     int nc = _fr.anyVec().nChunks();
     for (int c = 0; c < nc; c++) {
@@ -106,7 +111,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
       System.out.println("");
     }
     // shared between threads on the same node, all mappers write into distinct locations (no conflicts, no need to atomic updates, etc.)
-    System.out.print("Allocating _o and _x buckets on this node ready for split by MSB ... ");
+    System.out.print("Allocating _o and _x buckets on this node with known size up front, ready for split by MSB ... ");
     _o = new long[256][][];
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
     for (int c = 0; c < 256; c++) {
@@ -139,6 +144,9 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
         rollSum += tmp;
       }
     }
+
+    MOVESHASH.put(_linkTwoMRTask, this);
+
     System.out.println("done");
     // NB: no radix skipping in this version (unlike data.table we'll use biggestBit and assume further bits are used).
   }
@@ -154,6 +162,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
 
     //int leftAlign = (8-(_biggestBit % 8)) % 8;   // only the first column is left aligned, currently. But they all could be for better splitting.
 
+    // Loop through this chunk and write the byte key and the source row into the local MSB buckets
     long t0 = System.nanoTime();
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       long thisx = chk[0].at8(r);  // - _colMin[0]) << leftAlign;  (don't subtract colMin because it unlikely helps compression and makes joining 2 compressed keys more difficult and expensive).
@@ -181,7 +190,7 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
         }
       }
     }
-    System.out.println(System.currentTimeMillis() + " MoveByFirstByte.map() for chunk " + chk[0].cidx() + " took : " + (System.nanoTime() - t0) / 1e9);
+    System.out.println(System.currentTimeMillis() + " MoveByFirstByte.map() into MSB buckets for chunk " + chk[0].cidx() + " took : " + (System.nanoTime() - t0) / 1e9);
   }
 
   static H2ONode ownerOfMSB(int MSBvalue) {
@@ -223,12 +232,13 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   }
 
   // Push o/x in chunks to owning nodes
-  @Override protected void closeLocal() {
-    System.out.println(System.currentTimeMillis() + " Starting MoveByFirstByte.closeLocal() ... ");
+  void PushFirstByteBatches() {
+    Futures fs = new Futures();
+    System.out.println(System.currentTimeMillis() + " Starting MoveByFirstByte.PushFirstByteBatches() ... ");
     long t0 = System.nanoTime();
     int nc = _fr.anyVec().nChunks();
     long forLoopTime = 0, DKVputTime = 0, sumSize = 0;
-    for (int msb =0; msb <_o.length /*256*/; ++msb) {
+    for (int msb =0; msb <_o.length /*256*/; ++msb) {     // TODO: do we really need this loop?  We know the numbers of chunks when we allocated above didn't we?
       long t00 = System.nanoTime();
       if(_o[msb] == null) continue;
       int numChunks = 0;  // how many of the chunks on this node had some rows with this MSB
@@ -252,17 +262,16 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
       MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
       //Log.info("Putting MSB node headers for Frame " + _frameKey + " for MSB " + msb);
       //Log.info("Putting msb " + msb + " on node " + H2O.SELF.index());
-      DKV.put(getMSBNodeHeaderKey(_left, msb, H2O.SELF.index()), msbh, _fs);   // Just adding _fs makes it go in parallel
+      DKV.put(getMSBNodeHeaderKey(_left, msb, H2O.SELF.index()), msbh, fs);   // Just adding _fs makes it go in parallel
       for (int b=0;b<_o[msb].length; ++b) {
         OXbatch ox = new OXbatch(_o[msb][b], _x[msb][b]);
         //Log.info("Putting OX batch for Frame " + _frameKey + " for batch " + b + " for MSB " + msb);
         //Log.info("Putting");
         sumSize += _o[msb][b].length * 8 + _x[msb][b].length * _keySize + 64;
-        DKV.put(getNodeOXbatchKey(_left, msb, H2O.SELF.index(), b), ox, _fs);
+        DKV.put(getNodeOXbatchKey(_left, msb, H2O.SELF.index(), b), ox, fs);
       }
       DKVputTime += System.nanoTime() - t00;
     }
-    //super.postLocal();
     System.out.println("took " + (System.nanoTime() - t0) / 1e9);
     System.out.println("The for loops look took " + forLoopTime / 1e9);
     System.out.println("The DKV.put 's took " + DKVputTime / 1e9);
@@ -271,11 +280,24 @@ class MoveByFirstByte extends MRTask<MoveByFirstByte> {
   }
 }
 
+
+class PushFirstByteBatches extends MRTask<PushFirstByteBatches> {
+  Key _linkTwoMRTask;
+  PushFirstByteBatches(Key linkTwoMRTask) {
+    _linkTwoMRTask = linkTwoMRTask;
+  }
+  @Override public void setupLocal() {
+    MoveByFirstByte.MOVESHASH.get(_linkTwoMRTask).PushFirstByteBatches();
+    MoveByFirstByte.MOVESHASH.remove(_linkTwoMRTask);
+  }
+}
+
 // It is intended that several of these SingleThreadRadixOrder run on the same node, to utilize the cores available.
 // The initial MSB needs to split by num nodes * cpus per node; e.g. 256 is pretty good for 10 nodes of 32 cores. Later, use 9 bits, or a few more bits accordingly.
 // Its this 256 * 4kB = 1MB that needs to be < cache per core for cache write efficiency in MoveByFirstByte(). 10 bits (1024 threads) would be 4MB which still < L2
 // Since o[] and x[] are arrays here (not Vecs) it's harder to see how to parallelize inside this function. Therefore avoid that issue by using more threads in calling split.
 // General principle here is that several parallel, tight, branch free loops, faster than one heavy DKV pass per row
+
 
 class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   //long _nGroup[];
@@ -632,11 +654,20 @@ public class RadixOrder {
     // x is the byte key aligned with o
     // o AND x are what bmerge() needs. Pushing x to each node as well as o avoids inter-node comms.
 
+
     System.out.println("Starting MSB hist reduce across nodes and MoveByFirstByte MRTask ...");
+    // Workaround for incorrectly blocking closeLocal() in MRTask is to do a double MRTask and pass a key between them to pass output
+    // from first on that node to second on that node.  // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
+    Key workaroundMRTaskKey = Key.make();
     t0 = System.nanoTime();
-    MoveByFirstByte tmp = new MoveByFirstByte(left, _biggestBit[0], keySize, batchSize, _bytesUsed, whichCols).doAll(DF.vecs(whichCols));   // postLocal needs DKV.put()
+    MoveByFirstByte tmp = new MoveByFirstByte(left, _biggestBit[0], keySize, batchSize, _bytesUsed, whichCols, workaroundMRTaskKey).doAll(DF.vecs(whichCols));   // postLocal needs DKV.put()
     System.out.println("***\n*** MoveByFirstByte MRTask took : " + (System.nanoTime() - t0) / 1e9 + "\n***");
     System.out.print(tmp.profString());
+
+    System.out.println("Starting PushFirstByteBatches ...");
+    t0 = System.nanoTime();
+    new PushFirstByteBatches(workaroundMRTaskKey).doAllNodes();
+    System.out.println("***\n*** PushFirstByteBatches took : " + (System.nanoTime() - t0) / 1e9 + "\n***");
     t0 = System.nanoTime();
 
     //long nGroup[] = new long[257];   // one extra for later to make undo of cumulate easier when finding groups.  TO DO: let grouper do that and simplify here to 256
@@ -657,7 +688,7 @@ public class RadixOrder {
     int i=0;
     for (RPC rpc : radixOrders) { //TODO: Use a queue to make this fully async
       System.out.print(i+" ");
-      SingleThreadRadixOrder radixOrder = (SingleThreadRadixOrder)rpc.get();
+      SingleThreadRadixOrder radixOrder = (SingleThreadRadixOrder)rpc.get();   // TODO: make sure all transient here
       i++;
     }
     System.out.println("\n***\n*** Waiting for RPC SingleThreadRadixOrder to finish took : " + (System.nanoTime() - t0) / 1e9 + "\n***");
