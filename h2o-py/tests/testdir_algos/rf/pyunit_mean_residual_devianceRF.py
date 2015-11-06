@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -15,7 +15,7 @@ def rf_mean_residual_deviance():
   predictors = ["displacement","power","weight","acceleration","year"]
   response_col = "economy"
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   rf = H2ORandomForestEstimator(nfolds=3)
   rf.train(x=predictors,

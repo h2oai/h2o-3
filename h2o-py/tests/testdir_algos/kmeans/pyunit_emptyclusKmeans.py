@@ -10,6 +10,7 @@ import random
 import numpy as np
 from sklearn import preprocessing
 from sklearn.cluster import KMeans
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 def emptyclusKmeans():
   # Connect to a pre-existing cluster
@@ -53,7 +54,7 @@ def emptyclusKmeans():
   print "scikit final centers"
   print km_sci.cluster_centers_
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
 
   km_h2o = H2OKMeansEstimator(k=ncent, user_points=initial_centers_h2o, standardize=True)
   km_h2o.train(x = range(ozone_h2o.ncol), training_frame=ozone_h2o)

@@ -9,7 +9,9 @@ import hex.schemas.NaiveBayesModelV3;
 import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
+import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
+import water.exceptions.JCodeSB;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
@@ -115,17 +117,29 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
 
-    JCodeGen.toStaticVar(sb, "RESCNT", _output._rescnt, "Count of categorical levels in response.");
-    JCodeGen.toStaticVar(sb, "APRIORI", _output._apriori_raw, "Apriori class distribution of the response.");
-    JCodeGen.toStaticVar(sb, "PCOND", _output._pcond_raw, "Conditional probability of predictors.");
+    // This is model name
+    final String mname = JCodeGen.toJavaId(_key.toString());
 
-    double[] dlen = null;
-    if (_output._ncats > 0) {
-      dlen = new double[_output._ncats];
-      for (int i = 0; i < _output._ncats; i++)
-        dlen[i] = _output._domains[i].length;
-    }
-    JCodeGen.toStaticVar(sb, "DOMLEN", dlen, "Number of unique levels for each categorical predictor.");
+    fileCtx.add(new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        JCodeGen.toClassWithArray(out, null, mname + "_RESCNT", _output._rescnt,
+                                  "Count of categorical levels in response.");
+        JCodeGen.toClassWithArray(out, null, mname + "_APRIORI", _output._apriori_raw,
+                                  "Apriori class distribution of the response.");
+        JCodeGen.toClassWithArray(out, null, mname + "_PCOND", _output._pcond_raw,
+                                  "Conditional probability of predictors.");
+        double[] dlen = null;
+        if (_output._ncats > 0) {
+          dlen = new double[_output._ncats];
+          for (int i = 0; i < _output._ncats; i++)
+            dlen[i] = _output._domains[i].length;
+        }
+        JCodeGen.toClassWithArray(out, null, mname + "_DOMLEN", dlen,
+                                  "Number of unique levels for each categorical predictor.");
+      }
+    });
+
     return sb;
   }
 
@@ -133,26 +147,29 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
                                              CodeGeneratorPipeline classCtx,
                                              CodeGeneratorPipeline fileCtx,
                                              final boolean verboseCode) {
+    // This is model name
+    final String mname = JCodeGen.toJavaId(_key.toString());
+
     bodySb.i().p("java.util.Arrays.fill(preds,0);").nl();
     bodySb.i().p("double mean, sdev, prob;").nl();
     bodySb.i().p("double[] nums = new double[" + _output._levels.length + "];").nl();
 
     bodySb.i().p("for(int i = 0; i < " + _output._levels.length + "; i++) {").nl();
-    bodySb.i(1).p("nums[i] = Math.log(APRIORI[i]);").nl();
+    bodySb.i(1).p("nums[i] = Math.log(").pj(mname+"_APRIORI", "VALUES").p("[i]);").nl();
     bodySb.i(1).p("for(int j = 0; j < " + _output._ncats + "; j++) {").nl();
     bodySb.i(2).p("if(Double.isNaN(data[j])) continue;").nl();
     bodySb.i(2).p("int level = (int)data[j];").nl();
-    bodySb.i(2).p("prob = level < " + _output._pcond_raw.length + " ? PCOND[j][i][level] : " +
-                  (_parms._laplace == 0 ? 0 : _parms._laplace + "/(RESCNT[i] + " + _parms._laplace
-                                              + "*DOMLEN[j])")).p(";").nl();
+    bodySb.i(2).p("prob = level < ").p(_output._pcond_raw.length).p(" ? " + mname + "_PCOND.VALUES[j][i][level] : ")
+                .p(_parms._laplace == 0 ? "0" : _parms._laplace + "/("+mname+"_RESCNT.VALUES[i] + " + _parms._laplace
+                                              + "*" + mname + "_DOMLEN.VALUES[j])").p(";").nl();
     bodySb.i(2).p("nums[i] += Math.log(prob <= " + _parms._eps_prob + " ? " + _parms._min_prob + " : prob);").nl();
     bodySb.i(1).p("}").nl();
 
     bodySb.i(1).p("for(int j = " + _output._ncats + "; j < data.length; j++) {").nl();
     bodySb.i(2).p("if(Double.isNaN(data[j])) continue;").nl();
-    bodySb.i(2).p("mean = Double.isNaN(PCOND[j][i][0]) ? 0 : PCOND[j][i][0];").nl();
-    bodySb.i(2).p("sdev = Double.isNaN(PCOND[j][i][1]) ? 1 : (PCOND[j][i][1] <= " + _parms._eps_sdev + " ? "
-            + _parms._min_sdev + " : PCOND[j][i][1]);").nl();
+    bodySb.i(2).p("mean = Double.isNaN("+mname+"_PCOND.VALUES[j][i][0]) ? 0 : "+mname+"_PCOND.VALUES[j][i][0];").nl();
+    bodySb.i(2).p("sdev = Double.isNaN("+mname+"_PCOND.VALUES[j][i][1]) ? 1 : ("+mname+"_PCOND.VALUES[j][i][1] <= " + _parms._eps_sdev + " ? "
+            + _parms._min_sdev + " : "+mname+"_PCOND.VALUES[j][i][1]);").nl();
     bodySb.i(2).p("prob = Math.exp(-((data[j]-mean)*(data[j]-mean))/(2.*sdev*sdev)) / (sdev*Math.sqrt(2.*Math.PI));").nl();
     bodySb.i(2).p("nums[i] += Math.log(prob <= " + _parms._eps_prob + " ? " + _parms._min_prob + " : prob);").nl();
     bodySb.i(1).p("}").nl();

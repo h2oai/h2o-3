@@ -2,13 +2,10 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 def fiftycatRF():
-
-
 
   # Training set has only 45 categories cat1 through cat45
   #Log.info("Importing 50_cattest_train.csv data...\n")
@@ -17,7 +14,7 @@ def fiftycatRF():
 
   #Log.info("Summary of 50_cattest_train.csv from H2O:\n")
   #train.summary()
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   # Train H2O DRF Model:
   #Log.info(paste("H2O DRF with parameters:\nclassification = TRUE, ntree = 50, depth = 20, nbins = 500\n", sep = ""))

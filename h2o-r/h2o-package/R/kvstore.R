@@ -220,7 +220,12 @@ h2o.getModel <- function(model_id) {
 h2o.download_pojo <- function(model, path="", getjar=TRUE) {
   model_id <- model@model_id
   java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
-  file.path <- paste0(path, "/", model_id, ".java")
+
+  # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
+  # TODO: clients should extract Java class name from header.
+  pojoname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
+  
+  file.path <- paste0(path, "/", pojoname, ".java")
   if( path == "" ) cat(java)
   else {
     write(java, file=file.path)

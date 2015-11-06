@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -17,7 +17,7 @@ def czechboardRF():
   board.summary()
 
   # Train H2O DRF Model:
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   model = H2ORandomForestEstimator(ntrees=50, max_depth=20, nbins=500)
   model.train(x=["C1", "C2"], y="C3",training_frame=board)

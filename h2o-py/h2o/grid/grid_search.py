@@ -10,7 +10,7 @@ import itertools
 class H2OGridSearch(object):
   def __init__(self, model, hyper_params, grid_id=None):
     """Grid Search of a Hyper-Parameter Space for a Model
-
+  
      Parameters
      ----------
      model : H2O Estimator model
@@ -20,7 +20,20 @@ class H2OGridSearch(object):
      grid_id : str, optional
        The unique id assigned to the resulting grid object. If none is given, an id will
        automatically be generated.
-
+       
+    Returns
+    -------
+      A new H2OGridSearch instance.
+    
+    Examples
+    --------
+      >>> from h2o.grid.grid_search import H2OGridSearch
+      >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+      >>> hyper_parameters = {'alpha': [0.01,0.5,'a'], 'lambda': [1e-5,1e-6]}
+      >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+      >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
+      >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
+      >>> gs.show()
     """
     self._id = grid_id
     self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
@@ -334,17 +347,23 @@ class H2OGridSearch(object):
           print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
       print self.sort_by('mse')
 
-  def varimp(self, return_list=False):
+  def varimp(self, use_pandas=False):
     """
-    Pretty print the variable importances, or return them in a list
-    :param return_list: if True, then return the variable importances in an list (ordered from most important to least
-    important). Each entry in the list is a 4-tuple of (variable, relative_importance, scaled_importance, percentage).
-    :return: None or ordered list
+    Pretty print the variable importances, or return them in a list/pandas DataFrame
+
+    Parameters
+    ----------
+    use_pandas: boolean, optional
+      If True, then the variable importances will be returned as a pandas data frame.
+
+    Returns
+    -------
+      A dictionary of lists or Pandas DataFrame instances.
     """
-    return {model.model_id:model.varimp(return_list) for model in self.models}
+    return {model.model_id:model.varimp(use_pandas) for model in self.models}
 
   def residual_deviance(self,train=False,valid=False,xval=False):
-    """
+    """s
     Retreive the residual deviance if this model has the attribute, or None otherwise.
 
     :param train: Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
@@ -512,11 +531,26 @@ class H2OGridSearch(object):
   def sort_by(self, metric, increasing=True):
     """
     Sort the models in the grid space by a metric.
-
-    :param metric: str, A metric ('logloss', 'auc', 'r2') by which to sort the models. If addtional arguments are desired,
-    they can be passed to the metric, for example 'logloss(valid=True)'
-    :param increasing: boolean, Sort the metric in increasing (True) (default) or decreasing (False) order.
-    :return: An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value
+    
+    Parameters
+    ----------
+    metric: str
+      A metric ('logloss', 'auc', 'r2') by which to sort the models. If addtional arguments are desired,
+      they can be passed to the metric, for example 'logloss(valid=True)'
+    increasing: boolean, optional
+      Sort the metric in increasing (True) (default) or decreasing (False) order.
+      
+    Returns
+    -------
+      An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value. The best model can 
+      be extracted and used for predictions.
+     
+    Examples
+    --------
+      >>> grid_search_results = gs.sort_by('F1', False)
+      >>> best_model_id = grid_search_results['Model Id'][0]
+      >>> best_model = h2o.get_model(best_model_id)
+      >>> best_model.predict(test_data)
     """
 
     if metric[-1] != ')': metric += '()'
@@ -532,9 +566,17 @@ class H2OGridSearch(object):
   def get_hyperparams(self, id, display=True):
     """
     Get the hyperparameters of a model explored by grid search.
-    :param id: int or str, either the index of desired model or its model id
-    :param display: boolean, flag whether to display hyperparameter names
-    :return: list, hyperparameters in the order displayed
+    
+    Parameters
+    ----------    
+    id: str
+      The model id of the model with hyperparameters of interest.
+    display: boolean 
+      Flag to indicate whether to display the hyperparameter names.
+      
+    Returns
+    -------
+      A list of the hyperparameters for the specified model.
     """
     idx = id if isinstance(id, int) else self.model_ids.index(id)
     model = self[idx]

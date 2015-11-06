@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 
 
@@ -22,7 +22,7 @@ def convergeKmeans():
   start = ozone_h2o[0:10, 0:4]
 
   # expect error for 0 iterations
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
   try:
     H2OKMeansEstimator(max_iterations=0).train(x = range(ozone_h2o.ncol), training_frame=ozone_h2o)
     assert False, "expected an error"

@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 import random
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def cv_cars_gbm():
 
@@ -32,7 +32,7 @@ def cv_cars_gbm():
   print "Response column: {0}".format(response_col)
 
   ## cross-validation
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   # 1. check that cv metrics are the same over repeated "Modulo" runs
   nfolds = random.randint(3,10)
   gbm1 = H2OGradientBoostingEstimator(nfolds=nfolds,

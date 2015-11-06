@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 import random
@@ -35,17 +35,17 @@ def weights_vi():
 
   ##### compute variable importances on dataset1 and dataset2
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   model_dataset1 = H2ORandomForestEstimator()
   model_dataset1.train(x=["p1", "p2", "p3"], y="response", training_frame=dataset1_h2o)
-  varimp_dataset1 = tuple([p[0] for p in model_dataset1.varimp(return_list=True)])
+  varimp_dataset1 = tuple([p[0] for p in model_dataset1.varimp()])
   assert varimp_dataset1 == ('p1', 'p2', 'p3'), "Expected the following relative variable importance on dataset1: " \
                                                 "('p1', 'p2', 'p3'), but got: {0}".format(varimp_dataset1)
 
   model_dataset2 = H2ORandomForestEstimator()
   model_dataset2.train(x=["p1", "p2", "p3"], y="response", training_frame=dataset2_h2o)
-  varimp_dataset2 = tuple([p[0] for p in model_dataset2.varimp(return_list=True)])
+  varimp_dataset2 = tuple([p[0] for p in model_dataset2.varimp()])
   assert varimp_dataset2 == ('p3', 'p1', 'p2'), "Expected the following relative variable importance on dataset2: " \
                                                 "('p3', 'p1', 'p2'), but got: {0}".format(varimp_dataset2)
 
@@ -66,7 +66,7 @@ def weights_vi():
                                training_frame=combined_dataset_h2o,
                                weights_column="weights")
 
-  varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])
+  varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp()])
   assert varimp_combined == ('p1', 'p2', 'p3'), "Expected the following relative variable importance on the combined " \
                                                 "dataset: ('p1', 'p2', 'p3'), but got: {0}".format(varimp_combined)
 
@@ -88,7 +88,7 @@ def weights_vi():
                                training_frame=combined_dataset_h2o,
                                weights_column="weights")
 
-  varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])
+  varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp()])
   assert varimp_combined == ('p3', 'p1', 'p2'), "Expected the following relative variable importance on the combined " \
                                                 "dataset: ('p3', 'p1', 'p2'), but got: {0}".format(varimp_combined)
 

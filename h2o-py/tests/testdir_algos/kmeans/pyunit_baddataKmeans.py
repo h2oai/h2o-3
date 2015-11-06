@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 
 import random
@@ -23,7 +23,7 @@ def baddataKmeans():
   for col in data: col[24] = None
   frame = h2o.H2OFrame(data)
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
 
   km_model = H2OKMeansEstimator(k=5)
   km_model.train(x=range(cols), training_frame=frame)

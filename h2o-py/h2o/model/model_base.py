@@ -63,9 +63,15 @@ class ModelBase(object):
   def predict(self, test_data):
     """
     Predict on a dataset.
-
-    :param test_data: Data to be predicted on.
-    :return: A new H2OFrame filled with predictions.
+    
+    Parameters
+    ----------    
+    test_data: H2OFrame
+      Data on which to make predictions.
+    
+    Returns
+    -------
+      A new H2OFrame of predictions.
     """
     if not isinstance(test_data, H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
     j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id)
@@ -170,11 +176,19 @@ class ModelBase(object):
   def model_performance(self, test_data=None, train=False, valid=False):
     """
     Generate model metrics for this model on test_data.
-
-    :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
-    :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
-    :param valid: Report the validation metrics for the model. If train and valid are True, then it defaults to True.
-    :return: An object of class H2OModelMetrics.
+    
+    Parameters
+    ----------   
+    test_data: H2OFrame, optional 
+      Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
+    train: boolean, optional
+      Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
+    valid: boolean, optional 
+      Report the validation metrics for the model. If train and valid are True, then it defaults to True.
+    
+    Returns
+    -------
+      An object of class H2OModelMetrics.
     """
     if test_data is None:
       if not train and not valid: train = True  # default to train
@@ -197,7 +211,10 @@ class ModelBase(object):
   def score_history(self):
     """
     Retrieve Model Score History
-    :return: the score history (H2OTwoDimTable)
+    
+    Returns
+    -------
+      The score history as an H2OTwoDimTable.
     """
     model = self._model_json["output"]
     if 'scoring_history' in model.keys() and model["scoring_history"] != None:
@@ -212,8 +229,6 @@ class ModelBase(object):
   def summary(self):
     """
     Print a detailed summary of the model.
-
-    :return:
     """
     model = self._model_json["output"]
     if model["model_summary"]:
@@ -223,7 +238,6 @@ class ModelBase(object):
     """
     Print innards of model, without regards to type
 
-    :return: None
     """
     if self._future:
       self._job.poll_once()
@@ -252,17 +266,28 @@ class ModelBase(object):
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
 
-  def varimp(self, return_list=False):
+  def varimp(self, use_pandas=False):
     """
     Pretty print the variable importances, or return them in a list
-    :param return_list: if True, then return the variable importances in an list (ordered from most important to least
-    important). Each entry in the list is a 4-tuple of (variable, relative_importance, scaled_importance, percentage).
-    :return: None or ordered list
+
+    Parameters
+    ----------
+    use_pandas: boolean, optional
+      If True, then the variable importances will be returned as a pandas data frame.
+    
+    Returns
+    -------
+      A list or Pandas DataFrame.
     """
     model = self._model_json["output"]
     if "variable_importances" in model.keys() and model["variable_importances"]:
-      if not return_list: return model["variable_importances"].show()
-      else: return model["variable_importances"].cell_values
+      vals = model["variable_importances"].cell_values
+      header=model["variable_importances"].col_header
+      if use_pandas and h2o.can_use_pandas():
+        import pandas
+        return pandas.DataFrame(vals, columns=header)
+      else:
+        return vals
     else:
       print "Warning: This model doesn't have variable importances"
 
@@ -321,7 +346,6 @@ class ModelBase(object):
   def pprint_coef(self):
     """
     Pretty print the coefficents table (includes normalized coefficients)
-    :return: None
     """
     print self._model_json["output"]["coefficients_table"]  # will return None if no coefs!
 

@@ -302,7 +302,7 @@ In both examples,  a native Python object is returned (list and float respective
 in these examples).
 
 When applying functions to each column of the data, an H2OFrame containing the means of each column is returned :
-\lstinputlisting[style=pythoncode, firstline=297, lastline=303]{python/ipython_dataprep_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=295, lastline=303]{python/ipython_dataprep_output_fixed.txt}
 
 When applying functions to each row of the data, an H2OFrame containing the sum of all columns is returned :
 \lstinputlisting[style=pythoncode, firstline=305, lastline=317]{python/ipython_dataprep_output_fixed.txt}
@@ -316,7 +316,7 @@ H2O includes a set of string processing methods in the H2OFrame class
 that make it easy to operate on each element in an H2OFrame.  
 
 To determine the number of times a string is contained in each element:
-\lstinputlisting[style=pythoncode, firstline=339, lastline=362]{python/ipython_dataprep_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=340, lastline=361]{python/ipython_dataprep_output_fixed.txt}
 
 To replace the first occurrence of `l' (lower case letter) with `x' and return a new H2OFrame:
 \lstinputlisting[style=pythoncode, firstline=364, lastline=372]{python/ipython_dataprep_output_fixed.txt}
@@ -335,7 +335,7 @@ To combine two H2OFrames together by appending one as rows and return a new H2OF
 For successful row binding, the column names and column types between the two H2OFrames must match.
 
 H2O also supports merging two frames together by matching column names:
-\lstinputlisting[style=pythoncode, firstline=434, lastline=457]{python/ipython_dataprep_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=425, lastline=451]{python/ipython_dataprep_output_fixed.txt}
 
 \subsection{Grouping}
 
@@ -348,7 +348,7 @@ H2O also supports merging two frames together by matching column names:
 \end{itemize}
 
 To group and then apply a function to the results:
-\lstinputlisting[style=pythoncode, firstline=459, lastline=485]{python/ipython_dataprep_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=453, lastline=480]{python/ipython_dataprep_output_fixed.txt}
 
 To group by multiple columns and then apply a function:
 \lstinputlisting[style=pythoncode, firstline=487, lastline=497]{python/ipython_dataprep_output_fixed.txt}
@@ -375,7 +375,7 @@ H2O handles categorical (also known as enumerated or factor) values in an H2OFra
 columns have specific treatments in each of the machine learning algorithms.
 
 Using `df12' from above, H2O imports columns A and B as categorical/enumerated/factor types:
-\lstinputlisting[style=pythoncode, firstline=534, lastline=535]{python/ipython_dataprep_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=534, lastline=536]{python/ipython_dataprep_output_fixed.txt}
 
 To determine if any column is a categorical/enumerated/factor type:
 \lstinputlisting[style=pythoncode, firstline=537, lastline=538]{python/ipython_dataprep_output_fixed.txt}
@@ -513,12 +513,12 @@ defines the parameters of the estimator and the call to
 {\texttt{H2OGradientBoostingEstimator.train}}  trains the estimator on
 the specified data.  This pattern is common for each of the H2O algorithms.
 
-\lstinputlisting[style=pythoncode, firstline=3, lastline=99]{python/ipython_machine_learning_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=3, lastline=103]{python/ipython_machine_learning_output_fixed.txt}
 
 To generate a classification model that uses labels, \\ use 
 {\texttt{distribution="multinomial"}}:
 
-\lstinputlisting[style=pythoncode, firstline=101, lastline=162]{python/ipython_machine_learning_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=105, lastline=166]{python/ipython_machine_learning_output_fixed.txt}
 
 \subsubsection{Generalized Linear Models (GLM)}
 Generalized linear models (GLM) are some of the most commonly-used
@@ -548,7 +548,7 @@ linear models for exponential distributions, use
 regularization to the model by adjusting the lambda and alpha
 parameters.
 
-\lstinputlisting[style=pythoncode, firstline=164, lastline=292]{python/ipython_machine_learning_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=168, lastline=296]{python/ipython_machine_learning_output_fixed.txt}
 
 \newpage
 \subsubsection{K-means}
@@ -556,19 +556,19 @@ To generate a K-means model for data characterization, use
 {\texttt{h2o.kmeans()}}. This algorithm does not require a
 dependent variable.
 
-\lstinputlisting[style=pythoncode, firstline=294, lastline=335]{python/ipython_machine_learning_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=298, lastline=339]{python/ipython_machine_learning_output_fixed.txt}
 
 \subsubsection{Principal Components Analysis (PCA)}
 To map a set of variables onto a subspace using linear
 transformations, use {\texttt{h2o.transforms.decomposition.H2OPCA}}.
 This is the first step in Principal Components Regression.
-\lstinputlisting[style=pythoncode, firstline=337, lastline=379]{python/ipython_machine_learning_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=341, lastline=383]{python/ipython_machine_learning_output_fixed.txt}
 
 \subsection{Grid Search}
 H2O supports grid search across hyperparameters:
 
 
-\lstinputlisting[style=pythoncode, firstline=381, lastline=419]{python/ipython_machine_learning_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=385, lastline=423]{python/ipython_machine_learning_output_fixed.txt}
 
 \subsection{Integration with scikit-learn}
 The H2O Python client can be used within scikit-learn pipelines and cross validation searches.  This extends the power of both H2O and scikit-learn.
@@ -576,11 +576,11 @@ The H2O Python client can be used within scikit-learn pipelines and cross valida
 
 To create a scikit-learn style pipeline using H2O transformers and estimators:
 
-\lstinputlisting[style=pythoncode, firstline=421, lastline=509]{python/ipython_machine_learning_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=425, lastline=513]{python/ipython_machine_learning_output_fixed.txt}
 
 \subsubsection{Randomized Grid Search}
 To create a scikit-learn style hyperparameter grid search using k-fold cross validation:
-\lstinputlisting[style=pythoncode, firstline=511, lastline=616]{python/ipython_machine_learning_output_fixed.txt}
+\lstinputlisting[style=pythoncode, firstline=515, lastline=620]{python/ipython_machine_learning_output_fixed.txt}
 
 
 

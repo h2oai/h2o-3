@@ -53,12 +53,12 @@ def separator_test():
     # JIRA ticket placed.
 
     #Test caret separated files
-    #path_caret = "smalldata/parser/caret.csv"
-    #caret_test = h2o.import_file(path=pyunit_utils.locate(path_caret), destination_frame="caret_hex", sep="^")
+    path_caret = "smalldata/parser/caret.csv"
+    caret_test = h2o.import_file(path=pyunit_utils.locate(path_caret), destination_frame="caret_hex", sep="^")
 
     #Test asterisk separated files
-    #path_asterisk = "smalldata/parser/asterisk.asv"
-    #asterisk_test = h2o.import_file(path=pyunit_utils.locate(path_asterisk), destination_frame="asterisk_hex", sep="*")
+    path_asterisk = "smalldata/parser/asterisk.asv"
+    asterisk_test = h2o.import_file(path=pyunit_utils.locate(path_asterisk), destination_frame="asterisk_hex", sep="*")
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(separator_test)

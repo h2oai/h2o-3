@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 
 def imbalance():
@@ -10,7 +11,7 @@ def imbalance():
   covtype = h2o.upload_file(pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
   covtype[54] = covtype[54].asfactor()
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
 
   hh_imbalanced = H2ODeepLearningEstimator(l1=1e-5, activation="Rectifier",
                                            loss="CrossEntropy", hidden=[200,200], epochs=1,
