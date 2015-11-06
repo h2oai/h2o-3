@@ -9,11 +9,11 @@ from group_by import GroupBy
 
 # TODO: Automatically convert column names into Frame properties!
 class H2OFrame(object):
-  def __init__(self, python_object=None):
+  def __init__(self, python_obj=None):
     self._ex = ExprNode()
     self._ex._children=None
-    if python_object is not None:
-      self._upload_python_object(python_object)
+    if python_obj is not None:
+      self._upload_python_object(python_obj)
 
   @property
   def columns(self):
