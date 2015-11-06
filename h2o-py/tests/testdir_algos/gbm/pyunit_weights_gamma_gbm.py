@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def weights_gamma():
 
@@ -10,7 +10,7 @@ def weights_gamma():
   htable["premiekl"] = htable["premiekl"].asfactor()
   htable["moptva"] = htable["moptva"].asfactor()
   htable["zon"] = htable["zon"]
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   hh = H2OGradientBoostingEstimator(distribution="gamma",
                                     ntrees=20,
                                     max_depth=1,

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -19,7 +19,7 @@ def bigcatRF():
   #Log.info("Summary of bigcat_5000x2.csv from H2O:\n")
   #bigcat.summary()
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   # Train H2O DRF Model:
   #Log.info("H2O DRF (Naive Split) with parameters:\nclassification = TRUE, ntree = 1, depth = 1, nbins = 100, nbins_cats=10\n")

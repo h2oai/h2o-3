@@ -3,7 +3,7 @@ sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
 import random
-
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def cv_cars_dl():
 
@@ -29,7 +29,7 @@ def cv_cars_dl():
 
   ## cross-validation
   # 1. basic
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
   dl = H2ODeepLearningEstimator(nfolds=random.randint(3,10),fold_assignment="Modulo",hidden=[20,20],epochs=10)
   dl.train(x=predictors, y=response_col, training_frame=cars)
 
