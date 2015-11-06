@@ -54,16 +54,16 @@ class H2OAssembly:
       with open(filename, "wb") as f:
         f.write(response.read())
 
-  def union(self, assemblies):
-    # fuse the assemblies onto this one, each is added to the end going left -> right
-    # assemblies must be a list of namedtuples.
-    #   [(H2OAssembly, X, y, {params}), ..., (H2OAssembly, X, y, {params})]
-    for i in assemblies:
-      if not isinstance(i, namedtuple):
-        raise ValueError("Not a namedtuple. Assembly must be of type collections.namedtuple with fields [assembly, x, params].")
-      if i._fields != ('assembly','x','params'):
-        raise ValueError("Assembly must be a namedtuple with fields ('assembly', 'x', 'params').")
-      self.fuzed.append(i)
+  # def union(self, assemblies):
+  #   # fuse the assemblies onto this one, each is added to the end going left -> right
+  #   # assemblies must be a list of namedtuples.
+  #   #   [(H2OAssembly, X, y, {params}), ..., (H2OAssembly, X, y, {params})]
+  #   for i in assemblies:
+  #     if not isinstance(i, namedtuple):
+  #       raise ValueError("Not a namedtuple. Assembly must be of type collections.namedtuple with fields [assembly, x, params].")
+  #     if i._fields != ('assembly','x','params'):
+  #       raise ValueError("Assembly must be a namedtuple with fields ('assembly', 'x', 'params').")
+  #     self.fuzed.append(i)
 
   def fit(self, fr, **fit_params):
     res = []

@@ -266,24 +266,28 @@ class ModelBase(object):
     if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
 
-  def varimp(self, return_list=False):
+  def varimp(self, use_pandas=False):
     """
     Pretty print the variable importances, or return them in a list
 
     Parameters
-    ----------   
-    return_list: boolean, optional 
-      If True, then return the variable importances in an list (ordered from most important to least
-    important). Each entry in the list is a 4-tuple of (variable, relative_importance, scaled_importance, percentage).
+    ----------
+    use_pandas: boolean, optional
+      If True, then the variable importances will be returned as a pandas data frame.
     
     Returns
     -------
-      None or ordered list
+      A list or Pandas DataFrame.
     """
     model = self._model_json["output"]
     if "variable_importances" in model.keys() and model["variable_importances"]:
-      if not return_list: return model["variable_importances"].show()
-      else: return model["variable_importances"].cell_values
+      vals = model["variable_importances"].cell_values
+      header=model["variable_importances"].col_header
+      if use_pandas and h2o.can_use_pandas():
+        import pandas
+        return pandas.DataFrame(vals, columns=header)
+      else:
+        return vals
     else:
       print "Warning: This model doesn't have variable importances"
 

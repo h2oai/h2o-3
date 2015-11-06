@@ -347,17 +347,23 @@ class H2OGridSearch(object):
           print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
       print self.sort_by('mse')
 
-  def varimp(self, return_list=False):
+  def varimp(self, use_pandas=False):
     """
-    Pretty print the variable importances, or return them in a list
-    :param return_list: if True, then return the variable importances in an list (ordered from most important to least
-    important). Each entry in the list is a 4-tuple of (variable, relative_importance, scaled_importance, percentage).
-    :return: None or ordered list
+    Pretty print the variable importances, or return them in a list/pandas DataFrame
+
+    Parameters
+    ----------
+    use_pandas: boolean, optional
+      If True, then the variable importances will be returned as a pandas data frame.
+
+    Returns
+    -------
+      A dictionary of lists or Pandas DataFrame instances.
     """
-    return {model.model_id:model.varimp(return_list) for model in self.models}
+    return {model.model_id:model.varimp(use_pandas) for model in self.models}
 
   def residual_deviance(self,train=False,valid=False,xval=False):
-    """
+    """s
     Retreive the residual deviance if this model has the attribute, or None otherwise.
 
     :param train: Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
