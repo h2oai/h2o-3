@@ -1,22 +1,21 @@
 package water.util;
 
-import java.util.Arrays;
-
 import water.AutoBuffer;
-import water.DKV;
 import water.Futures;
 import water.MRTask;
 import water.MemoryManager;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
+
+import java.util.Arrays;
 
 public class VecUtils {
   /**

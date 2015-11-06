@@ -6,10 +6,11 @@ sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
 from h2o.grid.grid_search import H2OGridSearch
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def deeplearning_grid_cars():
 
-    from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
 
     cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     r = cars[0].runif(seed=42)

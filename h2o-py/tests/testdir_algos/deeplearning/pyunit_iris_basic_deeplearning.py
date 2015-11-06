@@ -2,10 +2,11 @@ import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def deeplearning_basic():
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
 
   iris_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
   hh = H2ODeepLearningEstimator(loss="CrossEntropy")

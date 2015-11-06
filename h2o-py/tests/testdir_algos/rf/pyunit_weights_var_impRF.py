@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 import random
@@ -35,7 +35,7 @@ def weights_vi():
 
   ##### compute variable importances on dataset1 and dataset2
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   model_dataset1 = H2ORandomForestEstimator()
   model_dataset1.train(x=["p1", "p2", "p3"], y="response", training_frame=dataset1_h2o)

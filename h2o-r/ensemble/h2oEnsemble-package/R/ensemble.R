@@ -274,7 +274,7 @@ predict.h2o.ensemble <- function(object, newdata, ...) {
     pred <- h2o.predict(object = object$metafit, newdata = basepred)
   } else {
     # SuperLearner wrapper function metalearner
-    pred <- predict(object = object$metafit$fit, newdata = basepred)
+    pred <- predict(object = object$metafit$fit, newdata = basepreddf)
   }
   out <- list(pred = pred, basepred = basepred)
   return(out)

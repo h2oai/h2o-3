@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def deep_learning_metrics_test():
   # connect to existing cluster
@@ -28,7 +29,6 @@ def deep_learning_metrics_test():
   # Run DeepLearning
   print "Train a Deeplearning model: "
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
   dl = H2ODeepLearningEstimator(epochs=100, hidden=[10,10,10], loss="CrossEntropy")
   dl.train(x=range(2,train.ncol),y="CAPSULE", training_frame=train)
   print "Binomial Model Metrics: "
