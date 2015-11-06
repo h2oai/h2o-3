@@ -59,7 +59,8 @@ checkMerge <- function(x, y, all.x, all.y) {
 
 test.merge <- function() {
     # real datasets
-    x_y_paths <- list(c("smalldata/merge/fertility.nuts.csv", "smalldata/merge/livestock.nuts.csv"),
+    x_y_paths <- list(c("smalldata/merge/tourism.csv", "smalldata/merge/heart.csv"),
+                      c("smalldata/merge/fertility.nuts.csv", "smalldata/merge/livestock.nuts.csv"),
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.area.csv"),
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.center.csv"),
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.division.csv"),
