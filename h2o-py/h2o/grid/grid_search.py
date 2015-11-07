@@ -9,18 +9,18 @@ import itertools
 
 class H2OGridSearch(object):
   def __init__(self, model, hyper_params, grid_id=None):
-    """Grid Search of a Hyper-Parameter Space for a Model
+    """
+    Grid Search of a Hyper-Parameter Space for a Model
   
-     Parameters
-     ----------
-     model : H2O Estimator model
+    Parameters
+    ----------
+    model : H2O Estimator model
       The type of model to be explored initalized with optional parameters that will be unchanged across explored models.
-     hyper_params: dict
+    hyper_params: dict
       A dictionary of string parameters (keys) and a list of values to be explored by grid search (values).
-     grid_id : str, optional
-       The unique id assigned to the resulting grid object. If none is given, an id will
-       automatically be generated.
-       
+    grid_id : str, optional
+      The unique id assigned to the resulting grid object. If none is given, an id will automatically be generated.
+     
     Returns
     -------
       A new H2OGridSearch instance.
@@ -599,3 +599,37 @@ class H2OGridSearch(object):
     else: raise NotImplementedError(model_type)
     return model_class
 
+  @staticmethod
+  def get_grid(model, hyper_params, grid_id):
+    """
+    Retrieve an H2OGridSearch instance already trained given its original model, hyper_params, and grid_id. 
+    
+    Parameters
+    ----------    
+    model : H2O Estimator model
+      The type of model explored that is initalized with optional parameters which are unchanged across explored models.
+    hyper_params: dict
+      A dictionary of string parameters (keys) and a list of values explored by grid search (values).
+    grid_id : str, optional
+      The unique id assigned to the grid object.
+     
+    Returns
+    -------
+      A new H2OGridSearch instance that is a replica of the H2OGridSearch instance with the specified grid_id.
+
+    """
+    kwargs = {'_rest_version':99}
+    grid_json = H2OConnection.get_json("Grids/"+grid_id, **kwargs)
+    grid = H2OGridSearch(model, hyper_params, grid_id)
+    grid.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
+    first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=kwargs['_rest_version'])['models'][0]
+    model_class = H2OGridSearch._metrics_class(first_model_json)
+    m = model_class()
+    m._id = grid_id
+    m._grid_json = grid_json
+    # m._metrics_class = metrics_class
+    m._parms = grid._parms
+    H2OEstimator.mixin(grid,model_class)
+    grid.__dict__.update(m.__dict__.copy())
+    return grid
+    
