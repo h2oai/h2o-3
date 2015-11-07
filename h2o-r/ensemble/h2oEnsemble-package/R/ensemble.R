@@ -255,25 +255,19 @@ h2o.ensemble <- function(x, y, training_frame,
 
 predict.h2o.ensemble <- function(object, newdata, ...) {
   
-  L <- length(object$basefits)
-  basepreddf <- as.data.frame(matrix(NA, nrow = nrow(newdata), ncol = L))
-  for (l in seq(L)) {
-    if (object$family == "binomial") {
-      basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))[,3]
-    } else {
-      basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))$predict
-    }
+  if (object$family == "binomial") {
+    basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,3]))
+  } else {
+    basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,1]))
   }
-  names(basepreddf) <- names(object$basefits)
-  basepred <- as.h2o(basepreddf, destination_frame = "basepred")
+  names(basepred) <- names(object$basefits)
   
   if (grepl("H2O", class(object$metafit))) {
     # H2O ensemble metalearner from wrappers.R
     pred <- h2o.predict(object = object$metafit, newdata = basepred)
   } else {
     # SuperLearner wrapper function metalearner
+    basepreddf <- as.data.frame(basepred)  
     pred <- predict(object = object$metafit$fit, newdata = basepreddf)
   }
   out <- list(pred = pred, basepred = basepred)
