@@ -365,7 +365,7 @@ class H2OFrame(object):
       if use_pandas and h2o.can_use_pandas():
         print self.head().as_data_frame(True)
       else:
-        print self,
+        print self
 
   def summary(self):
     """Summary: show(), plus includes min/mean/max/sigma and other rollup data"""

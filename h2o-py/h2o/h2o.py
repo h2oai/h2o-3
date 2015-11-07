@@ -227,15 +227,9 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
     if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
     kwargs["separator"] = ord(separator)
 
-  if bool(kwargs):
-    j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], **kwargs)
-  else:
-    j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
-
+  j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], **kwargs)
 
   if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
-
-
   if column_names:
     if not isinstance(column_names, list): raise ValueError("col_names should be a list")
     if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
