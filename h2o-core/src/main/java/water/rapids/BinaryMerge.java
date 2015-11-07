@@ -353,11 +353,26 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _timings[4] = (System.nanoTime() - t0) / 1e9;
     t0 = System.nanoTime();
 
+    RPC<GetRawRemoteRows> grrrsRite[][] = new RPC[H2O.CLOUD.size()][];
+    RPC<GetRawRemoteRows> grrrsLeft[][] = new RPC[H2O.CLOUD.size()][];
     for (H2ONode node : H2O.CLOUD._memary) {
-      int bUpp = perNodeRightRows[node.index()] == null ? 0 : perNodeRightRows[node.index()].length;
-      for (int b = 0; b < bUpp; b++) {
+      int ni = node.index();
+      int bUppRite = perNodeRightRows[ni] == null ? 0 : perNodeRightRows[ni].length;
+      int bUppLeft =  perNodeLeftRows[ni] == null ? 0 :  perNodeLeftRows[ni].length;
+      grrrsRite[ni] = new RPC[bUppRite];
+      grrrsLeft[ni] = new RPC[bUppLeft];
+      for (int b = 0; b < bUppRite; b++)
+        grrrsRite[ni][b] = new RPC<>(node, new GetRawRemoteRows(_rightFrame, perNodeRightRows[ni][b])).call();
+      for (int b = 0; b < bUppLeft; b++)
+        grrrsLeft[ni][b] = new RPC<>(node, new GetRawRemoteRows(_leftFrame, perNodeLeftRows[ni][b])).call();
+    }
+    for (H2ONode node : H2O.CLOUD._memary) {
+      int ni = node.index();
+      int bUppRite = perNodeRightRows[ni] == null ? 0 : perNodeRightRows[ni].length;
+      int bUppLeft =  perNodeLeftRows[ni] == null ? 0 :  perNodeLeftRows[ni].length;
+      for (int b = 0; b < bUppRite; b++) {
         t0 = System.nanoTime();
-        GetRawRemoteRows grrr = new RPC<>(node, new GetRawRemoteRows(_rightFrame, perNodeRightRows[node.index()][b])).call().get();
+        GetRawRemoteRows grrr = grrrsRite[ni][b].get();
         _timings[5] += (System.nanoTime() - t0) / 1e9;
         _timings[6] += grrr.timeTaken;
         t0 = System.nanoTime();
@@ -366,7 +381,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         for (int col = 0; col < _numColsInResult - _numLeftCols; col++) {   // TODO: currently join columns must be the first _numJoinCols. Relax.
           double chk[] = chks[_numJoinCols + col];
           for (int row = 0; row < chk.length /*.len()*/; row++) {
-            long actualRowInMSBCombo = perNodeRightRowsFrom[node.index()][b][row];
+            long actualRowInMSBCombo = perNodeRightRowsFrom[ni][b][row];
             int whichChunk = (int) (actualRowInMSBCombo / batchSize);
             int offset = (int) (actualRowInMSBCombo % batchSize);
             frameLikeChunks[_numLeftCols + col][whichChunk][offset] = chk[row];  // colForBatch.atd(row); TODO: this only works for numeric columns (not for date, UUID, strings, etc.)
@@ -374,10 +389,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         }
         _timings[7] += (System.nanoTime() - t0) / 1e9;
       }
-      bUpp = perNodeLeftRows[node.index()] == null ? 0 : perNodeLeftRows[node.index()].length;
-      for (int b = 0; b < bUpp; b++) {
+
+      for (int b = 0; b < bUppLeft; b++) {
         t0 = System.nanoTime();
-        GetRawRemoteRows grrr = new RPC<>(node, new GetRawRemoteRows(_leftFrame, perNodeLeftRows[node.index()][b])).call().get();
+        GetRawRemoteRows grrr = grrrsLeft[ni][b].get();
         _timings[8] += (System.nanoTime() - t0) / 1e9;
         _timings[9] += grrr.timeTaken;
         t0 = System.nanoTime();
@@ -386,8 +401,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         for (int col = 0; col < chks.length; ++col) {
           double chk[] = chks[col];
           for (int row = 0; row < chk.length; row++) {
-            long actualRowInMSBCombo = perNodeLeftRowsFrom[node.index()][b][row];
-            for (int rep = 0; rep < perNodeLeftRowsRepeat[node.index()][b][row]; rep++) {
+            long actualRowInMSBCombo = perNodeLeftRowsFrom[ni][b][row];
+            for (int rep = 0; rep < perNodeLeftRowsRepeat[ni][b][row]; rep++) {
               long a = actualRowInMSBCombo + rep;
               int whichChunk = (int) (a / batchSize);  // TO DO: loop into batches to save / and % for each repeat and still cater for crossing multiple batch boundaries
               int offset = (int) (a % batchSize);
@@ -443,26 +458,22 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     protected void compute2() {
       assert(_rows!=null);
       assert(_chk ==null);
-      //_priority = nextThrPriority();
       long t0 = System.nanoTime();
 
-      //_chk  = new Value[_fr.numCols()];
       _chk  = new double[_fr.numCols()][_rows.length];
-
-      //double[] rawVals = new double[_rows.length];
       for (int col=0; col<_fr.numCols(); col++) {
         Vec v = _fr.vec(col);
+        Chunk c[] = new Chunk[v.nChunks()];
+        for (int i=0; i<c.length; i++) c[i] = v.chunkKey(i).home() ? v.chunkForChunkIdx(i) : null;
+        // TODO: replace _rows with cidx and offset and then reuse for each column
         for (int row=0; row<_rows.length; row++) {
-          // assert v.chunkKey(v.chunkForRow(_rows[row]).cidx()).home();  Passes but very deep and expensive bin search on espc here so important to comment out
-          //nc.addNum(v.at(_rows[row]));
-          //rawVals[row] = v.at(_rows[row]); //local reads, random access //TODO: use chunk accessors by using indirection array
-          _chk[col][row] = v.at(_rows[row]);
+          int cidx = v.elem2ChunkIdx(_rows[row]);  // binary search of espc array.  TO DO: sort input row numbers to avoid
+          _chk[col][row] = c[cidx].atd((int)(_rows[row] - v.espc()[cidx]));
         }
-        //_chk[col] = (new NewChunk(rawVals).compress());  // NewChunk(rawVals[col]);
       }
 
       // tell remote node to fill up Chunk[/*batch*/][/*rows*/]
-//      perNodeRows[node] has perNodeRows[node].length batches of row numbers to fetch
+      // perNodeRows[node] has perNodeRows[node].length batches of row numbers to fetch
       _rows=null;
       assert(_chk !=null);
 

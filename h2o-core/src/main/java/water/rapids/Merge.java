@@ -113,7 +113,7 @@ public class Merge {
       System.out.print(String.format("%4d: ", i));
       BinaryMerge thisbm;
       bmResults[i++] = thisbm = (BinaryMerge)rpc.get(); //block
-      for (int t=0; t<12; t++) System.out.print(String.format("%2.2f ", thisbm._timings[t]));
+      for (int t=0; t<12; t++) System.out.print(String.format("%5.2f ", thisbm._timings[t]));
       System.out.println();
       if (thisbm._numRowsInResult == 0) continue;
       numChunks += thisbm._chunkSizes.length;
