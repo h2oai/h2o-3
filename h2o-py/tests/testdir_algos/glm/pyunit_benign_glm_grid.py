@@ -15,7 +15,6 @@ def benign_grid():
 
   hyper_parameters = {'alpha': [0.01,0.5,'a'], 'lambda': [1e-5,1e-6]}
   gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
-  gs.show()
   gs.train(x=X,y=Y, training_frame=training_data)
   gs.show()
   print gs.sort_by('F1', False)
@@ -24,6 +23,12 @@ def benign_grid():
   best_model.predict(training_data)
   gs.predict(training_data)
   print gs.get_hyperparams(best_model_id)
+  print gs.grid_id
+  
+  new_g = H2OGridSearch.get_grid(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters, gs.grid_id)
+  new_g.show()
+  print new_g.grid_id
+  print new_g.sort_by('F1', False)
 
   assert best_model.params['family']['actual'] == 'binomial'
 
