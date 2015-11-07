@@ -461,14 +461,19 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       long t0 = System.nanoTime();
 
       _chk  = new double[_fr.numCols()][_rows.length];
+      int cidx[] = new int[_rows.length];
+      int offset[] = new int[_rows.length];
+      Vec anyVec = _fr.anyVec();
+      for (int row=0; row<_rows.length; row++) {
+        cidx[row] = anyVec.elem2ChunkIdx(_rows[row]);  // binary search of espc array.  TODO: sort input row numbers to avoid
+        offset[row] = (int)(_rows[row] - anyVec.espc()[cidx[row]]);
+      }
+      Chunk c[] = new Chunk[anyVec.nChunks()];
       for (int col=0; col<_fr.numCols(); col++) {
         Vec v = _fr.vec(col);
-        Chunk c[] = new Chunk[v.nChunks()];
         for (int i=0; i<c.length; i++) c[i] = v.chunkKey(i).home() ? v.chunkForChunkIdx(i) : null;
-        // TODO: replace _rows with cidx and offset and then reuse for each column
         for (int row=0; row<_rows.length; row++) {
-          int cidx = v.elem2ChunkIdx(_rows[row]);  // binary search of espc array.  TO DO: sort input row numbers to avoid
-          _chk[col][row] = c[cidx].atd((int)(_rows[row] - v.espc()[cidx]));
+          _chk[col][row] = c[cidx[row]].atd(offset[row]);
         }
       }
 
