@@ -201,7 +201,7 @@ h2o.ensemble <- function(x, y, training_frame,
   .compress_cvpred_into_1col <- function(l, family) {
     # return the frame_id of the resulting 1-col Hdf of cvpreds for learner l
     if (family %in% c("bernoulli", "binomial")) {
-      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$p1, simplify = FALSE)
+      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)[,3], simplify = FALSE)
     } else {
       predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
     }
@@ -260,7 +260,7 @@ predict.h2o.ensemble <- function(object, newdata, ...) {
   for (l in seq(L)) {
     if (object$family == "binomial") {
       basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))$p1 
+                                                                   newdata = newdata)))[,3]
     } else {
       basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
                                                                    newdata = newdata)))$predict
