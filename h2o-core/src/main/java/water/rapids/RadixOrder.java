@@ -254,7 +254,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // The thinking was that if each chunk generated 256 objects, that would flood the DKV with keys?
     // TODO: send nChunks * 256.  Currently we do nNodes * 256.  Or avoid DKV altogether if possible.
 
-    for (int msb =0; msb <_o.length /*256*/; ++msb) {     // TODO: do we really need this loop?  We know the numbers of chunks when we allocated above didn't we?
+    for (int msb =0; msb <_o.length /*256*/; ++msb) {
       // “I found my A’s (msb=0) and now I'll send them to the node doing all the A's”
       // "I'll send you a long vector of _o and _x (batched if very long) along with where the boundaries are."
       // "You don't need to know the chunk numbers of these boundaries, because you know the node of each chunk from your local Vec header"
@@ -276,20 +276,24 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         }
       }
       forLoopTime += System.nanoTime() - t00;
-      t00 = System.nanoTime();
+
       //assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
       MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
       //Log.info("Putting MSB node headers for Frame " + _frameKey + " for MSB " + msb);
       //Log.info("Putting msb " + msb + " on node " + H2O.SELF.index());
-      DKV.put(getMSBNodeHeaderKey(_isLeft, msb, H2O.SELF.index()), msbh, fs);   // Just adding _fs makes it go in parallel
+      DKV.put(getMSBNodeHeaderKey(_isLeft, msb, H2O.SELF.index()), msbh, fs, true);
       for (int b=0;b<_o[msb].length; ++b) {
-        OXbatch ox = new OXbatch(_o[msb][b], _x[msb][b]);   // TODO: does this deep copy into OXbatch?  If so, create OXBatch[] in first place
+        OXbatch ox = new OXbatch(_o[msb][b], _x[msb][b]);   // this does not copy in Java, just references
         //Log.info("Putting OX batch for Frame " + _frameKey + " for batch " + b + " for MSB " + msb);
         //Log.info("Putting");
         sumSize += _o[msb][b].length * 8 + _x[msb][b].length * _keySize + 64;
-        DKV.put(getNodeOXbatchKey(_isLeft, msb, H2O.SELF.index(), b), ox, fs);
+        t00 = System.nanoTime();
+        DKV.put(getNodeOXbatchKey(_isLeft, msb, H2O.SELF.index(), b), ox, fs, true);   // TODO: send to particular node
+        long thist = System.nanoTime() - t00;
+        // System.out.println("This DKV put took : " + thist / 1e9);  // TODO:  adding fs (does it need ,fs,true?) above didn't appear to make it go in parallel. Apx 200 prints of 0.07 = 14s total
+        DKVputTime += thist;
       }
-      DKVputTime += System.nanoTime() - t00;
+
     }
     System.out.println("this node took : " + (System.nanoTime() - t0) / 1e9);
     System.out.println("  Finding the chunk boundaries in split OX took " + forLoopTime / 1e9);

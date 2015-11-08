@@ -361,10 +361,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       int bUppLeft =  perNodeLeftRows[ni] == null ? 0 :  perNodeLeftRows[ni].length;
       grrrsRite[ni] = new RPC[bUppRite];
       grrrsLeft[ni] = new RPC[bUppLeft];
-      for (int b = 0; b < bUppRite; b++)
+      for (int b = 0; b < bUppRite; b++) {
+        // Arrays.sort(perNodeRightRows[ni][b]);  Simple quick test of fetching in monotic order. Doesn't seem to help so far.
         grrrsRite[ni][b] = new RPC<>(node, new GetRawRemoteRows(_rightFrame, perNodeRightRows[ni][b])).call();
-      for (int b = 0; b < bUppLeft; b++)
+      }
+      for (int b = 0; b < bUppLeft; b++) {
+        // Arrays.sort(perNodeLeftRows[ni][b]);
         grrrsLeft[ni][b] = new RPC<>(node, new GetRawRemoteRows(_leftFrame, perNodeLeftRows[ni][b])).call();
+      }
     }
     for (H2ONode node : H2O.CLOUD._memary) {  // TODO:  this shouldn't be serially waiting for the first result.  Go parallel as soon as arrive. Callback? Parallel queue?
       int ni = node.index();
