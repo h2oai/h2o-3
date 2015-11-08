@@ -335,8 +335,8 @@ class H2OFrame(object):
     return (self[i] for i in range(self.ncol))
   def __str__(self):
     if sys.gettrace() is None:
-      row_string = ' rows x ' if self.nrow > 1 else ' row x '
-      column_string = ' columns]' if self.ncol > 1 else ' column]'
+      row_string = ' rows x ' if self.nrow != 1 else ' row x '
+      column_string = ' columns]' if self.ncol != 1 else ' column]'
       return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore") + '\n\n[' + str(self.nrow) \
     + row_string + str(self.ncol) + column_string
     return ""

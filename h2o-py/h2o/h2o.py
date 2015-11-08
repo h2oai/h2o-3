@@ -1882,18 +1882,16 @@ class H2ODisplay:
     entry = "<td><b>{}</b></td>"if bold else "<td>{}</td>"
     #format full floating point numbers to only 1 decimal place
     entries = "\n".join([entry.format(str(r))
-                         if len(str(r)) < 10 or not H2ODisplay._is_number(str(r))
+                         if len(str(r)) < 10 or not _is_number(str(r))
                          else entry.format("{0:.1f}".format(float(str(r)))) for r in row])
     return res.format(entries)
 
-  @staticmethod
-  def _is_number(s):
-    try:
-      float(s)
-      return True
-    except ValueError:
-      return False
-
+def _is_number(s):
+  try:
+    float(s)
+    return True
+  except ValueError:
+    return False
 
 def can_use_pandas():
   try:
