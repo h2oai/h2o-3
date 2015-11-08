@@ -172,7 +172,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
 
-  public String profString() { return _doProfile ? _profile.toString() : "Profiling turned off"; }
+  public String profString() { return _doProfile ? _profile.toString() : "MRTask profiling is turned off\n"; }
   MRProfile _profile;
 
   public void setProfile(boolean b) {_doProfile = b;}

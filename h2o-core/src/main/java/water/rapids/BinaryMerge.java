@@ -79,7 +79,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _retFirst = new long[leftSortedOXHeader._nBatch][];
     _retLen = new long[leftSortedOXHeader._nBatch][];
     for (int b=0; b<leftSortedOXHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxLeft = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(/*left=*/true, _leftMSB, b));
+      SplitByMSBLocal.OXbatch oxLeft = DKV.getGet(SplitByMSBLocal.getSortedOXbatchKey(/*left=*/true, _leftMSB, b));
       _leftKey[b] = oxLeft._x;
       _leftOrder[b] = oxLeft._o;
       _retFirst[b] = new long[oxLeft._o.length];
@@ -91,7 +91,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightKey = new byte[rightSortedOXHeader._nBatch][];
     _rightOrder = new long[rightSortedOXHeader._nBatch][];
     for (int b=0; b<rightSortedOXHeader._nBatch; ++b) {
-      MoveByFirstByte.OXbatch oxRight = DKV.getGet(MoveByFirstByte.getSortedOXbatchKey(/*left=*/false, _rightMSB, b));
+      SplitByMSBLocal.OXbatch oxRight = DKV.getGet(SplitByMSBLocal.getSortedOXbatchKey(/*left=*/false, _rightMSB, b));
       _rightKey[b] = oxRight._x;
       _rightOrder[b] = oxRight._o;
     }
@@ -246,7 +246,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     long perNodeLeftLoc[] = new long[H2O.CLOUD.size()];
 
     // Allocate memory to split this MSB combn's left and right matching rows into contiguous batches sent to the nodes they reside on
-    int batchSize = (int) _leftBatchSize;  // TODO: what's the right batch size here. And why is _leftBatchSize type long?
+    int batchSize = 256*1024*1024 / 8;  // 256GB DKV limit / sizeof(long)
     for (int i = 0; i < H2O.CLOUD.size(); i++) {
       if (_perNodeNumRightRowsToFetch[i] > 0) {
         int nbatch = (int) ((_perNodeNumRightRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
@@ -330,7 +330,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     t0 = System.nanoTime();
 
     // Create the chunks for the final frame from this MSB pair.
-    batchSize = 1<<22; // number of rows per chunk.  32MB for doubles, 64MB for UUIDs to fit into 256MB DKV Value limit
+    batchSize = 256*1024*1024 / 16;  // number of rows per chunk to fit in 256GB DKV limit.   16 bytes for each UUID (biggest type). Enum will be long (8). TODO: How is non-Enum 'string' handled by H2O?
     int nbatch = (int) (_numRowsInResult-1)/batchSize +1;  // TODO: wrap in class to avoid this boiler plate
     int lastSize = (int)(_numRowsInResult - (nbatch-1)*batchSize);
     assert nbatch >= 1;
@@ -366,7 +366,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       for (int b = 0; b < bUppLeft; b++)
         grrrsLeft[ni][b] = new RPC<>(node, new GetRawRemoteRows(_leftFrame, perNodeLeftRows[ni][b])).call();
     }
-    for (H2ONode node : H2O.CLOUD._memary) {
+    for (H2ONode node : H2O.CLOUD._memary) {  // TODO:  this shouldn't be serially waiting for the first result.  Go parallel as soon as arrive. Callback? Parallel queue?
       int ni = node.index();
       int bUppRite = perNodeRightRows[ni] == null ? 0 : perNodeRightRows[ni].length;
       int bUppLeft =  perNodeLeftRows[ni] == null ? 0 :  perNodeLeftRows[ni].length;
@@ -431,10 +431,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   static Key getKeyForMSBComboPerCol(/*Frame leftFrame, Frame rightFrame,*/ int leftMSB, int rightMSB, int col /*final table*/, int batch) {
     return Key.make("__binary_merge__Chunk_for_col" + col + "_batch" + batch
-            // + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
-            + "_leftMSB"+leftMSB + "_rightMSB" + rightMSB,
-            (byte)1, Key.HIDDEN_USER_KEY, false, MoveByFirstByte.ownerOfMSB(rightMSB)
-            ); //TODO home locally
+                    // + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
+                    + "_leftMSB" + leftMSB + "_rightMSB" + rightMSB,
+            (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(rightMSB)
+    ); //TODO home locally
   }
 
   class GetRawRemoteRows extends DTask<GetRawRemoteRows> {

@@ -41,12 +41,12 @@ public class Merge {
     System.out.println("\nCreating left index ...");
     long t0 = System.nanoTime();
     RadixOrder leftIndex = new RadixOrder(leftFrame, /*left=*/true, leftCols);
-    System.out.println("Creating left index took: " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("***\n*** Creating left index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
 
     System.out.println("\nCreating right index ...");
     t0 = System.nanoTime();
     RadixOrder rightIndex = new RadixOrder(rightFrame, /*left=*/false, rightCols);
-    System.out.println("Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n");
+    System.out.println("***\n*** Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
 
     // Align MSB locations between the two keys
     // If the 1st join column has range < 256 (e.g. test cases) then <=8 bits are used and there's a floor of 8 to the shift.
@@ -70,7 +70,7 @@ public class Merge {
     //   We hope most common case. Common width keys (e.g. ids, codes, enums, integers, etc) both sides over similar range
     //   Left msb will match exactly to right msb one-to-one, without any alignment needed.
 
-    System.out.println("Sending BinaryMerge async RPC calls ...");
+    System.out.print("Sending BinaryMerge async RPC calls ... ");
     t0 = System.nanoTime();
     List<RPC> bmList = new ArrayList<>();
     for (int leftMSB =0; leftMSB <leftExtent; leftMSB++) { // each of left msb values.  TO DO: go parallel
@@ -85,7 +85,7 @@ public class Merge {
         // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node.
         //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
 //        H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
-        H2ONode rightNode = MoveByFirstByte.ownerOfMSB(rightMSB);
+        H2ONode rightNode = SplitByMSBLocal.ownerOfMSB(rightMSB);
         //if (leftMSB!=73 || rightMSB!=73) continue;
         //Log.info("Calling BinaryMerge for " + leftMSB + " " + rightMSB);
         RPC bm = new RPC<>(rightNode,
@@ -101,9 +101,9 @@ public class Merge {
         bm.call(); //async
       }
     }
-    System.out.println("Sending BinaryMerge async RPC calls took: " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
-    System.out.println("Summing BinaryMerge._numChunks (and waiting for RPCs to finish)... ");
+    System.out.println("Waiting for BinaryMerge RPCs to finish ... ");
     t0 = System.nanoTime();
     long ansN = 0;
     int numChunks = 0;
@@ -119,7 +119,7 @@ public class Merge {
       numChunks += thisbm._chunkSizes.length;
       ansN += thisbm._numRowsInResult;
     }
-    System.out.println("\ntook: " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("\nBinaryMerge RPCs took: " + (System.nanoTime() - t0) / 1e9);
     assert(i == bmList.size());
 
     System.out.print("Allocating and populating chunk info (e.g. size and batch number) ...");
