@@ -197,9 +197,10 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
   static H2ONode ownerOfMSB(int MSBvalue) {
     // TO DO: this isn't properly working for efficiency. This value should pick the value of where it is, somehow.
-    //        Why not getSortedOXHeader(MSVvalue).home_node() ?
-    int blocksize = (int) Math.ceil(256. / H2O.CLOUD.size());
-    H2ONode node = H2O.CLOUD._memary[MSBvalue / blocksize];
+    //        Why not getSortedOXHeader(MSBvalue).home_node() ?
+    //int blocksize = (int) Math.ceil(256. / H2O.CLOUD.size());
+    //H2ONode node = H2O.CLOUD._memary[MSBvalue / blocksize];
+    H2ONode node = H2O.CLOUD._memary[MSBvalue % H2O.CLOUD.size()];   // spread it around more.
     return node;
   }
 
@@ -392,10 +393,12 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
     SplitByMSBLocal.OXbatch ox[/*node*/] = new SplitByMSBLocal.OXbatch[H2O.CLOUD.size()];
     int oxBatchNum[/*node*/] = new int[H2O.CLOUD.size()];  // which batch of OX are we on from that node?  Initialized to 0.
-    for (int node=0; node<H2O.CLOUD.size(); node++) {
+    for (int node=0; node<H2O.CLOUD.size(); node++) {  //TO DO: why is this serial?  Relying on
       // Log.info("Getting OX MSB " + MSBvalue + " batch 0 from node " + node + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
       // Log.info("Getting");
-      ox[node] = DKV.getGet(SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0));   // get the first batch for each node for this MSB
+      Key k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0);
+      assert k.home();
+      ox[node] = DKV.getGet(k);   // get the first batch for each node for this MSB
     }
     int oxOffset[] = new int[H2O.CLOUD.size()];
     int oxChunkIdx[] = new int[H2O.CLOUD.size()];  // that node has n chunks and which of those are we currently on?
@@ -499,13 +502,15 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     OXHeader msbh = new OXHeader(_o.length, _numRows, _batchSize);
     // Log.info("Putting MSB header for Frame " + _fr._key + " for MSB " + _MSBvalue);
     // Log.info("Putting");
-    DKV.put(getSortedOXHeaderKey(_isLeft, _MSBvalue), msbh);
+    Futures fs = new Futures();
+    DKV.put(getSortedOXHeaderKey(_isLeft, _MSBvalue), msbh, fs, true);
     for (b=0; b<_o.length; b++) {
       SplitByMSBLocal.OXbatch tmp = new SplitByMSBLocal.OXbatch(_o[b], _x[b]);
       // Log.info("Putting OX header for Frame " + _fr._key + " for MSB " + _MSBvalue);
       // Log.info("Putting");
-      DKV.put(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b), tmp);  // the OXbatchKey's on this node will be reused for the new keys
+      DKV.put(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b), tmp, fs, true);  // the OXbatchKey's on this node will be reused for the new keys
     }
+    fs.blockForPending();
     tryComplete();
   }
 
@@ -537,37 +542,54 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   {
     int batch0 = (int) (start / _batchSize);
     int batch1 = (int) (start+len-1) / _batchSize;
-    assert batch0==0;
+    long origstart = start;   // just for when straddle batch boundaries
+    int len0 = 0;             // same
     // _nGroup[_MSBvalue]++;  // TODO: reinstate.  This is at least 1 group (if all keys in this len items are equal)
-    if (batch0 == batch1)  {
-      // Within the same batch. Likely very often since len<=200
-      byte _xbatch[] = _x[batch0];  // taking this outside the loop does indeed make quite a big different (hotspot isn't catching this, then)
-      long _obatch[] = _o[batch0];
-      int offset = (int) (start % _batchSize);
-      for (int i=1; i<len; i++) {
-        int cmp = keycmp(_xbatch, offset+i, _xbatch, offset+i-1);  // TO DO: we don't need to compare the whole key here.  Set cmpLen < keySize
-        if (cmp < 0) {
-          System.arraycopy(_xbatch, (offset+i)*_keySize, keytmp, 0, _keySize);
-          int j = i - 1;
-          long otmp = _obatch[offset+i];
-          do {
-            System.arraycopy(_xbatch, (offset+j)*_keySize, _xbatch, (offset+j+1)*_keySize, _keySize);
-            _obatch[offset+j+1] = _obatch[offset+j];
-            j--;
-          } while (j >= 0 && (cmp = keycmp(keytmp, 0, _xbatch, offset+j))<0);
-          System.arraycopy(keytmp, 0, _xbatch, (offset+j+1)*_keySize, _keySize);
-          _obatch[offset + j + 1] = otmp;
-        }
-        //if (cmp>0) _nGroup[_MSBvalue]++;  //TODO: reinstate _nGroup. Saves sweep afterwards. Possible now that we don't maintain the group sizes in this deep pass, unlike data.table
+    byte _xbatch[];
+    long _obatch[];
+    if (batch1 != batch0) {
+      // small len straddles a batch boundary. Unlikely very often since len<=200
+      assert batch0 == batch1-1;
+      len0 = _batchSize - (int)(start % _batchSize);
+      // copy two halves to contiguous temp memory, do the below, then split it back to the two halves afterwards.
+      // Straddles batches very rarely (at most once per batch) so no speed impact at all.
+      _xbatch = new byte[len * _keySize];
+      System.arraycopy(_xbatch, 0, _x[batch0], (int)((start % _batchSize)*_keySize), len0*_keySize);
+      System.arraycopy(_xbatch, len0*_keySize, _x[batch1], 0, (len-len0)*_keySize);
+      _obatch = new long[len];
+      System.arraycopy(_obatch, 0, _o[batch0], (int)(start % _batchSize), len0);
+      System.arraycopy(_obatch, len0, _o[batch1], 0, len-len0);
+      start = 0;
+    } else {
+      _xbatch = _x[batch0];  // taking this outside the loop does indeed make quite a big different (hotspot isn't catching this, then)
+      _obatch = _o[batch0];
+    }
+    int offset = (int) (start % _batchSize);
+    for (int i=1; i<len; i++) {
+      int cmp = keycmp(_xbatch, offset+i, _xbatch, offset+i-1);  // TO DO: we don't need to compare the whole key here.  Set cmpLen < keySize
+      if (cmp < 0) {
+        System.arraycopy(_xbatch, (offset+i)*_keySize, keytmp, 0, _keySize);
+        int j = i - 1;
+        long otmp = _obatch[offset+i];
+        do {
+          System.arraycopy(_xbatch, (offset+j)*_keySize, _xbatch, (offset+j+1)*_keySize, _keySize);
+          _obatch[offset+j+1] = _obatch[offset+j];
+          j--;
+        } while (j >= 0 && (cmp = keycmp(keytmp, 0, _xbatch, offset+j))<0);
+        System.arraycopy(keytmp, 0, _xbatch, (offset+j+1)*_keySize, _keySize);
+        _obatch[offset + j + 1] = otmp;
+      }
+      //if (cmp>0) _nGroup[_MSBvalue]++;  //TODO: reinstate _nGroup. Saves sweep afterwards. Possible now that we don't maintain the group sizes in this deep pass, unlike data.table
         // saves call to push() and hop to _groups
         // _nGroup == nrow afterwards tells us if the keys are unique.
         // Sadly, it seems _nGroup += (cmp==0) isn't possible in Java even with explicit cast of boolean to int, so branch needed
-      }
-    } else {
-      assert batch0 == batch1-1;
-      throw H2O.unimpl();
-      // TO DO: copy two halves to contiguous temp memory, do the stuff above and then split it back to the two batches afterwards.
-      // Straddles batches very rarely (at most once per batch) so no speed impact at all.
+    }
+    if (batch1 != batch0) {
+      // Put the sorted data back into original two places straddling the boundary
+      System.arraycopy(_x[batch0], (int)(origstart % _batchSize) *_keySize, _xbatch, 0, len0*_keySize);
+      System.arraycopy(_x[batch1], 0, _xbatch, len0*_keySize, (len-len0)*_keySize);
+      System.arraycopy(_o[batch0], (int)(origstart % _batchSize), _obatch, 0, len0);
+      System.arraycopy(_o[batch1], 0, _obatch, len0, len-len0);
     }
   }
 
@@ -583,18 +605,26 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
     int batch0 = (int) (start / _batchSize);
     int batch1 = (int) (start+len-1) / _batchSize;
-    assert batch0==0;
-    assert batch0==batch1;  // TO DO: count across batches of 2Bn.  Wish we had 64bit indexing in Java.
-    byte _xbatch[] = _x[batch0];  // taking this outside the loop does indeed make quite a big different (hotspot isn't catching this, then)
+    // could well span more than one boundary when very large number of rows.
+    // assert batch0==0;
+    // assert batch0==batch1;  // Count across batches of 2Bn is now done.  Wish we had 64bit indexing in Java.
     long thisHist[] = counts[Byte];
     // thisHist reused and carefully set back to 0 below so we don't need to clear it now
-    int idx = (int)start*_keySize + _keySize-Byte-1;
+    int idx = (int)(start%_batchSize)*_keySize + _keySize-Byte-1;
     int bin=-1;  // the last bin incremented. Just to see if there is only one bin with a count.
-    for (long i = 0; i < len; i++) {
-      bin = 0xff & _xbatch[idx];
-      thisHist[bin]++;
-      idx += _keySize;
-      // maybe TO DO:  shorten key by 1 byte on each iteration, so we only need to thisx && 0xFF.  No, because we need for construction of final table key columns.
+    int nbatch = batch1-batch0+1;  // number of batches this span of len covers.  Usually 1.  Minimum 1.
+    int thisLen = (int)Math.min(len, _batchSize - start%_batchSize);
+    for (int b=0; b<nbatch; b++) {
+      byte _xbatch[] = _x[batch0+b];   // taking this outside the loop below does indeed make quite a big different (hotspot isn't catching this, then)
+      for (int i = 0; i < thisLen; i++) {
+        bin = 0xff & _xbatch[idx];
+        thisHist[bin]++;
+        idx += _keySize;
+        // maybe TO DO:  shorten key by 1 byte on each iteration, so we only need to thisx && 0xFF.  No, because we need for construction of final table key columns.
+      }
+      idx = _keySize-Byte-1;
+      thisLen = (b==nbatch-2/*next iteration will be last batch*/ ? (int)(start+len-1)%_batchSize : _batchSize);
+      // thisLen will be set to _batchSize for the middle batches when nbatch>=3
     }
     if (thisHist[bin] == len) {
       // one bin has count len and the rest zero => next byte quick
@@ -610,20 +640,87 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       thisHist[c] = rollSum;
       rollSum += tmp;
     }
-    long _obatch[] = _o[batch0];
-    byte _xtmpbatch[] = _xtmp[batch0];  // TO DO- ignoring >2^31 for now.  No batching.
-    long _otmpbatch[] = _otmp[batch0];
-    idx = (int)start*_keySize + _keySize-Byte-1;
-    for (int i = 0; i < len; i++) {
-      long target = thisHist[0xff & _xbatch[idx]]++;
-      _otmpbatch[(int)(target)] = _obatch[(int)start+i];   // this must be kept in 8 bytes longs
-      System.arraycopy( _xbatch, ((int)start+i)*_keySize, _xtmpbatch, (int)target*_keySize, _keySize );
-      idx += _keySize;
-      //  Maybe TO DO:  this can be variable byte width and smaller widths as descend through bytes (TO DO: reverse byte order so always doing &0xFF)
+
+    // Sigh. Now deal with batches here as well because Java doesn't have 64bit indexing.
+    int oidx = (int)(start%_batchSize);
+    int xidx = oidx*_keySize + _keySize-Byte-1;
+    thisLen = (int)Math.min(len, _batchSize - start%_batchSize);
+    for (int b=0; b<nbatch; b++) {
+      long _obatch[] = _o[batch0+b];   // taking these outside the loop below does indeed make quite a big different (hotspot isn't catching this, then)
+      byte _xbatch[] = _x[batch0+b];
+      for (int i = 0; i < thisLen; i++) {
+        long target = thisHist[0xff & _xbatch[xidx]]++;
+        // now always write to the beginning of _otmp and _xtmp just to reuse the first hot pages
+        _otmp[(int)(target/_batchSize)][(int)(target%_batchSize)] = _obatch[oidx+i];   // this must be kept in 8 bytes longs
+        System.arraycopy(_xbatch, (oidx+i)*_keySize, _xtmp[(int)(target/_batchSize)], (int)(target%_batchSize)*_keySize, _keySize );
+        xidx += _keySize;
+        //  Maybe TO DO:  this can be variable byte width and smaller widths as descend through bytes (TO DO: reverse byte order so always doing &0xFF)
+      }
+      xidx = _keySize-Byte-1;
+      oidx = 0;
+      thisLen = (b==nbatch-2/*next iteration will be last batch*/ ? (int)(start+len-1)%_batchSize : _batchSize);
     }
 
-    System.arraycopy(_otmpbatch, 0, _obatch, (int)start, (int)len);  // always use the beginning of _otmp and _xtmp just to reuse the first hot pages
-    System.arraycopy(_xtmpbatch, 0, _xbatch, (int)start*_keySize, (int)len*_keySize);
+    // now copy _otmp and _xtmp back over _o and _x from the start position, allowing for boundaries
+    // _o, _x, _otmp and _xtmp all have the same _batchsize
+    // Would be really nice if Java had 64bit indexing to save programmer time.
+    long numRowsToCopy = len;
+    int sourceBatch = 0, sourceOffset = 0;
+    int targetBatch = (int)(start / _batchSize), targetOffset = (int)(start % _batchSize);
+    int targetBatchRemaining = _batchSize - targetOffset;
+    while (numRowsToCopy > 0) {   // TO DO: put this into class as well, to ArrayCopy into batched
+      int sourceBatchRemaining = _batchSize - sourceOffset; // at most batchSize remaining.  No need to actually put the number of rows left in here
+      if (sourceBatchRemaining <= numRowsToCopy) {
+        if (targetBatchRemaining <= sourceBatchRemaining) {
+          System.arraycopy(_otmp[sourceBatch], sourceOffset, _o[targetBatch], targetOffset, targetBatchRemaining);
+          System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, targetBatchRemaining*_keySize);
+          numRowsToCopy -= targetBatchRemaining;
+          // sourceBatch no change
+          sourceOffset += targetBatchRemaining;
+          sourceBatchRemaining -= targetBatchRemaining;
+          assert sourceBatchRemaining >= 0;
+          targetBatch++;
+          targetOffset = 0;
+          targetBatchRemaining = _batchSize;
+          assert targetBatchRemaining >= sourceBatchRemaining;
+        }
+        if (sourceBatchRemaining <= numRowsToCopy) {
+          System.arraycopy(_otmp[sourceBatch], sourceOffset, _o[targetBatch], targetOffset, sourceBatchRemaining);
+          System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, sourceBatchRemaining*_keySize);
+          numRowsToCopy -= sourceBatchRemaining;
+          sourceBatch++;
+          sourceOffset = 0;
+          targetOffset += sourceBatchRemaining;
+          targetBatchRemaining -= sourceBatchRemaining;
+          sourceBatchRemaining = _batchSize;
+        }
+        assert sourceBatchRemaining >= numRowsToCopy;
+      }
+      if (targetBatchRemaining <= numRowsToCopy) {
+        System.arraycopy(_otmp[sourceBatch], sourceOffset, _o[targetBatch], targetOffset, targetBatchRemaining);
+        System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, targetBatchRemaining*_keySize);
+        numRowsToCopy -= targetBatchRemaining;
+        sourceOffset += targetBatchRemaining;
+        sourceBatchRemaining -= targetBatchRemaining;
+        assert sourceBatchRemaining >= 0;
+        targetBatch++;
+        targetOffset = 0;
+        targetBatchRemaining = _batchSize;
+        assert targetBatchRemaining >= numRowsToCopy;
+      }
+      if (numRowsToCopy > 0) {
+        assert targetBatchRemaining > numRowsToCopy;
+        //Log.info(MSBvalue + ";" + H2O.SELF.index() + ";" + fromNode + ";" + oxOffset[fromNode] + ";" + targetBatch + ";" + targetOffset + ";" + numRowsToCopy);
+        System.arraycopy(_otmp[sourceBatch], sourceOffset, _o[targetBatch], targetOffset, (int)numRowsToCopy);
+        System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, (int)numRowsToCopy*_keySize);
+        numRowsToCopy -= numRowsToCopy;
+        sourceOffset += numRowsToCopy;
+        sourceBatchRemaining -= numRowsToCopy;
+        assert sourceBatchRemaining >= 0;
+        targetOffset += numRowsToCopy;
+        targetBatchRemaining -= numRowsToCopy;
+      }
+    }
 
     long itmp = 0;
     for (int i=0; i<256; i++) {

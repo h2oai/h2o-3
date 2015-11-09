@@ -70,7 +70,9 @@ public class Merge {
     //   We hope most common case. Common width keys (e.g. ids, codes, enums, integers, etc) both sides over similar range
     //   Left msb will match exactly to right msb one-to-one, without any alignment needed.
 
-    System.out.print("Sending BinaryMerge async RPC calls ... ");
+    long ansN = 0;
+    int numChunks = 0;
+    System.out.print("Making BinaryMerge RPC calls ... ");
     t0 = System.nanoTime();
     List<RPC> bmList = new ArrayList<>();
     for (int leftMSB =0; leftMSB <leftExtent; leftMSB++) { // each of left msb values.  TO DO: go parallel
@@ -85,7 +87,7 @@ public class Merge {
         // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node.
         //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
 //        H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
-        H2ONode rightNode = SplitByMSBLocal.ownerOfMSB(rightMSB);
+        H2ONode rightNode = SplitByMSBLocal.ownerOfMSB(rightMSB);  // TODO: ensure that that owner has that part of the index locally.
         //if (leftMSB!=73 || rightMSB!=73) continue;
         //Log.info("Calling BinaryMerge for " + leftMSB + " " + rightMSB);
         RPC bm = new RPC<>(rightNode,
@@ -98,16 +100,67 @@ public class Merge {
                 )
         );
         bmList.add(bm);
-        bm.call(); //async
+        //System.out.println("Made RPC to node " + rightNode.index() + " for MSB" + leftMSB + "/" + rightMSB);
       }
     }
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
-    System.out.println("Waiting for BinaryMerge RPCs to finish ... ");
     t0 = System.nanoTime();
-    long ansN = 0;
-    int numChunks = 0;
+    System.out.print("Sending BinaryMerge async RPC calls in a queue ... ");
+    // need to do our own queue it seems, otherwise floods the cluster
+    int queueSize = Math.max(H2O.CLOUD.size() * 10, 40);
+    //int nbatch = 1+ (bmList.size()-1)/queueSize;
+    //int lastSize = bmList.size() - (nbatch-1) * queueSize;
+    //int bmCount = 0, batchStart = 0;
+    int queue[] = new int[queueSize];
     BinaryMerge bmResults[] = new BinaryMerge[bmList.size()];
+
+    //for (int b=1; b<=nbatch; b++) {      // to save flooding the cluster and RAM usage
+    //  int thisBatchSize = b==nbatch ? lastSize : queueSize;
+    int nextItem;
+    for (nextItem=0; nextItem<queueSize; nextItem++) {
+      queue[nextItem] = nextItem;
+      bmList.get(nextItem).call();  // async
+    }
+    int leftOnQueue = queueSize;
+    int waitMS = 50;  // 0.05 second for fast runs like 1E8 on 1 node
+    while (leftOnQueue > 0) {
+      try {
+        Thread.sleep(waitMS);
+      } catch(InterruptedException ex) {
+        Thread.currentThread().interrupt();
+      }
+      // System.out.println("Sweeping queue ...");
+      int doneInSweep = 0;
+      for (int q=0; q<queueSize; q++) {
+        int thisBM = queue[q];
+        if (thisBM >= 0 && bmList.get(thisBM).isDone()) {
+          BinaryMerge thisbm;
+          bmResults[thisBM] = thisbm = (BinaryMerge)bmList.get(thisBM).get();
+          leftOnQueue--;
+          doneInSweep++;
+          if (thisbm._numRowsInResult > 0) {
+            System.out.print(String.format("%3d",queue[q]) + ":");
+            for (int t=0; t<12; t++) System.out.print(String.format("%5.2f ", thisbm._timings[t]));
+            System.out.println();
+            numChunks += thisbm._chunkSizes.length;
+            ansN += thisbm._numRowsInResult;
+          }
+          queue[q] = -1;  // clear the slot
+          if (nextItem < bmList.size()) {
+            bmList.get(nextItem).call();   // call next one
+            queue[q] = nextItem++;         // put on queue so we can sweep
+            leftOnQueue++;
+          }
+        }
+      }
+      if (doneInSweep == 0) waitMS = Math.min(1000, waitMS*2);  // if last sweep caught none, then double wait time to avoid cost of sweeping
+    }
+    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+
+    /*System.out.println("Waiting for BinaryMerge RPCs to finish ... ");
+    t0 = System.nanoTime();
+    BinaryMerge bmResults[] = new BinaryMerge[bmList.size()];   // all the results were being collected on one node here?  No. bmResults are small.
     int i=0;
     for (RPC rpc : bmList) {
       System.out.print(String.format("%4d: ", i));
@@ -118,10 +171,12 @@ public class Merge {
       if (thisbm._numRowsInResult == 0) continue;
       numChunks += thisbm._chunkSizes.length;
       ansN += thisbm._numRowsInResult;
+      // There is no BinaryMerge[i] = null incrementally.  No wonder it is blowing up!
     }
     System.out.println("\nBinaryMerge RPCs took: " + (System.nanoTime() - t0) / 1e9);
     assert(i == bmList.size());
-
+*/
+    //return new Frame();
     System.out.print("Allocating and populating chunk info (e.g. size and batch number) ...");
     t0 = System.nanoTime();
     long chunkSizes[] = new long[numChunks];
@@ -129,7 +184,7 @@ public class Merge {
     int chunkRightMSB[] = new int[numChunks];
     int chunkBatch[] = new int[numChunks];
     int k = 0;
-    for (i=0; i<bmList.size(); i++) {
+    for (int i=0; i<bmList.size(); i++) {
       BinaryMerge thisbm = bmResults[i];
       if (thisbm._numRowsInResult == 0) continue;
       int thisChunkSizes[] = thisbm._chunkSizes;
@@ -148,7 +203,7 @@ public class Merge {
     System.out.print("Allocating and populated espc ...");
     t0 = System.nanoTime();
     long espc[] = new long[chunkSizes.length+1];
-    i=0;
+    int i=0;
     long sum=0;
     for (long s : chunkSizes) {
       espc[i++] = sum;
