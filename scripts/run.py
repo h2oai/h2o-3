@@ -412,7 +412,7 @@ class H2OCloud:
 
         # Randomly choose a seven digit cloud number.
         n = random.randint(1000000, 9999999)
-        user = getpass.getuser()
+        user = getpass.getuser().replace('\\', '/')
         user = ''.join(user.split())
 
         self.cloud_name = "H2O_runit_{}_{}".format(user, n)

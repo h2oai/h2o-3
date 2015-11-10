@@ -115,6 +115,12 @@ final public class H2O {
             "    -ice_root <fileSystemPath>\n" +
             "          The directory where H2O spills temporary data to disk.\n" +
             "\n" +
+            "    -username <username>\n " +
+            "          Username for HTTP Basic Authentication.\n " +
+            "\n" +
+            "    -password <password>\n " +
+            "          Password for HTTP Basic Authentication.\n " +
+            "\n" +
             "    -log_dir <fileSystemPath>\n" +
             "          The directory where H2O writes logs to disk.\n" +
             "          (This usually has a good default that you need not change.)\n" +
@@ -242,6 +248,15 @@ final public class H2O {
 
     /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
     public boolean ga_opt_out = false;
+
+    //-----------------------------------------------------------------------------------
+    // Authentication
+    //-----------------------------------------------------------------------------------
+    /** -username=username; username for HTTP Basic Authentication */
+    public String web_username;
+
+    /** -password=password; password for HTTP Basic Authentication */
+    public String web_password;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -435,6 +450,13 @@ final public class H2O {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
         ARGS.ga_opt_out = true;
+      }
+      else if (s.matches("username")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.web_username = args[i];
+      } else if (s.matches("password")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.web_password = args[i];
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
@@ -1152,7 +1174,7 @@ final public class H2O {
   public static String DEFAULT_ICE_ROOT() {
     String username = System.getProperty("user.name");
     if (username == null) username = "";
-    String u2 = username.replaceAll(" ", "_");
+    String u2 = username.replaceAll(" ", "_").replace('\\', '/');
     if (u2.length() == 0) u2 = "unknown";
     return "/tmp/h2o-" + u2;
   }

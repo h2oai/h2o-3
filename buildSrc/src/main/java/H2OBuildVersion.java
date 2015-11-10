@@ -137,7 +137,7 @@ public class H2OBuildVersion {
   }
 
   private String calcCompiledBy() {
-    return System.getProperty("user.name");
+    return System.getProperty("user.name").replace('\\', '/');
   }
 
   private String getProjectVersion() {

@@ -112,6 +112,8 @@ public class JettyHTTPD {
   // Jetty server object.
   private Server _server;
 
+  private AuthConfig _authConfig;
+
   /**
    * Create bare Jetty object.
    */
@@ -148,6 +150,10 @@ public class JettyHTTPD {
 
   public void setServer(Server value) {
     _server = value;
+  }
+
+  public void setAuthConfig(AuthConfig authConfig) {
+    this._authConfig = authConfig;
   }
 
   public void setup(String ip, int port) {
@@ -218,6 +224,11 @@ public class JettyHTTPD {
     ServletContextHandler context = new ServletContextHandler(
             ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
     );
+    if (_authConfig != null) {
+      Log.info("Enable basic authentication. Username=" + _authConfig.getUsername()
+          + ", password=" + _authConfig.getPassword());
+      context.setSecurityHandler(BasicAuthSecurityHandlerFactory.basicAuth(_authConfig));
+    }
     context.setContextPath("/");
 
     context.addServlet(H2oNpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
