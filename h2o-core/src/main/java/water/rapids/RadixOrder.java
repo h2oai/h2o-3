@@ -258,7 +258,10 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // The thinking was that if each chunk generated 256 objects, that would flood the DKV with keys?
     // TODO: send nChunks * 256.  Currently we do nNodes * 256.  Or avoid DKV altogether if possible.
 
-    System.out.print("Starting SendSplitMSB on this node ... ");
+    System.out.print("Starting SendSplitMSB on this node (keySize is " + _keySize + " as [");
+    for (int i=0; i<_bytesUsed.length; i++) System.out.print(" "+_bytesUsed[i]);
+    System.out.println(" ]) ...");
+
     long t0 = System.nanoTime();
     Futures fs = new Futures();
     for (int msb =0; msb <_o.length /*256*/; ++msb) {   // TODO this can be done in parallel, surely
