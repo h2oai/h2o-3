@@ -667,59 +667,21 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     long numRowsToCopy = len;
     int sourceBatch = 0, sourceOffset = 0;
     int targetBatch = (int)(start / _batchSize), targetOffset = (int)(start % _batchSize);
-    int targetBatchRemaining = _batchSize - targetOffset;
+    int targetBatchRemaining = _batchSize - targetOffset;  // 'remaining' means of the the full batch, not of the numRowsToCopy
+    int sourceBatchRemaining = _batchSize - sourceOffset;  // at most batchSize remaining.  No need to actually put the number of rows left in here
+    int thisCopy;
     while (numRowsToCopy > 0) {   // TO DO: put this into class as well, to ArrayCopy into batched
-      int sourceBatchRemaining = _batchSize - sourceOffset; // at most batchSize remaining.  No need to actually put the number of rows left in here
-      if (sourceBatchRemaining <= numRowsToCopy) {
-        if (targetBatchRemaining <= sourceBatchRemaining) {
-          System.arraycopy(_otmp[sourceBatch], sourceOffset, _o[targetBatch], targetOffset, targetBatchRemaining);
-          System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, targetBatchRemaining*_keySize);
-          numRowsToCopy -= targetBatchRemaining;
-          // sourceBatch no change
-          sourceOffset += targetBatchRemaining;
-          sourceBatchRemaining -= targetBatchRemaining;
-          assert sourceBatchRemaining >= 0;
-          targetBatch++;
-          targetOffset = 0;
-          targetBatchRemaining = _batchSize;
-          assert targetBatchRemaining >= sourceBatchRemaining;
-        }
-        if (sourceBatchRemaining <= numRowsToCopy) {
-          System.arraycopy(_otmp[sourceBatch], sourceOffset, _o[targetBatch], targetOffset, sourceBatchRemaining);
-          System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, sourceBatchRemaining*_keySize);
-          numRowsToCopy -= sourceBatchRemaining;
-          sourceBatch++;
-          sourceOffset = 0;
-          targetOffset += sourceBatchRemaining;
-          targetBatchRemaining -= sourceBatchRemaining;
-          sourceBatchRemaining = _batchSize;
-        }
-        assert sourceBatchRemaining >= numRowsToCopy;
-      }
-      if (targetBatchRemaining <= numRowsToCopy) {
-        System.arraycopy(_otmp[sourceBatch], sourceOffset, _o[targetBatch], targetOffset, targetBatchRemaining);
-        System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, targetBatchRemaining*_keySize);
-        numRowsToCopy -= targetBatchRemaining;
-        sourceOffset += targetBatchRemaining;
-        sourceBatchRemaining -= targetBatchRemaining;
-        assert sourceBatchRemaining >= 0;
-        targetBatch++;
-        targetOffset = 0;
-        targetBatchRemaining = _batchSize;
-        assert targetBatchRemaining >= numRowsToCopy;
-      }
-      if (numRowsToCopy > 0) {
-        assert targetBatchRemaining > numRowsToCopy;
-        //Log.info(MSBvalue + ";" + H2O.SELF.index() + ";" + fromNode + ";" + oxOffset[fromNode] + ";" + targetBatch + ";" + targetOffset + ";" + numRowsToCopy);
-        System.arraycopy(_otmp[sourceBatch], sourceOffset, _o[targetBatch], targetOffset, (int)numRowsToCopy);
-        System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, (int)numRowsToCopy*_keySize);
-        numRowsToCopy -= numRowsToCopy;
-        sourceOffset += numRowsToCopy;
-        sourceBatchRemaining -= numRowsToCopy;
-        assert sourceBatchRemaining >= 0;
-        targetOffset += numRowsToCopy;
-        targetBatchRemaining -= numRowsToCopy;
-      }
+      thisCopy = (int)Math.min(numRowsToCopy, Math.min(sourceBatchRemaining, targetBatchRemaining));
+      System.arraycopy(_otmp[sourceBatch], sourceOffset,          _o[targetBatch], targetOffset,          thisCopy);
+      System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, thisCopy*_keySize);
+      numRowsToCopy -= thisCopy;
+      // sourceBatch no change
+      sourceOffset += thisCopy; sourceBatchRemaining -= thisCopy;
+      targetOffset += thisCopy; targetBatchRemaining -= thisCopy;
+      if (sourceBatchRemaining == 0) { sourceBatch++; sourceOffset = 0; sourceBatchRemaining = _batchSize; }
+      if (targetBatchRemaining == 0) { targetBatch++; targetOffset = 0; targetBatchRemaining = _batchSize; }
+      // 'source' and 'target' deliberately the same length variable names and long lines deliberately used so we
+      // can easy match them up vertically to ensure they are the same
     }
 
     long itmp = 0;
@@ -759,7 +721,7 @@ public class RadixOrder {
     }
     if (_biggestBit[0] < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  // TODO: feeed back to R warnings()
     int keySize = ArrayUtils.sum(_bytesUsed);   // The MSB is stored (seemingly wastefully on first glance) because we need it when aligning two keys in Merge()
-    int batchSize = 256*1024*1024 / Math.max(keySize, 8);   // 256MB is the DKV limit
+    int batchSize = 256*1024*1024 / Math.max(keySize, 8) / 2 ;   // 256MB is the DKV limit.  / 2 because we fit o and x together in one OXBatch.
     // The Math.max ensures that batches of o and x are aligned, even for wide keys. To save % and / in deep iteration; e.g. in insert().
     System.out.println("Time to use rollup stats to determine biggestBit: " + (System.nanoTime() - t0) / 1e9);
 
