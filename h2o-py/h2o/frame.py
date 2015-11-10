@@ -741,7 +741,20 @@ class H2OFrame(object):
       True if the column is a character column, otherwise False (same as isstring)
     """
     return self.isstring()
-
+  
+  def isin(self, item):
+    """Test whether elements of an H2OFrame are contained in the item.
+    
+    Parameters
+    ----------
+      items : any element or a list of elements
+        An item or a list of items to compare the H2OFrame against.
+    Returns
+    -------
+      An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
+    """
+    return reduce(H2OFrame.__or__, (self == i for i in item)) if _is_list(item) else self == item
+  
   def kfold_column(self, n_folds=3, seed=-1):
     """Build a fold assignments column for cross-validation. This call will produce a
     column having the same data layout as the calling object.
