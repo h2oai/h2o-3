@@ -70,6 +70,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   boolean _isLeft;
   int _biggestBit, _batchSize, _bytesUsed[], _keySize;
   int[]_col;
+  long _numRowsOnThisNode;
   Key _linkTwoMRTask;
 
   static Hashtable<Key,SplitByMSBLocal> MOVESHASH = new Hashtable<>();
@@ -82,7 +83,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   }
 
   @Override protected void setupLocal() {
-    // First cumulate MSB count histograms across the chunks in this node
+
     // Log.info("Getting RadixCounts for column " + _col[0] + " from myself (node " + H2O.SELF + ") for Frame " + _frameKey );
     // Log.info("Getting");
     _counts = ((RadixCount.Long2DArray)DKV.getGet(RadixCount.getKey(_isLeft, _col[0], H2O.SELF)))._val;   // get the sparse spine for this node, created and DKV-put above
@@ -91,19 +92,22 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // } catch (InterruptedException e) {
     //   e.printStackTrace();
     // }
-    long _MSBhist[] = new long[256];  // total across nodes but retain original spine as we need that below
+    // First cumulate MSB count histograms across the chunks in this node
+    long MSBhist[] = new long[256];
     int nc = _fr.anyVec().nChunks();
+    assert nc == _counts.length;
     for (int c = 0; c < nc; c++) {
       if (_counts[c]!=null) {
         for (int h = 0; h < 256; h++) {
-          _MSBhist[h] += _counts[c][h];
+          MSBhist[h] += _counts[c][h];
         }
       }
     }
-    if (ArrayUtils.maxValue(_MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
+    _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message
+    if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
       Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
-              + " " + Arrays.toString(_MSBhist) + ")");
+              + " " + Arrays.toString(MSBhist) + ")");
     }
     /*System.out.println("_MSBhist on this node (biggestBit==" + _biggestBit + ") ...");
     for (int m=1; m<16; m+=2) {
@@ -118,9 +122,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     _o = new long[256][][];
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
     for (int msb = 0; msb < 256; msb++) {
-      if (_MSBhist[msb] == 0) continue;
-      int nbatch = (int) (_MSBhist[msb]-1)/_batchSize +1;  // at least one batch
-      int lastSize = (int) (_MSBhist[msb] - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize)
+      if (MSBhist[msb] == 0) continue;
+      int nbatch = (int) (MSBhist[msb]-1)/_batchSize +1;  // at least one batch
+      int lastSize = (int) (MSBhist[msb] - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize)
       assert nbatch == 1;  // Prevent large testing for now.  TO DO: test nbatch>0 by reducing batchSize very small and comparing results with non-batched
       assert lastSize > 0;
       _o[msb] = new long[nbatch][];
@@ -237,11 +241,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
   // Push o/x in chunks to owning nodes
   void SendSplitMSB() {
-    long t0 = System.nanoTime();
-    Futures fs = new Futures();
+    // Futures fs = new Futures();
     // System.out.println(System.currentTimeMillis() + " Starting MoveByFirstByte.PushFirstByteBatches() ... ");
-    int nc = _fr.anyVec().nChunks();
-    long forLoopTime = 0, DKVputTime = 0, sumSize = 0;
+    int numChunks = _fr.anyVec().nChunks();
 
     // The map() above ran above for each chunk on this node. Although this data was written to _o and _x in the order of chunk number (because we
     // calculated those offsets in order in the prior step), the chunk numbers will likely have gaps because chunks are distributed across nodes
@@ -256,53 +258,64 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // The thinking was that if each chunk generated 256 objects, that would flood the DKV with keys?
     // TODO: send nChunks * 256.  Currently we do nNodes * 256.  Or avoid DKV altogether if possible.
 
+    System.out.print("Starting SendSplitMSB on this node ... ");
+    long t0 = System.nanoTime();
+    Futures fs = new Futures();
     for (int msb =0; msb <_o.length /*256*/; ++msb) {   // TODO this can be done in parallel, surely
       // “I found my A’s (msb=0) and now I'll send them to the node doing all the A's”
       // "I'll send you a long vector of _o and _x (batched if very long) along with where the boundaries are."
       // "You don't need to know the chunk numbers of these boundaries, because you know the node of each chunk from your local Vec header"
-      long t00 = System.nanoTime();
       if(_o[msb] == null) continue;
+      fs.add(H2O.submitTask(new SendOne(msb, numChunks)));
+    }
+    fs.blockForPending();
+    double timeTaken = (System.nanoTime() - t0) / 1e9;
+    long bytes = _numRowsOnThisNode*( 8/*_o*/ + _keySize) + 64;
+    System.out.println("took : " + timeTaken);
+    System.out.println("  DKV.put " + PrettyPrint.bytes(bytes) + " @ " +
+                       String.format("%.3f", bytes / timeTaken / (1024*1024*1024)) + " GByte/sec  [10Gbit = 1.25GByte/sec]");
+  }
+
+  class SendOne extends H2O.H2OCountedCompleter<SendOne> {
+    // Nothing on remote node here, just a local parallel loop
+    int _msb;
+    SendOne(int msb, int numChunks) {
+      _msb = msb;
+      // maybe needed _priority = nextThrPriority();  // bump locally AND ship this priority to the worker where the priority() getter will query it
+    }
+    //@Override public byte priority() { return _priority; }
+    //private byte _priority;
+
+    @Override protected void compute2() {
       int numChunks = 0;  // how many of the chunks on this node had some rows with this MSB
-      for (int c=0; c<nc; c++) {
-        if (_counts[c] != null && _counts[c][msb] > 0)
+      for (int c=0; c<_counts.length; c++) {
+        if (_counts[c] != null && _counts[c][_msb] > 0)
           numChunks++;
       }
       int MSBnodeChunkCounts[] = new int[numChunks];   // make dense.  And by construction (i.e. cumulative counts) these chunks contributed in order
       int j=0;
-      long lastCount = 0; // _counts are cumulative at this stage so need to undo
-      for (int c=0; c<nc; c++) {
-        if (_counts[c] != null && _counts[c][msb] > 0) {
-          MSBnodeChunkCounts[j] = (int)(_counts[c][msb] - lastCount);  // _counts is long so it can be accumulated in-place I think.  TO DO: check
-          lastCount = _counts[c][msb];
+      long lastCount = 0; // _counts are cumulative at this stage so need to diff
+      for (int c=0; c<_counts.length; c++) {
+        if (_counts[c] != null && _counts[c][_msb] > 0) {
+          MSBnodeChunkCounts[j] = (int)(_counts[c][_msb] - lastCount);  // _counts is long so it can be accumulated in-place iirc.  TODO: check
+          lastCount = _counts[c][_msb];
           j++;
         }
       }
-      forLoopTime += System.nanoTime() - t00;
-
-      //assert _MSBhist[msb] == ArrayUtils.sum(MSBnodeChunkCounts);
       MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
       //Log.info("Putting MSB node headers for Frame " + _frameKey + " for MSB " + msb);
       //Log.info("Putting msb " + msb + " on node " + H2O.SELF.index());
-      DKV.put(getMSBNodeHeaderKey(_isLeft, msb, H2O.SELF.index()), msbh, fs, true);
-      for (int b=0;b<_o[msb].length; ++b) {
-        OXbatch ox = new OXbatch(_o[msb][b], _x[msb][b]);   // this does not copy in Java, just references
+      DKV.put(getMSBNodeHeaderKey(_isLeft, _msb, H2O.SELF.index()), msbh, _fs, true);   // TODO - check with Thomas but I don't think the _fs here matters because we're already in a counted completer, but we need the _fs so we can get to noLocalCache=true which does matter
+      for (int b=0;b<_o[_msb].length; b++) {
+        OXbatch ox = new OXbatch(_o[_msb][b], _x[_msb][b]);   // this does not copy in Java, just references
         //Log.info("Putting OX batch for Frame " + _frameKey + " for batch " + b + " for MSB " + msb);
         //Log.info("Putting");
-        sumSize += _o[msb][b].length * 8 + _x[msb][b].length * _keySize + 64;
-        t00 = System.nanoTime();
-        DKV.put(getNodeOXbatchKey(_isLeft, msb, H2O.SELF.index(), b), ox, fs, true);   // TODO: send to particular node
-        long thist = System.nanoTime() - t00;
-        // System.out.println("This DKV put took : " + thist / 1e9);  // TODO:  adding fs (does it need ,fs,true?) above didn't appear to make it go in parallel. Apx 200 prints of 0.07 = 14s total
-        DKVputTime += thist;
+        DKV.put(getNodeOXbatchKey(_isLeft, _msb, H2O.SELF.index(), b), ox, _fs, true);
       }
-
+      tryComplete();
     }
-    System.out.println("this node took : " + (System.nanoTime() - t0) / 1e9);
-    System.out.println("  Finding the chunk boundaries in split OX took " + forLoopTime / 1e9);
-    System.out.println("  DKV.put " + PrettyPrint.bytes(sumSize) + " in " + DKVputTime / 1e9 + ". Overall rate: " +
-                        String.format("%.3f", sumSize / (DKVputTime/1e9) / (1024*1024*1024)) + " GByte/sec  [10Gbit = 1.25GByte/sec]");
-
   }
+
 }
 
 
@@ -735,7 +748,6 @@ public class RadixOrder {
     System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + (System.nanoTime() - t0) / 1e9);
     System.out.print(tmp.profString());
 
-    System.out.print("Starting SendSplitMSB ... ");
     t0 = System.nanoTime();
     new SendSplitMSB(linkTwoMRTask).doAllNodes();
     System.out.println("SendSplitMSB across all nodes took : " + (System.nanoTime() - t0) / 1e9);
