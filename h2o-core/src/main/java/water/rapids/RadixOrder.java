@@ -6,6 +6,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.Pair;
 import water.util.PrettyPrint;
 
 import java.util.Arrays;
@@ -231,7 +232,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
   public static class MSBNodeHeader extends Iced {
     MSBNodeHeader(int MSBnodeChunkCounts[/*chunks*/]) { _MSBnodeChunkCounts = MSBnodeChunkCounts;}
-    int _MSBnodeChunkCounts[];
+    int _MSBnodeChunkCounts[];   // a vector of the number of contributions from each chunk.  Since each chunk is length int, this must less than that, so int
   }
 
   // Push o/x in chunks to owning nodes
@@ -255,7 +256,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // The thinking was that if each chunk generated 256 objects, that would flood the DKV with keys?
     // TODO: send nChunks * 256.  Currently we do nNodes * 256.  Or avoid DKV altogether if possible.
 
-    for (int msb =0; msb <_o.length /*256*/; ++msb) {
+    for (int msb =0; msb <_o.length /*256*/; ++msb) {   // TODO this can be done in parallel, surely
       // “I found my A’s (msb=0) and now I'll send them to the node doing all the A's”
       // "I'll send you a long vector of _o and _x (batched if very long) along with where the boundaries are."
       // "You don't need to know the chunk numbers of these boundaries, because you know the node of each chunk from your local Vec header"
@@ -405,71 +406,61 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
     int targetBatch = 0, targetOffset = 0, targetBatchRemaining = _batchSize;
 
-    for (int c=0; c<_fr.anyVec().nChunks(); c++) {   // TO DO: put this into class as well, to ArrayCopy into batched
-      int fromNode = _fr.anyVec().chunkKey(c).home_node().index();
+    for (int c=0; c<_fr.anyVec().nChunks(); c++) {
+      int fromNode = _fr.anyVec().chunkKey(c).home_node().index();  // each chunk in the column may be on different nodes
+      // See long comment at the top of SendSplitMSB. One line from there repeated here :
+      // " When the helper node (i.e. this one, now) (i.e the node doing all the A's) gets the A's from that node, it must stack all the nodes' A's
+      // with the A's from the other nodes in chunk order in order to maintain the original order of the A's within the global table. "
+      // TODO: We could process these in node order and or/in parallel if we cumulated the counts first to know the offsets - should be doable and high value
       if (MSBnodeHeader[fromNode] == null) continue;
-      int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[oxChunkIdx[fromNode]++];
+      int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[oxChunkIdx[fromNode]++];   // magically this works, given the outer for loop through global chunk
+      // _MSBnodeChunkCounts is a vector of the number of contributions from each Vec chunk.  Since each chunk is length int, this must less than that, so int
+      // The set of data corresponding to the Vec chunk contributions is stored packed in batched vectors _o and _x.
       int sourceBatchRemaining = _batchSize - oxOffset[fromNode];    // at most batchSize remaining.  No need to actually put the number of rows left in here
-      if (sourceBatchRemaining <= numRowsToCopy) {
-        if (targetBatchRemaining <= sourceBatchRemaining) {
-          System.arraycopy(ox[fromNode]._o, oxOffset[fromNode], _o[targetBatch], targetOffset, targetBatchRemaining);
-          System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, targetBatchRemaining*_keySize);
-          oxOffset[fromNode] += targetBatchRemaining;
-          sourceBatchRemaining -= targetBatchRemaining;
-          assert sourceBatchRemaining >= 0;
-          numRowsToCopy -= targetBatchRemaining;
-          targetBatch++;
-          targetOffset = 0;
-          targetBatchRemaining = _batchSize;
-          assert targetBatchRemaining >= sourceBatchRemaining;
-        }
-        if (sourceBatchRemaining <= numRowsToCopy) {
-          System.arraycopy(ox[fromNode]._o, oxOffset[fromNode], _o[targetBatch], targetOffset, sourceBatchRemaining);
-          System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, sourceBatchRemaining*_keySize);
-          numRowsToCopy -= sourceBatchRemaining;
-          targetOffset += sourceBatchRemaining;
-          targetBatchRemaining -= sourceBatchRemaining;
-
-          // delete and free node's OX. Have moved all its contents into _o and _x. Remove so as to avoid mistakenly picking it up in future.
+      while (numRowsToCopy > 0) {   // No need for class now, as this is a bit different to the other batch copier. Two isn't too bad.
+        int thisCopy = Math.min(numRowsToCopy, Math.min(sourceBatchRemaining, targetBatchRemaining));
+        System.arraycopy(ox[fromNode]._o, oxOffset[fromNode],          _o[targetBatch], targetOffset,          thisCopy);
+        System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, thisCopy*_keySize);
+        numRowsToCopy -= thisCopy;
+        oxOffset[fromNode] += thisCopy; sourceBatchRemaining -= thisCopy;
+        targetOffset += thisCopy; targetBatchRemaining -= thisCopy;
+        if (sourceBatchRemaining == 0) {
+          // delete and free node's OX batch. Have moved all its contents into _o and _x. Remove so as to avoid mistakenly picking it up in future and to free up memory as early as possible.
           DKV.remove(SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, oxBatchNum[fromNode]));
-
-          // get the next batch from the node ...
-          // Log.info("Getting OX MSB " + _MSBvalue + " batch " + oxBatchNum[fromNode]+1 + " from node " + fromNode + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
-          // Log.info("Getting");
+          // fetched the next batch :
           ox[fromNode] = DKV.getGet(SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode]));
+          if (ox[fromNode] == null) {
+            // if the last chunksworth fills a batchsize exactly, the getGet above will have returned null.
+            // TODO: Check will Cliff that a known fetch of a non-existent key is ok e.g. won't cause a delay/block? If ok, leave as good check.
+            assert oxBatchNum[fromNode]==MSBnodeHeader[fromNode]._MSBnodeChunkCounts.length;
+            assert ArrayUtils.sum(MSBnodeHeader[fromNode]._MSBnodeChunkCounts) % _batchSize == 0;
+          }
           oxOffset[fromNode] = 0;
           sourceBatchRemaining = _batchSize;
         }
-        assert sourceBatchRemaining >= numRowsToCopy;
-      }
-      if (targetBatchRemaining <= numRowsToCopy) {
-        System.arraycopy(ox[fromNode]._o, oxOffset[fromNode], _o[targetBatch], targetOffset, targetBatchRemaining);
-        System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, targetBatchRemaining*_keySize);
-        oxOffset[fromNode] += targetBatchRemaining;
-        sourceBatchRemaining -= targetBatchRemaining;
-        assert sourceBatchRemaining >= 0;
-        numRowsToCopy -= targetBatchRemaining;
-        targetBatch++;
-        targetOffset = 0;
-        targetBatchRemaining = _batchSize;
-        assert targetBatchRemaining >= numRowsToCopy;
-      }
-      if (numRowsToCopy > 0) {
-        assert targetBatchRemaining > numRowsToCopy;
-        //Log.info(MSBvalue + ";" + H2O.SELF.index() + ";" + fromNode + ";" + oxOffset[fromNode] + ";" + targetBatch + ";" + targetOffset + ";" + numRowsToCopy);
-        System.arraycopy(ox[fromNode]._o, oxOffset[fromNode], _o[targetBatch], targetOffset, numRowsToCopy);
-        System.arraycopy(ox[fromNode]._x, oxOffset[fromNode]*_keySize, _x[targetBatch], targetOffset*_keySize, numRowsToCopy*_keySize);
-        oxOffset[fromNode] += numRowsToCopy;
-        sourceBatchRemaining -= numRowsToCopy;
-        assert sourceBatchRemaining > 0;
-        targetOffset += numRowsToCopy;
-        targetBatchRemaining -= numRowsToCopy;
+        if (targetBatchRemaining == 0) {
+          targetBatch++;
+          targetOffset = 0;
+          targetBatchRemaining = _batchSize;
+        }
       }
     }
-    // Remove the last batch on each node from DKV.  Have used it all now (moved into _o and _x) and don't want to accidentally pick it up the originals.
+    // Now remove the last batch on each node from DKV.  Have used it all now (moved into _o and _x). Remove as early as possible to save memory.
     for (int node = 0; node < H2O.CLOUD.size(); node++) {
-      DKV.remove(SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, oxBatchNum[node]));
+      if (MSBnodeHeader[node] == null) continue;   // no contributions from that node
+      long nodeNumRows = ArrayUtils.sum(MSBnodeHeader[node]._MSBnodeChunkCounts);
+      assert nodeNumRows >= 1;
+      if (nodeNumRows % _batchSize == 0) {
+        // already should have been removed above in 'if (sourceBatchRemaining == 0)'
+        assert ox[node] == null;
+      } else {
+        assert ox[node] != null;
+        assert oxBatchNum[node] == (nodeNumRows-1) / _batchSize;
+        DKV.remove(SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, oxBatchNum[node]));
+      }
     }
+
+    // We now have _o and _x collated from all the contributing nodes, in the correct original order.
     _xtmp = new byte[_x.length][];
     _otmp = new long[_o.length][];
     assert _x.length == _o.length;  // i.e. aligned batch size between x and o (think 20 bytes keys and 8 bytes of long in o)
