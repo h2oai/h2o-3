@@ -658,6 +658,19 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
     Minimum heap size (jvm option Xms) in gigabytes.
   ice_root : str
     A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
+  proxies : dict
+    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
+
+  Examples
+  --------
+  Using the 'proxies' parameter
+
+  >>> import h2o
+  >>> import urllib
+  >>> proxy_dict = urllib.getproxies()
+  >>> h2o.init(proxies=proxy_dict)
+  Starting H2O JVM and connecting: ............... Connection successful!
+
   """
   H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies)
   return None
