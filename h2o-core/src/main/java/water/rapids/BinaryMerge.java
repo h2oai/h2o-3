@@ -120,22 +120,24 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
 
   private int keycmp(byte x[][], long xi, byte y[][], long yi) {   // TO DO - faster way closer to CPU like batches of long compare, maybe.
+    byte xbatch[] = x[(int)(xi / _leftBatchSize)];
+    byte ybatch[] = y[(int)(yi / _rightBatchSize)];
+    int xoff = (int)(xi % _leftBatchSize) * _leftKeySize;
+    int yoff = (int)(yi % _rightBatchSize) * _rightKeySize;
     byte xByte=0, yByte=0;
-    xi *= _leftKeySize;
-    yi *= _rightKeySize;   // x[] and y[] are len keys.
-    // TO DO: rationalize x and y being chunked into 2GB pieces.  Take x[0][] and y[0][] outside loop / function
-    // TO DO: switch to use keycmp_sameShape() for common case of all(leftFieldSizes == rightFieldSizes), although, skipping to current column will
+    // TODO: switch to use keycmp_sameShape() for common case of all(leftFieldSizes == rightFieldSizes), although, skipping to current column will
     //        help save repeating redundant work and saving the outer for() loop and one if() may not be worth it.
-    int i=0, xlen=0, ylen=0, diff=0;
+    int i=0, xlen=0, ylen=0;
+
     while (i<_numJoinCols && xlen==0) {    // TO DO: pass i in to start at a later key column, when known
       xlen = _leftFieldSizes[i];
       ylen = _rightFieldSizes[i];
       if (xlen!=ylen) {
-        while (xlen>ylen && x[0][(int)xi]==0) { xi++; xlen--; }
-        while (ylen>xlen && y[0][(int)yi]==0) { yi++; ylen--; }
+        while (xlen>ylen && xbatch[xoff]==0) { xoff++; xlen--; }
+        while (ylen>xlen && ybatch[yoff]==0) { yoff++; ylen--; }
         if (xlen!=ylen) return (xlen - ylen);
       }
-      while (xlen>0 && (xByte=x[0][(int)xi])==(yByte=y[0][(int)yi])) { xi++; yi++; xlen--; }
+      while (xlen>0 && (xByte=xbatch[xoff])==(yByte=ybatch[yoff])) { xoff++; yoff++; xlen--; }
       i++;
     }
     return (xByte & 0xFF) - (yByte & 0xFF);
