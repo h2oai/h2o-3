@@ -2,13 +2,13 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.Distribution;
-import water.*;
+import water.H2O;
+import water.MemoryManager;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Arrays;
 
 /**
  * This class implements the concept of a Neuron layer in a Neural Network
@@ -740,6 +740,47 @@ public abstract class Neurons {
     @Override protected void fprop(long seed, boolean training) {
       if (training) {
         seed += params._seed + 0x3C71F1ED;
+        _dropout.fillBytes(seed);
+        super.fprop(seed, true);
+      }
+      else {
+        super.fprop(seed, false);
+        ArrayUtils.mult(_a.raw(), 1-params._hidden_dropout_ratios[_index]);
+      }
+    }
+  }
+
+  public static class ArcTan extends Neurons {
+    public ArcTan(int units) { super(units); }
+    @Override protected void fprop(long seed, boolean training) {
+      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
+      final int rows = _a.size();
+      for( int row = 0; row < rows; row++ )
+        _a.set(row, Math.atan(_a.get(row))*2/Math.PI);
+      compute_sparsity();
+    }
+    // Computing partial derivative g = dE/dnet = dE/dy * dy/dnet, where dE/dy is the backpropagated error
+    // dy/dnet = 1/(1 + a^2) for y(net) = atan(net)
+    @Override protected void bprop() {
+      assert (_index < _minfo.get_params()._hidden.length);
+      float m = _minfo.adaDelta() ? 0 : momentum();
+      float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
+      final int rows = _a.size();
+      for (int row = 0; row < rows; row++) {
+        double g = _e.get(row) * 1./(1 + _a.get(row) * _a.get(row)) * 2/Math.PI;
+        bprop(row, g, r, m);
+      }
+    }
+  }
+
+  /**
+   * Tanh neurons with dropout
+   */
+  public static class ArcTanDropout extends ArcTan {
+    public ArcTanDropout(int units) { super(units); }
+    @Override protected void fprop(long seed, boolean training) {
+      if (training) {
+        seed += params._seed + 0xDA7A6000;
         _dropout.fillBytes(seed);
         super.fprop(seed, true);
       }
