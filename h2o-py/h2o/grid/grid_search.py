@@ -324,17 +324,13 @@ class H2OGridSearch(object):
   def summary(self):
     """
     Print a detailed summary of the model.
-
-    :return:
     """
+    # TODO: not
     return {model.model_id:model.summary() for model in self.models}
 
-  def show(self):
-    """
-    Print innards of grid, without regard to type
 
-    :return: None
-    """
+  def show(self):
+    """Print innards of grid, without regard to type"""
     hyper_combos = itertools.product(*self.hyper_params.values())
     if not self.models:
       c_values = [[idx+1, list(val)] for idx, val in enumerate(hyper_combos)]
@@ -347,9 +343,9 @@ class H2OGridSearch(object):
           print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
       print self.sort_by('mse')
 
+
   def varimp(self, use_pandas=False):
-    """
-    Pretty print the variable importances, or return them in a list/pandas DataFrame
+    """Pretty print the variable importances, or return them in a list/pandas DataFrame
 
     Parameters
     ----------
@@ -362,15 +358,27 @@ class H2OGridSearch(object):
     """
     return {model.model_id:model.varimp(use_pandas) for model in self.models}
 
-  def residual_deviance(self,train=False,valid=False,xval=False):
-    """s
-    Retreive the residual deviance if this model has the attribute, or None otherwise.
 
-    :param train: Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
-    :param valid: Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
-    :return: Return the residual deviance, or None if it is not present.
+  def residual_deviance(self,train=False,valid=False,xval=False):
+    """Retreive the residual deviance if this model has the attribute, or None otherwise.
+
+    Parameters
+    ----------
+    train : boolean, optional, default=True
+      Get the residual deviance for the training set. If both train and valid are False,
+      then train is selected by default.
+    valid: boolean, optional
+      Get the residual deviance for the validation set. If both train and valid are True,
+      then train is selected by default.
+    xval : boolean, optional
+      Get the residual deviance for the cross-validated models.
+
+    Returns
+    -------
+      Return the residual deviance, or None if it is not present.
     """
     return {model.model_id:model.residual_deviance(train, valid, xval) for model in self.models}
+
 
   def residual_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """

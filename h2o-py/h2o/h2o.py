@@ -634,12 +634,10 @@ def cluster_status():
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
          license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False, proxies=None):
-  """
-  Initiate an H2O connection to the specified ip and port.
+  """Initiate an H2O connection to the specified ip and port.
 
   Parameters
   ----------
-
   ip : str
     A string representing the hostname or IP address of the server where H2O is running.
   port : int
@@ -647,7 +645,8 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   size : int
     The expected number of h2o instances (ignored if start_h2o is True)
   start_h2o : bool
-    A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
+    A boolean dictating whether this module should start the H2O jvm. An attempt is made
+    anyways if _connect fails.
   enable_assertions : bool
     If start_h2o, pass `-ea` as a VM option.s
   license : str
@@ -657,9 +656,11 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   min_mem_size_GB : int
     Minimum heap size (jvm option Xms) in gigabytes.
   ice_root : str
-    A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
+    A temporary directory (default location is determined by tempfile.mkdtemp()) to hold
+    H2O log files.
   proxies : dict
-    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
+    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy
+    path.
 
   Examples
   --------
@@ -678,7 +679,8 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
 
 def export_file(frame,path,force=False):
   """
-  Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
+  Export a given H2OFrame to a path on the machine this python session is currently
+  connected to. To view the current session, call h2o.cluster_info().
 
   Parameters
   ----------
