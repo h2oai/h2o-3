@@ -494,12 +494,12 @@ def download_pojo(model,path="", get_jar=True):
   get_jar : bool
     Retrieve the h2o-genmodel.jar also.
   """
-  java = H2OConnection.get( "Models.java/"+model._id )
+  java = H2OConnection.get( "Models.java/"+model.model_id )
 
   # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
   # TODO: clients should extract Java class name from header.
   regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-  pojoname = regex.sub("_",model._id)
+  pojoname = regex.sub("_",model.model_id)
 
   filepath = path + "/" + pojoname + ".java"
   print "Filepath: {}".format(filepath)

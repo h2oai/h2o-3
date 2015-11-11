@@ -46,7 +46,7 @@ public class H2OColOp extends Transform<H2OColOp> {
       }
       if( _inplace ) f.remove(f.find(_oldCol)).remove();
     } else {
-      _newCol = new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)};
+      _newCol = _newNames==null?new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)}:_newCol;
       if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
       else          f.add(_newNames == null ? _newCol[0] : _newNames[0], fr.anyVec());
     }
