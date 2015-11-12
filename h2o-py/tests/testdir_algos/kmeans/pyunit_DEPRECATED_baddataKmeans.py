@@ -21,7 +21,7 @@ def baddataKmeans():
   #Log.info("Training data with 1 row of all Nones: replace with column mean")
   data = rawdata[:]
   for col in data: col[24] = None
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
@@ -33,7 +33,7 @@ def baddataKmeans():
   #Log.info("Training data with 1 col of all 5's: drop automatically")
   data = rawdata[:]
   data[4] = [5] * rows
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
@@ -46,7 +46,7 @@ def baddataKmeans():
   data = rawdata[:]
   data[4] = [None] * rows
   data[7] = [0] * rows
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
@@ -57,7 +57,7 @@ def baddataKmeans():
 
   # Log.info("Training data with all None's")
   data = [[None for c in range(rows)] for r in range(cols)]
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   try:
     h2o.kmeans(x=frame, k=5)
@@ -67,7 +67,7 @@ def baddataKmeans():
 
   # Log.info("Training data with a categorical column(s)")
   data = [[random.choice(string.ascii_uppercase) for c in range(rows)] for r in range(cols)]
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
   centers = km_model.centers()

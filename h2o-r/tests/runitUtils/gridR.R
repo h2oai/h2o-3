@@ -24,7 +24,7 @@ makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
     if ( sample(0:1,1) ) { grid_space$nbins_cats <- sample(2:1024, sample(2:3,1)) }
   }
   if ( algo == "gbm" ) {
-    if ( sample(0:1,1) ) { grid_space$learn_rate <- round(runif(sample(2:3,1)),6) }
+    if ( sample(0:1,1) ) { grid_space$learn_rate <- round(1e-2*runif(sample(2:3,1)),6) }
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }
   if ( algo == "drf" || algo == "randomForest") {
@@ -35,8 +35,8 @@ makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
     if ( sample(0:1,1) ) { grid_space$activation <- sample(c("Rectifier", "Tanh", "TanhWithDropout",
                                                             "RectifierWithDropout", "MaxoutWithDropout"),
                                                           sample(2:3,1)) }
-    if ( sample(0:1,1) ) { grid_space$epochs <- sample(1:10, sample(2:3,1)) }
-    #if ( sample(0:1,1) ) { grid_space$hidden <- list(rep(sample(10:50,1),sample(2:3,1)), rep(sample(10:50,1),sample(2:3,1)))}
+    if ( sample(0:1,1) ) { grid_space$l2 <- round(1e-3*runif(sample(2:3,1)),6) }
+    if ( sample(0:1,1) ) { grid_space$hidden <- list(rep(sample(10:50,1),sample(2:3,1)), rep(sample(10:50,1),sample(2:3,1)))}
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }
   if ( algo == "kmeans" ) {

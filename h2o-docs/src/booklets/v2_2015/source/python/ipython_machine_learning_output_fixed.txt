@@ -1,0 +1,620 @@
+file that will have output of machine learning
+
+In [1]: import h2o
+
+In [2]: h2o.init()
+
+Java Version: java version "1.8.0_40"
+Java(TM) SE Runtime Environment (build 1.8.0_40-b27)
+Java HotSpot(TM) 64-Bit Server VM (build 25.40-b25, mixed mode)
+
+
+Starting H2O JVM and connecting: .................. Connection successful!
+--------------------------  --------------------------
+H2O cluster uptime:         1 seconds 738 milliseconds
+H2O cluster version:        3.5.0.3238
+H2O cluster name:           H2O_started_from_python
+H2O cluster total nodes:    1
+H2O cluster total memory:   3.56 GB
+H2O cluster total cores:    4
+H2O cluster allowed cores:  4
+H2O cluster healthy:        True
+H2O Connection ip:          127.0.0.1
+H2O Connection port:        54321
+--------------------------  --------------------------
+
+In [3]: from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
+In [4]: iris_data_path = h2o.system_file("iris.csv") # load demonstration data
+
+In [5]: iris_df = h2o.import_file(path=iris_data_path)
+
+Parse Progress: [###############################] 100%
+Imported /Users/hank/PythonEnvs/h2obleeding/bin/../h2o_data/iris.csv. Parsed 150 rows and 5 cols
+
+In [6]: iris_df.describe()
+Rows:150 Cols:5
+
+Chunk compression summary:
+chunktype  chunkname  count  count_%  size  size_%
+---------  ---------  -----  -------  ----  ------
+1-Byte Int   C1         1       20    218B  18.890
+1-Byte Flt   C2         4       80    936B  81.109
+
+Frame distribution summary:
+                 size  rows  chunks/col  chunks
+---------------  ----  ----  ----------  ------
+127.0.0.1:54321  1.1KB  150       1        5
+mean             1.1KB  150       1        5
+min              1.1KB  150       1        5
+max              1.1KB  150               1                              5
+stddev           0  B    0                 0                              0
+total            1.1 KB  150               1                              5
+
+In [7]: gbm_regressor = H2OGradientBoostingEstimator(distribution="gaussian", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
+
+In [8]: gbm_regressor.train(x=range(1,iris_df.ncol), y=0, training_frame=iris_df)
+
+gbm Model Build Progress: [#####################] 100%
+
+In [9]: gbm_regressor
+Out[9]: Model Details
+=============
+H2OGradientBoostingEstimator: Gradient Boosting Machine
+Model Key:  GBM_model_python_1446220160417_2
+
+Model Summary:
+    number_of_trees           |         10
+    model_size_in_bytes       |         1535
+    min_depth                 |         3
+    max_depth                 |         3
+    mean_depth                |         3
+    min_leaves                |         7
+    max_leaves                |         8
+    mean_leaves               |         7.8
+
+ModelMetricsRegression: gbm
+** Reported on train data. **
+
+MSE: 0.0706936802293
+R^2: 0.896209989184
+Mean Residual Deviance: 0.0706936802293
+
+Scoring History:
+    timestamp            duration    number_of_trees    training_MSE    training_deviance
+--  -------------------  ----------  -----------------  --------------  -------------------
+    2015-10-30 08:50:00  0.121 sec   1                  0.472445        0.472445
+    2015-10-30 08:50:00  0.151 sec   2                  0.334868        0.334868
+    2015-10-30 08:50:00  0.162 sec   3                  0.242847        0.242847
+    2015-10-30 08:50:00  0.175 sec   4                  0.184128        0.184128
+    2015-10-30 08:50:00  0.187 sec   5                  0.14365         0.14365
+    2015-10-30 08:50:00  0.197 sec   6                  0.116814        0.116814
+    2015-10-30 08:50:00  0.208 sec   7                  0.0992098       0.0992098
+    2015-10-30 08:50:00  0.219 sec   8                  0.0864125       0.0864125
+    2015-10-30 08:50:00  0.229 sec   9                  0.077629        0.077629
+    2015-10-30 08:50:00  0.238 sec   10                 0.0706937       0.0706937
+
+Variable Importances:
+variable    relative_importance    scaled_importance    percentage
+----------  ---------------------  -------------------  ------------
+C3          227.562                1                    0.894699
+C2          15.1912                0.0667563            0.0597268
+C5          9.50362                0.0417627            0.037365
+C4          2.08799                0.00917544           0.00820926
+
+In [10]: gbm_classifier = H2OGradientBoostingEstimator(distribution="multinomial", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
+
+In [11]: gbm_classifier.train(x=range(0,iris_df.ncol-1), y=iris_df.ncol-1, training_frame=iris_df)
+
+gbm Model Build Progress: [##################################################] 100%
+
+In [12]: gbm_classifier
+Out[12]: Model Details
+=============
+H2OGradientBoostingEstimator :  Gradient Boosting Machine
+Model Key:  GBM_model_python_1446220160417_4
+
+Model Summary:
+    number_of_trees    model_size_in_bytes    min_depth    max_depth    mean_depth    min_leaves    max_leaves    mean_leaves
+--  -----------------  ---------------------  -----------  -----------  ------------  ------------  ------------  -------------
+    30                 3933                   1            3            2.93333       2             8             5.86667
+
+
+ModelMetricsMultinomial: gbm
+** Reported on train data. **
+
+MSE: 0.00976685294679
+R^2: 0.98534972058
+LogLoss: 0.0782480971236
+
+Confusion Matrix: vertical: actual; across: predicted
+
+Iris-setosa    Iris-versicolor    Iris-virginica    Error       Rate
+-------------  -----------------  ----------------  ----------  -------
+50             0                  0                 0           0 / 50
+0              49                 1                 0.02        1 / 50
+0              0                  50                0           0 / 50
+50             49                 51                0.00666667  1 / 150
+
+Top-3 Hit Ratios:
+k    hit_ratio
+---  -----------
+1    0.993333
+2    1
+3    1
+
+Scoring History:
+    timestamp            duration    number_of_trees    training_MSE    training_logloss    training_classification_error
+--  -------------------  ----------  -----------------  --------------  ------------------  -------------------------------
+    2015-10-30 08:51:52  0.047 sec   1                  0.282326        0.758411            0.0266667
+    2015-10-30 08:51:52  0.068 sec   2                  0.179214        0.550506            0.0266667
+    2015-10-30 08:51:52  0.086 sec   3                  0.114954        0.412173            0.0266667
+    2015-10-30 08:51:52  0.100 sec   4                  0.0744726       0.313539            0.02
+    2015-10-30 08:51:52  0.112 sec   5                  0.0498319       0.243514            0.02
+    2015-10-30 08:51:52  0.131 sec   6                  0.0340885       0.19091             0.00666667
+    2015-10-30 08:51:52  0.143 sec   7                  0.0241071       0.151394            0.00666667
+    2015-10-30 08:51:52  0.153 sec   8                  0.017606        0.120882            0.00666667
+    2015-10-30 08:51:52  0.165 sec   9                  0.0131024       0.0975897           0.00666667
+    2015-10-30 08:51:52  0.180 sec   10                 0.00976685      0.0782481           0.00666667
+
+Variable Importances:
+variable    relative_importance    scaled_importance    percentage
+----------  ---------------------  -------------------  ------------
+C4          192.761                1                    0.774374
+C3          54.0381                0.280338             0.217086
+C1          1.35271                0.00701757           0.00543422
+C2          0.773032               0.00401032           0.00310549
+
+In [13]: from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
+In [14]: prostate_data_path = h2o.system_file("prostate.csv")
+
+In [15]: prostate_df = h2o.import_file(path=prostate_data_path)
+
+Parse Progress: [##################################################] 100%
+Imported /Users/hank/PythonEnvs/h2obleeding/bin/../h2o_data/prostate.csv. Parsed 380 rows and 9 cols
+
+In [16]: prostate_df["RACE"] = prostate_df["RACE"].asfactor()
+
+In [17]: prostate_df.describe()
+Rows:380 Cols:9
+
+Chunk compression summary:
+chunk_type    chunk_name                 count    count_percentage    size    size_percentage
+------------  -------------------------  -------  ------------------  ------  -----------------
+CBS           Bits                       1        11.1111             118  B  1.39381
+C1N           1-Byte Integers (w/o NAs)  5        55.5556             2.2 KB  26.4588
+C2            2-Byte Integers            1        11.1111             828  B  9.7803
+CUD           Unique Reals               1        11.1111             2.1 KB  25.6556
+C8D           64-bit Reals               1        11.1111             3.0 KB  36.7116
+
+Frame distribution summary:
+                 size    number_of_rows    number_of_chunks_per_column    number_of_chunks
+---------------  ------  ----------------  -----------------------------  ------------------
+127.0.0.1:54321  8.3 KB  380               1                              9
+mean             8.3 KB  380               1                              9
+min              8.3 KB  380               1                              9
+max              8.3 KB  380               1                              9
+stddev           0  B    0                 0                              0
+total            8.3 KB  380               1                              9
+
+
+
+In [18]: glm_classifier = H2OGeneralizedLinearEstimator(family="binomial", nfolds=10, alpha=0.5)
+
+In [19]: glm_classifier.train(x=["AGE","RACE","PSA","DCAPS"],y="CAPSULE", training_frame=prostate_df)
+
+glm Model Build Progress: [##################################################] 100%
+
+In [20]: glm_classifier
+Out[20]: Model Details
+=============
+H2OGeneralizedLinearEstimator :  Generalized Linear Model
+Model Key:  GLM_model_python_1446220160417_6
+
+GLM Model: summary
+
+    family    link    regularization                                 number_of_predictors_total    number_of_active_predictors    number_of_iterations    training_frame
+--  --------  ------  ---------------------------------------------  ----------------------------  -----------------------------  ----------------------  ----------------
+    binomial  logit   Elastic Net (alpha = 0.5, lambda = 3.251E-4 )  6                             6                              6                       py_3
+
+
+ModelMetricsBinomialGLM: glm
+** Reported on train data. **
+
+MSE: 0.202434568594
+R^2: 0.158344081513
+LogLoss: 0.59112610879
+Null degrees of freedom: 379
+Residual degrees of freedom: 374
+Null deviance: 512.288840185
+Residual deviance: 449.25584268
+AIC: 461.25584268
+AUC: 0.719098211972
+Gini: 0.438196423944
+
+Confusion Matrix (Act/Pred) for max f1 @ threshold = 0.28443600654:
+       0    1    Error    Rate
+-----  ---  ---  -------  -------------
+0      80   147  0.6476   (147.0/227.0)
+1      19   134  0.1242   (19.0/153.0)
+Total  99   281  0.4368   (166.0/380.0)
+
+Maximum Metrics: Maximum metrics at their respective thresholds
+
+metric                      threshold    value     idx
+--------------------------  -----------  --------  -----
+max f1                      0.284436     0.617512  273
+max f2                      0.199001     0.77823   360
+max f0point5                0.415159     0.636672  108
+max accuracy                0.415159     0.705263  108
+max precision               0.998619     1         0
+max absolute_MCC            0.415159     0.369123  108
+max min_per_class_accuracy  0.33266      0.656388  175
+
+ModelMetricsBinomialGLM: glm
+** Reported on cross-validation data. **
+
+MSE: 0.209974707772
+R^2: 0.126994679038
+LogLoss: 0.609520995116
+Null degrees of freedom: 379
+Residual degrees of freedom: 373
+Null deviance: 515.693473211
+Residual deviance: 463.235956288
+AIC: 477.235956288
+AUC: 0.686706400622
+Gini: 0.373412801244
+
+Confusion Matrix (Act/Pred) for max f1 @ threshold = 0.326752491231:
+       0    1    Error    Rate
+-----  ---  ---  -------  -------------
+0      135  92   0.4053   (92.0/227.0)
+1      48   105  0.3137   (48.0/153.0)
+Total  183  197  0.3684   (140.0/380.0)
+
+Maximum Metrics: Maximum metrics at their respective thresholds
+
+metric                      threshold    value     idx
+--------------------------  -----------  --------  -----
+max f1                      0.326752     0.6       196
+max f2                      0.234718     0.774359  361
+max f0point5                0.405529     0.632378  109
+max accuracy                0.405529     0.702632  109
+max precision               0.999294     1         0
+max absolute_MCC            0.405529     0.363357  109
+max min_per_class_accuracy  0.336043     0.627451  176
+
+Scoring History:
+    timestamp            duration    iteration    log_likelihood    objective
+--  -------------------  ----------  -----------  ----------------  -----------
+    2015-10-30 08:53:01  0.000 sec   0            256.482           0.674952
+    2015-10-30 08:53:01  0.004 sec   1            226.784           0.597118
+    2015-10-30 08:53:01  0.005 sec   2            224.716           0.591782
+    2015-10-30 08:53:01  0.005 sec   3            224.629           0.59158
+    2015-10-30 08:53:01  0.005 sec   4            224.628           0.591579
+    2015-10-30 08:53:01  0.006 sec   5            224.628           0.591579
+
+In [21]: from h2o.estimators.kmeans import H2OKMeansEstimator
+
+In [22]: cluster_estimator = H2OKMeansEstimator(k=3)
+
+In [23]: cluster_estimator.train(x=[0,1,2,3], training_frame=iris_df)
+
+kmeans Model Build Progress: [##################################################] 100%
+
+In [24]: cluster_estimator
+Out[24]: Model Details
+=============
+H2OKMeansEstimator :  K-means
+Model Key:  K-means_model_python_1446220160417_8
+
+Model Summary:
+    number_of_rows    number_of_clusters    number_of_categorical_columns    number_of_iterations    within_cluster_sum_of_squares    total_sum_of_squares    between_cluster_sum_of_squares
+--  ----------------  --------------------  -------------------------------  ----------------------  -------------------------------  ----------------------  --------------------------------
+    150               3                     0                                4                       190.757                          596                     405.243
+
+
+ModelMetricsClustering: kmeans
+** Reported on train data. **
+
+MSE: NaN
+Total Within Cluster Sum of Square Error: 190.756926265
+Total Sum of Square Error to Grand Mean: 596.0
+Between Cluster Sum of Square Error: 405.243073735
+
+Centroid Statistics:
+    centroid    size    within_cluster_sum_of_squares
+--  ----------  ------  -------------------------------
+    1           96      149.733
+    2           32      17.292
+    3           22      23.7318
+
+Scoring History:
+    timestamp            duration    iteration    avg_change_of_std_centroids    within_cluster_sum_of_squares
+--  -------------------  ----------  -----------  -----------------------------  -------------------------------
+    2015-10-30 08:54:39  0.011 sec   0            nan                            401.733
+    2015-10-30 08:54:39  0.047 sec   1            2.09788                        191.282
+    2015-10-30 08:54:39  0.049 sec   2            0.00316006                     190.82
+    2015-10-30 08:54:39  0.050 sec   3            0.000846952                    190.757
+
+In [25]: from h2o.transforms.decomposition import H2OPCA
+
+In [26]: pca_decomp = H2OPCA(k=2, transform="NONE", pca_method="Power")
+
+In [27]: pca_decomp.train(x=range(0,4), training_frame=iris_df)
+
+pca Model Build Progress: [##################################################] 100%
+
+In [28]: pca_decomp
+Out[28]: Model Details
+=============
+H2OPCA :  Principal Component Analysis
+Model Key:  PCA_model_python_1446220160417_10
+
+Importance of components:
+                        pc1      pc2
+----------------------  -------  --------
+Standard deviation      7.86058  1.45192
+Proportion of Variance  0.96543  0.032938
+Cumulative Proportion   0.96543  0.998368
+
+
+ModelMetricsPCA: pca
+** Reported on train data. **
+
+MSE: NaN
+
+In [29]: pred = pca_decomp.predict(iris_df)
+
+In [30]: pred.head()  # Projection results
+Out[30]:
+    PC1      PC2
+-------  -------
+5.9122   2.30344
+5.57208  1.97383
+5.44648  2.09653
+5.43602  1.87168
+5.87507  2.32935
+6.47699  2.32553
+5.51543  2.07156
+5.85042  2.14948
+5.15851  1.77643
+5.64458  1.99191
+
+In [32]: ntrees_opt = [5, 10, 15]
+
+In [33]: max_depth_opt = [2, 3, 4]
+
+In [34]: learn_rate_opt = [0.1, 0.2]
+
+In [35]: hyper_parameters = {"ntrees": ntrees_opt, "max_depth":max_depth_opt, "learn_rate":learn_rate_opt}
+
+In [36]: from h2o.grid.grid_search import H2OGridSearch
+
+In [37]: gs = H2OGridSearch(H2OGradientBoostingEstimator(distribution="multinomial"), hyper_params=hyper_parameters)
+
+In [38]: gs.train(x=range(0,iris_df.ncol-1), y=iris_df.ncol-1, training_frame=iris_df, nfold=10)
+
+gbm Grid Build Progress: [##################################################] 100%
+
+In [39]: print gs.sort_by('logloss', increasing=True)
+
+Grid Search Results:
+Model Id                    Hyperparameters: ['learn_rate', 'ntrees', 'max_depth']    logloss
+--------------------------  --------------------------------------------------------  ---------
+GBM_model_1446220160417_30  ['0.2, 15, 4']                                            0.05105
+GBM_model_1446220160417_27  ['0.2, 15, 3']                                            0.0551088
+GBM_model_1446220160417_24  ['0.2, 15, 2']                                            0.0697714
+GBM_model_1446220160417_29  ['0.2, 10, 4']                                            0.103064
+GBM_model_1446220160417_26  ['0.2, 10, 3']                                            0.106232
+GBM_model_1446220160417_23  ['0.2, 10, 2']                                            0.120161
+GBM_model_1446220160417_21  ['0.1, 15, 4']                                            0.170086
+GBM_model_1446220160417_18  ['0.1, 15, 3']                                            0.171218
+GBM_model_1446220160417_15  ['0.1, 15, 2']                                            0.181186
+GBM_model_1446220160417_28  ['0.2, 5, 4']                                             0.275788
+GBM_model_1446220160417_25  ['0.2, 5, 3']                                             0.27708
+GBM_model_1446220160417_22  ['0.2, 5, 2']                                             0.280413
+GBM_model_1446220160417_20  ['0.1, 10, 4']                                            0.28759
+GBM_model_1446220160417_17  ['0.1, 10, 3']                                            0.288293
+GBM_model_1446220160417_14  ['0.1, 10, 2']                                            0.292993
+GBM_model_1446220160417_16  ['0.1, 5, 3']                                             0.520591
+GBM_model_1446220160417_19  ['0.1, 5, 4']                                             0.520697
+GBM_model_1446220160417_13  ['0.1, 5, 2']                                             0.524777
+
+In [41]: from h2o.transforms.preprocessing import H2OScaler
+
+In [42]: from sklearn.pipeline import Pipeline
+
+In [43]: # Turn off h2o progress bars
+
+In [44]: h2o.__PROGRESS_BAR__=False
+
+In [45]: h2o.no_progress()
+
+In [46]: # build transformation pipeline using sklearn's Pipeline and H2O transforms
+
+In [47]: pipeline = Pipeline([("standardize", H2OScaler()),
+   ....:                  ("pca", H2OPCA(k=2)),
+   ....:                  ("gbm", H2OGradientBoostingEstimator(distribution="multinomial"))])
+
+In [48]: pipeline.fit(iris_df[:4],iris_df[4])
+Out[48]: Model Details
+=============
+H2OPCA :  Principal Component Analysis
+Model Key:  PCA_model_python_1446220160417_32
+
+Importance of components:
+                        pc1       pc2
+----------------------  --------  ---------
+Standard deviation      3.22082   0.34891
+Proportion of Variance  0.984534  0.0115538
+Cumulative Proportion   0.984534  0.996088
+
+
+ModelMetricsPCA: pca
+** Reported on train data. **
+
+MSE: NaN
+Model Details
+=============
+H2OGradientBoostingEstimator :  Gradient Boosting Machine
+Model Key:  GBM_model_python_1446220160417_34
+
+Model Summary:
+    number_of_trees    model_size_in_bytes    min_depth    max_depth    mean_depth    min_leaves    max_leaves    mean_leaves
+--  -----------------  ---------------------  -----------  -----------  ------------  ------------  ------------  -------------
+    150                27014                  1            5            4.84          2             13            9.99333
+
+
+ModelMetricsMultinomial: gbm
+** Reported on train data. **
+
+MSE: 0.00162796438754
+R^2: 0.997558053419
+LogLoss: 0.0152718654494
+
+Confusion Matrix: vertical: actual; across: predicted
+
+Iris-setosa    Iris-versicolor    Iris-virginica    Error    Rate
+-------------  -----------------  ----------------  -------  -------
+50             0                  0                 0        0 / 50
+0              50                 0                 0        0 / 50
+0              0                  50                0        0 / 50
+50             50                 50                0        0 / 150
+
+Top-3 Hit Ratios:
+k    hit_ratio
+---  -----------
+1    1
+2    1
+3    1
+
+Scoring History:
+     timestamp            duration    number_of_trees    training_MSE      training_logloss    training_classification_error
+---  -------------------  ----------  -----------------  ----------------  ------------------  -------------------------------
+     2015-10-30 09:00:31  0.007 sec   1.0                0.36363226261     0.924249463924      0.04
+     2015-10-30 09:00:31  0.011 sec   2.0                0.297174376838    0.788619346614      0.04
+     2015-10-30 09:00:31  0.014 sec   3.0                0.242952566898    0.679995475248      0.04
+     2015-10-30 09:00:31  0.017 sec   4.0                0.199051390695    0.591313594921      0.04
+     2015-10-30 09:00:31  0.021 sec   5.0                0.163730865044    0.517916553872      0.04
+---  ---                  ---         ---                ---               ---                 ---
+     2015-10-30 09:00:31  0.191 sec   46.0               0.00239417625265  0.0192767794713     0.0
+     2015-10-30 09:00:31  0.195 sec   47.0               0.00214164838414  0.0180720391174     0.0
+     2015-10-30 09:00:31  0.198 sec   48.0               0.00197748500569  0.0171428309311     0.0
+     2015-10-30 09:00:31  0.202 sec   49.0               0.00179303578037  0.0161938228014     0.0
+     2015-10-30 09:00:31  0.205 sec   50.0               0.00162796438754  0.0152718654494     0.0
+
+Variable Importances:
+variable    relative_importance    scaled_importance    percentage
+----------  ---------------------  -------------------  ------------
+PC1         448.958                1                    0.982184
+PC2         8.1438                 0.0181393            0.0178162
+Pipeline(steps=[('standardize', <h2o.transforms.preprocessing.H2OScaler object at 0x1085cec90>), ('pca', ), ('gbm', )])
+
+In [57]: from sklearn.grid_search import RandomizedSearchCV
+
+In [58]: from h2o.cross_validation import H2OKFold
+
+In [59]: from h2o.model.regression import h2o_r2_score
+
+In [60]: from sklearn.metrics.scorer import make_scorer
+
+In [61]: from sklearn.metrics.scorer import make_scorer
+
+In [62]: params = {"standardize__center":    [True, False],             # Parameters to test
+   ....:           "standardize__scale":     [True, False],
+   ....:           "pca__k":                 [2,3],
+   ....:           "gbm__ntrees":            [10,20],
+   ....:           "gbm__max_depth":         [1,2,3],
+   ....:           "gbm__learn_rate":        [0.1,0.2]}
+
+In [63]: custom_cv = H2OKFold(iris_df, n_folds=5, seed=42)
+
+In [64]: pipeline = Pipeline([("standardize", H2OScaler()),
+   ....:                      ("pca", H2OPCA(k=2)),
+   ....:                      ("gbm", H2OGradientBoostingEstimator(distribution="gaussian"))])
+
+In [65]: random_search = RandomizedSearchCV(pipeline, params,
+   ....:                                    n_iter=5,
+   ....:                                    scoring=make_scorer(h2o_r2_score),
+   ....:                                    cv=custom_cv,
+   ....:                                    random_state=42,
+   ....:                                    n_jobs=1)
+In [66]: random_search.fit(iris_df[1:], iris_df[0])
+Out[66]:
+RandomizedSearchCV(cv=<h2o.cross_validation.H2OKFold instance at 0x108d59200>,
+          error_score='raise',
+          estimator=Pipeline(steps=[('standardize', <h2o.transforms.preprocessing.H2OScaler object at 0x108d50150>), ('pca', ), ('gbm', )]),
+          fit_params={}, iid=True, n_iter=5, n_jobs=1,
+          param_distributions={'pca__k': [2, 3], 'gbm__ntrees': [10, 20], 'standardize__scale': [True, False], 'gbm__max_depth': [1, 2, 3], 'standardize__center': [True, False], 'gbm__learn_rate': [0.1, 0.2]},
+          pre_dispatch='2*n_jobs', random_state=42, refit=True,
+          scoring=make_scorer(h2o_r2_score), verbose=0)
+
+In [67]: print random_search.best_estimator_
+Model Details
+=============
+H2OPCA :  Principal Component Analysis
+Model Key:  PCA_model_python_1446220160417_136
+
+Importance of components:
+                        pc1       pc2         pc3
+----------------------  --------  ----------  ----------
+Standard deviation      3.16438   0.180179    0.143787
+Proportion of Variance  0.994721  0.00322501  0.00205383
+Cumulative Proportion   0.994721  0.997946    1
+
+
+ModelMetricsPCA: pca
+** Reported on train data. **
+
+MSE: NaN
+Model Details
+=============
+H2OGradientBoostingEstimator :  Gradient Boosting Machine
+Model Key:  GBM_model_python_1446220160417_138
+
+Model Summary:
+    number_of_trees    model_size_in_bytes    min_depth    max_depth    mean_depth    min_leaves    max_leaves    mean_leaves
+--  -----------------  ---------------------  -----------  -----------  ------------  ------------  ------------  -------------
+    20                 2743                   3            3            3             4             8             6.35
+
+
+ModelMetricsRegression: gbm
+** Reported on train data. **
+
+MSE: 0.0566740346323
+R^2: 0.916793146878
+Mean Residual Deviance: 0.0566740346323
+
+Scoring History:
+    timestamp            duration    number_of_trees    training_MSE    training_deviance
+--  -------------------  ----------  -----------------  --------------  -------------------
+    2015-10-30 09:04:46  0.001 sec   1                  0.477453        0.477453
+    2015-10-30 09:04:46  0.002 sec   2                  0.344635        0.344635
+    2015-10-30 09:04:46  0.003 sec   3                  0.259176        0.259176
+    2015-10-30 09:04:46  0.004 sec   4                  0.200125        0.200125
+    2015-10-30 09:04:46  0.005 sec   5                  0.160051        0.160051
+    2015-10-30 09:04:46  0.006 sec   6                  0.132315        0.132315
+    2015-10-30 09:04:46  0.006 sec   7                  0.114554        0.114554
+    2015-10-30 09:04:46  0.007 sec   8                  0.100317        0.100317
+    2015-10-30 09:04:46  0.008 sec   9                  0.0890903       0.0890903
+    2015-10-30 09:04:46  0.009 sec   10                 0.0810115       0.0810115
+    2015-10-30 09:04:46  0.009 sec   11                 0.0760616       0.0760616
+    2015-10-30 09:04:46  0.010 sec   12                 0.0725191       0.0725191
+    2015-10-30 09:04:46  0.011 sec   13                 0.0694355       0.0694355
+    2015-10-30 09:04:46  0.012 sec   14                 0.06741         0.06741
+    2015-10-30 09:04:46  0.012 sec   15                 0.0655487       0.0655487
+    2015-10-30 09:04:46  0.013 sec   16                 0.0624041       0.0624041
+    2015-10-30 09:04:46  0.014 sec   17                 0.0615533       0.0615533
+    2015-10-30 09:04:46  0.015 sec   18                 0.058708        0.058708
+    2015-10-30 09:04:46  0.015 sec   19                 0.0579205       0.0579205
+    2015-10-30 09:04:46  0.016 sec   20                 0.056674        0.056674
+
+Variable Importances:
+variable    relative_importance    scaled_importance    percentage
+----------  ---------------------  -------------------  ------------
+PC1         237.674                1                    0.913474
+PC3         12.8597                0.0541066            0.0494249
+PC2         9.65329                0.0406157            0.0371014
+Pipeline(steps=[('standardize', <h2o.transforms.preprocessing.H2OScaler object at 0x104f2a490>), ('pca', ), ('gbm', )])

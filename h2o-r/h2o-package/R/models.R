@@ -307,19 +307,26 @@ h2o.getFutureModel <- function(object) {
         }
         # If there is no error then transform hyper values
         if (!nzchar(e)) {
-          transf_hyper_vals <- sapply(hyper_vals, function(hv) {
-                                      # R does not treat integers as numeric
-                                      if (is.integer(hv)) {
-                                        hv <- as.numeric(hv)
-                                      }
-                                      mapping <- .type.map[paramDef$type,]
-                                      type <- mapping[1L, 1L]
-                                      # Force evaluation of frames and fetch frame_id as
-                                      # a side effect
-                                      if (is.Frame(hv) )
-                                        hv <- h2o.getId(hv)
-                                      .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
-                                })
+          is_scalar <- .type.map[paramDef$type,][1L, 2L]
+          transf_fce <- function(hv) {
+                          # R does not treat integers as numeric
+                          if (is.integer(hv)) {
+                            hv <- as.numeric(hv)
+                          }
+                          mapping <- .type.map[paramDef$type,]
+                          type <- mapping[1L, 1L]
+                          # Note: we apply this transformatio also for types 
+                          # reported by the backend as scalar because of PUBDEV-1955
+                          if (is.list(hv)) {
+                            hv <- as.vector(hv, mode=type)
+                          }
+                          # Force evaluation of frames and fetch frame_id as
+                          # a side effect
+                          if (is.Frame(hv) )
+                            hv <- h2o.getId(hv)
+                          .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
+                        }
+          transf_hyper_vals <- if (is_scalar) sapply(hyper_vals,transf_fce) else lapply(hyper_vals, transf_fce) 
           hyper_params[[name]] <<- transf_hyper_vals
         }
       }
@@ -2000,8 +2007,9 @@ h2o.sdev <- function(object) {
 #' library(h2o)
 #' h2o.init()
 #' df <- as.h2o(iris)
-#' h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
+#' tab <- h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
 #'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
+#' plot(tab)              
 #' }
 #' @export
 h2o.tabulate <- function(data, x, y,
@@ -2022,10 +2030,69 @@ h2o.tabulate <- function(data, x, y,
   parms$nbins_response <- nbins_y
 
   res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 99, page = "Tabulate", .params = parms)
-  print(res)
   count_table <- res$count_table
   response_table <- res$response_table
   out <- list(count_table = count_table, response_table = response_table, cols = args$cols)
   oldClass(out) <- c("H2OTabulate", "list")
   out
 }
+
+#' Plot an H2O Tabulate Heatmap
+#'
+#' Plots the simple co-occurrence based tabulation of X vs Y as a heatmap, where X and Y are two Vecs in a given dataset.
+#'
+#' @param x An H2OTabulate object for which the heatmap plot is desired.
+#' @param xlab A title for the x-axis.  Defaults to what is specified in the given H2OTabulate object.
+#' @param ylab A title for the y-axis.  Defaults to what is specified in the given H2OTabulate object.
+#' @param base_size  Base font size for plot.
+#' @param ... additional arguments to pass on.
+#' @return Returns a ggplot2-based heatmap of co-occurance.
+#' @seealso \code{link{h2o.tabulate}}
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' df <- as.h2o(iris)
+#' tab <- h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
+#'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
+#' plot(tab)              
+#' }
+#' @export
+plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 12, ...) {
+  
+  if (!inherits(x, "H2OTabulate")) {
+    stop("Must be an H2OTabulate object")
+  }
+  
+  # Pull small counts table into R memory to plot
+  df <- as.data.frame(x$count_table)
+  names(df) <- c("c1", "c2", "counts")
+  
+  # Reorder the levels for better plotting
+  if (suppressWarnings(is.na(sum(as.numeric(df$c1))))) {
+    c1_order <- order(unique(df$c1))
+  } else {
+    c1_order <- order(unique(as.numeric(df$c1)))
+  }
+  if (suppressWarnings(is.na(sum(as.numeric(df$c2))))) {
+    c2_order <- order(unique(df$c2))
+  } else {
+    c2_order <- order(unique(as.numeric(df$c2)))
+  }
+  c1_labels <- unique(df$c1)
+  c2_labels <- unique(df$c2)
+  df$c1 <- factor(df$c1, levels = c1_labels[c1_order])
+  df$c2 <- factor(df$c2, levels = c2_labels[c2_order])
+  
+  # Plot heatmap
+  c1 <- c2 <- counts <- NULL #set these to pass CRAN checks w/o warnings
+  (p <- ggplot2::ggplot(df, ggplot2::aes(c1, c2)) 
+  + ggplot2::geom_tile(ggplot2::aes(fill = counts), colour = "white") + ggplot2::scale_fill_gradient(low = "white", high = "steelblue"))
+  
+  # Adjust the plot
+  p <- p + ggplot2::theme_grey(base_size = base_size) + ggplot2::labs(x = xlab, y = ylab) + ggplot2::scale_x_discrete(expand = c(0, 0)) + ggplot2::scale_y_discrete(expand = c(0, 0)) + ggplot2::theme(legend.position = "none", axis.ticks = ggplot2::element_blank(), axis.text.x = ggplot2::element_text(size = base_size * 0.8, angle = 330, hjust = 0, colour = "grey50"))
+  
+  # Return a ggplot object
+  return(p)
+}
+

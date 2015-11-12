@@ -12,17 +12,11 @@ def pyunit_apply():
   fr.apply(lambda x: x["PSA"], axis=1).show()
   print
   print
-  print fr.apply(lambda x: x['PSA'] > x['VOL'],axis=1).show()
+  fr.apply(lambda x: x['PSA'] > x['VOL'],axis=1).show()
   print
-  zz = fr.mean(na_rm=True)
-  print zz
+  print fr.mean()
+  fr.apply(lambda x: x.mean()).show()
 
-  zz = fr.apply(lambda row: row + 2, axis=1)
-
-  print zz.show()
-
-
-  print zz.show()
 
 
   fr.apply(lambda col: col.abs()).show()

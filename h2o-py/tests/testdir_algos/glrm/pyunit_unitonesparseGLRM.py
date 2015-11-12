@@ -2,6 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
+from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 
 
 
@@ -21,12 +22,14 @@ def glrm_unitonesparse():
     X = [ind_list(k) for x in xrange(m)]
     X = np.array(X)
     train = np.dot(X,Y)
-    train_h2o = h2o.H2OFrame.fromPython(zip(*train.tolist()))
+    train_h2o = h2o.H2OFrame(zip(*train.tolist()))
 
     print "Run GLRM with unit one-sparse regularization on X"
     initial_y = np.random.rand(k,n)
-    initial_y_h2o = h2o.H2OFrame.fromPython(zip(*initial_y.tolist()))
-    glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="UnitOneSparse", regularization_y="None", gamma_x=1, gamma_y=0)
+    initial_y_h2o = h2o.H2OFrame(zip(*initial_y.tolist()))
+    glrm_h2o = H2OGeneralizedLowRankEstimator(k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="UnitOneSparse", regularization_y="None", gamma_x=1, gamma_y=0)
+    glrm_h2o.train(x=train_h2o.names,training_frame=train_h2o)
+ #   glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="UnitOneSparse", regularization_y="None", gamma_x=1, gamma_y=0)
     glrm_h2o.show()
 
     print "Check that X matrix consists of rows of basis vectors"

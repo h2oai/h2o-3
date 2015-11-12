@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 
 
@@ -20,7 +20,7 @@ def prostateKmeans():
   prostate_sci = np.loadtxt(pyunit_utils.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
   prostate_sci = prostate_sci[:,1:]
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
 
   for i in range(5,9):
     #Log.info(paste("H2O K-Means with ", i, " clusters:\n", sep = ""))

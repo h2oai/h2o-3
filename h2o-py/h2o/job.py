@@ -65,6 +65,7 @@ class H2OJob:
       self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
       self.status = self.job["status"]
       self.progress = self.job["progress"]
+      self.exception = self.job["exception"]
 
   def _is_running(self):
       return self.status == "RUNNING" or self.status == "CREATED"

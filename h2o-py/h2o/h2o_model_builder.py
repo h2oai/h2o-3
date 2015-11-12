@@ -61,10 +61,7 @@ def _ow(name,kwargs):  # for checking offsets and weights, c is column, fr is fr
 
 def _check_frame(x,y,response):  # y and response are only ever different for validation
   if x is None: return None
-  x._eager()
   if y is not None:
-    y._eager()
-    response._eager()
     x[response.names[0]] = y
   return x
 

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -11,7 +11,7 @@ def iris_get_model():
 
 
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   model =H2ORandomForestEstimator(ntrees=50)
   model.train(y=4, x=range(4), training_frame=iris)

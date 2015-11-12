@@ -34,8 +34,8 @@ def minmax_basic():
     data = [1,-0.1,0]
     mn = min(data)
     mx = max(data)
-    h2o_min = h2o.H2OFrame.fromPython(data).min()
-    h2o_max = h2o.H2OFrame.fromPython(data).max()
+    h2o_min = h2o.H2OFrame(data).min()
+    h2o_max = h2o.H2OFrame(data).max()
     assert h2o_min == mn, "Expected the same min value. H2O got {0}, but python got {1}".format(h2o_min, mn)
     assert h2o_max == mx, "Expected the same max value. H2O got {0}, but python got {1}".format(h2o_max, mx)
 

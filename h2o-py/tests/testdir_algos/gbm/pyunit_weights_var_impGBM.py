@@ -55,12 +55,12 @@ def weights_var_imp():
                            y="cylinders",
                            weights_column="weights", training_frame=data2)
 
-    reg1_vi = gbm1_regression.varimp(return_list=True)
-    reg2_vi = gbm2_regression.varimp(return_list=True)
-    bin1_vi = gbm1_binomial.varimp(return_list=True)
-    bin2_vi = gbm2_binomial.varimp(return_list=True)
-    mul1_vi = gbm1_multinomial.varimp(return_list=True)
-    mul2_vi = gbm2_multinomial.varimp(return_list=True)
+    reg1_vi = gbm1_regression.varimp()
+    reg2_vi = gbm2_regression.varimp()
+    bin1_vi = gbm1_binomial.varimp()
+    bin2_vi = gbm2_binomial.varimp()
+    mul1_vi = gbm1_multinomial.varimp()
+    mul2_vi = gbm2_multinomial.varimp()
 
     print "Varimp (regresson)   no weights vs. weights: {0}, {1}".format(reg1_vi, reg2_vi)
     print "Varimp (binomial)    no weights vs. weights: {0}, {1}".format(bin1_vi, bin2_vi)
@@ -77,7 +77,7 @@ def weights_var_imp():
   # uniform weights same as no weights
   weight = random.randint(1,10)
   uniform_weights = [[weight for r in range(406)]]
-  h2o_uniform_weights = h2o.H2OFrame.fromPython(uniform_weights)
+  h2o_uniform_weights = h2o.H2OFrame(uniform_weights)
   h2o_uniform_weights.set_names(["weights"])
   h2o_data_uniform_weights = h2o_cars_data.cbind(h2o_uniform_weights)
 
@@ -86,7 +86,7 @@ def weights_var_imp():
 
   # zero weights same as removed observations
   zero_weights = [[0 if random.randint(0,1) else 1 for r in range(406)]]
-  h2o_zero_weights = h2o.H2OFrame.fromPython(zero_weights)
+  h2o_zero_weights = h2o.H2OFrame(zero_weights)
   h2o_zero_weights.set_names(["weights"])
   h2o_data_zero_weights = h2o_cars_data.cbind(h2o_zero_weights)
   h2o_data_zeros_removed = h2o_cars_data[h2o_zero_weights["weights"] == 1]
@@ -96,7 +96,7 @@ def weights_var_imp():
 
   # doubled weights same as doubled observations
   doubled_weights = [[1 if random.randint(0,1) else 2 for r in range(406)]]
-  h2o_doubled_weights = h2o.H2OFrame.fromPython(doubled_weights)
+  h2o_doubled_weights = h2o.H2OFrame(doubled_weights)
   h2o_doubled_weights.set_names(["weights"])
   h2o_data_doubled_weights = h2o_cars_data.cbind(h2o_doubled_weights)
 
@@ -106,7 +106,7 @@ def weights_var_imp():
   for idx, w in enumerate(doubled_weights[0]):
     if w == 2: doubled_data.append(doubled_data[idx])
   doubled_data = zip(*doubled_data)
-  h2o_data_doubled = h2o.H2OFrame.fromPython(doubled_data)
+  h2o_data_doubled = h2o.H2OFrame(doubled_data)
   h2o_data_doubled.set_names(list(colnames))
 
   h2o_data_doubled["economy_20mpg"] = h2o_data_doubled["economy_20mpg"].asfactor()

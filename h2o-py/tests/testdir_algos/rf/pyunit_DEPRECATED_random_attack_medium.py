@@ -21,7 +21,7 @@ def random_attack():
         if random.randint(0,1): kwargs['ntrees'] = random.randint(1,10)
         if random.randint(0,1): kwargs['max_depth'] = random.randint(1,5)
         if random.randint(0,1): kwargs['min_rows'] = random.randint(1,10)
-        if random.randint(0,1): kwargs['nbins'] = random.randint(1,20)
+        if random.randint(0,1): kwargs['nbins'] = random.randint(2,20)
         if random.randint(0,1):
             kwargs['balance_classes'] = True
             if random.randint(0,1): kwargs['max_after_balance_size'] = random.uniform(0,10)

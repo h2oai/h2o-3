@@ -1,5 +1,5 @@
 library(h2o)
-h2o.init()
+h2o.init(nthreads = -1, max_mem_size = "2G")
 
 ## Find and import data into H2O
 locate <- h2o:::.h2o.locate
@@ -7,7 +7,7 @@ pathToACSData <- locate("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
 pathToWHDData <- locate("bigdata/laptop/census/whd_zcta_cleaned.zip")
 
 print("Importing ACS 2013 5-year DP02 demographic dataset into H2O...")
-acs_orig <- h2o.uploadFile(pathToACSData, col.types = c("enum", rep("numeric", 149)))
+acs_orig <- h2o.importFile(pathToACSData, col.types = c("enum", rep("numeric", 149)))
 
 ## Save and drop zip code column from training frame
 acs_zcta_col <- acs_orig$ZCTA5
@@ -18,33 +18,35 @@ dim(acs_full)
 summary(acs_full)
 
 print("Importing WHD 2014-2015 labor violations dataset into H2O...")
-whd_zcta <- h2o.uploadFile(pathToWHDData, col.types = c(rep("enum", 7), rep("numeric", 97)))
+whd_zcta <- h2o.importFile(pathToWHDData, col.types = c(rep("enum", 7), rep("numeric", 97)))
 
 ## Grab a summary of WHD frame
 dim(whd_zcta)
 summary(whd_zcta)
 
+#---------------------------------------#
+#        Low Rank Model of ZCTAs        #
+#---------------------------------------#
 print("Run GLRM to reduce ZCTA demographics to k = 10 archetypes")
 acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZE", 
                       loss = "Quadratic", regularization_x = "Quadratic", 
-                      regularization_y = "L1", max_iterations = 100, gamma_x = 0.25, gamma_y = 0.5)
+                      regularization_y = "L1", gamma_x = 0.25, gamma_y = 0.5, max_iterations = 100)
 acs_model
 
 print("Plot objective function value each iteration")
-acs_model_score <- acs_model@model$scoring_history
-plot(acs_model_score$iteration, acs_model_score$objective, xlab = "Iteration", ylab = "Objective", main = "Objective Function Value per Iteration")
+plot(acs_model)
 
 ## Embedding of ZCTAs into archetypes (X)
 zcta_arch_x <- h2o.getFrame(acs_model@model$representation_name)
 head(zcta_arch_x)
 
 print("Plot a few ZCTAs on the first two archetypes")
-idx <- (acs_zcta_col == "10065" |   # Manhattan, NY (Upper East Side)
-        acs_zcta_col == "11219" |   # Manhattan, NY (East Harlem)
-        acs_zcta_col == "66753" |   # McCune, KS
-        acs_zcta_col == "84104" |   # Salt Lake City, UT
-        acs_zcta_col == "94086" |   # Sunnyvale, CA
-        acs_zcta_col == "95014")    # Cupertino, CA
+idx <- ((acs_zcta_col == "10065") |   # Manhattan, NY (Upper East Side)
+        (acs_zcta_col == "11219") |   # Manhattan, NY (East Harlem)
+        (acs_zcta_col == "66753") |   # McCune, KS
+        (acs_zcta_col == "84104") |   # Salt Lake City, UT
+        (acs_zcta_col == "94086") |   # Sunnyvale, CA
+        (acs_zcta_col == "95014"))    # Cupertino, CA
 
 city_arch <- as.data.frame(zcta_arch_x[idx,1:2])
 xeps <- (max(city_arch[,1]) - min(city_arch[,1])) / 10
@@ -58,6 +60,9 @@ text(city_arch[,1], city_arch[,2], labels = c("Upper East Side", "East Harlem", 
 arch_feat_y <- acs_model@model$archetypes
 arch_feat_y
 
+#---------------------------------------#
+#         Performance Comparison        #
+#---------------------------------------#
 ## Split WHD data into test/train with 20/80 ratio
 split <- h2o.runif(whd_zcta)
 train <- whd_zcta[split <= 0.8,]

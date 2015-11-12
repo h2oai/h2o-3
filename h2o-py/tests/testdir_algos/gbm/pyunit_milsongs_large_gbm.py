@@ -4,7 +4,7 @@ import h2o
 from tests import pyunit_utils
 import os
 import random
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def milsong_checkpoint():
 
@@ -20,7 +20,7 @@ def milsong_checkpoint():
   print "max_depth model 1: {0}".format(max_depth1)
   print "min_rows model 1: {0}".format(min_rows1)
 
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   model1 = H2OGradientBoostingEstimator(ntrees=ntrees1,
                                         max_depth=max_depth1,
                                         min_rows=min_rows1,

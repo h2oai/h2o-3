@@ -2,11 +2,11 @@ import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def checkpoint_new_category_in_response():
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
   sv = h2o.upload_file(pyunit_utils.locate("smalldata/iris/setosa_versicolor.csv"))
   iris = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
 

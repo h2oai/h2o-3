@@ -92,7 +92,7 @@ def gbm_demo(interactive, echo, test):
     if not test: h2o.init()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate = h2o.upload_file(path = h2o_data_path)
+    prostate = h2o.upload_file(path=h2o_data_path)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate.summary()
@@ -236,7 +236,7 @@ def glm_demo(interactive, echo, test):
     if not test: h2o.init()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate = h2o.upload_file(path = h2o_data_path)
+    prostate = h2o.upload_file(path=h2o_data_path)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate.summary()

@@ -19,6 +19,7 @@ function() {
     approvedRCodeExamples <- c(
     h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_uploadfile_example.R"),
     h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_examplerun.R"),
+    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_examplerun_stochastic.R"),
     h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_extractmodelparams.R"),
     h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_predict.R"),
     h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch.R"),

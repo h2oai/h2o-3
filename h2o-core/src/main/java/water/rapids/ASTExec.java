@@ -31,7 +31,9 @@ public class ASTExec extends AST {
   }
 
   // Function application.  Execute the first AST and verify that it is a
-  // function.  Then call that function's apply method.
+  // function.  Then call that function's apply method.  Do not evaluate other
+  // arguments; e.g. short-circuit logicals' apply calls may choose to not ever
+  // evalute some arguments.
   @Override public Val exec(Env env) {
     Val fun = _asts[0].exec(env);
     if( !fun.isFun() )
@@ -41,11 +43,14 @@ public class ASTExec extends AST {
     if( nargs != -1 && nargs != _asts.length )
       throw new IllegalArgumentException("Incorrect number of arguments; '"+ast+"' expects "+nargs+" but was passed "+_asts.length);
     try (Env.StackHelp stk = env.stk()) {
-        return stk.returning(ast.apply(env,stk,_asts));
+        return env.returning(ast.apply(env,stk,_asts));
       }
   }
 
   // No expected argument count
   @Override int nargs() { return -1; }
-  public String[] getArgs() { return ((ValFun)_asts[0].exec(new Env())).getArgs(); }
+  public String[] getArgs() { 
+//    throw water.H2O.unimpl();
+    return ((ValFun)_asts[0].exec(new Env(null))).getArgs();
+  }
 }

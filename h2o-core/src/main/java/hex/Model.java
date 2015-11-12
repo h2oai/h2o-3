@@ -104,6 +104,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public Distribution.Family _distribution = Distribution.Family.AUTO;
     public double _tweedie_power = 1.5f;
+    protected double defaultStoppingTolerance() { return 1e-3; }
 
     // TODO: This field belongs in the front-end column-selection process and
     // NOT in the parameters - because this requires all model-builders to have
@@ -120,6 +121,23 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // costs to less than 10% of the build time.  This flag forces scoring for
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
+
+    /**
+     * Early stopping based on convergence of stopping_metric.
+     * Stop if simple moving average of length k of the stopping_metric does not improve (by stopping_tolerance) for k=stopping_rounds scoring events."
+     * Can only trigger after at least 2k scoring events. Use 0 to disable.
+     */
+    public int _stopping_rounds = 0;
+
+    /**
+     * Metric to use for convergence checking, only for _stopping_rounds > 0
+     */
+    public ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
+
+    /**
+     * Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+     */
+    public double _stopping_tolerance = defaultStoppingTolerance();
 
     /** Supervised models have an expected response they get to train with! */
     public String _response_column; // response column name

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -12,7 +12,7 @@ def vi_toy_test():
 
   toy_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/toy_data_RF.csv"))
   #toy_data.summary()
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   toy_data[6] = toy_data[6].asfactor()
   toy_data.show()

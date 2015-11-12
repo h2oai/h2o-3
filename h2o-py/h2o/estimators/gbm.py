@@ -25,7 +25,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   min_rows : int
     Minimum number of rows to assign to terminal nodes.
   learn_rate : float
-    A value from 0.0 to 1.0
+    Learning rate (from 0.0 to 1.0)
+  sample_rate : float
+    Row sample rate (from 0.0 to 1.0)
+  col_sample_rate : float
+    Column sample rate (from 0.0 to 1.0)
   nbins : int
     For numerical columns (real/int), build a histogram of (at least) this many bins, then
     split at the best point.
@@ -57,6 +61,16 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Whether to keep the predictions of the cross-validation models
   score_each_iteration : bool
     Attempts to score each tree.
+  stopping_rounds : int
+    Early stopping based on convergence of stopping_metric.
+    Stop if simple moving average of length k of the stopping_metric does not improve
+    (by stopping_tolerance) for k=stopping_rounds scoring events.
+    Can only trigger after at least 2k scoring events. Use 0 to disable.
+  stopping_metric : str
+    Metric to use for convergence checking, only for _stopping_rounds > 0
+    Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+  stopping_tolerance : float
+    Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
   Returns
   -------
@@ -64,9 +78,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   """
   def __init__(self, model_id=None, distribution=None, tweedie_power=None, ntrees=None,
                max_depth=None, min_rows=None, learn_rate=None, nbins=None,
+               sample_rate=None,col_sample_rate=None,
                nbins_top_level=None, nbins_cats=None, balance_classes=None,
                max_after_balance_size=None, seed=None, build_tree_one_node=None,
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
+               stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
                score_each_iteration=None, checkpoint=None):
     super(H2OGradientBoostingEstimator, self).__init__()
     self._parms = locals()
@@ -119,6 +135,22 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @learn_rate.setter
   def learn_rate(self, value):
     self._parms["learn_rate"] = value
+
+  @property
+  def sample_rate(self):
+    return self._parms["sample_rate"]
+
+  @sample_rate.setter
+  def sample_rate(self, value):
+    self._parms["sample_rate"] = value
+
+  @property
+  def col_sample_rate(self):
+    return self._parms["col_sample_rate"]
+
+  @col_sample_rate.setter
+  def col_sample_rate(self, value):
+    self._parms["col_sample_rate"] = value
 
   @property
   def nbins(self):
@@ -207,6 +239,30 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @score_each_iteration.setter
   def score_each_iteration(self, value):
     self._parms["score_each_iteration"] = value
+
+  @property
+  def stopping_rounds(self):
+    return self._parms["stopping_rounds"]
+
+  @stopping_rounds.setter
+  def stopping_rounds(self, value):
+    self._parms["stopping_rounds"] = value
+
+  @property
+  def stopping_metric(self):
+    return self._parms["stopping_metric"]
+
+  @stopping_metric.setter
+  def stopping_metric(self, value):
+    self._parms["stopping_metric"] = value
+
+  @property
+  def stopping_tolerance(self):
+    return self._parms["stopping_tolerance"]
+
+  @stopping_tolerance.setter
+  def stopping_tolerance(self, value):
+    self._parms["stopping_tolerance"] = value
 
   @property
   def checkpoint(self):

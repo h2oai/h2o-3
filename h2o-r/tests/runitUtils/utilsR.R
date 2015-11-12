@@ -124,8 +124,7 @@ function(zipfile, exdir,header=T) {
 # returns the directory of the sandbox for the given test.
 sandbox<-
 function(create=FALSE) {
-  test_name <- R.utils::commandArgs(asValues=TRUE)$"f"
-  Rsandbox <- paste("./Rsandbox_", basename(test_name), sep = "")
+  Rsandbox <- paste0("./Rsandbox_", basename(test.name()))
   if (create) { dir.create(Rsandbox, showWarnings=FALSE) }
   if (dir.exists(Rsandbox)) { return(normalizePath(Rsandbox))
   } else { Log.err(paste0("Sandbox directory: ",Rsandbox," does not exists")) }
@@ -135,7 +134,7 @@ function(create=FALSE) {
 sandboxMakeSubDir<-
 function(dirname) {
   if (!is.character(dirname)) Log.err("dirname argument must be of type character")
-  subdir <- paste(sandbox(),dirname,sep=.Platform$file.sep)
+  subdir <- file.path(sandbox(),dirname,fsep = "\\")
   dir.create(subdir, showWarnings=FALSE)
   return(subdir)
 }
@@ -145,8 +144,13 @@ sandboxRenameSubDir<-
 function(oldSubDir,newSubDirName) {
   if (!is.character(oldSubDir)) Log.err("oldSubDir argument must be of type character")
   if (!is.character(newSubDirName)) Log.err("newSubDirName argument must be of type character")
-  newSubDir <- sandboxMakeSubDir(dirname=newSubDirName)
-  file.rename(oldSubDir, newSubDir)
+  newSubDir <- file.path(sandbox(),newSubDirName)
+  # Real trouble deleting a prior-existing newSubDir on Windows, that was filled with crap.
+  # Calling system("rm -rf") seems to work, where calling unlink() would not.
+  # Also renaming to an existing but empty directory does not work on windows.
+  system(paste0("rm -rf ",newSubDir))
+  res <- file.rename(oldSubDir, newSubDir)
+  if( !res ) print(paste0("Warning: File rename failed FROM ",oldSubDir," TO ",newSubDir))
   return(newSubDir)
 }
 
@@ -203,19 +207,19 @@ function() {
 PASS<-
 function() {
   PASS_BANNER()
-  q("no",0,FALSE)
+  q("no",0,TRUE)
 }
 
 FAIL<-
 function(e) {
   FAIL_BANNER()
   Log.err(e)
-  q("no",1,FALSE) #exit with nonzero exit code
+  q("no",1,TRUE) #exit with nonzero exit code
 }
 
 SKIP<-
 function() {
-  q("no",42,FALSE) #exit with nonzero exit code
+  q("no",42,TRUE) #exit with nonzero exit code
 }
 
 WARN<-
@@ -374,5 +378,30 @@ function(testDesc, test) {
     conn@mutable$session_id <- .init.session_id()
     tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
     PASS()
+}
+
+setupRandomSeed<-
+function(seed = NULL, master_seed = FALSE) {
+    possible_seed_path <- paste("./Rsandbox_", test.name(), "/seed", sep = "")
+
+    if (!is.null(seed)) {
+        SEED <<- seed
+        set.seed(seed)
+        write.table(seed, possible_seed_path)
+        cat("\n\n\n", paste("[INFO]: Using master SEED: ", seed), "\n\n\n\n")
+    } else if (file.exists(possible_seed_path)) {
+        fileseed <- read.table(possible_seed_path)[[1]]
+        SEED <<- fileseed
+        set.seed(fileseed)
+        cat("\n\n\n", paste("[INFO]: Reusing seed for this test from test's Rsandbox", fileseed), "\n\n\n\n")
+    } else {
+        maxInt <- .Machine$integer.max
+        seed <- sample(maxInt, 1)
+        SEED <<- seed
+        set.seed(seed)
+        write.table(seed, possible_seed_path)
+        cat("\n\n\n", paste("[INFO]: Generating new random SEED: ", seed), "\n\n\n\n")
+    }
+    Log.info(paste("USING SEED: ", SEED))
 }
 

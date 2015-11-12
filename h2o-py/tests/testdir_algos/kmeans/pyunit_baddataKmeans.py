@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 
 import random
@@ -21,9 +21,9 @@ def baddataKmeans():
   #Log.info("Training data with 1 row of all Nones: replace with column mean")
   data = rawdata[:]
   for col in data: col[24] = None
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
 
   km_model = H2OKMeansEstimator(k=5)
   km_model.train(x=range(cols), training_frame=frame)
@@ -36,7 +36,7 @@ def baddataKmeans():
   #Log.info("Training data with 1 col of all 5's: drop automatically")
   data = rawdata[:]
   data[4] = [5] * rows
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   km_model = H2OKMeansEstimator(k=5)
   km_model.train(x = range(cols), training_frame=frame)
@@ -50,7 +50,7 @@ def baddataKmeans():
   data = rawdata[:]
   data[4] = [None] * rows
   data[7] = [0] * rows
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   km_model = H2OKMeansEstimator(k=5)
   km_model.train(x=range(cols), training_frame=frame)
@@ -62,7 +62,7 @@ def baddataKmeans():
 
   # Log.info("Training data with all None's")
   data = [[None for r in range(rows)] for c in range(cols)]
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   try:
     H2OKMeansEstimator(k=5).train(x=range(cols), training_frame=frame)
@@ -72,7 +72,7 @@ def baddataKmeans():
 
   # Log.info("Training data with a categorical column(s)")
   data = [[random.choice(string.ascii_uppercase) for r in range(rows)] for c in range(cols)]
-  frame = h2o.H2OFrame.fromPython(data)
+  frame = h2o.H2OFrame(data)
 
   km_model = H2OKMeansEstimator(k=5)
   km_model.train(x=range(cols), training_frame=frame)

@@ -36,9 +36,8 @@ h2o.ensemble <- function(x, y, training_frame,
     family <- match.arg(family)
   }
   if (family == "AUTO") {
-    # TO DO: Change this... numcats way to expensive
-    if (is.factor(training_frame[,c(y)])) {
-      numcats <- length(unique(as.data.frame(training_frame)[,c(y)]))
+    if (is.factor(training_frame[,y])) {
+      numcats <- length(h2o.levels(training_frame[,y]))
       if (numcats == 2) {
         family <- "binomial" 
       } else {
@@ -48,10 +47,18 @@ h2o.ensemble <- function(x, y, training_frame,
       family <- "gaussian"
     }
   }
+  # Check that if specified, family matches data type for response
+  # binomial must be factor/enum and gaussian must be numeric
   if (family == c("gaussian")) {
-    # TO DO: (CHECK THIS UPDATE) Update this when h2o.range method gets implemented for H2OFrame cols
-    ylim <- c(min(training_frame[,c(y)]), max(training_frame[,c(y)]))  #Used to enforce bounds  
+    if (!is.numeric(training_frame[,y])) {
+      stop("When `family` is gaussian, the repsonse column must be numeric.")
+    }
+    # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OFrame cols
+    ylim <- c(min(training_frame[,y]), max(training_frame[,y]))  #Used to enforce bounds  
   } else {
+    if (!is.factor(training_frame[,y])) {
+      stop("When `family` is binomial, the repsonse column must be a factor.")
+    }
     ylim <- NULL
   }
   
@@ -194,7 +201,7 @@ h2o.ensemble <- function(x, y, training_frame,
   .compress_cvpred_into_1col <- function(l, family) {
     # return the frame_id of the resulting 1-col Hdf of cvpreds for learner l
     if (family %in% c("bernoulli", "binomial")) {
-      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$p1, simplify = FALSE)
+      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)[,3], simplify = FALSE)
     } else {
       predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
     }
@@ -248,26 +255,20 @@ h2o.ensemble <- function(x, y, training_frame,
 
 predict.h2o.ensemble <- function(object, newdata, ...) {
   
-  L <- length(object$basefits)
-  basepreddf <- as.data.frame(matrix(NA, nrow = nrow(newdata), ncol = L))
-  for (l in seq(L)) {
-    if (object$family == "binomial") {
-      basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))$p1 
-    } else {
-      basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))$predict
-    }
+  if (object$family == "binomial") {
+    basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,3]))
+  } else {
+    basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,1]))
   }
-  names(basepreddf) <- names(object$basefits)
-  basepred <- as.h2o(basepreddf, destination_frame = "basepred")
+  names(basepred) <- names(object$basefits)
   
   if (grepl("H2O", class(object$metafit))) {
     # H2O ensemble metalearner from wrappers.R
     pred <- h2o.predict(object = object$metafit, newdata = basepred)
   } else {
     # SuperLearner wrapper function metalearner
-    pred <- predict(object = object$metafit$fit, newdata = basepred)
+    basepreddf <- as.data.frame(basepred)  
+    pred <- predict(object = object$metafit$fit, newdata = basepreddf)
   }
   out <- list(pred = pred, basepred = basepred)
   return(out)

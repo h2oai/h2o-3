@@ -55,7 +55,7 @@ def user():
 
     import collections
 
-    c = h2o.H2OFrame.fromPython(collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
+    c = h2o.H2OFrame(collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
     c.show()
 
     c.describe()

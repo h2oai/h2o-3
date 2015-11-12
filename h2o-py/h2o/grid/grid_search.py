@@ -4,12 +4,39 @@ This module implements grid search class. All grid search things inherit from th
 from .. import H2OConnection, H2OJob, H2OFrame, H2OEstimator
 import h2o
 from metrics import *
+import itertools
+
 
 class H2OGridSearch(object):
   def __init__(self, model, hyper_params, grid_id=None):
-    #mimic __init__ in ModelBase
+    """
+    Grid Search of a Hyper-Parameter Space for a Model
+  
+    Parameters
+    ----------
+    model : H2O Estimator model
+      The type of model to be explored initalized with optional parameters that will be unchanged across explored models.
+    hyper_params: dict
+      A dictionary of string parameters (keys) and a list of values to be explored by grid search (values).
+    grid_id : str, optional
+      The unique id assigned to the resulting grid object. If none is given, an id will automatically be generated.
+     
+    Returns
+    -------
+      A new H2OGridSearch instance.
+    
+    Examples
+    --------
+      >>> from h2o.grid.grid_search import H2OGridSearch
+      >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+      >>> hyper_parameters = {'alpha': [0.01,0.5,'a'], 'lambda': [1e-5,1e-6]}
+      >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+      >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
+      >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
+      >>> gs.show()
+    """
     self._id = grid_id
-    self.model = model() if model.__class__.__name__ == 'type' else model# H2O Estimator child class
+    self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
     self.hyper_params = hyper_params
     self._grid_json = None
     self.models = None # list of H2O Estimator instances
@@ -140,8 +167,8 @@ class H2OGridSearch(object):
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
     kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
-    algo = self.model._compute_algo() #unique to grid search
-    kwargs["_rest_version"] = 99 #unique to grid search
+    algo = self.model._compute_algo()  #unique to grid search
+    kwargs["_rest_version"] = 99  #unique to grid search
 
     grid = H2OJob(H2OConnection.post_json("Grid/"+algo, **kwargs), job_type=(algo+" Grid Build"))
 
@@ -152,7 +179,6 @@ class H2OGridSearch(object):
     grid.poll()
     if '_rest_version' in kwargs.keys(): grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
     else:                                grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
-
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
     #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
@@ -298,41 +324,61 @@ class H2OGridSearch(object):
   def summary(self):
     """
     Print a detailed summary of the model.
-
-    :return:
     """
+    # TODO: not
     return {model.model_id:model.summary() for model in self.models}
 
+
   def show(self):
-    """
-    Print innards of model, without regards to type
+    """Print innards of grid, without regard to type"""
+    hyper_combos = itertools.product(*self.hyper_params.values())
+    if not self.models:
+      c_values = [[idx+1, list(val)] for idx, val in enumerate(hyper_combos)]
+      print h2o.H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'],
+                               table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values)
+    else:
+      if self.failed_raw_params:
+        print 'Failed Hyperparameters and Message:'
+        for i in range(len(self.failed_raw_params)):
+          print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
+      print self.sort_by('mse')
 
-    :return: None
-    """
 
-    for i, model in enumerate(self.models):
-      print 'Model ' + str(i) + ':', self.get_hyperparams(i)
-      model.show()
-      print '\n\n'
+  def varimp(self, use_pandas=False):
+    """Pretty print the variable importances, or return them in a list/pandas DataFrame
 
-  def varimp(self, return_list=False):
+    Parameters
+    ----------
+    use_pandas: boolean, optional
+      If True, then the variable importances will be returned as a pandas data frame.
+
+    Returns
+    -------
+      A dictionary of lists or Pandas DataFrame instances.
     """
-    Pretty print the variable importances, or return them in a list
-    :param return_list: if True, then return the variable importances in an list (ordered from most important to least
-    important). Each entry in the list is a 4-tuple of (variable, relative_importance, scaled_importance, percentage).
-    :return: None or ordered list
-    """
-    return {model.model_id:model.varimp(return_list) for model in self.models}
+    return {model.model_id:model.varimp(use_pandas) for model in self.models}
+
 
   def residual_deviance(self,train=False,valid=False,xval=False):
-    """
-    Retreive the residual deviance if this model has the attribute, or None otherwise.
+    """Retreive the residual deviance if this model has the attribute, or None otherwise.
 
-    :param train: Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
-    :param valid: Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
-    :return: Return the residual deviance, or None if it is not present.
+    Parameters
+    ----------
+    train : boolean, optional, default=True
+      Get the residual deviance for the training set. If both train and valid are False,
+      then train is selected by default.
+    valid: boolean, optional
+      Get the residual deviance for the validation set. If both train and valid are True,
+      then train is selected by default.
+    xval : boolean, optional
+      Get the residual deviance for the cross-validated models.
+
+    Returns
+    -------
+      Return the residual deviance, or None if it is not present.
     """
     return {model.model_id:model.residual_deviance(train, valid, xval) for model in self.models}
+
 
   def residual_degrees_of_freedom(self,train=False,valid=False,xval=False):
     """
@@ -493,35 +539,60 @@ class H2OGridSearch(object):
   def sort_by(self, metric, increasing=True):
     """
     Sort the models in the grid space by a metric.
-
-    :param metric: str, A metric ('logloss', 'auc', 'r2') by which to sort the models. If addtional arguments are desired,
-    they can be passed to the metric, for example 'logloss(valid=True)'
-    :param increasing: boolean, Sort the metric in increasing (True) (default) or decreasing (False) order.
-    :return: An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value
+    
+    Parameters
+    ----------
+    metric: str
+      A metric ('logloss', 'auc', 'r2') by which to sort the models. If addtional arguments are desired,
+      they can be passed to the metric, for example 'logloss(valid=True)'
+    increasing: boolean, optional
+      Sort the metric in increasing (True) (default) or decreasing (False) order.
+      
+    Returns
+    -------
+      An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value. The best model can 
+      be extracted and used for predictions.
+     
+    Examples
+    --------
+      >>> grid_search_results = gs.sort_by('F1', False)
+      >>> best_model_id = grid_search_results['Model Id'][0]
+      >>> best_model = h2o.get_model(best_model_id)
+      >>> best_model.predict(test_data)
     """
 
     if metric[-1] != ')': metric += '()'
     c_values = [list(x) for x in zip(*sorted(eval('self.' + metric + '.items()'), key = lambda(k,v): v))]
-    c_values.insert(1,[[self.get_hyperparams(model_id, display=False)] for model_id in c_values[0]])
+    c_values.insert(1,[self.get_hyperparams(model_id, display=False) for model_id in c_values[0]])
     if not increasing:
       for col in c_values: col.reverse()
-    if metric[-2:] == '()': metric = metric[:-2]
-    return h2o.H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: ' + str(self.hyper_params.keys()), metric], table_header='Grid Search Results', cell_values=zip(*c_values))
+    metric = metric[:-2]
+    return h2o.H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']', metric],
+                              table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=zip(*c_values))
 
 
   def get_hyperparams(self, id, display=True):
     """
     Get the hyperparameters of a model explored by grid search.
-    :param id: int or str, either the index of desired model or its model id
-    :param display: boolean, flag whether to display hyperparameter names
-    :return: str, hyperparameters
+    
+    Parameters
+    ----------    
+    id: str
+      The model id of the model with hyperparameters of interest.
+    display: boolean 
+      Flag to indicate whether to display the hyperparameter names.
+      
+    Returns
+    -------
+      A list of the hyperparameters for the specified model.
     """
-    s = ''
     idx = id if isinstance(id, int) else self.model_ids.index(id)
     model = self[idx]
-    for h in self.hyper_params: s += str(model.params[h]['actual']) + ', '
-    if display: print 'Hyperparameters:', self.hyper_params.keys()
-    return s[:-2]
+    res = [model.params[h]['actual'][0] if isinstance(model.params[h]['actual'],list)
+           else model.params[h]['actual']
+           for h in self.hyper_params]
+    if display: print 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'
+    return res
 
 
   @staticmethod
@@ -536,3 +607,37 @@ class H2OGridSearch(object):
     else: raise NotImplementedError(model_type)
     return model_class
 
+  @staticmethod
+  def get_grid(model, hyper_params, grid_id):
+    """
+    Retrieve an H2OGridSearch instance already trained given its original model, hyper_params, and grid_id. 
+    
+    Parameters
+    ----------    
+    model : H2O Estimator model
+      The type of model explored that is initalized with optional parameters which are unchanged across explored models.
+    hyper_params: dict
+      A dictionary of string parameters (keys) and a list of values explored by grid search (values).
+    grid_id : str, optional
+      The unique id assigned to the grid object.
+     
+    Returns
+    -------
+      A new H2OGridSearch instance that is a replica of the H2OGridSearch instance with the specified grid_id.
+
+    """
+    kwargs = {'_rest_version':99}
+    grid_json = H2OConnection.get_json("Grids/"+grid_id, **kwargs)
+    grid = H2OGridSearch(model, hyper_params, grid_id)
+    grid.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
+    first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=kwargs['_rest_version'])['models'][0]
+    model_class = H2OGridSearch._metrics_class(first_model_json)
+    m = model_class()
+    m._id = grid_id
+    m._grid_json = grid_json
+    # m._metrics_class = metrics_class
+    m._parms = grid._parms
+    H2OEstimator.mixin(grid,model_class)
+    grid.__dict__.update(m.__dict__.copy())
+    return grid
+    

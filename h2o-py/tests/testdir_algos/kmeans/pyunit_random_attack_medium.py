@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 
 import random
@@ -10,13 +10,13 @@ import random
 def random_attack():
 
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
 
   def attack(train, x):
     kwargs = {}
 
     # randomly select parameters and their corresponding values
-    kwargs['k'] = random.randint(2,20)
+    kwargs['k'] = random.randint(1,20)
     if random.randint(0,1): kwargs['model_id'] = "my_model"
     if random.randint(0,1): kwargs['max_iterations'] = random.randint(1,1000)
     if random.randint(0,1): kwargs['standardize'] = [True, False][random.randint(0,1)]
@@ -25,7 +25,7 @@ def random_attack():
       if method == 3:
         s = [[random.uniform(train[c].mean()[0]-100,train[c].mean()[0]+100) for p in range(kwargs['k'])] for c in x]
         print "s: {0}".format(s)
-        start = h2o.H2OFrame.fromPython(s)
+        start = h2o.H2OFrame(s)
         kwargs['user_points'] = start
       else:
         kwargs['init'] = ["Furthest","Random", "PlusPlus"][method]
@@ -48,7 +48,7 @@ def random_attack():
   print "Import and data munging..."
   ozone = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
   for i in range(50):
-    attack(ozone, random.sample([0,1,2,3],random.randint(2,4)))
+    attack(ozone, random.sample([0,1,2,3],random.randint(1,4)))
 
 
 

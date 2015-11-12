@@ -119,8 +119,8 @@ class H2OColOp(H2OTransformer):
     else:             return X.cbind(res)
     return X
 
-  def _transform_helper(self,X,**params):
-    if self.params == None or self.params == {}:
+  def _transform_helper(self, X, **params):
+    if self.params is None or self.params == {}:
       if self.col is not None: res = self.fun(X[self.col])
       else:                    res = self.fun(X)
     else:
@@ -137,7 +137,7 @@ class H2OColOp(H2OTransformer):
 
 
 class H2OBinaryOp(H2OColOp):
-  """ Perform a binary operation on a column.
+  """Perform a binary operation on a column.
 
   If left is None, then the column will appear on the left in the operation; otherwise
   it will be appear on the right.

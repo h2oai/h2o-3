@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 import random
@@ -30,7 +30,7 @@ def cv_carsRF():
 
   print "Response column: {0}".format(response_col)
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
 
 ## cross-validation
@@ -56,7 +56,7 @@ def cv_carsRF():
 
   # 3. folds_column
   num_folds = random.randint(2,5)
-  fold_assignments = h2o.H2OFrame.fromPython([[random.randint(0,num_folds-1) for f in range(cars.nrow)]])
+  fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1) for f in range(cars.nrow)]])
   fold_assignments.set_names(["fold_assignments"])
   cars = cars.cbind(fold_assignments)
   rf = H2ORandomForestEstimator(keep_cross_validation_predictions=True)

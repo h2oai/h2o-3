@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 import random
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def cv_cars_gbm():
 
@@ -32,7 +32,7 @@ def cv_cars_gbm():
   print "Response column: {0}".format(response_col)
 
   ## cross-validation
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   # 1. check that cv metrics are the same over repeated "Modulo" runs
   nfolds = random.randint(3,10)
   gbm1 = H2OGradientBoostingEstimator(nfolds=nfolds,
@@ -70,7 +70,7 @@ def cv_cars_gbm():
 
   # 3. folds_column
   num_folds = random.randint(2,5)
-  fold_assignments = h2o.H2OFrame.fromPython([[random.randint(0,num_folds-1) for f in range(cars.nrow)]])
+  fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1) for f in range(cars.nrow)]])
   fold_assignments.set_names(["fold_assignments"])
   cars = cars.cbind(fold_assignments)
   gbm = H2OGradientBoostingEstimator(distribution=distribution,

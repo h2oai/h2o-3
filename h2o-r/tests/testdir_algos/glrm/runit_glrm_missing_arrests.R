@@ -2,7 +2,7 @@
 
 
 test.glrm.arrests_miss <- function() {
-  missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
+  missing_frac <- seq(from = 0.1, to = 0.8, by = 0.1)
   stats_names <- c("Fraction", "Objective", "AvgChangeObj", "Iterations", "StepSize", "TrainSSE", "ValidSSE", "MissingASE")
   model_stats <- data.frame(matrix(0, nrow = length(missing_frac), ncol = length(stats_names)))
   colnames(model_stats) <- stats_names

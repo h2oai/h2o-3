@@ -2,6 +2,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
+from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
 
 
 def anomaly():
@@ -19,7 +20,7 @@ def anomaly():
 
   # 1) LEARN WHAT'S NORMAL
   # train unsupervised Deep Learning autoencoder model on train_hex
-  from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
+
   ae_model = H2OAutoEncoderEstimator(activation="Tanh", hidden=[2], l1=1e-5, ignore_const_cols=False, epochs=1)
   ae_model.train(x=predictors,training_frame=train)
 

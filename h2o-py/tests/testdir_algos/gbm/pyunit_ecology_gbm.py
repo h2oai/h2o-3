@@ -5,7 +5,7 @@ from tests import pyunit_utils
 import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def ecologyGBM():
 
@@ -31,7 +31,7 @@ def ecologyGBM():
 
   ecology_train["Angaus"] = ecology_train["Angaus"].asfactor()
   # Train H2O GBM Model:
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   gbm_h2o = H2OGradientBoostingEstimator(ntrees=ntrees,
                                          learn_rate=learn_rate,
                                          distribution="bernoulli",
