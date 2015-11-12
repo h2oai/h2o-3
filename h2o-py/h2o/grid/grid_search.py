@@ -29,7 +29,7 @@ class H2OGridSearch(object):
     --------
       >>> from h2o.grid.grid_search import H2OGridSearch
       >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-      >>> hyper_parameters = {'alpha': [0.01,0.5,'a'], 'lambda': [1e-5,1e-6]}
+      >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
       >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
       >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
       >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
@@ -321,12 +321,27 @@ class H2OGridSearch(object):
     """
     return {model.model_id:model.score_history() for model in self.models}
 
-  def summary(self):
+  def summary(self, header=True):
     """
-    Print a detailed summary of the model.
+    Print a detailed summary of the explored models.
     """
-    # TODO: not
-    return {model.model_id:model.summary() for model in self.models}
+    table = []
+    for model in self.models:
+      model_summary = model._model_json["output"]["model_summary"]
+      r_values = list(model_summary.cell_values[0])
+      r_values[0] = model.model_id
+      table.append(r_values)
+        
+    # if h2o.can_use_pandas():
+    #  import pandas
+    #  pandas.options.display.max_rows = 20
+    #  print pandas.DataFrame(table,columns=self.col_header)
+    #  return
+    print
+    if header:
+      print 'Grid Summary:'
+    print    
+    h2o.H2ODisplay(table, ['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
 
 
   def show(self):
@@ -551,7 +566,7 @@ class H2OGridSearch(object):
     Returns
     -------
       An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value. The best model can 
-      be extracted and used for predictions.
+      be selected and used for prediction.
      
     Examples
     --------
