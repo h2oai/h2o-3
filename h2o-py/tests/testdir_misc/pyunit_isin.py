@@ -8,11 +8,11 @@ def isin_check():
 
   cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
 
-  assert cars[0].isin("AMC Gremlin") == (cars[0] == "AMC Gremlin")
-  assert cars[2].isin(6) == (cars[2] == 6)
-  assert not ((cars.isin(["AMC Gremlin","AMC Concord DL"]) == cars.isin("AMC Gremlin")).all())
+  assert (cars[0].isin("AMC Gremlin") == (cars[0] == "AMC Gremlin")).all()
+  assert (cars[2].isin(6) == (cars[2] == 6)).all()
+  assert not (cars.isin(["AMC Gremlin","AMC Concord DL"]) == cars.isin("AMC Gremlin")).all()
   assert (cars.isin(["AMC Gremlin","AMC Concord DL",6]) == cars.isin("AMC Gremlin") + cars.isin("AMC Concord DL") 
-          + cars.isin(6)).all() == True 
+          + cars.isin(6)).all()
   
 
 if __name__ == "__main__":
