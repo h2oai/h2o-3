@@ -37,7 +37,7 @@ def vec_math_ops():
         h2o_round = h2o_data5[c].round(digits=d+4)
         s = h2o_signif[0]
         r = h2o_round[0]
-        assert s == r, "Expected these to be equal, but signif: {0}, round: {1}".format(s, r)
+        assert (s == r).all(), "Expected these to be equal, but signif: {0}, round: {1}".format(s, r)
     h2o_transposed = h2o_data1[c].transpose()
     x, y = h2o_transposed.dim
     assert x == 1 and y == 10, "Expected 1 row and 10 columns, but got {0} rows and {1} columns".format(x,y)

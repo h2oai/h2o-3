@@ -10,11 +10,12 @@ def pyunit_assign():
 
     pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
     pq = pros.quantile()
-
-    PSA_outliers = pros[pros["PSA"] <= pq[1,1] or pros["PSA"] >= pq[1,9]]
+    print '1st percentile for PSA:', pq[0,7]
+    print '99th percentile for PSA:', pq[8,7]
+    PSA_outliers = pros[ ((pros["PSA"] <= pq[0,7]) | (pros["PSA"] >= pq[8,7])) ]
     PSA_outliers = h2o.assign(PSA_outliers, "PSA.outliers")
-    print pros.head()
-    print PSA_outliers.head()
+    print pros
+    print PSA_outliers
     assert PSA_outliers.frame_id == "PSA.outliers", "Expected frame id to be PSA.outliers, but got {0}".format(PSA_outliers.frame_id)
 
 

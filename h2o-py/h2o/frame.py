@@ -448,6 +448,7 @@ class H2OFrame(object):
   def __eq__  (self, i): return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
   def __ne__  (self, i): return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
   def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
+  def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
   # rops
   def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("mod",i,self), cache=self._ex._cache)
   def __radd__(self, i): return self.__add__(i)
@@ -459,9 +460,13 @@ class H2OFrame(object):
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return H2OFrame._expr(expr=ExprNode("^",i,  self), cache=self._ex._cache)
   # unops
-  def __abs__ (self):        return H2OFrame._expr(expr=ExprNode("abs",self), cache=self._ex._cache)
-  def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
-  def __invert__(self): return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
+  def __abs__ (self):    return H2OFrame._expr(expr=ExprNode("abs",self), cache=self._ex._cache)
+  def __invert__(self):  return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
+  def __nonzero__(self): 
+    if self.nrow > 1 or self.ncol > 1: 
+      raise ValueError('This operation is not supported on an H2OFrame. Did you mean & (logical and), | (logical or), or ~ (logical not)?')
+    else:
+      return self.__len__()
 
 
   def mult(self, matrix):

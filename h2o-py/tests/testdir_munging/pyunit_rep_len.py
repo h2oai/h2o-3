@@ -15,7 +15,7 @@ def rep_len_check():
     # data is single column (vec)
     vec = iris[0].rep_len(length_out=301)
     assert vec.nrow == 301, "Expected an H2OVec with 301 rows, but got {0} rows".format(vec.nrow)
-    for r in range(len(vec)): assert vec[r,:] == vec[r % 150,:], "Expected {0}, but got {1}".format(vec[r % 150,:], vec[r,:])
+    for r in range(len(vec)): assert (vec[r,:] == vec[r % 150,:]).all(), "Expected {0}, but got {1}".format(vec[r % 150,:], vec[r,:])
 
     # data is frame
     fr = iris.rep_len(length_out=7)
