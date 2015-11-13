@@ -371,8 +371,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model.delete_and_lock(self());
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        boolean skipMissing = !_parms._impute_missing;
-        dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ skipMissing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+        dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -403,7 +402,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model.update(self());
 
           // Cannot calculate SVD if all rows contain missing value(s) and hence were skipped
-          if(skipMissing && gtsk._nobs == 0)
+          if(gtsk._nobs == 0)
             error("_train", "Every row in _train contains at least one missing value. Consider setting impute_missing = TRUE.");
           if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
