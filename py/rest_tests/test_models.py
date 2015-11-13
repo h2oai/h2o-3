@@ -3,6 +3,7 @@ import requests
 import h2o
 import h2o_test_utils
 from h2o_test_utils import ModelSpec
+from h2o_test_utils import GridSpec
 
 
 def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
@@ -35,6 +36,38 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         built_models[model_spec['dest_key']] = model
     
     
+
+    grids_to_build = [
+        GridSpec.for_dataset('kmeans_prostate_grid', 'kmeans', datasets['prostate_clustering'], { }, { 'k': [2, 3, 4] } ),
+    
+        GridSpec.for_dataset('glm_prostate_regression_grid', 'glm', datasets['prostate_regression'], {'family': 'gaussian'}, { 'lambda': [0.0001, 0.001, 0.01, 0.1] } ),
+    
+        GridSpec.for_dataset('glm_prostate_binomial_grid', 'glm', datasets['prostate_binomial'], {'family': 'binomial'}, { 'lambda': [0.0001, 0.001, 0.01, 0.1] }  ),
+        # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
+        # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
+    
+        GridSpec.for_dataset('deeplearning_prostate_regression_grid', 'deeplearning', datasets['prostate_regression'], { 'loss': 'Quadratic' }, { 'epochs': [0.1, 0.5, 1] } ),
+        # TODO: add toEnum of the response column and put back:    ModelSpec.for_dataset('deeplearning_prostate_binomial_grid', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': [20, 20], 'loss': 'CrossEntropy' } ),
+        GridSpec.for_dataset('deeplearning_airlines_binomial_grid', 'deeplearning', datasets['airlines_binomial'], { 'hidden': [10, 10], 'loss': 'CrossEntropy' }, { 'epochs': [0.1, 0.5, 1] }  ),
+        GridSpec.for_dataset('deeplearning_iris_multinomial_grid', 'deeplearning', datasets['iris_multinomial'], { 'loss': 'CrossEntropy' }, { 'epochs': [0.1, 0.5, 1] }  ),
+    
+        GridSpec.for_dataset('gbm_prostate_regression_grid', 'gbm', datasets['prostate_regression'], { 'distribution': 'gaussian' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] }  ),
+        # TODO: add toEnum of the response column and put back:        ModelSpec.for_dataset('gbm_prostate_binomial_grid', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'distribution': 'multinomial' } ),
+        GridSpec.for_dataset('gbm_airlines_binomial_grid', 'gbm', datasets['airlines_binomial'], { 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
+        GridSpec.for_dataset('gbm_iris_multinomial_grid', 'gbm', datasets['iris_multinomial'], { 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
+        # TODO: this should trigger a parameter validation error, but instead the non-grid ntrees silently overrides the drid values:        GridSpec.for_dataset('gbm_iris_multinomial_grid', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
+       ]
+    
+    for grid_spec in grids_to_build:
+        grid = grid_spec.build_and_validate_grid(a_node)
+
+        for model_key in grid['model_ids']:
+            model_key = model_key['name']
+            built_models[model_key] = a_node.models(key=model_key)
+
+
+
+
     #######################################
     # Test default parameters validation for each model builder
     #
