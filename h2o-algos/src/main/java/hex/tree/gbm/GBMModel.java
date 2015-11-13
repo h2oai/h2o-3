@@ -1,16 +1,9 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
-import hex.quantile.Quantile;
-import hex.quantile.QuantileModel;
 import hex.tree.SharedTreeModel;
-import water.DKV;
-import water.Job;
 import water.Key;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.Log;
-import water.util.SBPrintStream;
+import water.codegen.SBPrintStream;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 

@@ -4,7 +4,7 @@ import water.rapids.Env;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFun;
-import water.util.SB;
+import water.codegen.SB;
 
 import java.util.ArrayList;
 

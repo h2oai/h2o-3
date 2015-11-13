@@ -5,7 +5,7 @@ import java.util.Random;
 
 import water.*;
 import water.util.IcedBitSet;
-import water.util.SB;
+import water.codegen.SB;
 
 // --------------------------------------------------------------------------
 // Highly compressed tree encoding:

@@ -1,7 +1,7 @@
 package hex.tree;
 
 import water.util.IcedBitSet;
-import water.util.SB;
+import water.codegen.SB;
 
 /** A tree code generator producing Java code representation of the tree:
  *

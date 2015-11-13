@@ -2,6 +2,7 @@ package water.util;
 
 import sun.misc.Unsafe;
 import water.nbhm.UtilUnsafe;
+import water.codegen.SB;
 
 public abstract class AtomicUtils {
   // Atomically-updated float array

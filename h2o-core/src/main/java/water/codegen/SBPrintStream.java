@@ -1,13 +1,13 @@
-package water.util;
+package water.codegen;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 
-import water.exceptions.JCodeSB;
+import water.util.IcedBitSet;
 
 /**
- * A simple stream mimicing API of {@link SB}.
+ * A simple stream mimicking API of {@link SB}.
  */
 public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream> {
 
@@ -92,6 +92,11 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return this;
   }
 
+  public SBPrintStream p(Enum e) {
+    append(e.toString());
+    return this;
+  }
+
   public SBPrintStream i(int d) {
     for (int i = 0; i < d + _indent; i++) {
       p("  ");
@@ -142,6 +147,34 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return this;
   }
 
+  public SBPrintStream pj( long l ) {
+    append(l).append('L');
+    return this;
+  }
+
+  @Override
+  public SBPrintStream pj(double[] ary) {
+    return toJavaStringInit(ary);
+  }
+
+  @Override
+  public SBPrintStream pbraces(int dim) {
+    while (dim-- > 0) {
+      append("[]");
+    }
+    return this;
+  }
+
+  @Override
+  public SBPrintStream lineComment(String s) {
+    return p("// ").p(s);
+  }
+
+  @Override
+  public SBPrintStream blockComment(String s) {
+    return p("/* ").p(s).p(" */");
+  }
+
   @Override
   public SBPrintStream pj(String objectName, String fieldName) {
     append(objectName).append('.').append(fieldName);
@@ -177,7 +210,13 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   }
 
   public SBPrintStream nl() {
-    return p('\n');
+    return p('\n').i();
+  }
+
+  @Override
+  public SBPrintStream nl(int n) {
+    while (n-- > 0) nl();
+    return this;
   }
 
   // Convert a String[] into a valid Java String initializer

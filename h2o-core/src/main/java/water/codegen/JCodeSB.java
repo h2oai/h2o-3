@@ -1,4 +1,4 @@
-package water.exceptions;
+package water.codegen;
 
 import water.util.IcedBitSet;
 
@@ -30,6 +30,8 @@ public interface JCodeSB<T extends JCodeSB> {
 
   T pobj(Object s);
 
+  T p(Enum e);
+
   /** Increase indentation counter */
   T i(int d);
 
@@ -51,6 +53,20 @@ public interface JCodeSB<T extends JCodeSB> {
   /* Append Java string - escape all " and \ */
   T pj(String s);
 
+  /** Append Java Long */
+  T pj(long l);
+
+  /** Append Java array as new double[] { val1, val2, ...} */
+  T pj(double[] ary);
+
+  /** Print number of [] based on passed dimension */
+  T pbraces(int dim);
+
+  /* Append line comment */
+  T lineComment(String s);
+
+  T blockComment(String s);
+
   /** Append reference to object's field
    *
    * @param objectName  name of object
@@ -70,7 +86,11 @@ public interface JCodeSB<T extends JCodeSB> {
   // Copy indent from given string buffer
   T ci(JCodeSB sb);
 
+  /** Output new line */
   T nl();
+
+  /** Output number of new lines. */
+  T nl(int n);
 
   // Convert a String[] into a valid Java String initializer
   T toJavaStringInit(String[] ss);

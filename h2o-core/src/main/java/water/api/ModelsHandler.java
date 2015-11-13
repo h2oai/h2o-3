@@ -12,7 +12,7 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.FileUtils;
-import water.util.JCodeGen;
+import water.codegen.JCodeGen;
 
 public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,S>>
     extends Handler {
