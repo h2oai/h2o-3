@@ -1,12 +1,9 @@
-package water;
+package water.util;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.RandomUtils;
-import water.util.Timer;
+import water.TestUtil;
 
 import java.util.Random;
 
@@ -78,7 +75,7 @@ public class RNGTest extends TestUtil {
       else if (type == NumType.LONG) {
         for (int i = 0; i < n; ++i) N[r][(int)(Math.abs(rng.nextLong())/(Long.MAX_VALUE/k))]++;
       }
-      else throw H2O.unimpl();
+      else throw water.H2O.unimpl();
     }
     double time = timer.time();
 

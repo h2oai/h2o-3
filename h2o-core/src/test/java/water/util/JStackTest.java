@@ -1,7 +1,8 @@
-package water;
+package water.util;
 
 import org.junit.*;
-import water.util.JStackCollectorTask;
+import water.H2O;
+import water.TestUtil;
 
 public class JStackTest extends TestUtil {
   public JStackTest() { super(3); }
@@ -9,9 +10,9 @@ public class JStackTest extends TestUtil {
   @Test public void testJStack() {
     for( int i=0; i<10; i++ ) {
       JStackCollectorTask.DStackTrace traces[] = new water.util.JStackCollectorTask().doAllNodes()._traces;
-      Assert.assertEquals(traces.length,H2O.CLOUD.size());
-      for (int j=0; j<traces.length; ++j) {
-        Assert.assertTrue(traces[j] != null);
+      Assert.assertEquals(traces.length, H2O.CLOUD.size());
+      for( JStackCollectorTask.DStackTrace trace : traces ) {
+        Assert.assertTrue(trace != null);
       }
     }
   }

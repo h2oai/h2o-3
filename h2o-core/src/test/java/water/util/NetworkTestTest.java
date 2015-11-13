@@ -1,9 +1,11 @@
-package water;
+package water.util;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.H2O;
+import water.TestUtil;
 import water.init.NetworkTest;
 
 public class NetworkTestTest extends TestUtil {

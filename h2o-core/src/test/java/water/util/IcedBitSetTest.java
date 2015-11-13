@@ -1,10 +1,9 @@
-package water;
+package water.util;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.util.ArrayUtils;
-import water.util.IcedBitSet;
+import water.TestUtil;
 
 import java.util.Random;
 
@@ -119,9 +118,7 @@ public class IcedBitSetTest extends TestUtil {
     Assert.assertEquals(bs.size(), Math.max(32,len));
     check(bs, 0, idx);
 
-    for (int i = 0; i < idx.length; ++i) {
-      bs.clear(idx[i]);
-    }
+    for( Integer I : idx) bs.clear(I);
     check(bs, 0, new Integer[]{});
   }
 
@@ -142,9 +139,7 @@ public class IcedBitSetTest extends TestUtil {
     Assert.assertEquals(bs.size(), len);
     check(bs, bitoff, idx);
 
-    for (int i = 0; i < idx.length; ++i) {
-      bs.clear(idx[i]);
-    }
+    for( Integer I : idx ) bs.clear(I);
     check(bs, bitoff, new Integer[]{});
   }
 }
