@@ -2,7 +2,7 @@ package water.rapids;
 
 import water.H2O;
 import water.util.ArrayUtils;
-import water.util.SB;
+import water.codegen.SB;
 
 import java.util.ArrayList;
 import java.util.Arrays;

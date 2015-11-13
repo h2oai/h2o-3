@@ -15,14 +15,18 @@ import org.apache.commons.math3.distribution.TDistribution;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
-import water.exceptions.JCodeSB;
+import water.codegen.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
+
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.TwoDimTable;
 
 /**
  * Created by tomasnykodym on 8/27/14.

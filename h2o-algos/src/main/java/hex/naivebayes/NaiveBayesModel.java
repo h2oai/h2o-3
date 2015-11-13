@@ -11,9 +11,7 @@ import water.Key;
 import water.api.ModelSchema;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
-import water.exceptions.JCodeSB;
-import water.util.JCodeGen;
-import water.util.SBPrintStream;
+import water.codegen.*;
 import water.util.TwoDimTable;
 
 public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {

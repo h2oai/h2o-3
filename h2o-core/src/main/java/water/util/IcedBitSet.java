@@ -3,6 +3,7 @@ package water.util;
 import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
+import water.codegen.SB;
 
 /** BitSet - Iced, meaning cheaply serialized over the wire.
  *

@@ -6,7 +6,7 @@ import water.rapids.ASTExec;
 import water.rapids.ASTParameter;
 import water.rapids.Exec;
 import water.util.IcedHashMap;
-import water.util.SB;
+import water.codegen.SB;
 
 public abstract class Transform<T> extends Iced {
   protected final String _name;

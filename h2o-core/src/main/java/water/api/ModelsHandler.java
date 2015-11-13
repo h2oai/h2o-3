@@ -11,7 +11,7 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.FileUtils;
-import water.util.JCodeGen;
+import water.codegen.JCodeGen;
 
 class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
   /** Class which contains the internal representation of the models list and params. */

@@ -7,7 +7,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import water.util.Log;
-import water.util.SB;
+import water.codegen.SB;
 
 /**
  * The Thread that looks for TCP Cloud requests.

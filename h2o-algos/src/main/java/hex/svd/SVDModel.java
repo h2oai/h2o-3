@@ -9,8 +9,7 @@ import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.JCodeGen;
-import water.util.SBPrintStream;
+import water.codegen.*;
 
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {

@@ -2,14 +2,13 @@ package hex.tree;
 
 import hex.*;
 import water.*;
-import water.codegen.CodeGenerator;
-import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.codegen.*;
 import water.util.*;
 
 import java.lang.reflect.Field;

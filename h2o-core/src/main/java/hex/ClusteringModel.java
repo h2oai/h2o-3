@@ -1,8 +1,6 @@
 package hex;
 
 import water.Key;
-import water.util.SB;
-import water.util.TwoDimTable;
 
 /** Clustering Model
  *  Generates a 2-D array of clusters.
