@@ -1,8 +1,9 @@
-package water;
+package hex;
 
-import hex.CreateFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.MathUtils;
