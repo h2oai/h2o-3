@@ -9,8 +9,6 @@ import hex.ModelMetricsRegression.MetricBuilderRegression;
 import hex.ModelMetricsSupervised.MetricBuilderSupervised;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
-import water.DKV;
-import water.H2O;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
@@ -206,13 +204,13 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
     else return "explained dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,5);
   }
 
-  @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
+  @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) {
     GLMModel gm = (GLMModel)m;
     computeAIC();
-    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f);
+    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null);
     if (_parms._family == Family.binomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
-      metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), _aic, nullDOF(), resDOF());
+      metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), _aic, nullDOF(), resDOF(), metricsBinommial.gainsLift());
     } else if( _parms._family == Family.multinomial) {
       ModelMetricsMultinomial metricsMultinomial = (ModelMetricsMultinomial) metrics;
       metrics = new ModelMetricsMultinomialGLM(m, f, metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(), nullDeviance(), _aic, nullDOF(), resDOF());

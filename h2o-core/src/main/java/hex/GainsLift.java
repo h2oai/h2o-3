@@ -12,6 +12,8 @@ import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
 public class GainsLift extends Iced {
+  private static int GROUPS = 10;
+
   //INPUT
   public Vec labels;
   public Vec preds;
@@ -22,10 +24,6 @@ public class GainsLift extends Iced {
   public float avg_response_rate;
   public long[] positive_responses;
   TwoDimTable table;
-
-  // Private
-  private Frame frame;
-  private int groups = 10;
 
   protected void init() throws IllegalArgumentException {
     if( labels ==null || preds ==null )
@@ -48,6 +46,7 @@ public class GainsLift extends Iced {
     init();
     QuantileModel qm = null;
     Scope.enter();
+    Frame frame = null;
     try {
       labels = labels.toCategoricalVec();
       frame = new Frame(Key.make(), new String[]{"predicted"}, new Vec[]{preds});
@@ -64,9 +63,9 @@ public class GainsLift extends Iced {
       // compute thresholds for each quantile
       QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
       qp._train = frame._key;
-      qp._probs = new double[groups];
-      for (int i=0; i<groups; ++i) {
-        qp._probs[i] = (groups-i-1.) / groups;
+      qp._probs = new double[GROUPS];
+      for (int i=0; i< GROUPS; ++i) {
+        qp._probs[i] = (GROUPS -i-1.) / GROUPS;
       }
       if (weight!=null) throw H2O.unimpl("Quantile cannot handle weights yet.");
       Quantile q = new Quantile(qp);
@@ -93,17 +92,17 @@ public class GainsLift extends Iced {
     TwoDimTable table = new TwoDimTable(
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
-            new String[groups],
+            new String[GROUPS],
             new String[]{"Decile", "Response rate", "Lift", "Cumulative Lift"},
             new String[]{"int", "double", "double", "double"},
             new String[]{"%d", "%5f", "%5f", "%5f"},
             "");
     float cumulativelift = 0;
-    for (int i = 0; i < groups; ++i) {
+    for (int i = 0; i < GROUPS; ++i) {
       table.set(i,0,i+1);
       table.set(i,1,response_rates[i]);
       final float lift = response_rates[i]/ avg_response_rate;
-      cumulativelift += lift/groups;
+      cumulativelift += lift/ GROUPS;
       table.set(i,2,lift);
       table.set(i,3,cumulativelift);
     }
