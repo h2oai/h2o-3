@@ -93,10 +93,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
         AUC2 auc = new AUC2(_auc);
-        GainsLift gl = new GainsLift();
-        gl.preds = preds.lastVec();
-        gl.labels = f.vec(m._parms._response_column);
-        gl.exec();
+        GainsLift gl = null;
+        if (preds!=null) {
+          gl = new GainsLift();
+          gl.preds = preds.lastVec();
+          gl.labels = f.vec(m._parms._response_column);
+          gl.exec();
+        }
         return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc,  logloss, gl));
       } else {
         return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse,   null,  sigma, null, logloss, null));
