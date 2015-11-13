@@ -1066,8 +1066,11 @@ final public class H2O {
         if( pp == MIN_PRIORITY && set_t_prior ) t.setPriority(Thread.NORM_PRIORITY-1);
       }
       // Now run the task as planned
-      compute2();
+      if( this instanceof DTask ) icer().compute1(this);
+      else compute2();
     }
+
+    public void compute1() { compute2(); }
 
     /** Override to specify actual work to do */
     protected abstract void compute2();
