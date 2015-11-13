@@ -303,7 +303,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     // Unequal, linear interpolation
     double plo = (double)(row+0)/(nrows-1); // Note that row numbers are inclusive on the end point, means we need a -1
     double phi = (double)(row+1)/(nrows-1); // Passed in the row number for the low value, high is the next row, so +1
-    assert plo <= prob && prob < phi;
+    assert plo <= prob && prob <= phi;
     return lo + (hi-lo)*(prob-plo)/(phi-plo); // Classic linear interpolation
   }
 }
