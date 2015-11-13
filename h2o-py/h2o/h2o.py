@@ -1886,10 +1886,10 @@ class H2ODisplay:
   def _html_row(row, bold=False):
     res = "<tr>{}</tr>"
     entry = "<td><b>{}</b></td>"if bold else "<td>{}</td>"
-    #format full floating point numbers to only 1 decimal place
+    #format full floating point numbers to 7 decimal places
     entries = "\n".join([entry.format(str(r))
                          if len(str(r)) < 10 or not H2ODisplay._is_number(str(r))
-                         else entry.format("{0:.1f}".format(float(str(r)))) for r in row])
+                         else entry.format("{0:.7f}".format(float(str(r)))) for r in row])
     return res.format(entries)
 
   @staticmethod
