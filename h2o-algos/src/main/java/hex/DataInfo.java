@@ -599,9 +599,11 @@ public class DataInfo extends Keyed {
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
       if (chunks[i].isNA(rid)) {
-          if (_imputeMissing)
-            row.binIds[nbins++] = _catModes[i];
-          else   // TODO: What if missingBucket = false?
+          if (_imputeMissing) {
+            int c = getCategoricalId(i,_catModes[i]);
+            if(c >= 0)
+              row.binIds[nbins++] = c;
+          } else   // TODO: What if missingBucket = false?
             row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
       } else {
         int c = getCategoricalId(i,(int)chunks[i].at8(rid));
