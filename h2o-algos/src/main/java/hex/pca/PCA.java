@@ -217,7 +217,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model.delete_and_lock(_key);
 
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
-          dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+          boolean skipMissing = !_parms._impute_missing;
+          dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ skipMissing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
           
           // Calculate and save Gram matrix of training data
@@ -227,6 +228,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
           model._output._nobs = gtsk._nobs;
+
+          // Cannot calculate SVD if all rows contain missing value(s) and hence were skipped
+          if(skipMissing && gtsk._nobs == 0)
+            error("_train", "Every row in _train contains at least one missing value. Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead.");
+          if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
           // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm
