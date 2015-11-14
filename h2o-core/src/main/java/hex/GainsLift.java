@@ -11,6 +11,8 @@ import water.util.MathUtils;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
+
 public class GainsLift extends Iced {
   private static int GROUPS = 10;
 
@@ -44,7 +46,6 @@ public class GainsLift extends Iced {
 
   protected void exec() {
     init();
-    QuantileModel qm = null;
     Scope.enter();
     Frame frame = null;
     try {
@@ -60,17 +61,17 @@ public class GainsLift extends Iced {
           Scope.track(weight._key);
         }
       }
-      // compute thresholds for each quantile
-      QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
-      qp._train = frame._key;
-      qp._probs = new double[GROUPS];
-      for (int i=0; i< GROUPS; ++i) {
-        qp._probs[i] = (GROUPS -i-1.) / GROUPS;
-      }
-      if (weight!=null) throw H2O.unimpl("Quantile cannot handle weights yet.");
-      Quantile q = new Quantile(qp);
-      qm = q.trainModel().get();
-      GainsTask gt = new GainsTask(qm._output._quantiles[0], labels.length());
+      //get specific pre-computed quantiles (deciles) from rollupstats
+      //First check that rollups still uses the convention we rely on (hardcoded indexing below)
+      assert(Arrays.equals(Vec.PERCENTILES,
+              //             0      1    2    3    4     5        6          7    8   9   10          11    12   13   14    15, 16
+              new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
+      //HACK: hardcoded quantiles for simplicity (0.9,0.8,...,0.1,0)
+      double[] rq = preds.pctiles();
+      double[] quantiles = new double[]{
+              rq[14], rq[13], rq[11], rq[9], rq[8], rq[7], rq[5], rq[3], rq[2], 0 /*ignored*/
+      };
+      GainsTask gt = new GainsTask(quantiles, labels.length());
       if (weight != null)
         gt.doAll(labels, preds, weight);
       else
@@ -80,7 +81,6 @@ public class GainsLift extends Iced {
       avg_response_rate = gt.avg_response_rate();
       positive_responses = gt.responses();
     } finally {       // Delete adaptation vectors
-      if (qm!=null) qm.remove();
       if (frame != null) DKV.remove(frame._key); //just remove the header
       Scope.exit();
     }
