@@ -18,7 +18,7 @@ import java.util.Properties;
  *  running model-building work. */
 public class APIThrPriorTest extends TestUtil {
   @BeforeClass static public void setup() { 
-    stall_till_cloudsize(5);
+    stall_till_cloudsize(1);
     H2O.finalizeRegistration();
   }
 
@@ -59,6 +59,7 @@ public class APIThrPriorTest extends TestUtil {
         assert blder._state == 1;
       }
       int driver_prior = blder._driver_priority;
+      Properties urlparms;
   
       // Now that the builder is blocked at some priority, do some GUI work which
       // needs to be at a higher priority.  It comes in on a non-FJ thread
@@ -67,32 +68,68 @@ public class APIThrPriorTest extends TestUtil {
       Assert.assertEquals(0,H2O.LOW_PRIORITY_API_WORK);
       Assert.assertNull(H2O.LOW_PRIORITY_API_WORK_CLASS);
       H2O.LOW_PRIORITY_API_WORK = driver_prior+1;
-  
-      serve("/",null);
-      serve("/3/Cloud",null);
-      serve("/junk",null);
-      serve("/HTTP404", null);
-      Properties urlparms = new Properties();
-      urlparms.setProperty("src","./smalldata/iris");
-      serve("/3/Typeahead/files", urlparms);
-  
-      serve("/3/Frames", null);
-  
-      serve("/3/Frames/iris.hex", null); // Rollups already done at parse, but gets ChunkSummary
 
+      // Many URLs behave.
+      // Broken hack URLs:
+      serve("/",null,301);
+      serve("/junk",null,404);
+      serve("/HTTP404", null,404);
+      // Basic: is H2O up?
+      serve("/3/Cloud",null,200);
+      serve("/3/About", null,200);
+
+      // What is H2O doing?
+      urlparms = new Properties();
+      urlparms.setProperty("depth","10");
+      serve("/3/Profiler", urlparms,200);
+      serve("/3/JStack", null,200);
+      serve("/3/KillMinus3", null,200);
+      serve("/3/Timeline", null,200);
+      serve("/3/Jobs", null,200);
+      serve("/3/WaterMeterCpuTicks/0", null,200);
+      serve("/3/WaterMeterIo", null,200);
+      serve("/3/Logs/download", null,200);
+      serve("/3/NetworkTest", null,200);
+
+      // Rollup stats behave
       final Key rskey = vec.rollupStatsKey();
       Assert.assertNull(DKV.get(rskey)); // Rollups on my zeros not computed yet
       vec.sigma();
       Assert.assertNotNull(DKV.get(rskey)); // Rollups on my zeros not computed yet
+      serve("/3/Frames/iris.hex", null,200); // Rollups already done at parse, but gets ChunkSummary
 
+      // Convenience; inspection of simple stuff
+      urlparms = new Properties();
+      urlparms.setProperty("src","./smalldata/iris");
+      serve("/3/Typeahead/files", urlparms,200);
+      urlparms = new Properties();
+      urlparms.setProperty("key","iris.hex");
+      urlparms.setProperty("row","0");
+      urlparms.setProperty("match","foo");
+      serve("/3/Find", urlparms,200);
+      serve("/3/Metadata/endpoints", null,200);
+      serve("/3/Frames", null,200);
+      serve("/3/Models", null,200);
+      serve("/3/ModelMetrics", null,200);
+      serve("/3/NodePersistentStorage/configured", null,200);
 
+      // Recovery
+      //serve("/3/Shutdown", null,200); // OOPS!  Don't really want to run this one, unless we're all done with testing
+      serve("/3/DKV", null,200,"DELETE"); // delete must happen after rollups above!
+      serve("/3/LogAndEcho", null,200,"POST");
+      serve("/3/InitID", null,200);
+      serve("/3/GarbageCollect", null,200,"POST");
+
+      // Turn off debug tracking
       H2O.LOW_PRIORITY_API_WORK = 0;
       H2O.LOW_PRIORITY_API_WORK_CLASS = null;
-  
       // Allow the builder to complete.
       synchronized(blder) { blder._state = 2; blder.notify(); }
       job.get();                  // Block for builder to complete
     } finally {
+      // Turn off debug tracking
+      H2O.LOW_PRIORITY_API_WORK = 0;
+      H2O.LOW_PRIORITY_API_WORK_CLASS = null;
       if( blder != null )
         synchronized(blder) { blder._state = 2; blder.notify(); }
       if( job != null ) job.remove();
@@ -101,12 +138,16 @@ public class APIThrPriorTest extends TestUtil {
     }
   }
 
-  private void serve(String s, Properties parms) throws IOException {
-    NanoHTTPD.Response r = RequestServer.SERVER.serve(s,"GET",null,parms==null?new Properties():parms);
+  private void serve(String s, Properties parms, int status) throws IOException {
+    serve(s,parms,status,"GET");
+  }
+  private void serve(String s, Properties parms, int status, String method) throws IOException {
+    NanoHTTPD.Response r = RequestServer.SERVER.serve(s,method,null,parms==null?new Properties():parms);
     int n = r.data.available();
     byte[] bs = new byte[n];
     r.data.read(bs,0,n);
     String ss = new String(bs); // Computed to help with debugging
+    Assert.assertEquals(status,(int)Integer.parseInt(r.status.split(" ")[0]));
     Assert.assertNull("" + s, H2O.LOW_PRIORITY_API_WORK_CLASS);
   }
 }
@@ -154,3 +195,7 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
     }
   }
 }
+
+// Need this class, so a /3/Jobs can return the JSON'd version of it
+class BogusV3 extends ModelBuilderSchema<Bogus,BogusV3,ModelParametersSchema> {}
+
