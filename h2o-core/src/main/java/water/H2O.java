@@ -195,7 +195,10 @@ final public class H2O {
     /** -baseport=####; Port to start upward searching from. */
     public int baseport = 54321;
 
-    /** -port=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
+    public String web_ip = null;
+
+    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
     public String ip;
 
     /** -network=network; Network specification for acceptable interfaces to bind to */
@@ -385,6 +388,10 @@ final public class H2O {
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
         ARGS.ip = args[i];
+      }
+      else if (s.matches("web_ip")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.web_ip = args[i];
       }
       else if (s.matches("network")) {
         i = s.incrementAndCheck(i, args);
@@ -1153,8 +1160,11 @@ final public class H2O {
   public static InetAddress      CLOUD_MULTICAST_GROUP;
   public static int              CLOUD_MULTICAST_PORT ;
 
-  // Myself, as a Node in the Cloud
+  /** Myself, as a Node in the Cloud */
   public static H2ONode SELF = null;
+  /** IP address of this node used for communication
+   * with other nodes.
+   */
   public static InetAddress SELF_ADDRESS;
 
   // Place to store temp/swap files
