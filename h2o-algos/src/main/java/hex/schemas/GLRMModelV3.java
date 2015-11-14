@@ -9,6 +9,9 @@ public class GLRMModelV3 extends ModelSchema<GLRMModel, GLRMModelV3, GLRMModel.G
     @API(help = "Iterations executed")
     public int iterations;
 
+    @API(help = "Updates executed")
+    public int updates;
+
     @API(help = "Objective value")
     public double objective;
 

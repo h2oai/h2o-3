@@ -39,10 +39,12 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Optional parameters
     public int _max_iterations = 1000;            // Max iterations
+    public int _max_updates = 2*_max_iterations;  // Max number of updates (X or Y)
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
-    // public Key<Frame> _representation_key;               // Key to save X matrix
+
+    // public Key<Frame> _representation_key;     // Key to save X matrix
     public String _representation_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _impute_original = false;      // Reconstruct original training data by reversing _transform?
@@ -425,6 +427,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   public static class GLRMOutput extends Model.Output {
     // Iterations executed
     public int _iterations;
+
+    // Updates executed
+    public int _updates;
 
     // Current value of objective function
     public double _objective;
