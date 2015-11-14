@@ -1489,8 +1489,8 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
   return unsupervised(parms)
 
 
-def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
-         ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
+def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,max_updates=None,transform=None,
+         seed=None,ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
          user_y=None,user_x=None,expand_user_y=None,impute_original=None,recover_svd=None):
   """
@@ -1504,6 +1504,9 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   max_iterations : int
     The maximum number of iterations to run the optimization loop. Each iteration consists of an update of the X matrix, followed by an
     update of the Y matrix.
+  max_updates : int
+    The maximum number of updates of X or Y to run. Each update consists of an update of either the X matrix or the Y matrix. For example, 
+    if max_updates = 1 and max_iterations = 1, the algorithm will initialize X and Y, update X once, and terminate without updating Y.
   transform : str
     A character string that indicates how the training data should be transformed before running GLRM.
     Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for

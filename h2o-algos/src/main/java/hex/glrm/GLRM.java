@@ -633,6 +633,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         double step = _parms._init_step_size;   // Initial step size
         int steps_in_row = 0;                   // Keep track of number of steps taken that decrease objective
+        System.out.println(fr.toString());
 
         while (!isDone(model, steps_in_row, step)) {
           update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of alternating minimization");   // One unit of work
@@ -687,6 +688,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // 4) Save solution to model output
         // Save X frame for user reference later
+        System.out.println(fr.toString());
         Vec[] xvecs = new Vec[_ncolX];
         String[] xnames = new String[_ncolX];
         if(overwriteX) {
@@ -983,8 +985,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Random rand = RandomUtils.getRNG(0);
 
       for(int row = 0; row < chks[0]._len; row++) {
-        double xrow[] = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
-        rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
+        rand.setSeed(_parms._seed + chks[0].start() + row);   // global row ID determines the seed
+        double xrow[] = ArrayUtils.gaussianVector(_ncolX, rand);
         xrow = _parms.project_x(xrow, rand);
         for(int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);
