@@ -633,7 +633,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         double step = _parms._init_step_size;   // Initial step size
         int steps_in_row = 0;                   // Keep track of number of steps taken that decrease objective
-        System.out.println(fr.toString());
 
         while (!isDone(model, steps_in_row, step)) {
           update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of alternating minimization");   // One unit of work
@@ -688,7 +687,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // 4) Save solution to model output
         // Save X frame for user reference later
-        System.out.println(fr.toString());
         Vec[] xvecs = new Vec[_ncolX];
         String[] xnames = new String[_ncolX];
         if(overwriteX) {
