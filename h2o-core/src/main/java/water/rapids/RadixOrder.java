@@ -377,7 +377,13 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     _keySize = keySize;
     //_nGroup = nGroup;
     _MSBvalue = MSBvalue;
+    _priority = nextThrPriority();  // bump locally AND ship this priority to the worker where the priority() getter will query it
   }
+
+  // priority bump needed now that RadixOrder is a CountedCompleter so that left and right index can run in parallel
+  // if a bump is needed, so far it's been needed at the low level. TODO: ask Cliff why we have to do this manually.
+  @Override public byte priority() { return _priority; }
+  private byte _priority;
 
   @Override protected void compute2() {
     keytmp = new byte[_keySize];
@@ -706,20 +712,30 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   }
 }
 
-public class RadixOrder {
+public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counted completer so that left and right index can run at the same time
   int _biggestBit[];
   int _bytesUsed[];
   //long[][][] _o;
   //byte[][][] _x;
+  Frame _DF;
+  boolean _isLeft;
+  int _whichCols[];
 
   RadixOrder(Frame DF, boolean isLeft, int whichCols[]) {
+    _DF = DF;
+    _isLeft = isLeft;
+    _whichCols = whichCols;
+  }
+
+  @Override protected void compute2() {
+
     //System.out.println("Calling RadixCount ...");
     long t0 = System.nanoTime();
-    _biggestBit = new int[whichCols.length];   // currently only biggestBit[0] is used
-    _bytesUsed = new int[whichCols.length];
+    _biggestBit = new int[_whichCols.length];   // currently only biggestBit[0] is used
+    _bytesUsed = new int[_whichCols.length];
     //long colMin[] = new long[whichCols.length];
-    for (int i = 0; i < whichCols.length; i++) {
-      Vec col = DF.vec(whichCols[i]);
+    for (int i = 0; i < _whichCols.length; i++) {
+      Vec col = _DF.vec(_whichCols[i]);
       //long range = (long) (col.max() - col.min());
       //assert range >= 1;   // otherwise log(0)==-Inf next line
       _biggestBit[i] = 1 + (int) Math.floor(Math.log(col.max()) / Math.log(2));   // number of bits starting from 1 easier to think about (for me)
@@ -733,7 +749,7 @@ public class RadixOrder {
     System.out.println("Time to use rollup stats to determine biggestBit: " + (System.nanoTime() - t0) / 1e9);
 
     t0 = System.nanoTime();
-    new RadixCount(isLeft, _biggestBit[0], whichCols[0]).doAll(DF.vec(whichCols[0]));
+    new RadixCount(_isLeft, _biggestBit[0], _whichCols[0]).doAll(_DF.vec(_whichCols[0]));
     System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + (System.nanoTime() - t0) / 1e9);
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
@@ -747,7 +763,7 @@ public class RadixOrder {
     // from first on that node to second on that node.  // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
     t0 = System.nanoTime();
     Key linkTwoMRTask = Key.make();
-    SplitByMSBLocal tmp = new SplitByMSBLocal(isLeft, _biggestBit[0], keySize, batchSize, _bytesUsed, whichCols, linkTwoMRTask).doAll(DF.vecs(whichCols));   // postLocal needs DKV.put()
+    SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _biggestBit[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
     System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + (System.nanoTime() - t0) / 1e9);
     System.out.print(tmp.profString());
 
@@ -763,7 +779,7 @@ public class RadixOrder {
     t0 = System.nanoTime();
     for (int i = 0; i < 256; i++) {
       //System.out.print(i+" ");
-      radixOrders[i] = new RPC<>(SplitByMSBLocal.ownerOfMSB(i), new SingleThreadRadixOrder(DF, isLeft, batchSize, keySize, /*nGroup,*/ i)).call();
+      radixOrders[i] = new RPC<>(SplitByMSBLocal.ownerOfMSB(i), new SingleThreadRadixOrder(_DF, _isLeft, batchSize, keySize, /*nGroup,*/ i)).call();
     }
     System.out.println("took : " + (System.nanoTime() - t0) / 1e9);
 
@@ -777,6 +793,8 @@ public class RadixOrder {
       i++;
     }
     System.out.println("took " + (System.nanoTime() - t0) / 1e9);
+
+    tryComplete();
 
     // serial, do one at a time
 //    for (int i = 0; i < 256; i++) {

@@ -11,6 +11,7 @@ import water.util.MRUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Future;
 
 public class Merge {
 
@@ -35,18 +36,34 @@ public class Merge {
   }
 
   // single-threaded driver logic
-  static Frame merge(Frame leftFrame, Frame rightFrame, int leftCols[], int rightCols[], boolean allLeft) {
+  static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft) {
 
     // each of those launches an MRTask
     System.out.println("\nCreating left index ...");
     long t0 = System.nanoTime();
-    RadixOrder leftIndex = new RadixOrder(leftFrame, /*left=*/true, leftCols);
+    RadixOrder leftIndex;
+    H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols));
+    left.join(); // Running 3 consecutive times on an idle cluster showed that running left and right in parallel was
+                 // a little slower (97s) than one by one (89s).  TODO: retest in future
     System.out.println("***\n*** Creating left index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
 
     System.out.println("\nCreating right index ...");
     t0 = System.nanoTime();
-    RadixOrder rightIndex = new RadixOrder(rightFrame, /*left=*/false, rightCols);
+    RadixOrder rightIndex;
+    H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols));
+    right.join();
     System.out.println("***\n*** Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
+
+    // TODO: start merging before all indexes had been created. Use callback?
+
+    // TODO: Thomas showed this method which takes 'true' argument to H2OCountedCompleter directly.  Not sure how that
+    // relates to new of RadixOrder which itself extends H2OCountedCompleter.  That true argument isn't available that way.
+    // H2O.submitTask(new H2O.H2OCountedCompleter(true) {   // true just to bump priority and prevent deadlock (no different to speed, in theory - Thomas) in case this Merge ever called from within another counted completer
+    // @Override
+    // protected void compute2() {
+    //   RadixOrder.compute(leftFrame, /*left=*/true, leftCols);  // when RadixOrder had just a static compute() method
+    //   tryComplete();
+    // }
 
     // Align MSB locations between the two keys
     // If the 1st join column has range < 256 (e.g. test cases) then <=8 bits are used and there's a floor of 8 to the shift.
