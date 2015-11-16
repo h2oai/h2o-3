@@ -95,6 +95,14 @@ public class ASTMerge extends ASTPrim {
         id_maps[i] = CategoricalWrappedVec.computeMap(hashed.vecs()[i].domain(),lv.domain());
     }
 
+    // GC now to sync nodes and get them to use young gen for the working memory. This helps get stable
+    // repeatable timings.  Otherwise full GCs can cause blocks. Adding System.gc() here suggested by Cliff
+    // during F2F pair-programming and it for sure worked.
+    // TODO - would be better at the end to clean up, but there are several exit paths here.
+    new MRTask() {
+      @Override public void setupLocal() { System.gc(); }
+    }.doAllNodes();
+
     if (method.equals("radix")) {
       return sortingMerge(l,r,allLeft,allRite,ncols,id_maps);
     }
