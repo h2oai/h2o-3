@@ -42,8 +42,8 @@ check.deeplearning_anomaly <- function() {
   }
   plotDigits <- function(data, rec_error, rows) {
     row_idx <- order(rec_error[,1],decreasing=F)[rows]
-    my_rec_error <- rec_error[row_idx,]
-    my_data <- as.matrix(as.data.frame(data[row_idx,]))
+    my_rec_error <- rec_error[order(row_idx),]
+    my_data <- as.matrix(as.data.frame(data[order(row_idx),]))
     plotDigit(my_data, my_rec_error)
   }
   
