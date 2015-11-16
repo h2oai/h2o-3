@@ -86,7 +86,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
     // Log.info("Getting RadixCounts for column " + _col[0] + " from myself (node " + H2O.SELF + ") for Frame " + _frameKey );
     // Log.info("Getting");
-    _counts = ((RadixCount.Long2DArray)DKV.getGet(RadixCount.getKey(_isLeft, _col[0], H2O.SELF)))._val;   // get the sparse spine for this node, created and DKV-put above
+    Key k = RadixCount.getKey(_isLeft, _col[0], H2O.SELF);
+    _counts = ((RadixCount.Long2DArray)DKV.getGet(k))._val;   // get the sparse spine for this node, created and DKV-put above
+    DKV.remove(k);
     // try {
     //   Thread.sleep(10000);
     // } catch (InterruptedException e) {
@@ -388,14 +390,17 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   @Override protected void compute2() {
     keytmp = new byte[_keySize];
     counts = new long[_keySize][256];
+    Key k;
 
     SplitByMSBLocal.MSBNodeHeader[] MSBnodeHeader = new SplitByMSBLocal.MSBNodeHeader[H2O.CLOUD.size()];
     _numRows =0;
     for (int n=0; n<H2O.CLOUD.size(); n++) {
       // Log.info("Getting MSB " + MSBvalue + " Node Header from node " + n + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
       // Log.info("Getting");
-      MSBnodeHeader[n] = DKV.getGet(SplitByMSBLocal.getMSBNodeHeaderKey(_isLeft, _MSBvalue, n));
+      k = SplitByMSBLocal.getMSBNodeHeaderKey(_isLeft, _MSBvalue, n);
+      MSBnodeHeader[n] = DKV.getGet(k);
       if (MSBnodeHeader[n]==null) continue;
+      DKV.remove(k);
       _numRows += ArrayUtils.sum(MSBnodeHeader[n]._MSBnodeChunkCounts);   // This numRows is split into nbatch batches on that node.
       // This header has the counts of each chunk (the ordered chunk numbers on that node)
     }
@@ -419,9 +424,10 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     for (int node=0; node<H2O.CLOUD.size(); node++) {  //TO DO: why is this serial?  Relying on
       // Log.info("Getting OX MSB " + MSBvalue + " batch 0 from node " + node + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
       // Log.info("Getting");
-      Key k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0);
+      k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0);
       assert k.home();
       ox[node] = DKV.getGet(k);   // get the first batch for each node for this MSB
+      DKV.remove(k);
     }
     int oxOffset[] = new int[H2O.CLOUD.size()];
     int oxChunkIdx[] = new int[H2O.CLOUD.size()];  // that node has n chunks and which of those are we currently on?
@@ -447,10 +453,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
         oxOffset[fromNode] += thisCopy; sourceBatchRemaining -= thisCopy;
         targetOffset += thisCopy; targetBatchRemaining -= thisCopy;
         if (sourceBatchRemaining == 0) {
-          // delete and free node's OX batch. Have moved all its contents into _o and _x. Remove so as to avoid mistakenly picking it up in future and to free up memory as early as possible.
-          DKV.remove(SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, oxBatchNum[fromNode]));
-          // fetched the next batch :
-          ox[fromNode] = DKV.getGet(SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode]));
+          // fetch the next batch :
+          k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode]);
+          assert k.home();
+          ox[fromNode] = DKV.getGet(k);
+          DKV.remove(k);
           if (ox[fromNode] == null) {
             // if the last chunksworth fills a batchsize exactly, the getGet above will have returned null.
             // TODO: Check will Cliff that a known fetch of a non-existent key is ok e.g. won't cause a delay/block? If ok, leave as good check.
@@ -465,20 +472,6 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
           targetOffset = 0;
           targetBatchRemaining = _batchSize;
         }
-      }
-    }
-    // Now remove the last batch on each node from DKV.  Have used it all now (moved into _o and _x). Remove as early as possible to save memory.
-    for (int node = 0; node < H2O.CLOUD.size(); node++) {
-      if (MSBnodeHeader[node] == null) continue;   // no contributions from that node
-      long nodeNumRows = ArrayUtils.sum(MSBnodeHeader[node]._MSBnodeChunkCounts);
-      assert nodeNumRows >= 1;
-      if (nodeNumRows % _batchSize == 0) {
-        // already should have been removed above in 'if (sourceBatchRemaining == 0)'
-        assert ox[node] == null;
-      } else {
-        assert ox[node] != null;
-        assert oxBatchNum[node] == (nodeNumRows-1) / _batchSize;
-        DKV.remove(SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, oxBatchNum[node]));
       }
     }
 

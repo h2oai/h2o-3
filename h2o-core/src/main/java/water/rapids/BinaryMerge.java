@@ -134,8 +134,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
 
   private int keycmp(byte x[][], long xi, byte y[][], long yi) {   // TO DO - faster way closer to CPU like batches of long compare, maybe.
-    long t0 = System.nanoTime();
-    _timings[12] += 1;
+    //long t0 = System.nanoTime();
+    //_timings[12] += 1;
     byte xbatch[] = x[(int)(xi / _leftBatchSize)];
     byte ybatch[] = y[(int)(yi / _rightBatchSize)];
     int xoff = (int)(xi % _leftBatchSize) * _leftKeySize;
@@ -152,14 +152,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         while (xlen>ylen && xbatch[xoff]==0) { xoff++; xlen--; }
         while (ylen>xlen && ybatch[yoff]==0) { yoff++; ylen--; }
         if (xlen!=ylen) {
-          _timings[13] += (System.nanoTime() - t0)/1e9;
+          //_timings[13] += (System.nanoTime() - t0)/1e9;
           return (xlen - ylen);
         }
       }
       while (xlen>0 && (xByte=xbatch[xoff])==(yByte=ybatch[yoff])) { xoff++; yoff++; xlen--; }
       i++;
     }
-    _timings[13] += (System.nanoTime() - t0)/1e9;
+    //_timings[13] += (System.nanoTime() - t0)/1e9;
     return (xByte & 0xFF) - (yByte & 0xFF);
     // Same return value as strcmp in C. <0 => xi<yi
   }

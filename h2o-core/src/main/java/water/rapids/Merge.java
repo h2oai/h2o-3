@@ -13,11 +13,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
+
 public class Merge {
 
   // Hack to cleanup helpers made during merge
   // TODO: Keep radix order (Keys) around as hidden objects for a given frame and key column
-  static void cleanUp() {
+  // TODO: delete as we now delete keys on the fly as soon as we getGet them ...
+  /*static void cleanUp() {
     new MRTask() {
       protected void setupLocal() {
         Object [] kvs = H2O.STORE.raw_array();
@@ -33,7 +36,7 @@ public class Merge {
         }
       }
     }.doAllNodes();
-  }
+  }*/
 
   // single-threaded driver logic
   static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft) {
@@ -87,6 +90,8 @@ public class Merge {
     //   We hope most common case. Common width keys (e.g. ids, codes, enums, integers, etc) both sides over similar range
     //   Left msb will match exactly to right msb one-to-one, without any alignment needed.
 
+    // TODO we don't need to create the full index for the MSBs that we know won't match
+
     long ansN = 0;
     int numChunks = 0;
     System.out.print("Making BinaryMerge RPC calls ... ");
@@ -101,7 +106,7 @@ public class Merge {
 //          long rightLen = rightIndex._MSBhist[j];
 //          if (rightLen > 0) {
         //System.out.print(i + " left " + lenx + " => right " + leny);
-        // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node.
+        // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node
         //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
 //        H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
         H2ONode rightNode = SplitByMSBLocal.ownerOfMSB(rightMSB);  // TODO: ensure that that owner has that part of the index locally.
@@ -117,15 +122,17 @@ public class Merge {
                 )
         );
         bmList.add(bm);
+        System.out.print(rightNode.index() + " "); // So we can make sure distributed across nodes.
         //System.out.println("Made RPC to node " + rightNode.index() + " for MSB" + leftMSB + "/" + rightMSB);
       }
     }
-    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("... took: " + (System.nanoTime() - t0) / 1e9);
 
+    int queueSize = Math.max(H2O.CLOUD.size() * 20, 40);  // TODO: remove and let thread pool take care of it once GC issue alleviated
     t0 = System.nanoTime();
-    System.out.print("Sending BinaryMerge async RPC calls in a queue ... ");
+    System.out.print("Sending BinaryMerge async RPC calls in a queue of " + queueSize + " ... ");
     // need to do our own queue it seems, otherwise floods the cluster
-    int queueSize = Math.max(H2O.CLOUD.size() * 10, 40);
+
     //int nbatch = 1+ (bmList.size()-1)/queueSize;
     //int lastSize = bmList.size() - (nbatch-1) * queueSize;
     //int bmCount = 0, batchStart = 0;
@@ -174,6 +181,26 @@ public class Merge {
       if (doneInSweep == 0) waitMS = Math.min(1000, waitMS*2);  // if last sweep caught none, then double wait time to avoid cost of sweeping
     }
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+
+
+    System.out.print("Removing DKV keys of left and right index.  ... ");
+    // TODO: In future we won't delete but rather persist them as index on the table
+    // Explicitly deleting here (rather than Arno's cleanUp) to reveal if we're not removing keys early enough elsewhere
+    t0 = System.nanoTime();
+    for (int msb=0; msb<256; msb++) {
+      for (int isLeft=0; isLeft<2; isLeft++) {
+        Key k = getSortedOXHeaderKey(isLeft==0 ? false : true, msb);
+        SingleThreadRadixOrder.OXHeader oxheader = DKV.getGet(k);
+        DKV.remove(k);
+        if (oxheader != null) {
+          for (int b=0; b<oxheader._nBatch; ++b) {
+            k = SplitByMSBLocal.getSortedOXbatchKey(isLeft==0 ? false : true, msb, b);
+            DKV.remove(k);
+          }
+        }
+      }
+    }
+    System.out.println("took: " + (System.nanoTime() - t0)/1e9);
 
     /*System.out.println("Waiting for BinaryMerge RPCs to finish ... ");
     t0 = System.nanoTime();
@@ -260,7 +287,7 @@ public class Merge {
     ff.doAll(fr);
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
-    Merge.cleanUp();
+    //Merge.cleanUp();
     return fr;
   }
 

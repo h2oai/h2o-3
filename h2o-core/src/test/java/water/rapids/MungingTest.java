@@ -79,7 +79,7 @@ public class MungingTest extends TestUtil {
     fr2.delete();
     leftFrame.delete();
     rightFrame.delete();
-    Merge.cleanUp();
+    //Merge.cleanUp();
   }
 
 
