@@ -33,7 +33,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       p._train = frame._key;
       p._response_column = "CAPSULE"; // last column is the response
       p._activation = DeepLearningParameters.Activation.Rectifier;
-      p._epochs = 8;
+      p._epochs = 4;
       p._train_samples_per_iteration = -1;
       p._score_duty_cycle = 1;
       p._score_interval = 0;
