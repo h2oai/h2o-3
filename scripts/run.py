@@ -223,7 +223,7 @@ class H2OCloudNode:
             main_class = "water.H2OClientApp"
         else:
             main_class = "water.H2OApp"
-        if "JAVA_HOME" in os.environ:
+        if "JAVA_HOME" in os.environ and not sys.pqlatform == "win32":
             java = os.environ["JAVA_HOME"] + "/bin/java"
         else:
             java = "java"
