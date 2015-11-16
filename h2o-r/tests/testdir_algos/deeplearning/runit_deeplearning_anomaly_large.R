@@ -14,7 +14,7 @@ check.deeplearning_anomaly <- function() {
     print(train_hex)
   } else {
     library(h2o)
-    homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
+    homedir <- paste0(path.expand("~"),"/h2o-3/") #modify if needed
     train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = F, sep = ',', destination_frame = 'train.hex')
     test_hex  <- h2o.importFile(path = paste0(homedir,TEST ), header = F, sep = ',', destination_frame = 'test.hex' )
   }
@@ -41,9 +41,9 @@ check.deeplearning_anomaly <- function() {
     }
   }
   plotDigits <- function(data, rec_error, rows) {
-    row_idx <- order(rec_error[,1],decreasing=F)[rows]
-    my_rec_error <- rec_error[order(row_idx),]
-    my_data <- as.matrix(as.data.frame(data[order(row_idx),]))
+    row_idx <- sort(order(rec_error[,1],decreasing=F)[rows])
+    my_rec_error <- rec_error[row_idx,]
+    my_data <- as.matrix(as.data.frame(data[row_idx,]))
     plotDigit(my_data, my_rec_error)
   }
   
