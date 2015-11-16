@@ -411,19 +411,29 @@ def log_and_echo(message):
 
 
 def remove(x):
-  """Remove object from H2O.
+  """Remove object(s) from H2O.
 
   Parameters
   ----------
-  x : H2OFrame or str
-    The object pointing to the object to be removed.
+  x : H2OFrame, H2OEstimator, or basestring, or a list/tuple of those things.
+    The object(s) or unique id(s) pointing to the object(s) to be removed.
   """
-  if x is None:
-    raise ValueError("remove with no object is not supported, for your protection")
-  if isinstance(x, H2OFrame):
-    x = x._ex._cache._id       # String or None
-    if x is None: return       # Lazy frame, never evaluated, nothing in cluster
-  if isinstance(x, str): H2OConnection.delete("DKV/"+x)
+  if not isinstance(x, (list, tuple)): x = (x,)
+  for xi in x:
+    if xi is None:
+      raise ValueError("h2o.remove with no object is not supported, for your protection")
+    if isinstance(xi, H2OFrame):
+      xi_id = xi._ex._cache._id      # String or None
+      if xi_id is None: return       # Lazy frame, never evaluated, nothing in cluster
+      rapids("(rm {})".format(xi_id))
+      xi._ex = None
+    elif isinstance(xi, H2OEstimator):
+      H2OConnection.delete("DKV/"+xi.model_id)
+      xi._id = None
+    elif isinstance(xi, basestring):
+      H2OConnection.delete("DKV/"+xi)
+    else:
+      raise ValueError('input to h2o.remove must one of: H2OFrame, H2OEstimator, or basestring')
 
 
 def remove_all():

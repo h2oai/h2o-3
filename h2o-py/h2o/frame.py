@@ -335,6 +335,7 @@ class H2OFrame(object):
     return (self[i] for i in range(self.ncol))
   def __str__(self):
     if sys.gettrace() is None:
+      if self._ex is None: return "This H2OFrame has been removed."
       row_string = ' rows x ' if self.nrow != 1 else ' row x '
       column_string = ' columns]' if self.ncol != 1 else ' column]'
       return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore") + '\n\n[' + str(self.nrow) \
@@ -354,6 +355,9 @@ class H2OFrame(object):
     If called from IPython, displays an html'ized result
     Else prints a tabulate'd result
     """
+    if self._ex is None: 
+      print "This H2OFrame has been removed."
+      return
     if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
     if h2o.H2ODisplay._in_ipy():
       import IPython.display

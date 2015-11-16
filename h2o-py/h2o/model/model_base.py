@@ -245,6 +245,9 @@ class ModelBase(object):
     if self._model_json is None:
       print "No model trained yet"
       return
+    if self.model_id is None:
+      print "This H2OEstimator has been removed."
+      return
     model = self._model_json["output"]
     print "Model Details"
     print "============="
