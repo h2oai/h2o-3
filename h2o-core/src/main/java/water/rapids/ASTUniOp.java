@@ -341,32 +341,33 @@ class ASTMMult extends ASTPrim {
 
 
 class ASTMatch extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "table", "nomatch", "incomparables"}; }
+  @Override public String[] args() { return new String[]{"ary", "table", "nomatch", "incomparables"}; }
   @Override int nargs() { return 1+4; } // (match fr table nomatch incomps)
-  @Override
-  public String str() { return "match"; }
+  @Override public String str() { return "match"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() != 1 && !fr.anyVec().isCategorical()) throw new IllegalArgumentException("can only match on a single categorical column.");
-    String[] _strsTable=null;
-    double[] _dblsTable=null;
-    if( asts[2] instanceof ASTNumList ) _dblsTable = ((ASTNumList)asts[2]).expand();
-    else if( asts[2] instanceof ASTNum ) _dblsTable = new double[]{asts[2].exec(env).getNum()};
-    else if( asts[2] instanceof ASTStrList) _strsTable = ((ASTStrList)asts[2])._strs;
-    else if( asts[2] instanceof ASTStr) _strsTable = new String[]{asts[2].exec(env).getStr()};
+    if( fr.numCols() != 1 || !fr.anyVec().isCategorical()) 
+      throw new IllegalArgumentException("can only match on a single categorical column.");
+
+    String[] strsTable2=null;
+    double[] dblsTable2=null;
+    if(      asts[2] instanceof ASTNumList) dblsTable2 = ((ASTNumList)asts[2]).sort().expand();
+    else if( asts[2] instanceof ASTNum    ) dblsTable2 = new double[]{asts[2].exec(env).getNum()};
+    else if( asts[2] instanceof ASTStrList){strsTable2 = ((ASTStrList)asts[2])._strs; Arrays.sort(strsTable2); }
+    else if( asts[2] instanceof ASTStr    ) strsTable2 = new String[]{asts[2].exec(env).getStr()};
     else throw new IllegalArgumentException("Expected numbers/strings. Got: "+asts[2].getClass());
 
-    final String[] strsTable = _strsTable;
-    final double[] dblsTable = _dblsTable;
+    final String[] strsTable = strsTable2;
+    final double[] dblsTable = dblsTable2;
 
     Frame rez = new MRTask() {
       @Override public void map(Chunk c, NewChunk n) {
-        int rows = c._len;
-        if(strsTable==null)
-          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(dblsTable, c.atd(r)),0);
-        else
-          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
+        String[] domain = c.vec().domain();
+        int x, rows = c._len;
+        for( int r = 0; r < rows; ++r) {
+          x = c.isNA(r) ? 0 : (strsTable==null ? in(dblsTable, c.atd(r)) : in(strsTable, domain[(int)c.at8(r)]));
+          n.addNum(x,0);
+        }
       }
     }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame();
     return new ValFrame(rez);
