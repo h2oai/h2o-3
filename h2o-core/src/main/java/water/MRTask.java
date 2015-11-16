@@ -269,7 +269,15 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  numbers.  All map variants are called, but only one is expected to be
    *  overridden. */
   public void map( Chunk cs[] ) { }
-  //public void map( Chunk cs[], NewChunk nc ) { }
+
+  /** The handy method to generate a new vector based on existing vectors.
+   *
+   * Note: This method is used by Sparkling Water examples.
+   *
+   * @param cs  input vectors
+   * @param nc  output vector
+   */
+  public void map( Chunk cs[], NewChunk nc ) { }
   public void map( Chunk cs[], NewChunk nc1, NewChunk nc2 ) { }
   public void map( Chunk cs[], NewChunk [] ncs ) { }
 
