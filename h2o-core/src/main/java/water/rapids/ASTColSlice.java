@@ -98,7 +98,7 @@ class ASTRowSlice extends ASTPrim {
     if( asts[2] instanceof ASTNumList ) {
       final ASTNumList nums = (ASTNumList)asts[2];
       if( !nums._isSort && !nums.isEmpty() )
-        throw new IllegalArgumentException("H2O does not current reorder rows, please sort your row selection first");
+        throw new IllegalArgumentException("H2O does not currently reorder rows, please sort your row selection first");
       long[] rows = (nums._isList || nums.min()<0) ? nums.expand8Sort() : null;
       if( rows!=null ) {
         if (rows.length == 0) {      // Empty inclusion list?
