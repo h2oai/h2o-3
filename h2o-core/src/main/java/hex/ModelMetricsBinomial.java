@@ -32,7 +32,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     if (_auc != null) sb.append(" AUC: " + (float)_auc._auc + "\n");
     sb.append(" logloss: " + (float)_logloss + "\n");
     if (cm() != null) sb.append(" CM: " + cm().toASCII());
-    if (_gainsLift != null) sb.append(_gainsLift.createTwoDimTable());
+    if (_gainsLift != null) sb.append(_gainsLift);
     return sb.toString();
   }
 
@@ -95,9 +95,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         AUC2 auc = new AUC2(_auc);
         GainsLift gl = null;
         if (preds!=null) {
-          gl = new GainsLift();
-          gl.preds = preds.lastVec();
-          gl.labels = f.vec(m._parms._response_column);
+          gl = new GainsLift(preds.lastVec(), f.vec(m._parms._response_column));
           gl.exec();
         }
         return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc,  logloss, gl));
