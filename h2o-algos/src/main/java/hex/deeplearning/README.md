@@ -1,5 +1,6 @@
 #H2O Deep Learning
 
+* [Download H2O (Instructions)](http://h2o.ai/download)
 * [H2O Deep Learning Booklet (Documentation)](http://h2o.ai/resources)
 * [H2O Deep Learning Top 10 Tips & Tricks (Slides)](http://www.slideshare.net/0xdata/h2o-world-top-10-deep-learning-tips-tricks-arno-candel)
 * [H2O World 2015 Recordings (Slides and Videos)](http://h2oworld.h2o.ai)
