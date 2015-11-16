@@ -238,7 +238,7 @@ class H2OConnection(object):
       return os.path.join(os.getenv("JAVA_HOME"), "bin", "java.exe")
 
     # check /Program Files/ and /Program Files (x86)/ if os is windoz
-    if sys.platform == "windows":
+    if sys.platform == "win32":
       program_folder = os.path.join("C:", "{}", "Java")
       program_folders = [program_folder.format("Program Files"),
                          program_folder.format("Program Files (x86)")]

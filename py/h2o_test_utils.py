@@ -1,8 +1,9 @@
-import sys, os, time, json, datetime, errno, urlparse, stat, getpass, requests
+import sys, os, time, json, datetime, errno, urlparse, stat, getpass, requests, pprint
 import h2o
 
 debug_rest = False
 verbosity = 0  # 0, 1, 2, 3
+pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
 
 def setVerbosity(level):
     global verbosity
@@ -184,6 +185,7 @@ def validate_model_builder_result(result, original_params, model_name):
     and that it has a Job with a Key.  Note that model build will return a
     Job if successful, and a ModelBuilder with errors if it's not.
     '''
+    global pp
     error = False
     if result is None:
         print 'FAIL: result for model %s is None, timeout during build? result: %s' % (model_name, result)
@@ -209,6 +211,31 @@ def validate_model_builder_result(result, original_params, model_name):
     job = result['job']
     assert type(job) is dict, "FAIL: Job element for model is not a dict: " + model_name + ": " + pp.pprint(result)
     assert 'key' in job, "FAIL: Failed to find key in job for model: " + model_name + ": " + pp.pprint(result)
+
+
+def validate_grid_builder_result(result, original_params, grid_params, grid_id):
+    '''
+    Validate that a grid build result has no parameter validation errors,
+    and that it has a Job with a Key.  
+    '''
+    global pp
+    error = False
+    if result is None:
+        print 'FAIL: result for grid %s is None, timeout during build? result: %s' % (grid_id, result)
+        error = True
+
+    elif result['__http_response']['status_code'] != requests.codes.ok:
+        error = True
+        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
+
+    if error:
+        print 'Input parameters: '
+        pp.pprint(original_params)
+        print 'Grid parameters: '
+        pp.pprint(grid_params)
+        print 'Returned result: '
+        pp.pprint(result)
+        assert result['job']['error_count'] == 0, "FAIL: Non-zero error_count for model: " + grid_id
 
 
 def validate_validation_messages(result, expected_error_fields):
@@ -279,10 +306,6 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         if k is 'training_frame':
             continue
 
-        # TODO: skipping do_classification because it's not coming back correctly, and we're killing it anyway
-        if k is 'do_classification':
-            continue
-
         # Python says True; json says true
         assert k in actuals_dict, "FAIL: Expected key " + k + " not found in actual parameters list."
 
@@ -320,6 +343,63 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         # TODO: don't do exact comparison of floating point!
 
         assert expected == actual, "FAIL: Parameter with name: " + k + " expected to have input value: " + str(expected) + ", instead has: " + str(actual) + " cast from: " + str(actuals_dict[k]['actual_value']) + " ( type of expected: " + str(type(expected)) + ", type of actual: " + str(type(actual)) + ")"
+    # TODO: training_frame, validation_frame
+
+
+def validate_grid_parameters(grid_parameters, actual_parameters):
+    '''
+    Validate that the returned parameters list for a model build contains values we passed in as grid parameters.
+    '''
+    actuals_dict = list_to_dict(actual_parameters, 'name')
+    for k, grid_param_values in grid_parameters.iteritems():
+
+        # Python says True; json says true
+        assert k in actuals_dict, "FAIL: Expected key " + k + " not found in grid parameters list."
+
+        actual = actuals_dict[k]['actual_value']
+        actual_type = actuals_dict[k]['type']
+
+        if actual_type == 'boolean':
+            grid_param_values = [bool(x) for x in grid_param_values]
+            actual = True if 'true' == actual else False # true -> True
+        elif actual_type == 'int':
+            grid_param_values = [int(x) for x in grid_param_values]
+            actual = int(actual)
+        elif actual_type == 'long':
+            grid_param_values = [long(x) for x in grid_param_values]
+            actual = long(actual)
+        elif actual_type == 'string':
+            # convert from Unicode
+            grid_param_values = [str(x) for x in grid_param_values]
+            actual = str(actual)
+        elif actual_type == 'string[]':
+            # convert from Unicode
+            # grid_param_values = [str(grid_param_values_val) for grid_param_values_val in grid_param_values]
+            actual = [str(actual_val) for actual_val in actual]
+        elif actual_type == 'double':
+            grid_param_values = [float(x) for x in grid_param_values]
+            actual = float(actual)
+        elif actual_type == 'float':
+            grid_param_values = [float(x) for x in grid_param_values]
+            actual = float(actual)
+        elif actual_type.startswith('Key<'):
+            # For keys we send just a String but receive an object
+            grid_param_values = grid_param_values
+            actual = actual['name']
+
+        # TODO: don't do exact comparison of floating point!
+
+        # print("actual_type: " + actual_type)
+        # print("actual: " + repr(actual) + " (" + str(type(actual)) + ")")
+        # print("grid_param_values: " + repr(grid_param_values))
+
+        # TODO: 1-d arrays only for the moment; no grid over DL layers
+        if actual_type.endswith(']'):
+            actual = actual[0]
+            
+
+        # NOTE: check for IN
+        assert actual in grid_param_values, "FAIL: Parameter with name: " + k + " expected to be a possible grid value: " + str(grid_param_values) + ", instead has: " + str(actual) + " cast from: " + str(actuals_dict[k]['actual_value']) + " ( type of expected: " + str(type(grid_param_values[0])) + ", type of actual: " + str(type(actual)) + ")"
     # TODO: training_frame, validation_frame
 
 
@@ -446,6 +526,69 @@ class ModelSpec(dict):
 
         if isVerbose(): print 'Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")"
         return model
+
+
+class GridSpec(dict):
+    '''
+    Dictionary which specifies all that's needed to build and validate a grid of models.
+    '''
+    def __init__(self, dest_key, algo, frame_key, params, grid_params, model_category):
+        self['algo'] = algo
+        self['frame_key'] = frame_key
+        self['params'] = params
+        self['grid_params'] = grid_params
+        self['model_category'] = model_category
+
+        if dest_key is None:
+            self['dest_key'] = algo + "_" + frame_key
+        else:
+            self['dest_key'] = dest_key
+
+    @staticmethod
+    def for_dataset(dest_key, algo, dataset, params, grid_params):
+        '''
+        Factory for creating a GridSpec for a given Dataset (frame and additional metadata).
+        '''
+        dataset_params = {}
+        assert 'model_category' in dataset, "FAIL: Failed to find model_category in dataset: " + repr(dataset)
+        if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
+        if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
+
+        return GridSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() + params.items()), grid_params, dataset['model_category'])
+
+
+    def build_and_validate_grid(self, a_node):
+        before = time.time()
+        if isVerbose(): print 'About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model grid on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params']) + ' and grid_params: ' + repr(self['grid_params'])
+
+        # returns a GridSearchSchema:
+        result = a_node.build_model_grid(algo=self['algo'], grid_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], grid_parameters=self['grid_params'], timeoutSecs=240) # synchronous
+        if isVerbose(): print 'result: ' + repr(result)
+        grid = a_node.grid(key=self['dest_key'])
+        if isVerbose(): print 'grid: ' + repr(grid)
+        
+        validate_grid_builder_result(grid, self['params'], self['grid_params'], self['dest_key'])
+
+        # print("grid result: " + repr(grid))
+        # print("grid __meta: " + repr(grid['__meta']))
+        for model_key_dict in grid['model_ids']:
+            model_key = model_key_dict['name']
+            model = validate_model_exists(a_node, model_key)
+            validate_actual_parameters(self['params'], model['parameters'], self['frame_key'], None)
+            validate_grid_parameters(self['grid_params'], model['parameters'])
+
+            assert 'output' in model, 'FAIL: Failed to find output object in model: ' + self['dest_key']
+            assert 'model_category' in model['output'], 'FAIL: Failed to find model_category in model: ' + self['dest_key']
+            assert model['output']['model_category'] == self['model_category'], 'FAIL: Expected model_category: ' + self['model_category'] + ' but got: ' + model['output']['model_category'] + ' for model: ' + self['dest_key']
+
+        # Cartesian: check that we got the right number of models:
+        combos = 1
+        for k, vals in self['grid_params'].iteritems():
+            combos *= len(vals)
+        assert combos == len(grid['model_ids']), 'FAIL: Expected ' + combos + ' models; got: ' + len(grid['model_ids'])
+
+        if isVerbose(): print 'Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")"
+        return grid
 
 
 ### TODO: we should be able to have multiple DatasetSpecs that come from a single parse, for efficiency

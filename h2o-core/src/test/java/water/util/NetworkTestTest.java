@@ -1,15 +1,15 @@
-package water;
+package water.util;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.H2O;
+import water.TestUtil;
 import water.init.NetworkTest;
-import water.util.Log;
 
 public class NetworkTestTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
-  public NetworkTestTest() { super(3); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void testNetworkTest() {
     NetworkTest nt = new NetworkTest();

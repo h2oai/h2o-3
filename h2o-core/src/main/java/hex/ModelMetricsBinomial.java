@@ -8,11 +8,13 @@ import water.util.MathUtils;
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
   public final double _logloss;
+  public final GainsLift _gainsLift;
 
-  public ModelMetricsBinomial(Model model, Frame frame, double mse, String[] domain, double sigma, AUC2 auc, double logloss) {
+  public ModelMetricsBinomial(Model model, Frame frame, double mse, String[] domain, double sigma, AUC2 auc, double logloss, GainsLift gainsLift) {
     super(model, frame, mse, domain, sigma);
     _auc = auc;
     _logloss = logloss;
+    _gainsLift = gainsLift;
   }
 
   public static ModelMetricsBinomial getFromDKV(Model model, Frame frame) {
@@ -30,6 +32,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     if (_auc != null) sb.append(" AUC: " + (float)_auc._auc + "\n");
     sb.append(" logloss: " + (float)_logloss + "\n");
     if (cm() != null) sb.append(" CM: " + cm().toASCII());
+    if (_gainsLift != null) sb.append(_gainsLift.createTwoDimTable());
     return sb.toString();
   }
 
@@ -40,7 +43,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     double[][] cm = _auc.defaultCM();
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
-
+  public GainsLift gainsLift() { return _gainsLift; }
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
     protected double _logloss;
@@ -81,7 +84,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       _auc.reduce(mb._auc);
     }
 
-    @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
+    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) {
       double mse = Double.NaN;
       double logloss = Double.NaN;
       double sigma = Double.NaN;
@@ -90,9 +93,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
         AUC2 auc = new AUC2(_auc);
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc,  logloss));
+        GainsLift gl = null;
+        if (preds!=null) {
+          gl = new GainsLift();
+          gl.preds = preds.lastVec();
+          gl.labels = f.vec(m._parms._response_column);
+          gl.exec();
+        }
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc,  logloss, gl));
       } else {
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse,   null,  sigma, null, logloss));
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse,   null,  sigma, null, logloss, null));
       }
     }
     public String toString(){

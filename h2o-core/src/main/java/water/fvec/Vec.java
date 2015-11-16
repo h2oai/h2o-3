@@ -749,7 +749,7 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
   // Filled in lazily and racily... but all writers write the exact identical Key
-  Key rollupStatsKey() { 
+  public Key rollupStatsKey() { 
     if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
     return _rollupStatsKey;
   }

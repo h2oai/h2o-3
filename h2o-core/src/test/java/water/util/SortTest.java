@@ -1,11 +1,10 @@
-package water;
+package water.util;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.util.ArrayUtils;
+import water.TestUtil;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Random;
 
 public class SortTest extends TestUtil {
