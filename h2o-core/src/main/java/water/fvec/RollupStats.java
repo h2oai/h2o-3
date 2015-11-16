@@ -360,7 +360,7 @@ class RollupStats extends Iced {
     final boolean _computeHisto;
 
     public ComputeRollupsTask(Vec v, boolean computeHisto){
-      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY;
+      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY-2;
       _vecKey = v._key;
       _rsKey = v.rollupStatsKey();
       _computeHisto = computeHisto;
