@@ -321,7 +321,7 @@ public class Merge {
         assert(cs[i].len() == _chunkSizes[chkIdx]);
         Key k = BinaryMerge.getKeyForMSBComboPerCol(/*_leftFrame, _rightFrame,*/ _chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
         Chunk ck = DKV.getGet(k);
-        DKV.put(destKey, ck, fs);
+        DKV.put(destKey, ck, fs, /*don't cache*/true);
         DKV.remove(k);
       }
       fs.blockForPending();

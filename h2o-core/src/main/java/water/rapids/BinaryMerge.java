@@ -451,9 +451,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         frameLikeChunks[col][b]=null; //free mem as early as possible (it's now in the store)
       }
     }
+    fs.blockForPending();
     _timings[11] = (System.nanoTime() - t0) / 1e9;
 
-    fs.blockForPending();
   }
 
   static Key getKeyForMSBComboPerCol(/*Frame leftFrame, Frame rightFrame,*/ int leftMSB, int rightMSB, int col /*final table*/, int batch) {

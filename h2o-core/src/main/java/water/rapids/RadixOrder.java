@@ -56,7 +56,7 @@ class RadixCount extends MRTask<RadixCount> {
   @Override protected void closeLocal() {
     //Log.info("Putting MSB counts for column " + _col + " over my chunks (node " + H2O.SELF + ") for frame " + _frameKey);
     //Log.info("Putting");
-    DKV.put(getKey(_isLeft, _col, H2O.SELF), _counts);
+    DKV.put(getKey(_isLeft, _col, H2O.SELF), _counts, _fs, true);
     // just the MSB counts per chunk on this node.  Most of this spine will be empty here.  TO DO: could condense to just the chunks on this node but for now, leave sparse.
     // We'll use this sparse spine right now on this node and the reduce happens on _o and _x later
     //super.postLocal();
