@@ -158,7 +158,7 @@ public class Merge {
           doneInSweep++;
           if (thisbm._numRowsInResult > 0) {
             System.out.print(String.format("%3d",queue[q]) + ":");
-            for (int t=0; t<12; t++) System.out.print(String.format("%5.2f ", thisbm._timings[t]));
+            for (int t=0; t<20; t++) System.out.print(String.format("%.2f ", thisbm._timings[t]));
             System.out.println();
             numChunks += thisbm._chunkSizes.length;
             ansN += thisbm._numRowsInResult;

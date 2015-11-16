@@ -41,6 +41,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   boolean _allLeft, _allRight;
 
+  transient int _leftChunkNode[], _rightChunkNode[];  // fast lookups to save repeated calls to node.index() which calls binarysearch within it.
+
   BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
     _leftFrame = leftFrame;
     _rightFrame = rightFrame;
@@ -55,7 +57,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   @Override
   protected void compute2() {
-    _timings = new double[12];
+    _timings = new double[20];
     long t0 = System.nanoTime();
     SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true, _leftMSB));
     if (leftSortedOXHeader == null) {
@@ -101,7 +103,19 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightKeyNCol = _rightFieldSizes.length;
     _leftKeySize = ArrayUtils.sum(_leftFieldSizes);
     _rightKeySize = ArrayUtils.sum(_rightFieldSizes);
+    System.out.println("_leftKeySize="+_leftKeySize + " _rightKeySize="+_rightKeySize + " _leftN="+_leftN + " _rightN="+_rightN);
     _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
+
+    // Create fast lookups to go from chunk index to node index of that chunk
+    // TODO: must these be created for each and every instance?  Only needed once per node.
+    _leftChunkNode = new int[_leftFrame.anyVec().nChunks()];
+    _rightChunkNode = new int[_rightFrame.anyVec().nChunks()];
+    for (int i=0; i<_leftFrame.anyVec().nChunks(); i++) {
+      _leftChunkNode[i] = _leftFrame.anyVec().chunkKey(i).home_node().index();
+    }
+    for (int i=0; i<_rightFrame.anyVec().nChunks(); i++) {
+      _rightChunkNode[i] = _rightFrame.anyVec().chunkKey(i).home_node().index();
+    }
 
     _timings[0] = (System.nanoTime() - t0) / 1e9;
 
@@ -114,12 +128,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       if (_numRowsInResult > 0) createChunksInDKV();
     }
 
-    //null out members before returning to calling node
+    // TODO: recheck transients or null out here before returning
     tryComplete();
   }
 
 
   private int keycmp(byte x[][], long xi, byte y[][], long yi) {   // TO DO - faster way closer to CPU like batches of long compare, maybe.
+    long t0 = System.nanoTime();
+    _timings[12] += 1;
     byte xbatch[] = x[(int)(xi / _leftBatchSize)];
     byte ybatch[] = y[(int)(yi / _rightBatchSize)];
     int xoff = (int)(xi % _leftBatchSize) * _leftKeySize;
@@ -135,11 +151,15 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       if (xlen!=ylen) {
         while (xlen>ylen && xbatch[xoff]==0) { xoff++; xlen--; }
         while (ylen>xlen && ybatch[yoff]==0) { yoff++; ylen--; }
-        if (xlen!=ylen) return (xlen - ylen);
+        if (xlen!=ylen) {
+          _timings[13] += (System.nanoTime() - t0)/1e9;
+          return (xlen - ylen);
+        }
       }
       while (xlen>0 && (xByte=xbatch[xoff])==(yByte=ybatch[yoff])) { xoff++; yoff++; xlen--; }
       i++;
     }
+    _timings[13] += (System.nanoTime() - t0)/1e9;
     return (xByte & 0xFF) - (yByte & 0xFF);
     // Same return value as strcmp in C. <0 => xi<yi
   }
@@ -191,6 +211,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
     long len = rUpp - rLow - 1;  // if value found, rLow and rUpp surround it, unlike standard binary search where rLow falls on it
     if (len > 0 || _allLeft) {
+      long t0 = System.nanoTime();
       if (len > 1) _oneToManyMatch = true;
       _numRowsInResult += Math.max(1,len) * (lUpp-lLow-1);   // 1 for NA row when _allLeft
       for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
@@ -198,8 +219,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           // may be a range of left dup'd join-col values, but we need to fetch each one since the left non-join columns are likely not dup'd and may be the reason for the cartesian join
           long globalRowNumber = _leftOrder[(int)(j / _leftBatchSize)][(int)(j % _leftBatchSize)];
           int chkIdx = _leftFrame.anyVec().elem2ChunkIdx(globalRowNumber); //binary search in espc
-          H2ONode node = _leftFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
-          _perNodeNumLeftRowsToFetch[node.index()]++;  // the key is the same within this left dup range, but still need to fetch left non-join columns
+          _perNodeNumLeftRowsToFetch[_leftChunkNode[chkIdx]]++;  // the key is the same within this left dup range, but still need to fetch left non-join columns
         }
         if (len==0) continue;  // _allLeft must be true if len==0
         int jb = (int)(j/_leftBatchSize);
@@ -214,11 +234,11 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           //sb.append(_rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)] + " ");
           long globalRowNumber = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];
           int chkIdx = _rightFrame.anyVec().elem2ChunkIdx(globalRowNumber); //binary search in espc
-          H2ONode node = _rightFrame.anyVec().chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
-          _perNodeNumRightRowsToFetch[node.index()]++;  // just count the number per node. So we can allocate arrays precisely up front, and also to return early to use in case of memory errors or other distribution problems
+          _perNodeNumRightRowsToFetch[_rightChunkNode[chkIdx]]++;  // just count the number per node. So we can allocate arrays precisely up front, and also to return early to use in case of memory errors or other distribution problems
         }
         //Log.info(sb);
       }
+      _timings[14] += (System.nanoTime() - t0)/1e9;
     }
     // TO DO: check assumption that retFirst and retLength are initialized to 0, for case of no match
     // Now branch (and TO DO in parallel) to merge below and merge above
@@ -307,11 +327,11 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           long row = _leftOrder[(int)(leftLoc / _leftBatchSize)][(int)(leftLoc % _leftBatchSize)];
           Vec v = _leftFrame.anyVec();
           int chkIdx = v.elem2ChunkIdx(row); //binary search in espc
-          H2ONode node = v.chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
-          long pnl = perNodeLeftLoc[node.index()]++;   // pnl = per node location
-          perNodeLeftRows[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
-          perNodeLeftRowsFrom[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
-          perNodeLeftRowsRepeat[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = Math.max(1,l);
+          int ni = _leftChunkNode[chkIdx];
+          long pnl = perNodeLeftLoc[ni]++;   // pnl = per node location
+          perNodeLeftRows[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
+          perNodeLeftRowsFrom[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
+          perNodeLeftRowsRepeat[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = Math.max(1,l);
         }
         if (f==0) { resultLoc++; continue; }
         assert l > 0;
@@ -321,10 +341,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           // find the owning node for the row, using local operations here
           Vec v = _rightFrame.anyVec();
           int chkIdx = v.elem2ChunkIdx(row); //binary search in espc
-          H2ONode node = v.chunkKey(chkIdx).home_node(); //bit mask ops on the vec key
-          long pnl = perNodeRightLoc[node.index()]++;   // pnl = per node location
-          perNodeRightRows[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
-          perNodeRightRowsFrom[node.index()][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc++;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
+          int ni = _rightChunkNode[chkIdx];
+          long pnl = perNodeRightLoc[ni]++;   // pnl = per node location
+          perNodeRightRows[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
+          perNodeRightRowsFrom[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc++;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
         }
       }
     }
@@ -359,6 +379,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     RPC<GetRawRemoteRows> grrrsLeft[][] = new RPC[H2O.CLOUD.size()][];
     for (H2ONode node : H2O.CLOUD._memary) {
       int ni = node.index();
+      // TODO: Ask Cliff why node.index() calls binarysearch within it? He saw that coming up in profiling.
       int bUppRite = perNodeRightRows[ni] == null ? 0 : perNodeRightRows[ni].length;
       int bUppLeft =  perNodeLeftRows[ni] == null ? 0 :  perNodeLeftRows[ni].length;
       grrrsRite[ni] = new RPC[bUppRite];
