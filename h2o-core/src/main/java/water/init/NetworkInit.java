@@ -343,8 +343,7 @@ public class NetworkInit {
   }
 
   public static DatagramChannel _udpSocket;
-  public static ServerSocketChannel _tcpSocketBig;
-  public static ServerSocketChannel _tcpSocketSmall;
+  public static ServerSocketChannel _tcpSocket;
 
   // Default NIO Datagram channel
   public static DatagramChannel CLOUD_DGRAM;
@@ -364,6 +363,8 @@ public class NetworkInit {
     // API socket is only used to find opened port on given ip.
     ServerSocket apiSocket = null;
 
+    // At this point we would like to allocate 3 consecutive ports
+    //
     while (true) {
       H2O.H2O_PORT = H2O.API_PORT+1;
       try {
@@ -389,16 +390,10 @@ public class NetworkInit {
         InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT);
         _udpSocket.socket().bind(isa);
         // Bind to the TCP socket also
-        _tcpSocketBig = ServerSocketChannel.open();
-        _tcpSocketBig.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
-        _tcpSocketBig.socket().bind(isa);
+        _tcpSocket = ServerSocketChannel.open();
+        _tcpSocket.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
+        _tcpSocket.socket().bind(isa);
 
-        if(!H2O.ARGS.useUDP) {
-          _tcpSocketSmall = ServerSocketChannel.open();
-          _tcpSocketBig.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
-          InetSocketAddress isa2 = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT+1);
-          _tcpSocketSmall.socket().bind(isa2);
-        }
         // Warning: There is a ip:port race between socket close and starting Jetty
         if (! H2O.ARGS.disable_web) {
           apiSocket.close();
@@ -408,18 +403,17 @@ public class NetworkInit {
       } catch (Exception e) {
         if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
-        if( _tcpSocketBig != null ) try { _tcpSocketBig.close(); } catch( IOException ie ) { }
-        if( _tcpSocketSmall != null ) try { _tcpSocketSmall.close(); } catch( IOException ie ) { }
+        if( _tcpSocket != null ) try { _tcpSocket.close(); } catch( IOException ie ) { }
         apiSocket = null;
         _udpSocket = null;
-        _tcpSocketBig = null;
-        _tcpSocketSmall = null;
+        _tcpSocket = null;
         if( H2O.ARGS.port != 0 )
           H2O.die("On " + H2O.SELF_ADDRESS +
               " some of the required ports " + H2O.ARGS.port +
               ", " + (H2O.ARGS.port+1) +
               " are not available, change -port PORT and try again.");
       }
+      // Try next available port to bound
       H2O.API_PORT += 2;
     }
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
