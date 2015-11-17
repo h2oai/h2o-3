@@ -172,6 +172,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   }
 
   public static class DeepLearningScoring extends Iced {
+    public int iterations;
     public double epoch_counter;
     public double training_samples;
     public long time_stamp;
@@ -228,6 +229,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Epochs"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Iterations"); colTypes.add("int"); colFormat.add("%d");
     colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
@@ -288,6 +290,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + e.training_samples + "/((" + e.training_time_ms + "-" + scoring_time + ")/1e3)";
       table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
       table.set(row, col++, e.epoch_counter);
+      table.set(row, col++, e.iterations);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
       if (_output.getModelCategory() == ModelCategory.Regression) {
@@ -515,6 +518,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       err.time_stamp = _timeLastScoreStart;
       err.training_time_ms = total_run_time;
       err.epoch_counter = epoch_counter;
+      err.iterations = iteration >= 1 ? iteration : 0;
       err.training_samples = (double)model_info().get_processed_total();
       err.validation = ftest != null;
       err.score_training_samples = ftrain.numRows();
@@ -675,7 +679,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     double progress = prog == null ? 0 : prog.progress();
     int speed = (int)(model_info().get_processed_total() * 1000. / ((total_run_time + timeSinceEntering) - total_scoring_time));
 //    assert(speed >= 0);
-    String msg = "Map/Reduce Iterations: " + String.format("%,d", iteration) + ". Speed: " + String.format("%,d", speed) + " samples/sec."
+    String msg =
+            "Iterations: " + String.format("%,d", iteration)
+            + ". Epochs: " + String.format("%g", epoch_counter)
+            + ". Speed: " + String.format("%,d", speed) + " samples/sec."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (total_run_time * (1. - progress) / progress), true));
     ((Job) DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
