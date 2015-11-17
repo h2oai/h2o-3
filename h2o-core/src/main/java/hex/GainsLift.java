@@ -1,7 +1,10 @@
 package hex;
 
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.MathUtils;
 import water.util.PrettyPrint;
@@ -53,16 +56,37 @@ public class GainsLift extends Iced {
         Scope.track(_weights._key);
       }
     }
-    //get specific pre-computed quantiles (deciles) from rollupstats
-    //First check that rollups still uses the convention we rely on (hardcoded indexing below)
-    assert(Arrays.equals(Vec.PERCENTILES,
-            //             0      1    2    3    4     5        6          7    8   9   10          11    12   13   14    15, 16
-            new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
-    //HACK: hardcoded quantiles for simplicity (0.9,0.8,...,0.1,0)
-    double[] rq = _preds.pctiles(); //might do a full pass over the Vec
-    _quantiles = new double[]{
-            rq[14], rq[13], rq[11], rq[9], rq[8], rq[7], rq[5], rq[3], rq[2], 0 /*ignored*/
-    };
+
+    boolean fast = false;
+    if (fast) {
+      // FAST VERSION: single-pass
+      //get specific pre-computed quantiles (deciles) from rollupstats
+      //First check that rollups still uses the convention we rely on (hardcoded indexing below)
+      assert(Arrays.equals(Vec.PERCENTILES,
+              //             0      1    2    3    4     5        6          7    8   9   10          11    12   13   14    15, 16
+              new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
+      //HACK: hardcoded quantiles for simplicity (0.9,0.8,...,0.1,0)
+      double[] rq = _preds.pctiles(); //might do a full pass over the Vec
+      _quantiles = new double[]{
+              rq[14], rq[13], rq[11], rq[9], rq[8], rq[7], rq[5], rq[3], rq[2], 0 /*ignored*/
+      };
+    } else {
+      // ACCURATE VERSION: multi-pass
+      QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
+      Frame fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
+      DKV.put(fr);
+      qp._train = fr._key;
+      qp._probs = new double[GROUPS];
+      for (int i = 0; i < GROUPS; ++i) {
+        qp._probs[i] = (GROUPS - i - 1.) / GROUPS;
+      }
+      if (_weights != null) throw H2O.unimpl("Quantile cannot handle weights yet.");
+      Quantile q = new Quantile(qp);
+      QuantileModel qm = q.trainModel().get();
+      _quantiles = qm._output._quantiles[0];
+      qm.remove();
+      DKV.remove(fr._key);
+    }
   }
 
   public void exec() {
@@ -87,18 +111,19 @@ public class GainsLift extends Iced {
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
             new String[GROUPS],
-            new String[]{"Decile", "Response rate", "Lift", "Cumulative Lift"},
-            new String[]{"int", "double", "double", "double"},
-            new String[]{"%d", "%5f", "%5f", "%5f"},
+            new String[]{"Decile", "Lower threshold", "Response rate", "Lift", "Cumulative Lift"},
+            new String[]{"int", "double", "double", "double", "double"},
+            new String[]{"%d", "%5f", "%5f", "%5f", "%5f"},
             "");
     float cumulativelift = 0;
     for (int i = 0; i < GROUPS; ++i) {
       table.set(i,0,i+1);
-      table.set(i,1,response_rates[i]);
+      table.set(i,1,_quantiles[i]);
+      table.set(i,2,response_rates[i]);
       final float lift = response_rates[i]/ avg_response_rate;
       cumulativelift += lift/ GROUPS;
-      table.set(i,2,lift);
-      table.set(i,3,cumulativelift);
+      table.set(i,3,lift);
+      table.set(i,4,cumulativelift);
     }
     return this.table = table;
   }
