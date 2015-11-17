@@ -97,7 +97,8 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       max_criteria_and_metric_scores = new TwoDimTableV3().fillFromImpl(maxMetrics);
     }
     if (modelMetrics._gainsLift != null) {
-      this.gains_lift_table = new TwoDimTableV3().fillFromImpl(modelMetrics._gainsLift.createTwoDimTable());
+      TwoDimTable t = modelMetrics._gainsLift.createTwoDimTable();
+      if (t!=null) this.gains_lift_table = new TwoDimTableV3().fillFromImpl(t);
     }
     return (S) this;
   }
