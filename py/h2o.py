@@ -201,12 +201,34 @@ class H2O(object):
                             first  = False
                         array_str += ']'
                         munged_postData[k] = array_str
+                elif type(v) is dict:
+                    if len(v) == 0:
+                        munged_postData[k] = '{}'
+                    else:
+                        first = True
+                        map_str = '{'
+                        print("v: " + repr(v))
+                        for key, val in v.iteritems():
+                            if not first: map_str += ', '
+
+                            if val is None:
+                                map_str += "\"" + key + "\"" + ': null'
+                            elif isinstance(val, basestring):
+                                map_str += "\"" + str(key) + "\"" + ":" + "\"" + str(val) + "\""
+                            else:
+                                map_str += "\"" + key + "\"" + ':' + str(val)
+                            first  = False
+                        map_str += '}'
+                        munged_postData[k] = map_str
+
                 else:
                     # not list:
                     munged_postData[k] = v
         else:  
             # None
             munged_postData = postData
+
+        # print("munged_postData: " + repr(munged_postData))
 
         if extraComment:
             log('Start ' + url + paramsStr, comment=extraComment)
@@ -714,6 +736,65 @@ class H2O(object):
 
 
     '''
+    Build a Cartesian grid of models on the h2o cluster using the given algorithm, training 
+    Frame, model parameters and grid parameters.
+    '''
+    def build_model_grid(self, algo, training_frame, parameters, grid_parameters, grid_id = None, timeoutSecs=60, asynchronous=False, **kwargs):
+        # basic parameter checking
+        assert algo is not None, 'FAIL: "algo" parameter is null'
+        assert training_frame is not None, 'FAIL: "training_frame" parameter is null'
+        assert parameters is not None, 'FAIL: "parameters" parameter is null'
+        assert grid_parameters is not None, 'FAIL: "grid_parameters" parameter is null'
+
+        # check that algo is known (TODO: remove after testing that error from POST is good enough)
+        model_builders = self.model_builders(timeoutSecs=timeoutSecs)
+        assert model_builders is not None, "FAIL: /ModelBuilders REST call failed"
+        assert algo in model_builders['model_builders'], "FAIL: failed to find algo " + algo + " in model_builders list: " + repr(model_builders)
+        builder = model_builders['model_builders'][algo]
+        
+        # TODO: test this assert, I don't think this is working. . .
+        # Check for frame:
+        frames = self.frames(key=training_frame)
+        assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(training_frame)
+        assert frames['frames'][0]['frame_id']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['frame_id']['name'], training_frame)
+        parameters['training_frame'] = training_frame
+
+        # UGH: grid parameters are totally non-standard; the model parameters are mixed with grid_id and hyper_parameters.  See GridSearchSchema.fillFromParms().
+        post_parameters = {}
+        post_parameters.update(parameters)
+        post_parameters['hyper_parameters'] = grid_parameters
+        # gridParams['grid_parameters'] = json.dumps(hyperParameters)
+
+        print("post_parameters: " + repr(post_parameters))
+
+        if grid_id is not None:
+            post_parameters['grid_id'] = grid_id
+
+        result = self.__do_json_request('/99/Grid/' + algo, cmd='post', timeout=timeoutSecs, postData=post_parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
+        if result['__meta']['schema_type'] == 'H2OError':
+            print("ERROR: building model grid: " + grid_id)
+            print(" reason: " + result['dev_msg'])
+            print(" stacktrace: " + "\n ".join(result['stacktrace']))
+            raise ValueError("ERROR: building model grid: " + grid_id + ";  reason: " + result['dev_msg'])
+
+        if asynchronous:
+            return result
+        elif 'error_count' in result and result['error_count'] > 0:
+            # parameters validation failure
+            return result
+        elif result['__http_response']['status_code'] != 200:
+            return result
+        else:
+            assert 'job' in result, "FAIL: did not find job key in model build result: " + repr(result)
+            print("not async, result: " + repr(result))
+            job = result['job']
+            job_key = job['key']['name']
+            H2O.verboseprint("model building job_key: " + repr(job_key))
+            job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
+            return result
+
+
+    '''
     Score a model on the h2o cluster on the given Frame and return only the model metrics. 
     '''
     def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
@@ -827,6 +908,37 @@ class H2O(object):
 
 
     '''
+    Return all of the grid search results in the h2o cluster.
+    The grid IDs are contained in a list called "grids" at the top level of the
+    result.  Currently the list is unordered.
+    '''
+    def grids(self, api_version=99, timeoutSecs=20, **kwargs):
+        params_dict = {
+        }        
+        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'grids', H2O.verbose)
+
+        result = self.__do_json_request(str(api_version) + '/Grids', timeout=timeoutSecs, params=params_dict)
+        return result
+
+
+    '''
+    Return a grid search result from the h2o cluster given its key.  
+    The models IDs are contained in a list called "model_ids" at the top level of the
+    result.  Currently the list is unordered.
+    '''
+    def grid(self, api_version=99, key=None, timeoutSecs=20, **kwargs):
+        params_dict = {
+        }        
+        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'grids', H2O.verbose)
+
+        if key:
+            result = self.__do_json_request(str(api_version) + '/Grids/' + key, timeout=timeoutSecs, params=params_dict)
+        else:
+            raise ValueError('Grid key not given: ' + key)
+        return result
+
+
+    '''
     Fetch the list of REST API endpoints.
     '''
     def endpoints(self, timeoutSecs=60, **kwargs):
@@ -862,6 +974,7 @@ class H2O(object):
 
         return result
 
+'''
     def grid(self, algo, parameters, hyperParameters, timeoutSecs=60, asynchronous=False, **kwargs):
         assert algo is not None, 'FAIL: "algo" parameter is null'
         assert parameters is not None, 'FAIL: "parameters" parameter is null'
@@ -882,4 +995,4 @@ class H2O(object):
             H2O.verboseprint("grid search job_key: " + repr(job_key))
             job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
             return result
-
+'''

@@ -27,12 +27,18 @@
 #'        by projecting onto a random subspace (see references), "GLRM": fit a 
 #'        generalized low rank model with an l2 loss function (no regularization) 
 #'        and solve for the SVD using local matrix algebra.
-#' @param seed (Optional) Random seed used to initialize the right singular vectors
-#'        at the beginning of each power method iteration.
 #' @param use_all_factor_levels (Optional) A logical value indicating whether all
 #'        factor levels should be included in each categorical column expansion.
 #'        If FALSE, the indicator column corresponding to the first factor level
 #'        of every categorical variable will be dropped. Defaults to FALSE.
+#' @param compute_metrics (Optional) A logical value indicating whether to compute
+#'        metrics on the training data, which requires additional calculation time. 
+#'        Only used if pca_method = "GLRM". Defaults to TRUE.
+#' @param impute_missing (Optional) A logical value indicating whether missing values
+#'        should be imputed with the mean of the corresponding column. This is necessary
+#'        if too many entries are NA when using methods like GramSVD. Defaults to FALSE.
+#' @param seed (Optional) Random seed used to initialize the right singular vectors
+#'        at the beginning of each power method iteration.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
@@ -51,8 +57,10 @@ h2o.prcomp <- function(training_frame, x, k,
                       max_iterations = 1000,
                       transform = c("NONE", "DEMEAN", "DESCALE", "STANDARDIZE"),
                       pca_method = c("GramSVD", "Power", "Randomized", "GLRM"),
-                      seed,
-                      use_all_factor_levels)
+                      use_all_factor_levels = FALSE,
+                      compute_metrics = TRUE,
+                      impute_missing = FALSE,
+                      seed)
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
@@ -73,8 +81,9 @@ h2o.prcomp <- function(training_frame, x, k,
   if(!missing(max_iterations))        parms$max_iterations <- max_iterations
   if(!missing(transform))             parms$transform <- transform
   if(!missing(pca_method))            parms$pca_method <- pca_method
-  if(!missing(seed))                  parms$seed <- seed
   if(!missing(use_all_factor_levels)) parms$use_all_factor_levels <- use_all_factor_levels
+  if(!missing(impute_missing))        parms$impute_missing <- impute_missing
+  if(!missing(seed))                  parms$seed <- seed
 
   # Error check and build model
   .h2o.modelJob('pca', parms)

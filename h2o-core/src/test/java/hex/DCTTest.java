@@ -1,15 +1,17 @@
-package water;
+package hex;
 
-import hex.CreateFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
+import water.TestUtil;
 import water.fvec.Frame;
-import water.util.*;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.PrettyPrint;
 
 public class DCTTest extends TestUtil {
-  @BeforeClass()
-  public static void setup() {
-    stall_till_cloudsize(1);
+  @BeforeClass() public static void setup() {
+    stall_till_cloudsize(5);
   }
 
   @Test
@@ -20,7 +22,7 @@ public class DCTTest extends TestUtil {
     try {
       CreateFrame cf = new CreateFrame();
       cf.rows = 100;
-      int height = 513;
+      int height = 257;
       int width = 1;
       int depth = 1;
       cf.cols = height*width*depth;
@@ -59,8 +61,8 @@ public class DCTTest extends TestUtil {
     try {
       CreateFrame cf = new CreateFrame();
       cf.rows = 100;
-      int height = 47;
-      int width = 29;
+      int height = 35;
+      int width = 17;
       int depth = 1;
       cf.cols = height*width*depth;
       cf.categorical_fraction = 0.0;
@@ -98,9 +100,9 @@ public class DCTTest extends TestUtil {
     try {
       CreateFrame cf = new CreateFrame();
       cf.rows = 100;
-      int height = 35;
-      int width = 11;
-      int depth = 14;
+      int height = 17;
+      int width = 7;
+      int depth = 9;
       cf.cols = height*width*depth;
       cf.categorical_fraction = 0.0;
       cf.integer_fraction = 0;

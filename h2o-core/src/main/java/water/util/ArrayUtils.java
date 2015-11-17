@@ -702,10 +702,10 @@ public class ArrayUtils {
     return result;
   }
   public static double[] gaussianVector(int n) { return gaussianVector(n, System.currentTimeMillis()); }
-  public static double[] gaussianVector(int n, long seed) {
+  public static double[] gaussianVector(int n, long seed) { return gaussianVector(n, getRNG(seed)); }
+  public static double[] gaussianVector(int n, Random random) {
     if(n <= 0) return null;
     double[] result = new double[n];
-    Random random = getRNG(seed);
 
     for(int i = 0; i < n; i++)
       result[i] = random.nextGaussian();

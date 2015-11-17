@@ -2,8 +2,6 @@ package hex;
 
 import water.H2O;
 import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.FrameUtils;
 
 public class ModelMetricsSupervised extends ModelMetrics {
   public final String[] _domain;// Name of classes
@@ -43,6 +41,13 @@ public class ModelMetricsSupervised extends ModelMetrics {
       throw H2O.fail("Subclasses must implement perRow.");
     }
 
-    @Override public ModelMetrics makeModelMetrics(Model m, Frame f) { return null; }
+    /**
+     * Create a model metrics object
+     * @param m Model
+     * @param f Frame
+     * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems
+     * @return
+     */
+    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) { return null; }
   }
 }

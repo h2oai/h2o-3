@@ -20,6 +20,7 @@ def fiftycatRF():
   model.show()
   model.train(x=["x1", "x2"], y="y", training_frame=train)
   model.show()
+  model.summary()
 
 
 

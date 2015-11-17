@@ -464,6 +464,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       // Stopped for running out of iterations
       if (model._output._iterations >= _parms._max_iterations) return true;
+      if (model._output._updates >= _parms._max_updates) return true;
 
       // Stopped for falling below minimum step size
       if (step <= _parms._min_step_size) return true;
@@ -613,6 +614,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         update(1, "Initializing X and Y matrices");   // One unit of work
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, model, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
+        Archetypes ytnew = yt;
+        double yreg = _parms.regularize_y(yt._archetypes);
         if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
@@ -621,10 +624,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         boolean regX = _parms._regularization_x != GLRMParameters.Regularizer.None && _parms._gamma_x != 0;  // Assume regularization on initial X is finite, else objective can be NaN if \gamma_x = 0
         ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId, regX);
         objtsk.doAll(dinfo._adaptedFrame);
-        model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt._archetypes);
+        model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * yreg;
         model._output._archetypes_raw = yt;
         model._output._iterations = 0;
-        model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
+        model._output._updates = 0;
+        model._output._avg_change_obj = 2 * TOLERANCE;    // Allow at least 1 iteration
         model.update(self());  // Update model in K/V store
 
         double step = _parms._init_step_size;   // Initial step size
@@ -637,16 +641,21 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           xtsk.doAll(dinfo._adaptedFrame);
-          
+          model._output._updates++;
+
           // 2) Update Y matrix given fixed X
-          UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
-          double[][] yttmp = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
-          Archetypes ytnew = new Archetypes(yttmp, true, dinfo._catOffsets, numLevels);
+          if(model._output._updates < _parms._max_updates) {    // If max_updates is odd, we will terminate after the X update
+            UpdateY ytsk = new UpdateY(_parms, yt, step / _ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
+            double[][] yttmp = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
+            ytnew = new Archetypes(yttmp, true, dinfo._catOffsets, numLevels);
+            yreg = ytsk._yreg;
+            model._output._updates++;
+          }
 
           // 3) Compute average change in objective function
           objtsk = new ObjCalc(_parms, ytnew, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           objtsk.doAll(dinfo._adaptedFrame);
-          double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * ytsk._yreg;
+          double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * yreg;
           model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;
           model._output._iterations++;
 
@@ -974,8 +983,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Random rand = RandomUtils.getRNG(0);
 
       for(int row = 0; row < chks[0]._len; row++) {
-        double xrow[] = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
-        rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
+        rand.setSeed(_parms._seed + chks[0].start() + row);   // global row ID determines the seed
+        double xrow[] = ArrayUtils.gaussianVector(_ncolX, rand);
         xrow = _parms.project_x(xrow, rand);
         for(int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);

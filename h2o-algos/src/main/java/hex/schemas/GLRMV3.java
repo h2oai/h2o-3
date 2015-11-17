@@ -29,6 +29,7 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
 				"gamma_x",
 				"gamma_y",
 				"max_iterations",
+                "max_updates",
 				"init_step_size",
 				"min_step_size",
 				"seed",
@@ -76,6 +77,9 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
 
     @API(help = "Maximum number of iterations", gridable = true)
     public int max_iterations;
+
+    @API(help = "Maximum number of updates", gridable = true)
+    public int max_updates;
 
     @API(help = "Initial step size", gridable = true)
     public double init_step_size;

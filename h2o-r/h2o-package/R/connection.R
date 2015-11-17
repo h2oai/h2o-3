@@ -394,6 +394,9 @@ h2o.clusterStatus <- function() {
   jar_file <- paste0('"', jar_file, '"')
 
   # Throw an error if GNU Java is being used
+  if (.Platform$OS.type == "windows") {
+    command <- normalizePath(gsub("\"","",command))
+  }
   jver <- system2(command, "-version", stdout = TRUE, stderr = TRUE)
   if(any(grepl("GNU libgcj", jver))) {
     stop("Sorry, GNU Java is not supported for H2O.\n",

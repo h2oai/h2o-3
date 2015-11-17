@@ -46,6 +46,10 @@
 #' @param max_iterations The maximum number of iterations to run the optimization loop.
 #'        Each iteration consists of an update of the X matrix, followed by an update
 #'        of the Y matrix.
+#' @param max_updates The maximum number of updates of X or Y to run. Each update consists
+#'        of an update of either the X matrix or the Y matrix. For example, if max_updates = 1
+#'        and max_iterations = 1, the algorithm will initialize X and Y, update X once, and
+#'        terminate without updating Y.
 #' @param init_step_size Initial step size. Divided by number of columns in the training
 #'        frame when calculating the proximal gradient update. The algorithm begins at
 #'        init_step_size and decreases the step size at each iteration until a
@@ -103,6 +107,7 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
                      gamma_x = 0,
                      gamma_y = 0,
                      max_iterations = 1000,
+                     max_updates = 2 * max_iterations,
                      init_step_size = 1.0,
                      min_step_size = 0.001,
                      init = c("Random", "PlusPlus", "SVD"),
@@ -159,6 +164,8 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     parms$gamma_y <- gamma_y
   if(!missing(max_iterations))
     parms$max_iterations <- max_iterations
+  if(!missing(max_updates))
+    parms$max_updates <- max_updates
   if(!missing(init_step_size))
     parms$init_step_size <- init_step_size
   if(!missing(min_step_size))

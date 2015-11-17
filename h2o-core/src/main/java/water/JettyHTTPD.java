@@ -187,9 +187,7 @@ public class JettyHTTPD {
 //    _server.setThreadPool(p);
 
     Connector connector=new SocketConnector();
-    if (_ip != null) {
-      connector.setHost(_ip);
-    }
+    connector.setHost(_ip);
     connector.setPort(_port);
 
     createServer(connector);

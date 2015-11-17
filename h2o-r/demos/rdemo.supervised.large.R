@@ -3,7 +3,7 @@ h2o.init()
 
 runAll = function(data_path,split_ratio,response,predictors,flag,test_file_path){
   #remove all keys from h2o prior to running the function
-  h2o.rm(ids=as.character(grep(pattern = "", x = h2o.ls()$key,value=T)));
+  h2o.rm(as.character(grep(pattern = "", x = h2o.ls()$key,value=T)));
 
   print(paste("Parse : ",data_path,sep=''));
   time = system.time(data  <- h2o.importFile(data_path, destination_frame="data.hex"));
@@ -29,7 +29,7 @@ runAll = function(data_path,split_ratio,response,predictors,flag,test_file_path)
   print(paste("Dimension of test set: ",dim(test),sep=''));
   print("Summary of response column: ")
   print(summary(train[,response]));
-  h2o.rm(ids="data.hex")
+  h2o.rm("data.hex")
   print(h2o.ls())
 
   myY = response

@@ -2,13 +2,14 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
 import random
 
 def random_attack():
+    
+    
 
     def attack(train, valid, x, y):
         kwargs = {}
@@ -20,7 +21,7 @@ def random_attack():
         if random.randint(0,1): kwargs['ntrees'] = random.randint(1,10)
         if random.randint(0,1): kwargs['max_depth'] = random.randint(1,5)
         if random.randint(0,1): kwargs['min_rows'] = random.randint(1,10)
-        if random.randint(0,1): kwargs['nbins'] = random.randint(1,20)
+        if random.randint(0,1): kwargs['nbins'] = random.randint(2,20)
         if random.randint(0,1):
             kwargs['balance_classes'] = True
             if random.randint(0,1): kwargs['max_after_balance_size'] = random.uniform(0,10)
@@ -33,12 +34,8 @@ def random_attack():
         print "y: {0}".format(y)
         print "validation: {0}".format(do_validation)
         for k, v in zip(kwargs.keys(), kwargs.values()): print k + ": {0}".format(v)
-        if do_validation:
-            H2ORandomForestEstimator(**kwargs).train(x=x,y=y,training_frame=train,validation_frame=valid)
-#            h2o.random_forest(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
-        else:
-            H2ORandomForestEstimator(**kwargs).train(x=x,y=y,training_frame=train)
-#            h2o.random_forest(x=train[x], y=train[y], **kwargs)
+        if do_validation: h2o.random_forest(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
+        else: h2o.random_forest(x=train[x], y=train[y], **kwargs)
         print "-----------------------"
 
     print "Import and data munging..."

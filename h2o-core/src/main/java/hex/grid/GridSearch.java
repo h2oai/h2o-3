@@ -1,19 +1,16 @@
 package hex.grid;
 
-import java.util.Map;
-
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
 import hex.grid.HyperSpaceWalker.CartesianWalker;
-import water.DKV;
-import water.H2O;
-import water.Job;
-import water.Key;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.PojoUtils;
+
+import java.util.Map;
 
 /**
  * Grid search job.
@@ -101,8 +98,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
     // this function the grid object is in DKV and accessible.
-    Grid<MP> grid = DKV.getGet(dest());
+    Grid<MP> grid = null;
+    Keyed keyed = DKV.getGet(dest());
+
     if (grid != null) {
+      if (! (keyed instanceof Grid)) {
+        throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + dest() + "; it is a: " + keyed.getClass());
+      }
+
+      grid = (Grid<MP>)keyed;
       Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
       if (!specTrainFrame._key.equals(oldTrainFrame._key) ||

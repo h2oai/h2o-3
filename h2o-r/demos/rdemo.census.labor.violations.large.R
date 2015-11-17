@@ -24,10 +24,13 @@ whd_zcta <- h2o.importFile(pathToWHDData, col.types = c(rep("enum", 7), rep("num
 dim(whd_zcta)
 summary(whd_zcta)
 
+#---------------------------------------#
+#        Low Rank Model of ZCTAs        #
+#---------------------------------------#
 print("Run GLRM to reduce ZCTA demographics to k = 10 archetypes")
 acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZE", 
                       loss = "Quadratic", regularization_x = "Quadratic", 
-                      regularization_y = "L1", max_iterations = 100, gamma_x = 0.25, gamma_y = 0.5)
+                      regularization_y = "L1", gamma_x = 0.25, gamma_y = 0.5, max_iterations = 100)
 acs_model
 
 print("Plot objective function value each iteration")
@@ -57,6 +60,9 @@ text(city_arch[,1], city_arch[,2], labels = c("Upper East Side", "East Harlem", 
 arch_feat_y <- acs_model@model$archetypes
 arch_feat_y
 
+#---------------------------------------#
+#         Performance Comparison        #
+#---------------------------------------#
 ## Split WHD data into test/train with 20/80 ratio
 split <- h2o.runif(whd_zcta)
 train <- whd_zcta[split <= 0.8,]

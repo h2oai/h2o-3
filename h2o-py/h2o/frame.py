@@ -9,11 +9,11 @@ from group_by import GroupBy
 
 # TODO: Automatically convert column names into Frame properties!
 class H2OFrame(object):
-  def __init__(self, python_object=None):
+  def __init__(self, python_obj=None):
     self._ex = ExprNode()
     self._ex._children=None
-    if python_object is not None:
-      self._upload_python_object(python_object)
+    if python_obj is not None:
+      self._upload_python_object(python_obj)
 
   @property
   def columns(self):
@@ -335,8 +335,11 @@ class H2OFrame(object):
     return (self[i] for i in range(self.ncol))
   def __str__(self):
     if sys.gettrace() is None:
+      if self._ex is None: return "This H2OFrame has been removed."
+      row_string = ' rows x ' if self.nrow != 1 else ' row x '
+      column_string = ' columns]' if self.ncol != 1 else ' column]'
       return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore") + '\n\n[' + str(self.nrow) \
-    + ' rows x ' + str(self.ncol) + ' columns]'
+    + row_string + str(self.ncol) + column_string
     return ""
   def __len__(self):
     return self.nrow
@@ -352,6 +355,9 @@ class H2OFrame(object):
     If called from IPython, displays an html'ized result
     Else prints a tabulate'd result
     """
+    if self._ex is None: 
+      print "This H2OFrame has been removed."
+      return
     if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
     if h2o.H2ODisplay._in_ipy():
       import IPython.display
@@ -363,7 +369,7 @@ class H2OFrame(object):
       if use_pandas and h2o.can_use_pandas():
         print self.head().as_data_frame(True)
       else:
-        print self,
+        print self
 
   def summary(self):
     """Summary: show(), plus includes min/mean/max/sigma and other rollup data"""
@@ -446,6 +452,7 @@ class H2OFrame(object):
   def __eq__  (self, i): return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
   def __ne__  (self, i): return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
   def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
+  def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
   # rops
   def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("mod",i,self), cache=self._ex._cache)
   def __radd__(self, i): return self.__add__(i)
@@ -457,9 +464,13 @@ class H2OFrame(object):
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return H2OFrame._expr(expr=ExprNode("^",i,  self), cache=self._ex._cache)
   # unops
-  def __abs__ (self):        return H2OFrame._expr(expr=ExprNode("abs",self), cache=self._ex._cache)
-  def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
-  def __invert__(self): return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
+  def __abs__ (self):    return H2OFrame._expr(expr=ExprNode("abs",self), cache=self._ex._cache)
+  def __invert__(self):  return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
+  def __nonzero__(self): 
+    if self.nrow > 1 or self.ncol > 1: 
+      raise ValueError('This operation is not supported on an H2OFrame. Did you mean & (logical and), | (logical or), or ~ (logical not)?')
+    else:
+      return self.__len__()
 
 
   def mult(self, matrix):
@@ -739,7 +750,20 @@ class H2OFrame(object):
       True if the column is a character column, otherwise False (same as isstring)
     """
     return self.isstring()
-
+  
+  def isin(self, item):
+    """Test whether elements of an H2OFrame are contained in the item.
+    
+    Parameters
+    ----------
+      items : any element or a list of elements
+        An item or a list of items to compare the H2OFrame against.
+    Returns
+    -------
+      An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
+    """
+    return reduce(H2OFrame.__or__, (self == i for i in item)) if _is_list(item) else self == item
+  
   def kfold_column(self, n_folds=3, seed=-1):
     """Build a fold assignments column for cross-validation. This call will produce a
     column having the same data layout as the calling object.
