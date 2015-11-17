@@ -1,9 +1,6 @@
 package hex.tree;
 
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
-import hex.ModelMetricsSupervised;
+import hex.*;
 import hex.genmodel.GenModel;
 import water.MRTask;
 import water.fvec.C0DChunk;
@@ -18,13 +15,15 @@ public class Score extends MRTask<Score> {
   final boolean _oob;           // Computed on OOB
   final ModelCategory _mcat;    // Model category (Binomial, Regression, etc)
   ModelMetrics.MetricBuilder _mb;
+//  GainsLift.GainsLiftBuilder _gainsLiftBuilder;
+  final boolean _computeGainsLift;
 
   /** Compute ModelMetrics on the testing dataset.
    *  It expect already adapted validation dataset which is adapted to a model
    *  and contains a response which is adapted to confusion matrix domain.
    */
-  public Score(SharedTree bldr, boolean is_train, boolean oob, ModelCategory mcat) { _bldr = bldr; _is_train = is_train; _oob = oob; _mcat = mcat; }
-  
+  public Score(SharedTree bldr, boolean is_train, boolean oob, ModelCategory mcat, boolean computeGainsLift) { _bldr = bldr; _is_train = is_train; _oob = oob; _mcat = mcat; _computeGainsLift = computeGainsLift; }
+
   @Override public void map( Chunk chks[] ) {
     Chunk ys = _bldr.chk_resp(chks);  // Response
     Model m = _bldr._model;
@@ -39,6 +38,7 @@ public class Score extends MRTask<Score> {
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
     _mb = m.makeMetricBuilder(domain);
+//    _gainsLiftBuilder = _bldr._model._output.nclasses()==2 ? new GainsLift.GainsLiftBuilder(_fr.vec(_bldr.idx_tree(0)).pctiles()) : null;
     final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
@@ -60,13 +60,20 @@ public class Score extends MRTask<Score> {
       if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, m._output._priorClassDist, tmp, m.defaultThreshold()); // Fill in prediction
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);
+//      if (_gainsLiftBuilder != null) _gainsLiftBuilder.perRow(cdists[2],(int)val[0],weight);
     }
   }
 
-  @Override public void reduce( Score t ) { _mb.reduce(t._mb); }
+  @Override public void reduce( Score t ) {
+    _mb.reduce(t._mb);
+//    if (_gainsLiftBuilder!=null) _gainsLiftBuilder.reduce(t._gainsLiftBuilder);
+  }
 
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
   ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr) {
-    return (ModelMetricsSupervised)_mb.makeModelMetrics(model, fr, null);
+    Frame preds = model._output.nclasses()==2 && _computeGainsLift ? model.score(fr) : null;
+    ModelMetricsSupervised mms = (ModelMetricsSupervised) _mb.makeModelMetrics(model, fr, preds);
+    if (preds != null) preds.remove();
+    return mms;
   }
 }

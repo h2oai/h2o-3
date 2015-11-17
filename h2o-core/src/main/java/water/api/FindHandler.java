@@ -68,7 +68,7 @@ class FindHandler extends Handler {
     long _prev, _next;
     Find( long row, double[] ds ) { 
       _row = row; _ds = ds; _prev = -1; _next = Long.MAX_VALUE; 
-      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY;
+      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY - 2;
     }
     @Override public void map( Chunk cs[] ) {
       for( int col = 0; col<cs.length; col++ ) {

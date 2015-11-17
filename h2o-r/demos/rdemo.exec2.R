@@ -31,7 +31,7 @@ print(head(age.count))
 
 print("Run GLM2 on random sample of 50 observations")
 print("y = CAPSULE, x = AGE, RACE, PSA, VOL, GLEASON")
-prostate.samp <- prostate.hex[sample(1:nrow(prostate.hex), 50),]
+prostate.samp <- prostate.hex[sort(sample(1:nrow(prostate.hex), 50)),]
 prostate.samp.df <- as.data.frame(prostate.samp)    # Pull into R as a data frame
 expect_that(nrow(prostate.samp), equals(50))
 expect_that(nrow(prostate.samp.df), equals(50))

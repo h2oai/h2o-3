@@ -41,6 +41,13 @@ public class ModelMetricsSupervised extends ModelMetrics {
       throw H2O.fail("Subclasses must implement perRow.");
     }
 
+    /**
+     * Create a model metrics object
+     * @param m Model
+     * @param f Frame
+     * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems
+     * @return
+     */
     @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) { return null; }
   }
 }

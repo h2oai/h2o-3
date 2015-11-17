@@ -1596,10 +1596,12 @@ h2o.summary <- function(object, factors=6L, ...) {
       if( !(is.null(col.sum$maxs) || length(col.sum$maxs) == 0L) ) cmax <- max(col.sum$maxs,na.rm=TRUE)  # set the max
       if( !(is.null(col.sum$mean))                               ) cmean<- col.sum$mean                  # set the mean
 
+      #               1      2    3    4    5     6        7          8    9   10   11          12    13   14   15    16  17
+      # new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
       if( !is.null(col.sum$percentiles) ){# set the 1st quartile, median, and 3rd quartile
-        c1Q     <- col.sum$percentiles[4] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
-        cmedian <- col.sum$percentiles[6] # p=.5
-        c3Q     <- col.sum$percentiles[8] # p=.75
+        c1Q     <- col.sum$percentiles[5] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
+        cmedian <- col.sum$percentiles[9] # p=.5
+        c3Q     <- col.sum$percentiles[13] # p=.75
       }
 
       missing.count <- NULL
@@ -1617,15 +1619,11 @@ h2o.summary <- function(object, factors=6L, ...) {
       result
     } else if( col.type == "enum" ) {
       domains <- col.sum$domain
-      domain.cnts <- col.sum$histogram_bins
-      if( length(domain.cnts) < length(domains) ) {
-        if( length(domain.cnts) == 1 )  {   # Constant categorical column
-          cnt <- domain.cnts[1]
-          domain.cnts <- rep(NA, length(domains))
-          domain.cnts[col.sum$data[1]+1] <- cnt
-        } else
-          domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
-      }
+      histo <- col.sum$histogram_bins
+      base <- col.sum$histogram_base
+      domain.cnts <- numeric(length(domains))
+      for( i in 1:length(histo) )
+        domain.cnts[i+base] <- histo[i]
       missing.count <- 0L
       if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
       # create a dataframe of the counts and factor levels, then sort in descending order (most frequent levels at the top)

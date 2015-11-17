@@ -95,11 +95,13 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
             double prob = _parms._probs[p];
             Histo h = h1;  // Start from the first global histogram
 
-            while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) )
+            model._output._iterations++; // At least one iter per-prob-per-column
+            while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) ) {
               h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
+              model._output._iterations++; // also count refinement iterations
+            }
 
             // Update the model
-            model._output._iterations++; // One iter per-prob-per-column
             model.update(_key); // Update model in K/V store
             update(1);          // One unit of work
           }

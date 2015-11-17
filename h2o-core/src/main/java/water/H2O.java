@@ -195,7 +195,10 @@ final public class H2O {
     /** -baseport=####; Port to start upward searching from. */
     public int baseport = 54321;
 
-    /** -port=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
+    public String web_ip = null;
+
+    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
     public String ip;
 
     /** -network=network; Network specification for acceptable interfaces to bind to */
@@ -386,6 +389,10 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.ip = args[i];
       }
+      else if (s.matches("web_ip")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.web_ip = args[i];
+      }
       else if (s.matches("network")) {
         i = s.incrementAndCheck(i, args);
         ARGS.network = args[i];
@@ -501,9 +508,7 @@ final public class H2O {
   public static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
     try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
-    try { NetworkInit._tcpSocketBig.close(); } catch( IOException ignore ) { }
-    if(!H2O.ARGS.useUDP)
-      try { NetworkInit._tcpSocketSmall.close(); } catch( IOException ignore ) { }
+    try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
   }
@@ -1153,8 +1158,11 @@ final public class H2O {
   public static InetAddress      CLOUD_MULTICAST_GROUP;
   public static int              CLOUD_MULTICAST_PORT ;
 
-  // Myself, as a Node in the Cloud
+  /** Myself, as a Node in the Cloud */
   public static H2ONode SELF = null;
+  /** IP address of this node used for communication
+   * with other nodes.
+   */
   public static InetAddress SELF_ADDRESS;
 
   // Place to store temp/swap files
@@ -1326,7 +1334,7 @@ final public class H2O {
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread(NetworkInit._tcpSocketBig).start();
+    new TCPReceiverThread(NetworkInit._tcpSocket).start();
     // Register the default Requests
     Object x = water.api.RequestServer.class;
   }

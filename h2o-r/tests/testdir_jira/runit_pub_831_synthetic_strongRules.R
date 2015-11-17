@@ -35,25 +35,25 @@ test <- function() {
         prostate.def.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, nfolds=0)
         endTime <- proc.time()
         elapsedTime <- endTime - startTime
-        stopifnot(elapsedTime < 60)
+        stopifnot(elapsedTime < 90)
         
         startTime <- proc.time()
         prostate.bin.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","BIN"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, nfolds=0)
         endTime <- proc.time()
         elapsedTime <- endTime - startTime
-        stopifnot(elapsedTime < 60)
+        stopifnot(elapsedTime < 90)
         
         startTime <- proc.time()
         prostate.float.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","FLOAT"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, nfolds=0)
         endTime <- proc.time()
         elapsedTime <- endTime - startTime
-        stopifnot(elapsedTime < 60)
+        stopifnot(elapsedTime < 90)
         
         startTime <- proc.time()
         prostate.int.model <- h2o.glm(x=c("ID","CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL","INT"), y=c("GLEASON"), prostate.train, family="gaussian", lambda_search=FALSE, alpha=1, nfolds=0)
         endTime <- proc.time()
         elapsedTime <- endTime - startTime
-        stopifnot(elapsedTime < 60)
+        stopifnot(elapsedTime < 90)
 
     
     }

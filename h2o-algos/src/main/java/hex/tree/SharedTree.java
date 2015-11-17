@@ -544,9 +544,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       Log.info("============================================================== ");
       SharedTreeModel.SharedTreeOutput out = _model._output;
       _timeLastScoreStart = now;
+
+      final boolean printout = (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval);
+//      final boolean computeGainsLift = printout;  //only compute Gains/Lift during final scoring
+      final boolean computeGainsLift = true;
+
       // Score on training data
       new ProgressUpdate("Scoring the model.").fork(_progressKey);
-      Score sc = new Score(this,true,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
+      Score sc = new Score(this,true,oob,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;
       training_r2 = ((ModelMetricsSupervised)mm).r2();
@@ -555,7 +560,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score again on validation data
       if( _parms._valid != null ) {
-        Score scv = new Score(this,false,false,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
+        Score scv = new Score(this,false,false,_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
@@ -566,7 +571,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
-      if (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval) {
+      if (printout) {
         Log.info(_model.toString());
       }
       _timeLastScoreEnd = System.currentTimeMillis();
@@ -635,6 +640,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
@@ -650,6 +656,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
@@ -681,7 +688,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       table.set(row, col++, st._mse);
       if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
-      if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
+        table.set(row, col++, st._AUC);
+        table.set(row, col++, st._lift);
+      }
       if (_output.isClassifier()) table.set(row, col++, st._classError);
 
       if (_valid != null) {
@@ -689,7 +699,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         table.set(row, col++, st._mse);
         if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
-        if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
+        if (_output.getModelCategory() == ModelCategory.Binomial) {
+          table.set(row, col++, st._AUC);
+          table.set(row, col++, st._lift);
+        }
         if (_output.isClassifier()) table.set(row, col++, st._classError);
       }
       row++;
