@@ -399,6 +399,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
 
 //        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
+        model._timeLastIterationEnter = System.currentTimeMillis();
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           if (!mp._quiet_mode)
@@ -407,7 +408,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
         // put the initial version of the model into DKV
         model.update(self());
-        model._timeLastIterationEnter = System.currentTimeMillis();
         Log.info("Starting to train the Deep Learning model.");
         new ProgressUpdate("Training...").fork(_progressKey);
 
