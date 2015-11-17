@@ -125,7 +125,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
           String speedAfter = (String)table.get((int)(p._epochs+1),2);
           speedAfter = speedAfter.substring(0, speedAfter.length()-9);
           double speedAfterDouble = Double.parseDouble(speedAfter);
-          Assert.assertTrue("Speed shouldn't change more than 30%", Math.abs(speedAfterDouble-speedBeforeDouble)/speedBeforeDouble < 0.3); //expect less than 30% change in speed
+          Assert.assertTrue("Speed shouldn't change more than 50%", Math.abs(speedAfterDouble-speedBeforeDouble)/speedBeforeDouble < 0.5); //expect less than 50% change in speed
         } catch(NumberFormatException ex) {
           //skip runtimes > 1 minute (too hard to parse into seconds here...).
         }
