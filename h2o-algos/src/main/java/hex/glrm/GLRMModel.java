@@ -256,12 +256,15 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
           }
           return ones == 1 && zeros == u.length-1 ? 0 : Double.POSITIVE_INFINITY;
         case Simplex:
-          double sum = 0;
+          double sum = 0, absum = 0;
           for(int i = 0; i < u.length; i++) {
             if(u[i] < 0) return Double.POSITIVE_INFINITY;
-            else sum += u[i];
+            else {
+              sum += u[i];
+              absum += Math.abs(u[i]);
+            }
           }
-          return MathUtils.equalsWithinOneSmallUlp(sum, 1) ? 0 : Double.POSITIVE_INFINITY;
+          return MathUtils.equalsWithinRecSumErr(sum, 1.0, u.length, absum) ? 0 : Double.POSITIVE_INFINITY;
         default:
           throw new RuntimeException("Unknown regularization function " + regularization);
       }

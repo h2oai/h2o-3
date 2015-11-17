@@ -20,7 +20,10 @@ test.glrm.simplex <- function() {
   Log.info("Check that X matrix consists of rows within standard probability simplex")
   fitX.mat <- as.matrix(fitX)
   expect_true(all(fitX.mat >= 0))
-  apply(fitX.mat, 1, function(row) { expect_equal(sum(row), 1, tolerance=.Machine$double.eps) })
+  apply(fitX.mat, 1, function(row) {
+    tol <- (k-1) * .Machine$double.eps * sum(abs(row))   # From pg. 82 of Higham, Numerical Algorithms (2nd Ed)
+    expect_equal(sum(row), 1, tolerance = tol) 
+  })
   
   Log.info("Check final objective function value")
   fitXY <- fitX.mat %*% fitY
