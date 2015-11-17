@@ -76,7 +76,10 @@ class ExprNode:
   def _eval_driver(self,top):
     exec_str = self._do_it(top)
     res = h2o.rapids(exec_str)
-    if 'scalar' in res:  self._cache._data = res['scalar']
+    if 'scalar' in res:
+      if not isinstance(res['scalar'], list):
+        res['scalar'] = [res['scalar']]
+      self._cache._data = [float(x) for x in res['scalar']]
     if 'string' in res:  self._cache._data = res['string']
     if 'funstr' in res:  raise NotImplementedError
     if 'key'    in res:
