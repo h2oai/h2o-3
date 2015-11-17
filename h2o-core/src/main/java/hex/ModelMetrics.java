@@ -42,6 +42,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _scoring_time = System.currentTimeMillis();
   }
 
+  public long residualDegreesOfFreedom(){throw new UnsupportedOperationException("residual degrees of freedom is not supported for this metric class");}
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("Model Metrics Type: " + this.getClass().getSimpleName().substring(12) + "\n");

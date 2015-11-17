@@ -1942,8 +1942,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         assert _taskInfo._activeCols == null || glmt._beta == null || glmt._beta.length == (_taskInfo._activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _taskInfo._activeCols.length);
         assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
         double reg = _parms._obj_reg;
-        glmt._gram.mul(reg);
-        ArrayUtils.mult(glmt._xy, reg);
+        // sum of weights of this weighted least square problem,  includes both user weights and weights generated during fitting
+        double wsum = glmt._gram.get(_activeData.fullN(),_activeData.fullN());
+        GramSolver gslvr = null;
+        if(currentLambda() > 0) { // no need for this if has no regularization
+          glmt._gram.mul(reg);
+          ArrayUtils.mult(glmt._xy, reg);
+        }
         if (_countIteration) ++_taskInfo._iter;
         long callbackStart = System.currentTimeMillis();
         double lastObjVal = _taskInfo._objVal;
@@ -1979,11 +1984,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         // l1pen or upper/lower bounds require ADMM solver
         if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null || _bc._betaGiven != null) {
           // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
-          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
+          gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
           new ADMM.L1Solver(1e-4, 10000).solve(gslvr, newBeta, l1pen, _parms._intercept, _bc._betaLB, _bc._betaUB);
         } else {
           glmt._gram.addDiag(l2pen);
-          new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept).solve(newBeta);
+          (gslvr = new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept)).solve(newBeta);
         }
         LogInfo("iteration computed in " + (callbackStart - _iterationStartTime) + " + " + (System.currentTimeMillis() - tx) + " ms");
         _taskInfo._worked += _taskInfo._workPerIteration;
@@ -2000,9 +2005,30 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             LogInfo("converged (reached a fixed point with ~ 1e" + diff + " precision), got " + nzs + " nzs");
             if(_parms._family == Family.multinomial)
               System.arraycopy(newBeta,0,_taskInfo._beta_multinomial[_c],0,newBeta.length);
-//            else if(_parms._family == Family.gaussian){
+            if(_parms._family == Family.gaussian)
               _taskInfo._beta = newBeta;
-//            }
+            else
+              _taskInfo._beta = glmt._beta;
+            // compute KKTs
+            if(_parms._compute_p_values) { // compute p-values
+              double se = 1;
+              boolean seEst = false;
+              if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
+                seEst = true;
+                ComputeSETsk ct = new ComputeSETsk(null, _activeData, GLM.this.jobKey(), _taskInfo._beta, _parms).doAll(_activeData._adaptedFrame);
+                se = ct._sumsqe / (_taskInfo._nobs - 1 - _activeData.fullN());
+              }
+              double [] v = new double[_activeData.fullN()+1];
+              double [] zvalues = new double[_activeData.fullN()+1];
+              for(int i = 0; i < v.length; ++i) {
+                Arrays.fill(v,0);
+                v[i] = 1;
+                gslvr._chol.solve(v); // compute ith column of the inv(Gram)
+                zvalues[i] = _taskInfo._beta[i]/Math.sqrt(v[i]*se);
+              }
+              _model.setZValues(zvalues,se, seEst);
+              _model.update(GLM.this.jobKey());
+            }
             checkKKTsAndComplete(true,(H2OCountedCompleter)getCompleter());
             return;
           } else { // not done yet, launch next iteration
