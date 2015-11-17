@@ -50,7 +50,7 @@
 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: First Edition 
+\monthname \hspace{1pt}  \the\year: Second Edition 
 
 \bigskip
 \end{center}
@@ -75,7 +75,8 @@ Machine Learning with Python and H2O\\
   by Spencer Aiello, Cliff Click, \\ Hank Roark \&\  Ludi Rehak\\
 Edited by: Jessica Lanford
 \bigskip
-  Published by H2O.ai, Inc. \\
+
+Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
@@ -112,7 +113,7 @@ Printed in the United States of America.
 This documentation describes how to use H2O from Python. More information on H2O's system and algorithms
 (as well as complete Python user documentation) is available at the H2O website at {\url{http://docs.h2o.ai}}.
 
-H2O Python uses a REST API to connect to H2O. To use H2O in Python or launch H2O from Python, specify the IP address and port number of the H2O instance in the Python environment . Datasets are not directly transmitted
+H2O Python uses a REST API to connect to H2O. To use H2O in Python or launch H2O from Python, specify the IP address and port number of the H2O instance in the Python environment. Datasets are not directly transmitted
 through the REST API. Instead, commands (for example, importing a dataset at specified HDFS location) are sent either through the browser or the REST API to perform the specified task.
 
 The dataset is then assigned an identifier that is used as a reference in  commands to the web server.
@@ -216,14 +217,15 @@ Typically, we import and start H2O on the same machine as the running Python pro
 To connect to an established H2O cluster (in a multi-node Hadoop environment, for example):
 \lstinputlisting[style=pythoncode, firstline=587, lastline=588]{python/ipython_dataprep_output_fixed.txt}
 
-\newpage
 To create an H2OFrame object from a Python tuple:
 \lstinputlisting[style=pythoncode, firstline=33, lastline=46]{python/ipython_dataprep_output_fixed.txt}
 
 To create an H2OFrame object from a Python list:
 \lstinputlisting[style=pythoncode, firstline=48, lastline=61]{python/ipython_dataprep_output_fixed.txt}
 
-To create an H2OFrame object from a Python dict or \texttt{collections.OrderedDict}:
+\newpage
+
+To create an H2OFrame object from  \texttt{collections.OrderedDict} or a Python dict:
 \lstinputlisting[style=pythoncode, firstline=63, lastline=76]{python/ipython_dataprep_output_fixed.txt}
 
 To create an H2OFrame object from a Python dict and specify the column types:
@@ -231,6 +233,8 @@ To create an H2OFrame object from a Python dict and specify the column types:
 
 To display the column types:
 \lstinputlisting[style=pythoncode, firstline=95, lastline=96]{python/ipython_dataprep_output_fixed.txt}
+
+\newpage
 
 \subsection{Viewing Data}
 To display the top and bottom of an H2OFrame:
@@ -260,7 +264,6 @@ To select multiple columns by name, resulting in an H2OFrame:
 To select multiple columns by index, resulting in an H2OFrame:
 \lstinputlisting[style=pythoncode, firstline=201, lastline=213]{python/ipython_dataprep_output_fixed.txt}
 
-\newpage
 To select multiple rows by slicing, resulting in an H2OFrame: 
 
 \textbf{Note} By default, H2OFrame selection is for columns, so to slice by rows
@@ -293,7 +296,6 @@ When performing a descriptive statistic on an entire H2OFrame, missing data is g
 and the operation is only performed on the columns of the appropriate data type:
 \lstinputlisting[style=pythoncode, firstline=277, lastline=287]{python/ipython_dataprep_output_fixed.txt}
 
-\newpage
 When performing a descriptive statistic on a single column of an H2OFrame, missing data is generally 
 \textit{not} excluded:
 \lstinputlisting[style=pythoncode, firstline=289, lastline=293]{python/ipython_dataprep_output_fixed.txt}
@@ -301,13 +303,12 @@ When performing a descriptive statistic on a single column of an H2OFrame, missi
 In both examples,  a native Python object is returned (list and float respectively
 in these examples).
 
-When applying functions to each column of the data, an H2OFrame containing the means of each column is returned :
+When applying functions to each column of the data, an H2OFrame containing the means of each column is returned:
 \lstinputlisting[style=pythoncode, firstline=295, lastline=303]{python/ipython_dataprep_output_fixed.txt}
 
-When applying functions to each row of the data, an H2OFrame containing the sum of all columns is returned :
+When applying functions to each row of the data, an H2OFrame containing the sum of all columns is returned:
 \lstinputlisting[style=pythoncode, firstline=305, lastline=317]{python/ipython_dataprep_output_fixed.txt}
 
-\newpage
 H2O provides many methods for histogramming and discretizing data.
 Here is an example using the {\texttt{hist}} method on a single data frame:
 \lstinputlisting[style=pythoncode, firstline=319, lastline=337]{python/ipython_dataprep_output_fixed.txt}
@@ -321,10 +322,7 @@ To determine the number of times a string is contained in each element:
 To replace the first occurrence of `l' (lower case letter) with `x' and return a new H2OFrame:
 \lstinputlisting[style=pythoncode, firstline=364, lastline=372]{python/ipython_dataprep_output_fixed.txt}
 
-For global substitution, use {\texttt{gsub}}.  Both {\texttt{sub}} and {\texttt{gsub}} support regular expressions.
-
-\newpage
-To split strings based on a regular expression:
+For global substitution, use {\texttt{gsub}}.  Both {\texttt{sub}} and {\texttt{gsub}} support regular expressions. To split strings based on a regular expression:
 \lstinputlisting[style=pythoncode, firstline=374, lastline=382]{python/ipython_dataprep_output_fixed.txt}
 
 
@@ -336,6 +334,8 @@ For successful row binding, the column names and column types between the two H2
 
 H2O also supports merging two frames together by matching column names:
 \lstinputlisting[style=pythoncode, firstline=425, lastline=451]{python/ipython_dataprep_output_fixed.txt}
+
+\newpage
 
 \subsection{Grouping}
 
@@ -353,10 +353,11 @@ To group and then apply a function to the results:
 To group by multiple columns and then apply a function:
 \lstinputlisting[style=pythoncode, firstline=487, lastline=497]{python/ipython_dataprep_output_fixed.txt}
 
+\newpage
+
 To join the results into the original H2OFrame:
 \lstinputlisting[style=pythoncode, firstline=499, lastline=509]{python/ipython_dataprep_output_fixed.txt}
 
-\newpage
 \subsection{Using Date and Time Data} 
 H2O has powerful features for ingesting and feature engineering using time data.  Internally, H2O
 stores time information as an integer of the number of milliseconds since the epoch.
@@ -394,7 +395,6 @@ To retain the most common categories and set the remaining categories to a commo
 These can then be added as a new column on the original dataframe:
 \lstinputlisting[style=pythoncode, firstline=573, lastline=585]{python/ipython_dataprep_output_fixed.txt}
 
-\newpage
 \subsection{Loading and Saving Data}
 In addition to loading data from Python objects, H2O can load data directly from:
 \begin{itemize}
@@ -403,6 +403,8 @@ In addition to loading data from Python objects, H2O can load data directly from
 \item distributed file systems (HDFS)
 \item HTTP addresses
 \end{itemize}
+
+\newpage
 
  H2O currently supports the following file types:
 
@@ -438,8 +440,10 @@ To save an H2OFrame on the machine running H2O:
 To save an H2OFrame on the machine running Python:
 \lstinputlisting[style=pythoncode, firstline=597, lastline=598]{python/ipython_dataprep_output_fixed.txt}
 
-\newpage
 \section{Machine Learning}
+
+The following sections describe some common model types and features. 
+
 
 \subsection{Modeling}
 The following section describes the features and functions of some common models available in H2O.  For more information about running these models in Python using H2O, refer to the documentation on
@@ -472,9 +476,11 @@ H2O supports the following models:
 \end{frame}
 
 
-The list is growing quickly, so check \url{www.h2o.ai} to see the latest additions. The following list describes some common model types and features. 
+The list is growing quickly, so check \url{www.h2o.ai} to see the latest additions. 
 
 \subsubsection{Supervised Learning}
+
+
 {\textbf{Generalized Linear Models (GLM)}}: Provides flexible generalization of ordinary linear regression for response variables with error distribution models other than a Gaussian (normal) distribution. GLM unifies various other statistical models, including Poisson, linear, logistic, and others when using $\ell_1$ and $\ell_2$ regularization.
 
 {\textbf{Distributed Random Forest}}: Averages multiple decision trees, each created on different random samples of rows and columns. It is easy to use, non-linear, and provides feedback on the importance of each predictor in the model, making it one of the most robust algorithms for noisy data.
@@ -491,6 +497,8 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 {\textbf{Principal Component Analytis (PCA)}}: The algorithm is carried out on a set of possibly collinear features and performs a transformation to produce a new set of uncorrelated features.
 
 {\textbf{Anomaly Detection}}: Identifies the outliers in your data by invoking the deep learning autoencoder, a powerful pattern recognition model.
+
+\newpage
 
 \subsection{Running Models}
 This section describes how to run the following model types:
@@ -541,7 +549,9 @@ H2O's GLM algorithm fits the generalized linear model with
 elastic net penalties. The model fitting computation is distributed,
 extremely fast,and scales extremely well for models with a limited
 number ($\sim$ low thousands) of predictors with non-zero
-coefficients. The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to glmnet. It can compute Gaussian (linear), logistic, Poisson, and gamma regression models.
+coefficients. 
+
+The algorithm can compute models for a single value of a penalty argument or the full regularization path, similar to glmnet. It can compute Gaussian (linear), logistic, Poisson, and gamma regression models.
 To generate a generalized linear model for developing
 linear models for exponential distributions, use
 {\texttt{H2OGeneralizedLinearEstimator}}. You can apply
@@ -564,6 +574,8 @@ transformations, use {\texttt{h2o.transforms.decomposition.H2OPCA}}.
 This is the first step in Principal Components Regression.
 \lstinputlisting[style=pythoncode, firstline=341, lastline=383]{python/ipython_machine_learning_output_fixed.txt}
 
+\newpage
+
 \subsection{Grid Search}
 H2O supports grid search across hyperparameters:
 
@@ -571,7 +583,7 @@ H2O supports grid search across hyperparameters:
 \lstinputlisting[style=pythoncode, firstline=385, lastline=423]{python/ipython_machine_learning_output_fixed.txt}
 
 \subsection{Integration with scikit-learn}
-The H2O Python client can be used within scikit-learn pipelines and cross validation searches.  This extends the power of both H2O and scikit-learn.
+The H2O Python client can be used within scikit-learn pipelines and cross-validation searches.  This extends the capabilities of both H2O and scikit-learn.
 \subsubsection{Pipelines}
 
 To create a scikit-learn style pipeline using H2O transformers and estimators:
