@@ -97,12 +97,13 @@ class ASTRowSlice extends ASTPrim {
     long nrows = fr.numRows();
     if( asts[2] instanceof ASTNumList ) {
       final ASTNumList nums = (ASTNumList)asts[2];
-      if( !nums._isSort && !nums.isEmpty() )
-        throw new IllegalArgumentException("H2O does not currently reorder rows, please sort your row selection first");
+
       long[] rows = (nums._isList || nums.min()<0) ? nums.expand8Sort() : null;
       if( rows!=null ) {
         if (rows.length == 0) {      // Empty inclusion list?
         } else if (rows[0] >= 0) { // Positive (inclusion) list
+          if( !nums._isSort && !nums.isEmpty() )
+            throw new IllegalArgumentException("H2O does not currently reorder rows, please sort your row selection first");
           if (rows[rows.length - 1] > nrows)
             throw new IllegalArgumentException("Row must be an integer from 0 to " + (nrows - 1));
         } else {                  // Negative (exclusion) list
