@@ -6,9 +6,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.MathUtils;
-import water.util.PrettyPrint;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.Arrays;
 
@@ -93,17 +91,24 @@ public class GainsLift extends Iced {
     Scope.enter();
     init(); //check parameters and obtain _quantiles from _preds
     try {
-      GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
-      gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
-      response_rates = gt.response_rates();
-      avg_response_rate = gt.avg_response_rate();
-      positive_responses = gt.responses();
+      if (ArrayUtils.minValue(_quantiles) != ArrayUtils.maxValue(_quantiles)) {
+        GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
+        gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
+        response_rates = gt.response_rates();
+        avg_response_rate = gt.avg_response_rate();
+        positive_responses = gt.responses();
+      } else {
+        Log.info("Not computing Gains/Lift table from trivial (constant) predictions.");
+      }
     } finally {       // Delete adaptation vectors
       Scope.exit();
     }
   }
 
-  @Override public String toString() { return createTwoDimTable().toString(); }
+  @Override public String toString() {
+    TwoDimTable t = createTwoDimTable();
+    return t==null ? "" : t.toString();
+  }
 
   public TwoDimTable createTwoDimTable() {
     if (response_rates == null) return null;

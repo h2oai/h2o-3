@@ -544,9 +544,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       Log.info("============================================================== ");
       SharedTreeModel.SharedTreeOutput out = _model._output;
       _timeLastScoreStart = now;
+
+      final boolean printout = (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval);
+      final boolean computeGainsLift = printout;
+
       // Score on training data
       new ProgressUpdate("Scoring the model.").fork(_progressKey);
-      Score sc = new Score(this,true,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
+      Score sc = new Score(this,true,oob,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;
       training_r2 = ((ModelMetricsSupervised)mm).r2();
@@ -555,7 +559,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score again on validation data
       if( _parms._valid != null ) {
-        Score scv = new Score(this,false,false,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
+        Score scv = new Score(this,false,false,_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
@@ -566,7 +570,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
-      if (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval) {
+      if (printout) {
         Log.info(_model.toString());
       }
       _timeLastScoreEnd = System.currentTimeMillis();

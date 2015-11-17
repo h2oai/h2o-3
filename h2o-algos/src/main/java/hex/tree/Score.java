@@ -6,7 +6,6 @@ import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
@@ -17,12 +16,13 @@ public class Score extends MRTask<Score> {
   final ModelCategory _mcat;    // Model category (Binomial, Regression, etc)
   ModelMetrics.MetricBuilder _mb;
 //  GainsLift.GainsLiftBuilder _gainsLiftBuilder;
+  final boolean _computeGainsLift;
 
   /** Compute ModelMetrics on the testing dataset.
    *  It expect already adapted validation dataset which is adapted to a model
    *  and contains a response which is adapted to confusion matrix domain.
    */
-  public Score(SharedTree bldr, boolean is_train, boolean oob, ModelCategory mcat) { _bldr = bldr; _is_train = is_train; _oob = oob; _mcat = mcat; }
+  public Score(SharedTree bldr, boolean is_train, boolean oob, ModelCategory mcat, boolean computeGainsLift) { _bldr = bldr; _is_train = is_train; _oob = oob; _mcat = mcat; _computeGainsLift = computeGainsLift; }
 
   @Override public void map( Chunk chks[] ) {
     Chunk ys = _bldr.chk_resp(chks);  // Response
@@ -71,7 +71,7 @@ public class Score extends MRTask<Score> {
 
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
   ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr) {
-    Frame preds = model._output.nclasses()==2 ? model.score(fr) : null;
+    Frame preds = model._output.nclasses()==2 && _computeGainsLift ? model.score(fr) : null;
     ModelMetricsSupervised mms = (ModelMetricsSupervised) _mb.makeModelMetrics(model, fr, preds);
     if (preds != null) preds.remove();
     return mms;
