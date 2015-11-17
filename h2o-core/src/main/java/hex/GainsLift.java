@@ -69,7 +69,7 @@ public class GainsLift extends Iced {
     Scope.enter();
     init(); //check parameters and obtain _quantiles from _preds
     try {
-      GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles, _labels.length());
+      GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
       gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
       response_rates = gt.response_rates();
       avg_response_rate = gt.avg_response_rate();
@@ -104,23 +104,23 @@ public class GainsLift extends Iced {
   }
 
   // Compute Gains table via MRTask
-  static class GainsLiftBuilder extends MRTask<GainsLiftBuilder> {
+  public static class GainsLiftBuilder extends MRTask<GainsLiftBuilder> {
     /* @OUT response_rates */
     public final float[] response_rates() { return _response_rates; }
     public final float avg_response_rate() { return _avg_response_rate; }
     public final long[] responses(){ return _responses; }
 
-    /* @IN total count of events */ final private double[] _thresh;
-    final private long _count;
+    /* @IN quantiles/thresholds */
+    final private double[] _thresh;
 
     private long[] _responses;
     private long _avg_response;
     private float _avg_response_rate;
     private float[] _response_rates;
+    private long _count;
 
-    GainsLiftBuilder(double[] thresh, long count) {
+    public GainsLiftBuilder(double[] thresh) {
       _thresh = thresh.clone();
-      _count = count;
     }
 
     @Override public void map( Chunk ca, Chunk cp, Chunk w) {
@@ -159,6 +159,7 @@ public class GainsLift extends Iced {
         }
       }
       if (a == 1) _avg_response++;
+      _count++;
     }
 
     @Override public void reduce(GainsLiftBuilder other) {
@@ -166,6 +167,7 @@ public class GainsLift extends Iced {
         _responses[i] += other._responses[i];
       }
       _avg_response += other._avg_response;
+      _count += other._count;
     }
 
     @Override public void postGlobal(){
