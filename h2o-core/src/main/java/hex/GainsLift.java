@@ -118,7 +118,7 @@ public class GainsLift extends Iced {
             new String[GROUPS],
             new String[]{"Decile", "Lower threshold", "Response rate", "Lift", "Cumulative Lift"},
             new String[]{"int", "double", "double", "double", "double"},
-            new String[]{"%d", "%5f", "%5f", "%5f", "%5f"},
+            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f"},
             "");
     float cumulativelift = 0;
     for (int i = 0; i < GROUPS; ++i) {
