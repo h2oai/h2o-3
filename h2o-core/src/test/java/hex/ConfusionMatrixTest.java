@@ -1,11 +1,11 @@
-package water;
-
-import hex.ConfusionMatrix;
-import static hex.ConfusionMatrix.buildCM;
+package hex;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Key;
+import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.VecUtils;
@@ -32,7 +32,7 @@ public class ConfusionMatrixTest extends TestUtil {
             ard( ard(2, 0, 0),
                     ard(0, 2, 0),
                     ard(0, 0, 1)),
-            debug, false);
+            debug);
   }
 
   @Test
@@ -47,7 +47,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 1, 1),
                     ard(0, 0, 1)
             ),
-            debug, false);
+            debug);
   }
 
   /** Negative test testing expected exception if two vectors
@@ -65,7 +65,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 1, 1),
                     ard(0, 0, 1)
             ),
-            debug, false);
+            debug);
   }
 
   @Test
@@ -81,7 +81,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 0, 2),
                     ard(0, 0, 1)
             ),
-            debug, false);
+            debug);
 
     simpleCMTest(
             "smalldata/junit/cm/v2.csv",
@@ -93,7 +93,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 1, 1),
                     ard(0, 0, 2)
             ),
-            debug, false);
+            debug);
   }
 
   @Test
@@ -108,7 +108,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 2, 0),
                     ard(0, 0, 1)
             ),
-            debug, true);
+            debug);
 
     simpleCMTest(
             "smalldata/junit/cm/v1n.csv",
@@ -120,7 +120,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 1, 1),
                     ard(0, 0, 1)
             ),
-            debug, true);
+            debug);
   }
 
   @Test
@@ -136,7 +136,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 0, 2),
                     ard(0, 0, 1)
             ),
-            debug, true);
+            debug);
 
     simpleCMTest(
             "smalldata/junit/cm/v2n.csv",
@@ -148,7 +148,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 1, 1),
                     ard(0, 0, 2)
             ),
-            debug, true);
+            debug);
 
   }
 
@@ -168,7 +168,7 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 0, 2),
                     ard(0, 0, 1)
             ),
-            debug, false);
+            debug);
 
   }
 
@@ -183,26 +183,26 @@ public class ConfusionMatrixTest extends TestUtil {
                     ard(0, 0, 2),
                     ard(0, 0, 1)
             ),
-            debug, false);
+            debug);
 
   }
 
-  private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toCategorical) {
+  private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug) {
     try {
       Frame v1 = parseFrame(Key.make("v1.hex"), find_test_file(f1));
       Frame v2 = parseFrame(Key.make("v2.hex"), find_test_file(f2));
       v2 = v1.makeCompatible(v2);
-      simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug, toCategorical);
+      simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug);
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
   /** Delete v1, v2 after potential modifying operations during processing: categoricals and/or train/test adaptation. */
-  private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug, boolean toCategorical) {
+  private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug) {
     Scope.enter();
     try {
-      ConfusionMatrix cm = buildCM(VecUtils.toCategoricalVec(v1.vecs()[0]), VecUtils.toCategoricalVec(v2.vecs()[0]));
+      ConfusionMatrix cm = ConfusionMatrix.buildCM(VecUtils.toCategoricalVec(v1.vecs()[0]), VecUtils.toCategoricalVec(v2.vecs()[0]));
 
       // -- DEBUG --
       if (debug) {

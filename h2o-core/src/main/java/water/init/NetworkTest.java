@@ -59,6 +59,7 @@ public class NetworkTest extends Iced {
     public int repeats = 10;
     boolean serial;
     boolean collective;
+    private final byte _priority; // Allow higher priority for GUI work
 
     public NetworkTester(int[] msg, double[][] res, double[] res_collective, int rep, boolean serial, boolean collective) {
       microseconds = res;
@@ -67,10 +68,11 @@ public class NetworkTest extends Iced {
       repeats = rep;
       this.serial = serial;
       this.collective = collective;
+      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.MIN_HI_PRIORITY-1;
     }
+    @Override public byte priority() { return _priority; }
 
-    @Override
-    public void compute2() {
+    @Override public void compute2() {
       // serial comm
       if (serial) {
         for (int i = 0; i < microseconds.length; ++i) {
@@ -95,20 +97,9 @@ public class NetworkTest extends Iced {
    */
   private static class PingPongTask extends DTask<PingPongTask> {
     private final byte[] _payload;
-
-    public PingPongTask(byte[] payload) {
-      _payload = payload;
-    }
-
-    @Override
-    public void compute2() {
-      tryComplete();
-    }
-
-    @Override
-    public byte priority() {
-      return H2O.MIN_HI_PRIORITY;
-    }
+    public PingPongTask(byte[] payload) { _payload = payload; }
+    @Override public void compute2() { tryComplete(); }
+    @Override public byte priority() { return H2O.MIN_HI_PRIORITY; }
   }
 
   /**

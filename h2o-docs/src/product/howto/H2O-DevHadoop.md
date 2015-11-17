@@ -72,14 +72,13 @@ The following tutorial will walk the user through the download or build of H2O a
 
 		hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
- The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
+    The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
 
-	- *mapperXmx* is the mapper size or the amount of memory allocated to each node. Specify at least 6 GB. 
+	 - *mapperXmx* is the mapper size or the amount of memory allocated to each node. Specify at least 6 GB. 
 
-	- *nodes* is the number of nodes requested to form the cluster.
+	 - *nodes* is the number of nodes requested to form the cluster.
 
-	- *output* is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
-
+	 - *output* is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
 
 0. To monitor your job, direct your web browser to your standard job tracker Web UI.
 To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched,

@@ -223,7 +223,7 @@ class H2OCloudNode:
             main_class = "water.H2OClientApp"
         else:
             main_class = "water.H2OApp"
-        if "JAVA_HOME" in os.environ:
+        if "JAVA_HOME" in os.environ and not sys.platform == "win32":
             java = os.environ["JAVA_HOME"] + "/bin/java"
         else:
             java = "java"
@@ -2075,7 +2075,9 @@ def wipe_test_state(test_root_dir):
             if ("Rsandbox" in s):
                 rsandbox_dir = os.path.join(d, s)
                 try:
-                    shutil.rmtree(rsandbox_dir)
+                    if sys.platform == "win32":
+                        os.system(r'C:/cygwin64/bin/rm.exe -r -f "{0}"'.format(rsandbox_dir))
+                    else: shutil.rmtree(rsandbox_dir)
                 except OSError as e:
                     print("")
                     print("ERROR: Removing RSandbox directory failed: " + rsandbox_dir)

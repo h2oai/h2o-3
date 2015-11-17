@@ -93,7 +93,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
       f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
       DKV.put(f);
-      makeMetricBuilder(null).makeModelMetrics(this, orig);
+      makeMetricBuilder(null).makeModelMetrics(this, orig, null);
       return f;
     }
   }

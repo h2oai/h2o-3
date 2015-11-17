@@ -632,8 +632,8 @@ MAIN_LOOP:
     final String[][] data = new String[lines.length][];
     if( lines.length == 1 ) {       // Ummm??? Only 1 line?
       if( sep == GUESS_SEP) {
-        if (lines[0].split(",").length > 2) sep = (byte) ',';
-        else if (lines[0].split(" ").length > 2) sep = ' ';
+        if (lines[0].split(",").length > 1) sep = (byte) ',';
+        else if (lines[0].split(" ").length > 1) sep = ' ';
         else { //one item, guess type
           data[0] = new String[]{lines[0]};
           byte[] ctypes = new byte[1];

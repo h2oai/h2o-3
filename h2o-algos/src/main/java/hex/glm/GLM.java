@@ -454,15 +454,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           betas[i][0] = betaMultinomial[i][betaMultinomial[i].length-1];
         nullSm = new Submodel(_parms._lambda[0], betas, idxs, 0, itsk.getNullValidation().explainedDev(),itsk._gtNullTestMultinomial != null?itsk._gtNullTestMultinomial._val.residualDeviance():Double.NaN);
         if(_valid != null)
-          _model._output._validation_metrics = itsk._gtNullTestMultinomial._val.makeModelMetrics(_model, _parms.valid());
+          _model._output._validation_metrics = itsk._gtNullTestMultinomial._val.makeModelMetrics(_model, _parms.valid(), null);
       } else {
         nullSm = new Submodel(_parms._lambda[0], _bc._betaStart, 0, itsk.getNullValidation().explainedDev(), itsk._gtNullTest != null ? itsk._gtNullTest._val.residualDeviance() : Double.NaN);
         if(_valid != null)
-          _model._output._validation_metrics = itsk._gtNullTest._val.makeModelMetrics(_model, _parms.valid());
+          _model._output._validation_metrics = itsk._gtNullTest._val.makeModelMetrics(_model, _parms.valid(), null);
       }
       _model.setSubmodel(nullSm);
       _model._output.setSubmodelIdx(0);
-      _model._output._training_metrics = itsk.getNullValidation().makeModelMetrics(_model,_parms.train());
+      _model._output._training_metrics = itsk.getNullValidation().makeModelMetrics(_model,_parms.train(), null);
       _model.delete_and_lock(GLM.this._key);
 //      if(_parms._solver == Solver.COORDINATE_DESCENT) { // make needed vecs
 //        double eta = _parms.link(_tInfos[0]._ymu);
@@ -1656,7 +1656,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if(score) { // set the training metrics (always the last iteration if running without validation set)
             _model._output.pickBestModel();
             if(_model._output.bestSubmodel().lambda_value ==  _parms._lambda[_lambdaId]) {
-              _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train());
+              _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train(), null);
               if(_parms._family == Family.binomial)
                 _model._output._threshold = ((ModelMetricsBinomial)_model._output._training_metrics)._auc.defaultThreshold();
             }
@@ -1704,8 +1704,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                     _model._output.pickBestModel();
                     if (_model._output.bestSubmodel().lambda_value == _parms._lambda[_lambdaId]) {
                       // latest is the best
-                      _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train());
-                      _model._output._validation_metrics = gt2._val.makeModelMetrics(_model, _parms.valid());
+                      _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train(), null);
+                      _model._output._validation_metrics = gt2._val.makeModelMetrics(_model, _parms.valid(), null);
                       if (_parms._family == Family.binomial && gt2._nobs > 0)
                         _model._output._threshold = ((ModelMetricsBinomial) _model._output._validation_metrics)._auc.defaultThreshold();
                     }
@@ -1826,8 +1826,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   _model._output.pickBestModel();
                   if(_model._output.bestSubmodel().lambda_value ==  _parms._lambda[_lambdaId]) {
                     // latest is the best
-                    _model._output._training_metrics = gt1._val.makeModelMetrics(_model,_parms.train());
-                    _model._output._validation_metrics = gt2._val.makeModelMetrics(_model,_parms.valid());
+                    _model._output._training_metrics = gt1._val.makeModelMetrics(_model,_parms.train(), null);
+                    _model._output._validation_metrics = gt2._val.makeModelMetrics(_model,_parms.valid(), null);
                     if(_parms._family == Family.binomial && gt2._nobs > 0)
                       _model._output._threshold = ((ModelMetricsBinomial)_model._output._validation_metrics)._auc.defaultThreshold();
                   }
@@ -1846,7 +1846,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if(score) { // set the training metrics (always the last iteration if running without validation set)
               _model._output.pickBestModel();
               if(_model._output.bestSubmodel().lambda_value ==  _parms._lambda[_lambdaId]) {
-                _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train());
+                _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train(), null);
                 if(_parms._family == Family.binomial)
                   _model._output._threshold = ((ModelMetricsBinomial)_model._output._training_metrics)._auc.defaultThreshold();
               }

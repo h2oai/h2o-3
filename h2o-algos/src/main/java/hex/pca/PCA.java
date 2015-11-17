@@ -228,6 +228,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           assert gram.fullN() == _ncolExp;
           model._output._nobs = gtsk._nobs;
 
+          // Cannot calculate SVD if all rows contain missing value(s) and hence were skipped
+          if(gtsk._nobs == 0)
+            error("_train", "Every row in _train contains at least one missing value. Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead.");
+          if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
+
           // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm
           update(1, "Calculating SVD of Gram matrix locally");

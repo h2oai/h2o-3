@@ -84,7 +84,8 @@ public class RapidsTest extends TestUtil {
     tree = "(cols (rows a.hex [0:4 6 7]) [0])";
     checkTree(tree);
     // Checking `hex[c(8,1,1,7),1]`
-    tree = "(rows a.hex [8 1 1 7])";
+    // No longer handle dup or out-of-order rows
+    tree = "(rows a.hex [2 7 8])";
     checkTree(tree);
   }
 

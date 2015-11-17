@@ -137,7 +137,7 @@ class H2OColOp(H2OTransformer):
 
 
 class H2OBinaryOp(H2OColOp):
-  """ Perform a binary operation on a column.
+  """Perform a binary operation on a column.
 
   If left is None, then the column will appear on the left in the operation; otherwise
   it will be appear on the right.

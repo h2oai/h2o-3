@@ -173,7 +173,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     }
 
     public void postGlobal() {}
-    // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public abstract ModelMetrics makeModelMetrics( Model m, Frame f);
+
+    /**
+     * Having computed a MetricBuilder, this method fills in a ModelMetrics
+     * @param m Model
+     * @param f Scored Frame
+     * @param preds Predictions of m on f (optional)
+     * @return Filled Model Metrics object
+     */
+    public abstract ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds);
   }
 }

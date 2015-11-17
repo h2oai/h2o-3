@@ -39,10 +39,12 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Optional parameters
     public int _max_iterations = 1000;            // Max iterations
+    public int _max_updates = 2*_max_iterations;  // Max number of updates (X or Y)
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
-    // public Key<Frame> _representation_key;               // Key to save X matrix
+
+    // public Key<Frame> _representation_key;     // Key to save X matrix
     public String _representation_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _impute_original = false;      // Reconstruct original training data by reversing _transform?
@@ -426,6 +428,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Iterations executed
     public int _iterations;
 
+    // Updates executed
+    public int _updates;
+
     // Current value of objective function
     public double _objective;
 
@@ -522,7 +527,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    gs._mb.makeModelMetrics(GLRMModel.this, orig);   // save error metrics based on imputed data
+    gs._mb.makeModelMetrics(GLRMModel.this, orig, null);   // save error metrics based on imputed data
     return f;
   }
 
@@ -615,7 +620,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     fullFrm.add(loadingFrm);
 
     GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
-    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
+    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr, null);   // save error metrics based on imputed data
     return (ModelMetricsGLRM) mm;
   }
 

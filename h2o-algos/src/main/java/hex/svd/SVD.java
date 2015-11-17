@@ -401,6 +401,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model._output._total_variance = gram.diagSum() * gtsk._nobs / (gtsk._nobs-1);  // Since gram = X'X/nobs, but variance requires nobs-1 in denominator
           model.update(self());
 
+          // Cannot calculate SVD if all rows contain missing value(s) and hence were skipped
+          if(gtsk._nobs == 0)
+            error("_train", "Every row in _train contains at least one missing value. Consider setting impute_missing = TRUE.");
+          if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
+
           // Calculate SVD of G = A'A/n and back out SVD of A. If SVD of A = UDV' then A'A/n = V(D^2/n)V'
           update(1, "Calculating SVD of Gram matrix locally");
           Matrix gramJ = new Matrix(gtsk._gram.getXX());
