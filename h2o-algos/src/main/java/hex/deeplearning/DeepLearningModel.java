@@ -100,7 +100,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   public double epoch_counter;
-  public int iterations;
+  public int iterations=1;
   public boolean stopped_early;
 
   public long training_rows;
