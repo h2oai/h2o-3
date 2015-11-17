@@ -81,4 +81,32 @@ public class GainsLiftTest extends TestUtil {
     actual.remove();
     predict.remove();
   }
+
+  @Test public void imbalanced() {
+    int len = 50000;
+    double thresh = 1e-7;
+    double[] p = new double[2*len];
+    long[] a = new long[2*len];
+    Random rng = new Random(0xDECAF);
+    int i;
+    for (i=0; i<len; ++i) {
+      a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
+      p[i] = rng.nextDouble()*thresh;
+    }
+    for (i=len; i<2*len; ++i) {
+      a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
+      p[i] = (1-thresh)+thresh*rng.nextDouble();
+    }
+    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
+    Vec predict = Vec.makeVec(p, Vec.newKey());
+
+    GainsLift gl = new GainsLift(predict, actual);
+    gl.exec();
+    Log.info(gl);
+    for (i=0;i<gl.response_rates.length;++i)
+      Assert.assertTrue(gl.response_rates[i] > 0.19 && gl.response_rates[i] < 0.21);
+
+    actual.remove();
+    predict.remove();
+  }
 }
