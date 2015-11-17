@@ -100,6 +100,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   public double epoch_counter;
+  public int iterations;
   public boolean stopped_early;
 
   public long training_rows;
@@ -399,6 +400,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     validation_rows = cp.validation_rows; //copy the value to display the right number on the model page before training has started
     _bestLoss = cp._bestLoss;
     epoch_counter = cp.epoch_counter;
+    iterations = cp.iterations;
 
     // deep clone scoring history
     errors = cp.errors.clone();
@@ -477,7 +479,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     total_run_time +=  time_since_last_iter;
     _timeLastIterationEnter = now;
     epoch_counter = (double)model_info().get_processed_total()/training_rows;
-
+    this.iterations++; //don't set this to the iteration count that's passed in (since that is restarted from 0 after a checkpoint restart), instead increment the model's state variable
 
     boolean keep_running;
     // Auto-tuning
@@ -526,7 +528,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       err.time_stamp = _timeLastScoreStart;
       err.training_time_ms = total_run_time;
       err.epoch_counter = epoch_counter;
-      err.iterations = iteration >= 1 ? iteration : 0;
+      err.iterations = iterations;
       err.training_samples = (double)model_info().get_processed_total();
       err.validation = ftest != null;
       err.score_training_samples = ftrain.numRows();
@@ -675,12 +677,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       update(job_key);
       return false;
     }
-    progressUpdate(progressKey, job_key, iteration, keep_running);
+    progressUpdate(progressKey, job_key, keep_running);
     update(job_key);
     return keep_running;
   }
 
-  private void progressUpdate(Key progressKey, Key job_key, int iteration, boolean keep_running) {
+  private void progressUpdate(Key progressKey, Key job_key, boolean keep_running) {
     long now = System.currentTimeMillis();
     long timeSinceEntering = now - _timeLastIterationEnter;
     Job.Progress prog = DKV.getGet(progressKey);
@@ -688,7 +690,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     int speed = (int)(model_info().get_processed_total() * 1000. / ((total_run_time + timeSinceEntering) - total_scoring_time));
 //    assert(speed >= 0);
     String msg =
-            "Iterations: " + String.format("%,d", iteration)
+            "Iterations: " + String.format("%,d", iterations)
             + ". Epochs: " + String.format("%g", epoch_counter)
             + ". Speed: " + String.format("%,d", speed) + " samples/sec."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (total_run_time * (1. - progress) / progress), true));
