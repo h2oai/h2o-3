@@ -100,7 +100,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   public double epoch_counter;
-  public int iterations=1;
+  public int iterations;
   public boolean stopped_early;
 
   public long training_rows;
@@ -471,7 +471,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     total_run_time +=  time_since_last_iter;
     _timeLastIterationEnter = now;
     epoch_counter = (double)model_info().get_processed_total()/training_rows;
-    this.iterations++; //don't set this to the iteration count that's passed in (since that is restarted from 0 after a checkpoint restart), instead increment the model's state variable
 
     boolean keep_running;
     // Auto-tuning
