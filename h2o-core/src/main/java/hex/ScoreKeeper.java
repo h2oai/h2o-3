@@ -21,6 +21,7 @@ public class ScoreKeeper extends Iced {
   public double _AUC = Double.NaN;
   public double _classError = Double.NaN;
   public float[] _hitratio;
+  public double _lift = Double.NaN; //Lift in top decile
 
   public ScoreKeeper() {}
   public ScoreKeeper(double mse) { _mse = mse; }
@@ -43,6 +44,12 @@ public class ScoreKeeper extends Iced {
       if (((ModelMetricsBinomial)m)._auc != null) {
         _AUC = ((ModelMetricsBinomial) m)._auc._auc;
         _classError = ((ModelMetricsBinomial) m)._auc.defaultErr();
+      }
+      if (((ModelMetricsBinomial)m)._gainsLift != null) {
+        GainsLift gl = ((ModelMetricsBinomial)m)._gainsLift;
+        if (gl.response_rates != null && gl.response_rates.length > 0) {
+          _lift = gl.response_rates[0] / gl.avg_response_rate;
+        }
       }
     }
     else if (m instanceof ModelMetricsMultinomial) {
@@ -72,10 +79,11 @@ public class ScoreKeeper extends Iced {
             && MathUtils.compare(_mean_residual_deviance, o._mean_residual_deviance, 1e-6, 1e-6)
             && MathUtils.compare(_mse, o._mse, 1e-6, 1e-6)
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
-            && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6);
+            && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6)
+            && MathUtils.compare(_lift, o._lift, 1e-6, 1e-6);
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE, AUC, r2, misclassification}
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, AUC, lift_top_decile, r2, misclassification}
 
   public static boolean earlyStopping(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement) {
     if (k == 0) return false;
@@ -86,7 +94,7 @@ public class ScoreKeeper extends Iced {
       criterion = classification ? StoppingMetric.logloss : StoppingMetric.deviance;
     }
 
-    boolean moreIsBetter = (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2);
+    boolean moreIsBetter = (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2 || criterion == StoppingMetric.lift_top_decile);
     double movingAvg[] = new double[k+1]; //need one moving average value for the last k+1 scoring events
     double lastBeforeK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
     double bestInLastK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
@@ -131,6 +139,9 @@ public class ScoreKeeper extends Iced {
           case misclassification:
             val = skj._classError;
             break;
+          case lift_top_decile:
+            val = skj._lift;
+            break;
           default:
             throw H2O.unimpl("Undefined stopping criterion.");
         }
@@ -156,6 +167,4 @@ public class ScoreKeeper extends Iced {
     Log.info("Checking model convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
     return !improved;
   }
-
-
 }

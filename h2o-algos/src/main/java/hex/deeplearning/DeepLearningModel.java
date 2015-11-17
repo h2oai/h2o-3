@@ -243,6 +243,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if (_output.getModelCategory() == ModelCategory.Binomial) {
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
     }
+    if (_output.getModelCategory() == ModelCategory.Binomial) {
+      colHeaders.add("Training Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
+    }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
@@ -259,6 +262,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
+        colHeaders.add("Validation Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
@@ -301,6 +307,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         table.set(row, col++, e.training_AUC != null ? e.training_AUC._auc : Double.NaN);
+        table.set(row, col++, e.scored_train != null ? e.scored_train._lift : Double.NaN);
       }
       if (_output.isClassifier()) {
         table.set(row, col++, e.scored_train != null ? e.scored_train._classError : Double.NaN);
@@ -318,6 +325,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         }
         if (_output.getModelCategory() == ModelCategory.Binomial) {
           table.set(row, col++, e.validation_AUC != null ? e.validation_AUC._auc : Double.NaN);
+          table.set(row, col++, e.scored_valid != null ? e.scored_valid._lift : Double.NaN);
         }
         if (_output.isClassifier()) {
           table.set(row, col, e.scored_valid != null ? e.scored_valid._classError : Double.NaN);

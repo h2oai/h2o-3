@@ -546,7 +546,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _timeLastScoreStart = now;
 
       final boolean printout = (_parms._score_each_iteration || finalScoring || sinceLastScore > _parms._score_interval);
-      final boolean computeGainsLift = printout;
+//      final boolean computeGainsLift = printout;  //only compute Gains/Lift during final scoring
+      final boolean computeGainsLift = true;
 
       // Score on training data
       new ProgressUpdate("Scoring the model.").fork(_progressKey);
@@ -639,6 +640,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
@@ -654,6 +656,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
@@ -685,7 +688,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       table.set(row, col++, st._mse);
       if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
-      if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
+        table.set(row, col++, st._AUC);
+        table.set(row, col++, st._lift);
+      }
       if (_output.isClassifier()) table.set(row, col++, st._classError);
 
       if (_valid != null) {
@@ -693,7 +699,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         table.set(row, col++, st._mse);
         if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
-        if (_output.getModelCategory() == ModelCategory.Binomial) table.set(row, col++, st._AUC);
+        if (_output.getModelCategory() == ModelCategory.Binomial) {
+          table.set(row, col++, st._AUC);
+          table.set(row, col++, st._lift);
+        }
         if (_output.isClassifier()) table.set(row, col++, st._classError);
       }
       row++;
