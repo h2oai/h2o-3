@@ -41,6 +41,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   boolean _allLeft, _allRight;
 
+  Vec _leftVec, _rightVec;
+
   transient int _leftChunkNode[], _rightChunkNode[];  // fast lookups to save repeated calls to node.index() which calls binarysearch within it.
 
   BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
@@ -116,6 +118,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     for (int i=0; i<_rightFrame.anyVec().nChunks(); i++) {
       _rightChunkNode[i] = _rightFrame.anyVec().chunkKey(i).home_node().index();
     }
+
+    _leftVec = _leftFrame.anyVec();
+    _rightVec = _rightFrame.anyVec();
 
     _timings[0] = (System.nanoTime() - t0) / 1e9;
 
@@ -210,6 +215,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // lLow and lUpp now surround the group in the left table.  If left key is unique then lLow==lr-1 and lUpp==lr+1.
 
     long len = rUpp - rLow - 1;  // if value found, rLow and rUpp surround it, unlike standard binary search where rLow falls on it
+    // TO DO - we don't need loop here :)  Why does perNodeNumRightRowsToFetch increase so much?
     if (len > 0 || _allLeft) {
       long t0 = System.nanoTime();
       if (len > 1) _oneToManyMatch = true;
@@ -217,8 +223,12 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       for (long j = lLow + 1; j < lUpp; j++) {   // usually iterates once only for j=lr, but more than once if there are dup keys in left table
         {
           // may be a range of left dup'd join-col values, but we need to fetch each one since the left non-join columns are likely not dup'd and may be the reason for the cartesian join
+          long t00 = System.nanoTime();
           long globalRowNumber = _leftOrder[(int)(j / _leftBatchSize)][(int)(j % _leftBatchSize)];
-          int chkIdx = _leftFrame.anyVec().elem2ChunkIdx(globalRowNumber); //binary search in espc
+          _timings[17] += (System.nanoTime() - t00)/1e9;
+          t00 = System.nanoTime();
+          int chkIdx = _leftVec.elem2ChunkIdx(globalRowNumber); //binary search in espc
+          _timings[15] += (System.nanoTime() - t00)/1e9;
           _perNodeNumLeftRowsToFetch[_leftChunkNode[chkIdx]]++;  // the key is the same within this left dup range, but still need to fetch left non-join columns
         }
         if (len==0) continue;  // _allLeft must be true if len==0
@@ -229,11 +239,16 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         //StringBuilder sb = new StringBuilder();
         //sb.append("Left row " + _leftOrder[jb][jo] + " matches to " + _retLen[jb][jo] + " right rows: ");
         long a = _retFirst[jb][jo] -1;
-        for (int i=0; i<_retLen[jb][jo]; i++) {
+        long iLim = _retLen[jb][jo];
+        for (long i=0; i<iLim; i++) {
           long loc = a+i;
           //sb.append(_rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)] + " ");
+          long t00 = System.nanoTime();
           long globalRowNumber = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];
-          int chkIdx = _rightFrame.anyVec().elem2ChunkIdx(globalRowNumber); //binary search in espc
+          _timings[18] += (System.nanoTime() - t00)/1e9;
+          t00 = System.nanoTime();
+          int chkIdx = _rightVec.elem2ChunkIdx(globalRowNumber); //binary search in espc
+          _timings[16] += (System.nanoTime() - t00)/1e9;
           _perNodeNumRightRowsToFetch[_rightChunkNode[chkIdx]]++;  // just count the number per node. So we can allocate arrays precisely up front, and also to return early to use in case of memory errors or other distribution problems
         }
         //Log.info(sb);
