@@ -69,7 +69,7 @@ public class GainsLift extends Iced {
     Scope.enter();
     init(); //check parameters and obtain _quantiles from _preds
     try {
-      GainsTask gt = new GainsTask(_quantiles, _labels.length());
+      GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles, _labels.length());
       gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
       response_rates = gt.response_rates();
       avg_response_rate = gt.avg_response_rate();
@@ -104,7 +104,7 @@ public class GainsLift extends Iced {
   }
 
   // Compute Gains table via MRTask
-  private static class GainsTask extends MRTask<GainsTask> {
+  static class GainsLiftBuilder extends MRTask<GainsLiftBuilder> {
     /* @OUT response_rates */
     public final float[] response_rates() { return _response_rates; }
     public final float avg_response_rate() { return _avg_response_rate; }
@@ -118,16 +118,17 @@ public class GainsLift extends Iced {
     private float _avg_response_rate;
     private float[] _response_rates;
 
-    GainsTask(double[] thresh, long count) {
+    GainsLiftBuilder(double[] thresh, long count) {
       _thresh = thresh.clone();
       _count = count;
     }
 
     @Override public void map( Chunk ca, Chunk cp, Chunk w) {
-      throw H2O.unimpl("GainsTask with weights not yet implemented - requires weighted quantiles as well.");
+      throw H2O.unimpl("GainsLiftBuilder with weights not yet implemented - requires weighted quantiles as well.");
     }
 
     @Override public void map( Chunk ca, Chunk cp ) {
+      final double w = 1.0;
       _responses = new long[_thresh.length];
       _avg_response = 0;
       final int len = Math.min(ca._len, cp._len);
@@ -137,23 +138,30 @@ public class GainsLift extends Iced {
         if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
         if (cp.isNA(i)) continue;
         final double pr = cp.atd(i);
-        for( int t=0; t < _thresh.length; t++ ) {
-          if (a==0) continue;
-          if (t==0) {
-            if (pr >= _thresh[t]) _responses[t]++;
-          }
-          else if (t==_thresh.length-1) { //bottom decile
-            if (pr < _thresh[t-1]) _responses[t]++;
-          }
-          else { //in between
-            if (pr >= _thresh[t] && pr < _thresh[t-1]) _responses[t]++;
-          }
-        }
-        if (a == 1) _avg_response++;
+        perRow(pr, a, w);
       }
     }
 
-    @Override public void reduce( GainsTask other ) {
+    public void perRow(double pr, int a, double w) {
+      if (w!=1.0) throw H2O.unimpl("GainsLiftBuilder perRow cannot handle weights != 1 for now");
+      if (Double.isNaN(pr)) return;
+      if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
+      for( int t=0; t < _thresh.length; t++ ) {
+        if (a==0) continue;
+        if (t==0) {
+          if (pr >= _thresh[t]) _responses[t]++;
+        }
+        else if (t==_thresh.length-1) { //bottom decile
+          if (pr < _thresh[t-1]) _responses[t]++;
+        }
+        else { //in between
+          if (pr >= _thresh[t] && pr < _thresh[t-1]) _responses[t]++;
+        }
+      }
+      if (a == 1) _avg_response++;
+    }
+
+    @Override public void reduce(GainsLiftBuilder other) {
       for( int i=0; i<_responses.length; ++i) {
         _responses[i] += other._responses[i];
       }
