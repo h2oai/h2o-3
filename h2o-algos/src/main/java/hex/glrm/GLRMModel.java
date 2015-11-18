@@ -540,7 +540,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
    * @param destination_key Frame Id for output
    * @return Frame containing k rows and n columns, where each row corresponds to an archetype
    */
-  public Frame scoreArchetypes(Frame frame, Key destination_key) {
+  public Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform) {
     final int ncols = _output._names.length;
     Frame adaptedFr = new Frame(frame);
     adaptTestForTrain(adaptedFr, true, false);
@@ -561,7 +561,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       for (int k = 0; k < _parms._k; k++) {
         double num = _output._archetypes_raw.getNum(ds, k);
         proj[k][_output._permutation[d]] = _parms.impute(num, _output._lossFunc[d]);
-        if (_parms._impute_original)
+        if (reverse_transform)
           proj[k][_output._permutation[d]] = proj[k][_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
       }
     }

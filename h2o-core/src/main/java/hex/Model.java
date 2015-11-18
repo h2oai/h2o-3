@@ -60,7 +60,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public interface GLRMArchetypes {
-    Frame scoreArchetypes(Frame frame, Key destination_key);
+    Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform);
   }
 
   /**
