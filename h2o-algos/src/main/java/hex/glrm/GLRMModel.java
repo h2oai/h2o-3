@@ -13,7 +13,7 @@ import java.util.Random;
 
 import static hex.glrm.GLRMModel.GLRMParameters.Loss.*;
 
-public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
+public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> implements Model.GLRMArchetypes {
 
   public static class GLRMParameters extends Model.Parameters {
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
@@ -531,6 +531,44 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
     gs._mb.makeModelMetrics(GLRMModel.this, orig, null);   // save error metrics based on imputed data
+    return f;
+  }
+
+  /**
+   * Project each archetype into original feature space
+   * @param frame Original training data with m rows and n columns
+   * @param destination_key Frame Id for output
+   * @return Frame containing k rows and n columns, where each row corresponds to an archetype
+   */
+  public Frame scoreArchetypes(Frame frame, Key destination_key) {
+    final int ncols = _output._names.length;
+    Frame adaptedFr = new Frame(frame);
+    adaptTestForTrain(adaptedFr, true, false);
+    assert ncols == adaptedFr.numCols();
+    String[][] adaptedDomme = adaptedFr.domains();
+    double[][] proj = new double[_parms._k][_output._nnums + _output._ncats];
+
+    // Categorical columns
+    for (int d = 0; d < _output._ncats; d++) {
+      double[][] block = _output._archetypes_raw.getCatBlock(d);
+      for (int k = 0; k < _parms._k; k++)
+        proj[k][_output._permutation[d]] = _parms.mimpute(block[k], _output._lossFunc[d]);
+    }
+
+    // Numeric columns
+    for (int d = _output._ncats; d < (_output._ncats + _output._nnums); d++) {
+      int ds = d - _output._ncats;
+      for (int k = 0; k < _parms._k; k++) {
+        double num = _output._archetypes_raw.getNum(ds, k);
+        proj[k][_output._permutation[d]] = _parms.impute(num, _output._lossFunc[d]);
+        if (_parms._impute_original)
+          proj[k][_output._permutation[d]] = proj[k][_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
+      }
+    }
+
+    // Convert projection of archetypes into a frame with correct domains
+    Frame f = ArrayUtils.frame((null == destination_key ? Key.make() : destination_key), adaptedFr.names(), proj);
+    for(int i = 0; i < ncols; i++) f.vec(i).setDomain(adaptedDomme[i]);
     return f;
   }
 

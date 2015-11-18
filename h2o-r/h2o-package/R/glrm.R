@@ -220,3 +220,33 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
   # Error check and build model
   .h2o.modelJob('glrm', parms, h2oRestApiVersion=3)
 }
+
+#' Convert Archetypes to Features from H2O GLRM Model
+#'
+#' Project each archetype in a H2O GLRM model into the corresponding feature
+#' space from the H2O training frame.
+#'
+#' @param object An \linkS4class{H2ODimReductionModel} object that represents the
+#'        model containing archetypes to be projected.
+#' @param data An H2O Frame object representing the training data for the H2O GLRM model.
+#' @return Returns an H2O Frame object containing the projection of the archetypes
+#'         down into the original feature space, where each row is one archetype.
+#' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.uploadFile(path = irisPath)
+#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, loss = "Quadratic", 
+#'                       multi_loss = "Categorical", max_iterations = 1000)
+#' iris.parch <- h2o.proj_archetypes(iris.glrm, iris.hex)
+#' head(iris.parch)
+#' }
+#' @export
+h2o.proj_archetypes <- function(object, data) {
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", project_archetypes=project_archetypes)
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  h2o.getFrame(key)
+}

@@ -59,6 +59,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 
+  public interface GLRMArchetypes {
+    Frame scoreArchetypes(Frame frame, Key destination_key);
+  }
+
   /**
    * Default threshold for assigning class labels to the target class (for binomial models)
    * @return threshold in 0...1
