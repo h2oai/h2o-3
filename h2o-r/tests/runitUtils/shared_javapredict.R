@@ -3,8 +3,6 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   myIP <- conn@ip
   myPort <- conn@port
 
-  print("Uploading train data to H2O")
-
   print(paste("Creating", model, "model in H2O"))
   if (model == "glm") {
     model <- do.call("h2o.glm",params)
@@ -22,13 +20,14 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   print("Downloading Java prediction model code from H2O")
   model_key <- model@model_id
   tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
-  cmd <- sprintf("rm -fr %s", tmpdir_name)
-  safeSystem(cmd)
-  cmd <- sprintf("mkdir -p %s", tmpdir_name)
-  safeSystem(cmd)
+  if (.Platform$OS.type == "windows") {
+    shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name))) 
+    shell(sprintf("mkdir -p %s", normalizePath(tmpdir_name)))
+  } else {
+    safeSystem(sprintf("rm -fr %s", tmpdir_name))
+    safeSystem(sprintf("mkdir -p %s", tmpdir_name))
+  }
   h2o.download_pojo(model, tmpdir_name)
-
-  print("Uploading test data to H2O")
 
   print("Predicting in H2O")
   pred <- h2o.predict(model, test_frame)
@@ -47,20 +46,14 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   }
   write.csv(test_without_response, file = sprintf("%s/in.csv", tmpdir_name), row.names=F, quote=F)
   cmd <- sprintf("curl http://%s:%s/3/h2o-genmodel.jar > %s/h2o-genmodel.jar", myIP, myPort, tmpdir_name)
-  if (.Platform$OS.type == "windows") {
-    shell(cmd)
-  } else {
-    safeSystem(cmd)
-  }
+  if (.Platform$OS.type == "windows") shell(cmd)
+  else safeSystem(cmd)
   cmd <- sprintf("javac -cp %s/h2o-genmodel.jar -J-Xmx4g -J-XX:MaxPermSize=256m %s/%s.java", tmpdir_name, tmpdir_name, model_key)
   safeSystem(cmd)
 
   print("Predicting with Java POJO")
-  if (.Platform$OS.type == "windows") {
-    cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar;%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
-  } else {
-    cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
-  }
+  if (.Platform$OS.type == "windows") cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar;%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
+  else cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
   safeSystem(cmd)
 
   print("Comparing predictions between H2O and Java POJO")
@@ -120,7 +113,7 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   }
 
   print("Cleaning up tmp files")
-  cmd <- sprintf("rm -fr %s", tmpdir_name)
-  safeSystem(cmd)
+  if (.Platform$OS.type == "windows") shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
+  else safeSystem(sprintf("rm -fr %s", tmpdir_name))
   h2o.removeAll()
 }

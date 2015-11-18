@@ -414,6 +414,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for (int i=0; i<N; ++i) {
       cvModelBuilders[i].init(false);
       if (cvModelBuilders[i].error_count() > 0) {
+        // TODO: this crushes all prior top-level messages, including info's and warn's
         _messages = cvModelBuilders[i]._messages; //bail out on first failure -> main job gets the failed N-fold CV job's error message
         updateValidationMessages();
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(cvModelBuilders[i]);
@@ -725,8 +726,57 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return isClassifier();
   }
 
-  @Override
-  public int error_count() { assert error_count_or_uninitialized() >= 0 : "init() not run yet"; return super.error_count(); }
+  /** A list of field validation issues. */
+  public ValidationMessage[] _messages = new ValidationMessage[0];
+  private int _error_count = -1; // -1 ==> init not run yet, for those Jobs that have an init, like ModelBuilder. Note, this counts ONLY errors, not WARNs and etc.
+  public int error_count() { assert _error_count >= 0 : "init() not run yet"; return _error_count; }
+  public void hide (String field_name, String message) { message(Log.TRACE, field_name, message); }
+  public void info (String field_name, String message) { message(Log.INFO , field_name, message); }
+  public void warn (String field_name, String message) { message(Log.WARN , field_name, message); }
+  public void error(String field_name, String message) { message(Log.ERRR , field_name, message); _error_count++; }
+  public void clearValidationErrors() {
+    _messages = new ValidationMessage[0];
+    _error_count = 0;
+  }
+
+  public void message(byte log_level, String field_name, String message) {
+    _messages = Arrays.copyOf(_messages, _messages.length + 1);
+    _messages[_messages.length - 1] = new ValidationMessage(log_level, field_name, message);
+  }
+
+  // Atomically update just the error messages
+  public void updateValidationMessages() {
+    new TAtomic<ModelBuilder>() {
+      @Override public ModelBuilder atomic(ModelBuilder old) { if( old != null ) old._messages = _messages; return old; }
+    }.invoke(_key);
+  }
+
+ /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
+  public String validationErrors() {
+    StringBuilder sb = new StringBuilder();
+    for( ValidationMessage vm : _messages )
+      if( vm._log_level == Log.ERRR )
+        sb.append(vm.toString()).append("\n");
+    return sb.toString();
+  }
+
+  /** Can be an ERROR, meaning the parameters can't be used as-is,
+   *  a TRACE, which means the specified field should be hidden given
+   *  the values of other fields, or a WARN or INFO for informative
+   *  messages to the user. */
+  public static final class ValidationMessage extends Iced {
+    final byte _log_level; // See util/Log.java for levels
+    final String _field_name;
+    final String _message;
+    public ValidationMessage(byte log_level, String field_name, String message) {
+      _log_level = log_level;
+      _field_name = field_name;
+      _message = message;
+      Log.log(log_level,field_name + ": " + message);
+    }
+    public int log_level() { return _log_level; }
+    @Override public String toString() { return Log.LVLS[_log_level] + " on field: " + _field_name + ": " + _message; }
+  }
 
   // ==========================================================================
   /** Initialize the ModelBuilder, validating all arguments and preparing the
