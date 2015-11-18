@@ -926,6 +926,8 @@ class H2O(object):
     '''
     def grid(self, api_version=99, key=None, timeoutSecs=20, **kwargs):
         params_dict = {
+            'sort_by': None,
+            'sort_order': None
         }        
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'grids', H2O.verbose)
 

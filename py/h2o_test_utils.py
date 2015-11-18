@@ -403,6 +403,31 @@ def validate_grid_parameters(grid_parameters, actual_parameters):
     # TODO: training_frame, validation_frame
 
 
+def fetch_and_validate_grid_sort(a_node, key, sort_by, sort_order):
+    # key='kmeans_prostate_grid', sort_by='totss', sort_order='desc')
+    grid = a_node.grid(key=key, sort_by=sort_by, sort_order=sort_order)
+    training_metrics = grid['training_metrics']
+
+    # check sorting:
+    criteria = []
+    # Unfortunately, we use mixed case in the JSON and lower case in the back end. . .
+    for mm in training_metrics:
+        for k, v in mm.iteritems():
+            if k.lower() == sort_by:
+                criteria.append(v)
+                break
+    unsorted = list(criteria)
+    criteria.sort(reverse=(sort_order == 'desc'))
+
+    # print("criteria sorted: " + repr(criteria))
+    # print("original: " + repr(unsorted))
+    
+    assert unsorted == criteria, "FAIL: model metrics were not sorted correctly by criterion: " + key + ", " + sort_by + ", " + sort_order
+
+    for i in range(len(grid['model_ids'])):
+        assert grid['model_ids'][i]['name'] == training_metrics[i]['model']['name'], "FAIL: model_ids not sorted in the same order as training_metrics for grid: " + key + ", index: " + str(i)
+    
+
 def validate_predictions(a_node, result, model_name, frame_key, expected_rows, predictions_frame=None):
     '''
     Validate a /Predictions result.

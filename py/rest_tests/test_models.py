@@ -65,7 +65,14 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
             model_key = model_key['name']
             built_models[model_key] = a_node.models(key=model_key)
 
+#    grid = a_node.grid(key='kmeans_prostate_grid', sort_by='', sort_order='desc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', sort_order='desc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', sort_order='desc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', sort_order='desc')
 
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', sort_order='asc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', sort_order='asc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', sort_order='asc')
 
 
     #######################################

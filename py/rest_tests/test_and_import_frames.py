@@ -112,8 +112,8 @@ def load_and_test(a_node, pp):
     assert col['histogram_stride'] == 1, 'FAIL: Failed to find 1 as the histogram_stride for AGE.'
     assert col['percentiles'][0] == 44.516, 'FAIL: Failed to find 43.516 as the 0.1% percentile for AGE. '+str(col['percentiles'][0])
     assert col['percentiles'][1] == 50.79, 'FAIL: Failed to find 50.79 as the 1.0% percentile for AGE. '+str(col['percentiles'][1])
-# TODO: put back    assert col['percentiles'][9] == 78, 'FAIL: Failed to find 78 as the 99.0% percentile for AGE. '+str(col['percentiles'][9])
-# TODO: put back    assert col['percentiles'][10] == 79, 'FAIL: Failed to find 79 as the 99.9% percentile for AGE. '+str(col['percentiles'][10])
+    assert col['percentiles'][9] == 78, 'FAIL: Failed to find 78 as the 99.0% percentile for AGE. '+str(col['percentiles'][9])
+    assert col['percentiles'][10] == 79, 'FAIL: Failed to find 79 as the 99.9% percentile for AGE. '+str(col['percentiles'][10])
     # NB: col['percentiles'] corresponds to probs=[0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999]
     
     # Test /SplitFrame for prostate.csv

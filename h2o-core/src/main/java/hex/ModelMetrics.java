@@ -78,6 +78,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
       if (null == model1 || null == model2) throw new H2OIllegalArgumentException("Tried to compare a Model against null: " + model1 + " and " + model2);
 
+      // TODO cross_validation_metrics
       ModelMetrics m1 = model1._output._validation_metrics;
       ModelMetrics m2 = model2._output._validation_metrics;
 
@@ -132,9 +133,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       }
 
       if (descending) {
-        return (c1 - c2 > 0 ? 1 : -1);
-      } else {
         return (c2 - c1 > 0 ? 1 : -1);
+      } else {
+        return (c1 - c2 > 0 ? 1 : -1);
       }
     }
   }
