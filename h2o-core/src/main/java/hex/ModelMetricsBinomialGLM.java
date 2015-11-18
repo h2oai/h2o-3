@@ -19,6 +19,11 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial {
   }
 
   @Override
+  public long residualDegreesOfFreedom(){
+    return _residualDegressOfFreedom;
+  }
+
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
@@ -53,6 +58,11 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial {
       _AIC = aic;
       _nullDegressOfFreedom = nDof;
       _residualDegressOfFreedom = rDof;
+    }
+
+    @Override
+    public long residualDegreesOfFreedom(){
+      return _residualDegressOfFreedom;
     }
 
     @Override
