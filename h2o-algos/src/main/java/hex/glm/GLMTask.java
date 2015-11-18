@@ -182,7 +182,6 @@ public abstract class GLMTask  {
 
     @Override
     public void map(Chunk [] chks) {
-
       Chunk responseChunk = chks[_dinfo.responseChunkId()];
       boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
 
