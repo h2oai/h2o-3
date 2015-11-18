@@ -21,6 +21,10 @@ task run_selenium(type: Exec){
 			println("phantomjsPath parameter is required. Please imput it")
 			commandLine 'echo', "phantomjsPath parameter is required. Please imput it"
 		}
+		else if(rootProject.hasProperty('browser')){
+			println("run with $browser browser")
+			commandLine 'python', 'run.py', '-t', "$algorithm", '-l', "$phantomjsPath", '-b', "$browser"
+		}
 		else{
 			commandLine 'python', 'run.py', '-t', "$algorithm", '-l', "$phantomjsPath"
 		}

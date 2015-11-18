@@ -8,6 +8,10 @@ from utils import Config, Constant
 class TestNGResult:
 
     def __init__(self, filename = Config.result_filename):
+        # add CDATA element
+        ET._original_serialize_xml = ET._serialize_xml
+        ET._serialize_xml = ET._serialize['xml'] = _serialize_xml
+
         self.filename = filename
         self.root = ET.Element("testng_results")
         test_element = ET.SubElement(self.root, "test")
@@ -42,11 +46,15 @@ class TestNGResult:
 
         params_element = ET.SubElement(self.current_test_method_element, 'params')
 
-        #add param list
+        # add param list
         index = 0
         for param_text in params:
-            param_element = ET.SubElement(params_element, 'param', index = '%s' % index)
-            ET.SubElement(param_element, 'value').text = r"<![CDATA[%s]]>" % param_text
+            cdata = CDATA(param_text)
+
+            param_element = ET.SubElement(params_element, 'param', index = str(index))
+            value_element = ET.SubElement(param_element, 'value')
+            value_element.append(cdata)
+
             index += 1
 
     def add_reporter_output(self, *logs):
@@ -57,7 +65,10 @@ class TestNGResult:
         reporter_output_element = ET.SubElement(self.current_test_method_element, "reporter_output")
 
         for log in logs:
-            ET.SubElement(reporter_output_element, 'line').text = r"<![CDATA[%s]]>" % log
+            cdata = CDATA(log)
+
+            line_element = ET.SubElement(reporter_output_element, 'line')
+            line_element.append(cdata)
 
         self.current_test_method_element = 'NA'
 
@@ -70,14 +81,22 @@ class TestNGResult:
 
     def write(self):
         tree = ET.ElementTree(self.root)
-        tree.write(self.filename)
+        tree.write(self.filename, "utf-8")
 
-        # todo:how to enhance it
-        with open(self.filename,'r') as f:
-            newlines = []
-            for line in f.readlines():
-                newlines.append(line.replace('&lt;', '<').replace('&gt;', '>'))
 
-        with open(self.filename, 'w') as f:
-            for line in newlines:
-                f.write(line)
+################################################################
+# add CDATA element
+################################################################
+
+
+def CDATA(text=None):
+    element = ET.Element('![CDATA[')
+    element.text = text
+    return element
+
+
+def _serialize_xml(write, elem, encoding, qnames, namespaces):
+    if elem.tag == '![CDATA[':
+        write("\n<%s%s]]>\n" % (elem.tag, elem.text))
+        return
+    return ET._original_serialize_xml(write, elem, encoding, qnames, namespaces)

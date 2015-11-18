@@ -1,4 +1,4 @@
-'''
+"""
 TODO:
 1. xpath grouping by algo
 2. xpath current cell support: //div[contains(@data-bind, 'click:select')][last()]
@@ -7,11 +7,15 @@ TODO:
 5. need to use testNG testcases for algo tests too...
 
 Althru there are things to improve, I'm pretty much happy with this file... Good job, buddy! ;)
-'''
+"""
+
+
+xpath = 'xpath'
+type = 'type'
 
 
 def xp(xpath, xpath_type = 'button', is_current_cell = False):
-    ''' helper function for creating xpath dict '''
+    """ helper function for creating xpath dict """
     if is_current_cell:
         xpath = "//div[contains(@data-bind, 'click:select')][last()]" + xpath
 
@@ -147,7 +151,14 @@ XPATHS = dict(
     general_error =  xp("//span[contains(@style,'color: red')]", 'text', True),
     error_message_requirement = xp("//td[contains(.,'requires')]", 'text', True),
     error_message_validate = xp("//td[contains(.,'must be')]", 'text', True),
-    failure = xp("//div[contains(@class,'flow-failure')]", 'text', True)
+    failure = xp("//div[contains(@class,'flow-failure')]", 'text', True),
+    warning_message = xp("//tr[contains(@class,'bg-danger')]", 'text', True),
+
+    # delete all frame
+    type_ID = xp("//input[contains(@title, 'Select or deselect all')]", 'checkbox', True),
+    delete_selected_frames = xp("//button[contains(@data-bind,'click:deleteFrames, enable:hasSelectedFrames')]", 'button', True),
+    delete_all_DKV = xp("//textarea[contains(@placeholder, 'Expression...')]", 'input', True)
+
 )
 
 
@@ -171,7 +182,7 @@ DEEP_LEARNING_XPATHS = dict(
     balance_classes = xp("//tr[th[contains(., 'balance_classes')]]//input", 'checkbox', True),
     max_confusion_matrix_size= xp("//tr[th[contains(., 'max_confusion_matrix_size')]]//input", 'input', True),
     max_hit_ratio_k =  xp("//tr[th[contains(., 'max_hit_ratio_k')]]//input", 'input', True),
-    checkpoint = xp("//tr[th[contains(., 'checkpoint')]]//input",  'input', True),
+    check_point = xp("//tr[th[contains(., 'checkpoint')]]//input",  'input', True),
     use_all_factor_levels = xp("//tr[th[contains(., 'use_all_factor_levels')]]//input", 'checkbox', True),
     train_samples_per_iteration = xp("//tr[th[contains(., 'train_samples_per_iteration')]]//input", 'input', True),
     adaptive_rate = xp("//tr[th[contains(., 'adaptive_rate')]]//input", 'checkbox', True),
@@ -286,7 +297,7 @@ GLM_XPATHS = dict(
     family = xp("//tr[th[contains(., 'family')]]//select", 'select', True),
     solver = xp("//tr[th[contains(., 'solver')]]//select", 'select', True),
     alpha = xp("//tr[th[contains(., 'alpha')]]//input", 'input', True),
-    lamda = xp("//tr[th[contains(., 'lambda')]]//input", 'input'),
+    lamda = xp("//tr[th[contains(., 'lambda')]]//input", 'input', True),
     lambda_search = xp("//tr[th[contains(., 'lambda_search')]]//input", 'checkbox', True),
     nlambdas = xp("//tr[th[contains(., 'nlambdas')]]//input", 'input', True),
     standardize = xp("//tr[th[contains(., 'standardize')]]//input", 'checkbox', True),
@@ -316,21 +327,21 @@ DRF_XPATHS = dict(
     validate_dataset_id = xp("//tr[th[contains(., 'validation_frame')]]//select", 'select', True),
     nfolds = xp("//tr[th[contains(., 'nfolds')]]//input", 'input', True),
     response_column = xp("//tr[th[contains(., 'response_column')]]//select", 'select', True),
-    ignored_columns = xp("//tr[th[contains(., 'ignored_columns')]]//input", 'input', True),
+    ignored_columns = xp("//tr[td[label[contains(.,'%s')]]]//input", 'checkbox', True),
     ignore_const_cols = xp("//tr[th[contains(., 'ignore_const_cols')]]//input", 'checkbox', True),
     ntrees = xp("//tr[th[contains(., 'ntrees')]]//input", 'input', True),
     max_depth = xp("//tr[th[contains(., 'max_depth')]]//input", 'input', True),
     min_rows = xp("//tr[th[contains(., 'min_rows')]]//input", 'input', True),
     nbins = xp("//tr[th[contains(., 'nbins')]]//input", 'input', True),
     nbins_cats = xp("//tr[th[contains(., 'nbins_cats')]]//input", 'input', True),
-    seed_drf = xp("//tr[th[contains(., 'seed')]]//input",   'input', True),
+    seed = xp("//tr[th[contains(., 'seed')]]//input", 'input', True),
     mtries = xp("//tr[th[contains(., 'mtries')]]//input", 'input', True),
     sample_rate = xp("//tr[th[contains(., 'sample_rate')]]//input", 'input', True),
-    score_each_iteration_drf = xp("//tr[th[contains(., 'score_each_iteration')]]//input", 'checkbox', True),
+    score_each_iteration = xp("//tr[th[contains(., 'score_each_iteration')]]//input", 'checkbox', True),
     fold_assignment = xp("//tr[th[contains(., 'fold_assignment')]]//select", 'select', True),
     fold_column = xp("//tr[th[contains(., 'fold_column')]]//select", 'select', True),
-    offset_column_drf = xp("//tr[th[contains(., 'offset_column')]]//select", 'select', True),
-    weights_column_drf = xp("//tr[th[contains(., 'weights_column')]]//select", 'select', True),
+    offset_column = xp("//tr[th[contains(., 'offset_column')]]//select", 'select', True),
+    weights_column = xp("//tr[th[contains(., 'weights_column')]]//select", 'select', True),
     balance_classes = xp("//tr[th[contains(., 'balance_classes')]]//input", 'checkbox', True),
     max_confusion_matrix_size= xp("//tr[th[contains(., 'max_confusion_matrix_size')]]//input", 'input', True),
     max_hit_ratio_k =  xp("//tr[th[contains(., 'max_hit_ratio_k')]]//input", 'input', True),

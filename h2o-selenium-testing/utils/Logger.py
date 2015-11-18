@@ -4,7 +4,8 @@ import sys
 
 class Logger(object):
     def __init__(self, filename="testlog.log"):
-        temp = open(filename, "w")  # reset content file
+        # reset content file
+        temp = open(filename, "w")
         temp.close()
 
         self.filename = filename
@@ -20,9 +21,6 @@ class Logger(object):
 
         self.terminal.write(message)
         self.log.write(message)
-
-        # todo: for debug. we should delete it when release
-        self.flush()
 
     def read(self):
         self.flush()

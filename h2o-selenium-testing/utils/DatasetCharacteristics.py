@@ -1,7 +1,6 @@
-__author__ = 'trang.huynh'
-
 import Config
-import common
+import CSV
+
 
 class DatasetCharacteristics:
     def __init__(self, filename = Config.dataset_chars):
@@ -49,7 +48,7 @@ class DatasetCharacteristics:
          ...
         }
         '''
-        ds_chars = common.load_csv(Config.test_data % self.filename, 1, 0)
+        ds_chars = CSV.load('ds_chars', Config.test_data % self.filename, 1, 0)
 
         for chars in ds_chars.itervalues():
             for char_k in chars.keys():

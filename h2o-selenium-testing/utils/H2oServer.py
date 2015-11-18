@@ -5,10 +5,11 @@ import time
 
 from selenium import webdriver
 
-from testlibs import common
-from utils import se_functions
+from testlibs import Common
+from utils import Selenium
 import Config
 from urllib2 import *
+from utils.xpaths import XPATHS
 
 # import run
 import argparse
@@ -59,8 +60,8 @@ class H2oServer:
 
     def stop_by_UI(self, args):
         print 'Stop H2O server by UI'
-        driver = se_functions.open_browser(args)
-        common.navigate_to(driver, 'shut_down')
+        driver = Selenium.get_web_driver(args)
+        Common.navigate_to(driver, 'shut_down')
         driver.quit()
         print 'Stop H2O server by UI successfully'
 
@@ -97,5 +98,6 @@ if __name__ == '__main__':
 
 
     args = argparse.Namespace(browser='phantomjs', location='D:\\application\\phantomjs-1.9.7-windows/phantomjs.exe', testsuite='drf')
-    test.stop_by_UI(args)
+    # test.delete_all_frame(args)
+    # test.stop_by_UI(args)
 

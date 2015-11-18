@@ -1,6 +1,6 @@
-'''
+"""
 For running tests, run this from command line.
-'''
+"""
 import argparse
 import datetime
 import inspect
@@ -10,29 +10,31 @@ import shutil
 import sys
 
 
-from utils.common import load_csv
-from utils import common
+from utils import CSV
+from utils import Common
 from utils import Constant
 from utils import Config
-from utils import ConfigAlgorithm
 from utils import DatasetCharacteristics as DS
 from utils import H2oServer as HS
 from utils import Logger
-from utils import se_functions
+from utils import Selenium
 from utils import TestNGResult
+from tests import ModelBasic
+from testlibs import Common as CM
 
 
 def load_testclass(modulename, classname):
-    '''
+    """
     Dynamically load a test class by its name from 'tests' library under current working directory
     Assumption: module and class has the same name... ie. tests.drf.drf
-    '''
+    """
+
     # In order to load the class automatically, current directory/tests should be added to sys.path
     # and this should be done only once
     module_dir = os.path.join(os.getcwd(), 'tests')
 
     if not module_dir in sys.path:
-        sys.path.append(os.path.join(os.getcwd(), 'tests'))
+        sys.path.append(module_dir)
 
     module = __import__(modulename, fromlist=[''])
 
@@ -44,16 +46,17 @@ def load_testclass(modulename, classname):
 
 
 def mkdir(directory):
-    ''' make a directory if it is not exist '''
+    """ Make a directory if it is not exist """
     if not os.path.exists(directory):
         os.makedirs(directory)
 
 
 def setup_ouput_directories():
-    '''
+    """
     Remove all old results and create new /results directory
-    '''
+    """
 
+    # Remove old result if it exists
     if os.path.exists(Config.results):
         shutil.rmtree(Config.results)
 
@@ -62,21 +65,9 @@ def setup_ouput_directories():
     mkdir(Config.results_screenshots)
 
 
-def load_testsuite(suite_name):
-    ''' load testsuite from csv file '''
-    if 'drf' in suite_name:
-        return load_csv(Config.load_csv % suite_name, ConfigAlgorithm.drf_row, ConfigAlgorithm.drf_column)
-    elif 'gbm' in suite_name:
-        return load_csv(Config.load_csv % suite_name, ConfigAlgorithm.gbm_row, ConfigAlgorithm.gbm_column)
-    elif 'glm' in suite_name:
-        return load_csv(Config.load_csv % suite_name, ConfigAlgorithm.glm_row, ConfigAlgorithm.glm_column)
-    elif 'dl' in suite_name:
-        return load_csv(Config.load_csv % suite_name, ConfigAlgorithm.dl_row, ConfigAlgorithm.dl_column)
-    else:
-        raise Exception ("Uncorrect Testsuite Name, must be cotains 'drf' or 'gbm' or 'glm' or 'dl'")
+def validate_testcase(test_case, ds_chars):
+    print 'Start validate testcase'
 
-
-def check_model_types(test_case, ds_chars):
     result = ''
 
     ds = ds_chars[test_case[Constant.train_dataset_id]]
@@ -89,6 +80,9 @@ def check_model_types(test_case, ds_chars):
         result = 'This is classification testcase but response column type is not Enum'
     elif test_case['regression'] == 'x' and response_column_type.lower() == 'enum':
         result = 'This is regression testcase but response column type is Enum'
+    elif not('glm' in test_case['suitename'])\
+            and Common.is_regression_testcase(test_case, ds_chars) and test_case['balance_classes'] == 'x':
+        result = 'This is regression testcase but balance classes value is checked'
     # todo: validate more here.
 
     print result
@@ -96,45 +90,46 @@ def check_model_types(test_case, ds_chars):
 
 
 def run_testcase(testcase_id, testcase, dataset_characteristic, args):
-    '''
-    create an instance of testclass and call setup, test and clean_up sequentially
-    '''
+    """
+    create an instance of testclass and call test and clean_up sequentially
+    """
 
-    # set up testcase
-    testscript = testcase.pop('testscript')
-    classname = testcase.pop('classname')
-
-    # use reflection to get CLASS for run testcase
-    testclass = load_testclass(testscript, classname)
+    result = {
+        Constant.train_dataset_id: testcase[Constant.train_dataset_id],
+        Constant.validate_dataset_id: testcase[Constant.validate_dataset_id],
+        'result': Constant.testcase_result_status_invalid,
+        'message': 'N/A',
+        'mse': 'N/A',
+    }
 
     try:
-        driver = se_functions.open_browser(args)
+        driver = Selenium.get_web_driver(args)
 
-        test_obj = testclass(testcase_id, testcase, driver, dataset_characteristic)
+        test_obj = ModelBasic.ModelBasic(testcase_id, testcase, driver, dataset_characteristic)
 
         # run testcase
-        test_obj.setup()
         result = test_obj.test()
         test_obj.clean_up()
 
     except Exception as ex:
-        print ex.message
-        result = {
-            Constant.train_dataset_id : testcase[Constant.train_dataset_id],
-            Constant.validate_dataset_id : testcase[Constant.validate_dataset_id],
-            'result' : Constant.testcase_result_status_invalid,
-            'message' : str(ex),
-            'mse' : 'N/A',
-        }
-        # todo: do not handle it
-        # raise ex
+        print ex.__doc__
+        print str(ex)
+        result['message'] = str(ex)
 
     finally:
-        print 'Closing browser'
-        driver.close()
-        driver.quit()
-        time.sleep(3)
-        print 'Closed browser'
+        try:
+            print 'Closing driver'
+            driver.close()
+            driver.quit()
+
+            # To phantomjs clear catch & memory... after run each testcase
+            time.sleep(3)
+            print 'Closed driver'
+
+        except Exception as ex:
+            print ex.__doc__
+            print str(ex)
+            print 'Cannot close driver'
 
     return result
 
@@ -159,7 +154,6 @@ def run_testsuite(testsuite, dataset_characteristic, args):
     # start h2o server
     h2o_server = HS.H2oServer()
 
-    #are_headers_written = False
     total_tc_invalid = 0
     total_tc_fail = 0
     total_tc_pass = 0
@@ -168,16 +162,16 @@ def run_testsuite(testsuite, dataset_characteristic, args):
     testng_results = TestNGResult.TestNGResult()
 
     list_testcase_id = list(testsuite.keys())
-    list_testcase_id.sort(cmp=common.compare_string)
-    # for tc_id, testcase in testsuite.iteritems():
+    list_testcase_id.sort(cmp=Common.compare_string)
     for tc_id in list_testcase_id:
         testcase = testsuite.pop(tc_id)
         time_start_tc = datetime.datetime.now()
 
         # redirect output console to write log into TestNG format file
+        # todo: please move sys.stdout into Logger class
         sys.stdout = Logger.Logger(Config.temporary_log_file_name)
 
-        validate_message = check_model_types(testcase, dataset_characteristic.get_dataset())
+        validate_message = validate_testcase(testcase, dataset_characteristic.get_dataset())
 
         if '' == validate_message:
             test_result = run_testcase(tc_id, testcase, dataset_characteristic, args)
@@ -201,16 +195,18 @@ def run_testsuite(testsuite, dataset_characteristic, args):
         time_finish_tc = datetime.datetime.now()
         log = sys.stdout.read()
 
-        testng_results. add_test_method_n_child(tc_id, time_start_tc, time_finish_tc, test_result, log)
+        # write log
+        testng_results.add_test_method_n_child(tc_id, time_start_tc, time_finish_tc, test_result, log)
         testng_results.set_summary_attribute(total_tc_invalid, total_tc_fail, total_tc_pass)
         testng_results.write()
 
         # restart h2o server
         if total_tc % Config.test_case_num == 0:
-            h2o_server.restart(args)
+            CM.delete_all_DKV(args)
+            # h2o_server.restart(args)
 
             if args.location == 'phantomjs':
-                common.kill_phantomjs(args.location)
+                Common.kill_phantomjs(args.location)
 
     # todo: refactor it
     # stop h2o server
@@ -219,7 +215,7 @@ def run_testsuite(testsuite, dataset_characteristic, args):
 
 
 def parse_arguments():
-    ''' define all arguments '''
+    """ define all arguments """
     parser = argparse.ArgumentParser(description='Run Selenium tests')
     parser.add_argument(
         '-b',
@@ -246,21 +242,17 @@ def parse_arguments():
 
 
 def main():
-    '''
+    """
     test runner - parse input arguments, run test suite and save test results to /results
-    '''
+    """
     args = parse_arguments()
     print 'parse arguments: ', args
-
-    # if not se_functions.check_website_connect():
-    #     print 'FlowUI is not available'
-    #     sys.exit(0)
 
     # Setup /results directory
     setup_ouput_directories()
 
     # Load the testsuite
-    testsuite = load_testsuite(args.testsuite)
+    testsuite = CSV.load_testsuite(args.testsuite)
     # load the dataset characteristic
     dataset_chars = DS.DatasetCharacteristics()
 
