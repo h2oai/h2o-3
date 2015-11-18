@@ -55,7 +55,8 @@ public class ValidationMessageBase<I extends ModelBuilder.ValidationMessage, S e
 
   // Version&Schema-specific filling from the implementation object
   public S fillFromImpl(ModelBuilder.ValidationMessage vm) {
-    PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    this.message_type = Log.LVLS[vm.log_level()]; // field name changed
     if (this.field_name != null) {
       if (this.field_name.startsWith("_"))
         this.field_name = this.field_name.substring(1);
