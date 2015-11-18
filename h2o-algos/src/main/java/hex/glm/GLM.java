@@ -1117,42 +1117,43 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           ProgressMonitor pm = new L_BFGS.ProgressMonitor() {
             @Override
             public boolean progress(double[] beta, GradientInfo ginfo) {
+              double gnorm = 0;
+              double objval = 0;
+              if (ginfo instanceof ProximalGradientInfo) {
+                ProximalGradientInfo g = (ProximalGradientInfo) ginfo;
+                if (g._origGinfo instanceof GLMGradientInfo) {
+                  GLMGradientInfo gg = (GLMGradientInfo) g._origGinfo;
+                  double obj = gg._objVal;
+                  for (int i = 0; i < beta.length; ++i)
+                    obj += l1pen * (beta[i] >= 0 ? beta[i] : -beta[i]);
+                  // add l1pen
+                  _sc.addIterationScore(_taskInfo._iter, gg._likelihood, obj);
+                  double[] subgrad = ginfo._gradient.clone();
+                  ADMM.subgrad(l1pen, beta, subgrad);
+                  gnorm = ArrayUtils.l2norm2(subgrad, false);
+                  objval = obj;
+                }
+              } else {
+                gnorm = ArrayUtils.linfnorm(ginfo._gradient, false);
+                objval = ginfo._objVal;
+              }
+              if (ginfo instanceof GLMGradientInfo) {
+                GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
+                _sc.addIterationScore(_taskInfo._iter, gginfo._likelihood, gginfo._objVal);
+              }
+              int iterDelta = _taskInfo._iter < 8 ? 1 : 8;
+              _taskInfo._worked += _taskInfo._workPerIteration * iterDelta;
               if (_taskInfo._iter < 8 || (_taskInfo._iter & 7) == 0) {
-                double gnorm = 0;
-                double objval = 0;
-                if (ginfo instanceof ProximalGradientInfo) {
-                  ProximalGradientInfo g = (ProximalGradientInfo) ginfo;
-                  if (g._origGinfo instanceof GLMGradientInfo) {
-                    GLMGradientInfo gg = (GLMGradientInfo) g._origGinfo;
-                    double obj = gg._objVal;
-                    for (int i = 0; i < beta.length; ++i)
-                      obj += l1pen * (beta[i] >= 0 ? beta[i] : -beta[i]);
-                    // add l1pen
-                    _sc.addIterationScore(_taskInfo._iter, gg._likelihood, obj);
-                    double[] subgrad = ginfo._gradient.clone();
-                    ADMM.subgrad(l1pen, beta, subgrad);
-                    gnorm = ArrayUtils.l2norm2(subgrad, false);
-                    objval = obj;
-                  }
-                } else {
-                  gnorm = ArrayUtils.linfnorm(ginfo._gradient,false);
-                  objval = ginfo._objVal;
-                }
-                if (ginfo instanceof GLMGradientInfo) {
-                  GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-                  _sc.addIterationScore(_taskInfo._iter, gginfo._likelihood, gginfo._objVal);
-                }
-                int iterDelta = _taskInfo._iter < 8?1:8;
-                _taskInfo._worked += _taskInfo._workPerIteration * iterDelta;
                 update(_taskInfo._workPerIteration * iterDelta, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(objval, 4) + ", ginfo norm = " + MathUtils.roundToNDigits(gnorm, 4), GLM.this._key);
                 LogInfo("LBFGS: objval = " + objval);
               }
               ++_taskInfo._iter;
               // todo update the model here so we can show intermediate results
+              if(_taskInfo._iter >= _parms._max_iterations)
+                Log.warn("L_BFGS reached max number of iterations");
               return isRunning(GLM.this._key) && _taskInfo._iter < _parms._max_iterations;
             }
           };
-
           double[] beta = _taskInfo._beta;
           GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _parms._obj_reg, _bc);
 
@@ -1189,20 +1190,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double[] rho = MemoryManager.malloc8d(beta.length);
             // compute rhos
             for (int i = 0; i < rho.length - 1; ++i)
-              rho[i] = ADMM.L1Solver.estimateRho(nullBeta[i] + t*direction[i], l1pen, _bc._betaLB == null ? Double.NEGATIVE_INFINITY : _bc._betaLB[i], _bc._betaUB == null ? Double.POSITIVE_INFINITY : _bc._betaUB[i]);
+              rho[i] = .125*ADMM.L1Solver.estimateRho(nullBeta[i] + t*direction[i], l1pen, _bc._betaLB == null ? Double.NEGATIVE_INFINITY : _bc._betaLB[i], _bc._betaUB == null ? Double.POSITIVE_INFINITY : _bc._betaUB[i]);
             for(int ii = P; ii < rho.length; ii += P + 1)
-              rho[ii] = ADMM.L1Solver.estimateRho(nullBeta[ii] + t*direction[ii], 0, _bc._betaLB == null ? Double.NEGATIVE_INFINITY : _bc._betaLB[ii], _bc._betaUB == null ? Double.POSITIVE_INFINITY : _bc._betaUB[ii]);
+              rho[ii] = .125*ADMM.L1Solver.estimateRho(nullBeta[ii] + t*direction[ii], 0, _bc._betaLB == null ? Double.NEGATIVE_INFINITY : _bc._betaLB[ii], _bc._betaUB == null ? Double.POSITIVE_INFINITY : _bc._betaUB[ii]);
             for (int i = 0; i < rho.length - 1; ++i)
               rho[i] = Math.min(1000, rho[i]);
             final double[] objvals = new double[2];
             objvals[1] = Double.POSITIVE_INFINITY;
             double reltol = L1Solver.DEFAULT_RELTOL;
             double abstol = L1Solver.DEFAULT_ABSTOL;
-            double ADMM_gradEps = 1e-2;
+            double ADMM_gradEps = 1e-3;
             if (_bc != null)
-              new ADMM.L1Solver(ADMM_gradEps, 50, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+              new ADMM.L1Solver(ADMM_gradEps, 100, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon*1e-1).setGradEps(_parms._gradient_epsilon), beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
             else
-              new ADMM.L1Solver(ADMM_gradEps, 50, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon), beta, l1pen);
+              new ADMM.L1Solver(ADMM_gradEps, 100, reltol, abstol).solve(new LBFGS_ProximalSolver(solver, beta, rho, pm).setObjEps(_parms._objective_epsilon*1e-1).setGradEps(_parms._gradient_epsilon), beta, l1pen);
             if (_parms._family == Family.multinomial) {
               for (int i = 0; i < _taskInfo._beta_multinomial.length; ++i)
                 System.arraycopy(beta, i * (P + 1), _taskInfo._beta_multinomial[i], 0, _taskInfo._beta_multinomial[i].length);
