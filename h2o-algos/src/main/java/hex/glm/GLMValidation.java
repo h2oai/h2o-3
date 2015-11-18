@@ -10,6 +10,7 @@ import hex.ModelMetricsSupervised.MetricBuilderSupervised;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -212,8 +213,11 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       GainsLift gl = null;
       if (preds!=null) {
-        gl = new GainsLift(preds.lastVec(), f.vec(m._parms._response_column));
-        gl.exec();
+        Vec resp = f.vec(m._parms._response_column);
+        if (resp != null) {
+          gl = new GainsLift(preds.lastVec(), resp);
+          gl.exec();
+        }
       }
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), _aic, nullDOF(), resDOF(), gl);
     } else if( _parms._family == Family.multinomial) {
