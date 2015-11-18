@@ -8,7 +8,7 @@ from tests import pyunit_utils
 
 def vec_scaler_comparisons():
     # Connect to a pre-existing cluster
-    
+
 
     air = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
     rows, cols = air.dim
@@ -16,8 +16,8 @@ def vec_scaler_comparisons():
     ## H2OVec/scaler
     # ==
     row_sum = 0
-    levels = air.levels(16)
-    for level in levels:
+    levels = air[16].levels()
+    for level in levels[0]:
        r, c = air[air["Origin"] == str(level)].dim
        row_sum += r
     assert row_sum == rows, "expected equal number of rows"
@@ -46,7 +46,7 @@ def vec_scaler_comparisons():
     ## scaler/H2OVec
     # ==
     row_sum = 0
-    for level in levels:
+    for level in levels[0]:
        r, c = air[str(level) == air["Origin"]].dim
        row_sum += r
     assert row_sum == rows, "expected equal number of rows"

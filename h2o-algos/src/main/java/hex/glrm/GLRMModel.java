@@ -22,6 +22,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
     public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _user_x;               // User-specified X matrix (for _init = User)
+    public boolean _expand_user_y = true;    // Should categorical columns in _user_y be expanded via one-hot encoding? (for _init = User)
 
     // Loss functions
     public Loss _loss = Loss.Quadratic;                  // Default loss function for numeric cols
@@ -38,12 +39,15 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Optional parameters
     public int _max_iterations = 1000;            // Max iterations
+    public int _max_updates = 2*_max_iterations;  // Max number of updates (X or Y)
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
-    // public Key<Frame> _loading_key;               // Key to save X matrix
-    public String _loading_name;
+
+    // public Key<Frame> _representation_key;     // Key to save X matrix
+    public String _representation_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
+    public boolean _impute_original = false;      // Reconstruct original training data by reversing _transform?
     public boolean _verbose = true;               // Log when objective increases each iteration?
 
     // Quadratic -> Gaussian distribution ~ exp(-(a-u)^2)
@@ -424,12 +428,15 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Iterations executed
     public int _iterations;
 
+    // Updates executed
+    public int _updates;
+
     // Current value of objective function
     public double _objective;
 
     // Average change in objective function this iteration
     public double _avg_change_obj;
-    public double[/*iterations*/] _history_avg_change_obj = new double[0];
+    public double[/*iterations*/] _history_objective = new double[0];
 
     // Mapping from lower dimensional k-space to training features (Y)
     public TwoDimTable _archetypes;
@@ -444,7 +451,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double[] _singular_vals;
 
     // Frame key of X matrix
-    public Key<Frame> _loading_key;
+    public String _representation_name;
+    public Key<Frame> _representation_key;
     public Key<? extends Model> _init_key;
 
     // Number of categorical and numeric columns
@@ -489,8 +497,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   @Override protected Futures remove_impl( Futures fs ) {
     if(null != _output._init_key)
       _output._init_key.remove(fs);
-    if(null != _output._loading_key)
-      _output._loading_key.remove(fs);
+    if(null != _output._representation_key)
+      _output._representation_key.remove(fs);
     return super.remove_impl(fs);
   }
 
@@ -503,7 +511,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Need [A,X,P] where A = adaptedFr, X = loading frame, P = imputed frame
     // Note: A is adapted to original training frame, P has columns shuffled so cats come before nums!
     Frame fullFrm = new Frame(adaptedFr);
-    Frame loadingFrm = DKV.get(_output._loading_key).get();
+    Frame loadingFrm = DKV.get(_output._representation_key).get();
     fullFrm.add(loadingFrm);
     String[][] adaptedDomme = adaptedFr.domains();
     for(int i = 0; i < ncols; i++) {
@@ -519,7 +527,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    gs._mb.makeModelMetrics(GLRMModel.this, orig);   // save error metrics based on imputed data
+    gs._mb.makeModelMetrics(GLRMModel.this, orig, null);   // save error metrics based on imputed data
     return f;
   }
 
@@ -586,6 +594,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         int ds = d - _output._ncats;
         double xy = _output._archetypes_raw.lmulNumCol(tmp, ds);
         preds[_output._permutation[d]] = _parms.impute(xy, _output._lossFunc[d]);
+        if(_parms._impute_original)
+          preds[_output._permutation[d]] = preds[_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
       }
       return preds;
     }
@@ -606,15 +616,15 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     // Append loading frame X for calculating XY
     Frame fullFrm = new Frame(adaptedFr);
-    Frame loadingFrm = DKV.get(_output._loading_key).get();
+    Frame loadingFrm = DKV.get(_output._representation_key).get();
     fullFrm.add(loadingFrm);
 
     GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
-    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr);   // save error metrics based on imputed data
+    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr, null);   // save error metrics based on imputed data
     return (ModelMetricsGLRM) mm;
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation);
+    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation, _parms._impute_original);
   }
 }

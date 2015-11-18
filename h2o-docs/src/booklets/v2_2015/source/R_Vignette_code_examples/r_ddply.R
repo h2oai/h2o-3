@@ -7,5 +7,5 @@ iris.hex = h2o.importFile(path = irisPath, destination_frame = "iris.hex")
 
 # Apply function to groups by class of flower
 # uses h2o's ddply, since iris.hex is an H2OFrame object
-res = h2o.ddply(iris.hex, "class", function(df) { sum(df[,1], na.rm = T)/nrow(df) })
+res = h2o.group_by(data = iris.hex, by = "class", mean("sepal_len", na.rm=T),gb.control=list(na.methods="rm"))
 head(res)

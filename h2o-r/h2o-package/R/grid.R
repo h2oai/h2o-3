@@ -66,6 +66,8 @@ h2o.grid <- function(algorithm,
     lparams <- params
     # Generate all combination of hyper parameters
     expanded_grid <- expand.grid(lapply(hyper_params, function(o) { 1:length(o) }))
+    # Get algo REST version
+    algo_rest_version <- .h2o.getAlgoVersion(algo = algorithm)
     # Verify each defined point in hyper space against REST API
     apply(expanded_grid,
           MARGIN = 1,
@@ -76,7 +78,7 @@ h2o.grid <- function(algorithm,
       params_for_validation <- lapply(append(lparams, hparams), function(x) { if(is.integer(x)) x <- as.numeric(x); x })
       # We have to repeat part of work used by model builders
       params_for_validation <- .h2o.checkAndUnifyModelParameters(algo = algorithm, allParams = all_params, params = params_for_validation)
-      .h2o.validateModelParameters(algorithm, params_for_validation)
+      .h2o.validateModelParameters(algorithm, params_for_validation, h2oRestApiVersion = algo_rest_version)
     })
   }
 
@@ -112,9 +114,9 @@ h2o.grid <- function(algorithm,
 #' library(jsonlite)
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' h2o.grid("gbm", grid_id = "gbm_grid", x = c(1:4), y = 5,
+#' h2o.grid("gbm", grid_id = "gbm_grid_id", x = c(1:4), y = 5,
 #'          training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))
-#' grid <- h2o.getGrid("gbm_grid")
+#' grid <- h2o.getGrid("gbm_grid_id")
 #' # Get grid summary
 #' summary(grid)
 #' # Fetch grid models

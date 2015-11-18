@@ -17,6 +17,7 @@ public abstract class Transform<T> extends Iced {
   protected String[] _inNames;
   protected String[] _inTypes;
   protected String[] _outTypes;
+  protected String[] _outNames;
 
   Transform(String name, String ast, boolean inplace, String[] newNames) {
     _name=name;
@@ -32,6 +33,7 @@ public abstract class Transform<T> extends Iced {
     _inTypes = f.typesStr();
     Frame ff = transformImpl(f);
     _outTypes= ff.typesStr();
+    _outNames= ff.names();
     return ff;
   }
   protected abstract Frame transformImpl(Frame f);
@@ -43,7 +45,8 @@ public abstract class Transform<T> extends Iced {
     StringBuilder sb = new StringBuilder();
     sb.append("  class " + stepName + " extends Step<" + stepName + "> {\n");
     sb.append("    public " + stepName + "() { super(new String[]{" + toJavaString(_inNames) +"},\n");
-    sb.append("                                new String[]{" + toJavaString(_inTypes) + "});\n");
+    sb.append("                                new String[]{" + toJavaString(_inTypes) + "}," +
+              "                                new String[]{" + toJavaString(_outNames) +"});\n");
     for (String k : _params.keySet()) {
       String v = _params.get(k).toJavaString();
       sb.append(

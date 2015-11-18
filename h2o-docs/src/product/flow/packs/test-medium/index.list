@@ -15,7 +15,6 @@ gbm_airlines_AirlinesTrainMM.flow
 gbm_airlines_allyears2k.flow
 gbm_airlines_gram_std.flow
 gbm_arcene_train_test.flow
-gbm_chicagoCensus.flow
 gbm_covtype-20k.flow
 glm_airline.flow
 glm_airline_allyears2k.flow

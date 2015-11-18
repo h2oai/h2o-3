@@ -2,7 +2,7 @@
 
 
 test.glrm.prostate_miss <- function() {
-  missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
+  missing_frac <- seq(from = 0.1, to = 0.8, by = 0.1)
   stats_names <- c("Fraction", "Objective", "AvgChangeObj", "Iterations", "StepSize", 
                    "TrainNumSSE", "ValidNumSSE", "TrainCatErr", "ValidCatErr", 
                    "MissingNumASE", "MissingCatErr")
@@ -34,7 +34,7 @@ test.glrm.prostate_miss <- function() {
     expect_true(validmm$catcnt >= trainmm$catcnt)
     expect_true((trainmm$numcnt + validmm$numcnt) < totobs)
     expect_equal(validmm$numcnt + validmm$catcnt, totobs)
-    h2o.rm(prostate.glrm@model$loading_key$name)    # Remove loading matrix to free memory
+    h2o.rm(prostate.glrm@model$representation_name)    # Remove X matrix to free memory
     
     # Save relevant information from this run
     miss_numerr <- (validmm$numerr - trainmm$numerr) / (validmm$numcnt - trainmm$numcnt)   # Average squared error over missing entries only

@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import hex.Distribution;
 import hex.Model;
+import hex.ScoreKeeper;
 import water.H2O;
 import static water.H2O.technote;
 import water.exceptions.H2OIllegalArgumentException;
@@ -16,6 +17,11 @@ import java.util.Arrays;
  * Deep Learning Parameters
  */
 public class DeepLearningParameters extends Model.Parameters {
+  @Override protected double defaultStoppingTolerance() { return 0; }
+  public DeepLearningParameters() {
+    super();
+    _stopping_rounds = 5;
+  }
 
   @Override
   public double missingColumnsType() {
@@ -614,6 +620,9 @@ public class DeepLearningParameters extends Model.Parameters {
       if (_elastic_averaging_regularization < 0)
         dl.error("_elastic_averaging_regularization", "Elastic averaging regularization strength must be >= 0.");
     }
+    if (_autoencoder && _stopping_metric != ScoreKeeper.StoppingMetric.AUTO && _stopping_metric != ScoreKeeper.StoppingMetric.MSE) {
+      dl.error("_stopping_metric", "Stopping metric must either be AUTO or MSE for autoencoder.");
+    }
   }
 
   static class Sanity {
@@ -631,6 +640,9 @@ public class DeepLearningParameters extends Model.Parameters {
             "_score_validation_sampling",
             "_classification_stop",
             "_regression_stop",
+            "_stopping_rounds",
+            "_stopping_metric",
+            "_stopping_tolerance",
             "_quiet_mode",
             "_max_confusion_matrix_size",
             "_max_hit_ratio_k",
@@ -843,6 +855,11 @@ public class DeepLearningParameters extends Model.Parameters {
             Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;
         }
+      }
+      if (fromParms._autoencoder && fromParms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
+        if (!fromParms._quiet_mode)
+          Log.info("_stopping_metric: Automatically setting stopping_metric to MSE for autoencoder.");
+        toParms._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
       }
 
       // Automatically set the distribution

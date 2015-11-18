@@ -16,7 +16,7 @@ def insert_missing():
             [3, 4, 3, 2, 'b', 3, 8],
             [4, 5, 9, 5, 'c', 2, 8],
             [5, 7, 10,7, 'b', 8, 8]]
-    h2o_data = h2o.H2OFrame(python_obj=data)
+    h2o_data = h2o.H2OFrame(zip(*data))
 
     h2o_data.insert_missing_values(fraction = 0.0)
     num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol)])

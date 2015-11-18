@@ -19,7 +19,7 @@ def continuous_or_categorical():
     'h3': [0, 1, 0, 0, 1]
   }
 
-  df_hex = h2o.H2OFrame(python_obj = aa)
+  df_hex = h2o.H2OFrame(aa)
 
   df_hex.show()
   df_hex.summary()

@@ -13,7 +13,7 @@ def quantile():
     
 
     data = [[random.uniform(-10000,10000)] for c in range(1000)]
-    h2o_data = h2o.H2OFrame(python_obj=data)
+    h2o_data = h2o.H2OFrame(zip(*data))
     np_data = np.array(data)
 
     h2o_quants = h2o_data.quantile()

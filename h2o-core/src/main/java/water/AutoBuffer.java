@@ -184,6 +184,7 @@ public /* final */ class AutoBuffer {
     _read = true;
     _firstPage = true;
     _persist = 0;               // No persistance
+    _size = buf.length;
   }
 
   /** Read from a fixed byte[]; should not be closed. */
@@ -520,7 +521,6 @@ public /* final */ class AutoBuffer {
   private int udpSend() throws IOException {
     assert _chan == null;
     TimeLine.record_send(this,false);
-    assert _size == 0;
     _size = _bb.position();
     assert _size < AutoBuffer.BBP_SML.size();
     _bb.flip();                 // Flip for sending

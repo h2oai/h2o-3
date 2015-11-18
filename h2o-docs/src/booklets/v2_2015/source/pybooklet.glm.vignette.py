@@ -1,4 +1,4 @@
-def gbm_vignette():
+def glm_vignette():
     from tests import pyunit_utils
     story1 = [pyunit_utils.locate("GLM_Vignette_code_examples/glm_gaussian_example.py")]
     story2 = [pyunit_utils.locate("GLM_Vignette_code_examples/glm_binomial_example.py")]
@@ -21,4 +21,4 @@ def gbm_vignette():
     pybooklet_utils.check_story("story6",story6)
     pybooklet_utils.check_story("story7",story7)
 
-gbm_vignette()
+glm_vignette()

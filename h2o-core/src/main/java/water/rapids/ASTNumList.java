@@ -1,19 +1,35 @@
 package water.rapids;
 
+import water.H2O;
 import water.util.ArrayUtils;
 import water.util.SB;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/** A collection of base/stride/cnts.  Bases are monotonically increasing, and
- *  base+stride*cnt is always less than the next base.  This is a syntatic form
- *  only, and never executes and never gets on the execution stack.
+/** A collection of base/stride/cnts.  
+ *  Syntax: { {num | num:cnt | num:cnt:stride},* }
+ *
+ *  The bases can be unordered with dups (often used for column selection where
+ *  repeated columns are allowed, and order matters).  The _isList flag tracks
+ *  that all cnts are 1 (and hence all strides are ignored and 1); these lists
+ *  may or may not be sorted.  Note that some column selection is dense
+ *  (typical all-columns is: {0:MAX_INT}), and this has cnt>1.
+ *
+ *  When cnts are > 1, bases must be sorted, with base+stride*cnt always less
+ *  than the next base.  Typical use-case might be a list of probabilities for
+ *  computing quantiles, or grid-search parameters.
+ * 
+ *  Asking for a sorted integer expansion will sort the bases internally, and
+ *  also demand no overlap between bases.  The has(), min() and max() calls
+ *  require a sorted list.
  */
 public class ASTNumList extends ASTParameter {
   final double _bases[], _strides[];
   final long _cnts[];
-  final boolean _isList;
+  final boolean _isList; // True if an unordered list of numbers (cnts are 1, stride is ignored)
+        boolean _isSort; // True if bases are sorted.  May get updated later.
+  
   ASTNumList( Exec e ) {
     ArrayList<Double> bases  = new ArrayList<>();
     ArrayList<Double> strides= new ArrayList<>();
@@ -40,6 +56,7 @@ public class ASTNumList extends ASTParameter {
           c = e.skipWS();
         }
       }
+      if( cnt==1 && stride != 1 ) throw new IllegalArgumentException("If count is 1, then stride must be one (and ignored)");
       bases.add(base);
       cnts.add((long)cnt);  
       strides.add(stride);
@@ -62,10 +79,12 @@ public class ASTNumList extends ASTParameter {
     _isList = isList;
 
     // Complain about unordered bases, unless it's a simple number list
-    if( !isList )
-      for( int i=1; i<_bases.length; i++ )
-        if( _bases[i-1] >= _bases[i] )
-          throw new IllegalArgumentException("Bases must be monotonically increasing");
+    boolean isSort = true;
+    for( int i=1; i<_bases.length; i++ )
+      if( _bases[i-1] >= _bases[i] )
+        if( _isList ) isSort = false;
+        else throw new IllegalArgumentException("Bases must be monotonically increasing");
+    _isSort = isSort;
   }
 
   // A simple ASTNumList of 1 number
@@ -73,7 +92,7 @@ public class ASTNumList extends ASTParameter {
     _bases  = new double[]{d};
     _strides= new double[]{1};
     _cnts   = new long  []{1};
-    _isList = true;
+    _isList = _isSort = true;
   }
   // A simple dense range ASTNumList
   ASTNumList( long lo, long hi_exclusive ) {
@@ -81,6 +100,7 @@ public class ASTNumList extends ASTParameter {
     _strides= new double[]{1};
     _cnts   = new long  []{hi_exclusive-lo};
     _isList = false;
+    _isSort = true;
   }
 
   // An empty number list
@@ -88,7 +108,7 @@ public class ASTNumList extends ASTParameter {
     _bases  = new double[0];
     _strides= new double[0];
     _cnts   = new long  [0];
-    _isList = true;
+    _isList = _isSort = true;
   }
 
   ASTNumList(double[] list) {
@@ -128,12 +148,8 @@ public class ASTNumList extends ASTParameter {
     double[] ary = expand();
     if( ary==null || ary.length==0 ) return "\"null\"";
     SB sb = new SB().p('{');
-    for(int i=0;i<ary.length;++i) {
-      sb.p(ary[i]);
-      if( i==ary.length-1) return sb.p('}').toString();
-      sb.p(',');
-    }
-    throw new RuntimeException("Should never be here");
+    for(int i=0;i<ary.length-1;++i) sb.p(ary[i]).p(',');
+    return sb.p('}').toString();
   }
 
   // Expand the compressed form into an array of doubles.
@@ -148,6 +164,25 @@ public class ASTNumList extends ASTParameter {
     return vals;
   }
 
+  // Update-in-place sort of bases
+  ASTNumList sort() {
+    if( _isSort ) return this;  // Flow coding fast-path cutout
+    int[] idxs = ArrayUtils.seq(0,_bases.length);
+    ArrayUtils.sort(idxs,_bases);
+    double[] bases  = _bases  .clone();
+    double[] strides= _strides.clone();
+    long  [] cnts   = _cnts   .clone();
+    for( int i=0; i<idxs.length; i++ ) {
+      _bases  [i] = bases  [idxs[i]];
+      _strides[i] = strides[idxs[i]];
+      _cnts   [i] = cnts   [idxs[i]];
+    }
+    _isSort = true;
+    return this;
+  }
+
+  // Expand the compressed form into an array of ints; 
+  // often used for unordered column lists
   int[] expand4() {
     // Count total values
     int nrows=(int)cnt(), r=0;
@@ -158,12 +193,12 @@ public class ASTNumList extends ASTParameter {
         vals[r++] = (int)d;
     return vals;
   }
-  int[] expand4Sort() {
-    int[] is = expand4();
-    Arrays.sort(is);
-    return is;
-  }
+  // Expand the compressed form into an array of ints; 
+  // often used for sorted column lists
+  int[] expand4Sort() { return sort().expand4(); }
 
+  // Expand the compressed form into an array of longs; 
+  // often used for unordered row lists
   long[] expand8() {
     // Count total values
     int nrows=(int)cnt(), r=0;
@@ -174,61 +209,50 @@ public class ASTNumList extends ASTParameter {
         vals[r++] = (long)d;
     return vals;
   }
-  long[] expand8Sort() {
-    long[] is = expand8();
-    Arrays.sort(is);
-    return is;
-  }
+  // Expand the compressed form into an array of longs; 
+  // often used for sorted row lists
+  long[] expand8Sort() { return sort().expand8(); }
 
-  double max() { return _bases[_bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1]; } // largest exclusive value (weird rite?!)
-  double min() { return _bases[0]; }
+  double max() { assert _isSort; return _bases[_bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1]; } // largest exclusive value (weird rite?!)
+  double min() { assert _isSort; return _bases[0]; }
   long cnt() { return water.util.ArrayUtils.sum(_cnts); }
   boolean isDense() { return _cnts.length==1 && _bases[0]==0 && _strides[0]==1; }
   boolean isEmpty() { return _bases.length==0; }
 
-
   // check if n is in this list of numbers
   // NB: all contiguous ranges have already been checked to have stride 1
   boolean has(long v) {
-    boolean isEx = false;
-    double[] bases=Arrays.copyOf(_bases,_bases.length); // if bases!=null then we do exclusion has -> !has
-    double min = min();
-    double max = max();
-    // do something special for negative indexing
-    if( min < 0 ) {
-      for(int i=0; i<bases.length;++i) bases[i] = -1*bases[i] - 1; // make bases positive for bsearch; also do 1-based => 0-based conversion
-      min = bases[0];
-      max = bases[bases.length-1] + _cnts[_cnts.length-1]*_strides[_strides.length-1];
-      isEx = true;
-    }
-
-    if( min <= v && v < max ) { // guarantees that ub is not out-of-bounds
-      // binary search _bases for range to check, return true for exact match
-      // if no exact base matches, check the ranges of the two "bounding" bases
-      int[][] res = new int[2][]; // entry 0 is exact; entry 1 is [lb,ub]
-      bsearch(bases, v, res);
-      if( res[0] != null /* exact base match */ ) return !isEx;
-      else {
-        int lb = res[1][0], ub = res[1][1];
-        if( bases[lb] <= v && v < bases[lb] + _cnts[lb] ) return !isEx;
-        if( bases[ub] <= v && v < bases[ub] + _cnts[ub] ) return !isEx;
-      }
-    }
-    return isEx;
+    assert _isSort; // Only called when already sorted
+    // do something special for negative indexing... that does not involve
+    // allocating arrays, once per list element!
+    if( v < 0 )  throw H2O.unimpl();
+    int idx = Arrays.binarySearch(_bases, v);
+    if( idx >= 0 ) return true;
+    idx = -idx-2;  // See Arrays.binarySearch; returns (-idx-1), we want +idx-1
+    assert _bases[idx] < v;     // Sanity check binary search, AND idx >= 0
+    return v < _bases[idx]+_cnts[idx]*_strides[idx];
   }
 
-  private static void bsearch(double[] bases, long v, int[][] res) {
-    int lb=0,ub=bases.length;
-    int m=(ub+lb)>>1; // [lb,m) U [m,ub)
-    do {
-      if( v==bases[m] ) { res[0]=new int[]{m}; return; } // exact base match
-      else if( v<bases[m] ) ub=m;
-      else lb = m;
-      m = (ub+lb)>>1;
-    } while( m!=lb );
-    res[1]=new int[]{lb,ub}; // return 2 closest bases
+  // Select columns by number.  Numbers are capped to the number of columns +1
+  // - this allows R      to see a single out-of-range value and throw a range check
+  // - this allows Python to see a single out-of-range value and ignore it
+  // - this allows Python to pass [0:MAXINT] without blowing out the max number of columns.
+  // Note that the Python front-end does not want to cap the max column size, because
+  // this will force eager evaluation on a standard column slice operation.
+  // Note that the list is often unsorted (_isSort is false).
+  // Note that the list is often dense with cnts>1 (_isList is false).
+  @Override int[] columns( String[] names ) {
+    // Count total values, capped by max len+1
+    int nrows=0, r=0;
+    for( int i=0; i<_bases.length; i++ )
+      nrows += Math.min(_bases[i]+_cnts[i],names.length+1) - Math.min(_bases[i],names.length+1);
+    // Fill in values
+    int[] vals = new int[nrows];
+    for( int i=0; i<_bases.length; i++ ) {
+      int lim = Math.min((int)(_bases[i]+_cnts[i]),names.length+1);
+      for( int d = Math.min((int)_bases[i],names.length+1); d<lim; d++ )
+        vals[r++] = d;
+    }
+    return vals;
   }
-
-  // Select columns by number or String.
-  @Override int[] columns( String[] names ) { return expand4(); }
 }

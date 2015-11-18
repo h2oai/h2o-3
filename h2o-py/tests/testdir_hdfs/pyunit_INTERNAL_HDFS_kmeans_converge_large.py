@@ -10,6 +10,7 @@ from tests import pyunit_utils
 
 
 
+
 def hdfs_kmeans_converge():
     
 
@@ -35,8 +36,7 @@ def hdfs_kmeans_converge():
 
         print "Run k-means with init = final cluster centers and max_iterations = 1"
         init_centers = h2o.H2OFrame(cross1_km.centers())
-        init_centers_key = init_centers.send_frame()
-        cross2_km = h2o.kmeans(training_frame = cross_h2o, x=cross_h2o[0:57], k = ncent, user_points=init_centers_key,
+        cross2_km = h2o.kmeans(training_frame = cross_h2o, x=cross_h2o[0:57], k = ncent, user_points=init_centers,
                                max_iterations = 1)
         print cross2_km
 

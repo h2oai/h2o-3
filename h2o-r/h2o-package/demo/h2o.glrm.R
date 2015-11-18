@@ -7,7 +7,7 @@ h2o.init()
 
 gait.hex <- h2o.uploadFile(path = system.file("extdata", "walking.csv", package="h2o"), destination_frame = "gait")
 summary(gait.hex)
-gait.glrm <- h2o.glrm(training_frame = gait.hex, x = 2:ncol(gait.hex), k = 5, init = "PlusPlus", loss = "Quadratic", 
+gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 5, init = "PlusPlus", loss = "Quadratic", 
                       regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 print(gait.glrm)
 

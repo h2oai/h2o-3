@@ -25,9 +25,9 @@ def additional_parameters():
                            col_types=c_types)
     fhex.describe()
 
-    assert fhex._id == dest_frame.replace("%",".").replace("&",".")
+    assert fhex.frame_id == dest_frame.replace("%",".").replace("&",".")
     assert fhex.col_names == c_names
-    col_summary = h2o.frame(fhex._id)["frames"][0]["columns"]
+    col_summary = h2o.frame(fhex.frame_id)["frames"][0]["columns"]
     for i in range(len(col_summary)):
         assert col_summary[i]["type"] == c_types[i]
 
@@ -42,9 +42,9 @@ def additional_parameters():
                            col_types=c_types)
     fhex.describe()
 
-    assert fhex._id == dest_frame.replace("%",".").replace("&",".")
+    assert fhex.frame_id == dest_frame.replace("%",".").replace("&",".")
     assert fhex.col_names == c_names
-    col_summary = h2o.frame(fhex._id)["frames"][0]["columns"]
+    col_summary = h2o.frame(fhex.frame_id)["frames"][0]["columns"]
     for i in range(len(col_summary)):
       name = c_names[i]
       if name in c_types:

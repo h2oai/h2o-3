@@ -7,10 +7,10 @@ import numpy as np
 def test_negate():
 
   a = np.random.randn(100,1).tolist()
-  d = h2o.H2OFrame(a)
+  d = h2o.H2OFrame(zip(*a))
 
-  assert d[~(d['C1']>0),'C1'] == d[(d['C1']<=0), 'C1']
-  assert d[~(d['C1']<=0),'C1'] == d[(d['C1']>0),'C1']
+  assert (~(d['C1']>0) == (d['C1']<=0)).all()
+  assert (~(d['C1']<=0) == (d['C1']>0)).all()
 
 
 if __name__ == "__main__":

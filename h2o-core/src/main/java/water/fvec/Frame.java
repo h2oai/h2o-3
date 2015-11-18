@@ -2,16 +2,25 @@ package water.fvec;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import water.*;
-import water.parser.BufferedString;
-import water.util.Log;
-import water.util.PrettyPrint;
-import water.util.TwoDimTable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+
+import water.DKV;
+import water.Futures;
+import water.H2O;
+import water.Iced;
+import water.Key;
+import water.Keyed;
+import water.Lockable;
+import water.MRTask;
+import water.Value;
+import water.parser.BufferedString;
+import water.util.Log;
+import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -348,6 +357,24 @@ public class Frame extends Lockable<Frame> {
     for(int i = 0; i < names.length; ++i)
       res[i] = find(names[i]);
     return res;
+  }
+
+  public void insertVec(int i, String name, Vec vec) {
+    String [] names = new String[_names.length+1];
+    Vec [] vecs = new Vec[_vecs.length+1];
+    Key [] keys = new Key[_keys.length+1];
+    System.arraycopy(_names,0,names,0,i);
+    System.arraycopy(_vecs,0,vecs,0,i);
+    System.arraycopy(_keys,0,keys,0,i);
+    names[i] = name;
+    vecs[i] = vec;
+    keys[i] = vec._key;
+    System.arraycopy(_names,i,names,i+1,_names.length-i);
+    System.arraycopy(_vecs,i,vecs,i+1,_vecs.length-i);
+    System.arraycopy(_keys,i,keys,i+1,_keys.length-i);
+    _names = names;
+    _vecs = vecs;
+    _keys = keys;
   }
 
   /** Pair of (column name, Frame key). */
@@ -795,19 +822,22 @@ public class Frame extends Lockable<Frame> {
   // Make NewChunks to for holding data from e.g. Spark.  Once per set of
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
-  static NewChunk[] createNewChunks( String name, byte type, int cidx ) {
-    Frame fr = (Frame)Key.make(name).get();
+  static NewChunk[] createNewChunks(String name, byte[] type, int cidx) {
+    Frame fr = (Frame) Key.make(name).get();
     NewChunk[] nchks = new NewChunk[fr.numCols()];
-    for( int i=0; i<nchks.length; i++ )
-      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i],type),cidx);
+    for (int i = 0; i < nchks.length; i++) {
+      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx);
+    }
     return nchks;
   }
 
   // Compress & DKV.put NewChunks.  Once per set of Chunks in a Frame, after
   // filling them.  Can be called in parallel for different sets of Chunks.
-  static void closeNewChunks( NewChunk[] nchks ) {
+  static void closeNewChunks(NewChunk[] nchks) {
     Futures fs = new Futures();
-    for( NewChunk nchk : nchks ) nchk.close(fs);
+    for (NewChunk nchk : nchks) {
+      nchk.close(fs);
+    }
     fs.blockForPending();
   }
 
@@ -1077,8 +1107,7 @@ public class Frame extends Lockable<Frame> {
         throw H2O.fail();
       }
     }
-
-    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null, "", strCells, dblCells).toString();
+    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.clone(),coltypes,null, "", strCells, dblCells).toString();
   }
 
 

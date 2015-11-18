@@ -4,9 +4,6 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
-
 def levels_nlevels_setlevel_setLevels_test():
 
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
@@ -16,38 +13,41 @@ def levels_nlevels_setlevel_setLevels_test():
     nlevels = iris.nlevels()
 
     # frame (w/ index)
-    levels = iris.levels(col=4)
-    nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    levels = iris[4].levels()[0]
+    nlevels = iris[4].nlevels()[0]
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     # vec
     iris[4] = iris[4].set_level(level='Iris-setosa')
-    levels = iris.levels(col=4)
-    nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    levels = iris[4].levels()[0]
+    nlevels = iris[4].nlevels()[0]
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'Iris-setosa'
 
-    levels = iris[4].levels()
-    nlevels = iris[4].nlevels()
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
-        "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
+    levels = iris[4].levels()[0]
+    nlevels = iris[4].nlevels()[0]
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
+        "Expected levels to be {0}, but got {1}".format(
+          {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'},levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     iris[4] = iris[4].set_level(level='Iris-versicolor')
-    levels = iris.levels(col=4)
-    nlevels = iris.nlevels(col=4)
-    assert set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']) == set(levels), \
+    levels = iris[4].levels()[0]
+    nlevels = iris.nlevels()[0]
+    assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'Iris-versicolor'
 
-    levels = iris[1].levels()
-    nlevels = iris[1].nlevels()
-    assert levels == None, "Expected levels to be None, but got {0}".format(levels)
+    levels = iris[1].levels()[0]
+    nlevels = iris[1].nlevels()[0]
+    assert levels == [], "Expected levels to be [], but got {0}".format(levels)
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     ################### reimport, set new domains, rerun tests ###################################
@@ -59,38 +59,38 @@ def levels_nlevels_setlevel_setLevels_test():
     nlevels = iris.nlevels()
 
     # frame (w/ index)
-    levels = iris.levels(col=4)
-    nlevels = iris.nlevels(col=4)
+    levels = iris[4].levels()[0]
+    nlevels = iris.nlevels()[0]
     assert set(['a', 'b', 'c']) == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['a', 'b', 'c']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     # vec
     iris[4] = iris[4].set_level(level='a')
-    levels = iris.levels(col=4)
-    nlevels = iris.nlevels(col=4)
+    levels = iris[4].levels()[0]
+    nlevels = iris[4].nlevels()[0]
     assert set(['a', 'b', 'c']) == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['a', 'b', 'c']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'a'
 
-    levels = iris[4].levels()
-    nlevels = iris[4].nlevels()
+    levels = iris[4].levels()[0]
+    nlevels = iris[4].nlevels()[0]
     assert set(['a', 'b', 'c']) == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['a', 'b', 'c']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
 
     iris[4] = iris[4].set_level(level='b')
-    levels = iris.levels(col=4)
-    nlevels = iris.nlevels(col=4)
+    levels = iris[4].levels()[0]
+    nlevels = iris[4].nlevels()[0]
     assert set(['a', 'b', 'c']) == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['a', 'b', 'c']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'b'
 
-    levels = iris[1].levels()
-    nlevels = iris[1].nlevels()
-    assert levels == None, "Expected levels to be None, but got {0}".format(levels)
+    levels = iris[1].levels()[0]
+    nlevels = iris[1].nlevels()[0]
+    assert levels == [], "Expected levels to be [], but got {0}".format(levels)
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
     one_column_frame = iris[4]

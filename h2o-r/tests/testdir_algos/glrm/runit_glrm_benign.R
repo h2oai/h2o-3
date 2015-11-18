@@ -15,7 +15,7 @@ test.glrm.benign <- function() {
     Log.info(paste("Singular values:", paste(benign.glrm@model$singular_vals, collapse = " ")))
     Log.info("Eigenvectors:"); print(benign.glrm@model$eigenvectors)
     checkGLRMPredErr(benign.glrm, benign.hex, tolerance = 1e-6)
-    h2o.rm(benign.glrm@model$loading_key$name)   # Remove loading matrix to free memory
+    h2o.rm(benign.glrm@model$representation_name)   # Remove X matrix to free memory
   }
   
 }

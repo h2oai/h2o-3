@@ -3,28 +3,35 @@ package water.rapids;
 import water.fvec.Frame;
 import water.Iced;
 
+import java.util.Arrays;
+
 /** Generic execution values for the untyped stack */
 abstract public class Val extends Iced {
   // Things on the execution stack
-  final public static int NUM = 1;     // scalar
-  final public static int STR = 2;     // string scalar
-  final public static int FRM = 3;     // Frame, not a Vec.  Can be a Frame of 1 Vec
-  final public static int ROW = 4;     // Row of data; limited to a single array of doubles
-  final public static int FUN = 5;     // Function
+  final public static int NUM = 1;     // double
+  final public static int NUMS= 2;     // array of doubles
+  final public static int STR = 3;     // string
+  final public static int STRS= 4;     // array of strings
+  final public static int FRM = 5;     // Frame, not a Vec.  Can be a Frame of 1 Vec
+  final public static int ROW = 6;     // Row of data; limited to a single array of doubles
+  final public static int FUN = 7;     // Function
 
   abstract public int type();
   boolean isNum() { return false; }
+  boolean isNums(){ return false; }
   boolean isStr() { return false; }
-  boolean isFrame() { return false; }
+  boolean isStrs(){ return false; }
+  boolean isFrame(){return false; }
   boolean isRow() { return false; }
   boolean isFun() { return false; }
 
-  public double getNum() { throw new IllegalArgumentException("Expected a number but found a "+getClass()); }
-  public String getStr() { throw new IllegalArgumentException("Expected a String but found a "+getClass()); }
-  public Frame  getFrame(){throw new IllegalArgumentException("Expected a Frame but found a "+getClass()); }
-  public double[]getRow(){ throw new IllegalArgumentException("Expected a Row but found a "+getClass()); }
-  public String[]getNames(){ throw new IllegalArgumentException("Expected a Row but found a "+getClass()); }
-  public AST    getFun() { throw new IllegalArgumentException("Expected a function but found a "+getClass()); }
+  public double   getNum() { throw new IllegalArgumentException("Expected a number but found a "+getClass()); }
+  public double[] getNums(){ throw new IllegalArgumentException("Expected a number array but found a "+getClass()); }
+  public String   getStr() { throw new IllegalArgumentException("Expected a String but found a "+getClass()); }
+  public String[] getStrs(){ throw new IllegalArgumentException("Expected a String array but found a "+getClass()); }
+  public Frame    getFrame(){throw new IllegalArgumentException("Expected a Frame but found a "+getClass()); }
+  public double[] getRow() { throw new IllegalArgumentException("Expected a Row but found a "+getClass()); }
+  public AST      getFun() { throw new IllegalArgumentException("Expected a function but found a "+getClass()); }
 }
 
 class ValNum extends Val {
@@ -36,6 +43,15 @@ class ValNum extends Val {
   @Override public double getNum() { return _d; }
 }
 
+class ValNums extends Val {
+  final double[] _ds;
+  ValNums(double[] ds) { _ds = ds; }
+  @Override public String toString() { return Arrays.toString(_ds); }
+  @Override public int type () { return NUMS; }
+  @Override boolean isNums() { return true; }
+  @Override public double[] getNums() { return _ds; }
+}
+
 class ValStr extends Val {
   final String _str;
   ValStr(String str) { _str = str; }
@@ -43,6 +59,15 @@ class ValStr extends Val {
   @Override public int type () { return STR; }
   @Override boolean isStr() { return true; }
   @Override public String getStr() { return _str; }
+}
+
+class ValStrs extends Val {
+  final String[] _strs;
+  ValStrs(String[] strs) { _strs = strs; }
+  @Override public String toString() { return Arrays.toString(_strs); }
+  @Override public int type () { return STRS; }
+  @Override boolean isStrs() { return true; }
+  @Override public String[] getStrs() { return _strs; }
 }
 
 class ValFrame extends Val {
@@ -62,7 +87,7 @@ class ValRow extends Val {
   @Override public int type () { return ROW; }
   @Override boolean isRow() { return true; }
   @Override public double[] getRow() { return _ds; }
-  @Override public String[] getNames() { return _names; }
+  public String[] getNames() { return _names; }
 
   ValRow slice(int[] cols) {
     double[] ds = new double[cols.length];

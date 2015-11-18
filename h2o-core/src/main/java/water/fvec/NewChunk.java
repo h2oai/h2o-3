@@ -1,5 +1,6 @@
 package water.fvec;
 
+import com.google.common.base.Charsets;
 import water.AutoBuffer;
 import water.Futures;
 import water.H2O;
@@ -8,8 +9,10 @@ import water.parser.BufferedString;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
-import java.util.*;
-import com.google.common.base.Charsets;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
@@ -60,7 +63,7 @@ public class NewChunk extends Chunk {
   public int _timCnt = 0;
   protected static final int MIN_SPARSE_RATIO = 32;
   private int _sparseRatio = MIN_SPARSE_RATIO;
-  public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
+  public boolean _isAllASCII = false; //For cat/string col, are all characters in chunk ASCII? FIXME: this is never updated anywhere... setting to false
 
   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }
 
@@ -319,14 +322,15 @@ public class NewChunk extends Chunk {
     assert sparseLen() <= _len;
   }
 
+  // TODO: FIX isAllASCII test to actually inspect string contents
   public void addStr(Chunk c, long row) {
     if( c.isNA_abs(row) ) addNA();
-    else addStr(c.atStr_abs(new BufferedString(), row));
+    else { addStr(c.atStr_abs(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
   }
 
   public void addStr(Chunk c, int row) {
     if( c.isNA(row) ) addNA();
-    else addStr(c.atStr(new BufferedString(), row));
+    else { addStr(c.atStr(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
   }
 
   // Append a UUID, stored in _ls & _ds

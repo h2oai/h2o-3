@@ -65,6 +65,9 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "score_duty_cycle",
         "classification_stop",
         "regression_stop",
+        "stopping_rounds",
+        "stopping_metric",
+        "stopping_tolerance",
         "score_validation_sampling",
         "diagnostics",
         "fast_mode",
@@ -130,7 +133,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * If enabled, store the best model under the destination key of this model at the end of training.
      * Only applicable if training is not cancelled.
      */
-    @API(help = "If enabled, override the final model with the best model found during training", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "If enabled, override the final model with the best model found during training", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean overwrite_with_best_model;
 
     @API(help = "Auto-Encoder", level = API.Level.secondary, direction=API.Direction.INOUT)
@@ -300,7 +303,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * of training samples.
      * This parameter is only active if adaptive learning rate is disabled.
      */
-    @API(help = "Number of training samples for which momentum increases", /* dmin = 1, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Number of training samples for which momentum increases", /* dmin = 1, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double momentum_ramp;
 
     /**
@@ -515,7 +518,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Handling of missing values. Either Skip or MeanImputation.", values = { "Skip", "MeanImputation" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.MissingValuesHandling missing_values_handling;
 
-    @API(help = "Sparse data handling (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Sparse data handling (more efficient for data with lots of 0 values).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean sparse;
 
     @API(help = "Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow down backpropagation (Deprecated).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
@@ -539,13 +542,13 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 //    @API(help = "Mini-batch size (use 1 for stochastic gradient descent)", level = API.Level.expert, direction=API.Direction.INOUT)
 //    public int mini_batch_size;
 
-    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Elastic averaging between compute nodes can improve distributed model convergence (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public boolean elastic_averaging;
 
-    @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Elastic averaging moving rate (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double elastic_averaging_moving_rate;
 
-    @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double elastic_averaging_regularization;
   }
 }

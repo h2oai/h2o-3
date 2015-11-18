@@ -9,16 +9,28 @@ class RapidsSchema<I extends Iced,R extends RapidsSchema<I,R>> extends Schema<I,
   @API(help="Key name to assign Frame results", direction=API.Direction.INPUT) String id;
 }
 
-class RapidsScalarV3 extends RapidsSchema<Iced,RapidsScalarV3> {
-  @API(help="Scalar result"          , direction=API.Direction.OUTPUT) double scalar;
-  RapidsScalarV3( ) { }
-  RapidsScalarV3( double d ) { scalar = d; }
+class RapidsNumberV3 extends RapidsSchema<Iced,RapidsNumberV3> {
+  @API(help="Number result"          , direction=API.Direction.OUTPUT) double scalar;
+  RapidsNumberV3( ) { }
+  RapidsNumberV3( double d ) { scalar = d; }
+}
+
+class RapidsNumbersV3 extends RapidsSchema<Iced,RapidsNumbersV3> {
+  @API(help="Number array result"    , direction=API.Direction.OUTPUT) double[] scalar;
+  RapidsNumbersV3( ) { }
+  RapidsNumbersV3( double[] ds ) { scalar = ds; }
 }
 
 class RapidsStringV3 extends RapidsSchema<Iced,RapidsStringV3> {
   @API(help="String result"          , direction=API.Direction.OUTPUT) String scalar;
   RapidsStringV3( ) { }
   RapidsStringV3( String s ) { scalar = s; }
+}
+
+class RapidsStringsV3 extends RapidsSchema<Iced,RapidsStringsV3> {
+  @API(help="String array result"     , direction=API.Direction.OUTPUT) String[] scalar;
+  RapidsStringsV3( ) { }
+  RapidsStringsV3( String[] ss ) { scalar = ss; }
 }
 
 class RapidsFunctionV3 extends RapidsSchema<Iced,RapidsFunctionV3> {

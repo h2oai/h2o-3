@@ -52,8 +52,11 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   .h2o.__waitOnJob(res$job$key$name)
 
   # Return a new Frame object
-  .newFrame("Parse",id=hex)
+  x <- .newFrame("Parse",id=hex,-1,-1)
+  .fetch.data(x,1L) # Fill in nrow and ncol
+  x
 }
+
 
 #'
 #' Get a parse setup back for the staged data.
@@ -61,9 +64,8 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 #' @export
 h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL, parse_type=NULL) {
 
-  # quick sanity checking
-  if (class(data) == "Frame") data <- list(data)
-
+  # Allow single frame or list of frames; turn singleton into a list
+  if( is.Frame(data) ) data <- list(data)
   for (d in data) chk.Frame(d)
 
   .key.validate(destination_frame)
@@ -186,4 +188,3 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
     print("col.types=list(by.col.idx=c(1,3,99),types=c('Numeric','Numeric','Enum')). Note: `by.col.names` and")
     print("`by.col.idx` cannot be specified simultaneously.")
 }
-

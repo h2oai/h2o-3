@@ -12,7 +12,7 @@ import hex.gram.Gram.*;
 import hex.kmeans.EmbeddedKMeans;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import hex.schemas.GLRMV99;
+import hex.schemas.GLRMV3;
 import hex.schemas.ModelBuilderSchema;
 import hex.svd.EmbeddedSVD;
 import hex.svd.SVD;
@@ -58,7 +58,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   private transient GLRMParameters.Loss[] _lossFunc;
 
   @Override public ModelBuilderSchema schema() {
-    return new GLRMV99();
+    return new GLRMV3();
   }
 
   @Override protected Job<GLRMModel> trainModelImpl(long work, boolean restartTimer) {
@@ -102,6 +102,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_parms._min_step_size < 0 || _parms._min_step_size > _parms._init_step_size)
       error("_min_step_size", "min_step_size must be between 0 and " + _parms._init_step_size);
 
+    // Cannot recover SVD of original _train from XY of transformed _train
+    if (_parms._recover_svd && (_parms._impute_original && _parms._transform != DataInfo.TransformType.NONE))
+      error("_recover_svd", "_recover_svd and _impute_original cannot both be true if _train is transformed");
+
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
 
@@ -116,9 +120,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       Frame user_y = _parms._user_y.get();
       assert null != user_y;
+      int user_y_cols = _parms._expand_user_y ? _train.numCols() : _ncolY;
 
-      if (user_y.numCols() != _train.numCols())
-        error("_user_y", "The user-specified Y must have the same number of columns (" + _train.numCols() + ") as the training observations");
+      // Check dimensions of user-specified initial Y
+      if (user_y.numCols() != user_y_cols)
+        error("_user_y", "The user-specified Y must have the same number of columns (" + user_y_cols + ") as the training observations");
       else if (user_y.numRows() != _parms._k)
         error("_user_y", "The user-specified Y must have k = " + _parms._k + " rows");
       else {
@@ -273,17 +279,25 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
         if (null != _parms._user_y) {   // Set Y = user-specified initial points
           Vec[] yVecs = _parms._user_y.get().vecs();
-          centers = new double[_parms._k][_ncolA];
 
-          // Get the centers and put into array
-          for (int c = 0; c < _ncolA; c++) {
-            for (int r = 0; r < _parms._k; r++)
-              centers[r][c] = yVecs[c].at(r);
+          if(_parms._expand_user_y) {   // Categorical cols must be one-hot expanded
+            // Get the centers and put into array
+            centers = new double[_parms._k][_ncolA];
+            for (int c = 0; c < _ncolA; c++) {
+              for (int r = 0; r < _parms._k; r++)
+                centers[r][c] = yVecs[c].at(r);
+            }
+
+            // Permute cluster columns to align with dinfo and expand out categoricals
+            centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
+            centers_exp = expandCats(centers, tinfo);
+          } else {    // User Y already has categoricals expanded
+            centers_exp = new double[_parms._k][_ncolY];
+            for (int c = 0; c < _ncolY; c++) {
+              for (int r = 0; r < _parms._k; r++)
+                centers_exp[r][c] = yVecs[c].at(r);
+            }
           }
-
-          // Permute cluster columns to align with dinfo and expand out categoricals
-          centers = ArrayUtils.permuteCols(centers, tinfo._permutation);
-          centers_exp = expandCats(centers, tinfo);
         } else
           centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
 
@@ -450,6 +464,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       // Stopped for running out of iterations
       if (model._output._iterations >= _parms._max_iterations) return true;
+      if (model._output._updates >= _parms._max_updates) return true;
 
       // Stopped for falling below minimum step size
       if (step <= _parms._min_step_size) return true;
@@ -599,6 +614,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         update(1, "Initializing X and Y matrices");   // One unit of work
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, model, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
+        Archetypes ytnew = yt;
+        double yreg = _parms.regularize_y(yt._archetypes);
         if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
@@ -607,10 +624,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         boolean regX = _parms._regularization_x != GLRMParameters.Regularizer.None && _parms._gamma_x != 0;  // Assume regularization on initial X is finite, else objective can be NaN if \gamma_x = 0
         ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId, regX);
         objtsk.doAll(dinfo._adaptedFrame);
-        model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * _parms.regularize_y(yt._archetypes);
+        model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * yreg;
         model._output._archetypes_raw = yt;
         model._output._iterations = 0;
-        model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
+        model._output._updates = 0;
+        model._output._avg_change_obj = 2 * TOLERANCE;    // Allow at least 1 iteration
         model.update(self());  // Update model in K/V store
 
         double step = _parms._init_step_size;   // Initial step size
@@ -623,16 +641,21 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           xtsk.doAll(dinfo._adaptedFrame);
-          
+          model._output._updates++;
+
           // 2) Update Y matrix given fixed X
-          UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
-          double[][] yttmp = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
-          Archetypes ytnew = new Archetypes(yttmp, true, dinfo._catOffsets, numLevels);
+          if(model._output._updates < _parms._max_updates) {    // If max_updates is odd, we will terminate after the X update
+            UpdateY ytsk = new UpdateY(_parms, yt, step / _ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
+            double[][] yttmp = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
+            ytnew = new Archetypes(yttmp, true, dinfo._catOffsets, numLevels);
+            yreg = ytsk._yreg;
+            model._output._updates++;
+          }
 
           // 3) Compute average change in objective function
           objtsk = new ObjCalc(_parms, ytnew, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           objtsk.doAll(dinfo._adaptedFrame);
-          double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * ytsk._yreg;
+          double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * yreg;
           model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;
           model._output._iterations++;
 
@@ -657,7 +680,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // Add to scoring history
           model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._training_time_ms.length+1, System.currentTimeMillis());
           model._output._history_step_size = ArrayUtils.copyAndFillOf(model._output._history_step_size, model._output._history_step_size.length+1, step);
-          model._output._history_avg_change_obj = ArrayUtils.copyAndFillOf(model._output._history_avg_change_obj, model._output._history_avg_change_obj.length+1, model._output._avg_change_obj);
+          model._output._history_objective = ArrayUtils.copyAndFillOf(model._output._history_objective, model._output._history_objective.length+1, model._output._objective);
           model._output._scoring_history = createScoringHistoryTable(model._output);
           model.update(self()); // Update model in K/V store
         }
@@ -677,9 +700,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
-        String loading_name = (_parms._loading_name == null || _parms._loading_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._loading_name;
-        model._output._loading_key = Key.make(loading_name);
-        Frame x = new Frame(model._output._loading_key, xnames, xvecs);
+        model._output._representation_name = (_parms._representation_name == null || _parms._representation_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._representation_name;
+        model._output._representation_key = Key.make(model._output._representation_name);
+        Frame x = new Frame(model._output._representation_key, xnames, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x);
         DKV.put(xinfo);
@@ -766,7 +789,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
       colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Step Size"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Avg. Change in Objective"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Objective"); colTypes.add("double"); colFormat.add("%.5f");
 
       final int rows = output._training_time_ms.length;
       TwoDimTable table = new TwoDimTable(
@@ -785,7 +808,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[row] - _start_time, true));
         table.set(row, col++, row);
         table.set(row, col++, output._history_step_size[row]);
-        table.set(row, col++, output._history_avg_change_obj[row]);
+        table.set(row, col++, output._history_objective[row]);
       }
       return table;
     }
@@ -960,8 +983,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Random rand = RandomUtils.getRNG(0);
 
       for(int row = 0; row < chks[0]._len; row++) {
-        double xrow[] = ArrayUtils.gaussianVector(_ncolX, _parms._seed);
-        rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
+        rand.setSeed(_parms._seed + chks[0].start() + row);   // global row ID determines the seed
+        double xrow[] = ArrayUtils.gaussianVector(_ncolX, rand);
         xrow = _parms.project_x(xrow, rand);
         for(int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);

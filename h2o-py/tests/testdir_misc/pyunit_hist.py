@@ -4,12 +4,7 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
 def hist_test():
-    
-    
-
     kwargs = {}
     kwargs['server'] = True
 
@@ -17,7 +12,6 @@ def hist_test():
     hex = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     hex["AGE"].hist(**kwargs)
     hex["VOL"].hist(**kwargs)
-
 
 
 if __name__ == "__main__":

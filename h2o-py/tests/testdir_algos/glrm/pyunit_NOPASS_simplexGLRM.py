@@ -2,6 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
+from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 
 
 
@@ -26,11 +27,13 @@ def glrm_simplex():
     print "Run GLRM with quadratic mixtures (simplex) regularization on X"
     initial_y = np.random.rand(k,n)
     initial_y_h2o = h2o.H2OFrame(initial_y.tolist())
-    glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="Simplex", regularization_y="None", gamma_x=1, gamma_y=0)
+    glrm_h2o = H2OGeneralizedLowRankEstimator(k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="Simplex", regularization_y="None", gamma_x=1, gamma_y=0)
+    glrm_h2o.train(x=train_h2o.names,training_frame=train_h2o)
+#    glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="Simplex", regularization_y="None", gamma_x=1, gamma_y=0)
     glrm_h2o.show()
     
     print "Check that X matrix consists of rows within standard probability simplex"
-    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['loading_key']['name'])
+    fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
     def is_simplex(a):
         row_sum = sum(a)

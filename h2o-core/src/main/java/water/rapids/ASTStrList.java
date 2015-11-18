@@ -44,11 +44,9 @@ public class ASTStrList extends ASTParameter {
 
 /** Assign column names */
 class ASTColNames extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "cols", "names"}; }
+  @Override public String[] args() { return new String[]{"ary", "cols", "names"}; }
   @Override int nargs() { return 1+3; } // (colnames frame [#cols] ["names"])
-  @Override
-  public String str() { return "colnames="; }
+  @Override public String str() { return "colnames="; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( asts[2] instanceof ASTNumList ) {
@@ -99,11 +97,9 @@ class ASTAsCharacter extends ASTPrim {
 
 /** Convert to a factor/categorical */
 class ASTAsFactor extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (as.factor col)
-  @Override
-  public String str() { return "as.factor"; }
+  @Override public String str() { return "as.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
     Vec[] nvecs = new Vec[ary.numCols()];
@@ -154,73 +150,60 @@ class ASTAsNumeric extends ASTPrim {
 
 /** Is String Vec? */
 class ASTIsCharacter extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.character col)
-  @Override
-  public String str() { return "is.character"; }
+  @Override public String str() { return "is.character"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isString() ? "TRUE" : "FALSE");
+    if( fr.numCols() == 1 ) return new ValNum(fr.anyVec().isString()?1:0);
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isString() ? 1 : 0;
     Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    vec.setDomain(new String[]{"FALSE","TRUE"});
     return new ValFrame(new Frame(new String[]{"is.character"}, new Vec[]{vec}));
   }
 }
 
 /** Is a factor/categorical? */
 class ASTIsFactor extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.factor col)
-  @Override
-  public String str() { return "is.factor"; }
+  @Override public String str() { return "is.factor"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isCategorical() ? "TRUE" : "FALSE");
+    if( fr.numCols() == 1 ) return new ValNum(fr.anyVec().isCategorical()?1:0);
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isCategorical() ? 1 : 0;
     Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    vec.setDomain(new String[]{"FALSE","TRUE"});
     return new ValFrame(new Frame(new String[]{"is.factor"}, new Vec[]{vec}));
   }
 }
 
 /** Is a numeric? */
 class ASTIsNumeric extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.numeric col)
-  @Override
-  public String str() { return "is.numeric"; }
+  @Override public String str() { return "is.numeric"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValStr(fr.anyVec().isNumeric() ? "TRUE" : "FALSE");
+    if( fr.numCols() == 1 ) return new ValNum(fr.anyVec().isNumeric()?1:0);
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isNumeric() ? 1 : 0;
     Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    vec.setDomain(new String[]{"FALSE","TRUE"});
     return new ValFrame(new Frame(new String[]{"is.numeric"}, new Vec[]{vec}));
   }
 }
 
 /** Any columns factor/categorical? */
 class ASTAnyFactor extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (any.factor frame)
-  @Override
-  public String str() { return "any.factor"; }
-  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override public String str() { return "any.factor"; }
+  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    String res = "FALSE";
-    for (int i = 0; i < fr.vecs().length; ++i)
-      if (fr.vecs()[i].isCategorical()) { res = "TRUE"; break; }
-    return new ValStr(res);
+    for( Vec vec : fr.vecs() )  if( vec.isCategorical()) return new ValNum(1);
+    return new ValNum(0);
   }
 }

@@ -10,7 +10,6 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -466,7 +465,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // Called from either a F/J thread (generally with a UDP packet) or from the
   // TCPReceiver thread.
   static void remote_exec( AutoBuffer ab ) {
-    long lo = ab.get8(0), hi = ab.get8(8);
+    long lo = ab.get8(0), hi = ab._size >= 16 ? ab.get8(8) : 0;
     final int task = ab.getTask();
     final int flag = ab.getFlag();
     assert flag==CLIENT_UDP_SEND || flag==CLIENT_TCP_SEND; // Client-side send

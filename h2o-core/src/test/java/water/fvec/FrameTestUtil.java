@@ -17,18 +17,19 @@ public class FrameTestUtil {
     f.preparePartialFrame(new String[]{"C0"});
     f.update(null);
     // Create chunks
+    byte[] types = new byte[] {Vec.T_STR};
     for (int i=0; i<chunkLayout.length; i++) {
-      createNC(fname, data[i], i, (int) chunkLayout[i]);
+      createNC(fname, data[i], i, (int) chunkLayout[i], types);
     }
     // Reload frame from DKV
     f = DKV.get(fname).get();
     // Finalize frame
-    f.finalizePartialFrame(chunkLayout, new String[][] { null }, new byte[] {Vec.T_STR});
+    f.finalizePartialFrame(chunkLayout, new String[][] { null }, types);
     return f;
   }
 
-  public static NewChunk createNC(String fname, String[] data, int cidx, int len) {
-    NewChunk[] nchunks = Frame.createNewChunks(fname, Vec.T_STR, cidx);
+  public static NewChunk createNC(String fname, String[] data, int cidx, int len, byte[] types) {
+    NewChunk[] nchunks = Frame.createNewChunks(fname, types, cidx);
     for (int i=0; i<len; i++) {
       nchunks[0].addStr(data[i] != null ? data[i] : null);
     }
@@ -41,19 +42,20 @@ public class FrameTestUtil {
     Frame f = new Frame(Key.make(fname));
     f.preparePartialFrame(new String[]{"C0"});
     f.update(null);
+    byte[] types = new byte[] {Vec.T_NUM};
     // Create chunks
     for (int i=0; i<chunkLayout.length; i++) {
-      createNC(fname, i, (int) chunkLayout[i]);
+      createNC(fname, i, (int) chunkLayout[i], types);
     }
     // Reload frame from DKV
     f = DKV.get(fname).get();
     // Finalize frame
-    f.finalizePartialFrame(chunkLayout, new String[][] { null }, new byte[] {Vec.T_NUM});
+    f.finalizePartialFrame(chunkLayout, new String[][] { null }, types);
     return f;
   }
 
-  public static NewChunk createNC(String fname, int cidx, int len) {
-    NewChunk[] nchunks = Frame.createNewChunks(fname, Vec.T_NUM, cidx);
+  public static NewChunk createNC(String fname, int cidx, int len, byte[] types) {
+    NewChunk[] nchunks = Frame.createNewChunks(fname, types, cidx);
     int starVal = cidx * 1000;
     for (int i=0; i<len; i++) {
       nchunks[0].addNum(starVal + i);

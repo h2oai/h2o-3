@@ -1,7 +1,7 @@
 \name{predict.h2o.ensemble}
 \alias{predict.h2o.ensemble}
 \title{
-Predict method for an 'h2o.ensemble' object.
+Predict method for an 'h2o.ensemble' object
 }
 \description{
 Obtains predictions on a new data set from a \code{\link[h2oEnsemble]{h2o.ensemble}} fit.  

@@ -6,7 +6,7 @@ test.slice.div <- function() {
 
   #hex <- as.h2o(iris)
   Log.info("Try /ing a scalar to a numeric column: 5 / hex[,col]")
-  col <- sample(ncol(hex), 1)
+  col <- sample(ncol(hex)-1, 1)
 
   sliced <- hex[,col]
   print(sliced)
@@ -68,7 +68,7 @@ test.slice.div <- function() {
     expect_true( res < 1E-4 || C == nrow(A))
   }
 
-  
+
 }
 
 doTest("BINOP2 EXEC2 TEST: /", test.slice.div)

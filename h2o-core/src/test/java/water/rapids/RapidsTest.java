@@ -15,7 +15,7 @@ import java.io.File;
 import java.util.Arrays;
 
 public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void bigSlice() {
     // check that large slices do something sane
@@ -60,7 +60,7 @@ public class RapidsTest extends TestUtil {
     String tree = "(== a.hex (cols a.hex [1 2]))";
     checkTree(tree,true);
   }
-  
+
   @Test public void test5() {
     // Checking `hex && hex`, ||, &, |
     String tree = "(&& a.hex a.hex)";
@@ -84,26 +84,27 @@ public class RapidsTest extends TestUtil {
     tree = "(cols (rows a.hex [0:4 6 7]) [0])";
     checkTree(tree);
     // Checking `hex[c(8,1,1,7),1]`
-    tree = "(rows a.hex [8 1 1 7])";
+    // No longer handle dup or out-of-order rows
+    tree = "(rows a.hex [2 7 8])";
     checkTree(tree);
   }
 
   @Test public void testRowAssign() {
     String tree;
     // Assign column 3 over column 0
-    tree = "(= a.hex (cols a.hex [3]) 0 [0:150])";
+    tree = "(:= a.hex (cols a.hex [3]) 0 [0:150])";
     checkTree(tree);
 
     // Assign 17 over column 0
-    tree = "(= a.hex 17 [0] [0:150])";
+    tree = "(:= a.hex 17 [0] [0:150])";
     checkTree(tree);
 
     // Assign 17 over column 0, row 5
-    tree = "(= a.hex 17 [0] [5])";
+    tree = "(:= a.hex 17 [0] [5])";
     checkTree(tree);
 
     // Append 17
-    tree = "(= a.hex 17 [4] [0:150])";
+    tree = "(append a.hex 17 \"nnn\")";
     checkTree(tree);
   }
 
@@ -147,7 +148,7 @@ public class RapidsTest extends TestUtil {
 
     tree = "(cbind 1 a.hex 2)";
     checkTree(tree);
-    
+
     tree = "(cbind a.hex (cols a.hex 0) 2)";
     checkTree(tree);
   }
@@ -189,6 +190,11 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
 
     tree = "(apply a.hex 1 {x . (sum (* x x))})";
+    checkTree(tree);
+
+    // require lookup of 'y' outside the scope of the applied function.
+    // doubles all values.
+    tree = "({y . (apply a.hex 1 {x . (sum (* x y))})} 2)";
     checkTree(tree);
   }
 
@@ -240,6 +246,19 @@ public class RapidsTest extends TestUtil {
     }
   }
 
+  @Test public void testCombo() {
+    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
+    String tree = "(tmp= py_2 (:= (tmp= py_1 (cbind a.hex (== (cols_py a.hex 4.0 ) \"Iris-setosa\" ) ) ) (as.factor (cols_py py_1 5.0 ) ) 5.0 [] ) )";
+    //String tree = "(:= (tmp= py_1 a.hex) (h2o.runif a.hex -1) 4 [])";
+    Val val = Exec.exec(tree);
+    if( val instanceof ValFrame ) {
+      Frame fr2= ((ValFrame)val)._fr;
+      System.out.println(fr2.vec(0));
+      fr2.remove();
+    }
+    fr.delete();
+  }
+
   @Test public void testMerge() {
     Frame l=null,r=null,f=null;
     try {
@@ -275,15 +294,15 @@ public class RapidsTest extends TestUtil {
     Frame f = null;
     try {
       Frame fr = ArrayUtils.frame(ard(ard(1.223292e-02),
-                                      ard(1.635312e-25),
-                                      ard(1.601522e-11),
-                                      ard(8.452298e-10),
-                                      ard(2.643733e-10),
-                                      ard(2.671520e-06),
-                                      ard(1.165381e-06),
-                                      ard(7.193265e-10),
-                                      ard(3.383532e-04),
-                                      ard(2.561221e-05)));
+              ard(1.635312e-25),
+              ard(1.601522e-11),
+              ard(8.452298e-10),
+              ard(2.643733e-10),
+              ard(2.671520e-06),
+              ard(1.165381e-06),
+              ard(7.193265e-10),
+              ard(3.383532e-04),
+              ard(2.561221e-05)));
       double[] probs = new double[]{0.001, 0.005, .01, .02, .05, .10, .50, .8883, .90, .99};
       String x = String.format("(quantile %s %s \"interpolate\")", fr._key, Arrays.toString(probs));
       Val val = Exec.exec(x);
@@ -292,7 +311,7 @@ public class RapidsTest extends TestUtil {
       Assert.assertEquals(2,f.numCols());
       // Expected values computed as golden values from R's quantile call
       double[] exp = ard(1.4413698000016206E-13, 7.206849000001562E-13, 1.4413698000001489E-12, 2.882739600000134E-12, 7.20684900000009E-12,
-                         1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
+              1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
       for( int i=0; i<exp.length; i++ )
         Assert.assertTrue( "expected "+exp[i]+" got "+f.vec(1).at(i), water.util.MathUtils.compare(exp[i],f.vec(1).at(i),1e-6,1e-6) );
     } finally {
@@ -300,31 +319,22 @@ public class RapidsTest extends TestUtil {
     }
   }
 
-  static Frame exec_str( String str, String id ) {
-    Val val = Exec.exec(str);
+  static void exec_str( String str, Session ses ) {
+    Val val = Exec.exec(str,ses);
     switch( val.type() ) {
     case Val.FRM:
       Frame fr = val.getFrame();
-      Key k = Key.make(id);
-      // Smart delete any prior top-level result
-      Iced i = DKV.getGet(k);
-      if( i instanceof Lockable) ((Lockable)i).delete();
-      else if( i instanceof Keyed ) ((Keyed)i).remove();
-      else if( i != null ) throw new IllegalArgumentException("Attempting to overright an unexpected key");
-      DKV.put(fr = new Frame(k,fr._names,fr.vecs()));
       System.out.println(fr);
       checkSaneFrame();
-      return fr;
+      break;
     case Val.NUM:
       System.out.println("num= "+val.getNum());
-      assert id==null;
       checkSaneFrame();
-      return null;
+      break;
     case Val.STR:
       System.out.println("str= "+val.getStr());
-      assert id==null;
       checkSaneFrame();
-      return null;
+      break;
     default:
       throw water.H2O.fail();
     }
@@ -349,131 +359,151 @@ public class RapidsTest extends TestUtil {
     return true;
   }
 
-  @Test public void testChicago() {
-    Frame weather=null, crimes=null, census=null;
-    String oldtz = Exec.exec("(getTimeZone)").getStr();
+  @Test public void testRowSlice() {
+    Session ses = new Session();
+    Frame fr = null;
     try {
-      weather = parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
-      crimes  = parse_test_file(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
+      fr = parse_test_file(Key.make("a.hex"),"smalldata/airlines/AirlinesTrainMM.csv.zip");
+      System.out.printf(fr.toString());
+      Exec.exec("(tmp= flow_1 (h2o.runif a.hex -1))",ses);
+      Exec.exec("(tmp= f.25 (rows a.hex (<  flow_1 0.25) ) )",ses);
+      Exec.exec("(tmp= f.75 (rows a.hex (>= flow_1 0.25) ) )",ses);
+      Exec.exec("(tmp= flow_2 (h2o.runif a.hex -1))",ses);
+      ses.end(null);
+    } catch( Throwable ex ) {
+      throw ses.endQuietly(ex);
+    } finally {
+      fr.delete();
+    }
+  }
+
+  @Test public void testChicago() {
+    String oldtz = Exec.exec("(getTimeZone)").getStr();
+    Session ses = new Session();
+    try {
+      parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
+      parse_test_file(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
       String fname = "smalldata/chicago/chicagoCensus.csv";
       File f = find_test_file(fname);
       assert f != null && f.exists():" file not found: " + fname;
       NFSFileVec nfs = NFSFileVec.make(f);
       ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
       ps.getColumnTypes()[1] = Vec.T_CAT;
-      census = ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
-
-      census = exec_str("(colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"])", "census.hex");
-
-      crimes = exec_str("(colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"])", "crimes.hex");
-
-      exec_str("(setTimeZone \"Etc/UTC\")", null);
-
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) [22] [0:9999]) 22 \"Day\")", "crimes.hex");
-
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) [23] [0:9999]) 23 \"Month\")", "crimes.hex");
+      ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
       
-      Keyed.remove(Key.make("nary_op_30"));
+      exec_str("(assign census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))", ses);
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) #1900)) #1900)) [17] [0:9999]) 17 \"Year\")", "crimes.hex");
+      exec_str("(assign crimes.hex (colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"]))", ses);
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_10 (week nary_op_5)) [24] [0:9999]) 24 \"WeekNum\")", "crimes.hex");
+      exec_str("(setTimeZone \"Etc/UTC\")", ses);
 
-      Keyed.remove(Key.make("binary_op_32"));
-      Keyed.remove(Key.make("binary_op_31"));
-      Keyed.remove(Key.make("unary_op_8"));
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) \"Day\"))", ses);
+
+      checkSaneFrame();
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) \"Month\"))", ses);
+
+      exec_str("(rm nary_op_30)",ses);
+
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) #1900)) #1900)) \"Year\"))", ses);
+
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_10 (week nary_op_5)) \"WeekNum\"))", ses);
+
+      exec_str("(rm binary_op_32)",ses);
+      exec_str("(rm binary_op_31)",ses);
+      exec_str("(rm unary_op_8)",ses);
       checkSaneFrame();
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) [25] [0:9999]) 25 \"WeekDay\")", "crimes.hex");
-      Keyed.remove(Key.make("nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip"));
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) \"WeekDay\"))", ses);
+      exec_str("(rm nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip)",ses);
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= unary_op_12 (hour nary_op_5)) [26] [0:9999]) 26 \"HourOfDay\")", "crimes.hex");
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_12 (hour nary_op_5)) \"HourOfDay\"))", ses);
 
-      crimes = exec_str("(colnames= (= crimes.hex (tmp= nary_op_16 (ifelse (tmp= binary_op_15 (| (tmp= binary_op_13 (== unary_op_11 \"Sun\")) (tmp= binary_op_14 (== unary_op_11 \"Sat\")))) 1 0)) [27] [0:9999]) 27 \"Weekend\")", "crimes.hex");
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= nary_op_16 (ifelse (tmp= binary_op_15 (| (tmp= binary_op_13 (== unary_op_11 \"Sun\")) (tmp= binary_op_14 (== unary_op_11 \"Sat\")))) 1 0)) \"Weekend\"))", ses);
 
       // Season is incorrectly assigned in the original chicago demo; picks up the Weekend flag
-      crimes = exec_str("(colnames= (= crimes.hex nary_op_16 [28] [0:9999]) 28 \"Season\")", "crimes.hex");
+      exec_str("(assign crimes.hex (append crimes.hex nary_op_16 \"Season\"))", ses);
 
       // Standard "head of 10 rows" pattern for printing
-      Frame subset_33 = exec_str("(rows crimes.hex [0:10])", "subset_33");
-      Keyed.remove(Key.make("subset_33"));
+      exec_str("(tmp= subset_33 (rows crimes.hex [0:10]))", ses);
+      exec_str("(rm subset_33)",ses);
 
-      Keyed.remove(Key.make("subset_33"));
-      Keyed.remove(Key.make("unary_op_29"));
-      Keyed.remove(Key.make("nary_op_28"));
-      Keyed.remove(Key.make("nary_op_27"));
-      Keyed.remove(Key.make("nary_op_26"));
-      Keyed.remove(Key.make("binary_op_25"));
-      Keyed.remove(Key.make("binary_op_24"));
-      Keyed.remove(Key.make("binary_op_23"));
-      Keyed.remove(Key.make("binary_op_22"));
-      Keyed.remove(Key.make("binary_op_21"));
-      Keyed.remove(Key.make("binary_op_20"));
-      Keyed.remove(Key.make("binary_op_19"));
-      Keyed.remove(Key.make("binary_op_18"));
-      Keyed.remove(Key.make("binary_op_17"));
-      Keyed.remove(Key.make("nary_op_16"));
-      Keyed.remove(Key.make("binary_op_15"));
-      Keyed.remove(Key.make("binary_op_14"));
-      Keyed.remove(Key.make("binary_op_13"));
-      Keyed.remove(Key.make("unary_op_12"));
-      Keyed.remove(Key.make("unary_op_11"));
-      Keyed.remove(Key.make("unary_op_10"));
-      Keyed.remove(Key.make("binary_op_9"));
-      Keyed.remove(Key.make("unary_op_8"));
-      Keyed.remove(Key.make("unary_op_7"));
-      Keyed.remove(Key.make("unary_op_6"));
-      Keyed.remove(Key.make("nary_op_5"));
+      exec_str("(rm subset_33)",ses);
+      exec_str("(rm unary_op_29)",ses);
+      exec_str("(rm nary_op_28)",ses);
+      exec_str("(rm nary_op_27)",ses);
+      exec_str("(rm nary_op_26)",ses);
+      exec_str("(rm binary_op_25)",ses);
+      exec_str("(rm binary_op_24)",ses);
+      exec_str("(rm binary_op_23)",ses);
+      exec_str("(rm binary_op_22)",ses);
+      exec_str("(rm binary_op_21)",ses);
+      exec_str("(rm binary_op_20)",ses);
+      exec_str("(rm binary_op_19)",ses);
+      exec_str("(rm binary_op_18)",ses);
+      exec_str("(rm binary_op_17)",ses);
+      exec_str("(rm nary_op_16)",ses);
+      exec_str("(rm binary_op_15)",ses);
+      exec_str("(rm binary_op_14)",ses);
+      exec_str("(rm binary_op_13)",ses);
+      exec_str("(rm unary_op_12)",ses);
+      exec_str("(rm unary_op_11)",ses);
+      exec_str("(rm unary_op_10)",ses);
+      exec_str("(rm binary_op_9)",ses);
+      exec_str("(rm unary_op_8)",ses);
+      exec_str("(rm unary_op_7)",ses);
+      exec_str("(rm unary_op_6)",ses);
+      exec_str("(rm nary_op_5)",ses);
       checkSaneFrame();
 
       // Standard "head of 10 rows" pattern for printing
-      Frame subset_34 = exec_str("(rows crimes.hex [0:10])", "subset_34");
-      Keyed.remove(Key.make("subset_34"));
+      exec_str("(tmp= subset_34 (rows crimes.hex [0:10]))", ses);
+      exec_str("(rm subset_34)",ses);
 
-      census = exec_str("(colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"])", "census.hex");
-      Keyed.remove(Key.make("subset_34"));
+      exec_str("(assign census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))", ses);
+      exec_str("(rm subset_34)",ses);
 
-      Frame subset_35 = exec_str("(cols  crimes.hex [-3])", "subset_35");
-      Frame subset_36 = exec_str("(cols weather.hex [-1])", "subset_36");
+      exec_str("(tmp= subset_35 (cols  crimes.hex [-3]))", ses);
+      exec_str("(tmp= subset_36 (cols weather.hex [-1]))", ses);
 
-      subset_36 = exec_str("(colnames= subset_36 [0 1 2 3 4 5] [\"Month\" \"Day\" \"Year\" \"maxTemp\" \"meanTemp\" \"minTemp\"])", "subset_36");
+      exec_str("(tmp= subset_36_2 (colnames= subset_36 [0 1 2 3 4 5] [\"Month\" \"Day\" \"Year\" \"maxTemp\" \"meanTemp\" \"minTemp\"]))", ses);
 
-      crimes.remove();
-      weather.remove();
+      exec_str("(rm crimes.hex)",ses);
+      exec_str("(rm weather.hex)",ses);
 
       // nary_op_37 = merge( X Y ); Vecs in X & nary_op_37 shared
-      Frame nary_op_37 = exec_str("(merge subset_35 census.hex TRUE FALSE)", "nary_op_37");
+      exec_str("(tmp= nary_op_37 (merge subset_35 census.hex TRUE FALSE))", ses);
 
-      // nary_op_38 = merge( nary_op_37 subset_36); Vecs in nary_op_38 and nary_pop_37 and X shared
-      Frame subset_41 = exec_str("(rows (tmp= nary_op_38 (merge nary_op_37 subset_36 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8)))", "subset_41");
+      // nary_op_38 = merge( nary_op_37 subset_36_2); Vecs in nary_op_38 and nary_pop_37 and X shared
+      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36_2 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8))))", ses);
 
       // Standard "head of 10 rows" pattern for printing
-      Frame subset_44 = exec_str("(rows subset_41 [0:10])", "subset_44");
-      Keyed.remove(Key.make("subset_44"));
-      Keyed.remove(Key.make("subset_44"));
-      Keyed.remove(Key.make("binary_op_40"));
-      Keyed.remove(Key.make("nary_op_37"));
+      exec_str("(tmp= subset_44 (rows subset_41 [0:10]))", ses);
+      exec_str("(rm subset_44)",ses);
+      exec_str("(rm subset_44)",ses);
+      exec_str("(rm binary_op_40)",ses);
+      exec_str("(rm nary_op_37)",ses);
 
-      Frame subset_43 = exec_str("(rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 #0.8)))", "subset_43");
+      exec_str("(tmp= subset_43 (rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 #0.8))))", ses);
 
       // Chicago demo continues on past, but this is all I've captured for now
 
       checkSaneFrame();
+      ses.end(null);
 
+    } catch( Throwable ex ) {
+      throw ses.endQuietly(ex);
     } finally {
       Exec.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
-      if( weather != null ) weather.remove();
-      if( crimes  != null ) crimes .remove();
-      if( census  != null ) census .remove();
 
-      for( String s : new String[]{"nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
+      for( String s : new String[]{"weather.hex","crimes.hex","census.hex",
+                                   "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",
                                    "unary_op_10", "unary_op_11", "unary_op_12", "binary_op_13",
                                    "binary_op_14", "binary_op_15", "nary_op_16", "binary_op_17",
                                    "binary_op_18", "binary_op_19", "binary_op_20", "binary_op_21",
                                    "binary_op_22", "binary_op_23", "binary_op_24", "binary_op_25",
                                    "nary_op_26", "nary_op_27", "nary_op_28", "unary_op_29", "binary_op_30",
                                    "binary_op_31", "binary_op_32", "subset_33", "subset_34", "subset_35",
-                                   "subset_36", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
+                                   "subset_36", "subset_36_2", "nary_op_37", "nary_op_38", "nary_op_39", "binary_op_40",
                                    "subset_41", "binary_op_42", "subset_43", "subset_44", } )
         Keyed.remove(Key.make(s));
     }

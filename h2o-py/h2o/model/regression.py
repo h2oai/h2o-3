@@ -1,16 +1,10 @@
-"""
-Regression Models
-"""
+from model_base import ModelBase
 
-import math
-from metrics_base import *
 
 class H2ORegressionModel(ModelBase):
-  """
-  Class for Regression models.
-  """
-  def __init__(self, dest_key, model_json):
-    super(H2ORegressionModel, self).__init__(dest_key, model_json,H2ORegressionModelMetrics)
+
+  def _make_model(self):
+    return H2ORegressionModel()
 
   def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
     """
@@ -24,8 +18,8 @@ class H2ORegressionModel(ModelBase):
 
     if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
       if metric == "AUTO": metric = "MSE"
-      elif metric not in ("MSE","deviance", "r2"):
-        raise ValueError("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance, r2")
+      elif metric not in ("MSE","deviance"):
+        raise ValueError("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance")
 
     self._plot(timestep=timestep, metric=metric, **kwargs)
 
@@ -37,7 +31,7 @@ def _mean_var(frame, weights=None):
   :param weights: optional weights column
   :return: The (weighted) mean and variance
   """
-  return frame.mean(), frame.var()
+  return frame.mean()[0], frame.var()
 
 
 def h2o_mean_absolute_error(y_actual, y_predicted, weights=None):
@@ -51,7 +45,7 @@ def h2o_mean_absolute_error(y_actual, y_predicted, weights=None):
 
   """
   ModelBase._check_targets(y_actual, y_predicted)
-  return (y_predicted-y_actual).abs().mean()
+  return (y_predicted-y_actual).abs().mean()[0]
 
 
 def h2o_mean_squared_error(y_actual, y_predicted, weights=None):
@@ -64,7 +58,7 @@ def h2o_mean_squared_error(y_actual, y_predicted, weights=None):
   :return: loss (float) (best is 0.0)
   """
   ModelBase._check_targets(y_actual, y_predicted)
-  return ((y_predicted-y_actual)**2).mean()
+  return ((y_predicted-y_actual)**2).mean()[0]
 
 
 def h2o_median_absolute_error(y_actual, y_predicted):
@@ -108,7 +102,7 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
   """
   ModelBase._check_targets(y_actual, y_predicted)
   numerator   = (weights * (y_actual - y_predicted) ** 2).sum()
-  denominator = (weights * (y_actual - y_actual.mean()) ** 2).sum()
+  denominator = (weights * (y_actual - y_actual.mean()[0]) ** 2).sum()
 
   if denominator == 0.0:
     return 1. if numerator == 0. else 0.  # 0/0 => 1, else 0

@@ -176,7 +176,6 @@ dl_junit_two_spiral.flow
 dl_junit_weather.flow
 dl_junit_weights_all_ones_twos.flow
 dl_junit_weights_all_ones.flow
-dl_junit_weights.flow
 drf_junit_40k_categoricals.flow
 drf_junit_arff_folder1_iris1.flow
 drf_junit_arff_iris_spacesep.flow
@@ -217,3 +216,4 @@ glm_junit_weather.flow
 glm_junit_weights_all_ones_twos.flow
 glm_junit_weights_all_ones.flow
 glm_junit_weights.flow
+grid_search_test.flow

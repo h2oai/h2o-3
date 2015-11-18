@@ -2,7 +2,7 @@
 
 Welcome to the H2O documentation site! Depending on your area of interest, select a learning path from the links above. 
 
-We're glad you're interested in learning more about H2O - if you have any questions, please email them to our Google Group,  [h2ostream](mailto:h2ostream@googlegroups.com) or post them on our Google groups forum, <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>. This is a public forum, so your question will be visible to other users. 
+We're glad you're interested in learning more about H2O - if you have any questions or need general support, please email them to our Google Group,  [h2ostream](mailto:h2ostream@googlegroups.com) or post them on our Google groups forum, <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>. This is a public forum, so your question will be visible to other users. 
 
 
 **Note**: To join our Google group on <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a>, you need a Google account (such as Gmail or Google+). On the <a href="https://groups.google.com/forum/#!forum/h2ostream" target="_blank">h2ostream</a> page, click the **Join group** button, then click the **New Topic** button to post a new message. You don't need to request or leave a message to join - you should be added to the group automatically. 
@@ -35,11 +35,6 @@ If you're just getting started with H2O, here are some links to help you learn m
 
 	For first-time users, we recommend downloading the latest alpha release and the default standalone option (the first tab) as the installation method. Make sure to install Java if it is not already installed.
 	
-	The following video provides step-by-step instructions on how to install and run H2O: 
-	
-	<iframe width="560" height="315" src="https://www.youtube.com/embed/_HVx9Jqr34Q?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
-
-
 - **Tutorials**: To see a step-by-step example of our algorithms in action, select a model type from the following list:
 
 	- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/dl/dl.md" target="_blank">Deep Learning</a>
@@ -81,14 +76,17 @@ If you've used previous versions of H2O, the following links will help guide you
 <a name="OS"></a>
 ##Enterprise Users
 
-If you're considering using H2O in an enterprise environment, you'll be happy to know that H2O supports many popular scalable computing solutions, such as Hadoop and EC2 (AWS). For more information, refer to the following links. 
+If you're considering using H2O in an enterprise environment, you'll be happy to know that the H2O platform is supported on all major Hadoop distributions including Cloudera Enterprise, Hortonworks Data Platform and the MapR Apache Hadoop Distribution. 
+
+H2O can be deployed in-memory directly on top of existing Hadoop clusters without the need for data transfers, allowing for unmatched speed and ease of use. To ensure the integrity of data stored in Hadoop clusters, the H2O platform supports native integration of the Kerberos protocol. 
+
+For additional sales or marketing assistance, please email [sales@h2o.ai](mailto:sales@h2o.ai). 
 
 - <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
+
+- <a href="http://h2o.ai/enterprise-edition/" target="_blank">H2O Enterprise Edition</a>: This web page describes the benefits of H2O Enterprise Edition. 
  
-- The following video provides step-by-step instructions on how to start H2O on Hadoop: 
-
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/B1ax_k_sSoY?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
-
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/security/Security.md" target="_blank">Security</a>: This document describes how to use the security features (available only in H2O Enterprise Edition). 
 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">How to Pass S3 Credentials to H2O</a>: This document describes the necessary step of passing your S3 credentials to H2O so that H2O can be used with AWS, as well as how to run H2O on an EC2 cluster.  
@@ -97,6 +95,8 @@ If you're considering using H2O in an enterprise environment, you'll be happy to
 - Click [here](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Hadoop) to view instructions on how to set up H2O using Hadoop. 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevHadoop.md" target="_blank">Running H2O on Hadoop</a>: This document describes how to run H2O on Hadoop. 
+
+
 
 
 ---
@@ -110,6 +110,7 @@ Sparkling Water is a gradle project with the following submodules:
 - Examples: Application, demos, examples
 - ML: Implementation of MLLib pipelines for H2O algorithms
 - Assembly: Creates "fatJar" composed of all other modules
+- py: Implementation of (h2o) Python binding to Sparkling Water
 
 The best way to get started is to modify the core module or create a new module, which extends a project. 
 
@@ -120,12 +121,9 @@ Sparkling Water is versioned according to the Spark versioning:
 - Use [Sparkling Water 1.2](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.2/6/index.html) for Spark 1.2
 - Use [Sparkling Water 1.3](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.3/7/index.html) for Spark 1.3+
 - Use [Sparkling Water 1.4](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.4/3/index.html) for Spark 1.4
+- Use [Sparkling Water 1.5](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html) for Spark 1.5
 
 ###Getting Started with Sparkling Water
-
-The following video provides step-by-step instructions on how to start H2O using Sparkling Water:
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ypka6eX1G14?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
 
 - <a href="http://h2o.ai/download/" target="_blank">Download Sparkling Water</a>: Go here to download Sparkling Water. 
 
@@ -144,6 +142,8 @@ The following video provides step-by-step instructions on how to start H2O using
 - <a href="http://learn.h2o.ai/content/hackers_station/start_with_sparkling_water.html" target="_blank">Building Applications on top of H2O</a>: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model. 
 
 - <a href="http://h2o.ai/product/faq/#SparklingH2O" target="_blank">Sparkling Water FAQ</a>: This FAQ provides answers to many common questions about Sparkling Water. 
+
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md" target="_blank">Connecting RStudio to Sparkling Water</a>: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water. 
 
 ###Sparkling Water Blog Posts
 
@@ -172,11 +172,6 @@ Pythonistas will be glad to know that H2O now provides support for this popular 
 
 - Click [here](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Python) to view instructions on how to use H2O with Python. 
 
-- The following video provides step-by-step instructions on how to start H2O using Python: 
-
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/K8J3dPBEz1s?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
-
-
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.rst" target="_blank">Python readme</a>: This document describes how to setup and install the prerequisites for using Python with H2O. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-py/docs/index.html" target="_blank">Python docs</a>: This document represents the definitive guide to using Python with H2O. 
@@ -198,15 +193,20 @@ Currently, the only version of R that is known to be incompatible with H2O is R 
 
 - Click [here](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#R) to view instructions for using H2O with R. 
 
-- The following video provides step-by-step instructions on how to start H2O in R:
-
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0" frameborder="0" allowfullscreen></iframe>
-
-
-
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-r/h2o_package.pdf" target="_blank">R User Documentation</a>: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R. 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md" target="_blank">Porting R Scripts</a>: This document is designed to assist users who have created R scripts using previous versions of H2O. Due to the many improvements in R, scripts created using previous versions of H2O will not work. This document provides a side-by-side comparison of the changes in R for each algorithm, as well as overall structural enhancements R users should be aware of, and provides a link to a tool that assists users in upgrading their scripts. 
+
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md" target="_blank">Connecting RStudio to Sparkling Water</a>: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water. 
+
+
+###Ensembles
+
+Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance. 
+
+- <a href="https://github.com/h2oai/h2o-2/tree/master/R/ensemble" target="_blank">H2O Ensemble GitHub repository</a>: Location for the H2O Ensemble R package.
+
+- <a href="http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html" target="_blank">Ensemble Documentation</a>: This documentation provides more details on the concepts behind ensembles and how to use them. 
 
 ---
 
@@ -216,6 +216,9 @@ Currently, the only version of R that is known to be incompatible with H2O is R 
 API users will be happy to know that the APIs have been more thoroughly documented in the latest release of H2O and additional capabilities (such as exporting weights and biases for Deep Learning models) have been added. 
 
 REST APIs are generated immediately out of the code, allowing users to implement machine learning in many ways. For example, REST APIs could be used to call a model created by sensor data and to set up auto-alerts if the sensor data falls below a specified threshold. 
+
+
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/api/REST/h2o_3_rest_api_overview.md" target="_blank">H2O 3 REST API Overview</a>: This document describes how the REST API commands are used in H2O, versioning, experimental APIs, verbs, status codes, formats, schemas, payloads, metadata, and examples. 
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#route-reference" target="_blank">REST API Reference</a>: This document represents the definitive guide to the H2O REST API. 
 

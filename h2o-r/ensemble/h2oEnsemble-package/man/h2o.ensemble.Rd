@@ -13,7 +13,8 @@ h2o.ensemble(x, y, training_frame,
   learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper", "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"), 
   metalearner = "h2o.glm.wrapper", 
   cvControl = list(V = 5, shuffle = TRUE), 
-  seed = 1, parallel = "seq", ...)
+  seed = 1, parallel = "seq", 
+  keep_levelone_data = TRUE)
 }
 \arguments{
   \item{x}{
@@ -32,7 +33,7 @@ A description of the error distribution and link function to be used in the mode
 (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
 }
   \item{validation_frame}{
-(Optional) An H2O Frame object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not functional.
+(Optional) An H2O Frame object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not used.
 }
   \item{learner}{
 A string or character vector naming the prediction algorithm(s) used to train the base models for the ensemble.  The functions must have the same format as the h2o wrapper functions.
@@ -49,8 +50,8 @@ A random seed to be set (integer); defaults to 1. If \code{NULL}, then a random 
   \item{parallel}{
 A character string specifying optional parallelization. Use \code{"seq"} for sequential computation (the default) of the cross-validation and base learning steps. Use \code{"multicore"} to perform the V-fold (internal) cross-validation step as well as the final base learning step in parallel over all available cores. Or parallel can be a snow cluster object. Both parallel options use the built-in functionality of the R core "parallel" package.  Currently, only \code{"seq"} is compatible with the parallelized H2O algorithms, so this argument may be removed or modified in the future.
 }
-\item{...}{
-  Additional arguments to be passed to or from methods.
+\item{keep_levelone_data}{
+  Logical, defaults to \code{TRUE}.  Keep the \code{levelone} H2O Frame of cross-validated predicted values (Z matrix) and original response vector, y (cbind to Z).
 }
 }
 
@@ -86,8 +87,8 @@ A list of H2O models, each of which are trained using the \code{data} object.  T
 \item{metafit}{
 The predictive model which is learned by regressing \code{y} on \code{Z} (see description of \code{Z} below).  The type of model is specified using the \code{metalearner} argument.
 }
-\item{Z}{
-An H2O Frame object.  The Z matrix (the cross-validated predicted values for each base learner).  In the stacking ensemble literature, this is known as the "level-one" data and is the design matrix used to train the metalearner.
+\item{levelone}{
+An H2O Frame object.  The \code{levelone} H2O Frame includes the "Z matrix" (the cross-validated predicted values for each base learner) and original response vector, y.  In the stacking ensemble literature, the Z matrix is the design matrix used to train the metalearner.
 }
 \item{runtime}{
 A list of runtimes for various steps of the algorithm.  The list contains \code{cv}, \code{metalearning}, \code{baselearning} and \code{total} elements.  The \code{cv} element is the time it takes to create the \code{Z} matrix (see above).  The \code{metalearning} element is the training time for the metalearning step.  The \code{baselearning} element is a list of training times for each of the models in the ensemble.  The time to run the entire \code{h2o.ensemble} function is given in \code{total}.
@@ -100,6 +101,9 @@ The version of the h2oEnsemble R package.
 }
 }
 \references{
+LeDell, E. (2015) Scalable Ensemble Learning and Computationally Efficient Variance Estimation (Doctoral Dissertation).  University of California, Berkeley, USA.\cr
+\url{http://www.stat.berkeley.edu/~ledell/papers/ledell-phd-thesis.pdf}\cr
+\cr
 van der Laan, M. J., Polley, E. C. and Hubbard, A. E. (2007) Super Learner, Statistical Applications of Genetics and Molecular Biology, 6, article 25. \cr
 \url{http://dx.doi.org/10.2202/1544-6115.1309}\cr
 \url{http://biostats.bepress.com/ucbbiostat/paper222}\cr
@@ -127,18 +131,15 @@ localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num
 
 
 # Import a sample binary outcome train/test set into R
-train <- read.table("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv", sep=",")
-test <- read.table("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv", sep=",")
-
-
-# Convert R data.frames into H2O parsed data objects
-training_frame <- as.h2o(train)
-validation_frame <- as.h2o(test)
-y <- "V1"
-x <- setdiff(names(training_frame), y)
+train <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv")
+test <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv")
+y <- "C1"
+x <- setdiff(names(train), y)
 family <- "binomial"
-training_frame[,c(y)] <- as.factor(training_frame[,c(y)])  #Force Binary classification
-validation_frame[,c(y)] <- as.factor(validation_frame[,c(y)])
+
+#For binary classification, response should be a factor
+train[,y] <- as.factor(train[,y])  
+test[,y] <- as.factor(test[,y])
 
 
 # Specify the base learner library & the metalearner
@@ -150,7 +151,7 @@ metalearner <- "h2o.deeplearning.wrapper"
 # Train the ensemble using 5-fold CV to generate level-one data
 # More CV folds will take longer to train, but should increase performance
 fit <- h2o.ensemble(x = x, y = y, 
-                    training_frame = training_frame, 
+                    training_frame = train, 
                     family = family, 
                     learner = learner, 
                     metalearner = metalearner,
@@ -158,19 +159,19 @@ fit <- h2o.ensemble(x = x, y = y,
 
 
 # Generate predictions on the test set
-pred <- predict.h2o.ensemble(fit, validation_frame)
-predictions <- as.data.frame(pred$pred)[,3]  #third column, p1 is P(Y==1)
-labels <- as.data.frame(validation_frame[,c(y)])[,1]
+pp <- predict(fit, test)
+predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
+labels <- as.data.frame(test[,y])[,1]
 
 
 # Ensemble test AUC 
-cvAUC::AUC(predictions = predictions , labels = labels)
+cvAUC::AUC(predictions = predictions, labels = labels)
 # 0.7888723
 
 
 # Base learner test AUC (for comparison)
 L <- length(learner)
-auc <- sapply(seq(L), function(l) cvAUC::AUC(predictions = as.data.frame(pred$basepred)[,l], labels = labels)) 
+auc <- sapply(seq(L), function(l) cvAUC::AUC(predictions = as.data.frame(pp$basepred)[,l], labels = labels)) 
 data.frame(learner, auc)
 #                   learner       auc
 #1          h2o.glm.wrapper 0.6871288
@@ -179,12 +180,13 @@ data.frame(learner, auc)
 #4 h2o.deeplearning.wrapper 0.7425813
 
 # Note that the ensemble results above are not reproducible since 
-# h2o.deeplearning is not reproducible when using multiple cores.
+# h2o.deeplearning is not reproducible when using multiple cores,
+# and we did not set a seed for h2o.randomForest.wrapper or h2o.gbm.wrapper.
 
-# Additional note: In a future version, performance metrics will be 
-# computed automatically, as in the other H2O algos.
+# Additional note: In a future version, performance metrics such as AUC
+# will be computed automatically, as in the other H2O algos.
 
-# Here is an example of how to generate a custom learner library:
+# Here is an example of how to generate a base learner library using custom base learners:
 h2o.randomForest.1 <- function(..., ntrees = 1000, nbins = 100, seed = 1) {
 h2o.randomForest.wrapper(..., ntrees = ntrees, nbins = nbins, seed = seed)
 }

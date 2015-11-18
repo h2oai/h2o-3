@@ -148,6 +148,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
 
     @Override
     public void map (Chunk[]cs){
+      if (_createFrame.isCancelledOrCrashed()) return;
       if (!_createFrame.randomize) return;
       final Random rng = RandomUtils.getRNG(new Random().nextLong());
 

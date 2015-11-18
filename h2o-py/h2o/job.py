@@ -6,7 +6,6 @@ A job can be polled for completion and reports the progress so far if it is stil
 from connection import H2OConnection
 import time
 import sys
-import h2o
 
 
 class H2OJob:
@@ -50,11 +49,23 @@ class H2OJob:
       raise EnvironmentError("Job with key {} failed with an exception: {}".format(self.job_key, self.exception))
     return self
 
+  def poll_once(self):
+    print
+    self._refresh_job_view()
+    self._update_progress()
+    print
+
+    # check if failed... and politely print relevant message
+    if self.status == "CANCELLED": raise EnvironmentError("Job with key {} was cancelled by the user.".format(self.job_key))
+    if self.status == "FAILED":    raise EnvironmentError("Job with key {} failed with an exception: {}".format(self.job_key, self.exception))
+    return self
+
   def _refresh_job_view(self):
       jobs = H2OConnection.get_json(url_suffix="Jobs/" + self.job_key)
       self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
       self.status = self.job["status"]
       self.progress = self.job["progress"]
+      self.exception = self.job["exception"]
 
   def _is_running(self):
       return self.status == "RUNNING" or self.status == "CREATED"

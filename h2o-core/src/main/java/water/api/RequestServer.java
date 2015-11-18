@@ -2,49 +2,23 @@ package water.api;
 
 import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.ServerSocket;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import water.DKV;
-import water.H2O;
-import water.H2OError;
-import water.H2OModelBuilderError;
-import water.H2ONode;
-import water.HeartBeatThread;
-import water.NanoHTTPD;
-import water.exceptions.H2OAbstractRuntimeException;
-import water.exceptions.H2OFailException;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.exceptions.H2ONotFoundArgumentException;
+import water.*;
+import water.exceptions.*;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
-import water.util.GAUtils;
-import water.util.GetLogsFromNode;
-import water.util.HttpResponseStatus;
-import water.util.JCodeGen;
-import water.util.Log;
-import water.util.PojoUtils;
+import water.util.*;
+
+import java.io.*;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.ServerSocket;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -127,7 +101,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Cloud",      "GET", CloudHandler.class,  "status", null, "Determine the status of the nodes in the H2O cloud.");
     register("/3/Cloud",                  "HEAD",CloudHandler.class, "head", null, "Determine the status of the nodes in the H2O cloud.");
     register("/3/Jobs"       ,"GET", JobsHandler.class,   "list", null,   "Get a list of all the H2O Jobs (long-running actions).");
-    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       , null,"Show a time line.");
+    register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       , null,"Debugging tool that provides information on current communication between nodes.");
     register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       , null,"Report real-time profiling information for all nodes (sorted, aggregated stack traces).");
     register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       , null,"Report stack traces for all threads on all nodes.");
     register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       , null,"Run a network test to measure the performance of the cluster interconnect.");
@@ -303,6 +277,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", null, "Remove all keys from the H2O distributed K/V store.");
     register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", null, "Save a message to the H2O logfile.");
     register("/3/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", null, "Issue a new session ID.");
+    register("/3/InitID"                                           ,"DELETE",InitIDHandler.class, "endSession", null, "End a session.");
     register("/3/GarbageCollect"                                   ,"POST"  ,GarbageCollectHandler.class, "gc", null, "Explicitly call System.gc().");
 
     register("/99/Sample"                                          ,"GET",CloudHandler      .class,"status"      , null,"Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");

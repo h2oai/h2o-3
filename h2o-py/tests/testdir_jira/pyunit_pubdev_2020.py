@@ -63,9 +63,9 @@ def test4():
     df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.8], destination_frames=["myf0", "myf1"])
     part0 = splits[0]
-    assert part0._id == "myf0"
+    assert part0.frame_id == "myf0"
     part1 = splits[1]
-    assert part1._id == "myf1"
+    assert part1.frame_id == "myf1"
 
 
 def pubdev_2020():

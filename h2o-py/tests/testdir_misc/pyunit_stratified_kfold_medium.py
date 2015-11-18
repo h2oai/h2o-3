@@ -15,11 +15,11 @@ def stratified_kfold():
   stratified = fr[54].stratified_kfold_column(n_folds=NFOLDS)
   stratified.show()
 
-  dist = (fr[54].table()["Count"] / fr[54].table()["Count"].sum()).as_data_frame().to_dict("list")["Count"]  # get a raw list of means
+  dist = (fr[54].table()["Count"] / fr[54].table()["Count"].sum()).as_data_frame(True).to_dict("list")["Count"]  # get a raw list of means
 
   overall_result = reduce(lambda x,y: x.cbind(y), [fr[stratified==i,54].table()["Count"]/fr[stratified==i,54].table()["Count"].sum() for i in range(NFOLDS)])
   overall_result.show()
-  df = overall_result.as_data_frame()  # get the overall result here
+  df = overall_result.as_data_frame(True)  # get the overall result here
 
 
   # show that folds are consistent

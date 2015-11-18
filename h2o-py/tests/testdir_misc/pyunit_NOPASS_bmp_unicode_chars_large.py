@@ -17,7 +17,7 @@ def bmp_unicode_chars():
     print codes_in_uni[0:10]
 
     # load them into h2o
-    codes_in_h2o = h2o.H2OFrame(python_obj=codes_in_uni)
+    codes_in_h2o = h2o.H2OFrame(codes_in_uni)
 
     # retrieve the codes from h2o and compare them to their ground-truth encoding
     for idx, u in enumerate(codes_in_uni):

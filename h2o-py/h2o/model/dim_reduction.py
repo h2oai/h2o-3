@@ -1,14 +1,9 @@
-"""
-DimReduction Models
-"""
-
+from model_base import ModelBase
 from metrics_base import *
+
 
 class H2ODimReductionModel(ModelBase):
 
-    def __init__(self, dest_key, model_json):
-        super(H2ODimReductionModel, self).__init__(dest_key, model_json,H2ODimReductionModelMetrics)
-    
     def num_iterations(self):
       """
       Get the number of iterations that it took to converge or reach max iterations.

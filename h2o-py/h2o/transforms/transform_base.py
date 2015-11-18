@@ -1,5 +1,6 @@
 from ..frame import H2OFrame
 import urllib
+from h2o import expr
 
 class TransformAttributeError(AttributeError):
   def __init__(self,obj,method):
@@ -47,10 +48,10 @@ class H2OTransformer(object):
 
   @staticmethod
   def _dummy_frame():
-    dummy = H2OFrame()
-    dummy._id = "py_dummy"
-    dummy._computed = True
-    return dummy
+    fr = H2OFrame._expr(expr.ExprNode())
+    fr._ex._children = None
+    fr._ex._cache.dummy_fill()
+    return fr
 
   def to_rest(self, args):
     return urllib.quote("{}__{}__{}__{}__{}".format(*args))

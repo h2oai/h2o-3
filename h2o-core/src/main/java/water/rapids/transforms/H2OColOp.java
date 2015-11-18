@@ -4,10 +4,7 @@ import org.apache.commons.lang.ArrayUtils;
 import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
-import water.rapids.AST;
-import water.rapids.ASTExec;
-import water.rapids.ASTParameter;
-import water.rapids.Exec;
+import water.rapids.*;
 
 public class H2OColOp extends Transform<H2OColOp> {
   protected final String _fun;
@@ -38,7 +35,8 @@ public class H2OColOp extends Transform<H2OColOp> {
   @Override public Transform<H2OColOp> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
     ((ASTExec)_ast._asts[1])._asts[1] = AST.newASTFrame(f);
-    Frame fr = Exec.execute(_ast).getFrame();
+    Session ses = new Session();
+    Frame fr = ses.exec(_ast, null).getFrame();
     _newCol = _newNames==null?new String[fr.numCols()]:_newNames;
     _newColTypes = toJavaPrimitive(fr.anyVec().get_type_str());
     if( (_multiColReturn=fr.numCols() > 1) ) {
@@ -48,9 +46,9 @@ public class H2OColOp extends Transform<H2OColOp> {
       }
       if( _inplace ) f.remove(f.find(_oldCol)).remove();
     } else {
-      _newCol = new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)};
+      _newCol = _newNames==null?new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)}:_newCol;
       if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
-      else          f.add(_newNames==null?_newCol[0]:_newNames[0], fr.anyVec());
+      else          f.add(_newNames == null ? _newCol[0] : _newNames[0], fr.anyVec());
     }
     DKV.put(f);
     return f;
@@ -59,7 +57,7 @@ public class H2OColOp extends Transform<H2OColOp> {
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }
 
   @Override public String genClassImpl() {
-    String typeCast = _inTypes[ArrayUtils.indexOf(_inNames, _oldCol)].equals("Numeric")?"double":"String";
+    String typeCast = _inTypes[ArrayUtils.indexOf(_inNames, _oldCol)].equals("Numeric")?"Double":"String";
 
     if( _multiColReturn ) {
       StringBuilder sb = new StringBuilder(
@@ -68,7 +66,7 @@ public class H2OColOp extends Transform<H2OColOp> {
               "     "+_newColTypes+"[] res = GenMunger."+lookup(_fun)+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params);\n");
       for(int i=0;i<_newCol.length;i++)
         sb.append(
-              "      row.put(\""+_newCol[i]+"\", res["+i+"]);\n");
+              "      row.put(\""+_newCol[i]+"\",("+i+">=res.length)?\"\":res["+i+"]);\n");
       sb.append(
               "      return row;\n" +
               "    }\n");

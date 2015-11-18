@@ -119,12 +119,15 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     intercept = TRUE,
                     max_active_predictors = -1)
 {
-  if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
-        stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
-      if (inherits(beta_constraints, "data.frame")) {
+  # if (!is.null(beta_constraints)) {
+  #     if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
+  #       stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
+  #     if (inherits(beta_constraints, "data.frame")) {
+  #       beta_constraints <- as.h2o(beta_constraints)
+  #     }
+  # }
+  if (inherits(beta_constraints, "data.frame")) {
         beta_constraints <- as.h2o(beta_constraints)
-      }
   }
 
   if (!is.Frame(training_frame))
@@ -171,10 +174,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
   if (!missing(nfolds) && nfolds > 1)
     parms$nfolds <- nfolds
-  if(!missing(beta_constraints)){
-    .eval.frame(beta_constraints)
+  if(!missing(beta_constraints))
     parms$beta_constraints <- beta_constraints
-  }
   m <- .h2o.modelJob('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
@@ -188,7 +189,6 @@ h2o.glm <- function(x, y, training_frame, model_id,
 #' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
-   cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
    res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
    m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
@@ -223,13 +223,13 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
                     ...
                     )
 {
-  if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !is.Frame("Frame"))
-        stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
-      if (inherits(beta_constraints, "data.frame")) {
-        beta_constraints <- as.h2o(beta_constraints)
-      }
-  }
+  # if (!is.null(beta_constraints)) {
+  #     if (!inherits(beta_constraints, "data.frame") && !is.Frame("Frame"))
+  #       stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
+  #     if (inherits(beta_constraints, "data.frame")) {
+  #       beta_constraints <- as.h2o(beta_constraints)
+  #     }
+  # }
 
   if (!is.Frame(training_frame))
       tryCatch(training_frame <- h2o.getFrame(training_frame),

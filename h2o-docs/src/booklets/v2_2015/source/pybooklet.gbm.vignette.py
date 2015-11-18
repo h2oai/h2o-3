@@ -3,8 +3,11 @@ def gbm_vignette():
     approved_py_code_examples = [
         pyunit_utils.locate("GBM_Vignette_code_examples/gbm_uploadfile_example.py"),
         pyunit_utils.locate("GBM_Vignette_code_examples/gbm_examplerun.py"),
+        pyunit_utils.locate("GBM_Vignette_code_examples/gbm_examplerun_stochastic.py"),
         pyunit_utils.locate("GBM_Vignette_code_examples/gbm_extractmodelparams.py"),
-        pyunit_utils.locate("GBM_Vignette_code_examples/gbm_predict.py")]
+        pyunit_utils.locate("GBM_Vignette_code_examples/gbm_predict.py"),
+        pyunit_utils.locate("GBM_Vignette_code_examples/gbm_gridsearch.py"),
+        pyunit_utils.locate("GBM_Vignette_code_examples/gbm_gridsearch_result.py")]
 
     pybooklet_utils.check_code_examples_in_dir(approved_py_code_examples,
                                                pyunit_utils.locate("GBM_Vignette_code_examples"))

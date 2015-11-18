@@ -48,13 +48,10 @@ def hexdev_394():
                    validation_y=newvalid_y,
                    x=newtrain_x,
                    validation_x=newvalid_x,
-                   distribution = "multinomial",
+                   distribution="multinomial",
                    ntrees=100,
                    learn_rate=0.1,
                    max_depth=6)
-
-  print "KEEPING FRAME???"
-  print train._keep
 
 
 

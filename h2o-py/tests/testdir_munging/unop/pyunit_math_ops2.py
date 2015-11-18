@@ -2,27 +2,22 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
-
-
 import numpy as np
 import random
 import math
 import scipy.special
 
-def expr_math_ops():
-    
-    
 
+def expr_math_ops():
     sin_cos_tan_atan_sinh_cosh_tanh_asinh_data = [[random.uniform(-10,10) for r in range(10)] for c in range(10)]
     asin_acos_atanh_data = [[random.uniform(-1,1) for r in range(10)] for c in range(10)]
     acosh_data = [[random.uniform(1,10) for r in range(10)] for c in range(10)]
     abs_data = [[random.uniform(-100000,0) for r in range(10)] for c in range(10)]
 
-    h2o_data1_1 = h2o.H2OFrame(python_obj=sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
-    h2o_data2_1 = h2o.H2OFrame(python_obj=asin_acos_atanh_data)
-    h2o_data3_1 = h2o.H2OFrame(python_obj=acosh_data)
-    h2o_data4_1 = h2o.H2OFrame(python_obj=abs_data)
+    h2o_data1_1 = h2o.H2OFrame(zip(*sin_cos_tan_atan_sinh_cosh_tanh_asinh_data))
+    h2o_data2_1 = h2o.H2OFrame(zip(*asin_acos_atanh_data))
+    h2o_data3_1 = h2o.H2OFrame(zip(*acosh_data))
+    h2o_data4_1 = h2o.H2OFrame(zip(*abs_data))
 
     np_data1 = np.array(sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
     np_data2 = np.array(asin_acos_atanh_data)

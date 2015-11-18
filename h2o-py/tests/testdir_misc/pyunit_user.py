@@ -18,7 +18,7 @@ def user():
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant
     (a[0] + a[1]).show()  # Add 2 columns; broadcast parallel add
     sum(a).show()
-    print a["sepal_len"].mean()
+    print a["sepal_len"].mean()[0]
 
     print
     print "Rows 50 through 77 in the `sepal_len` column"
@@ -31,7 +31,7 @@ def user():
 
     a.show()
 
-    colmeans = [v.mean() for v in a]
+    colmeans = a.mean()
 
     print "The column means: "
     print colmeans
@@ -51,11 +51,11 @@ def user():
     c = None
     # Internal "ExprNode(c=a+b)" not dead!
 
-    print 1 + (a[0] + b[1]).mean()
+    print 1 + (a[0] + b[1]).mean()[0]
 
     import collections
 
-    c = h2o.H2OFrame(python_obj=collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
+    c = h2o.H2OFrame(collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
     c.show()
 
     c.describe()

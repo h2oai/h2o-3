@@ -10,7 +10,7 @@ import numpy as np
 
 def mmult():
     data = [[random.uniform(-10000,10000)] for c in range(100)]
-    h2o_data = h2o.H2OFrame(python_obj=data)
+    h2o_data = h2o.H2OFrame(zip(*data))
     np_data = np.array(data)
 
     h2o_mm = h2o_data.mult(h2o_data.transpose())

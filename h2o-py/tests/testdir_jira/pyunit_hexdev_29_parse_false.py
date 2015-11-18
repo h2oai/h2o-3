@@ -8,10 +8,6 @@ from tests import pyunit_utils
 ##
 ################################################################################
 
-
-
-
-
 def parse_false():
 
     fraw = h2o.import_file(pyunit_utils.locate("smalldata/jira/hexdev_29.csv"), parse=False)

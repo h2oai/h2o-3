@@ -33,13 +33,29 @@ def ipy_lines(block):
         raise NotImplementedError, "ipython notebook source/line json format not handled"
 
 def ipy_valid_lines(block):
-    # remove ipython magic functions
-    lines = [line for line in ipy_lines(block) if not line.startswith('%')]
+    lines = ipy_lines(block)
 
-    # (clunky) matplotlib handling
+    # matplotlib handling
     for line in lines:
-        if "import matplotlib.pyplot as plt" in line:
+        if "import matplotlib.pyplot as plt" in line or "%matplotlib inline" in line:
             import matplotlib
             matplotlib.use('Agg', warn=False)
-    return [line for line in lines if not "plt.show()" in line]
+
+    # remove ipython magic functions
+    lines = [line for line in lines if not line.startswith('%')]
+
+    # don't show any plots
+    lines = [line for line in lines if not "plt.show()" in line]
+
+    return lines
+
+def pydemo_exec(test_name):
+    with open (test_name, "r") as t: demo = t.read()
+    program = ''
+    for line in demo.split('\n'):
+        if "h2o.init" not in line:
+            program += line if '\n' in line else line + '\n'
+    demo_c = compile(program, '<string>', 'exec')
+    p = {}
+    exec demo_c in p
 

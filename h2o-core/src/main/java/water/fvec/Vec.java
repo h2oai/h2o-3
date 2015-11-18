@@ -616,12 +616,12 @@ public class Vec extends Keyed<Vec> {
   public long byteSize(){return rollupStats()._size; }
 
   /** Default Histogram bins. */
-  public static final double PERCENTILES[] = {0.001,0.01,0.1,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.9,0.99,0.999};
+  public static final double PERCENTILES[] = {0.001,0.01,0.1,0.2,0.25,0.3,1.0/3.0,0.4,0.5,0.6,2.0/3.0,0.7,0.75,0.8,0.9,0.99,0.999};
   /** A simple and cheap histogram of the Vec, useful for getting a broad
    *  overview of the data.  Each bin is row-counts for the bin's range.  The
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
    *  histogram is computed on first use and cached thereafter.
-   *  @return A set of histogram bins. */
+   *  @return A set of histogram bins, or null for String columns */
   public long[] bins() { return RollupStats.get(this, true)._bins;      }
   /** Optimistically return the histogram bins, or null if not computed 
    *  @return the histogram bins, or null if not computed */
@@ -749,7 +749,7 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
   // Filled in lazily and racily... but all writers write the exact identical Key
-  Key rollupStatsKey() { 
+  public Key rollupStatsKey() { 
     if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
     return _rollupStatsKey;
   }
@@ -989,7 +989,7 @@ public class Vec extends Keyed<Vec> {
   /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
    *  @return Brief string representation of a Vec */
   @Override public String toString() {
-    RollupStats rs = RollupStats.getOrNull(this);
+    RollupStats rs = RollupStats.getOrNull(this,rollupStatsKey());
     String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
     int nc = nChunks();
     for( int i=0; i<nc; i++ ) {
@@ -1198,6 +1198,8 @@ public class Vec extends Keyed<Vec> {
     @Override public String toString() {
       return "VecGrp "+_key.toString()+", next free="+_len;
     }
+    // Return current VectorGroup index; used for tests
+    public int len() { return _len; }
 
     /** True if two VectorGroups are equal 
      *  @return True if two VectorGroups are equal */

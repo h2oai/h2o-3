@@ -88,10 +88,10 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
   if(length(res$files) <= 0L) stop("all files failed to import")
   if(parse) {
     srcKey <- res$destination_frames
-    return( h2o.parseRaw(data=.newFrame(op="ImportFolder",id=srcKey), destination_frame=destination_frame,
+    return( h2o.parseRaw(data=.newFrame(op="ImportFolder",id=srcKey,-1,-1), destination_frame=destination_frame,
                          header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings) )
   }
-  myData <- lapply(res$destination_frames, function(x) .newFrame( op="ImportFolder", id=x))  # do not gc, H2O handles these nfs:// vecs
+  myData <- lapply(res$destination_frames, function(x) .newFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
     return( myData[[1L]] )
   else
@@ -141,7 +141,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
   fileUploadInfo <- fileUpload(path)
   .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
 
-  assign("rawData",.newFrame(op="PostFile",id=srcKey))
+  rawData = .newFrame(op="PostFile",id=srcKey,-1,-1)
   if (parse) {
     h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type)
   } else {

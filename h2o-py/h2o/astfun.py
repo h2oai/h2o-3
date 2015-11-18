@@ -1,5 +1,7 @@
 import expr
 from opcode import *
+import frame
+import inspect
 
 BYTECODE_INSTRS = {
   "BINARY_SUBSCR"      : "cols",  # column slice; could be row slice?
@@ -20,12 +22,13 @@ BYTECODE_INSTRS = {
   "CALL_FUNCTION"      : "",  # some function call, have nargs in ops list...
 }
 
-def is_bytecode_instruction(instr): return BYTECODE_INSTRS.has_key(instr)
+def is_bytecode_instruction(instr): return instr in BYTECODE_INSTRS
 def is_comp(instr):                 return "COMPARE" in instr
 def is_binary(instr):               return "BINARY" in instr
 def is_unary(instr):                return "UNARY" in instr
 def is_func(instr):                 return "CALL_FUNCTION" == instr
 def is_load_fast(instr):            return "LOAD_FAST" == instr
+def is_attr(instr):                 return "LOAD_ATTR" == instr
 def is_load_global(instr):          return "LOAD_GLOBAL" == instr
 def is_return(instr):               return "RETURN_VALUE" == instr
 
@@ -107,19 +110,31 @@ def _unop_bc(op,idx,ops,keys):
   return [expr.ExprNode(op,arg),idx]
 
 def _func_bc(nargs,idx,ops,keys):
-  args=[]
+  named_args = {}
+  unnamed_args = []
   while nargs > 0:
     if nargs >=256:  # named args ( foo(50,True,x=10) ) read first  ( right -> left )
       arg,idx=_opcode_read_arg(idx,ops,keys)
-      args.insert(0,arg)  # push arg
-      idx-=1      # skip the LOAD_CONST for the named arg
+      named_args[ops[idx][1][0]] = arg
+      idx-=1      # skip the LOAD_CONST for the named args
       nargs-=256  # drop 256
     else:
       arg,idx=_opcode_read_arg(idx,ops,keys)
-      args.insert(0, arg)
+      unnamed_args.insert(0, arg)
       nargs-=1
   op = ops[idx][1][0]
+  if op not in dir(frame.H2OFrame):
+    raise ValueError("Unimplemented: op not bound in H2OFrame")
+  if is_attr(ops[idx][0]):
+    argspec = inspect.getargspec(getattr(frame.H2OFrame, op))
+    argnames = argspec.args[1:]
+    argdefs  = argspec.defaults or ()
+    args = unnamed_args + list(argdefs[len(unnamed_args):])
+    for a in named_args: args[argnames.index(a)] = named_args[a]
   if op=="ceil": op = "ceiling"
+  if op=="sum" and len(args) > 0 and args[0]: op="sumNA"
+  if op=="min" and len(args) > 0 and args[0]: op="minNA"
+  if op=="max" and len(args) > 0 and args[0]: op="maxNA"
   idx-=1
   if is_bytecode_instruction(ops[idx][0]):
     arg,idx = _opcode_read_arg(idx,ops,keys)

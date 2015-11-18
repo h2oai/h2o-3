@@ -257,6 +257,10 @@ public class Weaver {
     if( debug_print ) System.out.println(ftbody);
     addMethod(ftbody,icer_cc);
 
+    String cmp2 = "  protected void compute1( water.H2O.H2OCountedCompleter dt ) { dt.compute1(); }";
+    if( debug_print ) System.out.println(cmp2);
+    addMethod(cmp2,icer_cc);
+
     // DTasks need to be able to copy all their (non transient) fields from one
     // DTask instance over another, to match the MRTask API.
     if( iced_cc.subclassOf(_dtask) ) {

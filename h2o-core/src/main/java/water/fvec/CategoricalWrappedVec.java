@@ -37,11 +37,11 @@ public class CategoricalWrappedVec extends WrappedVec {
 
   /** Constructor just to generate the map and domain; used in tests or when
    *  mixing categorical columns */
-  private CategoricalWrappedVec(Key key) { super(key,ESPC.rowLayout(key,new long[]{0}),null,null); }
+  private CategoricalWrappedVec(Key key) { super(key, ESPC.rowLayout(key, new long[]{0}), null, null); }
   public static int[] computeMap(String[] from, String[] to) {
     Key key = Vec.newKey();
     CategoricalWrappedVec tmp = new CategoricalWrappedVec(key);
-    tmp.computeMap(from,to,false);
+    tmp.computeMap(from, to, false);
     return tmp._map;
   }
 
@@ -136,9 +136,13 @@ public class CategoricalWrappedVec extends WrappedVec {
     setDomain(Arrays.copyOf(ss, actualLen));
   }
 
+  @Override
+  public Vec doCopy() {
+    return new CategoricalWrappedVec(group().addVec(),_rowLayout, domain(), _masterVecKey);
+  }
 
   public static class CategoricalWrappedChunk extends Chunk {
-    public final Chunk _c;             // Test-set map
+    public final transient Chunk _c;             // Test-set map
     final transient int[] _map;
     final transient int   _p;
 
@@ -176,7 +180,7 @@ public class CategoricalWrappedVec extends WrappedVec {
       return nc;
     }
     @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }
-    @Override public Chunk read_impl(AutoBuffer bb)       { throw water.H2O.fail(); }
+    @Override public CategoricalWrappedChunk read_impl(AutoBuffer bb)       { throw water.H2O.fail(); }
     @Override public boolean hasNA() { return false; }
   }
 }

@@ -40,9 +40,12 @@ test <- function() {
 	mean_deviance = (sum((MEPS$EXPENDIP^(2.0-dPower)/((1.0-dPower)*(2.0-dPower)) -
    		MEPS$EXPENDIP*exp(pr[,1]*(1.0-dPower))/(1.0-dPower) + exp(pr[,1]*(2.0-dPower))/(2.0-dPower) ))*2) /157  ## tweedie deviance
 
-        #print(mean_deviance)
-        #print(hh@model$training_metrics@metrics$mean_residual_deviance)
-        #print(hh@model$validation_metrics@metrics$mean_residual_deviance)
+  print("---------------------------------------------------------tweedie-----------------------------------------------")
+        print(mean_deviance)
+        print(hh@model$training_metrics@metrics$mean_residual_deviance)
+        print(hh@model$validation_metrics@metrics$mean_residual_deviance)
+  print("---------------------------------------------------------tweedie-----------------------------------------------")
+
 
 	expect_equal(mean_deviance,hh@model$training_metrics@metrics$mean_residual_deviance, 1e-8)
 	expect_equal(mean_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance, 1e-8)
@@ -54,11 +57,14 @@ test <- function() {
 	hh = h2o.deeplearning(x = 4:12,y = "ClaimNb",training_frame = fre,hidden = c(5,5),epochs = 1,
                        train_samples_per_iteration = -1,validation_frame = fre,activation = "Tanh",distribution = "poisson", score_training_samples=0)
         p = h2o.predict(hh,newdata = fre)[,1]
-        mean_deviance = -2*sum(fre$ClaimNb*log(p) - p)/nrow(p) ## Poisson deviance
+        nr <- nrow(p)
+        mean_deviance = -2*sum(fre$ClaimNb*log(p) - p)/nr ## Poisson deviance
 
-        #print(mean_deviance)
-        #print(hh@model$training_metrics@metrics$mean_residual_deviance)
-        #print(hh@model$validation_metrics@metrics$mean_residual_deviance)
+  print("---------------------------------------------------------poisson-----------------------------------------------")
+        print(mean_deviance)
+        print(hh@model$training_metrics@metrics$mean_residual_deviance)
+        print(hh@model$validation_metrics@metrics$mean_residual_deviance)
+  print("---------------------------------------------------------poisson-----------------------------------------------")
 
 	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
