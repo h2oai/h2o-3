@@ -102,6 +102,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
 
           // Check that epoch counting is good
           Assert.assertTrue("Epoch counter must be contiguous", (Double)table.get(i,3) == i); //1 epoch per step
+          Assert.assertTrue("Iteration counter must match epochs", (Integer)table.get(i,4) == i); //1 iteration per step
         }
         // Check that duration doesn't see the sleep
         String durationBefore = (String)table.get((int)(p._epochs),1);
