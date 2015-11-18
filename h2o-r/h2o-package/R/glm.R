@@ -119,7 +119,9 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     intercept = TRUE,
                     max_active_predictors = -1,
                     objective_epsilon = -1,
-                    gradient_epsilon = -1)
+                    gradient_epsilon = -1,
+                    non_negative = FALSE,
+                    compute_p_values = FALSE)
 {
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
@@ -172,7 +174,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(max_active_predictors) )     parms$max_active_predictors  <- max_active_predictors
   if( !missing(objective_epsilon) )         parms$objective_epsilon      <- objective_epsilon
   if( !missing(gradient_epsilon) )          parms$gradient_epsilon       <- gradient_epsilon
-
+  if( !missing(non_negative) )              parms$non_negative           <- non_negative
+  if( !missing(compute_p_values) )          parms$compute_p_values       <- compute_p_values
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
