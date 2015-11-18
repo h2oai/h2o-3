@@ -21,7 +21,7 @@ public class ScoreKeeper extends Iced {
   public double _AUC = Double.NaN;
   public double _classError = Double.NaN;
   public float[] _hitratio;
-  public double _lift = Double.NaN; //Lift in top decile
+  public double _lift = Double.NaN; //Lift in top group
 
   public ScoreKeeper() {}
   public ScoreKeeper(double mse) { _mse = mse; }
@@ -45,11 +45,9 @@ public class ScoreKeeper extends Iced {
         _AUC = ((ModelMetricsBinomial) m)._auc._auc;
         _classError = ((ModelMetricsBinomial) m)._auc.defaultErr();
       }
-      if (((ModelMetricsBinomial)m)._gainsLift != null) {
-        GainsLift gl = ((ModelMetricsBinomial)m)._gainsLift;
-        if (gl.response_rates != null && gl.response_rates.length > 0) {
-          _lift = gl.response_rates[0] / gl.avg_response_rate;
-        }
+      GainsLift gl = ((ModelMetricsBinomial)m)._gainsLift;
+      if (gl != null && gl.response_rates != null && gl.response_rates.length > 0) {
+        _lift = gl.response_rates[0] / gl.avg_response_rate;
       }
     }
     else if (m instanceof ModelMetricsMultinomial) {
@@ -83,7 +81,7 @@ public class ScoreKeeper extends Iced {
             && MathUtils.compare(_lift, o._lift, 1e-6, 1e-6);
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE, AUC, lift_top_decile, r2, misclassification}
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, AUC, lift_top_group, r2, misclassification}
 
   public static boolean earlyStopping(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement) {
     if (k == 0) return false;
@@ -94,7 +92,7 @@ public class ScoreKeeper extends Iced {
       criterion = classification ? StoppingMetric.logloss : StoppingMetric.deviance;
     }
 
-    boolean moreIsBetter = (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2 || criterion == StoppingMetric.lift_top_decile);
+    boolean moreIsBetter = (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2 || criterion == StoppingMetric.lift_top_group);
     double movingAvg[] = new double[k+1]; //need one moving average value for the last k+1 scoring events
     double lastBeforeK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
     double bestInLastK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
@@ -139,7 +137,7 @@ public class ScoreKeeper extends Iced {
           case misclassification:
             val = skj._classError;
             break;
-          case lift_top_decile:
+          case lift_top_group:
             val = skj._lift;
             break;
           default:

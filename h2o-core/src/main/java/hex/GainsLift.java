@@ -11,10 +11,10 @@ import water.util.*;
 import java.util.Arrays;
 
 public class GainsLift extends Iced {
-  private static int GROUPS = 10;
   private double[] _quantiles;
 
   //INPUT
+  public int _groups = 20;
   public Vec _labels;
   public Vec _preds; //of length N, n_i = N/GROUPS
   public Vec _weights;
@@ -58,7 +58,7 @@ public class GainsLift extends Iced {
     boolean fast = false;
     if (fast) {
       // FAST VERSION: single-pass, only works with the specific pre-computed quantiles from rollupstats
-      assert(GROUPS == 10);
+      assert(_groups == 10);
       assert(Arrays.equals(Vec.PERCENTILES,
               //             0      1    2    3    4     5        6          7    8   9   10          11    12   13   14    15, 16
               new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
@@ -73,9 +73,9 @@ public class GainsLift extends Iced {
       Frame fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
       DKV.put(fr);
       qp._train = fr._key;
-      qp._probs = new double[GROUPS];
-      for (int i = 0; i < GROUPS; ++i) {
-        qp._probs[i] = (GROUPS - i - 1.) / GROUPS;
+      qp._probs = new double[_groups];
+      for (int i = 0; i < _groups; ++i) {
+        qp._probs[i] = (_groups - i - 1.) / _groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
       }
       if (_weights != null) throw H2O.unimpl("Quantile cannot handle weights yet.");
       Quantile q = new Quantile(qp);
@@ -114,7 +114,7 @@ public class GainsLift extends Iced {
     TwoDimTable table = new TwoDimTable(
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
-            new String[GROUPS],
+            new String[_groups],
             new String[]{"Group", "Lower Threshold", "Response Rate", "Cumulative Response Rate", "Capture Rate", "Cumulative Capture Rate", "Lift", "Cumulative Lift", "Gain", "Cumulative Gain"},
             new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
             new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
@@ -124,9 +124,9 @@ public class GainsLift extends Iced {
     double P = avg_response_rate; // E/N
     double N = _preds.length(); //TODO: Add obs. weights
     double E = N * P;
-    for (int i = 0; i < GROUPS; ++i) {
+    for (int i = 0; i < _groups; ++i) {
       double e_i = positive_responses[i];
-      double n_i = N/GROUPS;
+      double n_i = N/ _groups;
       double p_i = response_rates[i];
       cumulative_events += e_i;
       cumulative_observations += n_i;
@@ -194,11 +194,7 @@ public class GainsLift extends Iced {
         if (a==0) continue;
         if (t==0) {
           if (pr >= _thresh[t]) _responses[t]++;
-        }
-        else if (t==_thresh.length-1) { //bottom decile
-          if (pr < _thresh[t-1]) _responses[t]++;
-        }
-        else { //in between
+        } else {
           if (pr >= _thresh[t] && pr < _thresh[t-1]) _responses[t]++;
         }
       }
