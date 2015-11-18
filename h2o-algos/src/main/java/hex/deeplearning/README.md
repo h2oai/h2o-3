@@ -21,7 +21,7 @@ The [MNIST](http://yann.lecun.com/exdb/mnist/) database of handwritten digits ha
 
 The following benchmark is available as an [example Flow pack](https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/flow/packs/examples) and is also part of the distribution (after November 18 2015). In Flow, on the right-hand-side, click on the 'HELP' tab, then 'view example Flows', then select 'DeepLearning_MNIST.flow'.
 
-**Model parameters**: 2 hidden layers (128,64), Rectifier with Dropout, L1/L2 regularization, mini-batch size 1. Auto-tuning for the number of training images per Map/Reduce iteration (`train_samples_per_iteration=-2`). The model is trained until convergence of the test set accuracy, and scored on the training and test sets every 5 seconds, with full confusion matrices and variable importances.
+**Model parameters**: For illustration only, not tuned. 2 hidden layers (128,64), Rectifier with Dropout, L1/L2 regularization, mini-batch size 1. Auto-tuning for the number of training images per Map/Reduce iteration (`train_samples_per_iteration=-2`). The model is trained until convergence of the test set accuracy, and scored on the training and test sets every 5 seconds, with full confusion matrices and variable importances.
 
 **Hardware**: Dual Xeon E5-2650 2.6GHz, Ubuntu 12.04, Java 7, 10GbE interconnect
 
