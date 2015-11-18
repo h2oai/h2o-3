@@ -1,7 +1,6 @@
 package water.api;
 
 import hex.ModelBuilder;
-import water.Job;
 import water.util.Log;
 import water.util.PojoUtils;
 
@@ -30,7 +29,7 @@ public class ValidationMessageBase<I extends ModelBuilder.ValidationMessage, S e
       return;
     if (null == from || null == to)
       throw new IllegalArgumentException("Bad parameter name translation arrays; one is null and the other isn't.");
-    Map<String, String> translations = new HashMap();
+    Map<String, String> translations = new HashMap<>();
     for (int i = 0; i < from.length; i++) {
       translations.put(from[i], to[i]);
     }
@@ -51,7 +50,7 @@ public class ValidationMessageBase<I extends ModelBuilder.ValidationMessage, S e
   }
 
   public I createImpl() {
-    return (I) new ModelBuilder.ValidationMessage(Job.ValidationMessage.MessageType.valueOf(message_type), field_name, message);
+    return (I) new ModelBuilder.ValidationMessage(Log.valueOf(message_type), field_name, message);
   }
 
   // Version&Schema-specific filling from the implementation object

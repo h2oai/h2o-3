@@ -101,16 +101,12 @@ public class Tabulate extends Job<Tabulate> {
   }
 
   public Tabulate execImpl() {
-    if (_dataset == null)
-      error("_dataset", "Dataset not found");
-    if (_nbins_predictor < 1)
-      error("_binsPredictor", "Number of bins for predictor must be >= 1");
-    if (_nbins_response < 1)
-      error("_binsResponse", "Number of bins for response must be >= 1");
+    if (_dataset == null)     throw new H2OIllegalArgumentException("Dataset not found");
+    if (_nbins_predictor < 1) throw new H2OIllegalArgumentException("Number of bins for predictor must be >= 1");
+    if (_nbins_response < 1)  throw new H2OIllegalArgumentException("Number of bins for response must be >= 1");
     Vec x = _dataset.vec(_predictor);
-    if (x == null)
-      error("_predictor", "Predictor column " + _predictor + " not found");
-    else if (x.cardinality() > _nbins_predictor) {
+    if (x == null)            throw new H2OIllegalArgumentException("Predictor column " + _predictor + " not found");
+    if (x.cardinality() > _nbins_predictor) {
       Interaction in = new Interaction();
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_predictor};
@@ -123,9 +119,8 @@ public class Tabulate extends Job<Tabulate> {
       x = x.toCategoricalVec();
     }
     Vec y = _dataset.vec(_response);
-    if (y == null)
-      error("_response", "Response column " + _response + " not found");
-    else if (y.cardinality() > _nbins_response) {
+    if (y == null) throw new H2OIllegalArgumentException("Response column " + _response + " not found");
+    if (y.cardinality() > _nbins_response) {
       Interaction in = new Interaction();
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_response};
@@ -138,15 +133,10 @@ public class Tabulate extends Job<Tabulate> {
       y = y.toCategoricalVec();
     }
     if (y!=null && y.cardinality() > 2)
-      warn("_response", "Response column has more than two factor levels - mean response depends on lexicographic order of factors!");
+      Log.warn("Response column has more than two factor levels - mean response depends on lexicographic order of factors!");
     Vec w = _dataset.vec(_weight); //can be null
-    if (w != null && (!w.isNumeric() && w.min() < 0))
-      error("_weight", "Observation weights must be numeric with values >= 0");
+    if (w != null && (!w.isNumeric() && w.min() < 0)) throw new H2OIllegalArgumentException("Observation weights must be numeric with values >= 0");
 
-    if (error_count() > 0){
-      Tabulate.this.updateValidationMessages();
-      throw new H2OIllegalArgumentException(validationErrors());
-    }
     if (x!=null) {
       _vecs[0] = x._key;
       _stats[0] = new Stats(x);
