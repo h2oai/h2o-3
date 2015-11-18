@@ -42,6 +42,22 @@ class H2ODimReductionModel(ModelBase):
         archetypes.append(list(yvals[yidx])[1:])
       return archetypes
     
+    def proj_archetypes(self,test_data):
+        """Obtain the reconstruction error for the input test_data.
+
+        Parameters
+        ----------
+          test_data : H2OFrame
+            The dataset upon which the H2O GLRM model was trained.
+
+        Returns
+        -------
+          Return the GLRM archetypes projected back into the original training data's feature space.
+        """
+        if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
+        j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, project_archetypes=True)
+        return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
+    
     def screeplot(self, type="barplot", **kwargs):
         """
         Produce the scree plot
