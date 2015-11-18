@@ -563,9 +563,9 @@ class GridSpec(dict):
 
         # returns a GridSearchSchema:
         result = a_node.build_model_grid(algo=self['algo'], grid_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], grid_parameters=self['grid_params'], timeoutSecs=240) # synchronous
-        if isVerbose(): print 'result: ' + repr(result)
+        if isVerboser(): print 'result: ' + repr(result)
         grid = a_node.grid(key=self['dest_key'])
-        if isVerbose(): print 'grid: ' + repr(grid)
+        if isVerboser(): print 'grid: ' + repr(grid)
         
         validate_grid_builder_result(grid, self['params'], self['grid_params'], self['dest_key'])
 
