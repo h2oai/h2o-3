@@ -1945,7 +1945,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         // sum of weights of this weighted least square problem,  includes both user weights and weights generated during fitting
         double wsum = glmt._gram.get(_activeData.fullN(),_activeData.fullN());
         GramSolver gslvr = null;
-        if(currentLambda() > 0) { // no need for this if has no regularization
+        if(!_parms._compute_p_values) { // no need for this if has no regularization
           glmt._gram.mul(reg);
           ArrayUtils.mult(glmt._xy, reg);
         }
