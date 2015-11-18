@@ -22,7 +22,7 @@ test.glrm.simplex <- function() {
   expect_true(all(fitX.mat >= 0))
   apply(fitX.mat, 1, function(row) {
     tol <- (k-1) * .Machine$double.eps * sum(abs(row))   # From pg. 82 of Higham, Numerical Algorithms (2nd Ed)
-    expect_equal(sum(row), 1, tolerance = tol) 
+    expect_equal(sum(row), 1, tolerance = tol)
   })
   
   Log.info("Check final objective function value")
@@ -32,7 +32,7 @@ test.glrm.simplex <- function() {
   Log.info("Impute XY and check error metrics")
   pred <- predict(fitH2O, train.h2o)
   expect_equivalent(as.matrix(pred), fitXY)   # Imputation for numerics with quadratic loss is just XY product
-  expect_equal(fitH2O@model$training_metrics@metrics$numerr, fitH2O@model$objective)
+  expect_equal(fitH2O@model$training_metrics@metrics$numerr, fitH2O@model$objective, tolerance = 1e-6)
   expect_equal(fitH2O@model$training_metrics@metrics$caterr, 0)
   
 }
