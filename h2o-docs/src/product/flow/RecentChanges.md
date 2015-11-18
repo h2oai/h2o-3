@@ -2,11 +2,125 @@
 
 ##H2O
 
+###Tibshirani (3.6.0.3) - 11/?/15
+
+####New Features
+The following changes represent features that have been added since the previous release:
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/66c7ce896584e6a0b8462ba5cb073959ee9e845d): Added lift in top decile to DL, GBM & DRF `scoring_history` and to `stopping_metric`. Lift is computed for every tree scoring event by default. [(PUBDEV-2118)](https://github.com/h2oai/h2o-3/commit/479fa0909636af8e36b531442199802e16e30776)
+
+#####Python
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/14c52b8463ec8594716649a7c6bfa3b84d5712a5): Added `isin` method to H2OFrame
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b26ca13616d64551ca92ee56ee4438d4f400c1ca): Added `get_grid` static method to retrieve H2OGridSearch objects
+
+
+#####System
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/3d9f172a6480a306fcc48b8fe49e543c482692db): Added the ability to remove objects from the cache and client in Python and R
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1038cdf9372b799d65fcc559b949695e3855f9de): Cleaned up iteration counter logic
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/47f4b754e8f4178b86d5c4f929a46223b3f7b042): Added Iterations and Epochs to DL job status updates, added Iterations to scoring history
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/114b6e98312c4c6cd5d063123df8a778bb7e5e2e): Renamed DL flow example and changed parameters
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b1f345a57d649002acdb15763f967bed81035f62): Added an input parameter controlling how many times X or Y are updated
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fc21d89660cb7af3d862ab8c8d570edd030597bb): H2O now generates an error in SVD if all rows were skipped in Gram calculation
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/49994fbea0456a4451a97db7346fa95854adfced): Improved summary for grid search
+
+#####Python
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/7ef73ca18a8fb44238159f3789602b13d25a615b): H2O now allows more missing data in munging ops
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fa61b8224d53d0ceedcd178fec60314ba4f48b96): Removed duplicated code from `parse_setup`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/7b32b23c5da583eaf5d8787eb08229043fcb10d5): Added `islist` check to frame `__setitem__`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/fe562e2945ce4b4e5574f825defe900d37605efb): Improved handling of various simple cases for number parsing
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9b3d97b42caed3e96636508deb24253fde976a98): Changed `varimp` to return the variable importances as a pandas data frame 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/12c7f05a3bb12e49551f35805d0b93e9cc5e3ab0): Removed dead code
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/400ce8a6a428f0a646f4636bfa6e92a04ef6845b): H2O now allows parsing of 1 row x 2 cols objects in Python
+
+
+#####R
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1823fd815d59a1cd4960c4f6d4d9598f3763ca57): Optimized `predict.h2o.ensemble` function
+
+
+#####System
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/8b890041ee15e82dcf246c0c329a94089615eba0): H2O now displays a warning if rows are re-ordered
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/d79ea6967935e9d68af1b9349ae1df6bddc400ae): PUBDEV-2320: Changed generated code to support large arrays
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/81b1c0658a210f7a696a50f0151d12f0ca3fde60): Improved placement of [n rows x m columns] printout in R and Python
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/b26ca13616d64551ca92ee56ee4438d4f400c1ca): H2O now makes rows/columns singular where there is only one
+
+####Bug Fixes
+
+The following changes resolve incorrect software behavior: 
+
+
+#####API
+
+- [PUBDEV-2109](https://0xdata.atlassian.net/browse/PUBDEV-2109): Interactive REST calls run at normal F/J priorities, and will wait for other normal F/J work
+- [PUBDEV-2334](https://0xdata.atlassian.net/browse/PUBDEV-2334): For GLM, Grid Search and alpha API the "list of lists" function was not correctly supported
+
+
+
+#####Algorithms
+
+- [PUBDEV-2336](https://0xdata.atlassian.net/browse/PUBDEV-2336): PCA was taking too long on some datasets
+- [PUBDEV-2315](https://0xdata.atlassian.net/browse/PUBDEV-2315): Could not compile POJO for K-means
+- [PUBDEV-2320](https://0xdata.atlassian.net/browse/PUBDEV-2320): Could not compile POJO for Naive Bayes 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bd784804b5ba09fd21eb0ee67d13925b668496a3): Fixed scoring speed display for autoencoder, was showing 0 because wrong runtime was used (ms since 1970 instead of actual runtime)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/690fb27780cca470686b6f623ed2f9066d09bcc0): Fixed a bug where rows of X were initialized to the same random Gaussian vector
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f5766cc315cb8579307c26c12dfaa26afc5e012b): Fixed an offset bug when imputing missing categorical values
+
+#####Python
+
+- [PUBDEV-2234](https://0xdata.atlassian.net/browse/PUBDEV-2234): `mean()` behavior was not consistent for NA's in Python
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9310c0cc1e80f6253fba9e4b4d0dcfa657ab8e21): Fixed name issues in `H2OColOp`to use `model_id` instead of `_id`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/46de3e6b25740663c6d6c436ee8692c6294fbc2d): PUBDEV-2335: Fixed bug in `tmp.getNumericType`
+
+
+#####R
+
+- [PUBDEV-2230](https://0xdata.atlassian.net/browse/PUBDEV-2230): Reordering rows in H2O Frame was not working
+- [PUBDEV-2318](https://0xdata.atlassian.net/browse/PUBDEV-2318): `h2o.saveModel()` did not overwrite model with `force=TRUE` argument 
+- [PUBDEV-1585](https://0xdata.atlassian.net/browse/PUBDEV-1585): In R, the summary was showing NANs in the summary for attached data
+- [PUBDEV-1974](https://0xdata.atlassian.net/browse/PUBDEV-1974): When imputing columns from R, it created many temp files that were not generated when imputing in Flow
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/211f9c399452342ebaa994736f044f7ed222b99b): Restored original parameter name in `h2o.rm` for backward compatibility
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/0d3c3530223fbe7cc1ef548a44550432156d8a3d): Fixed bug in `h2o.ensemble` for character factor levels
+
+
+#####System
+
+- [PUBDEV-2344](https://0xdata.atlassian.net/browse/PUBDEV-2344): After loading a data file, pressing the convert to enum button did not generate a new data frame with enum column.
+- [PUBDEV-2353](https://0xdata.atlassian.net/browse/PUBDEV-2353): During grid search, H2O generated a  ClassCastException if a grid was created with a key that already exists with a different type
+- [PUBDEV-2339](https://0xdata.atlassian.net/browse/PUBDEV-2339): When splitting a frame from Flow, H2O generated a "temp key already exists error" and an Internal Server Error
+- [PUBDEV-2337](https://0xdata.atlassian.net/browse/PUBDEV-2337): When converting to numeric (enum to int), H2O generates an error: `Temp ID Key_Frame__iris.hex already exists`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e23f5753256e23c3aa1397ab56480acd82ab8000): Fixed NPE in TwoDimTable made by gains/lift
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/9ab9bfa0a1dfb9883f108d6a9ccce26cc4ea03ed): Fixed port allocation strategy to prevent port range overlap
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/4a45e727c3d079950a00987328286eb40d70df4c): Fixed Java for row exclusions 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/46d0cde18c0956870e51c8bd551df9be5d0e29d9): Fixed table counts for integers
+
+
+
+#####Web UI
+
+- [PUBDEV-2331](https://0xdata.atlassian.net/browse/PUBDEV-2331): Could not display table with string vectors in Flow
+
+
+
+
+---
 
 ###Tibshirani (3.6.0.2) - 11/5/15
 
 ####New Features
-The following changes represent features that have been added since the previous release:
 
 #####Algorithms
 
@@ -26,9 +140,6 @@ The following changes represent features that have been added since the previous
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/723d552f7f1a9977c6fc837704b73cf1b85f0524): PUBDEV-2289: Enabled convergence-based early stopping for R API of Deep Learning
 
 ####Enhancements
-
-The following changes are improvements to existing features (which includes changed default values):
-
 
 #####Algorithms
 
@@ -70,8 +181,6 @@ The following changes are improvements to existing features (which includes chan
 
 
 ####Bug Fixes
-
-The following changes resolve incorrect software behavior: 
 
 
 #####Algorithms 

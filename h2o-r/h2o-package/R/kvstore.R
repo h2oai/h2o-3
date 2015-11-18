@@ -76,11 +76,11 @@ h2o.removeAll <- function(timeout_secs=0) {
 #'
 #' Remove the h2o Big Data object(s) having the key name(s) from ids.
 #'
-#' @param x The object or hex key associated with the object to be removed or a vector/list of those things.
+#' @param ids The object or hex key associated with the object to be removed or a vector/list of those things.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
-h2o.rm <- function(x) {
-  if( !is.vector(x) ) x_list = c(x) else x_list = x
+h2o.rm <- function(ids) {
+  if( !is.vector(ids) ) x_list = c(ids) else x_list = ids
   for (xi in x_list) {
     if( is.null(xi) ) stop("h2o.rm with NULL object is not supported")
     if( is.Frame(xi) ) {
@@ -97,8 +97,8 @@ h2o.rm <- function(x) {
   }
 
   #remove object from R client if possible (not possible for input of strings)
-  x <- deparse(substitute(x))
-  if( exists(x, envir=parent.frame()) ) rm(list=x, envir=parent.frame())
+  ids <- deparse(substitute(ids))
+  if( exists(ids, envir=parent.frame()) ) rm(list=ids, envir=parent.frame())
   
 }
 
