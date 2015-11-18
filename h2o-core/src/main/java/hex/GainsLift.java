@@ -16,13 +16,13 @@ public class GainsLift extends Iced {
 
   //INPUT
   public Vec _labels;
-  public Vec _preds;
+  public Vec _preds; //of length N, n_i = N/GROUPS
   public Vec _weights;
 
   //OUTPUT
-  public float[] response_rates;
-  public float avg_response_rate;
-  public long[] positive_responses;
+  public double[] response_rates; // p_i = e_i/n_i = e_i/N*GROUPS
+  public double avg_response_rate; // P
+  public long[] positive_responses; // e_i
   TwoDimTable table;
 
   public GainsLift(Vec preds, Vec labels) {
@@ -57,9 +57,8 @@ public class GainsLift extends Iced {
 
     boolean fast = false;
     if (fast) {
-      // FAST VERSION: single-pass
-      //get specific pre-computed quantiles (deciles) from rollupstats
-      //First check that rollups still uses the convention we rely on (hardcoded indexing below)
+      // FAST VERSION: single-pass, only works with the specific pre-computed quantiles from rollupstats
+      assert(GROUPS == 10);
       assert(Arrays.equals(Vec.PERCENTILES,
               //             0      1    2    3    4     5        6          7    8   9   10          11    12   13   14    15, 16
               new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
@@ -116,19 +115,34 @@ public class GainsLift extends Iced {
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
             new String[GROUPS],
-            new String[]{"Decile", "Lower threshold", "Response rate", "Lift", "Cumulative Lift"},
-            new String[]{"int", "double", "double", "double", "double"},
-            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f"},
+            new String[]{"Group", "Lower Threshold", "Response Rate", "Cumulative Response Rate", "Capture Rate", "Cumulative Capture Rate", "Lift", "Cumulative Lift", "Gain", "Cumulative Gain"},
+            new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
+            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
             "");
-    float cumulativelift = 0;
+    double cumulative_events = 0; //partial_sum(e_i)
+    double cumulative_observations = 0; //partial_sum(n_i)
+    double P = avg_response_rate; // E/N
+    double N = _preds.length(); //TODO: Add obs. weights
+    double E = N * P;
     for (int i = 0; i < GROUPS; ++i) {
+      double e_i = positive_responses[i];
+      double n_i = N/GROUPS;
+      double p_i = response_rates[i];
+      cumulative_events += e_i;
+      cumulative_observations += n_i;
+      double lift=p_i/P;
+      double cumulative_lift = (cumulative_events/cumulative_observations)/P;
+
       table.set(i,0,i+1);
       table.set(i,1,_quantiles[i]);
-      table.set(i,2,response_rates[i]);
-      final float lift = response_rates[i]/ avg_response_rate;
-      cumulativelift += lift/ GROUPS;
-      table.set(i,3,lift);
-      table.set(i,4,cumulativelift);
+      table.set(i,2,p_i);
+      table.set(i,3,cumulative_events/cumulative_observations);
+      table.set(i,4,e_i/E);
+      table.set(i,5,cumulative_events/E);
+      table.set(i,6,lift);
+      table.set(i,7,cumulative_lift);
+      table.set(i,8,100*(lift-1));
+      table.set(i,9,100*(cumulative_lift-1));
     }
     return this.table = table;
   }
@@ -136,8 +150,8 @@ public class GainsLift extends Iced {
   // Compute Gains table via MRTask
   public static class GainsLiftBuilder extends MRTask<GainsLiftBuilder> {
     /* @OUT response_rates */
-    public final float[] response_rates() { return _response_rates; }
-    public final float avg_response_rate() { return _avg_response_rate; }
+    public final double[] response_rates() { return _response_rates; }
+    public final double avg_response_rate() { return _avg_response_rate; }
     public final long[] responses(){ return _responses; }
 
     /* @IN quantiles/thresholds */
@@ -145,8 +159,8 @@ public class GainsLift extends Iced {
 
     private long[] _responses;
     private long _avg_response;
-    private float _avg_response_rate;
-    private float[] _response_rates;
+    private double _avg_response_rate;
+    private double[] _response_rates;
     private long _count;
 
     public GainsLiftBuilder(double[] thresh) {
@@ -201,11 +215,11 @@ public class GainsLift extends Iced {
     }
 
     @Override public void postGlobal(){
-      _response_rates = new float[_thresh.length];
+      _response_rates = new double[_thresh.length];
       for (int i=0; i<_response_rates.length; ++i) {
-        _response_rates[i] = (float) _responses[i];
+        _response_rates[i] = (double) _responses[i];
       }
-      MathUtils.div(_response_rates, (float) _count / _thresh.length);
+      MathUtils.div(_response_rates, (double) _count / _thresh.length);
       for (int i=0; i<_response_rates.length; ++i) {
         // spill over to next bucket - needed due to tie breaking in quantiles
         if(_response_rates[i] > 1 && i<_response_rates.length-1) {
@@ -213,7 +227,7 @@ public class GainsLift extends Iced {
           _response_rates[i] -= (_response_rates[i]-1);
         }
       }
-      _avg_response_rate = (float)_avg_response / _count;
+      _avg_response_rate = (double)_avg_response / _count;
     }
   }
 }
