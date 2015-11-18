@@ -151,11 +151,6 @@ public abstract class GLMTask  {
      }
    }
  }
-
-
-
-
-
   static class GLMLineSearchTask extends MRTask<GLMLineSearchTask> {
     final DataInfo _dinfo;
     final double [] _beta;

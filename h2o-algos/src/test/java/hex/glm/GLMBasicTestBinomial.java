@@ -1107,8 +1107,8 @@ public class GLMBasicTestBinomial extends TestUtil {
       double[] pvals_actual = model._output.pValues();
       for (int i = 0; i < stder_expected.length; ++i) {
         int id = coefMap.get(names_actual[i]);
-        assertEquals(stder_expected[id], stder_actual[i], stder_expected[id] * 1e-5);
-        assertEquals(zvals_expected[id], zvals_actual[i], Math.abs(zvals_expected[id]) * 1e-5);
+        assertEquals(stder_expected[id], stder_actual[i], stder_expected[id] * 1e-4);
+        assertEquals(zvals_expected[id], zvals_actual[i], Math.abs(zvals_expected[id]) * 1e-4);
         assertEquals(pvals_expected[id], pvals_actual[i], pvals_expected[id] * 1e-3);
       }
     } finally {
