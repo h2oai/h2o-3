@@ -4,7 +4,7 @@ Type: Package
 Title: R Interface for H2O
 Date: 2015-11-18
 Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the H2O.ai team
-Maintainer: Tom Kraljevic <tomk@0xdata.com>
+Maintainer: Tom Kraljevic <anmol@0xdata.com>
 Description: R scripting functionality for H2O, the open source
   math engine for big data that computes parallel distributed
   machine learning algorithms such as generalized linear models,
