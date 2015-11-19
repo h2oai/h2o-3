@@ -501,10 +501,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Vec p1 = p1combined.anyVec();
         preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
         if (!_parms._keep_cross_validation_predictions) {
-          for (Key k : predictionKeys) DKV.remove(k);
+          for (Key k : predictionKeys) ((Frame)DKV.getGet(k)).remove();
         }
       }
       mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), preds);
+      if (preds!=null) preds.remove();
       mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
       Log.info(mainModel._output._cross_validation_metrics.toString());
 
