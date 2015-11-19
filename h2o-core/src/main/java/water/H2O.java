@@ -32,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
-import hex.ModelBuilder;
 import water.UDPRebooted.ShutdownTsk;
 import water.api.ModelCacheManager;
 import water.api.RequestServer;
@@ -261,8 +260,6 @@ final public class H2O {
     /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
     public boolean quiet = false;
 
-    /** -beta, -experimental */
-    public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
     public boolean useUDP = false;
 
     @Override public String toString() {
@@ -455,12 +452,6 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
-      }
-      else if (s.matches("beta")) {
-        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Beta;
-      }
-      else if (s.matches("experimental")) {
-        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
       } else if(s.matches("useUDP")) {
           ARGS.useUDP = true;
       } else {

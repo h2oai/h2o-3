@@ -8,6 +8,9 @@ import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.glm.GLMModel.GLMParameters.Family;
+import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.distribution.TDistribution;
 import water.DKV;
 import water.H2O;
 import water.Iced;
@@ -105,14 +108,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
     public double _objective_epsilon = 1e-5;
-    public double _gradient_epsilon = 1e-5;
+    public double _gradient_epsilon = 1e-4;
     public double _obj_reg = -1;
+    public boolean _compute_p_values = false;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1;
 
     public void validate(GLM glm) {
+      if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
+        glm.error("_compute_p_values","P values can only be computed with IRLSM solver, go solver = " + _solver);
+      if(_compute_p_values && (_lambda == null || _lambda[0] > 0))
+        glm.error("_compute_p_values","P values can only be computed with NO REGULARIZATION (lambda = 0)");
+      if(_compute_p_values && _family == Family.multinomial)
+        glm.error("_compute_p_values","P values are currently not supported for family=multinomial");
+      if(_compute_p_values && _non_negative)
+        glm.error("_compute_p_values","P values are currently not supported for family=multinomial");
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
       if(_lambda_search)
@@ -126,7 +138,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
         glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
       }
-
       if(_beta_constraints != null) {
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
@@ -151,7 +162,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if (frame != null) {
           Vec response = frame.vec(_response_column);
           if (response != null) {
-            if (response.min() != 0 || response.max() != 1) {
+            if (response.min() < 0 || response.max() > 1) {
               glm.error("_response_column", "Illegal response for family binomial, must be binary, got min = " + response.min() + ", max = " + response.max() + ")");
             }
           }
@@ -485,6 +496,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
+  public void setZValues(double [] zValues, double dispersion, boolean dispersionEstimated) {
+    _output._zvalues = zValues;
+    _output._dispersion = dispersion;
+    _output._dispersionEstimated = dispersionEstimated;
+  }
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels;
     DataInfo _dinfo;
@@ -493,6 +509,25 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     double _threshold;
     double[] _global_beta;
+    private double[] _zvalues;
+    private double _dispersion;
+    private boolean _dispersionEstimated;
+
+    public boolean hasPValues(){return _zvalues != null;}
+    public double [] stdErr(){
+      double [] res = _zvalues.clone();
+      for(int i = 0; i < res.length; ++i)
+        res[i] = _global_beta[i]/_zvalues[i];
+      return res;
+    }
+    public double [] zValues(){return _zvalues.clone();}
+    public double [] pValues(){
+      double [] res = zValues();
+      RealDistribution rd = _dispersionEstimated?new TDistribution(_training_metrics.residualDegreesOfFreedom()):new NormalDistribution();
+      for(int i = 0; i < res.length; ++i)
+        res[i] = 2*rd.cumulativeProbability(-Math.abs(res[i]));
+      return res;
+    }
     double[][] _global_beta_multinomial;
     final int _nclasses;
     public boolean _binomial;

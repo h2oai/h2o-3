@@ -313,15 +313,23 @@ class H2OConnection(object):
     :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
     :return: None
     """
+    global __H2OCONN__
     if not isinstance(conn, H2OConnection): raise ValueError("`conn` must be an H2OConnection object")
-    if not conn.cluster_is_up(conn):  raise ValueError("There is no H2O instance running at ip: {0} and port: "
+    try:
+      if not conn.cluster_is_up(conn):  raise ValueError("There is no H2O instance running at ip: {0} and port: "
                                                        "{1}".format(conn.ip(), conn.port()))
-
+    except:
+      #H2O is already shutdown on the java side
+      print "The H2O instance running at {0}:{1} has already been shutdown.".format(conn.ip(), conn.port())
+      __H2OCONN__= None
+      return 
     if not isinstance(prompt, bool): raise ValueError("`prompt` must be TRUE or FALSE")
     if prompt: response = raw_input("Are you sure you want to shutdown the H2O instance running at {0}:{1} "
                                     "(Y/N)? ".format(conn.ip(), conn.port()))
     else: response = "Y"
-    if response == "Y" or response == "y": conn.post(url_suffix="Shutdown")
+    if response == "Y" or response == "y": 
+      conn.post(url_suffix="Shutdown")
+      __H2OCONN__ = None #so that the "Did you run `h2o.init()`" ValueError is triggered
 
   @staticmethod
   def rest_version(): return __H2OCONN__._rest_version
@@ -477,8 +485,7 @@ class H2OConnection(object):
       try:
         result = http_result.json()
         if 'messages' in result.keys():
-          detailed_error_msgs = '\n'.join([m['message'] for m in result['messages'] if m['message_type'] in \
-                                          ['ERROR']])
+          detailed_error_msgs = '\n'.join([m['message'] for m in result['messages'] if m['message_type'] in ['ERRR']])
         elif 'exception_msg' in result.keys():
           detailed_error_msgs = result['exception_msg']
       except ValueError:
@@ -521,8 +528,6 @@ class H2OConnection(object):
 
     except requests.ConnectionError as e:
       raise EnvironmentError("h2o-py encountered an unexpected HTTP error:\n {}".format(e))
-
-    return http_result
 
   # TODO:
   # @staticmethod
@@ -569,7 +574,10 @@ class H2OConnection(object):
 
 # On exit, close the session to allow H2O to cleanup any temps
 def end_session():
-  H2OConnection.delete(url_suffix="InitID")
+  try:
+    H2OConnection.delete(url_suffix="InitID")
+  except:
+    pass
   print "Sucessfully closed the H2O Session."
 
 def get_human_readable_size(num):

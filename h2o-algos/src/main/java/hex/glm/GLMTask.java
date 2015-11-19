@@ -151,11 +151,6 @@ public abstract class GLMTask  {
      }
    }
  }
-
-
-
-
-
   static class GLMLineSearchTask extends MRTask<GLMLineSearchTask> {
     final DataInfo _dinfo;
     final double [] _beta;
@@ -187,7 +182,6 @@ public abstract class GLMTask  {
 
     @Override
     public void map(Chunk [] chks) {
-
       Chunk responseChunk = chks[_dinfo.responseChunkId()];
       boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
 
@@ -963,6 +957,7 @@ public abstract class GLMTask  {
     final double _lambda;
     double wsum, wsumu;
     final boolean _intercept;
+    double _sumsqe;
 
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate,
                              double [][] betaMultinomial, double [] beta, int c, double [] ymu, boolean intercept, H2OCountedCompleter cmp) {
@@ -1078,8 +1073,11 @@ public abstract class GLMTask  {
           wz = w*z;
           if(_validate)
             _val.add(y, mu, r.weight, r.offset);
+          double sqe = w*(z - mu);
+          _sumsqe += sqe * sqe;
         }
       }
+
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       wsum+=w;
       wsumu+=r.weight; // just add the user observation weight for the scaling.
@@ -1105,6 +1103,7 @@ public abstract class GLMTask  {
       wsumu += git.wsumu;
       if (_validate) _val.reduce(git._val);
       _likelihood += git._likelihood;
+      _sumsqe += git._sumsqe;
       super.reduce(git);
     }
 
@@ -1482,7 +1481,71 @@ public abstract class GLMTask  {
 
   }
 
+  public static final class GLMWeights {
+    final GLMParameters _parms;
+    public double mu;
+    public double w;
+    public double z;
+    public double likelihood;
 
+    public GLMWeights(GLMParameters parms) {
+      _parms = parms;
+    }
+
+    public void compute(double eta, double y, double w, double o) {
+      mu = _parms.linkInv(eta + o);
+      likelihood = w * _parms.likelihood(y, mu);
+      double var = Math.max(1e-6, _parms.variance(mu)); // avoid numerical problems with 0 variance
+      double d = _parms.linkDeriv(mu);
+      z = eta + (y - mu) * d;
+      this.w = w / (var * d * d);
+    }
+  }
+
+  public static class ComputeSETsk extends FrameTask2<ComputeSETsk> {
+//    final double [] _betaOld;
+    final double [] _betaNew;
+    final GLMParameters _parms;
+    double _sumsqe;
+    double _wsum;
+
+    public ComputeSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, /*, double [] betaOld,*/ double [] betaNew, GLMParameters parms) {
+      super(cmp, dinfo, jobKey);
+//      _betaOld = betaOld;
+      _parms = parms;
+      _betaNew = betaNew;
+    }
+
+    transient double _sparseOffsetOld = 0;
+    transient double _sparseOffsetNew = 0;
+    transient GLMWeights _glmw;
+    @Override public void chunkInit(){
+      if(_sparse) {
+//        _sparseOffsetOld = GLM.sparseOffset(_betaNew, _dinfo);
+        _sparseOffsetNew = GLM.sparseOffset(_betaNew, _dinfo);
+      }
+      _glmw = new GLMWeights(_parms);
+    }
+
+    @Override
+    protected void processRow(Row r) {
+      double z = r.response(0);
+      double w = r.weight;
+      if(_parms._family != Family.gaussian) {
+//        double etaOld = r.innerProduct(_betaOld) + _sparseOffsetOld;
+        double etaOld = r.innerProduct(_betaNew) + _sparseOffsetNew;
+        _glmw.compute(etaOld, r.response(0), r.weight, r.offset);
+        z = _glmw.z;
+        w = _glmw.w;
+      }
+      double eta = r.innerProduct(_betaNew) + _sparseOffsetNew;
+//      double mu = _parms.linkInv(eta);
+      _sumsqe += w*(eta - z)*(eta - z);
+      _wsum += Math.sqrt(w);
+    }
+    @Override
+    public void reduce(ComputeSETsk c){_sumsqe += c._sumsqe; _wsum += c._wsum;}
+  }
 
 
 //  public static class GLMValidationTask<T extends GLMValidationTask<T>> extends MRTask<T> {

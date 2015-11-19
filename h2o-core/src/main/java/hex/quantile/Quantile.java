@@ -41,8 +41,6 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     return new ModelCategory[]{ModelCategory.Unknown};
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
-
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made

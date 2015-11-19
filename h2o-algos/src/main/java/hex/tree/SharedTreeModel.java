@@ -57,6 +57,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
 
+    @Override protected long nFoldSeed() { return _seed; }
+
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
