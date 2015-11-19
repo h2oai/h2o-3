@@ -14,7 +14,7 @@ public class GainsLift extends Iced {
   private double[] _quantiles;
 
   //INPUT
-  public int _groups = 10;
+  public int _groups = 20;
   public Vec _labels;
   public Vec _preds; //of length N, n_i = N/GROUPS
   public Vec _weights;
@@ -117,9 +117,9 @@ public class GainsLift extends Iced {
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
             new String[_groups],
-            new String[]{"Group", "Lower Threshold", "Response Rate", "Cumulative Response Rate", "Capture Rate", "Cumulative Capture Rate", "Lift", "Cumulative Lift", "Gain", "Cumulative Gain"},
-            new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
+            new String[]{"Group", "Lower Threshold", "Cumulative Data Fraction", "Response Rate", "Cumulative Response Rate", "Capture Rate", "Cumulative Capture Rate", "Lift", "Cumulative Lift", "Gain", "Cumulative Gain"},
+            new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
+            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
             "");
     double sum_e_i = 0;
     double sum_n_i = 0;
@@ -136,14 +136,15 @@ public class GainsLift extends Iced {
       double sum_lift=sum_e_i/sum_n_i/P;
       table.set(i,0,i+1);
       table.set(i,1,_quantiles[i]);
-      table.set(i,2,p_i);
-      table.set(i,3,sum_e_i/sum_n_i);
-      table.set(i,4,e_i/E);
-      table.set(i,5,sum_e_i/E);
-      table.set(i,6,lift);
-      table.set(i,7,sum_lift);
-      table.set(i,8,100*(lift-1));
-      table.set(i,9,100*(sum_lift-1));
+      table.set(i,2,sum_n_i/N);
+      table.set(i,3,p_i);
+      table.set(i,4,sum_e_i/sum_n_i);
+      table.set(i,5,e_i/E);
+      table.set(i,6,sum_e_i/E);
+      table.set(i,7,lift);
+      table.set(i,8,sum_lift);
+      table.set(i,9,100*(lift-1));
+      table.set(i,10,100*(sum_lift-1));
     }
     return this.table = table;
   }
