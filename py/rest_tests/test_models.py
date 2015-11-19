@@ -65,7 +65,14 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
             model_key = model_key['name']
             built_models[model_key] = a_node.models(key=model_key)
 
+#    grid = a_node.grid(key='kmeans_prostate_grid', sort_by='', sort_order='desc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', sort_order='desc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', sort_order='desc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', sort_order='desc')
 
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', sort_order='asc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', sort_order='asc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', sort_order='asc')
 
 
     #######################################
@@ -131,7 +138,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     
     found_expected_error = False
     for validation_message in parameters_validation['messages']:
-        if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
+        if validation_message['message_type'] == 'ERRR' and validation_message['field_name'] == 'input_dropout_ratio':
             found_expected_error = True
     assert found_expected_error, "FAIL: Failed to find error message about input_dropout_ratio in the validation messages."
     

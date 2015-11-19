@@ -75,7 +75,8 @@ def is_gradle_build_python_test(file_name):
     """
     Return True if file_name matches a regexp for on of the python test run during gradle build.  False otherwise.
     """
-    return file_name in ["generate_rest_api_docs.py", "generate_java_bindings.py"]
+    return file_name in ["generate_rest_api_docs.py", "generate_java_bindings.py", "test_gbm_prostate.py",
+                         "test_rest_api.py"]
 
 def is_javascript_test_file(file_name):
     """
@@ -1012,6 +1013,8 @@ class TestRunner:
                 if (is_pyunit(f)):
                     is_test = True
                 if (is_pybooklet(f)):
+                    is_test = True
+                if (is_gradle_build_python_test(f)):
                     is_test = True
                 if (not is_test):
                     continue

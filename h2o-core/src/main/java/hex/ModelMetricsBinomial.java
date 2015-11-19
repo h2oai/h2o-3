@@ -2,6 +2,7 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -37,7 +38,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   }
 
   public double logloss() { return _logloss; }
-  @Override public AUC2 auc() { return _auc; }
+  @Override public AUC2 auc_obj() { return _auc; }
   @Override public ConfusionMatrix cm() {
     if( _auc == null ) return null;
     double[][] cm = _auc.defaultCM();
@@ -95,8 +96,11 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         AUC2 auc = new AUC2(_auc);
         GainsLift gl = null;
         if (preds!=null) {
-          gl = new GainsLift(preds.lastVec(), f.vec(m._parms._response_column));
-          gl.exec();
+          Vec resp = f.vec(m._parms._response_column);
+          if (resp != null) {
+            gl = new GainsLift(preds.lastVec(), resp);
+            gl.exec();
+          }
         }
         return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc,  logloss, gl));
       } else {

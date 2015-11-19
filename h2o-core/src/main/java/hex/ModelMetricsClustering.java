@@ -19,6 +19,11 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   public double _betweenss;
 //  public TwoDimTable _centroid_stats;
 
+
+  public double totss() { return _totss; }
+  public double tot_withinss() { return _tot_withinss; }
+  public double betweenss() { return _betweenss; }
+
   public ModelMetricsClustering(Model model, Frame frame) {
     super(model, frame, Double.NaN);
     _size = null;

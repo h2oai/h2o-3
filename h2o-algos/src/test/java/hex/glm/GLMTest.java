@@ -1430,7 +1430,7 @@ public class GLMTest  extends TestUtil {
 
   public static double auc(GLMModel m) {
     ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
-    return metrics.auc()._auc;
+    return metrics.auc_obj()._auc;
   }
   public static double logloss(GLMModel m) {
     ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
@@ -1531,12 +1531,12 @@ public class GLMTest  extends TestUtil {
       model.score(fr).delete();
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
-      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+      assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       model.score(fr).delete();
       mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
-      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+      assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       double prior = 1e-5;

@@ -231,15 +231,14 @@ After this operation, `vol` has been permanently mutated in place (it is not a c
 
 ExprNode
 ++++++++
-In the guts of this module is the Expr class, which defines objects holding
-the cumulative, unevaluated expressions that may become H2OFrame objects.
+In the guts of this module is the ExprNode class, which defines objects holding
+the cumulative, unevaluated expressions that underpin H2OFrame objects.
+
 For example:
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
-  >>> a = fr + 3.14159                                             # "a" is now an Expr
-  >>>
-  >>> type(a)                                                      # <class 'h2o.expr.Expr'>
+  >>> a = fr + 3.14159                                             # "a" is an H2OFrame, but unevaluated
 
 These objects are not as important to distinguish at the user level, and all operations
 can be performed with the mental model of operating on 2D frames (i.e. everything is an
@@ -250,26 +249,28 @@ fact, a pending computation. Once `a` is evaluated, it stays evaluated. Addition
 all dependent subparts composing `a` are also evaluated.
 
 This module relies on reference counting of python objects to dispose of
-out-of-scope objects. The Expr class destroys objects and their big data
+out-of-scope objects. The ExprNode class destroys objects and their big data
 counterparts in the H2O cloud using a remove call:
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
   >>> h2o.remove(fr)                                               # remove prostate data
-  >>> fr                                                           # attempting to use fr results in a ValueError
+  >>> fr + 2                                                       # attempting to use fr results in an attribute error
 
 Notice that attempting to use the object after a remove call has been issued will
-result in a ValueError. Therefore, any working references may not be cleaned up,
-but they will no longer be functional. Deleting an unevaluated expression will not
-delete all subparts.
+result in an :mod:`AttributeError`. Therefore, any working references may not be cleaned
+up, but they will no longer be functional.
 
 Models
 ++++++
 
-The model-building experience with this module is unique, especially for those coming
-from a background in scikit-learn. Instead of using objects to build the model,
-builder functions are provided in the top-level module, and the result of a call
-is a model object belonging to one of the following categories:
+Model building in this python module is influenced by both scikit-learn and the H2O R
+package. A section of documentation is devoted to discussing the way to use the existing
+scikit-learn software with H2O-powered algorithms.
+
+Every model object inherits from the :class:`H2OEstimator` from the :mod:`h2o.estimators`
+submodule. After an estimator has been specified and trained, it will additionally inherit
+methods to the following five model categories:
 
     * Regression
     * Binomial
@@ -277,33 +278,37 @@ is a model object belonging to one of the following categories:
     * Clustering
     * Autoencoder
 
-To better demonstrate this concept, refer to the following example:
+Let's build a logistic regression using H2O's GLM:
 
-  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
-  >>>
-  >>> fr[1] = fr[1].asfactor()                                     # make 2nd column a factor
-  >>>
-  >>> m = h2o.glm(x=fr[3:], y=fr[2])                               # build a glm with a method call
-  >>>
-  >>> m.__class__                                                  # <h2o.model.binomial.H2OBinomialModel object at 0x104659cd0>
-  >>>
-  >>> m.show()                                                     # print the model details
-  >>>
-  >>> m.summary()                                                  # print a model summary
+>>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator   # import the glm estimator object
+>>>
+>>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")     # import prostate data
+>>>
+>>> fr[1] = fr[1].asfactor()                                       # make the 2nd column a factor
+>>>
+>>> m = H2OGeneralizedLinearEstimator(family="binomial")           # specify the model
+>>>
+>>> m.__class__                                                    # <class 'h2o.estimators.glm.H2OGeneralizedLinearEstimator'>
+>>>
+>>> m.train(x=fr.names[2:], y="CAPSULE", training_frame=fr)        # train the model
+>>>
+>>> m                                                              # print the model to screen
 
-As you can see in the example, the result of the GLM call is a binomial model. This example also showcases
-an important feature-munging step needed for GLM to perform a classification task rather than a
-regression task. Namely, the second column is initially read as a numeric column,
-but it must be changed to a factor by way of the operation `asfactor`. Let's take a look
+As you can see the model setup and train is akin to the scikit-learn style. The reason
+for the :mod:`train` verb over :mod:`fit` is because `x` and `y` are column references
+(rather than data objects as they would be in scikit). H2OEstimator implements a fit
+method, but its usage is meant strictly for the scikit-learn Pipeline and grid search
+framework. Use of :mod:`fit` outside of this framework will result in a usage warning.
+
+This example also showcases an important feature-munging step needed for GLM to perform a
+classification task rather than a regression task. Namely, the second column is initially
+read as a numeric column, but it must be changed to a factor by way of the operation
+`asfactor`. This is a necessary step for all model building, in fact. So let's take a look
 at this more deeply:
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
   >>> fr[1].isfactor()                                             # produces False
-  >>>
-  >>> m = h2o.gbm(x=fr[2:],y=fr[1])                                # build the gbm
-  >>>
-  >>> m.__class__                                                  # <h2o.model.regression.H2ORegressionModel object at 0x104d07590>
   >>>
   >>> fr[1] = fr[1].asfactor()                                     # cast the 2nd column to a factor column
   >>>
