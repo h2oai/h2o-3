@@ -38,7 +38,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   }
 
   public double logloss() { return _logloss; }
-  @Override public AUC2 auc() { return _auc; }
+  @Override public AUC2 auc_obj() { return _auc; }
   @Override public ConfusionMatrix cm() {
     if( _auc == null ) return null;
     double[][] cm = _auc.defaultCM();

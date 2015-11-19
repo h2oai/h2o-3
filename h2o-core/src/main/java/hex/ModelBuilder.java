@@ -21,7 +21,6 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -43,7 +42,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
-  private Key[] cvModelBuilderKeys;
+  private Key[] _cvModelBuilderKeys;
 
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
@@ -215,21 +214,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
-    if (error_count() > 0) {
+    if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
-    }
-    if(!nFoldCV()) {
+    if( !nFoldCV() )
       return trainModelImpl(progressUnits(), true);
-    } else {
-      int work;
-      if (_parms._fold_column != null) {
-        Vec fc = train().vec(_parms._fold_column);
-        work = ((int)fc.max()-(int)fc.min()) + 1;
-      } else {
-        work = _parms._nfolds + 1;
-      }
-      // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-      return start(new H2O.H2OCountedCompleter() {
+
+    // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
+    return start(new H2O.H2OCountedCompleter() {
         @Override protected void compute2() {
           computeCrossValidation();
           tryComplete();
@@ -238,8 +229,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           failed(ex);
           return true;
         }
-      }, work * progressUnits(), true);
-    }
+      }, (nFoldWork()+1/*+1 for all the post-fold work*/) * progressUnits(), true);
   }
 
   /**
@@ -250,6 +240,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   abstract protected Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
   abstract protected long progressUnits();
+  // Work for each requested fold
+  private int nFoldWork() {
+    if( _parms._fold_column == null ) return _parms._nfolds;
+    Vec fc = train().vec(_parms._fold_column);
+    return ((int)fc.max()-(int)fc.min()) + 1;
+  }
+  // Temp zero'd vector, same size as train()
+  private Vec zTmp() { return train().anyVec().makeZero(); }
 
   /**
    * Whether the Job is done after building the model itself, or whether there's extra work to be done
@@ -267,11 +265,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void cancel() {
     super.cancel();
     // parent job cancels all running CV child jobs
-    if (cvModelBuilderKeys != null) {
-      for (int i = 0; i < cvModelBuilderKeys.length; ++i) {
-        ModelBuilder<M, P, O> mb = DKV.getGet(cvModelBuilderKeys[i]);
+    if (_cvModelBuilderKeys != null) {
+      for (int i = 0; i < _cvModelBuilderKeys.length; ++i) {
+        ModelBuilder<M, P, O> mb = DKV.getGet(_cvModelBuilderKeys[i]);
         if (mb != null) {
-          assert (mb.cvModelBuilderKeys == null); //prevent infinite recursion
+          assert (mb._cvModelBuilderKeys == null); //prevent infinite recursion
           mb.cancel();
         }
       }
@@ -289,38 +287,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Step 1: Assign each row to a fold
     // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
-    Vec foldAssignment;
-
-    final Integer N;
+    final Integer N = nFoldWork();
+    final Vec foldAssignment;
     if (_parms._fold_column != null) {
       foldAssignment = origTrainFrame.vec(_parms._fold_column);
-      N = (int)foldAssignment.max() - (int)foldAssignment.min() + 1;
-      assert(N>1); //should have been already checked in init();
     } else {
-      N = _parms._nfolds;
-      long seed = new Random().nextLong();
-      for (Field f : _parms.getClass().getFields()) {
-        if (f.getName().equals("_seed")) {
-          try {
-            seed = (long)(f.get(_parms));
-          } catch (IllegalAccessException e) {
-            e.printStackTrace();
-          }
-        }
-      }
+      final long seed = _parms.nFoldSeed();
       Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
-      foldAssignment = origTrainFrame.anyVec().makeZero();
-      final Model.Parameters.FoldAssignmentScheme foldAssignmentScheme = _parms._fold_assignment;
-      switch(foldAssignmentScheme) {
-        case AUTO:
-        case Random:
-          foldAssignment = ASTKFold.kfoldColumn(foldAssignment,N,seed); break;
-        case Modulo:
-          foldAssignment = ASTKFold.moduloKfoldColumn(foldAssignment, N); break;
-        case Stratified:
-          foldAssignment = ASTKFold.stratifiedKFoldColumn(response(),N,seed); break;
-        default:
-          throw H2O.unimpl();
+      switch( _parms._fold_assignment ) {
+      case AUTO:
+      case Random:     foldAssignment = ASTKFold.          kfoldColumn(    zTmp(),N,seed); break;
+      case Modulo:     foldAssignment = ASTKFold.    moduloKfoldColumn(    zTmp(),N     ); break;
+      case Stratified: foldAssignment = ASTKFold.stratifiedKFoldColumn(response(),N,seed); break;
+      default:         throw H2O.unimpl();
       }
     }
 
@@ -339,8 +318,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final Key<M> origDest = dest();
     for (int i=0; i<N; ++i) {
       // Make weights
-      weights[2*i]   = origTrainFrame.anyVec().makeZero();
-      weights[2*i+1] = origTrainFrame.anyVec().makeZero();
+      weights[2*i]   = zTmp();
+      weights[2*i+1] = zTmp();
 
       // Now update the weights in place
       final int whichFold = i;
@@ -390,7 +369,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     long cs = _parms.checksum();
     final boolean async = false;
-    cvModelBuilderKeys = new Key[N];
+    _cvModelBuilderKeys = new Key[N];
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for (int i=0; i<N; ++i) {
       if (isCancelledOrCrashed()) break;
@@ -399,9 +378,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cvModelBuilders[i] = (ModelBuilder<M, P, O>) this.clone();
 
       // Fix up some parameters of the clone - UGLY - hopefully nothing is missing
-      cvModelBuilderKeys[i] = Key.make(_key.toString() + "_cv" + i);
-      cvModelBuilders[i]._key = cvModelBuilderKeys[i];
-      cvModelBuilders[i].cvModelBuilderKeys = null; //children cannot have children
+      _cvModelBuilderKeys[i] = Key.make(_key.toString() + "_cv" + i);
+      cvModelBuilders[i]._key = _cvModelBuilderKeys[i];
+      cvModelBuilders[i]._cvModelBuilderKeys = null; //children cannot have children
       cvModelBuilders[i]._dest = modelKeys[i]; // the model_id gets updated as well in modifyParmsForCrossValidationSplits (must be consistent)
       cvModelBuilders[i]._state = JobState.CREATED;
       cvModelBuilders[i]._parms = (P) _parms.clone();
@@ -444,7 +423,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!_deleteProgressKey);
       _deleteProgressKey = true; //delete progress after the main model is done
 
-      modifyParmsForCrossValidationMainModel(N, async ? null : cvModelBuilderKeys); //tell the main model that it shouldn't stop early either
+      modifyParmsForCrossValidationMainModel(N, async ? null : _cvModelBuilderKeys); //tell the main model that it shouldn't stop early either
 
       trainModelImpl(-1, false); //non-blocking
       if (!async)

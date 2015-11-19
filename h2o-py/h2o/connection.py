@@ -477,8 +477,8 @@ class H2OConnection(object):
       try:
         result = http_result.json()
         if 'messages' in result.keys():
-          detailed_error_msgs = '\n'.join([m['message'] for m in result['messages'] if m['message_type'] in \
-                                          ['ERROR']])
+          detailed_error_msgs = '\n'.join([m['message'] for m in result['messages'] if m['message_type'] in ['ERRR']])
+          print("CRUNK "+detailed_error_msgs)
         elif 'exception_msg' in result.keys():
           detailed_error_msgs = result['exception_msg']
       except ValueError:

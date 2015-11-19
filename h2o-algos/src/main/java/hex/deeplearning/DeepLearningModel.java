@@ -247,7 +247,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
-      colHeaders.add("Training Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training Lift"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
@@ -267,7 +267,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
-        colHeaders.add("Validation Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
