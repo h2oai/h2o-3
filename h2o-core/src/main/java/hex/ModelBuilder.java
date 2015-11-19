@@ -3,6 +3,7 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.fvec.NewChunk;
 import water.rapids.ASTKFold;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -15,7 +16,6 @@ import water.util.MRUtils;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -240,6 +240,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   abstract protected Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
   abstract protected long progressUnits();
+
   // Work for each requested fold
   private int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
@@ -451,7 +452,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           m[i].adaptTestForTrain(adaptFr, true, !isSupervised());
           mb[i] = m[i].scoreMetrics(adaptFr);
 
-          if (_parms._keep_cross_validation_predictions) {
+          if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {
             String predName = "prediction_" + modelKeys[i].toString();
             predictionKeys[i] = Key.make(predName);
             m[i].predictScoreImpl(cvValid[i], adaptFr, predName);
@@ -489,7 +490,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._keep_cross_validation_predictions)
           mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
       }
-      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), null);
+      Frame preds = null;
+      //stitch together holdout predictions into one Vec, to compute the Gains/Lift table
+      if (nclasses() == 2) {
+        Vec[] p1s = new Vec[N];
+        for (int i=0;i<N;++i) {
+          p1s[i] = ((Frame)DKV.getGet(predictionKeys[i])).lastVec();
+        }
+        Frame p1combined = new HoldoutPredictionCombiner().doAll(1,Vec.T_NUM,new Frame(p1s)).outputFrame(new String[]{"p1"},null);
+        Vec p1 = p1combined.anyVec();
+        preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
+        if (!_parms._keep_cross_validation_predictions) {
+          for (Key k : predictionKeys) ((Frame)DKV.getGet(k)).remove();
+        }
+      }
+      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), preds);
+      if (preds!=null) preds.remove();
       mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
       Log.info(mainModel._output._cross_validation_metrics.toString());
 
@@ -501,6 +517,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       updateModelOutput(); //update the state of the model (tiny race condition here: someone might fetch the model without the updated state/time)
     }
     return this;
+  }
+
+  // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
+  private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
+    @Override
+    public void map(Chunk[] cs, NewChunk[] nc) {
+      double [] vals = new double[cs[0].len()];
+      for (int i=0;i<cs.length;++i)
+        for (int row = 0; row < cs[0].len(); ++row)
+          vals[row] += cs[i].atd(row);
+      nc[0].setDoubles(vals);
+    }
   }
   /**
    * Override with model-specific checks / modifications to _parms for N-fold cross-validation splits.
@@ -541,23 +569,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  build.  Each ModelBuilder must have one of these. */
   abstract public ModelCategory[] can_build();
 
-  /**
-   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
-   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
-   * at startup).
-   */
-  public enum BuilderVisibility {
-    Experimental,
-    Beta,
-    Stable
-  }
 
-  /**
-   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
-   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
-   * at startup).
-   */
-  abstract public BuilderVisibility builderVisibility();
+  /** Visibility for this algo: is it always visible, is it beta (always
+   *  visible but with a note in the UI) or is it experimental (hidden by
+   *  default, visible in the UI if the user gives an "experimental" flag at
+   *  startup); test-only builders are "experimental"  */
+  public enum BuilderVisibility { Experimental, Beta, Stable }
+  public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   /** Clear whatever was done by init() so it can be run again. */
   public void clearInitState() {

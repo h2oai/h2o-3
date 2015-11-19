@@ -51,7 +51,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     };
   }
   public ModelBuilderSchema schema() { return new DeepLearningV3(); }
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
   /** Start the DeepLearning training Job on an F/J thread.
