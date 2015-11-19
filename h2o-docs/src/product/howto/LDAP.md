@@ -2,7 +2,6 @@
 
 If your network uses an LDAP protocol, perform the following steps to connect to H2O: 
 
-0. Connect via VPN. 
 0. Launch H2O. 
 0. Copy the URL that displays in the H2O output. In the following example, the # symbols represent the numbers in the IP address. 
 
