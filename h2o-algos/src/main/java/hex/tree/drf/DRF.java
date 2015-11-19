@@ -7,16 +7,11 @@ import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
-import water.AutoBuffer;
 import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.Log;
-import water.util.Timer;
-
-import java.util.Arrays;
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
@@ -36,8 +31,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       ModelCategory.Multinomial,
     };
   }
-
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   // Called from an http request
   public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF", parms); init(false); }

@@ -15,7 +15,6 @@ import water.util.MRUtils;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -240,6 +239,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   abstract protected Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
   abstract protected long progressUnits();
+
   // Work for each requested fold
   private int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
@@ -541,23 +541,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  build.  Each ModelBuilder must have one of these. */
   abstract public ModelCategory[] can_build();
 
-  /**
-   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
-   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
-   * at startup).
-   */
-  public enum BuilderVisibility {
-    Experimental,
-    Beta,
-    Stable
-  }
 
-  /**
-   * Visibility for this algo: is it always visible, is it beta (always visible but with a note in the UI)
-   * or is it experimental (hidden by default, visible in the UI if the user gives an "experimental" flag
-   * at startup).
-   */
-  abstract public BuilderVisibility builderVisibility();
+  /** Visibility for this algo: is it always visible, is it beta (always
+   *  visible but with a note in the UI) or is it experimental (hidden by
+   *  default, visible in the UI if the user gives an "experimental" flag at
+   *  startup); test-only builders are "experimental"  */
+  public enum BuilderVisibility { Experimental, Beta, Stable }
+  public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   /** Clear whatever was done by init() so it can be run again. */
   public void clearInitState() {

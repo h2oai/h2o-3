@@ -4,40 +4,10 @@ import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
 import water.H2O;
 import water.Iced;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2ONotFoundArgumentException;
 
 import java.util.Map;
 
 class ModelBuildersHandler extends Handler {
-  public static class ModelBuildersVisibilityV3 extends Schema<Iced, ModelBuildersVisibilityV3> {
-    @API(help = "Stable, Beta, Experimental", direction = API.Direction.INOUT)
-    public String value;
-  }
-
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelBuildersVisibilityV3 setVisibility(int version, ModelBuildersVisibilityV3 m) {
-    if (m.value.equals("Stable")) {
-      H2O.ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
-    }
-    else if (m.value.equals("Beta")) {
-      H2O.ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Beta;
-    }
-    else if (m.value.equals("Experimental")) {
-      H2O.ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
-    }
-    else {
-      throw new H2OIllegalArgumentException("value", "setVisibility", "Level must be one of (Stable, Beta, Experimental)");
-    }
-
-    return getVisibility(version, m);
-  }
-
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelBuildersVisibilityV3 getVisibility(int version, ModelBuildersVisibilityV3 m) {
-    m.value = H2O.ARGS.model_builders_visibility.toString();
-    return m;
-  }
 
   /** Return all the modelbuilders. */
   @SuppressWarnings("unused") // called through reflection by RequestServer

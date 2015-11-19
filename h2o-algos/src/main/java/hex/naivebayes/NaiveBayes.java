@@ -50,8 +50,6 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     return new ModelCategory[]{ ModelCategory.Unknown };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
-
   @Override
   protected void checkMemoryFootPrint() {
     // compute memory usage for pcond matrix
