@@ -110,7 +110,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
           durationBefore = durationBefore.substring(0, durationBefore.length()-4);
           String durationAfter = (String)table.get((int)(p._epochs+1),1);
           durationAfter = durationAfter.substring(0, durationAfter.length()-4);
-          Assert.assertTrue("Duration must be smooth", Double.parseDouble(durationAfter) - Double.parseDouble(durationBefore) < sleepTime);
+          Assert.assertTrue("Duration must be smooth", Double.parseDouble(durationAfter) - Double.parseDouble(durationBefore) < sleepTime+1);
 
           // Check that time stamp does see the sleep
           String timeStampBefore = (String)table.get((int)(p._epochs),0);
