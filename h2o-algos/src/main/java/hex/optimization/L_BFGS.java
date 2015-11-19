@@ -197,7 +197,7 @@ public final class L_BFGS extends Iced {
       rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
       ginfo = newGinfo;
     }
-    return new Result(true,iter,beta, ginfo,rel_improvement);
+    return new Result((ArrayUtils.linfnorm(ginfo._gradient,false) <= _gradEps  || rel_improvement <= _objEps),iter,beta, ginfo,rel_improvement);
   }
 
   /**
