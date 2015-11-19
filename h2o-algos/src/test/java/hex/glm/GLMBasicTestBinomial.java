@@ -751,6 +751,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
+        params._max_iterations = 500;
         System.out.println("SOLVER = " + s);
         job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
         model = job.trainModel().get();
