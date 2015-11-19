@@ -645,7 +645,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // 2) Update Y matrix given fixed X
           if(model._output._updates < _parms._max_updates) {    // If max_updates is odd, we will terminate after the X update
-            UpdateY ytsk = new UpdateY(_parms, yt, step / _ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
+            UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
             double[][] yttmp = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
             ytnew = new Archetypes(yttmp, true, dinfo._catOffsets, numLevels);
             yreg = ytsk._yreg;

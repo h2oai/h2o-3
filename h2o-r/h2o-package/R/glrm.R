@@ -220,3 +220,70 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
   # Error check and build model
   .h2o.modelJob('glrm', parms, h2oRestApiVersion=3)
 }
+
+#' Reconstruct Training Data via H2O GLRM Model
+#' 
+#' Reconstruct the training data and impute missing values from the H2O GLRM model
+#' by computing the matrix product of X and Y, and transforming back to the original
+#' feature space by minimizing each column's loss function.
+#' 
+#' @param object An \linkS4class{H2ODimReductionModel} object that represents the
+#'        model to be used for reconstruction.
+#' @param data An H2O Frame object representing the training data for the H2O GLRM model.
+#'        Used to set the domain of each column in the reconstructed frame.
+#' @param reverse_transform (Optional) A logical value indicating whether to reverse the
+#'        transformation from model-building by re-scaling columns and adding back the 
+#'        offset to each column of the reconstructed frame.
+#' @return Returns an H2O Frame object containing the approximate reconstruction of the
+#'         training data;
+#' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.uploadFile(path = irisPath)
+#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, transform = "STANDARDIZE",
+#'                       loss = "Quadratic", multi_loss = "Categorical", max_iterations = 1000)
+#' iris.rec <- h2o.reconstruct(iris.glrm, iris.hex, reverse_transform = TRUE)
+#' head(iris.rec)
+#' }
+h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", reconstruct_train=TRUE, reverse_transform=reverse_transform)
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  h2o.getFrame(key)
+}
+
+#' Convert Archetypes to Features from H2O GLRM Model
+#'
+#' Project each archetype in a H2O GLRM model into the corresponding feature
+#' space from the H2O training frame.
+#'
+#' @param object An \linkS4class{H2ODimReductionModel} object that represents the
+#'        model containing archetypes to be projected.
+#' @param data An H2O Frame object representing the training data for the H2O GLRM model.
+#' @param reverse_transform (Optional) A logical value indicating whether to reverse the
+#'        transformation from model-building by re-scaling columns and adding back the 
+#'        offset to each column of the projected archetypes.
+#' @return Returns an H2O Frame object containing the projection of the archetypes
+#'         down into the original feature space, where each row is one archetype.
+#' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.uploadFile(path = irisPath)
+#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, loss = "Quadratic", 
+#'                       multi_loss = "Categorical", max_iterations = 1000)
+#' iris.parch <- h2o.proj_archetypes(iris.glrm, iris.hex)
+#' head(iris.parch)
+#' }
+#' @export
+h2o.proj_archetypes <- function(object, data, reverse_transform=FALSE) {
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", project_archetypes=TRUE, reverse_transform=reverse_transform)
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  h2o.getFrame(key)
+}
