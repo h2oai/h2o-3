@@ -57,7 +57,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   @Override protected void checkMemoryFootPrint() {/* see below */ }
   protected void checkMemoryFootPrint(DataInfo dinfo) {

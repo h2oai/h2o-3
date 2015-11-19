@@ -1,22 +1,17 @@
 package hex.schemas;
 
 import com.google.gson.Gson;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
 import hex.Model;
 import hex.grid.Grid;
 import water.H2O;
 import water.Key;
-import water.api.API;
-import water.api.JobV3;
-import water.api.KeyV3;
-import water.api.ModelParametersSchema;
-import water.api.Schema;
+import water.api.*;
 import water.util.IcedHashMap;
 import water.util.ReflectionUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * This is a common grid search schema composed of two parameters: default parameters for a builder
@@ -50,6 +45,7 @@ public /* FIXME: abstract */ class GridSearchSchema<G extends Grid<MP>,
 
   @API(help = "Destination id for this grid; auto-generated if not specified", required = false, direction = API.Direction.INOUT)
   public KeyV3.GridKeyV3 grid_id;
+
 
   //
   // Outputs

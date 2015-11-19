@@ -129,5 +129,4 @@ public class ReflectionUtils {
     } while (clz != Object.class);
     return null;
   }
-
 }

@@ -1,11 +1,12 @@
 package hex;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.TwoDimTable;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import java.lang.reflect.Method;
+import java.util.*;
 
 /** Container to hold the metric for a model as scored on a specific frame.
  *
@@ -58,7 +59,103 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public double mse() { return _MSE; }
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
-  public AUC2 auc() { return null; }
+  public AUC2 auc_obj() { return null; }
+  public double auc() { AUC2 auc = auc_obj(); if (null != auc) return auc._auc; else return 0; }
+
+  private static class MetricsComparator implements Comparator<Key<Model>> {
+    String _sort_by = null;
+    boolean descending = true;
+    Method criterion = null;
+
+    public MetricsComparator(String sort_by, String sort_direction) {
+      this._sort_by = sort_by;
+      this.descending = ! "asc".equals(sort_direction);
+    }
+
+    public int compare(Key<Model> key1, Key<Model> key2) {
+      Model model1 = DKV.getGet(key1);
+      Model model2 = DKV.getGet(key2);
+
+      if (null == model1 || null == model2) throw new H2OIllegalArgumentException("Tried to compare a Model against null: " + model1 + " and " + model2);
+
+      // TODO cross_validation_metrics
+      ModelMetrics m1 = model1._output._validation_metrics;
+      ModelMetrics m2 = model2._output._validation_metrics;
+
+      // TODO: pull this check up?
+      if (null == m1 ^ null == m2) throw new H2OIllegalArgumentException("Tried to compare two ModelMetrics objects, only one of which had a validation set: " + m1 + " and " + m2);
+
+      if (null == m1 && null == m2) {
+        m1 = model1._output._training_metrics;
+        m2 = model2._output._training_metrics;
+      }
+
+      if (m1.getClass() != m2.getClass()) throw new H2OIllegalArgumentException("Tried to compare two ModelMetrics objects of different types: " + m1 + " and " + m2);
+
+      if (null == criterion) {
+        ConfusionMatrix cm = m1.cm();
+        try {
+          criterion = m1.getClass().getMethod(_sort_by);
+        }
+        catch (Exception e) {
+          // fall through
+        }
+
+        if (null == criterion && null != cm) {
+          try {
+            criterion = cm.getClass().getMethod(_sort_by);
+          }
+          catch (Exception e) {
+            // fall through
+          }
+        }
+      }
+      if (null == criterion) throw new H2OIllegalArgumentException("Failed to find ModelMetrics criterion: " + _sort_by);
+
+      double c1, c2;
+      try {
+        c1 = (double) criterion.invoke(m1);
+      }
+      catch (Exception e) {
+        throw new H2OIllegalArgumentException(
+          "Failed to get metric: " + _sort_by + " from ModelMetrics object: " + m1,
+          "Failed to get metric: " + _sort_by + " from ModelMetrics object: " + m1 + ", criterion: " + criterion + ", exception: " + e
+          );
+      }
+      try {
+        c2 = (double) criterion.invoke(m2);
+      }
+      catch (Exception e) {
+        throw new H2OIllegalArgumentException(
+          "Failed to get metric: " + _sort_by + " from ModelMetrics object: " + m2,
+          "Failed to get metric: " + _sort_by + " from ModelMetrics object: " + m2 + ", criterion: " + criterion + ", exception: " + e
+          );
+      }
+
+      if (descending) {
+        return (c2 - c1 > 0 ? 1 : -1);
+      } else {
+        return (c1 - c2 > 0 ? 1 : -1);
+      }
+    }
+  }
+
+  /**
+   * Return a new list of models sorted by the named criterion, such as "auc", mse", "hr", "err", "errCount",
+   * "accuracy", "specificity", "recall", "precision", "mcc", "max_per_class_error", "F1", "F2", "F0point5". . .
+   * @param sort_by criterion by which we should sort
+   * @param modelKeys keys of models to sortm
+   * @return keys of the models, sorted by the criterion
+   */
+  public static List<Key<Model>> sortModelsByMetric(String sort_by, String sort_order, List<Key<Model>>modelKeys) {
+    List<Key<Model>> sorted = new ArrayList<>();
+    sorted.addAll(modelKeys);
+
+    Comparator<Key<Model>> c = new MetricsComparator(sort_by, sort_order);
+
+    Collections.sort(sorted, c);
+    return sorted;
+  }
 
   public static TwoDimTable calcVarImp(VarImp vi) {
     if (vi == null) return null;

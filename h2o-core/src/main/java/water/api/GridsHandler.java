@@ -1,12 +1,10 @@
 package water.api;
 
-import hex.Model;
 import hex.grid.Grid;
 import hex.schemas.GridSchemaV99;
-import water.*;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.exceptions.H2OKeyWrongTypeArgumentException;
+import water.Key;
+import water.KeySnapshot;
+import water.Value;
 
 /**
  * /Grids/ end-point handler.

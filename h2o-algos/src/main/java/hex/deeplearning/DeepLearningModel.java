@@ -100,6 +100,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   public double epoch_counter;
+  public int iterations;
   public boolean stopped_early;
 
   public long training_rows;
@@ -172,6 +173,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   }
 
   public static class DeepLearningScoring extends Iced {
+    public int iterations;
     public double epoch_counter;
     public double training_samples;
     public long time_stamp;
@@ -228,6 +230,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Epochs"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Iterations"); colTypes.add("int"); colFormat.add("%d");
     colHeaders.add("Samples"); colTypes.add("double"); colFormat.add("%f");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
@@ -244,7 +247,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
-      colHeaders.add("Training Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training Lift"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
@@ -264,7 +267,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
-        colHeaders.add("Validation Lift Top Decile"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
@@ -294,6 +297,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 //      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + e.training_samples + "/((" + e.training_time_ms + "-" + scoring_time + ")/1e3)";
       table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
       table.set(row, col++, e.epoch_counter);
+      table.set(row, col++, e.iterations);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
       if (_output.getModelCategory() == ModelCategory.Regression) {
@@ -396,6 +400,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     validation_rows = cp.validation_rows; //copy the value to display the right number on the model page before training has started
     _bestLoss = cp._bestLoss;
     epoch_counter = cp.epoch_counter;
+    iterations = cp.iterations;
 
     // deep clone scoring history
     errors = cp.errors.clone();
@@ -475,7 +480,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     _timeLastIterationEnter = now;
     epoch_counter = (double)model_info().get_processed_total()/training_rows;
 
-
     boolean keep_running;
     // Auto-tuning
     // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
@@ -523,6 +527,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       err.time_stamp = _timeLastScoreStart;
       err.training_time_ms = total_run_time;
       err.epoch_counter = epoch_counter;
+      err.iterations = iterations;
       err.training_samples = (double)model_info().get_processed_total();
       err.validation = ftest != null;
       err.score_training_samples = ftrain.numRows();
@@ -671,19 +676,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       update(job_key);
       return false;
     }
-    progressUpdate(progressKey, job_key, iteration, keep_running);
+    progressUpdate(progressKey, job_key, keep_running);
     update(job_key);
     return keep_running;
   }
 
-  private void progressUpdate(Key progressKey, Key job_key, int iteration, boolean keep_running) {
+  private void progressUpdate(Key progressKey, Key job_key, boolean keep_running) {
     long now = System.currentTimeMillis();
     long timeSinceEntering = now - _timeLastIterationEnter;
     Job.Progress prog = DKV.getGet(progressKey);
     double progress = prog == null ? 0 : prog.progress();
     int speed = (int)(model_info().get_processed_total() * 1000. / ((total_run_time + timeSinceEntering) - total_scoring_time));
 //    assert(speed >= 0);
-    String msg = "Map/Reduce Iterations: " + String.format("%,d", iteration) + ". Speed: " + String.format("%,d", speed) + " samples/sec."
+    String msg =
+            "Iterations: " + String.format("%,d", iterations)
+            + ". Epochs: " + String.format("%g", epoch_counter)
+            + ". Speed: " + String.format("%,d", speed) + " samples/sec."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (total_run_time * (1. - progress) / progress), true));
     ((Job) DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
     if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
