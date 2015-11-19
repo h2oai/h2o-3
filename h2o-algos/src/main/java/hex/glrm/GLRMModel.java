@@ -506,7 +506,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  private Frame reconstruct(Frame orig, Frame adaptedFr, Key destination_key, boolean save_imputed, boolean reverse_transform) {
     final int ncols = _output._names.length;
     assert ncols == adaptedFr.numCols();
     String prefix = "reconstr_";
@@ -522,16 +522,26 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       v.setDomain(adaptedDomme[i]);
       fullFrm.add(prefix + _output._names[i], v);
     }
-    GLRMScore gs = new GLRMScore(ncols, _parms._k, true).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(ncols, _parms._k, save_imputed, reverse_transform).doAll(fullFrm);
 
     // Return the imputed training frame
     int x = ncols + _parms._k, y = fullFrm.numCols();
     Frame f = fullFrm.extractFrame(x, y);  // this will call vec_impl() and we cannot call the delete() below just yet
 
-    f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+    f = new Frame((null == destination_key ? Key.make() : destination_key), f.names(), f.vecs());
     DKV.put(f);
     gs._mb.makeModelMetrics(GLRMModel.this, orig, null);   // save error metrics based on imputed data
     return f;
+  }
+
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+    return reconstruct(orig, adaptedFr, (null == destination_key ? Key.make() : Key.make(destination_key)), true, _parms._impute_original);
+  }
+
+  public Frame scoreReconstruction(Frame frame, Key destination_key, boolean reverse_transform) {
+    Frame adaptedFr = new Frame(frame);
+    adaptTestForTrain(adaptedFr, true, false);
+    return reconstruct(frame, adaptedFr, destination_key, true, reverse_transform);
   }
 
   /**
@@ -576,10 +586,17 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     final int _ncolA;   // Number of cols in original data A
     final int _ncolX;   // Number of cols in X (rank k)
     final boolean _save_imputed;  // Save imputed data into new vecs?
+    final boolean _reverse_transform;   // Reconstruct original training data by reversing transform?
     ModelMetrics.MetricBuilder _mb;
 
     GLRMScore( int ncolA, int ncolX, boolean save_imputed ) {
-      _ncolA = ncolA; _ncolX = ncolX; _save_imputed = save_imputed;
+      this(ncolA, ncolX, save_imputed, _parms._impute_original);
+    }
+
+    GLRMScore( int ncolA, int ncolX, boolean save_imputed, boolean reverse_transform ) {
+      _ncolA = ncolA; _ncolX = ncolX;
+      _save_imputed = save_imputed;
+      _reverse_transform = reverse_transform;
     }
 
     @Override public void map( Chunk chks[] ) {
@@ -635,7 +652,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         int ds = d - _output._ncats;
         double xy = _output._archetypes_raw.lmulNumCol(tmp, ds);
         preds[_output._permutation[d]] = _parms.impute(xy, _output._lossFunc[d]);
-        if(_parms._impute_original)
+        if(_reverse_transform)
           preds[_output._permutation[d]] = preds[_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
       }
       return preds;
