@@ -247,7 +247,7 @@ def validate_validation_messages(result, expected_error_fields):
 
     error_fields = []
     for validation_message in result['messages']:
-        if validation_message['message_type'] == 'ERROR':
+        if validation_message['message_type'] == 'ERRR':
             error_fields.append(validation_message['field_name'])
 
     not_found = [item for item in expected_error_fields if item not in error_fields]
@@ -402,6 +402,31 @@ def validate_grid_parameters(grid_parameters, actual_parameters):
         assert actual in grid_param_values, "FAIL: Parameter with name: " + k + " expected to be a possible grid value: " + str(grid_param_values) + ", instead has: " + str(actual) + " cast from: " + str(actuals_dict[k]['actual_value']) + " ( type of expected: " + str(type(grid_param_values[0])) + ", type of actual: " + str(type(actual)) + ")"
     # TODO: training_frame, validation_frame
 
+
+def fetch_and_validate_grid_sort(a_node, key, sort_by, sort_order):
+    # key='kmeans_prostate_grid', sort_by='totss', sort_order='desc')
+    grid = a_node.grid(key=key, sort_by=sort_by, sort_order=sort_order)
+    training_metrics = grid['training_metrics']
+
+    # check sorting:
+    criteria = []
+    # Unfortunately, we use mixed case in the JSON and lower case in the back end. . .
+    for mm in training_metrics:
+        for k, v in mm.iteritems():
+            if k.lower() == sort_by:
+                criteria.append(v)
+                break
+    unsorted = list(criteria)
+    criteria.sort(reverse=(sort_order == 'desc'))
+
+    # print("criteria sorted: " + repr(criteria))
+    # print("original: " + repr(unsorted))
+    
+    assert unsorted == criteria, "FAIL: model metrics were not sorted correctly by criterion: " + key + ", " + sort_by + ", " + sort_order
+
+    for i in range(len(grid['model_ids'])):
+        assert grid['model_ids'][i]['name'] == training_metrics[i]['model']['name'], "FAIL: model_ids not sorted in the same order as training_metrics for grid: " + key + ", index: " + str(i)
+    
 
 def validate_predictions(a_node, result, model_name, frame_key, expected_rows, predictions_frame=None):
     '''
@@ -563,9 +588,9 @@ class GridSpec(dict):
 
         # returns a GridSearchSchema:
         result = a_node.build_model_grid(algo=self['algo'], grid_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], grid_parameters=self['grid_params'], timeoutSecs=240) # synchronous
-        if isVerbose(): print 'result: ' + repr(result)
+        if isVerboser(): print 'result: ' + repr(result)
         grid = a_node.grid(key=self['dest_key'])
-        if isVerbose(): print 'grid: ' + repr(grid)
+        if isVerboser(): print 'grid: ' + repr(grid)
         
         validate_grid_builder_result(grid, self['params'], self['grid_params'], self['dest_key'])
 

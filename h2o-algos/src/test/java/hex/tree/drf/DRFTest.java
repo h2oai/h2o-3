@@ -620,12 +620,12 @@ public class DRFTest extends TestUtil {
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
       DRFModel drf = job.trainModel().get();
-      Log.info("Training set AUC:   " + drf._output._training_metrics.auc()._auc);
-      Log.info("Validation set AUC: " + drf._output._validation_metrics.auc()._auc);
+      Log.info("Training set AUC:   " + drf._output._training_metrics.auc_obj()._auc);
+      Log.info("Validation set AUC: " + drf._output._validation_metrics.auc_obj()._auc);
 
       // all numerical
-      assertEquals(drf._output._training_metrics.auc()._auc, 0.6498819479528417, 1e-8);
-      assertEquals(drf._output._validation_metrics.auc()._auc, 0.6479974533672835, 1e-8);
+      assertEquals(drf._output._training_metrics.auc_obj()._auc, 0.6498819479528417, 1e-8);
+      assertEquals(drf._output._validation_metrics.auc_obj()._auc, 0.6479974533672835, 1e-8);
 
       job.remove();
       drf.delete();
@@ -665,7 +665,7 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
@@ -704,7 +704,7 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
@@ -743,7 +743,7 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
@@ -782,7 +782,7 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
@@ -821,7 +821,7 @@ public class DRFTest extends TestUtil {
       // OOB
       // Shuffling changes the row sampling -> results differ
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.975, mm.auc()._auc, 1e-8);
+      assertEquals(0.975, mm.auc_obj()._auc, 1e-8);
       assertEquals(0.09254807692307693, mm.mse(), 1e-8);
       assertEquals(0.6089843749999999, mm.r2(), 1e-6);
       assertEquals(0.24567709133200652, mm.logloss(), 1e-6);
@@ -860,7 +860,7 @@ public class DRFTest extends TestUtil {
       // OOB
       // Reduced number of rows changes the row sampling -> results differ
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.9, mm.auc()._auc, 1e-8);
+      assertEquals(0.9, mm.auc_obj()._auc, 1e-8);
       assertEquals(0.09090909090909091, mm.mse(), 1e-8);
       assertEquals(0.6333333333333333, mm.r2(), 1e-6);
       assertEquals(3.1398887631736985, mm.logloss(), 1e-6);
@@ -871,7 +871,7 @@ public class DRFTest extends TestUtil {
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
 
       // Non-OOB
-      assertEquals(1, mm2.auc()._auc, 1e-8);
+      assertEquals(1, mm2.auc_obj()._auc, 1e-8);
       assertEquals(0.006172839506172841, mm2.mse(), 1e-8);
       assertEquals(0.9753086419753086, mm2.r2(), 1e-8);
       assertEquals(0.02252583933934247, mm2.logloss(), 1e-8);
@@ -918,7 +918,7 @@ public class DRFTest extends TestUtil {
       drf = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._cross_validation_metrics;
-      assertEquals(0.7276154565296726, mm.auc()._auc, 1e-8); // 1 node
+      assertEquals(0.7276154565296726, mm.auc_obj()._auc, 1e-8); // 1 node
       assertEquals(0.21211607823987555, mm.mse(), 1e-8);
       assertEquals(0.14939930970822446, mm.r2(), 1e-6);
       assertEquals(0.6121968624307211, mm.logloss(), 1e-6);
@@ -1007,7 +1007,7 @@ public class DRFTest extends TestUtil {
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._cross_validation_metrics;
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
-      assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
+      assertEquals(mm1.auc_obj()._auc, mm2.auc_obj()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
@@ -1163,7 +1163,7 @@ public class DRFTest extends TestUtil {
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._cross_validation_metrics;
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
-      assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
+      assertEquals(mm1.auc_obj()._auc, mm2.auc_obj()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);

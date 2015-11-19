@@ -207,7 +207,6 @@ class H2O(object):
                     else:
                         first = True
                         map_str = '{'
-                        print("v: " + repr(v))
                         for key, val in v.iteritems():
                             if not first: map_str += ', '
 
@@ -765,7 +764,7 @@ class H2O(object):
         post_parameters['hyper_parameters'] = grid_parameters
         # gridParams['grid_parameters'] = json.dumps(hyperParameters)
 
-        print("post_parameters: " + repr(post_parameters))
+        # print("post_parameters: " + repr(post_parameters))
 
         if grid_id is not None:
             post_parameters['grid_id'] = grid_id
@@ -786,7 +785,6 @@ class H2O(object):
             return result
         else:
             assert 'job' in result, "FAIL: did not find job key in model build result: " + repr(result)
-            print("not async, result: " + repr(result))
             job = result['job']
             job_key = job['key']['name']
             H2O.verboseprint("model building job_key: " + repr(job_key))
@@ -928,6 +926,8 @@ class H2O(object):
     '''
     def grid(self, api_version=99, key=None, timeoutSecs=20, **kwargs):
         params_dict = {
+            'sort_by': None,
+            'sort_order': None
         }        
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'grids', H2O.verbose)
 

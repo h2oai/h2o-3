@@ -6,16 +6,12 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
-import water.parser.ParseDataset;
 
-import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
@@ -166,19 +162,19 @@ public class GLMBasicTestBinomial extends TestUtil {
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
-          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
           scoreTrain = model.score(fTrain);
           mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           adata = mmTrain._auc;
-          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
           scoreTest = model.score(fTest);
           ModelMetricsBinomialGLM mmTest = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTest);
           adata = mmTest._auc;
-          assertEquals(model._output._validation_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._validation_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
           // test the actual predictions
@@ -367,19 +363,19 @@ public class GLMBasicTestBinomial extends TestUtil {
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
-          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
           scoreTrain = model.score(fTrain);
           mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           adata = mmTrain._auc;
-          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
           scoreTest = model.score(fTest);
           ModelMetricsBinomialGLM mmTest = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTest);
           adata = mmTest._auc;
-          assertEquals(model._output._validation_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._validation_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
           // test the actual predictions
@@ -465,13 +461,13 @@ public class GLMBasicTestBinomial extends TestUtil {
         scoreTrain = model.score(_prostateTrain);
         hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostateTrain);
         hex.AUC2 adata = mm._auc;
-        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+        assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
         assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
         assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
         scoreTest = model.score(_prostateTest);
         mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostateTest);
         adata = mm._auc;
-        assertEquals(model._output._validation_metrics.auc()._auc, adata._auc, 1e-8);
+        assertEquals(model._output._validation_metrics.auc_obj()._auc, adata._auc, 1e-8);
         assertEquals(model._output._validation_metrics._MSE, mm._MSE, 1e-8);
         assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
 
@@ -627,13 +623,13 @@ public class GLMBasicTestBinomial extends TestUtil {
           scoreTrain.delete();
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
-          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
           scoreTrain = model.score(fTrain);
           mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           adata = mmTrain._auc;
-          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
 
@@ -711,7 +707,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         scoreTrain = model.score(_prostateTrain);
         hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostateTrain);
         hex.AUC2 adata = mm._auc;
-        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+        assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
         assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
         assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
       } finally {
@@ -769,7 +765,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         scoreTrain = model.score(_prostateTrain);
         hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model, _prostateTrain);
         hex.AUC2 adata = mm._auc;
-        assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+        assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
         assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
         assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM) mm)._resDev, 1e-8);
       } finally {
@@ -951,13 +947,13 @@ public class GLMBasicTestBinomial extends TestUtil {
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
-          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
           scoreTrain = model.score(fTrain);
           mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           adata = mmTrain._auc;
-          assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+          assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._training_metrics)._resDev, mmTrain._resDev, 1e-8);
 //          scoreTest = model.score(fTest);

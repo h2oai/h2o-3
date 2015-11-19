@@ -25,6 +25,7 @@ public class GainsLiftTest extends TestUtil {
     Vec predict = Vec.makeVec(p, Vec.newKey());
 
     GainsLift gl = new GainsLift(predict, actual);
+    gl._groups = 10;
     gl.exec();
     Log.info(gl);
     for (int i=0;i<2;++i)
@@ -49,6 +50,7 @@ public class GainsLiftTest extends TestUtil {
     Vec predict = Vec.makeVec(p, Vec.newKey());
 
     GainsLift gl = new GainsLift(predict, actual);
+    gl._groups = 10;
     gl.exec();
     Log.info(gl);
     for (int i=gl.response_rates.length-2;i<gl.response_rates.length;++i)
@@ -73,6 +75,7 @@ public class GainsLiftTest extends TestUtil {
     Vec predict = Vec.makeVec(p, Vec.newKey());
 
     GainsLift gl = new GainsLift(predict, actual);
+    gl._groups = 10;
     gl.exec();
     Log.info(gl);
     for (int i=0;i<gl.response_rates.length;++i)
@@ -101,6 +104,7 @@ public class GainsLiftTest extends TestUtil {
     Vec predict = Vec.makeVec(p, Vec.newKey());
 
     GainsLift gl = new GainsLift(predict, actual);
+    gl._groups = 10;
     gl.exec();
     Log.info(gl);
     for (i=0;i<gl.response_rates.length;++i)
@@ -123,9 +127,34 @@ public class GainsLiftTest extends TestUtil {
     Vec predict = Vec.makeVec(p, Vec.newKey());
 
     GainsLift gl = new GainsLift(predict, actual);
+    gl._groups = 10;
     gl.exec();
     Log.info(gl);
     Assert.assertTrue(gl.response_rates[0] <= 0.011 && gl.response_rates[0] >= 0.009);
+    for (int i=1;i<gl.response_rates.length;++i)
+      Assert.assertTrue(gl.response_rates[i] == 0);
+
+    actual.remove();
+    predict.remove();
+  }
+
+  @Test public void rareEvents20() {
+    int len = 100000;
+    double[] p = new double[len];
+    long[] a = new long[len];
+    Random rng = new Random(0xDECAF);
+    for (int i=0; i<len; ++i) {
+      a[i] = rng.nextDouble() > 0.999 ? 1 : 0;
+      p[i] = a[i] == 0 ? 0.5*rng.nextDouble() : 0.5 + rng.nextDouble() * 0.5;
+    }
+    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
+    Vec predict = Vec.makeVec(p, Vec.newKey());
+
+    GainsLift gl = new GainsLift(predict, actual);
+    gl._groups = 20;
+    gl.exec();
+    Log.info(gl);
+    Assert.assertTrue(gl.response_rates[0] <= 0.022 && gl.response_rates[0] >= 0.018);
     for (int i=1;i<gl.response_rates.length;++i)
       Assert.assertTrue(gl.response_rates[i] == 0);
 
