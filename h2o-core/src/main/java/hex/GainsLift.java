@@ -14,15 +14,16 @@ public class GainsLift extends Iced {
   private double[] _quantiles;
 
   //INPUT
-  public int _groups = 20;
+  public int _groups = 10;
   public Vec _labels;
   public Vec _preds; //of length N, n_i = N/GROUPS
   public Vec _weights;
 
   //OUTPUT
-  public double[] response_rates; // p_i = e_i/n_i = e_i/N*GROUPS
+  public double[] response_rates; // p_i = e_i/n_i
   public double avg_response_rate; // P
-  public long[] positive_responses; // e_i
+  public long[] events; // e_i
+  public long[] observations; // n_i
   TwoDimTable table;
 
   public GainsLift(Vec preds, Vec labels) {
@@ -95,7 +96,8 @@ public class GainsLift extends Iced {
         gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
         response_rates = gt.response_rates();
         avg_response_rate = gt.avg_response_rate();
-        positive_responses = gt.responses();
+        events = gt.responses();
+        observations = gt.observations();
       } else {
         Log.info("Not computing Gains/Lift table from trivial (constant) predictions.");
       }
@@ -119,30 +121,29 @@ public class GainsLift extends Iced {
             new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
             new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
             "");
-    double cumulative_events = 0; //partial_sum(e_i)
-    double cumulative_observations = 0; //partial_sum(n_i)
+    double sum_e_i = 0;
+    double sum_n_i = 0;
     double P = avg_response_rate; // E/N
     double N = _preds.length(); //TODO: Add obs. weights
     double E = N * P;
     for (int i = 0; i < _groups; ++i) {
-      double e_i = positive_responses[i];
-      double n_i = N/ _groups;
+      long e_i = events[i];
+      long n_i = observations[i];
       double p_i = response_rates[i];
-      cumulative_events += e_i;
-      cumulative_observations += n_i;
+      sum_e_i += e_i;
+      sum_n_i += n_i;
       double lift=p_i/P;
-      double cumulative_lift = (cumulative_events/cumulative_observations)/P;
-
+      double sum_lift=sum_e_i/sum_n_i/P;
       table.set(i,0,i+1);
       table.set(i,1,_quantiles[i]);
       table.set(i,2,p_i);
-      table.set(i,3,cumulative_events/cumulative_observations);
+      table.set(i,3,sum_e_i/sum_n_i);
       table.set(i,4,e_i/E);
-      table.set(i,5,cumulative_events/E);
+      table.set(i,5,sum_e_i/E);
       table.set(i,6,lift);
-      table.set(i,7,cumulative_lift);
+      table.set(i,7,sum_lift);
       table.set(i,8,100*(lift-1));
-      table.set(i,9,100*(cumulative_lift-1));
+      table.set(i,9,100*(sum_lift-1));
     }
     return this.table = table;
   }
@@ -153,11 +154,13 @@ public class GainsLift extends Iced {
     public final double[] response_rates() { return _response_rates; }
     public final double avg_response_rate() { return _avg_response_rate; }
     public final long[] responses(){ return _responses; }
+    public final long[] observations(){ return _observations; }
 
     /* @IN quantiles/thresholds */
     final private double[] _thresh;
 
     private long[] _responses;
+    private long[] _observations;
     private long _avg_response;
     private double _avg_response_rate;
     private double[] _response_rates;
@@ -174,6 +177,7 @@ public class GainsLift extends Iced {
     @Override public void map( Chunk ca, Chunk cp ) {
       final double w = 1.0;
       _responses = new long[_thresh.length];
+      _observations = new long[_thresh.length];
       _avg_response = 0;
       final int len = Math.min(ca._len, cp._len);
       for( int i=0; i < len; i++ ) {
@@ -191,11 +195,9 @@ public class GainsLift extends Iced {
       if (Double.isNaN(pr)) return;
       if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
       for( int t=0; t < _thresh.length; t++ ) {
-        if (a==0) continue;
-        if (t==0) {
-          if (pr >= _thresh[t]) _responses[t]++;
-        } else {
-          if (pr >= _thresh[t] && pr < _thresh[t-1]) _responses[t]++;
+        if (pr >= _thresh[t] && (t==0 || pr <_thresh[t-1])) {
+          _observations[t]++;
+          if (a == 1) _responses[t]++;
         }
       }
       if (a == 1) _avg_response++;
@@ -203,19 +205,17 @@ public class GainsLift extends Iced {
     }
 
     @Override public void reduce(GainsLiftBuilder other) {
-      for( int i=0; i<_responses.length; ++i) {
-        _responses[i] += other._responses[i];
-      }
+      ArrayUtils.add(_responses, other._responses);
+      ArrayUtils.add(_observations, other._observations);
       _avg_response += other._avg_response;
       _count += other._count;
     }
 
     @Override public void postGlobal(){
+      assert(ArrayUtils.sum(_observations) == _count);
       _response_rates = new double[_thresh.length];
-      for (int i=0; i<_response_rates.length; ++i) {
-        _response_rates[i] = (double) _responses[i];
-      }
-      MathUtils.div(_response_rates, (double) _count / _thresh.length);
+      for (int i=0; i<_response_rates.length; ++i)
+        _response_rates[i] = (double) _responses[i] / _observations[i];
       for (int i=0; i<_response_rates.length; ++i) {
         // spill over to next bucket - needed due to tie breaking in quantiles
         if(_response_rates[i] > 1 && i<_response_rates.length-1) {
