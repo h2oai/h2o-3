@@ -247,7 +247,7 @@ def validate_validation_messages(result, expected_error_fields):
 
     error_fields = []
     for validation_message in result['messages']:
-        if validation_message['message_type'] == 'ERROR':
+        if validation_message['message_type'] == 'ERRR':
             error_fields.append(validation_message['field_name'])
 
     not_found = [item for item in expected_error_fields if item not in error_fields]

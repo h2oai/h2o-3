@@ -138,7 +138,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     
     found_expected_error = False
     for validation_message in parameters_validation['messages']:
-        if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
+        if validation_message['message_type'] == 'ERRR' and validation_message['field_name'] == 'input_dropout_ratio':
             found_expected_error = True
     assert found_expected_error, "FAIL: Failed to find error message about input_dropout_ratio in the validation messages."
     
