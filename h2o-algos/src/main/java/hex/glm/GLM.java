@@ -1188,7 +1188,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               t = mt.step();
             }
             double[] rho = MemoryManager.malloc8d(beta.length);
-            double r = _bc._betaLB == null && _bc._betaUB == null?1.25:1;
+            double r = (_bc._betaLB == null && _bc._betaUB == null)?0.1:1;
             // compute rhos
             for (int i = 0; i < rho.length - 1; ++i)
               rho[i] = r*ADMM.L1Solver.estimateRho(nullBeta[i] + t*direction[i], l1pen, _bc._betaLB == null ? Double.NEGATIVE_INFINITY : _bc._betaLB[i], _bc._betaUB == null ? Double.POSITIVE_INFINITY : _bc._betaUB[i]);
