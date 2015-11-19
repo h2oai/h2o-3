@@ -31,6 +31,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public enum Method {
       GramSVD, Power, Randomized, GLRM
     }
+    @Override protected long nFoldSeed() { return _seed; }
   }
 
   public static class PCAOutput extends Model.Output {

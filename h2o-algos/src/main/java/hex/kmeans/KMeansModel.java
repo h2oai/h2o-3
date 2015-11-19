@@ -25,6 +25,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public Key<Frame> _user_points;
     public boolean _pred_indicator = false;   // For internal use only: generate indicator cols during prediction
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
+    @Override protected long nFoldSeed() { return _seed; }
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {

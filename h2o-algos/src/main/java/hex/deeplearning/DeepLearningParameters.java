@@ -97,6 +97,7 @@ public class DeepLearningParameters extends Model.Parameters {
    * still lead to some weak sense of determinism in the model.
    */
   public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
+  @Override protected long nFoldSeed() { return _seed; }
 
 /*Adaptive Learning Rate*/
   /**

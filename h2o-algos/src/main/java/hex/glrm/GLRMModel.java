@@ -43,6 +43,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
     public long _seed = System.nanoTime();        // RNG seed
+    @Override protected long nFoldSeed() { return _seed; }
 
     // public Key<Frame> _representation_key;     // Key to save X matrix
     public String _representation_name;

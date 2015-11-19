@@ -35,6 +35,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public enum Method {
       GramSVD, Power, Randomized
     }
+    @Override protected long nFoldSeed() { return _seed; }
   }
 
   public static class SVDOutput extends Model.Output {
