@@ -4,6 +4,7 @@ import hex.optimization.OptimizationUtils.*;
 import water.Iced;
 import water.MemoryManager;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -76,20 +77,22 @@ public final class L_BFGS extends Iced {
     public final double [] coefs;
     public final GradientInfo ginfo;
     public final boolean converged;
+    public final double rel_improvement;
 
-    public Result(boolean converged, int iter, double [] coefs, GradientInfo ginfo){
+    public Result(boolean converged, int iter, double [] coefs, GradientInfo ginfo, double rel_improvement){
       this.iter = iter;
       this.coefs = coefs;
       this.ginfo = ginfo;
       this.converged = converged;
+      this.rel_improvement = rel_improvement;
     }
 
     public String toString(){
-      return coefs.length < 50?
-        "L-BFGS_res(iter = " + iter + ", obj = " + ginfo._objVal + ", " + " coefs = " + Arrays.toString(coefs) + ", grad = " + Arrays.toString(ginfo._gradient) + ")"
-        :("L-BFGS_res(iter = " + iter + ", obj = " + ginfo._objVal + ", coefs = [" + coefs[0] + ", " + coefs[1] + ", ..., " + coefs[coefs.length-2] + ", " + coefs[coefs.length-1] + "]" +
-        ", grad = [" + ginfo._gradient[0] + ", " + ginfo._gradient[1] + ", ..., " + ginfo._gradient[ginfo._gradient.length-2] + ", " + ginfo._gradient[ginfo._gradient.length-1] + "])") +
-        "|grad|^2 = " + MathUtils.l2norm2(ginfo._gradient);
+      if(coefs.length < 10) {
+        return "L-BFGS_res(converged? " + converged + ", iter = " + iter + ", obj = " + ginfo._objVal + ", rel_improvement = " + rel_improvement +  ", coefs = " + Arrays.toString(coefs) + ", grad = " + Arrays.toString(ginfo._gradient) + ")";
+      } else {
+        return "L-BFGS_res(converged? " + converged + ", iter = " + iter + ", obj = " + ginfo._objVal + ", rel_improvement = " + rel_improvement +  "grad_linf_norm = " + ArrayUtils.linfnorm(ginfo._gradient,false) + ")";
+      }
     }
   }
 
@@ -185,7 +188,7 @@ public final class L_BFGS extends Iced {
       ++iter;
       _hist.getSearchDirection(ginfo._gradient,pk);
       if(!_lineSearch.evaluate(gslvr,ginfo,beta,pk,minStep,maxStep,20)) {
-        break;
+        return new Result(false,iter,beta, ginfo,rel_improvement);
       }
       _lineSearch.setInitialStep(Math.max(10 * minStep, _lineSearch.step()));
       ArrayUtils.add(beta,ArrayUtils.mult(pk,_lineSearch.step()));
@@ -194,7 +197,7 @@ public final class L_BFGS extends Iced {
       rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
       ginfo = newGinfo;
     }
-    return new Result(ArrayUtils.linfnorm(ginfo._gradient,false) < _gradEps,iter,beta, ginfo);
+    return new Result((ArrayUtils.linfnorm(ginfo._gradient,false) <= _gradEps  || rel_improvement <= _objEps),iter,beta, ginfo,rel_improvement);
   }
 
   /**

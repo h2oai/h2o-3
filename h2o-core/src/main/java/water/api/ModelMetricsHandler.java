@@ -18,6 +18,9 @@ class ModelMetricsHandler extends Handler {
     public boolean _reconstruction_error;
     public boolean _reconstruction_error_per_feature;
     public int _deep_features_hidden_layer = -1;
+    public boolean _reconstruct_train;
+    public boolean _project_archetypes;
+    public boolean _reverse_transform;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -91,6 +94,15 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Extract Deep Features for given hidden layer (optional, only for Deep Learning models)", json = false, required = false)
     public int deep_features_hidden_layer;
 
+    @API(help = "Reconstruct original training frame (optional, only for GLRM models)", json = false, required = false)
+    public boolean reconstruct_train;
+
+    @API(help = "Project GLRM archetypes back into original feature space (optional, only for GLRM models)", json = false, required = false)
+    public boolean project_archetypes;
+
+    @API(help = "Reverse transformation applied during training to model output (optional, only for GLRM models)", json = false, required = false)
+    public boolean reverse_transform;
+
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
     public ModelMetricsBase[] model_metrics;
@@ -103,6 +115,9 @@ class ModelMetricsHandler extends Handler {
       mml._reconstruction_error = this.reconstruction_error;
       mml._reconstruction_error_per_feature = this.reconstruction_error_per_feature;
       mml._deep_features_hidden_layer = this.deep_features_hidden_layer;
+      mml._reconstruct_train = this.reconstruct_train;
+      mml._project_archetypes = this.project_archetypes;
+      mml._reverse_transform = this.reverse_transform;
 
       if (null != model_metrics) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -123,6 +138,9 @@ class ModelMetricsHandler extends Handler {
       this.reconstruction_error = mml._reconstruction_error;
       this.reconstruction_error_per_feature = mml._reconstruction_error_per_feature;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
+      this.reconstruct_train = mml._reconstruct_train;
+      this.project_archetypes = mml._project_archetypes;
+      this.reverse_transform = mml._reverse_transform;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
@@ -214,7 +232,8 @@ class ModelMetricsHandler extends Handler {
     ModelMetricsList parms = s.createAndFillImpl();
 
     Frame predictions;
-    if (!s.reconstruction_error && !s.reconstruction_error_per_feature && s.deep_features_hidden_layer < 0 ) {
+    if (!s.reconstruction_error && !s.reconstruction_error_per_feature && s.deep_features_hidden_layer < 0 &&
+        !s.project_archetypes && !s.reconstruct_train) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       predictions = parms._model.score(parms._frame, parms._predictions_name);
@@ -235,8 +254,19 @@ class ModelMetricsHandler extends Handler {
         }
         predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
         DKV.put(predictions._key, predictions);
+      } else if(Model.GLRMArchetypes.class.isAssignableFrom(parms._model.getClass())) {
+        if(s.project_archetypes) {
+          if (null == parms._predictions_name)
+            parms._predictions_name = "reconstructed_archetypes_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_of_" + parms._frame._key.toString();
+          predictions = ((Model.GLRMArchetypes) parms._model).scoreArchetypes(parms._frame, Key.make(parms._predictions_name), s.reverse_transform);
+        } else {
+          assert s.reconstruct_train;
+          if (null == parms._predictions_name)
+            parms._predictions_name = "reconstruction_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_of_" + parms._frame._key.toString();
+          predictions = ((Model.GLRMArchetypes) parms._model).scoreReconstruction(parms._frame, Key.make(parms._predictions_name), s.reverse_transform);
+        }
       }
-      else throw new H2OIllegalArgumentException("Requires a Deep Learning model.", "Model must implement specific methods.");
+      else throw new H2OIllegalArgumentException("Requires a Deep Learning or GLRM model.", "Model must implement specific methods.");
     }
 
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);

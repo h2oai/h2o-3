@@ -331,7 +331,7 @@ public class OptimizationUtils {
           _bestStep = step;
         }
         ++_iter;
-        if(!Double.isNaN(step) && (Double.isNaN(newGinfo._objVal) || Double.isInfinite(newGinfo._objVal) || ArrayUtils.hasNaNsOrInfs(newGinfo._gradient))) {
+        if(_iter < maxfev && (!Double.isNaN(step) && (Double.isNaN(newGinfo._objVal) || Double.isInfinite(newGinfo._objVal) || ArrayUtils.hasNaNsOrInfs(newGinfo._gradient)))) {
           _brackt = true;
           _sty = step;
           maxStep = step;
