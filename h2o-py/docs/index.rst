@@ -14,8 +14,10 @@ Contents:
    intro
    h2o
    frame
-   h2o.model
-   h2o.metrics
+   modeling
+   model_categories
+   metrics
+   assembly
    other
 
 Indices and tables

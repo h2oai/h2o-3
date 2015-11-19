@@ -1,8 +1,5 @@
-Modeling in H2O
-===============
-
-:mod:`Modeling In H2O`
-----------------------
+Model Categories
+================
 
 .. automodule:: h2o.model
     :members:
@@ -17,7 +14,7 @@ Modeling in H2O
     :undoc-members:
     :show-inheritance:
 
-:mod:`Binomial Classification`
+:mod:`Binomial Classification c`
 ------------------------------
 
 .. automodule:: h2o.model.binomial
