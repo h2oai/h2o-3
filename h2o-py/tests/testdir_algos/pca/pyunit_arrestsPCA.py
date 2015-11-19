@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.transforms.decomposition import H2OPCA
 
 
 
@@ -13,7 +13,7 @@ def pca_arrests():
   arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
   arrestsH2O.describe()
 
-  from h2o.transforms.decomposition import H2OPCA
+
 
   for i in range(4):
     print "H2O PCA with " + str(i) + " dimensions:\n"

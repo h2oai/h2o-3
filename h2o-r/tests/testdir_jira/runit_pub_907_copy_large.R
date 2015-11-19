@@ -18,7 +18,7 @@ test <- function() {
         dataset.copy = h2o.assign(dataset, "dataset.copy")
         endTime = proc.time()
 
-        elapsedTime = endTime - startTime
+        elapsedTime = endTime['elapsed'] - startTime['elapsed']
         print(elapsedTime)
 
     print("Assert runtime less than 180 seconds")

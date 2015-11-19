@@ -1,8 +1,9 @@
 package water.parser;
 
 import com.google.common.base.Charsets;
-import java.util.Arrays;
 import water.Iced;
+
+import java.util.Arrays;
 import java.util.Formatter;
 
 public class BufferedString extends Iced implements Comparable<BufferedString> {
@@ -142,7 +143,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     if (_buf[_off] == '+' || _buf[_off] == '-') i++;
     while( i < _len) {
       if (_buf[_off+i] == '.') decimalCnt++;
-      if (_buf[_off+i] < '0' || _buf[_off+i] > '9') return NA;
+      else if (_buf[_off+i] < '0' || _buf[_off+i] > '9') return NA;
       i++;
     }
     if (decimalCnt > 0)

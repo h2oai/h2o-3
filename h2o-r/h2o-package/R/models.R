@@ -128,7 +128,7 @@
   validation <- .h2o.__remoteSend(method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = params, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
     error <- lapply(validation$messages, function(i) {
-      if( i$message_type == "ERROR" )
+      if( i$message_type == "ERRR" )
         paste0(i$message, ".\n")
       else ""
     })
@@ -1633,6 +1633,71 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   }
 }
 
+#' Access H2O Gains/Lift Tables
+#'
+#' Retrieve either a single or many Gains/Lift tables from H2O objects.
+#'
+#' The \linkS4class{H2OModelMetrics} version of this function will only take
+#' \linkS4class{H2OBinomialMetrics} objects.
+#'
+#' @param object Either an \linkS4class{H2OModel} object or an
+#'        \linkS4class{H2OModelMetrics} object.
+#' @param newdata An H2O Frame object that can be scored on.
+#'        Requires a valid response column.
+#' @param valid Retrieve the validation metric.
+#' @param \dots further arguments to be passed to/from this method.
+#' @return Calling this function on \linkS4class{H2OModel} objects returns a
+#'         Gains/Lift table corresponding to the \code{\link{predict}} function.
+#' @seealso \code{\link{predict}} for generating prediction frames,
+#'          \code{\link{h2o.performance}} for creating
+#'          \linkS4class{H2OModelMetrics}.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
+#' h2o.gainsLift(model, hex)
+#' # Generating a ModelMetrics object
+#' perf <- h2o.performance(model, hex)
+#' h2o.gainsLift(perf)
+#' }
+#' @export
+setGeneric("h2o.gainsLift", function(object, ...) {})
+
+#' @rdname h2o.gainsLift
+#' @export
+setMethod("h2o.gainsLift", "H2OModel", function(object, newdata, valid=FALSE, ...) {
+  model.parts <- .model.parts(object)
+  if( missing(newdata) ) {
+    if( valid ) {
+      if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
+      else                          return( h2o.gainsLift(model.parts$vm) )
+    } else                          return( h2o.gainsLift(model.parts$tm) )
+  } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
+
+  # ok need to score on the newdata
+  url <- paste0("Predictions/models/",object@model_id, "/frames/", h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method="POST")
+
+  # Make the correct class of metrics object
+  metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])
+  h2o.gainsLift(metrics, ...)
+})
+
+#' @rdname h2o.gainsLift
+#' @export
+setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
+  if( is(object, "H2OBinomialMetrics") ) {
+    return(object@metrics$gains_lift_table)
+  } else {
+    warning(paste0("No Gains/Lift table for ",class(object)))
+    return(NULL)
+  }
+})
+
 #' Access H2O Confusion Matrices
 #'
 #' Retrieve either a single or many confusion matrices from H2O objects.
@@ -1651,7 +1716,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param metrics (Optional) A metric or a list of valid metrics ("min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1").
 #'        This value is only used in the case of
 #'        \linkS4class{H2OBinomialMetrics} objects.
-#' @param valid Retreive the validation metric.
+#' @param valid Retrieve the validation metric.
 #' @param ... Extra arguments for extracting train or valid confusion matrices.
 #' @return Calling this function on \linkS4class{H2OModel} objects returns a
 #'         confusion matrix corresponding to the \code{\link{predict}} function.

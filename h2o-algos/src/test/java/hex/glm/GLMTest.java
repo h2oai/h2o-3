@@ -298,8 +298,8 @@ public class GLMTest  extends TestUtil {
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
 
-      GLMGradientTask grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true).forceColAccess().doAll(dinfo._adaptedFrame);
-      GLMGradientTask grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true).forceRowAccess().doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceRowAccess().doAll(dinfo._adaptedFrame);
       LBFGS_LogisticGradientTask logistic = (LBFGS_LogisticGradientTask) new LBFGS_LogisticGradientTask(dinfo, params, params._lambda[0], beta, 1, true).forceRowAccess().doAll(dinfo._adaptedFrame);
       for (int i = 0; i < beta.length; ++i) {
         assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
@@ -314,8 +314,8 @@ public class GLMTest  extends TestUtil {
       rnd = new Random(1987654321);
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
-      grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true).forceRowAccess().doAll(dinfo._adaptedFrame);
+      grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceRowAccess().doAll(dinfo._adaptedFrame);
 
       for (int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
@@ -333,8 +333,8 @@ public class GLMTest  extends TestUtil {
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
 
-      grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true).forceRowAccess().doAll(dinfo._adaptedFrame);
+      grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceRowAccess().doAll(dinfo._adaptedFrame);
       for (int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
       dinfo.remove();
@@ -874,7 +874,7 @@ public class GLMTest  extends TestUtil {
       // todo: remove, result from h2o.1
       // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask) new LBFGS_LogisticGradientTask(dinfo, params, 0, beta_1, 1.0 / 380.0,true).doAll(dinfo._adaptedFrame);
-      new GLMGradientTask(dinfo, params, 0, beta_1, 1.0 / 380, true).doAll(dinfo._adaptedFrame);
+      new GLMGradientTask(dinfo, params, 0, beta_1, 1.0 / 380, true, null).doAll(dinfo._adaptedFrame);
       double[] grad = lt._gradient;
       for (int i = 0; i < beta_1.length; ++i)
         assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
@@ -1430,7 +1430,7 @@ public class GLMTest  extends TestUtil {
 
   public static double auc(GLMModel m) {
     ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
-    return metrics.auc()._auc;
+    return metrics.auc_obj()._auc;
   }
   public static double logloss(GLMModel m) {
     ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
@@ -1531,12 +1531,12 @@ public class GLMTest  extends TestUtil {
       model.score(fr).delete();
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
-      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+      assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       model.score(fr).delete();
       mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
-      assertEquals(model._output._training_metrics.auc()._auc, adata._auc, 1e-8);
+      assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       double prior = 1e-5;
@@ -1574,8 +1574,8 @@ public class GLMTest  extends TestUtil {
       GLMIterationTaskTest gtt = (GLMIterationTaskTest)new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu[0],model3).doAll(dinfo._adaptedFrame);
       System.out.println("val1 = " + gtt._val.toString());
       System.out.println("val2 = " + gtt._val2.toString());
-      ModelMetrics mm1 = gtt._val .makeModelMetrics(model3, dinfo._adaptedFrame);
-      ModelMetrics mm2 = gtt._val2.makeModelMetrics(model3, dinfo._adaptedFrame);
+      ModelMetrics mm1 = gtt._val .makeModelMetrics(model3, dinfo._adaptedFrame, null);
+      ModelMetrics mm2 = gtt._val2.makeModelMetrics(model3, dinfo._adaptedFrame, null);
       System.out.println("mm1 = " + mm1.toString());
       System.out.println("mm2 = " + mm2.toString());
       assert mm1.equals(mm2);

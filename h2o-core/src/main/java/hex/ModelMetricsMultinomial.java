@@ -146,7 +146,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _logloss += mb._logloss;
     }
 
-    @Override public ModelMetrics makeModelMetrics( Model m, Frame f) {
+    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) {
       double mse = Double.NaN;
       double logloss = Double.NaN;
       float[] hr = new float[_K];

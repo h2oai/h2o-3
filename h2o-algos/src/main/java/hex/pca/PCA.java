@@ -57,8 +57,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return new ModelCategory[]{ ModelCategory.Clustering };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
-
   @Override
   protected void checkMemoryFootPrint() {
     HeartBeat hb = H2O.SELF._heartbeat;
@@ -227,6 +225,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
           model._output._nobs = gtsk._nobs;
+
+          // Cannot calculate SVD if all rows contain missing value(s) and hence were skipped
+          if(gtsk._nobs == 0)
+            error("_train", "Every row in _train contains at least one missing value. Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead.");
+          if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
           // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm

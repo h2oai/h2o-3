@@ -79,8 +79,7 @@ public class NewChunk extends Chunk {
   public NewChunk(double [] ds) {
     _cidx = -1;
     _vec = null;
-    _ds = ds;
-    _sparseLen = _len = ds.length;
+    setDoubles(ds);
   }
   public NewChunk( Vec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
     _vec = vec; _cidx = cidx;
@@ -111,6 +110,11 @@ public class NewChunk extends Chunk {
   public NewChunk setSparseRatio(int s) {
     _sparseRatio = s;
     return this;
+  }
+
+  public void setDoubles(double[] ds) {
+    _ds = ds;
+    _sparseLen = _len = ds.length;
   }
 
   public void set_vec(Vec vec) { _vec = vec; }

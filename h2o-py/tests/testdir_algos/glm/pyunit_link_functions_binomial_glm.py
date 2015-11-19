@@ -5,7 +5,7 @@ from tests import pyunit_utils
 import pandas as pd
 import zipfile
 import statsmodels.api as sm
-
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 def link_functions_binomial():
   print("Read in prostate data.")
@@ -22,7 +22,7 @@ def link_functions_binomial():
   myX = ["ID","AGE","RACE","GLEASON","DCAPS","PSA","VOL","DPROS"]
 
   print("Create models with canonical link: LOGIT")
-  from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
   h2o_data[myY] = h2o_data[myY].asfactor()
   h2o_model = H2OGeneralizedLinearEstimator(family="binomial", link="logit",alpha=0.5, Lambda=0)
   h2o_model.train(x=myX, y=myY, training_frame=h2o_data)

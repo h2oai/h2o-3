@@ -41,7 +41,7 @@ h2o.ensemble <- function(x, y, training_frame,
       if (numcats == 2) {
         family <- "binomial" 
       } else {
-        stop("multinomial case not yet implemented.")
+        stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://0xdata.atlassian.net/browse/PUBDEV-2355")
       }
     } else {
       family <- "gaussian"
@@ -58,6 +58,11 @@ h2o.ensemble <- function(x, y, training_frame,
   } else {
     if (!is.factor(training_frame[,y])) {
       stop("When `family` is binomial, the repsonse column must be a factor.")
+    } else {
+      numcats <- length(h2o.levels(training_frame[,y]))
+      if (numcats > 2) {
+        stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://0xdata.atlassian.net/browse/PUBDEV-2355")
+      } 
     }
     ylim <- NULL
   }
@@ -201,7 +206,7 @@ h2o.ensemble <- function(x, y, training_frame,
   .compress_cvpred_into_1col <- function(l, family) {
     # return the frame_id of the resulting 1-col Hdf of cvpreds for learner l
     if (family %in% c("bernoulli", "binomial")) {
-      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$p1, simplify = FALSE)
+      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)[,3], simplify = FALSE)
     } else {
       predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
     }
@@ -255,26 +260,20 @@ h2o.ensemble <- function(x, y, training_frame,
 
 predict.h2o.ensemble <- function(object, newdata, ...) {
   
-  L <- length(object$basefits)
-  basepreddf <- as.data.frame(matrix(NA, nrow = nrow(newdata), ncol = L))
-  for (l in seq(L)) {
-    if (object$family == "binomial") {
-      basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))$p1 
-    } else {
-      basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))$predict
-    }
+  if (object$family == "binomial") {
+    basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,3]))
+  } else {
+    basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,1]))
   }
-  names(basepreddf) <- names(object$basefits)
-  basepred <- as.h2o(basepreddf, destination_frame = "basepred")
+  names(basepred) <- names(object$basefits)
   
   if (grepl("H2O", class(object$metafit))) {
     # H2O ensemble metalearner from wrappers.R
     pred <- h2o.predict(object = object$metafit, newdata = basepred)
   } else {
     # SuperLearner wrapper function metalearner
-    pred <- predict(object = object$metafit$fit, newdata = basepred)
+    basepreddf <- as.data.frame(basepred)  
+    pred <- predict(object = object$metafit$fit, newdata = basepreddf)
   }
   out <- list(pred = pred, basepred = basepred)
   return(out)

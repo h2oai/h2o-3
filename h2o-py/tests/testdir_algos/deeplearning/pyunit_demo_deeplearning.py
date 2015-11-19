@@ -3,6 +3,7 @@ sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
 import h2o, tests
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 
 def deeplearning_demo():
@@ -20,7 +21,7 @@ def deeplearning_demo():
   test_data.head()
 
   # Run DeepLearning
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
   dl = H2ODeepLearningEstimator(loss="CrossEntropy", epochs=1000, hidden=[20,20,20])
   dl.train(x=range(1,train_data.ncol),
            y="Angaus",

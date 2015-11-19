@@ -290,6 +290,7 @@ class RollupStats extends Iced {
   static RollupStats get(Vec vec, boolean computeHisto) {
     if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
 
+    if( vec.isString() ) computeHisto = false; // No histogram for string columns
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
@@ -353,13 +354,13 @@ class RollupStats extends Iced {
   // If rs computation is already in progress, it will wait for it to finish.
   // Throws IAE if the Vec is being modified (or removed) while this task is in progress.
   static final class ComputeRollupsTask extends DTask<ComputeRollupsTask>{
-    final byte _priority;
+    private final byte _priority;
     final Key _vecKey;
     final Key _rsKey;
     final boolean _computeHisto;
 
     public ComputeRollupsTask(Vec v, boolean computeHisto){
-      _priority = nextThrPriority();
+      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY-2;
       _vecKey = v._key;
       _rsKey = v.rollupStatsKey();
       _computeHisto = computeHisto;

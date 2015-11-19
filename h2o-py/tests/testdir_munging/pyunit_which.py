@@ -11,9 +11,9 @@ def pyunit_which():
     versicolor = (iris[4]=="Iris-versicolor").which()
     virginica  = (iris[4]=="Iris-virginica" ).which()
 
-    assert sum(range(  0, 50)) == sum(setosa    )
-    assert sum(range( 50,100)) == sum(versicolor)
-    assert sum(range(100,150)) == sum(virginica )
+    assert sum(range(  0, 50)) == setosa.sum()
+    assert sum(range( 50,100)) == versicolor.sum()
+    assert sum(range(100,150)) == virginica.sum()
 
 
 if __name__ == "__main__":

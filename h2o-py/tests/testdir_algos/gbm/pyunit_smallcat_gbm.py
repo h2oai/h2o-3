@@ -4,7 +4,7 @@ import h2o
 from tests import pyunit_utils
 import numpy as np
 from sklearn import ensemble
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def smallcat_gbm():
   # Training set has 26 categories from A to Z
@@ -23,7 +23,7 @@ def smallcat_gbm():
   trainDataFeatures = trainData[:,0]
 
   # Train H2O GBM Model:
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   gbm_h2o = H2OGradientBoostingEstimator(distribution="bernoulli",
                                          ntrees=1,
                                          max_depth=1,

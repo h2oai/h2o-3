@@ -13,35 +13,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 
 import hex.genmodel.GenModel;
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.Lockable;
-import water.MRTask;
-import water.MemoryManager;
-import water.Weaver;
+import water.*;
 import water.api.StreamWriter;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
-import water.fvec.C0DChunk;
-import water.fvec.CategoricalWrappedVec;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.LineLimitOutputStreamWrapper;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.SBPrintStream;
-import water.util.TwoDimTable;
+import water.fvec.*;
+import water.util.*;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -57,6 +38,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
     Frame scoreDeepFeatures(Frame frame, final int layer);
+  }
+
+  public interface GLRMArchetypes {
+    Frame scoreReconstruction(Frame frame, Key destination_key, boolean reverse_transform);
+    Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform);
   }
 
   /**
@@ -101,6 +87,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
+    protected long nFoldSeed() { return new Random().nextLong(); }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public Distribution.Family _distribution = Distribution.Family.AUTO;
     public double _tweedie_power = 1.5f;
@@ -756,7 +743,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/).doAll(ncols, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
-      bs._mb.makeModelMetrics(this, fr);
+      bs._mb.makeModelMetrics(this, fr, bs.outputFrame());
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
   }
 

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def cupMediumGBM():
 
@@ -16,7 +16,7 @@ def cupMediumGBM():
   for c in ['C1', "TARGET_D", "TARGET_B", "CONTROLN"]:
     train_cols.remove(c)
 
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
   model = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=5)
   model.train(x=train_cols,y="TARGET_B", training_frame=train)
 

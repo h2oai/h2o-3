@@ -24,14 +24,18 @@ public class KillMinus3Handler extends Handler {
 
   public KillMinus3V3 killm3(int version, KillMinus3V3 u) {
       new MRTask() {
+        private final byte _priority = (Thread.currentThread() instanceof water.H2O.FJWThr) ? nextThrPriority() : water.H2O.GUI_PRIORITY - 2;
+        @Override public byte priority() { return _priority; }
         @Override public void setupLocal() {
           try {
             String cmd = "/bin/kill -3 " + getProcessId();
             java.lang.Runtime.getRuntime().exec(cmd);
+          } catch( java.io.IOException ioe ) {
+            // Silently ignore if, e.g. /bin/kill does not exist on windows
           } catch (Exception xe) {
-              xe.printStackTrace();
-              throw new H2OIllegalArgumentException("");
-            }
+            xe.printStackTrace();
+            throw new H2OIllegalArgumentException("");
+          }
         }
       }.doAllNodes();
     return u;

@@ -7,7 +7,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
                nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
                fold_assignment=None, keep_cross_validation_predictions=None,
-               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None):
+               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None, objective_epsilon = None, gradient_epsilon = None, non_negative=False,compute_p_values=False):
     """
     Build a Generalized Linear Model
     Fit a generalized linear model, specified by a response variable, a set of predictors,
@@ -276,4 +276,36 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   @checkpoint.setter
   def checkpoint(self, value):
     self._parms["checkpoint"] = value
+
+  @property
+  def objective_epsilon(self):
+    return self._parms["objective_epsilon"]
+
+  @objective_epsilon.setter
+  def objective_epsilon(self, value):
+    self._parms["objective_epsilon"] = value
+
+  @property
+  def gradient_epsilon(self):
+    return self._parms["gradient_epsilon"]  
+    
+  @gradient_epsilon.setter
+  def gradient_epsilon(self, value):
+    self._parms["gradient_epsilon"] = value
+
+  @property
+  def non_negative(self):
+    return self._parms["non_negative"]
+
+  @non_negative.setter
+  def gradient_epsilon(self, value):
+    self._parms["non_negative"] = value
+
+  @property
+  def compute_p_values(self):
+    return self._parms["compute_p_values"]
+
+  @compute_p_values.setter
+  def compute_p_values(self, value):
+    self._parms["compute_p_values"] = value
 

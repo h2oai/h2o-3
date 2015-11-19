@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -12,7 +12,7 @@ def iris_ignore():
 
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris2.csv"))
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   for maxx in range(4):
     model = H2ORandomForestEstimator(ntrees=50, max_depth=100)

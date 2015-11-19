@@ -15,7 +15,7 @@ class FindHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FindV3 find(int version, FindV3 find) {
-    Frame frame = find.key.createAndFillImpl();
+    Frame frame = find.key._fr;
     // Peel out an optional column; restrict to this column
     if( find.column != null ) {
       Vec vec = frame.vec(find.column);
@@ -62,10 +62,14 @@ class FindHandler extends Handler {
   }
 
   private static class Find extends MRTask<Find> {
+    private final byte _priority; // Allow higher priority for GUI work
     final long _row;
     final double[] _ds;
     long _prev, _next;
-    Find( long row, double[] ds ) { _row = row; _ds = ds; _prev = -1; _next = Long.MAX_VALUE; }
+    Find( long row, double[] ds ) { 
+      _row = row; _ds = ds; _prev = -1; _next = Long.MAX_VALUE; 
+      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY - 2;
+    }
     @Override public void map( Chunk cs[] ) {
       for( int col = 0; col<cs.length; col++ ) {
         Chunk C = cs[col];
@@ -82,5 +86,6 @@ class FindHandler extends Handler {
       if( _prev < f._prev ) _prev = f._prev;
       if( _next > f._next ) _next = f._next;
     }
+    @Override public byte priority() { return _priority; }
   }
 }

@@ -13,19 +13,10 @@ gait.hex <- h2o.importFile(path = pathToData, destination_frame = "gait.hex")
 dim(gait.hex)
 summary(gait.hex)
 
-print("Plot first row on x- vs. y-coordinate locations")
-gait.row <- as.matrix(gait.hex[1,2:ncol(gait.hex)])
-x_coords <- seq(1, ncol(gait.row), by = 3)
-y_coords <- seq(2, ncol(gait.row), by = 3)
-feat_nams <- sapply(colnames(gait.row), function(nam) { substr(nam, 1, nchar(nam)-2) })
-feat_nams <- as.character(feat_nams[x_coords])
-plot(gait.row[x_coords], gait.row[y_coords], xlab = "X-Coordinate", ylab = "Y-Coordinate", main = paste("Location of Body Parts at Time 0"), col = "blue", pch = 19, lty = "solid")
-text(gait.row[x_coords], gait.row[y_coords], labels = feat_nams, cex = 0.7, pos = 3)
-
 #---------------------------------------#
 #          Matrix Decomposition         #
 #---------------------------------------#
-## Basic GLRM using quadratic loss and no regularization (PCA)
+print("Build GLRM with quadratic loss and no regularization")
 gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 10, loss = "Quadratic", 
                       regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 gait.glrm
@@ -83,7 +74,7 @@ dim(gait.miss)
 summary(gait.miss)
 sum(is.na(gait.miss))   # Total number of missing values
 
-## Basic GLRM using quadratic loss and no regularization (PCA)
+print("Build GLRM with quadratic loss and no regularization")
 gait.glrm2 <- h2o.glrm(training_frame = gait.miss, validation_frame = gait.hex, cols = 2:ncol(gait.miss), k = 10, init = "SVD", svd_method = "GramSVD",
                       loss = "Quadratic", regularization_x = "None", regularization_y = "None", max_iterations = 2000, min_step_size = 1e-6)
 gait.glrm2

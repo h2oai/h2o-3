@@ -42,7 +42,7 @@ def weights_vi():
                                       hidden=[1],
                                       reproducible=True, seed=1234,
                                       activation="Tanh")
-    varimp_dataset1 = tuple([p[0] for p in model_dataset1.varimp(return_list=True)])
+    varimp_dataset1 = tuple([p[0] for p in model_dataset1.varimp()])
     assert sorted(varimp_dataset1) == ['p1', 'p2', 'p3'], "Expected the following relative variable importance on dataset1: " \
                                                   "('p1', 'p2', 'p3'), but got: {0}".format(varimp_dataset1)
 
@@ -52,7 +52,7 @@ def weights_vi():
                                       hidden=[1],
                                       reproducible=True, seed=1234,
                                       activation="Tanh")
-    varimp_dataset2 = tuple([p[0] for p in model_dataset2.varimp(return_list=True)])
+    varimp_dataset2 = tuple([p[0] for p in model_dataset2.varimp()])
     assert sorted(varimp_dataset1) == ['p1', 'p2', 'p3'], "Expected the following relative variable importance on dataset2: " \
                                                   "('p3', 'p1', 'p2'), but got: {0}".format(varimp_dataset2)
 
@@ -78,7 +78,7 @@ def weights_vi():
                                               reproducible=True, seed=1234,
                                               activation="Tanh")
 
-    varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])
+    varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp()])
     assert sorted(varimp_dataset1) == ['p1', 'p2', 'p3'], "Expected the following relative variable importance on the combined " \
                                                   "dataset: ('p1', 'p3', 'p2'), but got: {0}".format(varimp_combined)
 
@@ -105,7 +105,7 @@ def weights_vi():
                                               reproducible=True, seed=123,
                                               activation="Tanh")
 
-    varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp(return_list=True)])
+    varimp_combined = tuple([p[0] for p in model_combined_dataset.varimp()])
     assert sorted(varimp_dataset1) == ['p1', 'p2', 'p3'], "Expected the following relative variable importance on the combined " \
                                                   "dataset: ('p1', 'p3', 'p2'), but got: {0}".format(varimp_combined)
 

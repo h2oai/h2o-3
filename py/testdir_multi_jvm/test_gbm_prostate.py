@@ -26,7 +26,7 @@ df = h2o.import_file(path="../../../smalldata/logreg/prostate.csv")
 df.describe()
 
 # Remove ID from training frame
-df = df[:,-1]  # WARNING: this is NOT python negative indexing!!!
+df.pop('ID')  # WARNING: this is NOT python negative indexing!!!
 
 # For VOL & GLEASON, a zero really means "missing"
 vol = df['VOL']
