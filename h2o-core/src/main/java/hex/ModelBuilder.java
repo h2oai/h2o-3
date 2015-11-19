@@ -3,6 +3,7 @@ package hex;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.fvec.NewChunk;
 import water.rapids.ASTKFold;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -451,7 +452,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           m[i].adaptTestForTrain(adaptFr, true, !isSupervised());
           mb[i] = m[i].scoreMetrics(adaptFr);
 
-          if (_parms._keep_cross_validation_predictions) {
+          if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {
             String predName = "prediction_" + modelKeys[i].toString();
             predictionKeys[i] = Key.make(predName);
             m[i].predictScoreImpl(cvValid[i], adaptFr, predName);
@@ -489,7 +490,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._keep_cross_validation_predictions)
           mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
       }
-      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), null);
+      Frame preds = null;
+      //stitch together holdout predictions into one Vec, to compute the Gains/Lift table
+      if (nclasses() == 2) {
+        Vec[] p1s = new Vec[N];
+        for (int i=0;i<N;++i) {
+          p1s[i] = ((Frame)DKV.getGet(predictionKeys[i])).lastVec();
+        }
+        Frame p1combined = new HoldoutPredictionCombiner().doAll(1,Vec.T_NUM,new Frame(p1s)).outputFrame(new String[]{"p1"},null);
+        Vec p1 = p1combined.anyVec();
+        preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
+        if (!_parms._keep_cross_validation_predictions) {
+          for (Key k : predictionKeys) DKV.remove(k);
+        }
+      }
+      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), preds);
       mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
       Log.info(mainModel._output._cross_validation_metrics.toString());
 
@@ -501,6 +516,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       updateModelOutput(); //update the state of the model (tiny race condition here: someone might fetch the model without the updated state/time)
     }
     return this;
+  }
+
+  // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
+  private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
+    @Override
+    public void map(Chunk[] cs, NewChunk[] nc) {
+      double [] vals = new double[cs[0].len()];
+      for (int i=0;i<cs.length;++i)
+        for (int row = 0; row < cs[0].len(); ++row)
+          vals[row] += cs[i].atd(row);
+      nc[0].setDoubles(vals);
+    }
   }
   /**
    * Override with model-specific checks / modifications to _parms for N-fold cross-validation splits.
