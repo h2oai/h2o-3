@@ -468,7 +468,7 @@ class H2OFrame(object):
   def __invert__(self):  return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
   def __nonzero__(self): 
     if self.nrow > 1 or self.ncol > 1: 
-      raise ValueError('This operation is not supported on an H2OFrame. Did you mean & (logical and), | (logical or), or ~ (logical not)?')
+      raise ValueError('This operation is not supported on an H2OFrame. Try using parantheses. Did you mean & (logical and), | (logical or), or ~ (logical not)?')
     else:
       return self.__len__()
 
