@@ -8,7 +8,10 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 def mycomp(l,r):
     assert len(l) == len(r)
     for i in range(len(l)):
-        z = [li == ri for li,ri in zip(l[i],r[i])]
+        l_i = [num for num in l[i] if isinstance(num, (int,float))]
+        r_i = [num for num in r[i] if isinstance(num, (int,float))]
+        zz = zip(l_i,r_i)
+        z = [abs(li-ri)<1e-8 for li,ri in zz]
         assert all(z), str(i) + ":" +  str(z)
 
 def pubdev_2118():
