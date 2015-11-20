@@ -1008,7 +1008,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    VOL         -0.009793   0.008753  -1.119  0.26320
 //    GLEASON      0.851867   0.182282   4.673 2.96e-06 ***
 //    ---
-//      Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+//      Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 //
 //    (Dispersion parameter for binomial family taken to be 1)
 //
@@ -1136,7 +1136,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    VOL         -0.18130    0.16204  -1.119  0.26320
 //    GLEASON      0.91751    0.19633   4.673 2.96e-06 ***
 //    ---
-//      Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+//      Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 //
 //    (Dispersion parameter for binomial family taken to be 1)
 //

@@ -3,7 +3,9 @@ Data In H2O
 
 A H2OFrame represents a 2D array of data where each column is uniformly typed.
 
-The data may be local or it may be in an H2O cluster. The data are loaded from a CSV file or from a native python data structure, and is either a python-process-local file, a cluster-local file, or a list of H2OVec objects.
+The data may be local or it may be in an H2O cluster. The data are loaded from a CSV file
+or from a native python data structure, and is either a python-process-local file, a
+cluster-local file, or a list of H2OVec objects.
 
 Loading Data From A CSV File
 ----------------------------
@@ -32,7 +34,9 @@ The following data sources are supported:
 Loading Data From A Python Object
 ---------------------------------
 
-To transfer the data that are stored in python data structures to H2O, use the H2OFrame constructor and the `python_obj` argument. If the `python_obj` argument is not `None`, then additional arguments are ignored.
+To transfer the data that are stored in python data structures to H2O, use the H2OFrame
+constructor and the :mod:`python_obj` argument. Additionally, :mod:`from_python` performs
+the same function but provides a few more options for how H2O will parse the data.
 
 The following types are permissible for `python_obj`:
 
@@ -41,16 +45,17 @@ The following types are permissible for `python_obj`:
 * :class:`dict`  {}
 * :mod:`collections.OrderedDict`
 
-The type of `python_obj` is inspected by performing an `isinstance` call. A ValueError will be raised if the type of `python_obj` is not one of the above types. For example, sets, byte arrays, and un-contained types are not permissible.
+The type of `python_obj` is inspected by performing an `isinstance` call. A ValueError
+will be raised if the type of `python_obj` is not one of the above types. For example,
+sets, byte arrays, and un-contained types are not permissible.
 
-The subsequent sections discuss each data type in detail in terms of the "source" representation (the python
-object) and the "target" representation (the H2O object). Concretely, the topics
-of discussion will be on the following: Headers, Data Types, Number of Rows,
-Number of Columns, and Missing Values.
+The subsequent sections discuss each data type in detail in terms of the "source"
+representation (the python object) and the "target" representation (the H2O object).
+Concretely, the topics of discussion will be on the following: Headers, Data Types,
+Number of Rows, Number of Columns, and Missing Values.
 
-
-In the following documentation, H2OFrame and Frame will be used synonymously. Technically, an
-H2OFrame is the object-pointer that resides in the python VM and points to a Frame
+In the following documentation, H2OFrame and Frame will be used synonymously. Technically,
+an H2OFrame is the object-pointer that resides in the python VM and points to a Frame
 object inside of the H2O JVM. Similarly, H2OFrame, Frame, and H2O Frame  all
 refer to the same kind of object. In general, though, the context is from the
 python VM, unless otherwise specified.
@@ -62,26 +67,25 @@ Essentially, the tuple is an immutable list. This immutability does not map to
 the H2OFrame. So pythonistas beware!
 
 The restrictions on what goes inside the tuple are fairly relaxed, but if they
-are not recognized, a ValueError displays.
+are not recognized, a ValueError is raised.
 
 A tuple is formatted as follows:
 
    (i1, i2, i3, ..., iN)
 
-Restrictions are mainly on the types of the individual `iJ` (1 <= J <= N).
+Restrictions are mainly on the types of the individual `iJ` (1 <= J <= N). Here `N` is the
+number of rows in the column represented by this tuple.
 
-If `iJ` is {} for some J, then a ValueError displays.
+If `iJ` is {} for some J, then a ValueError is raised. If `iJ` is a () (tuple) or []
+(list), then `iJ` must be a () or [] for all J; otherwise a ValueError is raised. In other
+words, any mixing of types will result in a
 
-If `iJ` is a () (tuple) or [] (list), then `iJ` must be a () or [] for all J;
-otherwise a ValueError displays.
-
-If `iJ` is a () or [], and if it is a nested () or nested [], then a
-ValueError displays. In other words, only a single level of nesting is
-valid and all internal arrays must be flat -- H2O does not flatten them for you.
+Additionally, only a single layer of nesting is allowed: if `iJ` is a () or [], and if it
+contains any () or [], then a ValueError is raised.
 
 If `iJ` is not a () or [], then it must be of type string or a non-complex
 numeric type (float or int). In other words, if `iJ` is not a tuple, list,
-string, float, or int, for some J, then a ValueError displays.
+string, float, or int, for some J, then a ValueError is raised.
 
 Some examples of acceptable inputs are:
  * Example A: (1,2,3)
@@ -133,15 +137,15 @@ The shape of the H2OFrame is determined by two factors:
 If there are no nested arrays (as in Example A and Example D above), 
 the resulting H2OFrame will have the following shape (rows x cols):
 
-  1 x len(tuple)
+  len(tuple) x 1
 
-(i.e. a Frame with a single row).
+(i.e. a Frame with a single column).
 
 If there are nested arrays (as in Example B and Example C above), then
-(given the rules stated above) the resulting H2OFrame will have ROWS equal
-to the number of arrays nested within and COLUMNS equal to the maximum sub-array:
+the resulting H2OFrame will have COLUMNS equal to the number of arrays nested within and
+ROWS equal to the maximum sub-array:
 
-   max( [len(l) for l in tuple] ) x len(tuple)
+    len(tuple) x max( [len(l) for l in tuple] )
 
 Note that this addresses the issue with ragged sub-arrays by assuming that
 shorter sub-arrays will pad themselves with NA (missing values) at the end
@@ -149,7 +153,8 @@ so that they become the correct length.
 
 Because the Frame is uniformly typed, combining data types
 within a column may produce unexpected results. Please read up on the H2O
-parser for details on how a column type is determined for mixed-type columns.
+parser for details on how a column type is determined for mixed-type columns. Also, as
+stated above, you may use the :mod:`from_python` method to provide a set of column types.
 
 Loading A Python List
 +++++++++++++++++++++
@@ -158,7 +163,8 @@ The same principles that apply to tuples also apply to lists. Lists are mutable
 objects, so there is no semantic difference regarding mutability between an
 H2OFrame and a list (as there is for a tuple).
 
-Additionally, a list [] is ordered the same way as a tuple (), with the data appearing within the brackets.
+Additionally, a list [] is ordered the same way as a tuple (), with the data appearing
+within the brackets.
 
 Loading A Python Dictionary Or collections.OrderedDict
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -177,7 +183,8 @@ Note that the built-in dict does not provide any guarantees on ordering. This
 has implications on the order of columns in the eventual H2OFrame, since they
 may be written out of order from which they were initially put into the dict.
 
-collections.OrderedDict preserves the order of the key-value pairs in which they were entered.
+collections.OrderedDict preserves the order of the key-value pairs in which they were
+entered.
 
 :mod:`H2OFrame`
 ----------------

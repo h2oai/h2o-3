@@ -2185,7 +2185,13 @@ h2o.rbind <- function(...) {
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' }
 #' @export
-h2o.merge <- function(x, y, all.x = TRUE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
+h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE, by.x=NULL, by.y=NULL, method="hash") {
+  common.names = intersect(names(x), names(y))
+  if (length(common.names) == 0) stop("No columns in common to merge on!")
+  if (is.null(by.x)) by.x = match(common.names, names(x))
+  if (is.null(by.y)) by.y = match(common.names, names(y))
+  .newExpr("merge", x, y, all.x, all.y, by.x, by.y, .quote(method))
+}
 
 #' Group and Apply by Column
 #'

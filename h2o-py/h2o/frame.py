@@ -449,8 +449,12 @@ class H2OFrame(object):
   def __gt__  (self, i): return H2OFrame._expr(expr=ExprNode(">",   self,i), cache=self._ex._cache)
   def __le__  (self, i): return H2OFrame._expr(expr=ExprNode("<=",  self,i), cache=self._ex._cache)
   def __lt__  (self, i): return H2OFrame._expr(expr=ExprNode("<",   self,i), cache=self._ex._cache)
-  def __eq__  (self, i): return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
-  def __ne__  (self, i): return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
+  def __eq__  (self, i):
+    if i is None: i = float("nan")
+    return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
+  def __ne__  (self, i):
+    if i is None: i = float("nan")
+    return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
   def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
   # rops
@@ -1331,7 +1335,7 @@ class H2OFrame(object):
     if isinstance(by, basestring):     by     = self.names.index(by)
     return H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
 
-  def merge(self, other, allLeft=True, allRite=False):
+  def merge(self, other, all_x = False, all_y = False, by_x = None, by_y = None, method="auto"):
     """Merge two datasets based on common column names
 
     Parameters
@@ -1341,16 +1345,22 @@ class H2OFrame(object):
       and all columns in common are used as the merge key.  If you want to use only a
       subset of the columns in common, rename the other columns so the columns are unique
       in the merged result.
-    allLeft: bool, default=True
+    all_x: bool, default=False
       If True, include all rows from the left/self frame
-    allRite: bool, default=True
+    all_y: bool, default=False
       If True, include all rows from the right/other frame
 
     Returns
     -------
       Original self frame enhanced with merged columns and rows
     """
-    return H2OFrame._expr(expr=ExprNode("merge", self, other, allLeft, allRite))
+
+    common_names = set(self.names).intersection(set(other.names))
+    common_names = list(common_names)
+    if (len(common_names) == 0): raise ValueError("No columns in common to merge on!")
+    if (by_x==None): by_x = [self.names.index(c) for c in common_names]
+    if (by_y==None): by_y = [other.names.index(c) for c in common_names]
+    return H2OFrame._expr(expr=ExprNode("merge", self, other, all_x, all_y, by_x, by_y, method))
 
   def insert_missing_values(self, fraction=0.1, seed=None):
     """Inserting Missing Values into an H2OFrame.
