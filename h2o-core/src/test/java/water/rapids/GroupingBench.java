@@ -1,16 +1,13 @@
-package water.fvec;
+package water.rapids;
+
 import java.util.Arrays;
 import java.util.Random;
-
 import hex.CreateFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.H2O;
-import water.MRTask;
-import water.TestUtil;
+import water.*;
+import water.fvec.*;
 import water.util.ArrayUtils;
-import water.util.Timer;
 
 
 class MySample extends MRTask<MySample> {
@@ -35,7 +32,7 @@ class MySeq extends MRTask<MySeq> {
     }
     @Override public void map( Chunk chk ) {
         for (int i=0; i<chk.len(); i++) {
-            chk.set(i, (chk._start + i) % K);
+            chk.set(i, (chk.start() + i) % K);
         }
     }
 }
@@ -52,7 +49,7 @@ class MyCountRange extends MRTask<MyCountRange> {
     }
     // setupLocal(); // to do.  No because the memory gets copied across. Constructor doesn't need to run on other nodes.
     @Override public void map( Chunk chk ) {
-        long tmp[] = _counts[chk._cidx] = new long[(int)(_max-_min+1)];
+        long tmp[] = _counts[chk.cidx()] = new long[(int)(_max-_min+1)];
         //long tmp[] = new long[(int)(_max-_min+1)];   // does non-sharing help?   If so, assign afterwards after the loop?
         int rows = chk._len;
         //double dummyCounter=1;
@@ -125,11 +122,11 @@ class WriteOrder extends MRTask<WriteOrder> {
     WriteOrder(long[][] counts, int[][] order, long min, long max) { _counts = counts; _order = order; _min = min; _max = max; }
     @Override public void map( Chunk chk ) {
         long nanos[] = new long[5];
-        Vec vec = chk._vec;
+        Vec vec = chk.vec();
         int range = (int)(_max-_min+1);
         long[] espc = vec.espc();
 
-        long myCounts[] = _counts[chk._cidx];
+        long myCounts[] = _counts[chk.cidx()];
 
         // Test thread local counts. Keep in cache and never push to RAM (don't need to be shared)
         // long myCounts[] = new long[(int)(_max-_min+1)];
