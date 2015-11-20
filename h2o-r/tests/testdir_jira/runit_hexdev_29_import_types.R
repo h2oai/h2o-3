@@ -127,6 +127,16 @@ test.continuous.or.categorical <- function() {
   expect_error(h2o.importFile(locate("smalldata/iris/multiple_iris_files_wheader"),
                               col.types=list(by.col.name=c(2,3), types=c("Enum","Enum"))))
 
+  df.hex7 <- h2o.importFile(locate("smalldata/iris/multiple_iris_files"),
+                            col.types=list(by.col.name=c("C5"),types=c("String")))
+
+  expect_true(is.numeric(df.hex7$C1))
+  expect_true(is.numeric(df.hex7$C2))
+  expect_true(is.numeric(df.hex7$C3))
+  expect_true(is.numeric(df.hex7$C4))
+  expect_false(is.factor(df.hex7$C5))
+  expect_false(is.numeric(df.hex7$C5))
+
 }
 
 doTest("Veryfying R Can Declare Types on Import", test.continuous.or.categorical)
