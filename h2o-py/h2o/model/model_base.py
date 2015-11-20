@@ -18,7 +18,7 @@ class ModelBase(object):
     self._xval_keys = None
     self._parms = {}   # internal, for object recycle
     self.parms = {}    # external
-    self._estimator_type = None
+    self._estimator_type = "unsupervised"
     self._future = False  # used by __repr__/show to query job state
     self._job = None      # used when _future is True
 
@@ -55,6 +55,16 @@ class ModelBase(object):
     :return: a dictionary of parameters used to build this model.
     """
     return self.parms
+
+  @property
+  def type(self):
+    """Get the type of model built as a string.
+
+    Returns
+    -------
+      "classifier" or "regressor" or "unsupervised"
+    """
+    return self._estimator_type
 
   def __repr__(self):
     self.show()

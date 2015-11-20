@@ -12,6 +12,7 @@ import site
 __H2OCONN__ = None            # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
 
+
 class H2OConnection(object):
   """
   H2OConnection is a class that represents a connection to the H2O cluster.
@@ -51,12 +52,7 @@ class H2OConnection(object):
     self._rest_version = __H2O_REST_API_VERSION__
     self._child = getattr(__H2OCONN__, "_child") if hasattr(__H2OCONN__, "_child") else None
     __H2OCONN__ = self
-    jar_path = None
-    jarpaths = [os.path.join(sys.prefix, "h2o_jar", "h2o.jar"),
-                os.path.join(os.path.sep,"usr","local","h2o_jar","h2o.jar"),
-                os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar"),
-                os.path.join(site.USER_BASE, "h2o_jar", "h2o.jar")
-                ]
+    jarpaths = H2OConnection.jar_paths()
     if os.path.exists(jarpaths[0]):   jar_path = jarpaths[0]
     elif os.path.exists(jarpaths[1]): jar_path = jarpaths[1]
     elif os.path.exists(jarpaths[2]): jar_path = jarpaths[2]
@@ -105,6 +101,14 @@ class H2OConnection(object):
 
     self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()
+
+  @staticmethod
+  def jar_paths():
+    return [os.path.join(sys.prefix, "h2o_jar", "h2o.jar"),
+                os.path.join(os.path.sep,"usr","local","h2o_jar","h2o.jar"),
+                os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar"),
+                os.path.join(site.USER_BASE, "h2o_jar", "h2o.jar"),
+           ]
 
   @staticmethod
   def _cluster_info():
@@ -576,9 +580,9 @@ class H2OConnection(object):
 def end_session():
   try:
     H2OConnection.delete(url_suffix="InitID")
+    print "Sucessfully closed the H2O Session."
   except:
     pass
-  print "Sucessfully closed the H2O Session."
 
 def get_human_readable_size(num):
   exp_str = [(0, 'B'), (10, 'KB'), (20, 'MB'), (30, 'GB'), (40, 'TB'), (50, 'PB'), ]

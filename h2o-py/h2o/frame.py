@@ -449,8 +449,12 @@ class H2OFrame(object):
   def __gt__  (self, i): return H2OFrame._expr(expr=ExprNode(">",   self,i), cache=self._ex._cache)
   def __le__  (self, i): return H2OFrame._expr(expr=ExprNode("<=",  self,i), cache=self._ex._cache)
   def __lt__  (self, i): return H2OFrame._expr(expr=ExprNode("<",   self,i), cache=self._ex._cache)
-  def __eq__  (self, i): return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
-  def __ne__  (self, i): return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
+  def __eq__  (self, i):
+    if i is None: i = float("nan")
+    return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
+  def __ne__  (self, i):
+    if i is None: i = float("nan")
+    return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
   def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
   # rops
