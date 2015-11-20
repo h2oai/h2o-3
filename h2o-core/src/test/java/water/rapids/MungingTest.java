@@ -1,6 +1,7 @@
 package water.rapids;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
@@ -29,7 +30,7 @@ public class MungingTest extends TestUtil {
       throw new RuntimeException(ex);
     }
   }
-  @Test public void run2() throws Exception {
+  @Ignore @Test public void run2() throws Exception {
     System.out.println("Running run2 ...");
     NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1.csv"));
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
@@ -39,7 +40,7 @@ public class MungingTest extends TestUtil {
     frame.delete();
   }
 
-  @Test public void run3() throws Exception {
+  @Ignore @Test public void run3() throws Exception {
     System.out.println("Running run3 ...");
 
     NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1_subset.csv"));
