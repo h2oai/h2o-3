@@ -2,21 +2,19 @@
 selenium advanced functions
 """
 
-import selenium
-
-from urllib2 import *
-
-from utils import Config
-from utils import Constant
-from utils import Common
-from datetime import datetime
+import time
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+
+from utils import Config
+from utils import Constant
+from utils import Common
 from utils import xpaths
 from utils.xpaths import XPATHS as COMMON_XPATHS
+
 
 def get_web_driver(agrs):
     browser = agrs.browser
@@ -220,7 +218,6 @@ def get_error_message(driver, xpaths, orders):
     error = ''
     for i in orders:
         if check_element_enable(driver, xpaths[i]['xpath'], timeout=10):
-            print "Reason Failed- some error happen", get_value(driver, xpaths[i])
             error += get_text_all(driver, xpaths[i]['xpath'])
 
     if error != '':
@@ -242,5 +239,5 @@ def get_text_all(driver, xpath):
         return result
 
     except Exception as e:
-        print str(e)
         print e.__doc__
+        print str(e)

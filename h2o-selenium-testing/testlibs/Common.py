@@ -79,6 +79,8 @@ def __parse_file(driver, configs, ds_chars, dataset_id ):
 
     Selenium.set_values(driver, orders, cfgs)
 
+    Selenium.get_error_message(driver, XPATHS, ['failure'])
+
     print 'Parse dataset is done'
 
 
@@ -188,49 +190,6 @@ def predict_model(driver, configs):
     Selenium.set_values(driver, orders, cfgs)
 
     print 'Predict is done'
-
-
-# This function don't use now
-def __change_flow_name(driver, configs):
-    """
-    Change the name flow
-    """
-    print 'Start change the name flow'
-
-    orders = ['united_flow_btn', 'name_flow']
-    cfgs = dict(
-        name_flow = '',
-    )
-    cfgs.update(configs)
-
-    Selenium.set_values(driver, orders, cfgs)
-
-    print 'Name flow is changed sucessfully'
-
-
-# This function don't use now
-def __save_flow(driver, command = 'replace'):
-    """
-    Save flow
-    """
-    print 'Start save flow'
-
-    if 'replace' == command:
-        Selenium.set_values(driver, ['flow_btn','save_flow_btn','replace_btn'])
-    else:
-        Selenium.set_values(driver, ['flow_btn', 'save_flow_btn', 'cancel_save_btn'])
-
-    print 'Save flow is successful'
-
-
-# This function don't use now
-def save_download_flow(driver):
-    """
-    Save and download flow
-    """
-    __change_flow_name(driver)
-    __save_flow(driver)
-    navigate_to(driver, 'download_this_flow')
 
 
 def delete_all_DKV(args):

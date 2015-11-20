@@ -23,13 +23,13 @@ class ModelBasic:
         Implement all step to create a perfect model
         """
         result_dict = dict(
-                    result = Constant.testcase_result_status_pass,
-                    message = 'This tescase is passed',
-                    mse = '',
-                    auc = '',
-                    train_dataset_id = self.cfgs[Constant.train_dataset_id],
-                    validate_dataset_id = self.cfgs[Constant.validate_dataset_id],
-                    )
+                result = Constant.testcase_result_status_pass,
+                message = 'This tescase is passed',
+                mse = '',
+                auc = '',
+                train_dataset_id = self.cfgs[Constant.train_dataset_id],
+                validate_dataset_id = self.cfgs[Constant.validate_dataset_id],
+            )
         print 'Test case %s is running.' % self.tc_id
 
         print 'Start import train dataset: ', self.cfgs[Constant.train_dataset_id]

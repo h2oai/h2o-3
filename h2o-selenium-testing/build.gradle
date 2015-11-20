@@ -9,26 +9,36 @@ dependencies {
    }
    
 task run_java(type:Exec){
-		commandLine 'java', '-jar', '../build/h2o.jar' 
-	}
+	commandLine 'java', '-jar', '../build/h2o.jar'
+}
    
 task run_selenium(type: Exec){  
-		if(!rootProject.hasProperty('algorithm')){
-			println("algorithm parameter is required. Please imput it")
-			commandLine 'echo', "algorithm parameter is required. Please imput it"
-		}
-		else if(!rootProject.hasProperty('phantomjsPath')){
-			println("phantomjsPath parameter is required. Please imput it")
-			commandLine 'echo', "phantomjsPath parameter is required. Please imput it"
-		}
-		else if(rootProject.hasProperty('browser')){
+	if(!rootProject.hasProperty('algorithm')){
+		println("algorithm parameter is required. Please imput it")
+		commandLine 'echo', "algorithm parameter is required. Please imput it"
+	}
+	else if(!rootProject.hasProperty('phantomjsPath')){
+		println("phantomjsPath parameter is required. Please imput it")
+		commandLine 'echo', "phantomjsPath parameter is required. Please imput it"
+	}
+	else{
+		def cmd = ['python', 'run.py', '-t', "$algorithm", '-l', "$phantomjsPath"]
+
+		if(rootProject.hasProperty('browser')){
 			println("run with $browser browser")
-			commandLine 'python', 'run.py', '-t', "$algorithm", '-l', "$phantomjsPath", '-b', "$browser"
+			cmd.push('-b')
+			cmd.push("$browser")
 		}
-		else{
-			commandLine 'python', 'run.py', '-t', "$algorithm", '-l', "$phantomjsPath"
+		if(rootProject.hasProperty('testcaseId')){
+			println("run with testcase id: $testcaseId")
+			cmd.push('-testcaseId')
+			cmd.push("$testcaseId")
 		}
-	} 
+
+		//commandLine 'python', 'run.py', '-t', "$algorithm", '-l', "$phantomjsPath"
+		commandLine cmd
+	}
+}
 
 task selenium()<<{
 /*

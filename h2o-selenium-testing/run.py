@@ -9,7 +9,6 @@ import time
 import shutil
 import sys
 
-
 from utils import CSV
 from utils import Common
 from utils import Constant
@@ -208,7 +207,6 @@ def run_testsuite(testsuite, dataset_characteristic, args):
             if args.location == 'phantomjs':
                 Common.kill_phantomjs(args.location)
 
-    # todo: refactor it
     # stop h2o server
     # h2o_server.stop_by_terminal()
     h2o_server.stop_by_UI(args)
@@ -238,6 +236,12 @@ def parse_arguments():
         help = 'Testsuite to be ran',
         required = True)
 
+    parser.add_argument(
+        '-testcaseId',
+        dest = 'testcaseId',
+        help = 'testcaseId to be ran',
+        required = False)
+
     return parser.parse_args()
 
 
@@ -252,7 +256,7 @@ def main():
     setup_ouput_directories()
 
     # Load the testsuite
-    testsuite = CSV.load_testsuite(args.testsuite)
+    testsuite = CSV.load_testsuite(args.testsuite, args.testcaseId)
     # load the dataset characteristic
     dataset_chars = DS.DatasetCharacteristics()
 

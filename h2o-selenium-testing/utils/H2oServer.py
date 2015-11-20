@@ -1,18 +1,11 @@
-import os
-import signal
 import subprocess
 import time
-
-from selenium import webdriver
+import urllib2
 
 from testlibs import Common
-from utils import Selenium
-import Config
-from urllib2 import *
-from utils.xpaths import XPATHS
 
-# import run
-import argparse
+from utils import Config
+from utils import Selenium
 
 
 class H2oServer:
@@ -73,31 +66,20 @@ class H2oServer:
         print 'Restart h2o server successfully'
 
     def check_website_connect(self, website = Config.h2o_website):
-        req = Request(website)
+        req = urllib2.Request(website)
         # Try to open the url
         try:
-            urlopen(req)
+            urllib2.urlopen(req)
             print 'FlowUI is available'
             return True
-        except HTTPError as e:
+        except urllib2.HTTPError as e:
             print 'Cannot connect to ', website
             print e.__doc__
             print str(e)
             return False
-        except URLError as e:
+        except urllib2.URLError as e:
             print 'Cannot connect to ', website
             print e.__doc__
             print str(e)
             return False
-
-
-if __name__ == '__main__':
-    test = H2oServer()
-    # driver = se_functions.get_web_driver('phantomjs', '/home/lamtran/application/phantomjs-1.9.8-linux-i686/bin/phantomjs')
-    # test.check_website_connect(website = Config.h2o_website)
-
-
-    args = argparse.Namespace(browser='phantomjs', location='D:\\application\\phantomjs-1.9.7-windows/phantomjs.exe', testsuite='drf')
-    # test.delete_all_frame(args)
-    # test.stop_by_UI(args)
 

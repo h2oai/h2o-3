@@ -3,7 +3,7 @@ import copy
 from testlibs import Common
 
 from utils.Selenium import set_values
-from utils.xpaths import GBM_XPATHS, XPATHS
+from utils.xpaths import GBM_XPATHS
 
 
 # GBM config

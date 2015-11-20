@@ -1,10 +1,10 @@
 import csv
 
-from utils import Config
+from utils import Config, Common
 from testlibs import GLM, GBM, DRF, DL
 
 
-def load(suitename , filename, index_head_row, index_id_column):
+def load(suitename, filename, index_head_row, index_id_column):
     """
     Load a csv file and return a dict with the first column as dictionary's key.
     To mitigate data input error, raise an exception if same key is found in the csv file.
@@ -39,7 +39,23 @@ def load(suitename , filename, index_head_row, index_id_column):
     return csv_contents
 
 
-def load_testsuite(suite_name):
+def filter_testsuite(testsuite, testcase_ids=[]):
+    if len(testcase_ids) == 0:
+        print 'testcase_ids is empty'
+        return testsuite
+
+    result = {}
+
+    for testcase_id in testcase_ids:
+        if testcase_id in testsuite.keys():
+            result[testcase_id] = testsuite.get(testcase_id)
+        else:
+            print('Testcase_id %s not exist testsuite' % testcase_id)
+
+    return result
+
+
+def load_testsuite(suite_name, testcase_id_args=None):
     """ Load testsuite from csv file """
     if 'drf' in suite_name:
         row = DRF.row
@@ -57,4 +73,9 @@ def load_testsuite(suite_name):
         print 'Do not implement for: ', suite_name
         raise Exception('Do not implement for: ', suite_name)
 
-    return load(suite_name, Config.load_csv % suite_name, row, column)
+    result = load(suite_name, Config.load_csv % suite_name, row, column)
+
+    if testcase_id_args is not None:
+        result = filter_testsuite(result, Common.parse_testcase_id_args(testcase_id_args))
+
+    return result

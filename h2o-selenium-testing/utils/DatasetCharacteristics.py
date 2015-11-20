@@ -1,4 +1,4 @@
-import Config
+from utils import Config
 import CSV
 
 
