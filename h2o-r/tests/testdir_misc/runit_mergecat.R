@@ -22,7 +22,7 @@ test.mergecat <- function() {
   
   Log.info("Merge crimes and census data on community area number")
   names(census)[names(census) == "Community.Area.Number"] <- "Community.Area"
-  crimeMerge <- h2o.merge(crimes, census)
+  crimeMerge <- h2o.merge(crimes, census, all.x=TRUE)
   print(summary(crimeMerge))
   
   
