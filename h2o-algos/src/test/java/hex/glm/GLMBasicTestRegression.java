@@ -327,7 +327,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    Age25-29          0.07624    0.10099   0.755  0.45096
 //    SexMale           0.03908    0.08619   0.453  0.65058
 //      ---
-//      Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+//      Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 //
 //    (Dispersion parameter for Tweedie family taken to be 2.896306)
 //
@@ -391,7 +391,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    Cost         2.021e-05  6.869e-06   2.943 0.003252 **
 //    logInsured   9.390e-01  2.622e-02  35.806  < 2e-16 ***
 //    ---
-//      Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+//      Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 //
 //    (Dispersion parameter for poisson family taken to be 1)
 //
@@ -463,7 +463,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    VOL         -0.0019401  0.0013920  -1.394  0.16449
 //    GLEASON      0.1438776  0.0273259   5.265 2.81e-07 ***
 //    ---
-//      Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+//      Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 //
 //    (Dispersion parameter for gaussian family taken to be 0.1823264)
 //
@@ -576,7 +576,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    VOL         -0.18130    0.16204  -1.119  0.26320
 //    GLEASON      0.91751    0.19633   4.673 2.96e-06 ***
 //    ---
-//      Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+//      Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 //
 //    (Dispersion parameter for binomial family taken to be 1)
 //
