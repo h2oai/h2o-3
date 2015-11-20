@@ -2169,10 +2169,12 @@ h2o.rbind <- function(...) {
 #' function only supports \code{all.x = TRUE}. All other permutations will fail.
 #'
 #' @param x,y Frame objects
-#' @param all.x a logical value indicating whether or not shared values are
-#'        preserved or ignored in \code{x}.
-#' @param all.y a logical value indicating whether or not shared values are
-#'        preserved or ignored in \code{y}.
+#' @param all.x If all.x is true, all rows in the x will be included, even if there is no matching
+#'        row in y, and vice-versa for all.y.
+#' @param all.y see all.x
+#' @param by.x x columns used for merging.
+#' @param by.y y columns used for merging.
+#' @param method auto, radix, or hash (default)
 #' @examples
 #' \donttest{
 #' h2o.init()
