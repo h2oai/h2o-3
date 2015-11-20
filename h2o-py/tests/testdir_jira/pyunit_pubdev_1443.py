@@ -14,7 +14,7 @@ def pubdev_1443():
     mapping = h2o.H2OFrame([[0,1,2,3],[6,7,8,9]])
     mapping.set_names(['rank', 'outcome'])
 
-    merged = fr.merge(mapping,allLeft=True)
+    merged = fr.merge(mapping,all_x=True,all_y=False)
 
     rows, cols = merged.dim
     assert rows == 70000 and cols == 2, "Expected 70000 rows and 2 cols, but got {0} rows and {1} cols".format(rows, cols)
