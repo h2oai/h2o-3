@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Random;
 import hex.CreateFrame;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
@@ -155,7 +156,7 @@ class WriteOrder extends MRTask<WriteOrder> {
 public class GroupingBench extends TestUtil {
     @BeforeClass public static void setup() { stall_till_cloudsize(2); }
 
-    @Test public void runGroupingBench() {
+    @Ignore @Test public void runGroupingBench() {
         // Simplified version of tests in runit_quantile_1_golden.R. There we test probs=seq(0,1,by=0.01)
         //Vec vec = Vec.makeCon(1.1, 1000000000);
         //Vec vec = Vec.makeRepSeq(10,10);
