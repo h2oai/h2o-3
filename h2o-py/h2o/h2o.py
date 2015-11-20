@@ -34,8 +34,7 @@ def _import(path):
 
 
 def upload_file(path, destination_frame="", header=(-1,0,1), sep="", col_names=None, col_types=None, na_strings=None):
-  """
-  Upload a dataset at the path given from the local machine to the H2O cluster.
+  """Upload a dataset at the path given from the local machine to the H2O cluster.
 
   Parameters
   ----------
@@ -431,7 +430,11 @@ def remove(x):
       H2OConnection.delete("DKV/"+xi.model_id)
       xi._id = None
     elif isinstance(xi, basestring):
-      H2OConnection.delete("DKV/"+xi)
+      # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
+      try:
+        rapids("(rm {})".format(xi))
+      except:
+        H2OConnection.delete("DKV/"+xi)
     else:
       raise ValueError('input to h2o.remove must one of: H2OFrame, H2OEstimator, or basestring')
 
@@ -463,11 +466,11 @@ def ls():
   -------
     A list of keys in the current H2O instance.
   """
-  return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=False)
+  return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
 
 
 def frame(frame_id, exclude=""):
-  """Retrieve metadata for a id that points to a Frame.
+  """Retrieve metadata for an id that points to a Frame.
 
   Parameters
   ----------

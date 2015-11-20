@@ -383,6 +383,22 @@ class H2OBinomialModel(ModelBase):
         m[k] = (v.fprs, v.tprs)
     return m.values()[0] if len(m) == 1 else m
 
+  def gains_lift(self, train=False, valid=False, xval=False):
+    """
+    Get the Gains/Lift table for the specified metrics
+    If all are False (default), then return the training metric Gains/Lift table.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
+
+    :param train: If train is True, then return the Gains/Lift table for the training data.
+    :param valid: If valid is True, then return the Gains/Lift table for the validation data.
+    :param xval:  If xval is True, then return the Gains/Lift table for the cross validation data.
+    :return: The Gains/Lift table for this binomial model.
+    """
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.gains_lift()
+    return m.values()[0] if len(m) == 1 else m
 
 
   def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False, xval=False):

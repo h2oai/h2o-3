@@ -73,6 +73,9 @@ class MetricsBase(object):
       print "Gini: "                                          + str(self.giniCoef())
       self.confusion_matrix().show()
       self._metric_json["max_criteria_and_metric_scores"].show()
+      if self.gains_lift():
+          print self.gains_lift()
+
     if metric_type in types_w_mult:
                                                                self.confusion_matrix().show()
                                                                self.hit_ratio_table().show()
@@ -85,6 +88,7 @@ class MetricsBase(object):
     if metric_type in types_w_dim:
         print "Sum of Squared Error (Numeric): "              + str(self.num_err())
         print "Misclassification Error (Categorical): "       + str(self.cat_err())
+
 
   def r2(self):
     """
@@ -516,6 +520,13 @@ class H2OBinomialModelMetrics(MetricsBase):
       return closest_idx
     raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
 
+  def gains_lift(self):
+    """
+    Retrieve the Gains/Lift table
+    """
+    if 'gains_lift_table' in self._metric_json:
+      return self._metric_json['gains_lift_table']
+    return None
 
 class H2OAutoEncoderModelMetrics(MetricsBase):
   def __init__(self, metric_json, on=None, algo=""):

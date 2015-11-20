@@ -3,18 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to H2O's documentation!
-===============================
+H2O Documentation
+=================
 
 Contents:
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
+   intro
    h2o
    frame
-   h2o.model
-   h2o.metrics
+   modeling
+   model_categories
+   metrics
+   assembly
    other
 
 Indices and tables

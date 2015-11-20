@@ -74,6 +74,7 @@ public class GainsLift extends Iced {
       Frame fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
       DKV.put(fr);
       qp._train = fr._key;
+      qp._combine_method = QuantileModel.CombineMethod.HIGH;
       qp._probs = new double[_groups];
       for (int i = 0; i < _groups; ++i) {
         qp._probs[i] = (_groups - i - 1.) / _groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
@@ -96,7 +97,7 @@ public class GainsLift extends Iced {
         gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
         response_rates = gt.response_rates();
         avg_response_rate = gt.avg_response_rate();
-        events = gt.responses();
+        events = gt.events();
         observations = gt.observations();
       } else {
         Log.info("Not computing Gains/Lift table from trivial (constant) predictions.");
@@ -126,7 +127,7 @@ public class GainsLift extends Iced {
     double P = avg_response_rate; // E/N
     double N = _preds.length(); //TODO: Add obs. weights
     double E = N * P;
-    for (int i = 0; i < _groups; ++i) {
+    for (int i = 0; i < events.length; ++i) {
       long e_i = events[i];
       long n_i = observations[i];
       double p_i = response_rates[i];
@@ -134,17 +135,17 @@ public class GainsLift extends Iced {
       sum_n_i += n_i;
       double lift=p_i/P;
       double sum_lift=sum_e_i/sum_n_i/P;
-      table.set(i,0,i+1);
-      table.set(i,1,_quantiles[i]);
-      table.set(i,2,sum_n_i/N);
-      table.set(i,3,p_i);
-      table.set(i,4,sum_e_i/sum_n_i);
-      table.set(i,5,e_i/E);
-      table.set(i,6,sum_e_i/E);
-      table.set(i,7,lift);
-      table.set(i,8,sum_lift);
-      table.set(i,9,100*(lift-1));
-      table.set(i,10,100*(sum_lift-1));
+      table.set(i,0,i+1); //group
+      table.set(i,1,_quantiles[i]); //lower_threshold
+      table.set(i,2,sum_n_i/N); //cumulative_data_fraction
+      table.set(i,3,p_i); //response_rate
+      table.set(i,4,sum_e_i/sum_n_i); //cumulative_response_rate
+      table.set(i,5,e_i/E); //capture_rate
+      table.set(i,6,sum_e_i/E); //cumulative_capture_rate
+      table.set(i,7,lift); //lift
+      table.set(i,8,sum_lift); //cumulative_lift
+      table.set(i,9,100*(lift-1)); //gain
+      table.set(i,10,100*(sum_lift-1)); //cumulative gain
     }
     return this.table = table;
   }
@@ -154,18 +155,17 @@ public class GainsLift extends Iced {
     /* @OUT response_rates */
     public final double[] response_rates() { return _response_rates; }
     public final double avg_response_rate() { return _avg_response_rate; }
-    public final long[] responses(){ return _responses; }
+    public final long[] events(){ return _events; }
     public final long[] observations(){ return _observations; }
 
     /* @IN quantiles/thresholds */
     final private double[] _thresh;
 
-    private long[] _responses;
+    private long[] _events;
     private long[] _observations;
     private long _avg_response;
     private double _avg_response_rate;
     private double[] _response_rates;
-    private long _count;
 
     public GainsLiftBuilder(double[] thresh) {
       _thresh = thresh.clone();
@@ -177,7 +177,7 @@ public class GainsLift extends Iced {
 
     @Override public void map( Chunk ca, Chunk cp ) {
       final double w = 1.0;
-      _responses = new long[_thresh.length];
+      _events = new long[_thresh.length];
       _observations = new long[_thresh.length];
       _avg_response = 0;
       final int len = Math.min(ca._len, cp._len);
@@ -191,40 +191,39 @@ public class GainsLift extends Iced {
       }
     }
 
+    long partial_sum(long[] arr, int I) {
+      long sum=0;
+      for (int i=0; i<I; ++i) sum+=arr[i];
+      return sum;
+    }
+
     public void perRow(double pr, int a, double w) {
       if (w!=1.0) throw H2O.unimpl("GainsLiftBuilder perRow cannot handle weights != 1 for now");
       if (Double.isNaN(pr)) return;
       if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
       for( int t=0; t < _thresh.length; t++ ) {
         if (pr >= _thresh[t] && (t==0 || pr <_thresh[t-1])) {
+          // handle tie breaking in quantiles - push row to the next (lower) group
+          while (t != _thresh.length-1 && partial_sum(_observations, t+1) >= ((t+1)*_fr.numRows())/_events.length) t++;
           _observations[t]++;
-          if (a == 1) _responses[t]++;
+          if (a == 1) _events[t]++;
+          break;
         }
       }
       if (a == 1) _avg_response++;
-      _count++;
     }
 
     @Override public void reduce(GainsLiftBuilder other) {
-      ArrayUtils.add(_responses, other._responses);
+      ArrayUtils.add(_events, other._events);
       ArrayUtils.add(_observations, other._observations);
       _avg_response += other._avg_response;
-      _count += other._count;
     }
 
     @Override public void postGlobal(){
-      assert(ArrayUtils.sum(_observations) == _count);
       _response_rates = new double[_thresh.length];
       for (int i=0; i<_response_rates.length; ++i)
-        _response_rates[i] = (double) _responses[i] / _observations[i];
-      for (int i=0; i<_response_rates.length; ++i) {
-        // spill over to next bucket - needed due to tie breaking in quantiles
-        if(_response_rates[i] > 1 && i<_response_rates.length-1) {
-          _response_rates[i+1] += (_response_rates[i]-1);
-          _response_rates[i] -= (_response_rates[i]-1);
-        }
-      }
-      _avg_response_rate = (double)_avg_response / _count;
+        _response_rates[i] = _observations[i] == 0 ? 0 : (double) _events[i] / _observations[i];
+      _avg_response_rate = (double)_avg_response / ArrayUtils.sum(_observations);
     }
   }
 }
