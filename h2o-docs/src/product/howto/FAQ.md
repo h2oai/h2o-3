@@ -593,6 +593,106 @@ If you do not wish to upgrade to the latest version, documentation for H2O Class
 
 ---
 
+**I am writing an academic research paper and I would like to cite H2O in my bibliography - how should I do that?**
+
+To cite our software: 
+
+- The H2O.ai Team. (2015) *h2o: R Interface for H2O*. R package version 3.1.0.99999. http://www.h2o.ai. 
+
+- The H2O.ai Team. (2015) *h2o: h2o: Python Interface for H2O*. Python package version 3.1.0.99999. http://www.h2o.ai. 
+
+- - The H2O.ai Team. (2015) *H2O: Scalable Machine Learning*. Version 3.1.0.99999. http://www.h2o.ai. 
+
+
+To cite one of our booklets: 
+
+-  Nykodym, T., Hussami, N., Kraljevic, T.,Rao, A., and Wang, A. (Sept. 2015). *Generalized Linear Modeling with H2O.* http://h2o.ai/resources.
+
+- Candel, A., LeDell, E., Parmar, V., and Arora, A. (Sept. 2015). *Deep Learning with H2O.* http://h2o.ai/resources.
+
+- Click, C.,  Malohlava, M., Parmar, V., and Roark, H. (Sept. 2015). *Gradient Boosted Models with H2O.* http://h2o.ai/resources.
+
+- Aiello, S., Eckstrand, E., Fu, A., Landry, M., and Aboyoun, P. (Sept. 2015) *Fast Scalable R with H2O.* http://h2o.ai/resources.
+
+- Aiello, S., Click, C., Roark, H. and Rehak, L. (Sept. 2015) *Machine Learning with Python and H2O* http://h2o.ai/resources. 
+
+- Malohlava, M., and Tellez, A. (Sept. 2015) *Machine Learning with Sparkling Water: H2O + Spark*  http://h2o.ai/resources. 
+
+
+If you are using Bibtex: 
+
+```
+
+@Manual{h2o_GLM_booklet,
+    title = {Generalized Linear Modeling with H2O},
+    author = {Nykodym, T. and Hussami, N. and Kraljevic, T. and Rao, A. and Wang, A.},
+    year = {2015},
+    month = {September},
+    url = {http://h2o.ai/resources},
+}
+
+@Manual{h2o_DL_booklet,
+    title = {Deep Learning with H2O},
+    author = {Candel, A. and LeDell, E. and Arora, A. and Parmar, V.},
+    year = {2015},
+    month = {September},
+    url = {http://h2o.ai/resources},
+}
+
+@Manual{h2o_GBM_booklet,
+    title = {Gradient Boosted Models},
+    author = {Click, C. and Lanford, J. and Malohlava, M. and Parmar, V. and Roark, H.},
+    year = {2015},
+    month = {September},
+    url = {http://h2o.ai/resources},
+}
+
+@Manual{h2o_R_booklet,
+    title = {Fast Scalable R with H2O},
+    author = {Aiello, S. and Eckstrand, E. and Fu, A. and Landry, M. and Aboyoun, P. },
+    year = {2015},
+    month = {September},
+    url = {http://h2o.ai/resources},
+}
+
+@Manual{h2o_R_package,
+    title = {h2o: R Interface for H2O},
+    author = {The H2O.ai team},
+    year = {2015},
+    note = {R package version 3.1.0.99999},
+    url = {http://www.h2o.ai},
+}
+
+
+@Manual{h2o_Python_module,
+    title = {h2o: Python Interface for H2O},
+    author = {The H2O.ai team},
+    year = {2015},
+    note = {Python package version 3.1.0.99999},
+    url = {http://www.h2o.ai},
+}
+
+
+@Manual{h2o_Java_software,
+    title = {H2O: Scalable Machine Learning},
+    author = {The H2O.ai team},
+    year = {2015},
+    note = {version 3.1.0.99999},
+    url = {http://www.h2o.ai},
+}
+
+```
+
+---
+
+**How can I use Flow to export the prediction results with a dataset?**
+
+After obtaining your results, click the **Combine predictions with frame** button, then click the **View Frame** button. 
+
+
+
+---
+
 ##Hadoop
 
 
@@ -737,6 +837,53 @@ EOF
 
 ##Python
 
+**I tried to install H2O in Python but `pip install scikit-learn` failed - what should I do?**
+
+Use the following commands (prepending with `sudo` if necessary): 
+
+```
+easy_install pip
+pip install numpy
+brew install gcc
+pip install scipy
+pip install scikit-learn
+```
+
+If you are still encountering errors and you are using OSX, the default version of Python may be installed. We recommend installing the Homebrew version of Python instead: 
+
+```
+brew install python
+```
+
+If you are encountering errors related to missing Python packages when using H2O, refer to the following list for a complete list of all Python packages, including dependencies: 
+
+<table>
+    <tr>
+        <td><code>grip</code></td>
+        <td><code>tabulate</code></td>
+        <td><code>wheel</code></td>
+        <td><code>jsonlite</code></td>
+        <td><code>ipython</code></td>
+    </tr>
+    <tr>
+        <td><code>numpy</code></td>
+        <td><code>scipy</code></td>
+        <td><code>pandas</code></td>
+        <td><code>-U gensim</code></td>
+        <td><code>jupyter</code></td>
+    </tr>
+    <tr>
+        <td><code>-U PIL</code></td>
+        <td><code>nltk</code></td>
+        <td><code>beautifulsoup4</code></td>
+        <td><code></code></td>
+        <td><code></code></td>
+    </tr>
+    </table>
+
+
+---
+
 **How do I specify a value as an enum in Python? Is there a Python equivalent of `as.factor()` in R?**
 
 Use `.asfactor()` to specify a value as an enum. 
@@ -877,6 +1024,79 @@ Currently, the only version of R that is known to not work well with H2O is R ve
 
 ---
 
+**What R packages are required to use H2O?**
+
+The following packages are required: 
+
+- `methods`
+- `statmod`
+- `stats`
+- `graphics`
+- `RCurl`
+- `jsonlite`
+- `tools`
+- `utils`
+
+Some of these packages have dependencies; for example, `bitops` is required, but it is a dependency of the `RCurl` package, so `bitops` is automatically included when `RCurl` is installed. 
+
+If you are encountering errors related to missing R packages when using H2O, refer to the following list for a complete list of all R packages, including dependencies: 
+
+
+
+<table>
+    <tr>
+        <td><code>statmod</code></td>
+        <td><code>bitops</code></td>
+        <td><code>RCurl</code></td>
+        <td><code>jsonlite</code></td>
+        <td><code>methods</code></td>
+    </tr>
+    <tr>
+        <td><code>stats</code></td>
+        <td><code>graphics</code></td>
+        <td><code>tools</code></td>
+        <td><code>utils</code></td>
+        <td><code>stringi</code></td>
+    </tr>
+    <tr>
+        <td><code>magrittr</code></td>
+        <td><code>colorspace</code></td>
+        <td><code>stringr</code></td>
+        <td><code>RColorBrewer</code></td>
+        <td><code>dichromat</code></td>
+    </tr>
+    <tr>
+        <td><code>munsell</code></td>
+        <td><code>labeling</code></td>
+        <td><code>plyr</code></td>
+        <td><code>digest</code></td>
+        <td><code>gtable</code></td>
+    </tr>
+    <tr>
+        <td><code>reshape2</code></td>
+        <td><code>scales</code></td>
+        <td><code>proto</code></td>
+        <td><code>ggplot2</code></td>
+        <td><code>h2oEnsemble</code></td>
+    </tr>
+    <tr>
+        <td><code>gtools</code></td>
+        <td><code>gdata</code></td>
+        <td><code>caTools</code></td>
+        <td><code>gplots</code></td>
+        <td><code>chron</code></td>
+    </tr>
+    <tr>
+        <td><code>ROCR</code></td>
+        <td><code>data.table</code></td>
+        <td><code>cvAUC</code></td>
+        <td></td>
+        <td></td>
+   </tr>
+</table>
+
+---
+
 **How can I install the H2O R package if I am having permissions problems?**
 
 This issue typically occurs for Linux users when the R software was installed by a root user. For more information, refer to the following [link](https://stat.ethz.ch/R-manual/R-devel/library/base/html/libPaths.html). 
@@ -917,7 +1137,7 @@ Error in h2o.init() :
 Version mismatch! H2O is running version 3.2.0.9 but R package is version 3.2.0.3
 ```
 
-This error is due to a version mismatch between the H2O package and the running H2O instance. Make sure you are using the latest version of both files by downloading H2O from the [downloads page](http://h2o.ai/download/) and installing the latest version and that you have removed any previous H2O R package versions by running: 
+This error is due to a version mismatch between the H2O R package and the running H2O instance. Make sure you are using the latest version of both files by downloading H2O from the [downloads page](http://h2o.ai/download/) and installing the latest version and that you have removed any previous H2O R package versions by running: 
 
 ```
 if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
@@ -945,6 +1165,8 @@ install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws
 library(h2o)
 localH2O = h2o.init(nthreads=-1)
 ```
+
+If your R version is older than the H2O R package, upgrade your R version using `update.packages(checkBuilt=TRUE, ask=FALSE)`. 
 
 ---
 
@@ -1170,11 +1392,19 @@ new_fr <- h2o.cbind(fr,random_column)
 new_fr
 ```
 
-
-
 ---
 
 ##Sparkling Water
+
+**What are the advantages of using Sparkling Water compared with H2O?**
+
+Sparkling Water contains the same features and functionality as H2O but provides a way to use H2O with [Spark](http://spark.apache.org/), a large-scale cluster framework. 
+
+Sparkling Water is ideal for H2O users who need to manage large clusters for their data processing needs and want to transfer data from Spark to H2O (or vice versa). 
+
+There is also a Python interface available to enable access to Sparkling Water directly from PySpark. 
+
+--- 
 
 **How do I filter an H2OFrame using Sparkling Water?**
 
