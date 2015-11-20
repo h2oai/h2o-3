@@ -6,6 +6,7 @@ import org.apache.commons.math3.util.FastMath;
 import water.*;
 import water.fvec.*;
 import water.util.MathUtils;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -33,7 +34,7 @@ abstract class ASTUniOp extends ASTPrim {
                 nc.addNum(op(c.atd(i)));
             }
           }
-        }.doAll(fr.numCols(),fr).outputFrame());
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
       case Val.ROW:
         ValRow v = (ValRow)val;
         double[] ds = new double[v._ds.length];
@@ -106,7 +107,7 @@ class ASTIsNA  extends ASTPrim {
                 nc.addNum(c.isNA(i) ? 1 : 0);
             }
           }
-        }.doAll(fr.numCols(),fr).outputFrame());
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
     case Val.STR: return new ValNum(val.getStr()==null ? 1 : 0);
     default: throw H2O.unimpl("is.na unimpl: " + val.getClass());
     }
@@ -143,7 +144,7 @@ class ASTStratifiedSplit extends ASTPrim {
     final double testFrac = asts[2].exec(env).getNum();
     long seed = (long)asts[3].exec(env).getNum();
     seed = seed == -1 ? new Random().nextLong() : seed;
-    final long[] classes = new Vec.CollectDomain().doAll(y).domain();
+    final long[] classes = new VecUtils.CollectDomain().doAll(y).domain();
     final int nClass = y.isNumeric() ? classes.length : y.domain().length;
     final long[] seeds = new long[nClass]; // seed for each regular fold column (one per class)
     for( int i=0;i<nClass;++i)
@@ -162,7 +163,7 @@ class ASTStratifiedSplit extends ASTPrim {
           }
         }
       }
-    }.doAll(1,y).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
+    }.doAll(1, Vec.T_NUM, new Frame(y)).outputFrame(new String[]{"test_train_split"}, new String[][]{dom} ));
   }
 }
 
@@ -225,8 +226,9 @@ class ASTLevels extends ASTPrim {
       if( f.vec(i).isCategorical() )
         if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
 
+    final int rowLayout = Vec.ESPC.rowLayout(keys[0],new long[]{0,max});
     for( int i=0;i<f.numCols();++i ) {
-      AppendableVec v = new AppendableVec(keys[i]);
+      AppendableVec v = new AppendableVec(keys[i],Vec.T_NUM);
       NewChunk nc = new NewChunk(v,0);
       String[] dom = f.vec(i).domain();
       int numToPad = dom==null?max:max-dom.length;
@@ -234,7 +236,7 @@ class ASTLevels extends ASTPrim {
         for(int j=0;j<dom.length;++j) nc.addNum(j);
       for(int j=0;j<numToPad;++j)     nc.addNA();
       nc.close(0,fs);
-      vecs[i] = v.close(fs);
+      vecs[i] = v.close(rowLayout,fs);
       vecs[i].setDomain(dom);
     }
     fs.blockForPending();
@@ -268,7 +270,7 @@ class ASTSetLevel extends ASTPrim {
         for (int i=0;i<c._len;++i)
           nc.addNum(idx);
       }
-    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
     return new ValFrame(fr2);
   }
 }
@@ -288,7 +290,7 @@ class ASTSetDomain extends ASTPrim {
     if( !v.isCategorical() ) throw new IllegalArgumentException("Vector must be a factor column. Got: "+v.get_type_str());
     if( _domains!=null && _domains.length != v.domain().length) {
       // in this case we want to recollect the domain and check that number of levels matches _domains
-      Vec.CollectDomainFast t = new Vec.CollectDomainFast((int)v.max());
+      VecUtils.CollectDomainFast t = new VecUtils.CollectDomainFast((int)v.max());
       t.doAll(v);
       final long[] dom = t.domain();
       if( dom.length != _domains.length)
@@ -339,34 +341,35 @@ class ASTMMult extends ASTPrim {
 
 
 class ASTMatch extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "table", "nomatch", "incomparables"}; }
+  @Override public String[] args() { return new String[]{"ary", "table", "nomatch", "incomparables"}; }
   @Override int nargs() { return 1+4; } // (match fr table nomatch incomps)
-  @Override
-  public String str() { return "match"; }
+  @Override public String str() { return "match"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() != 1 && !fr.anyVec().isCategorical()) throw new IllegalArgumentException("can only match on a single categorical column.");
-    String[] _strsTable=null;
-    double[] _dblsTable=null;
-    if( asts[2] instanceof ASTNumList ) _dblsTable = ((ASTNumList)asts[2]).expand();
-    else if( asts[2] instanceof ASTNum ) _dblsTable = new double[]{asts[2].exec(env).getNum()};
-    else if( asts[2] instanceof ASTStrList) _strsTable = ((ASTStrList)asts[2])._strs;
-    else if( asts[2] instanceof ASTStr) _strsTable = new String[]{asts[2].exec(env).getStr()};
+    if( fr.numCols() != 1 || !fr.anyVec().isCategorical()) 
+      throw new IllegalArgumentException("can only match on a single categorical column.");
+
+    String[] strsTable2=null;
+    double[] dblsTable2=null;
+    if(      asts[2] instanceof ASTNumList) dblsTable2 = ((ASTNumList)asts[2]).sort().expand();
+    else if( asts[2] instanceof ASTNum    ) dblsTable2 = new double[]{asts[2].exec(env).getNum()};
+    else if( asts[2] instanceof ASTStrList){strsTable2 = ((ASTStrList)asts[2])._strs; Arrays.sort(strsTable2); }
+    else if( asts[2] instanceof ASTStr    ) strsTable2 = new String[]{asts[2].exec(env).getStr()};
     else throw new IllegalArgumentException("Expected numbers/strings. Got: "+asts[2].getClass());
 
-    final String[] strsTable = _strsTable;
-    final double[] dblsTable = _dblsTable;
+    final String[] strsTable = strsTable2;
+    final double[] dblsTable = dblsTable2;
 
     Frame rez = new MRTask() {
       @Override public void map(Chunk c, NewChunk n) {
-        int rows = c._len;
-        if(strsTable==null)
-          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(dblsTable, c.atd(r)),0);
-        else
-          for (int r = 0; r < rows; ++r) n.addNum(c.isNA(r)?0:in(strsTable, c.vec().domain()[(int)c.at8(r)]),0);
+        String[] domain = c.vec().domain();
+        int x, rows = c._len;
+        for( int r = 0; r < rows; ++r) {
+          x = c.isNA(r) ? 0 : (strsTable==null ? in(dblsTable, c.atd(r)) : in(strsTable, domain[(int)c.at8(r)]));
+          n.addNum(x,0);
+        }
       }
-    }.doAll(1, fr.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame();
     return new ValFrame(rez);
   }
   private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0; }
@@ -393,52 +396,39 @@ class ASTMatch extends ASTPrim {
   }
 }
 
+// Indices of which entries are not equal to 0
 class ASTWhich extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
-  @Override int nargs() { return 1+1; } // (h2o.which col)
-  @Override
-  public String str() { return "h2o.which"; }
+  @Override public String[] args() { return new String[]{"ary"}; }
+  @Override int nargs() { return 1+1; } // (which col)
+  @Override public String str() { return "which"; }
   @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
+
+    // The 1-row version
     if( f.numRows()==1 && f.numCols() > 1) {
-      double[] in = new double[f.numCols()];
-      for(int i=0;i<in.length;++i) in[i] = f.vecs()[i].at(0)==1?i:-1;
-      Futures fs = new Futures();
-      Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
-      AppendableVec v = new AppendableVec(key);
+      AppendableVec v = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(),Vec.T_NUM);
       NewChunk chunk = new NewChunk(v, 0);
-      for (double d : in) {
-        if( d!=-1)
-          chunk.addNum(d);
-      }
-      chunk.close(0, fs);
-      Vec vec = v.close(fs);
+      for( int i=0; i<f.numCols(); i++ ) 
+        if( f.vecs()[i].at8(0)!=0 )
+          chunk.addNum(i);
+      Futures fs = chunk.close(0, new Futures());
+      Vec vec = v.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }
+
+    // The 1-column version
+    Vec vec = f.anyVec();
+    if( f.numCols() > 1 || !vec.isInt() ) 
+      throw new IllegalArgumentException("which requires a single integer column");
     Frame f2 = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
         long start = c.start();
         for(int i=0;i<c._len;++i)
-          if( c.at8(i)==1 ) nc.addNum(start+i);
+          if( c.at8(i)!=0 ) nc.addNum(start+i);
       }
-    }.doAll(1,f.anyVec()).outputFrame();
+    }.doAll(new byte[]{Vec.T_NUM},vec).outputFrame();
     return new ValFrame(f2);
   }
 }
 
-class ASTPop extends ASTPrim {
-  @Override public String[] args() { return new String[]{"ary", "colidx"}; }
-  @Override int nargs() { return 1+2; } // (pop fr colidx)
-  @Override
-  public String str() { return "pop"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    int idx = (int)asts[2].exec(env).getNum();
-    String[] name = new String[]{fr.names()[idx]};
-    Vec[] v = new Vec[]{fr.remove(idx)};
-    if( fr._key!=null ) DKV.put(fr);
-    return new ValFrame(new Frame(name,v));
-  }
-}

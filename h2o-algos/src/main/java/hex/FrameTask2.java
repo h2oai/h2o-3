@@ -22,17 +22,12 @@ import water.util.FrameUtils;
 public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   protected boolean _sparse;
   final Key     _jobKey;
-  public final Vec     _rowFilter;
   protected final DataInfo _dinfo;
 
   public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey){
-    this(cmp,dinfo,jobKey,null);
-  }
-  public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, Vec rowFilter){
     super(cmp);
     _dinfo = dinfo;
     _jobKey = jobKey;
-    _rowFilter = rowFilter;
     _sparse = handlesSparseData() && FrameUtils.sparseRatio(dinfo._adaptedFrame) < .5;
   }
 
@@ -50,7 +45,6 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
    */
   public void chunkDone(){}
 
-  public double sparseOffset(){return 0;}
 
   public boolean handlesSparseData(){return false;}
   abstract protected void processRow(Row r);
@@ -59,18 +53,20 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   public void map(Chunk[] chks) {
     if(_jobKey != null && (DKV.get(_jobKey) == null || !Job.isRunning(_jobKey)))
       throw new Job.JobCancelledException();
-    Chunk rowFilter = _rowFilter == null?null:_rowFilter.chunkForChunkIdx(chks[0].cidx());
     chunkInit();
     // compute
     if(_sparse) {
-      for(Row r:_dinfo.extractSparseRows(chks, sparseOffset()))
-        if(rowFilter == null || rowFilter.at8((int)(r.rid - chks[0].start())) == 0)
+      for(Row r:_dinfo.extractSparseRows(chks, 0)) {
+        if(!r.bad && r.weight != 0)
           processRow(r);
+      }
     } else {
       Row row = _dinfo.newDenseRow();
-      for(int r = 0 ; r < chks[0]._len; ++r)
-        if(rowFilter == null || rowFilter.at8(r) == 0)
-          processRow(_dinfo.extractDenseRow(chks, r, row));
+      for(int r = 0 ; r < chks[0]._len; ++r) {
+        _dinfo.extractDenseRow(chks, r, row);
+        if(!row.bad && row.weight != 0)
+          processRow(row);
+      }
     }
     chunkDone();
   }

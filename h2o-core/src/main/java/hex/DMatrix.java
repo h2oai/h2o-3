@@ -47,7 +47,9 @@ public class DMatrix  {
       espc[i] = sum;
       sum += s;
     }
-    return transpose(src, new Frame(new Vec(Vec.newKey(),espc).makeZeros((int)src.numRows())));
+    Key key = Vec.newKey();
+    int rowLayout = Vec.ESPC.rowLayout(key,espc);
+    return transpose(src, new Frame(new Vec(key,rowLayout).makeZeros((int)src.numRows())));
   }
 
   /**
@@ -86,7 +88,7 @@ public class DMatrix  {
     public TransposeTsk(Frame tgt){ _tgt = tgt;}
     public void map(final Chunk[] chks) {
       final Frame tgt = _tgt;
-      final long [] espc = tgt.anyVec()._espc;
+      final long [] espc = tgt.anyVec().espc();
       final int colStart = (int)chks[0].start();
 //      addToPendingCount(espc.length - 2);
       for (int i = 0; i < espc.length - 1; ++i) {

@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test <- function(){
   ## Import data
@@ -34,8 +34,8 @@ test <- function(){
 
 
   ## Check coefficients remained the same and the intercept is adjusted
-  coeff1 <- glm_priors@model$coefficients[-ncol(h2oData)]
-  coeff2 <- glm_nopriors@model$coefficients[-ncol(h2oData)]
+  coeff1 <- glm_priors@model$coefficients[-1]
+  coeff2 <- glm_nopriors@model$coefficients[-1]
   intercept1 <- glm_priors@model$coefficients["Intercept"]
   intercept2 <- glm_nopriors@model$coefficients["Intercept"]
   print("Coefficients from GLM ran with priors: ")

@@ -4,9 +4,9 @@
 # Issue: is.na on a UUID column was not giving correct results
 ######################################################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-source('../h2o-runit.R')
+
 
 test.uuid <- function() {
   Log.info('Importing test_uuid.csv to H2O...')

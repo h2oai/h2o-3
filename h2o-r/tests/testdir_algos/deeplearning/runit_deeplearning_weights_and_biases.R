@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.deeplearning_imbalanced <- function() {
   Log.info("Test checks if Deep Learning weights and biases are accessible from R")

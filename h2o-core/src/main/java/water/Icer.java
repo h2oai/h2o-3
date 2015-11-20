@@ -2,6 +2,7 @@ package water;
 
 import sun.misc.Unsafe;
 import water.nbhm.UtilUnsafe;
+import water.fvec.*;
 
 /** Base Class for the {@link Iced} implementation hierarchy; subclasses are
  *  all auto-gen'd and no user code should call or extend this class.  Since
@@ -33,4 +34,6 @@ public class Icer<T extends Freezable> {
   protected final AutoBuffer writeJSON3(AutoBuffer ab, T ice) { return ab; }
   protected final T read3    (AutoBuffer ab, T ice) { return ice; }
   protected final T readJSON3(AutoBuffer ab, T ice) { return ice; }
+
+  protected void compute1(water.H2O.H2OCountedCompleter h2cc ) { h2cc.compute1(); }
 }

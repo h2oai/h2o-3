@@ -2,6 +2,7 @@ from .transform_base import H2OTransformer
 import warnings
 from ..assembly import H2OCol
 
+
 class H2OScaler(H2OTransformer):
   """
   Standardize an H2OFrame by demeaning and scaling each column.
@@ -63,7 +64,7 @@ class H2OScaler(H2OTransformer):
     :param params: (Ignored)
     :return: A scaled H2OFrame.
     """
-    return X.scale(self.means, self.stds)._frame()
+    return X.scale(self.means, self.stds)
 
   def inverse_transform(self,X,y=None,**params):
     """
@@ -87,10 +88,10 @@ class H2OColSelect(H2OTransformer):
     return self
 
   def transform(self,X,y=None,**params):
-    return X[self.cols]._frame()
+    return X[self.cols]
 
   def to_rest(self, step_name):
-    ast = self._dummy_frame()[self.cols]._ast._debug_print(pprint=False)
+    ast = self._dummy_frame()[self.cols]._ex._to_string()
     return super(H2OColSelect, self).to_rest([step_name,"H2OColSelect",ast,False,"|"])
 
 
@@ -115,11 +116,11 @@ class H2OColOp(H2OTransformer):
   def transform(self,X,y=None,**params):
     res = H2OColOp._transform_helper(X,params)
     if self.inplace:  X[self.col] = res
-    else:             return X.cbind(res)._frame()
+    else:             return X.cbind(res)
     return X
 
-  def _transform_helper(self,X,**params):
-    if self.params == None or self.params == {}:
+  def _transform_helper(self, X, **params):
+    if self.params is None or self.params == {}:
       if self.col is not None: res = self.fun(X[self.col])
       else:                    res = self.fun(X)
     else:
@@ -128,7 +129,7 @@ class H2OColOp(H2OTransformer):
     return res
 
   def to_rest(self, step_name):
-    ast = self._transform_helper(self._dummy_frame())._ast._debug_print(pprint=False)
+    ast = self._transform_helper(self._dummy_frame())._ex._to_string()
     new_col_names = self.new_col_name
     if new_col_names is None: new_col_names=["|"]
     elif not isinstance(new_col_names, (list,tuple)): new_col_names = [new_col_names]
@@ -136,7 +137,7 @@ class H2OColOp(H2OTransformer):
 
 
 class H2OBinaryOp(H2OColOp):
-  """ Perform a binary operation on a column.
+  """Perform a binary operation on a column.
 
   If left is None, then the column will appear on the left in the operation; otherwise
   it will be appear on the right.

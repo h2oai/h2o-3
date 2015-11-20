@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.merge.examples <- function() {
   census_path <- locate("smalldata/chicago/chicagoCensus.csv")
@@ -38,7 +38,7 @@ test.merge.examples <- function() {
   print(head(crimeExamples))
   
   Log.info("Merge created crime examples with Chicago census data")
-  crimeExamplesMerge <- h2o.merge(crimeExamples, census)
+  crimeExamplesMerge <- h2o.merge(crimeExamples, census, all.x=TRUE, all.y=FALSE)
   print(summary(crimeExamplesMerge))
   
 }

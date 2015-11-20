@@ -1,6 +1,8 @@
 import h2o
+from h2o import _locate # private function. used to find files within h2o git project directory.
 import sys, os
 import site
+
 
 def system_file(name):
     """
@@ -20,7 +22,7 @@ def system_file(name):
 
     if h2o_data_path is None:
         if name == "prostate.csv":
-            h2o_data_path = h2o.locate(os.path.join("smalldata", "prostate", name))
+            h2o_data_path = _locate(os.path.join("smalldata", "prostate", name))
 
     if h2o_data_path is None or not os.path.exists(h2o_data_path):
         raise(ValueError, "This demo depends on " + name + " which could not be found")
@@ -90,7 +92,7 @@ def gbm_demo(interactive, echo, test):
     if not test: h2o.init()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate = h2o.upload_file(path = h2o_data_path)
+    prostate = h2o.upload_file(path=h2o_data_path)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate.summary()
@@ -234,7 +236,7 @@ def glm_demo(interactive, echo, test):
     if not test: h2o.init()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate = h2o.upload_file(path = h2o_data_path)
+    prostate = h2o.upload_file(path=h2o_data_path)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate.summary()

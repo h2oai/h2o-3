@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 check.deeplearning_anomaly_mse <- function(conn) {
   Log.info("Deep Learning Anomaly Detection on ECG Data)")

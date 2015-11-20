@@ -1,7 +1,7 @@
 ### This tests priors in glm on a synthetic dataset ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 	print("Create sythetic data with intercept = -3.35 and coefficent = 2 for binomial classification with class distribution 0.1")

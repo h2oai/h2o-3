@@ -25,54 +25,60 @@
 #` - TRUE : Node is evaluated, cluster has the ID, and an R GC finalizer will remove this temp ID
 #` - FALSE: Node is evaluated, cluster has the ID, and the user has to explictly remove this permanent ID
 #` - list of Nodes: Then further ID is one of:
-#` - - missing: this Node is lazy and has never been evaluated 
+#` - - missing: this Node is lazy and has never been evaluated
 #` - - NA: this Node has been executed once, but no temp ID was made
-#` - - String: this Node is-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to FALSE
-#` 
+#` - - String: this Node is mid-execution, with the given temp ID.  Once execution has completed the EVAL field will be set to TRUE
+#`
 #` # A number of fields represent cached queries of an evaluated frame.
 #` E$data   <- A cached result; can be a scalar, or a R dataframe result holding
 #`             the first N (typically 10) rows and all cols of the frame
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
+#` E$types  <- the H2O column types
 
 
 is.Frame <- function(fr) !missing(fr) && class(fr)[1]=="Frame"
 chk.Frame <- function(fr) if( is.Frame(fr) ) fr else stop("must be a Frame")
+# Horrible internal shortcut to set our fields, using a more "normal"
+# parameter order
+.set <- function(x,name,value) attr(x,name) <- value
 
 #' Get back-end distributed key/value store id from a Frame.
 #'
 #' @param x A Frame
 #' @return The id
 #' @export
-h2o.getId <- function(x) {
-  chk.Frame(x)
-  attr(x, "id")
-}
+h2o.getId <- function(x) attr( .eval.frame(x), "id")
+
+#' Get the types-per-column
+#'
+#' @param x A Frame
+#' @return A list of types
+#' @export
+h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
 
 .h2o.gc <- function() {
   gc()
 }
-
-# Horrible internal shortcut to set our fields, using a more "normal"
-# parameter order
-.set <- function(x,name,value) attr(x,name) <- value
 
 # GC Finalizer - called when GC collects a Frame Must be defined ahead of constructors.
 .nodeFinalizer <- function(x) {
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
     #cat("=== Finalizer on ",attr(x, "id"),"\n")
-    .h2o.__remoteSend(paste0(.h2o.__DKV, "/", attr(x, "id")), method = "DELETE")
+    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), method = "POST")
   }
 }
 
 # Make a raw named data frame.  The key will exist on the server, and will be
 # the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
-.newFrame <- function(op,id) {
+.newFrame <- function(op,id,nrow,ncol) {
   stopifnot( is.character(id) )
   node <- structure(new.env(parent = emptyenv()), class="Frame")
   .set(node,"op",op)
   .set(node,"id",id)
   .set(node,"eval",FALSE) # User-managed lifetime
+  .set(node,"nrow",nrow)
+  .set(node,"ncol",ncol)
   node
 }
 
@@ -87,11 +93,205 @@ h2o.getId <- function(x) {
   node
 }
 
+#
+# Overload Assignment!
+#
+# Trying to remove excessive temp generation, by having the R interpreter tell
+# H2O that some computation may be used, or not.  If the expression is only
+# ever used once, then no temp is needed and the cluster can optimize the
+# lifetime.  If the temp *may* be used again, the cluster needs a temp for
+# the reuse, or else the computation needs to be "pure" and re-executed.
+#
+# After many many attempts, I think it's not reasonably possible to track
+# lifetimes in R via assignment overload.  There are too many other paths
+# that extend lifetimes that all must be caught (including, but not limited
+# to: c, list, <-, =, and the *apply series)
+
+# Internal recursive printer
+.pfr <- function(x) {
+  if( is.list(res<- attr(x,"eval")) )
+    res <- paste0("(",attr(x, "op")," ",paste(sapply( attr(x,"eval"), function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "),")")
+  paste0( attr(x, "id"), ":=", res)
+}
+
+# Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
+pfr <- function(x) { chk.Frame(x); .pfr(x) }
+
+# Recursively build a rapids execution string; assign the "id" field to count
+# executions; flip to using a temp on the 2nd execution.
+#
+# This call "counts"!!!
+# On the 2nd .eval.impl call to any Frame object, the object will be cached as
+# a temp until the next R GC cycle - consuming memory.  Do Not Call This except
+# when you need to do some other cluster operation on the evaluated object.
+# Examples might be: lazy dataset time parse vs changing the global timezone.
+# Global timezone change is eager, so the time parse as to occur in the correct
+# order relative to the timezone change, so cannot be lazy.
+.eval.impl <- function(x) {
+  dat <- attr(x, "data")
+  id  <- attr(x, "id")
+  if( !is.null(dat) ) return( if( is.data.frame(dat) ) id else dat ) # Data already computed and cached
+  if( !is.null( id) && !is.na(id) ) return( id ) # Data already computed under ID, but not cached
+  # Build the eval expression
+  eval<- attr(x, "eval")
+  stopifnot(is.list(eval))
+  op  <- attr(x, "op")
+  res <- paste(sapply( eval, function(child) {
+    if(      is.Frame    (child) )                      .eval.impl(child)  # recurse
+    else if( is.numeric  (child) && length(child) > 1L ) .num.list(child)  # [ numberz ]  TODO: sup with those NaNs tho
+    else if( is.character(child) && length(child) > 1L ) .str.list(child)  # [ stringz ]
+    else                                                           child   # base; e.g. raw single numbers or strings
+  }),collapse=" ")
+  res <- paste0("(",op," ",res,")")
+  # First exec: ID is missing, convert to NA
+  # 2nd exec: ID is NA, convert to unique string
+  # 3rd exec: there is no 3rd exec, just use the ID string
+  if( is.null(id) ) .set(x,"id",NA)  # 1st exec: missing->NA
+  else {                             # 2nd exec: NA-> tmp name
+    .set(x,"id", id <- .key.make("RTMP")) # Flag as code-emitted by assigning the cluster name
+    res <- paste0("(tmp= ",id," ",res,")")
+  }
+  res
+}
+
+.clear.impl <- function(x) {
+  if( !is.Frame(x) ) return()
+  eval <- attr(x, "eval")
+  if( !is.list(eval) ) { stopifnot(is.character( attr(x, "id") )); return() }
+  lapply(eval, function(child) .clear.impl(child))
+  if( is.character( attr(x, "id")) )
+    .set(x,"eval",TRUE) # GC-able temp
+}
+
+# Evaluate this Frame, giving the result a name, and never re-execute it.
+#
+# Because of GC, this algo requires 2 passes over the DAG.  The first pass
+# builds the expression string - but it cannot let any of the sub-parts go
+# dead, lest GC delete frames on last use... before the expression string is
+# shipped over the wire.  During the 2nd pass the internal DAG pointers are
+# wiped out, and allowed to go dead (hence can be nuked by GC).
+#
+.eval.frame <- function(x) {
+  id <- attr(chk.Frame(x), "id")
+  if( is.character(id) ) return(x)  # Already executed and named
+  # Frame does not have a name in the cluster?
+  # Act "as if" they're on the 2nd execution - and
+  # they will get assigned a temp
+  .set(x,"id",NA)
+  .eval.driver(x) # Return the evaluated and id'd result
+}
+.eval.scalar <- function(x) {
+  dat <- attr(chk.Frame(x), "data")
+  if( !is.null(dat) ) return(dat)   # Return cached scalar
+  stopifnot(is.null(attr(x, "id"))) # No names for scalars
+  attr(.eval.driver(x),"data")      # Cache and return scalar
+}
+.eval.driver <- function(x) {
+  # Build the AST; this will assign a name as needed
+  exec_str <- .eval.impl(x)
+  # Execute the AST on H2O
+  #print(paste0("EXPR: ",exec_str))
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, method = "POST")
+  if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
+  if( !is.null(res$scalar) ) { # Fetch out a scalar answer
+    y <- res$scalar
+    if( y=="TRUE" ) y <- TRUE
+    else if( y=="FALSE" ) y <- FALSE
+    .set(x,"data",y)
+  } else if( !is.null(res$funstr) ) {
+    stop("Unimplemented: handling of function returns")
+  } else if( !is.null(res$string) ) {
+    .set(x,"data",res$string)
+  } else if( !is.null(res$key) ) {
+    .set(x,"nrow",res$num_rows)
+    .set(x,"ncol",res$num_cols)
+    # No data set, none fetched.  So no column names, nor preview data nor column types
+  }
+  # Now clear all internal DAG nodes, allowing GC to reclaim them
+  .clear.impl(x)
+  # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
+  # temps... to help debug GC issues.
+  #.h2o.gc()
+  x
+}
+
+#` Fetch the first N rows on demand, caching them in x$data; also cache x$types.
+#` nrow and ncol are usually already set, but for getFrame they are set to -1
+#` and immediately set here.
+.fetch.data <- function(x,N) {
+  stopifnot(!missing(N))
+  N <- max(N,10L)  # At least as many as the default head/tail use
+  data = attr(chk.Frame(x), "data")
+  if( is.null(data) || (is.data.frame(data) && nrow(data) < N) ) {
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", h2o.getId(x), "?row_count=",N))$frames[[1]]
+    .set(x,"types",lapply(res$columns, function(c) c$type))
+    nrow <- .set.nlen(x,"nrow",res$rows)
+    ncol <- .set.nlen(x,"ncol",length(res$columns))
+    if( res$row_count==0 ) {
+      data <- as.data.frame(matrix(NA,ncol=ncol,nrow=0L))
+      colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
+    } else {
+      # Convert to data.frame
+      L <- lapply(res$columns, function(c) {
+        row <- if( c$type!="string" && c$type!="uuid" )  c$data  else  c$string_data
+        #if( length(row)!=res$row_count ) browser()
+        stopifnot(length(row)==res$row_count) # No short columns
+        row
+      })
+      data <- data.frame(L)
+      colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
+      for( i in 1:length(data) ) {  # Set factor levels
+        dom <- res$columns[[i]]$domain
+        if( !is.null(dom) ) # H2O has a domain; force R to do so also
+          data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
+        else if( is.factor(data[,i]) ) # R has a domain, but H2O does not
+          data[,i] <- as.character(data[,i]) # Force to string type
+      }
+    }
+    .set(x,"data",data)
+  }
+  attr(x,"data")
+}
+
+.set.nlen <- function(x,fld,nlen) {
+  y <- attr(x,fld)
+  if( is.null(y) || y == -1 ) .set(x,fld,(y=nlen))
+  else stopifnot(y==nlen)
+  y
+}
+
+#` Flush any cached data
+.flush.data <- function(x) {
+  if( !is.null(attr(x,"data")) ) rm("data" ,envir=x)
+  if( !is.null(attr(x,"data")) ) rm("types",envir=x)
+  if( !is.null(attr(x,"data")) ) rm("nrow" ,envir=x)
+  if( !is.null(attr(x,"data")) ) rm("ncol" ,envir=x)
+  x
+}
+
+#'
+#' Rename an H2O object.
+#'
+#' Makes a copy of the data frame and gives it the desired the key.
+#'
+#' @param data An H2O Frame object
+#' @param key The hex key to be associated with the H2O parsed data object
+#'
+#' @export
+h2o.assign <- function(data, key) {
+  .key.validate(key)
+  id <- h2o.getId(data)
+  if( key == id ) stop("Destination key must differ from input frame ", key)
+  x = .eval.driver(.newExpr("assign", key, id)) # Eager eval, so can see it in cluster
+  .set(x,"id",key)
+  .set(x,"eval",NULL)
+  x
+}
+
 #' Data Frame Creation in H2O
 #'
 #' Creates a data frame in H2O with real-valued, categorical, integer, and binary columns specified by the user.
 #'
-#' @param key A string indicating the destination key. If empty, this will be auto-generated by H2O.
 #' @param rows The number of rows of data to generate.
 #' @param cols The number of columns of data to generate. Excludes the response column if \code{has_response = TRUE}.
 #' @param randomize A logical value indicating whether data values should be randomly generated. This must be TRUE if either \code{categorical_fraction} or \code{integer_fraction} is non-zero.
@@ -123,7 +323,7 @@ h2o.getId <- function(x) {
 #' summary(hex2)
 #' }
 #' @export
-h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
+h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
                             value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,
                             integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1,
                             binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
@@ -144,19 +344,15 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
   if(!is.numeric(response_factors)) stop("`response_factors` must be a numeric value")
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
 
-  .cframe.map <- c("key" = "dest")
   parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent, 2)  # depth must be 2 in order to pop out of the lapply scope...
-  if(missing(key) || !is.character(key) || !nzchar(key))
-    parms$key = .key.make(prefix = "frame")
-  .key.validate(parms$key)
-  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
+  parms$dest = .key.make("RTMP")
 
   res <- .h2o.__remoteSend(.h2o.__CREATE_FRAME, method = "POST", .params = parms)
-
-  job_key  <- res$key$name
-  dest_key <- res$dest$name
-  .h2o.__waitOnJob(job_key)
-  h2o.getFrame(dest_key)
+  .h2o.__waitOnJob(res$key$name)
+  fr <- h2o.getFrame(parms$dest)
+  .set(fr,"eval",TRUE)  # Declare the result a named tmp
+  reg.finalizer(fr, .nodeFinalizer, onexit=TRUE)
+  fr
 }
 
 #' Categorical Interaction Feature Creation in H2O
@@ -176,7 +372,7 @@ h2o.createFrame <- function(key = "", rows = 10000, cols = 10, randomize = TRUE,
 #' h2o.init()
 #'
 #' # Create some random data
-#' myframe = h2o.createFrame('framekey', rows = 20, cols = 5,
+#' myframe = h2o.createFrame(rows = 20, cols = 5,
 #'                          seed = -12301283, randomize = TRUE, value = 0,
 #'                          categorical_fraction = 0.8, factors = 10, real_range = 1,
 #'                          integer_fraction = 0.2, integer_range = 10,
@@ -244,7 +440,7 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
   if(missing(destination_frame) || !is.character(destination_frame) || !nzchar(destination_frame))
     parms$dest = .key.make(prefix = "interaction")
   .key.validate(parms$dest)
-  parms$source_frame <- attr(.eval.frame(data), "id")
+  parms$source_frame <- h2o.getId(data)
   parms$factor_columns <- .collapse.char(factors)
   parms$pairwise <- pairwise
   parms$max_factors <- max_factors
@@ -269,9 +465,8 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 #' @return Creates a Frame vector of the same type as x
 #' @export
 h2o.rep_len <- function(x, length.out) {
-  if (length.out <= 0)    NULL
-  else if( is.Frame(x) ) .newExpr("rep_len", chk.Frame(x), length.out)
-  else                   .newExpr("rep_len", x, length.out)
+  if (length.out <= 0)  NULL
+  else                  .newExpr("rep_len", x, length.out)
 }
 
 #' Inserting Missing Values to an H2O DataFrame
@@ -301,7 +496,7 @@ h2o.rep_len <- function(x, length.out) {
 #' @export
 h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   parms = list()
-  parms$dataset <- attr(.eval.frame(data),"id") # Eager force evaluation
+  parms$dataset <- h2o.getId(data) # Eager force evaluation
   parms$fraction <- fraction
   if( !missing(seed) )
     parms$seed <- seed
@@ -319,6 +514,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #'        contained in each split. Must total up to less than 1.
 #' @param destination_frames An array of frame IDs equal to the number of ratios
 #'        specified plus one.
+#' @param seed Random seed.
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -330,18 +526,74 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 #' summary(iris.split[[1]])
 #' }
 #' @export
-h2o.splitFrame <- function(data, ratios = 0.75, destination_frames) {
-  params <- list()
-  params$dataset <- attr(.eval.frame(chk.Frame(data)), "id")
-  params$ratios <- .collapse(ratios)
-  if (!missing(destination_frames))
-    params$destination_frames <- .collapse.char(destination_frames)
+h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
+  chk.Frame(data)
 
-  res <- .h2o.__remoteSend(method="POST", "SplitFrame", .params = params)
-  job_key <- res$key$name
-  .h2o.__waitOnJob(job_key)
+  if (! is.numeric(ratios)) stop("ratios must be of type numeric")
+  if (length(ratios) < 1) stop("ratios must have length of at least 1")
 
-  splits <- lapply(res$destination_frames, function(s) h2o.getFrame(s$name))
+  if (! missing(destination_frames)) {
+    if (! is.character(destination_frames)) stop("destination_frames must be of type character")
+    if ((length(ratios) + 1) != length(destination_frames)) {
+      stop("The number of provided destination_frames must be one more than the number of provided ratios")
+    }
+  }
+
+  if (! is.numeric(seed)) stop("seed must be an integer")
+
+  num_slices = length(ratios) + 1
+  boundaries = numeric(length(ratios))
+
+  i = 1
+  last_boundary = 0
+  while (i < num_slices) {
+    ratio = ratios[i]
+    if (ratio < 0) {
+      stop("Ratio must be greater than 0")
+    }
+
+    boundary = last_boundary + ratio
+    if (boundary >= 1) {
+      stop("Ratios must add up to less than 1.0")
+    }
+
+    boundaries[i] = boundary
+    last_boundary = boundary
+
+    i = i + 1
+  }
+
+  splits = list()
+  tmp_runif = h2o.runif(data, seed)
+
+  i = 1
+  while (i <= num_slices) {
+    if (i == 1) {
+      # lower_boundary is 0.0
+      upper_boundary = boundaries[i]
+      tmp_slice = data[tmp_runif <= upper_boundary,]
+    } else if (i == num_slices) {
+      lower_boundary = boundaries[i-1]
+      # upper_boundary is 1.0
+      tmp_slice = data[tmp_runif > lower_boundary,]
+    } else {
+      lower_boundary = boundaries[i-1]
+      upper_boundary = boundaries[i]
+      tmp_slice = data[((tmp_runif > lower_boundary) & (tmp_runif <= upper_boundary)),]
+    }
+
+    if (missing(destination_frames)) {
+      splits = c(splits, tmp_slice)
+    } else {
+      destination_frame_id = destination_frames[i]
+      tmp_slice2 = h2o.assign(tmp_slice, destination_frame_id)
+      splits = c(splits, tmp_slice2)
+    }
+
+    i = i + 1
+  }
+
+  return(splits)
 }
 
 #'
@@ -362,6 +614,7 @@ h2o.filterNACols <- function(data, frac=0.2) {
 #' @param y An H2O Frame similar to x, or \code{NULL}.
 #' @return Returns a tabulated Frame object.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
@@ -375,6 +628,7 @@ h2o.filterNACols <- function(data, frac=0.2) {
 #' # Two-way table of ages (rows) and race (cols) of all patients
 #' head(h2o.table(prostate.hex[,c(3,4)]))
 #' h2o.table(prostate.hex[,c(3,4)])
+#' }
 #' @export
 h2o.table <- function(x, y = NULL) {
   chk.Frame(x)
@@ -393,24 +647,16 @@ table.Frame <- h2o.table
 #' @param x An H2O Frame object.
 #' @param na.rm a logical, indicating whether na's are omitted.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
+#' }
 #' @export
-h2o.median <- function(x, na.rm = TRUE) attr(.eval.frame(.newExpr("median",x,na.rm)), "data")
+h2o.median <- function(x, na.rm = TRUE) .eval.scalar(.newExpr("median",x,na.rm))
 
 #' @rdname h2o.median
 median.Frame <- h2o.median
-
-#' Range of an H2O Column
-#'
-#' @param x An H2O Frame object.
-#' @param na.rm ignore missing values
-#' @export
-range <- function(x,na.rm = TRUE) {
-  if( !is.Frame(x) ) .Primitive("range")(x,na.rm)
-  else .newExpr("range",x,na.rm)
-}
 
 #' Cut H2O Numeric Data to Factor
 #'
@@ -528,10 +774,10 @@ na.omit.Frame <- function(object, ...) .newExpr("na.omit", object)
 #'   max(abs(df1-df2))
 #' }
 #' @export
-h2o.dct <- function(data, destination_frame, dimensions, inverse=F) {
+h2o.dct <- function(data, destination_frame, dimensions, inverse=FALSE) {
   if(!is.logical(inverse)) stop("inverse must be a boolean value")
   params <- list()
-  params$dataset <- attr(.eval.frame(chk.Frame(data)), "id")
+  params$dataset <- h2o.getId(data)
   params$dimensions <- .collapse(dimensions)
   if (!missing(destination_frame))
     params$destination_frame <- destination_frame
@@ -663,6 +909,23 @@ hour <- function(x) UseMethod('hour', x)
 #' @export
 hour.Frame <- h2o.hour
 
+#' Compute msec since the Unix Epoch
+#'
+#' @param year Defaults to 1970
+#' @param month zero based (months are 0 to 11)
+#' @param day zero based (days are 0 to 30)
+#' @param hour hour
+#' @param minute minute
+#' @param second second
+#' @param msec msec
+#' @export
+h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) {
+  # All units are zero-based (including months and days).  Missing year defaults to 1970.
+  # H2OFrame of one column containing the date in millis since the epoch.
+  .newExpr("mktime", year,month,day,hour,minute,second,msec)
+}
+
+
 #' @export
 as.Date.Frame <- function(x, format, ...) {
   if(!is.character(format)) stop("format must be a string")
@@ -673,18 +936,18 @@ as.Date.Frame <- function(x, format, ...) {
 #'
 #' @param tz The desired timezone.
 #' @export
-h2o.setTimezone <- function(tz) .fetch.data(.newExpr("setTimeZone",.quote(tz)),1000)
+h2o.setTimezone <- function(tz) .eval.scalar(.newExpr("setTimeZone",.quote(tz)))
 
 #' Get the Time Zone on the H2O Cloud
 #' Returns a string
 #'
 #' @export
-h2o.getTimezone <- function() .fetch.data(.newExpr("getTimeZone"),1000)
+h2o.getTimezone <- function() .eval.scalar(.newExpr("getTimeZone"))
 
 #' List all of the Time Zones Acceptable by the H2O Cloud.
 #'
 #' @export
-h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000)
+h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000L)
 
 #' Produce a Vector of Random Uniform Numbers
 #'
@@ -732,7 +995,7 @@ h2o.runif <- function(x, seed = -1) {
 #' h2o.anyFactor(iris.hex)
 #' }
 #' @export
-h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
+h2o.anyFactor <- function(x) as.logical(.eval.scalar(.newExpr("any.factor", x)))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Overloaded Base R Methods
@@ -752,10 +1015,12 @@ h2o.anyFactor <- function(x) .newExpr("any.factor", chk.Frame(x))
 # Convert a row or column selector to zero-based numbering and return a string
 .row.col.selector <- function( sel, raw_sel=NULL, envir=NULL ) {
   if( !is.symbol(sel) && is.language(sel) && sel[[1]] == ":" ) {
-    sub <- if( eval(sel[[2]], envir=envir) < 0 ) 0 else 1L
-    s <- paste0( "[", eval(sel[[2]], envir=envir) - sub, ":", abs(eval(sel[[3]], envir=envir) - eval(sel[[2]], envir=envir))+1L, "]")
-    return( s )
+    lo <- eval(sel[[2]], envir=envir)
+    hi <- eval(sel[[3]], envir=envir)
+    if( hi < lo ) { tmp <- hi; hi <- lo; lo <- tmp }
+    return(paste0("[", (if(lo<0) lo else (lo-1)), ":", hi-lo+1L, "]"))
   }
+
   sel <- if( !is.null(raw_sel) ) raw_sel else eval(sel)
   if( is.numeric(sel) ) { # number list for column selection; zero based
     sel2 <- lapply(sel,function(x) if( x==0 ) stop("Cannot select row or column 0") else if( x > 0 ) x-1 else x)
@@ -813,21 +1078,21 @@ NULL
   if( !missing(col) ) {     # Have a column selector?
     if( is.logical(col) ) { # Columns by boolean choice
       col <- which(col)     # Pick out all the TRUE columns by index
-    } else if( is.character(col) ) { # Columns by name
-      assign("idx", match(col,colnames(data))) # Match on name
+    } else if( is.character(col) ) {   # Columns by name
+      idx <- match(col,colnames(data)) # Match on name
       if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
       col <- idx
     }
     idx <- .row.col.selector(col,envir=parent.frame()) # Generic R expression
-    assign("data",.newExpr("cols",data,idx)) # Column selector
+    data <- .newExpr("cols",data,idx) # Column selector
   }
   # Have a row selector?
   if( !missing(row) && (is.Frame(row) || !is.na(row)) ) {
     if( !is.Frame(row) )    # Generic R expression
       row <- .row.col.selector(substitute(row), row,envir=parent.frame())
-    assign("data",.newExpr("rows",data,row)) # Row selector
+    data <- .newExpr("rows",data,row) # Row selector
   }
-  if( is1by1 ) .fetch.data(data,1)[[1]]
+  if( is1by1 ) .fetch.data(data,1L)[[1]]
   else         data
 }
 
@@ -851,97 +1116,6 @@ NULL
   }
   if( is.na(i) ) NULL
   else           x[,i]
-}
-
-#
-# Overload Assignment!
-#
-# Trying to remove excessive temp generation, by having the R interpreter tell
-# H2O that some computation may be used, or not.  If the expression is only
-# ever used once, then no temp is needed and the cluster can optimize the
-# lifetime.  If the temp *may* be used again, the cluster needs a temp for
-# the reuse, or else the computation needs to be "pure" and re-executed.
-#
-# After many many attempts, I think it's not reasonably possible to track
-# lifetimes in R via assignment overload.  There are too many other paths
-# that extend lifetimes that all must be caught (including, but not limited
-# to: c, list, <-, =, and the *apply series)
-
-# Internal recursive printer
-.pfr <- function(x) {
-  if( is.list(res<- attr(x,"eval")) )
-    res <- paste0("(",attr(x, "op")," ",paste(sapply( attr(x,"eval"), function(child) { if( is.Frame(child) ) .pfr(child) else child }),collapse=" "),")")
-  paste0( attr(x, "id"), ":=", res)
-}
-
-# Pretty print the reachable execution DAG from this Frame, withOUT evaluating it
-pfr <- function(x) { chk.Frame(x); .pfr(x) }
-
-.eval.impl <- function(x) {
-  dat <- attr(x, "data")
-  id  <- attr(x, "id")
-  if( !is.null(dat) ) return( if( is.data.frame(dat) ) id else dat ) # Data already computed and cached
-  if( !is.null( id) && !is.na(id) ) return( id ) # Data already computed under ID
-  # Build the eval expression
-  stopifnot(is.list(attr(x, "eval")))
-  res <- paste(sapply( attr(x, "eval"), function(child) {
-    if( is.Frame(child) )                             .eval.impl(child)    # recurse
-    else if( is.numeric(  child) && length(child) > 1L ) .num.list(child)  # [ numberz ]  TODO: sup with those NaNs tho
-    else if( is.character(child) && length(child) > 1L ) .str.list(child)  # [ stringz ]
-    else                                              child                # base
-  }),collapse=" ")
-  res <- paste0("(",attr(x, "op")," ",res,")")
-  # First exec: ID is missing, convert to NA
-  # 2nd exec: ID is NA, convert to unique string
-  # 3rd exec: there is no 3rd exec, just use the ID string
-  if( is.null(id) ) .set(x,"id",NA) # 1st exec: missing->NA
-  else {                            # 2nd exec: NA-> tmp name
-    .set(x,"id", id <- .key.make("RTMP")) # Flag as code-emitted by assigning the cluster name
-    res <- paste0("(tmp= ",id," ",res,")")
-  }
-  res
-}
-
-.clear.impl <- function(x) {
-  if( !is.Frame(x) ) return()
-  eval <- attr(x, "eval")
-  if( !is.list(eval) ) { stopifnot(is.character( attr(x, "id") )); return() }
-  lapply(eval, function(child) .clear.impl(child))
-  if( is.character( attr(x, "id")) )
-    .set(x,"eval",TRUE) # GC-able temp
-}
-
-# Evaluate this Frame on demand.
-#
-# Because of GC, this algo requires 2 passes over the DAG.  The first pass
-# builds the expression string - but it cannot let any of the sub-parts go
-# dead, lest GC delete frames on last use... before the expression string is
-# shipped over the wire.  During the 2nd pass the internal DAG pointers are
-# wiped out, and allowed to go dead (hence can be nuked by GC).
-.eval.frame <- function(x,skip_fetch=FALSE) {
-  chk.Frame(x)
-  if( !is.character( attr(x, "id")) ) {
-    exec_str <- .eval.impl(x)
-    if( !is.character( attr(x, "id")) ) # Top-level gets a name always
-      .set(x,"id", id <- .key.make("RTMP"))
-    # Execute the AST on H2O
-    #print(paste0("EXPR: ",exec_str))
-    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, id= attr(x, "id"), method = "POST")
-    if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
-    if( !is.null(res$scalar) ) {
-      y <- res$scalar
-      if( y=="TRUE" ) y <- TRUE
-      else if( y=="FALSE" ) y <- FALSE
-      .set(x,"data", y)
-    }
-    # Now clear all internal DAG nodes, allowing GC to reclaim them
-    .clear.impl(x)
-    if(!skip_fetch) .fetch.data(x,1) #trigger a cache update if needed
-    # Enable this GC to trigger rapid R GC cycles, and rapid R clearing of
-    # temps... to help debug GC issues.
-    #.h2o.gc()
-  }
-  x
 }
 
 #' S3 Group Generic Functions for H2O
@@ -978,7 +1152,7 @@ Math.Frame <- function(x,...) .newExprList(.Generic,list(x,...))
 Summary.Frame <- function(x,...,na.rm) {
   if( na.rm ) stop("na.rm versions not impl")
   # Eagerly evaluation, to produce a scalar
-  res <- attr(.eval.frame(.newExprList(.Generic,list(x,...))), "data")
+  res <- .eval.scalar(.newExprList(.Generic,list(x,...)))
   if( .Generic=="all" ) as.logical(res) else res
 }
 
@@ -1023,29 +1197,31 @@ trunc <- function(x, ...) {
 #' @param x An H2O Frame object.
 #' @seealso \code{\link[base]{dim}} for the base R method.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
 #' dim(iris.hex)
+#' }
 #' @export
-dim.Frame <- function(x) { data <- .fetch.data(x,1); unlist(list(attr(x, "nrow"),ncol(data))) }
+dim.Frame <- function(x) { .eval.frame(x); c(attr(x, "nrow"), attr(x,"ncol")) }
 
 #' @rdname Frame
 #' @export
-nrow.Frame <- function(x) { .fetch.data(x,1); attr(x, "nrow") }
+nrow.Frame <- function(x) attr(.eval.frame(x), "nrow")
 
 #' @rdname Frame
 #' @export
-ncol.Frame <- function(x) { ncol(.fetch.data(x,1)) }
+ncol.Frame <- function(x) attr(.eval.frame(x), "ncol")
 
 #' Column names of an H2O Frame
 #' @param x A Frame
 #' @export
-dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1))
+dimnames.Frame <- function(x) .Primitive("dimnames")(.fetch.data(x,1L))
 
 #' Column names of an H2O Frame
 #' @param x A Frame
 #' @export
-names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1))
+names.Frame <- function(x) .Primitive("names")(.fetch.data(x,1L))
 
 #' Returns the column names of a Frame
 #'
@@ -1060,7 +1236,7 @@ colnames <- function(x, do.NULL=TRUE, prefix = "col") {
 
 #' @rdname Frame
 #' @export
-length.Frame <- function(x) { data <- .fetch.data(x,1); if( is.data.frame(data) ) ncol(data) else 1; }
+length.Frame <- function(x) attr(.eval.frame(x),"ncol")
 
 #' @rdname Frame
 #' @export
@@ -1073,22 +1249,15 @@ h2o.length <- length.Frame
 #' @param i The index of the column whose domain is to be returned.
 #' @seealso \code{\link[base]{levels}} for the base R method.
 #' @examples
+#' \donttest{
 #' iris.hex <- as.h2o(iris)
 #' h2o.levels(iris.hex, 5)  # returns "setosa"     "versicolor" "virginica"
+#' }
 #' @export
 h2o.levels <- function(x, i) {
-  .eval.frame(x)
-  res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", attr(x, "id")))$frames[[1]]
-  lvls <- lapply(res$columns, function(col) col$domain)
-  if( all(sapply(lvls, is.null)) ) return(NULL)
-  if( missing(i) ) {
-    nrow <- max(unlist(lapply(lvls, length)))
-    lvls <- sapply(lvls, function(l) { if( length(l) < nrow ) {l <- c(l,rep(NA,nrow-length(l))) } else { l } })
-    colnames(lvls) <- sapply(res$columns, function(col) col$label)
-    lvls
-  } else {
-    lvls[[i]]
-  }
+  df <- .fetch.data(x,1L)
+  if( missing(i) ) levels(df[[1]])
+  else levels(df[[i]])
 }
 
 #'
@@ -1114,12 +1283,14 @@ h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.Frame(x), levels)
 #' @param ... Further arguments passed to or from other methods.
 #' @return A Frame containing the first or last n rows of an H2O Frame object.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' ausPath <- system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex <- h2o.uploadFile(path = ausPath)
 #' head(australia.hex, 10)
 #' tail(australia.hex, 10)
+#' }
 #' @export
 h2o.head <- function(x, ..., n=6L) {
   stopifnot(length(n) == 1L)
@@ -1159,7 +1330,7 @@ tail.Frame <- h2o.tail
 is.factor <- function(x) {
   # Eager evaluate and use the cached result to return a scalar
   if( is.Frame(x) ) {
-    x <- .fetch.data(x,1)
+    x <- .fetch.data(x,1L)
     if( ncol(x)==1L ) x <- x[,1]
   }
   base::is.factor(x)
@@ -1172,7 +1343,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.Frame(x) ) .Primitive("is.numeric")(x)
-  else attr(.eval.frame(.newExpr("is.numeric",x)), "data")
+  else as.logical(.eval.scalar(.newExpr("is.numeric",x)))
 }
 
 #' Print An H2O Frame
@@ -1180,7 +1351,12 @@ is.numeric <- function(x) {
 #' @param x An H2O Frame object
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
-print.Frame <- function(x, ...) { print(head(x)) }
+print.Frame <- function(x, ...) { 
+  print(head(x))
+  rowString = if (nrow(x) > 1) " rows x " else " row x "
+  colString = if (ncol(x) > 1) " columns]" else " column]"
+  cat(paste0("\n[", nrow(x), rowString, ncol(x), colString), "\n")
+}
 
 #' Display the structure of an H2O Frame object
 #'
@@ -1249,7 +1425,10 @@ str.Frame <- function(object, ..., cols=FALSE) {
   allCol <- missing(col)
   if( !allCol && is.na(col) ) col <- as.list(match.call())$col
 
-  if( !allRow && is.character(row) && allCol ) {  ## case where fr["baz"] <- qux
+  # Named column assignment; the column name was passed in as "row"
+  # fr["baz"] <- qux
+  # fr$ baz   <- qux
+  if( !allRow && is.character(row) && allCol ) {
     allRow <- TRUE
     allCol <- FALSE
     col <- row
@@ -1274,7 +1453,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
     cols <- paste0("[]") # Shortcut for "all cols"
   } else {
     if( is.character(col) ) {
-      assign("idx", match(col, colnames(data)))
+      idx <- match(col, colnames(data))
       if( any(is.na(idx)) ) { # Any unknown names?
         if( length(col) > 1 ) stop("unknown column names")
         else { idx <- ncol(data)+1; name <- col } # Append 1 unknown column
@@ -1287,19 +1466,17 @@ str.Frame <- function(object, ..., cols=FALSE) {
 
   if( is.character(value) ) value <- .quote(value)
   # Set col name and return updated frame
-  if( is.na(name) ) .newExpr("=", data, value, cols, rows)
-  else              .newExpr("=", data, value, cols, rows, .quote(name))
+  if( is.na(name) ) .newExpr(":=", data, value, cols, rows)
+  else              .newExpr("append", data, value, .quote(name))
 }
 
 #' @rdname Frame-Extract
 #' @export
-`$<-.Frame` <- function(data, name, value) {
-  `[<-.Frame`(data,row=name,value=value) # col is missing on purpose
-}
+`$<-.Frame`  <- function(data, name, value) `[<-.Frame`(data,row=name,value=value)
 
 #' @rdname Frame-Extract
 #' @export
-`[[<-.Frame` <- function(data,name,value) `[<-`(data, row=name,value=chk.Frame(value))
+`[[<-.Frame` <- function(data, name, value) `[<-.Frame`(data,row=name,value=chk.Frame(value))
 
 #' @rdname Frame
 #' @param value To be assigned
@@ -1331,6 +1508,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
 #' @param ... Further arguments passed to or from other methods.
 #' @return A vector describing the percentiles at the given cutoffs for the \code{Frame} object.
 #' @examples
+#' \donttest{
 #' # Request quantiles for an H2O parsed data set:
 #' library(h2o)
 #' h2o.init()
@@ -1340,6 +1518,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
 #' quantile(prostate.hex[,3])
 #' for(i in 1:ncol(prostate.hex))
 #'    quantile(prostate.hex[,i])
+#' }
 #' @export
 h2o.quantile <- function(x,
                      # AUTOGENERATED params
@@ -1361,7 +1540,7 @@ h2o.quantile <- function(x,
 
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
-  assign("res",.newExpr("quantile", x, .num.list(probs), .quote(combine_method)))
+  res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method))
   res <- as.matrix(res)
   col <- as.numeric(res[,-1])
   names(col) <- paste0(100*res[,1], "%")
@@ -1385,6 +1564,7 @@ quantile.Frame <- h2o.quantile
 #' @return A table displaying the minimum, 1st quartile, median, mean, 3rd quartile and maximum for each
 #' numeric column, and the levels and category counts of the levels in each categorical column.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath = system.file("extdata", "prostate.csv", package="h2o")
@@ -1392,6 +1572,7 @@ quantile.Frame <- h2o.quantile
 #' summary(prostate.hex)
 #' summary(prostate.hex$GLEASON)
 #' summary(prostate.hex[,4:6])
+#' }
 #' @export
 h2o.summary <- function(object, factors=6L, ...) {
   SIG.DIGITS    <- 12L
@@ -1415,10 +1596,12 @@ h2o.summary <- function(object, factors=6L, ...) {
       if( !(is.null(col.sum$maxs) || length(col.sum$maxs) == 0L) ) cmax <- max(col.sum$maxs,na.rm=TRUE)  # set the max
       if( !(is.null(col.sum$mean))                               ) cmean<- col.sum$mean                  # set the mean
 
+      #               1      2    3    4    5     6        7          8    9   10   11          12    13   14   15    16  17
+      # new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
       if( !is.null(col.sum$percentiles) ){# set the 1st quartile, median, and 3rd quartile
-        c1Q     <- col.sum$percentiles[4] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
-        cmedian <- col.sum$percentiles[6] # p=.5
-        c3Q     <- col.sum$percentiles[8] # p=.75
+        c1Q     <- col.sum$percentiles[5] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
+        cmedian <- col.sum$percentiles[9] # p=.5
+        c3Q     <- col.sum$percentiles[13] # p=.75
       }
 
       missing.count <- NULL
@@ -1436,15 +1619,11 @@ h2o.summary <- function(object, factors=6L, ...) {
       result
     } else if( col.type == "enum" ) {
       domains <- col.sum$domain
-      domain.cnts <- col.sum$histogram_bins
-      if( length(domain.cnts) < length(domains) ) {
-        if( length(domain.cnts) == 1 )  {   # Constant categorical column
-          cnt <- domain.cnts[1]
-          domain.cnts <- rep(NA, length(domains))
-          domain.cnts[col.sum$data[1]+1] <- cnt
-        } else
-          domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
-      }
+      histo <- col.sum$histogram_bins
+      base <- col.sum$histogram_base
+      domain.cnts <- numeric(length(domains))
+      for( i in 1:length(histo) )
+        domain.cnts[i+base] <- histo[i]
       missing.count <- 0L
       if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
       # create a dataframe of the counts and factor levels, then sort in descending order (most frequent levels at the top)
@@ -1532,12 +1711,14 @@ summary.Frame <- h2o.summary
 #' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
 #' @seealso \code{\link[base]{mean}} for the base R implementation.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' mean(prostate.hex$AGE)
+#' }
 #' @export
-h2o.mean <- function(x, ..., na.rm=TRUE) attr(.eval.frame(.newExpr("mean",x,na.rm)), "data")
+h2o.mean <- function(x, ..., na.rm=TRUE) .eval.scalar(.newExpr("mean",x,na.rm))
 
 #' @rdname h2o.mean
 #' @export
@@ -1567,10 +1748,12 @@ mean.Frame <- h2o.mean
 #' @param use An optional character string to be used in the presence of missing values. This must be one of the following strings. "everything", "all.obs", or "complete.obs".
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' var(prostate.hex$AGE)
+#' }
 #' @export
 h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
   if( na.rm ) stop("na.rm versions not impl")
@@ -1581,7 +1764,9 @@ h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
   } else
     use <- "everything"
   # Eager, mostly to match prior semantics but no real reason it need to be
-  .fetch.data(.newExpr("var",x,y,.quote(use)),ncol(x))
+  expr <- .newExpr("var",x,y,.quote(use))
+  if( (nrow(x)==1L || ncol(x)==1L) ) .eval.scalar(expr)
+  else .fetch.data(expr,ncol(x))
 }
 
 #' @rdname h2o.var
@@ -1601,20 +1786,22 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' @param na.rm \code{logical}. Should missing values be removed?
 #' @seealso \code{\link{h2o.var}} for variance, and \code{\link[stats]{sd}} for the base R implementation.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' sd(prostate.hex$AGE)
+#' }
 #' @export
 h2o.sd <- function(x, na.rm = FALSE) {
-  if( na.rm ) stop("na.rm versions not impl")
-  attr(.eval.frame(.newExpr("sd",x)), "data")
+  if( ncol(x)==1L ) .eval.scalar(.newExpr("sd",x, na.rm))
+  else .fetch.data(.newExpr("sd",x,na.rm),1L)
 }
 
 #' @rdname h2o.sd
 #' @export
 sd <- function(x, na.rm=FALSE) {
-  if( is.Frame(x) ) h2o.sd(x)
+  if( is.Frame(x) ) h2o.sd(x,na.rm)
   else stats::sd(x,na.rm)
 }
 
@@ -1675,8 +1862,8 @@ as.h2o <- function(x, destination_frame= "") {
   types <- gsub("Date", "Time", types)
   tmpf <- tempfile(fileext = ".csv")
   write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
-  assign("h2f",h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
-                              col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x))))
+  h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
+                        col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
   file.remove(tmpf)
   h2f
 }
@@ -1689,14 +1876,16 @@ as.h2o <- function(x, destination_frame= "") {
 #' @param x An H2O Frame object.
 #' @param ... Further arguments to be passed down from other methods.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' as.data.frame(prostate.hex)
+#' }
 #' @export
 as.data.frame.Frame <- function(x, ...) {
-  .eval.frame(x,TRUE)
-
+  # Force loading of the types
+  .fetch.data(x,1L)
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   use_hex_string <- getRversion() >= "3.1"
@@ -1704,7 +1893,7 @@ as.data.frame.Frame <- function(x, ...) {
 
   url <- paste0('http://', conn@ip, ':', conn@port,
                 '/3/DownloadDataset',
-                '?frame_id=', URLencode( attr(x, "id")),
+                '?frame_id=', URLencode( h2o.getId(x)),
                 '&hex_string=', as.numeric(use_hex_string))
 
   ttt <- getURL(url)
@@ -1714,26 +1903,20 @@ as.data.frame.Frame <- function(x, ...) {
   # Handle \r\n (for windows) or just \n (for not windows).
   chars_to_trim <- 0L
   if (n >= 2L) {
-      c <- substr(ttt, n, n)
-      if (c == "\n") {
-          chars_to_trim <- chars_to_trim + 1L
-      }
-      if (chars_to_trim > 0L) {
-          c <- substr(ttt, n-1L, n-1L)
-          if (c == "\r") {
-              chars_to_trim <- chars_to_trim + 1L
-          }
-      }
+    c <- substr(ttt, n, n)
+    if (c == "\n") chars_to_trim <- chars_to_trim + 1L
+    if (chars_to_trim > 0L) {
+      c <- substr(ttt, n-1L, n-1L)
+      if (c == "\r") chars_to_trim <- chars_to_trim + 1L
+    }
   }
 
   if (chars_to_trim > 0L) {
     ttt2 <- substr(ttt, 1L, n-chars_to_trim)
-    # Is this going to use an extra copy?  Or should we assign directly to ttt?
     ttt <- ttt2
   }
 
   # Get column types from H2O to set the dataframe types correctly
-  if( is.null(attr(x, "types")) ) .fetch.types(x)
   colClasses <- attr(x, "types")
   colClasses <- gsub("numeric", NA, colClasses) # let R guess the appropriate numeric type
   colClasses <- gsub("int", NA, colClasses) # let R guess the appropriate numeric type
@@ -1772,31 +1955,25 @@ as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
 #`
 #' @export
 as.double.Frame <- function(x, ...) {
-  res <- .fetch.data(x,1) # Force evaluation
-  if( is.data.frame(res) ) {
-    if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a double")
-    res <- res[1,1]
-  }
+  res <- .fetch.data(x,1L) # Force evaluation
+  if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a double")
+  res <- res[1,1]
   .Primitive("as.double")(res)
 }
 
 #' @export
 as.logical.Frame <- function(x, ...) {
-  res <- .fetch.data(x,1) # Force evaluation
-  if( is.data.frame(res) ) {
-    if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a logical")
-    res <- res[1,1]
-  }
+  res <- .fetch.data(x,1L) # Force evaluation
+  if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element Frame into a logical")
+  res <- res[1,1]
   .Primitive("as.logical")(res)
 }
 
 #' @export
 as.integer.Frame <- function(x, ...) {
-  x <- .fetch.data(x,1) # Force evaluation
-  if( is.data.frame(x) ) {
-    if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element Frame into an integer")
-    x <- x[1,1]
-  }
+  x <- .fetch.data(x,1L) # Force evaluation
+  if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element Frame into an integer")
+  x <- x[1,1]
   .Primitive("as.integer")(x)
 }
 
@@ -1806,11 +1983,13 @@ as.integer.Frame <- function(x, ...) {
 #' @param x a column from an H2O Frame data set.
 #' @seealso \code{\link{is.factor}}.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.hex[,2] <- as.factor(prostate.hex[,2])
 #' summary(prostate.hex)
+#' }
 #' @export
 as.factor <- function(x) {
   if( is.Frame(x) ) .newExpr("as.factor",x)
@@ -1834,11 +2013,13 @@ as.character.Frame <- function(x, ...) {
 #' @param x a column from an H2O Frame data set.
 #' @param ... Further arguments to be passed from or to other methods.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.hex[,2] <- as.factor (prostate.hex[,2])
 #' prostate.hex[,2] <- as.numeric(prostate.hex[,2])
+#' }
 #' @export
 as.numeric <- function(x) {
   if( is.Frame(x) ) .newExpr("as.numeric",x)
@@ -1881,11 +2062,13 @@ h2o.removeVecs <- function(data, cols) {
 #' @param no The value to return if the condition is FALSE.
 #' @return Returns a vector of new values matching the conditions stated in the ifelse call.
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' ausPath = system.file("extdata", "australia.csv", package="h2o")
 #' australia.hex = h2o.importFile(path = ausPath)
 #' australia.hex[,9] <- ifelse(australia.hex[,3] < 279.9, 1, 0)
 #' summary(australia.hex)
+#' }
 #' @export
 h2o.ifelse <- function(test, yes, no) {
   if( !is.Frame(yes) && is.character(yes) ) yes <- .quote(yes)
@@ -1927,12 +2110,14 @@ ifelse <- function(test, yes, no) {
 #' @return An H2O Frame object containing the combined \dots arguments column-wise.
 #' @seealso \code{\link[base]{cbind}} for the base \code{R} method.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.cbind <- h2o.cbind(prostate.hex, prostate.hex)
 #' head(prostate.cbind)
+#' }
 #' @export
 h2o.cbind <- function(...) {
   li <- list(unlist(list(...)))
@@ -1955,12 +2140,14 @@ h2o.cbind <- function(...) {
 #' @return An H2O Frame object containing the combined \dots arguments column-wise.
 #' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.cbind <- h2o.rbind(prostate.hex, prostate.hex)
 #' head(prostate.cbind)
+#' }
 #' @export
 h2o.rbind <- function(...) {
   ls <- list(...)
@@ -1982,11 +2169,14 @@ h2o.rbind <- function(...) {
 #' function only supports \code{all.x = TRUE}. All other permutations will fail.
 #'
 #' @param x,y Frame objects
-#' @param all.x a logical value indicating whether or not shared values are
-#'        preserved or ignored in \code{x}.
-#' @param all.y a logical value indicating whether or not shared values are
-#'        preserved or ignored in \code{y}.
+#' @param all.x If all.x is true, all rows in the x will be included, even if there is no matching
+#'        row in y, and vice-versa for all.y.
+#' @param all.y see all.x
+#' @param by.x x columns used for merging.
+#' @param by.y y columns used for merging.
+#' @param method auto, radix, or hash (default)
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
 #' color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
@@ -1995,8 +2185,15 @@ h2o.rbind <- function(...) {
 #' l.hex <- as.h2o(left)
 #' r.hex <- as.h2o(right)
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
+#' }
 #' @export
-h2o.merge <- function(x, y, all.x = TRUE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
+h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE, by.x=NULL, by.y=NULL, method="hash") {
+  common.names = intersect(names(x), names(y))
+  if (length(common.names) == 0) stop("No columns in common to merge on!")
+  if (is.null(by.x)) by.x = match(common.names, names(x))
+  if (is.null(by.y)) by.y = match(common.names, names(y))
+  .newExpr("merge", x, y, all.x, all.y, by.x, by.y, .quote(method))
+}
 
 #' Group and Apply by Column
 #'
@@ -2013,14 +2210,13 @@ h2o.merge <- function(x, y, all.x = TRUE, all.y = FALSE) .newExpr("merge", x, y,
 #' @param data an H2O Frame object.
 #' @param by a list of column names
 #' @param \dots any supported aggregate function.
-#' @param order.by Takes a vector column names or indices specifiying how to order the group by result.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
 #'        output columns. See \code{Details:} for more help.
 #' @return Returns a new Frame object with columns equivalent to the number of
 #'         groups created
 #' @export
-h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.methods=NULL, col.names=NULL)) {
-  # Build the argument list: (GB data, [group.by] [order.by] {agg col "na"}...)
+h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.names=NULL)) {
+  # Build the argument list: (GB data, [group.by] {agg col "na"}...)
   args <- list(chk.Frame(data))
 
   ### handle the columns
@@ -2038,28 +2234,15 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
     stop('Column ', group.cols, ' out of range for frame columns ', ncol(data), '.')
   args <- c(args,.row.col.selector(group.cols,envir=parent.frame()))
 
-  ### ORDER BY ###
-  order.by.cols <- NULL
-  if( !is.null(order.by) ) {
-    if(is.character(order.by)) {
-        order.by.cols <- match(order.by, by)
-        if (any(is.na(order.by.cols)))
-          stop('No column named ', order.by, ' in ', by, '.')
-    } else if(is.integer(order.by)) {
-      order.by.cols <- order.by
-    } else if(is.numeric(order.by)) {   # this will happen eg c(1,2,3)
-      order.by.cols <- as.integer(order.by)
-    }
-    if(order.by.cols < 1L || order.by.cols > ncol(data)) stop('Column ', order.by.cols, ' out of range for frame columns ', ncol(data), '.')
-  }
-  args <- c(args,.row.col.selector(order.by.cols,envir=parent.frame()))
-
-
   a <- substitute(list(...))
   a[[1]] <- NULL  # drop the wrapping list()
   nAggs <- length(a)  # the number of aggregates
   # for each aggregate, build this list: (agg,col.idx,na.method)
-  agg.methods <- unlist(lapply(a, function(agg) as.character(agg[[1]]) ))
+  agg.methods <- unlist(lapply(a, function(agg) {
+    ag <- as.character(agg[[1]])
+    if( ag=="sd" ) ag <- "\"sdev\""
+    ag
+  }))
   col.idxs    <- unlist(lapply(a, function(agg, envir) {
     # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
     # if numeric, then eval it and return
@@ -2145,11 +2328,11 @@ h2o.group_by <- function(data, by, ..., order.by=NULL, gb.control=list(na.method
 #'  fr <- as.h2o(iris, destination_frame="iris")
 #'  fr[sample(nrow(fr),40),5] <- NA  # randomly replace 50 values with NA
 #'  # impute with a group by
-#'  h2o.impute(fr, "Species", "mode", by=c("Sepal.Length", "Sepal.Width"))
+#'  fr <- h2o.impute(fr, "Species", "mode", by=c("Sepal.Length", "Sepal.Width"))
 #' }
 #'  @export
 h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
-                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, inplace=TRUE) {
+                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, inplace=FALSE) {
   # TODO: "bfill" back fill the missing value with the next non-missing value in the vector
   # TODO: "ffill" front fill the missing value with the most-recent non-missing value in the vector.
   # TODO: #'  @param max_gap  The maximum gap with which to fill (either "ffill", or "bfill") missing values. If more than max_gap consecutive missing values occur, then those values remain NA.
@@ -2199,13 +2382,19 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
       gb.cols <- .row.col.selector(vars,envir=parent.frame())
   }
 
-  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, inplace)
+  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols)
   # In-place updates we force right now, because the user expects future uses
   # of 'data' to show the imputed changed.
-  if( inplace ) .fetch.data(res,1)
+  if( inplace ) stop("unimpl")
   res
 }
 
+#' Range of an H2O Column
+#'
+#' @param ... An H2O Frame object.
+#' @param na.rm ignore missing values
+#' @export
+range.Frame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
@@ -2224,6 +2413,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
 #          row-by-row
 #' @seealso \code{\link[plyr]{ddply}} for the plyr library implementation.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -2231,11 +2421,12 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 #' # Add function taking mean of sepal_len column
-#' fun = function(df) { sum(df[,1], na.rm = T)/nrow(df) }
+#' fun = function(df) { sum(df[,1], na.rm = TRUE)/nrow(df) }
 #' # Apply function to groups by class of flower
 #' # uses h2o's ddply, since iris.hex is a Frame object
 #' res = h2o.ddply(iris.hex, "class", fun)
 #' head(res)
+#' }
 #' @export
 h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
   .h2o.gc()
@@ -2310,10 +2501,12 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
 #'         subsequent H2O processes.
 #' @seealso \link[base]{apply} for the base generic
 #' @examples
+#' \donttest{
 #' h2o.init()
 #' irisPath = system.file("extdata", "iris.csv", package="h2o")
 #' iris.hex = h2o.importFile(path = irisPath, destination_frame = "iris.hex")
 #' summary(apply(iris.hex, 2, sum))
+#' }
 #' @export
 apply <- function(X, MARGIN, FUN, ...) {
   if( !is.Frame(X) ) return(base::apply(X,MARGIN,FUN,...))

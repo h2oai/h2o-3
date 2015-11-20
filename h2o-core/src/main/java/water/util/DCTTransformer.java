@@ -5,6 +5,7 @@ import jsr166y.CountedCompleter;
 import water.DKV;
 import water.H2O;
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 
 public class DCTTransformer extends Transformer<DCTTransformer> {
@@ -40,12 +41,12 @@ public class DCTTransformer extends Transformer<DCTTransformer> {
 
   @Override
   protected DCTTransformer execImpl() {
-    if (_dimensions.length != 3)
-      error("_dimensions", "Need 3 dimensions (width/height/depth): WxHxD (1D: Wx1x1, 2D: WxHx1, 3D: WxHxD)");
+    if (_dimensions.length != 3) 
+      throw new H2OIllegalArgumentException("Need 3 dimensions (width/height/depth): WxHxD (1D: Wx1x1, 2D: WxHx1, 3D: WxHxD)");
     if (ArrayUtils.minValue(_dimensions) < 1)
-      error("_dimensions", "Dimensions must be >= 1");
+      throw new H2OIllegalArgumentException("Dimensions must be >= 1");
     if (_dataset.numCols() < _dimensions[0] * _dimensions[1] * _dimensions[2])
-      error("_dimensions", "Product of dimensions WxHxD must be <= #columns (" + _dataset.numCols() + ")");
+      throw new H2OIllegalArgumentException("Product of dimensions WxHxD must be <= #columns (" + _dataset.numCols() + ")");
     MathUtils.DCT.initCheck(_dataset, _dimensions[0], _dimensions[1], _dimensions[2]);
 
     return (DCTTransformer) start(

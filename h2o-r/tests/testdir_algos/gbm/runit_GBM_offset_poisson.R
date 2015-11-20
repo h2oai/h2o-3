@@ -1,7 +1,7 @@
 ####### This tests offset in gbm for poisson by comparing results with R ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function(h) {
 	

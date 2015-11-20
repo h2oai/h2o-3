@@ -2,12 +2,10 @@ package water;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 
 import water.util.Log;
 
@@ -66,7 +64,7 @@ public class TCPReceiverThread extends Thread {
         H2ONode h2o = H2ONode.intern(sock.socket().getInetAddress(),port);
         // Pass off the TCP connection to a separate reader thread
         if(chanType == 1) {
-          Log.info("starting new UDP-TCP receiver thread connected to " + sock.getRemoteAddress());
+          Log.info("starting new UDP-TCP receiver thread connected to " + sock.socket().getRemoteSocketAddress());
           new UDP_TCP_ReaderThread(h2o, sock).start();
         } else if(chanType == 2)
           new TCPReaderThread(sock,new AutoBuffer(sock)).start();

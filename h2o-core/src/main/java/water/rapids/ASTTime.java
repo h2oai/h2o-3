@@ -59,8 +59,7 @@ class ASTSetTimeZone extends ASTPrim {
 /** Basic time accessors; extract hours/days/years/etc from H2O's internal
  *  msec-since-Unix-epoch time */
 abstract class ASTTime extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"time"}; }
+  @Override public String[] args() { return new String[]{"time"}; }
   @Override int nargs() { return 1+1; } // (op time)
   // Override for e.g. month and day-of-week
   protected String[][] factors() { return null; }
@@ -84,7 +83,7 @@ abstract class ASTTime extends ASTPrim {
             for( int i=0; i<chk._len; i++ )
               cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt,chk.at8(i)));
           }
-        }.doAll(1,fr).outputFrame(fr._names, factors()));
+        }.doAll(1, Vec.T_NUM, fr).outputFrame(fr._names, factors()));
     default: throw water.H2O.fail();
     }
   }
@@ -142,7 +141,7 @@ class ASTasDate extends ASTPrim {
           } else nc.addNA();
         }
       }
-    }.doAll(1,fr).outputFrame(fr._names, null);
+    }.doAll(1, Vec.T_NUM, fr).outputFrame(fr._names, null);
     return new ValFrame(fr2);
   }
 }
@@ -161,8 +160,8 @@ class ASTMktime extends ASTPrim {
     int   is[] = new int  [nargs()-1];
     Frame x = null;             // Sample frame (for auto-expanding constants)
     for( int i=1; i<nargs(); i++ )
-      if( asts[i] instanceof ASTId )    fs[i-1] = x = stk.track(asts[i].exec(env)).getFrame();
-      else                              is[i-1] = (int)asts[i].exec(env).getNum();
+      if( asts[i] instanceof ASTId || asts[i] instanceof ASTExec )    fs[i-1] = x = stk.track(asts[i].exec(env)).getFrame();
+      else                                                            is[i-1] = (int)asts[i].exec(env).getNum();
 
     if( x==null ) {                            // Single point
       long msec = new MutableDateTime(
@@ -206,7 +205,7 @@ class ASTMktime extends ASTPrim {
           n.addNum(dt.getMillis());
         }
       }
-    }.doAll(1,vecs).outputFrame(new String[]{"msec"},null);
+    }.doAll(new byte[]{Vec.T_NUM},vecs).outputFrame(new String[]{"msec"},null);
     // Clean up the constants
     for( int i=0; i<nargs()-1; i++ )
       if( fs[i] == null )

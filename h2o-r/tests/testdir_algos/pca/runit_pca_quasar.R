@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.pca.quasar <- function() {
   Log.info("Importing SDSS_quasar.txt.zip data...") 

@@ -44,7 +44,9 @@ Before creating a model, import the data into H2O:
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
 
-0. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field. 
+0. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field. For this example, the following datasets are used: 
+	- *Training*:  https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/mnist/train.csv.gz
+	- *Testing*: https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/mnist/test.csv.gz
 
   ![Importing Testing Data](../images/DL_importFile_test.png)
 

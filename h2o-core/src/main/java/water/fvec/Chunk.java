@@ -8,7 +8,7 @@ import water.parser.BufferedString;
  *  header info is in the Vec - which contains info to find all the bytes of
  *  the distributed vector.  Subclasses of this abstract class implement
  *  (possibly empty) compression schemes.
- *  
+ *
  *  <p>Chunks are collections of elements, and support an array-like API.
  *  Chunks are subsets of a Vec; while the elements in a Vec are numbered
  *  starting at 0, any given Chunk has some (probably non-zero) starting row,
@@ -19,11 +19,11 @@ import water.parser.BufferedString;
  *  at} and {@code set}.  If the row is outside the current Chunk's range, the
  *  data will be loaded by fetching from the correct Chunk.  This probably
  *  involves some network traffic, and if all rows are loaded then the entire
- *  dataset will be pulled local (possibly triggering an OutOfMemory).  
+ *  dataset will be pulled local (possibly triggering an OutOfMemory).
  *
  *  <p>The chunk-local numbering supports the common {@code for} loop iterator
  *  pattern, using {@code at} and {@code set} calls that end in a '{@code 0}',
- *  and is faster than the global row-numbering for tight loops (because it 
+ *  and is faster than the global row-numbering for tight loops (because it
  *  avoids some range checks):
  *  <pre>
  *  for( int row=0; row &lt; chunk._len; row++ )
@@ -44,7 +44,7 @@ import water.parser.BufferedString;
  *  synchronization.  This is already handled by the Map/Reduce {MRTask)
  *  framework.  Chunk updates are not visible cross-cluster until the {@link
  *  #close} is made; again this is handled by MRTask directly.
- * 
+ *
  *  <p>In addition to normal load and store operations, Chunks support the
  *  notion a missing element via the {@code isNA_abs()} calls, and a "next
  *  non-zero" notion for rapidly iterating over sparse data.
@@ -70,7 +70,7 @@ import water.parser.BufferedString;
  *  <pre>
  *  if( !chk.isNA(row) ) ...chk.at8(row)....
  *  </pre>
- * 
+ *
  *  <p>The same holds true for the other non-real types (timestamps, UUIDs,
  *  Strings, or categoricals); they must be checked for missing before being used.
  *
@@ -83,7 +83,7 @@ import water.parser.BufferedString;
  *  aligned together (the common use-case of looking a whole rows of a
  *  dataset).  Again, typically such a code pattern is memory-bandwidth bound
  *  although the X86 will stop being able to prefetch well beyond 100 or 200
- *  Chunks.  
+ *  Chunks.
  *
  *  <p>Note that Chunk alignment is guaranteed within all the Vecs of a Frame:
  *  Same numbered Chunks of <em>different</em> Vecs will have the same global
@@ -508,14 +508,14 @@ public abstract class Chunk extends Iced implements Cloneable {
     return _cidx;
   }
 
-  /** Chunk-specific readers.  Not a public API */ 
+  /** Chunk-specific readers.  Not a public API */
   abstract double   atd_impl(int idx);
   abstract long     at8_impl(int idx);
   abstract boolean isNA_impl(int idx);
   long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
   long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
   BufferedString atStr_impl(BufferedString bStr, int idx) { throw new IllegalArgumentException("Not a String"); }
-  
+
   /** Chunk-specific writer.  Returns false if the value does not fit in the
    *  current compression scheme.  */
   abstract boolean set_impl  (int idx, long l );
@@ -560,7 +560,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   }
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
-   *  Bulk copy from the compressed form into the nc._ls array.   */ 
+   *  Bulk copy from the compressed form into the nc._ls array.   */
   public abstract NewChunk inflate_impl(NewChunk nc);
 
   /** Return the next Chunk, or null if at end.  Mostly useful for parsers or

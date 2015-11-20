@@ -21,13 +21,37 @@ class ASTStrSplit extends ASTPrim {
   public String str() { return "strsplit"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    String split = asts[2].exec(env).getStr();
-    if (fr.numCols() != 1) throw new IllegalArgumentException("strsplit() requires a single column.");
-    final String[]   old_domains = fr.anyVec().domain();
-    final String[][] new_domains = newDomains(old_domains, split);
+    String splitRegEx = asts[2].exec(env).getStr();
 
-    final String regex = split;
-    Frame fr2 = new MRTask() {
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.anyVec().get_type_str()
+            + ". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    ArrayList<Vec> vs = new ArrayList<>(fr.numCols());
+    for (Vec v : fr.vecs()) {
+      Vec[] splits;
+      if (v.isCategorical()) {
+        splits = strSplitCategoricalCol(v, splitRegEx);
+        for (Vec split : splits) vs.add(split);
+      } else {
+        splits = strSplitStringCol(v, splitRegEx);
+        for (Vec split : splits) vs.add(split);
+      }
+    }
+
+    return new ValFrame(new Frame(vs.toArray(new Vec[vs.size()])));
+  }
+
+  private Vec[] strSplitCategoricalCol(Vec vec, String splitRegEx) {
+    final String[]   old_domains = vec.domain();
+    final String[][] new_domains = newDomains(old_domains, splitRegEx);
+
+    final String regex = splitRegEx;
+    return new MRTask() {
       @Override public void map(Chunk[] cs, NewChunk[] ncs) {
         Chunk c = cs[0];
         for (int i = 0; i < c._len; ++i) {
@@ -46,8 +70,7 @@ class ASTStrSplit extends ASTPrim {
             for (; cnt < ncs.length; ++cnt) ncs[cnt].addNA();
         }
       }
-    }.doAll(new_domains.length, fr).outputFrame(null,null,new_domains);
-    return new ValFrame(fr2);
+    }.doAll(new_domains.length, Vec.T_CAT, new Frame(vec)).outputFrame(null,null,new_domains).vecs();
   }
 
   // each domain level may split in its own uniq way.
@@ -83,6 +106,56 @@ class ASTStrSplit extends ASTPrim {
     for (HashSet<String> h: strs)
       doms[i++] = h.toArray(new String[h.size()]);
     return doms;
+  }
+
+  private Vec[] strSplitStringCol(Vec vec, final String splitRegEx) {
+    final int newColCnt = (new CountSplits(splitRegEx)).doAll(vec)._maxSplits;
+    return new MRTask() {
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        Chunk chk = cs[0];
+        if (chk instanceof C0DChunk) // all NAs
+          for (int row = 0; row < chk.len(); row++)
+            for (int col = 0; col < ncs.length; col++)
+              ncs[col].addNA();
+        else {
+          BufferedString tmpStr = new BufferedString();
+          for (int row = 0; row < chk._len; ++row) {
+            int col = 0;
+            if (!chk.isNA(row)) {
+              String[] ss = chk.atStr(tmpStr, row).toString().split(splitRegEx);
+              for (String s : ss) // distribute strings among new cols
+                ncs[col++].addStr(s);
+            }
+            if (col < ncs.length) // fill remaining cols w/ NA
+              for (; col < ncs.length; col++) ncs[col].addNA();
+          }
+        }
+      }
+    }.doAll(newColCnt, Vec.T_STR, new Frame(vec)).outputFrame().vecs();
+  }
+  /**
+   * Run through column to figure out the maximum split that
+   * any string in the column will need.
+   */
+  private static class CountSplits extends MRTask<CountSplits> {
+    // IN
+    private final String _regex;
+    // OUT
+    int _maxSplits = 0;
+
+    CountSplits(String regex) { _regex = regex; }
+    @Override public void map(Chunk chk) {
+      BufferedString tmpStr = new BufferedString();
+      for( int row = 0; row < chk._len; row++ ) {
+        if (!chk.isNA(row)) {
+          int split = chk.atStr(tmpStr, row).toString().split(_regex).length;
+          if (split > _maxSplits) _maxSplits = split;
+        }
+      }
+    }
+    @Override public void reduce(CountSplits that) {
+      if (this._maxSplits < that._maxSplits) this._maxSplits = that._maxSplits;
+    }
   }
 }
 
@@ -137,7 +210,7 @@ class ASTCountMatches extends ASTPrim {
           } else ncs[i].addNA();
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
   }
 
   int[] countDomainMatches(String[] domain, String[] pattern) {
@@ -168,7 +241,7 @@ class ASTCountMatches extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
   }
 }
 
@@ -232,7 +305,7 @@ class ASTToLower extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -296,7 +369,7 @@ class ASTToUpper extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -310,8 +383,7 @@ class ASTToUpper extends ASTPrim {
  * expression with the given replacement.
  */
 class ASTReplaceFirst extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
+  @Override public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replacefirst"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -342,7 +414,7 @@ class ASTReplaceFirst extends ASTPrim {
   }
 
   private Vec replaceFirstCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
-    String[] doms = vec.domain();
+    String[] doms = vec.domain().clone();
     for (int i = 0; i < doms.length; ++i)
       doms[i] = ignoreCase
           ? doms[i].toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement)
@@ -377,7 +449,7 @@ class ASTReplaceFirst extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -458,7 +530,7 @@ class ASTReplaceAll extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -513,7 +585,7 @@ class ASTTrim extends ASTPrim {
         // so UTF-8 safe methods are not needed here.
         else ((CStrChunk)chk).asciiTrim(newChk);
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
 }
 
@@ -554,23 +626,23 @@ class ASTStrLength extends ASTPrim {
     int[] catLengths = new int[doms.length];
     for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
     Vec res = new MRTask() {
-      transient int[] catLengths;
-      @Override public void setupLocal() {
-        String[] doms = _fr.anyVec().domain();
-        catLengths = new int[doms.length];
-        for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
-      }
-      @Override public void map(Chunk chk, NewChunk newChk){
-        // pre-allocate since the size is known
-        newChk._ls = MemoryManager.malloc8(chk._len);
-        newChk._xs = MemoryManager.malloc4(chk._len); // sadly, a waste
-        for (int i =0; i < chk._len; i++)
-          if(chk.isNA(i))
-            newChk.addNA();
-          else
-            newChk.addNum(catLengths[(int)chk.atd(i)],0);
-      }
-    }.doAll(1, vec).outputFrame().anyVec();
+        transient int[] catLengths;
+        @Override public void setupLocal() {
+          String[] doms = _fr.anyVec().domain();
+          catLengths = new int[doms.length];
+          for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
+        }
+        @Override public void map(Chunk chk, NewChunk newChk){
+          // pre-allocate since the size is known
+          newChk._ls = MemoryManager.malloc8(chk._len);
+          newChk._xs = MemoryManager.malloc4(chk._len); // sadly, a waste
+          for (int i =0; i < chk._len; i++)
+            if(chk.isNA(i))
+              newChk.addNA();
+            else
+              newChk.addNum(catLengths[(int)chk.atd(i)],0);
+        }
+      }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
     return res;
   }
 
@@ -590,6 +662,6 @@ class ASTStrLength extends ASTPrim {
           }
         }
       }
-    }.doAll(1, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
   }
 }

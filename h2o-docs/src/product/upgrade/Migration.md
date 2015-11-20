@@ -21,16 +21,27 @@ Overall, H2O 3.0 is more stable, elegant, and simplified, with additional capabi
 
 ##Algorithm Changes
 
-Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy. Currently available model types include Gradient Boosting Machine, Deep Learning, Generalized Linear Model, K-means, Distributed Random Forest, and Naïve Bayes. 
+Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy. Currently available model types include:
+
+###Supervised 
+
+- **Generalized Linear Model (GLM)**: Binomial classification, multinomial classification, regression (including logistic regression)
+- **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
+- **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
+- **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
+
+###Unsupervised
+
+- K-means
+- Principal Component Analysis
+- Autoencoder 
 
 There are a few algorithms that are still being refined to provide these same benefits and will be available in a future version of H2O. 
 
 Currently, the following algorithms and associated capabilities are still in development: 
 
-- Cross-validation 
-- Grid search
-- Principal Component Analysis (PCA) 
-- Cox Proportional Hazards (Cox PH)
+- Naïve Bayes
+
 
 Check back for updates, as these algorithms will be re-introduced in an improved form in a future version of H2O. 
 
@@ -40,7 +51,7 @@ Check back for updates, as these algorithms will be re-introduced in an improved
 
 ##Parsing Changes
 
-In H2O Classic, the parser reads all the data and tries to guess the column type. In H2O 3.0, the parser reads a subset and makes a type guess for each column. In Flow, you can view the preliminary parse results in the **Data Preview** area. To change the column type, select an option from the drop-down menu at the top of the column. H2O 3.0 can also automatically identify mixed-type columns; in H2O Classic, if one column is mixed integers or real numbers using a string, the output is blank. 
+In H2O Classic, the parser reads all the data and tries to guess the column type. In H2O 3.0, the parser reads a subset and makes a type guess for each column. In Flow, you can view the preliminary parse results in the **Edit Column Names and Types** area. To change the column type, select an option from the drop-down menu to the right  of the column. H2O 3.0 can also automatically identify mixed-type columns; in H2O Classic, if one column is mixed integers or real numbers using a string, the output is blank. 
 
 ---
 
@@ -54,7 +65,7 @@ For more information, refer to our [Getting Started with Flow](https://github.co
 
 ##API Users
 
-H2O's new Python API allows Pythonistas to use H2O in their favorite environment. Using the Python command line or an integrated development environment like IPython Notebook H2O users can control clusters and manage massive datasets quickly. 
+H2O's new Python API allows Pythonistas to use H2O in their favorite environment. Using the Python command line or an integrated development environment like IPython Notebook, H2O users can control clusters and manage massive datasets quickly. 
 
 H2O's REST API is the basis for the web UI (Flow), as well as the R and Python APIs, and is versioned for stability. It is also easier to understand and use, with full metadata available dynamically from the server, allowing for easier integration by developers. 
 
@@ -72,7 +83,9 @@ As in previous versions of H2O, users can export trained models as Java objects 
 
 If you use H2O primarily in R, be aware that as a result of the improvements to the R package for H2O scripts created using previous versions (Nunes 2.8.6.2 or prior) will require minor revisions to work with H2O 3.0. 
 
-To assist our R users in upgrading to H2O 3.0 a "shim" tool has been developed. The [shim](https://github.com/h2oai/h2o-dev/blob/9795c401b7be339be56b1b366ffe816133cccb9d/h2o-r/h2o-package/R/shim.R) reviews your script, identifies deprecated or revised parameters and arguments, and suggests replacements. 
+To assist our R users in upgrading to H2O 3.0, a "shim" tool has been developed. The [shim](https://github.com/h2oai/h2o-dev/blob/9795c401b7be339be56b1b366ffe816133cccb9d/h2o-r/h2o-package/R/shim.R) reviews your script, identifies deprecated or revised parameters and arguments, and suggests replacements. 
+
+  >**Note**: As of Slater v.3.2.0.10, this shim will no longer be available. 
 
 There is also an [R Porting Guide](#PortingGuide) that provides a side-by-side comparison of the algorithms in the previous version of H2O with H2O 3.0. It outlines the new, revised, and deprecated parameters for each algorithm, as well as the changes to the output. 
 
@@ -154,7 +167,7 @@ Saving and loading a model from R is supported in version 3.0.0.18 and later. H2
 <a name="GBM"></a>
 ##GBM
 
-N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
+N-fold cross-validation and grid search are currently supported in H2O 3.0. 
 
 ###Renamed GBM Parameters
 
@@ -181,7 +194,7 @@ The following parameters have been removed:
 - `group_split`: Bit-set group splitting of categorical variables is now the default. 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
 - `holdout.fraction`: The fraction of the training data to hold out for validation is no longer supported. 
-- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O 3.0. 
+- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. 
 
 ###New GBM Parameters
 
@@ -200,21 +213,34 @@ H2O Classic  | H2O 3.0
 `y,` |`y,` 
 `data,` | `training_frame,`
 `key = "",` | `model_id,` 
-`distribution = 'multinomial',` | `distribution = c("bernoulli", "multinomial", "gaussian"),` 
+&nbsp; | `checkpoint`
+`distribution = 'multinomial',` | `distribution = c("AUTO",
+"gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),` 
+&nbsp; | `tweedie_power = 1.5,`
 `n.trees = 10,` | `ntrees = 50`
 `interaction.depth = 5,` | `max_depth = 5,` 
 `n.minobsinnode = 10,` | `min_rows = 10,` 
 `shrinkage = 0.1,` | `learn_rate = 0.1,` 
 `n.bins = 20,`| `nbins = 20,` 
+&nbsp; | `nbins_top_level,`
+&nbsp; | `nbins_cats = 1024,`
 `validation,` | `validation_frame = NULL,` 
 `balance.classes = FALSE` | `balance_classes = FALSE,` 
 `max.after.balance.size = 5,` | `max_after_balance_size = 1,` 
  &nbsp; | `seed,` 
  &nbsp; | `build_tree_one_node = FALSE,`
- &nbsp; | `score_each_iteration)`
+ &nbsp; | `nfolds = 0,`
+ &nbsp; | `fold_column = NULL,`
+ &nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+ &nbsp; | `keep_cross_validation_predictions = FALSE,`
+ &nbsp; | `score_each_iteration = FALSE,`
+ &nbsp; | `stopping_rounds = 0,`
+ &nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),`
+ &nbsp; | `stopping_tolerance = 0.001,`
+ &nbsp; | `offset_column = NULL,`
+ &nbsp; | `weights_column = NULL,`
 `group_split = TRUE,` | 
 `importance = FALSE,` | 
-`nfolds = 0,` | 
 `holdout.fraction = 0,` | 
 `class.sampling.factors = NULL,` | 
 `grid.parallelism = 1)` | 
@@ -253,8 +279,6 @@ H2O Classic | H2O 3.0  | Model Type
 <a name="GLM"></a>
 ##GLM
 
- N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
-
 ###Renamed GLM Parameters
 
 The following parameters have been renamed, but retain the same functions:
@@ -278,7 +302,6 @@ The following parameters have been removed:
  - `non_negative`: Specify a non-negative response. (may be re-added)
  - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. 
  - `disable_line_search`: This parameter has been deprecated, as it was mainly used for testing purposes. 
- - `offset`: Specify a column as an offset. (may be re-added)
  - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. (may be re-added)
 
 ###New GLM Parameters
@@ -293,12 +316,12 @@ The following parameters have been removed:
 
 H2O Classic | H2O 3.0 
 ------------- | -------------
-`h2o.glm <- function(` | `h2o.startGLMJob <- function(`
+`h2o.glm <- function(` | `h2o.glm(`
 `x,` | `x,`
 `y,` | `y,` 
 `data,` |`training_frame,` 
 `key = "",` | `model_id,` 
- &nbsp; | `validation_frame`
+ &nbsp; | `validation_frame = NULL`
 `iter.max = 100,` |  `max_iterations = 50,` 
 `epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
@@ -307,7 +330,7 @@ H2O Classic | H2O 3.0
 `non_negative = FALSE,` | 
 &nbsp; | `solver = c("IRLSM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
-`family,` | `family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),` 
+`family,` | `family = c("gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie"),` 
 `link,` | `link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),`
 `tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` |  `tweedie_variance_power = NaN,`
 &nbsp; | `tweedie_link_power = NaN,`
@@ -319,12 +342,17 @@ H2O Classic | H2O 3.0
 `lambda.min.ratio = -1,` | `lambda_min_ratio = 1.0,` 
 `use_all_factor_levels = FALSE` | `use_all_factor_levels = FALSE,` 
 `nfolds = 0,` |  `nfolds = 0,`
-`beta_constraints = NULL,` | `beta_constraint = NULL)` 
+&nbsp; | `fold_column = NULL,`
+&nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+&nbsp; | `keep_cross_validation_predictions = FALSE,`
+`beta_constraints = NULL,` | `beta_constraints = NULL)` 
 `higher_accuracy = FALSE,` |  
 `variable_importances = FALSE,` | 
 `disable_line_search = FALSE,` | 
-`offset = NULL,` | 
-`max_predictors = -1)` |
+`offset = NULL,` | `offset_column = NULL,`
+&nbsp; | `weights_column = NULL,`
+&nbsp; | `intercept = TRUE,`
+`max_predictors = -1)` | `max_active_predictors = -1)`
 
 
 ###Output
@@ -381,7 +409,7 @@ The following parameters have been added:
 
 H2O Classic | H2O 3.0
 ------------- | -------------
-`h2o.kmeans <- function(` | `h2o.kmeans <- function(`
+`h2o.kmeans <- function(` | `h2o.kmeans(`
 `data,` | `training_frame,` 
 `cols = '',` | `x,`
 `centers,` | `k,`
@@ -389,7 +417,11 @@ H2O Classic | H2O 3.0
 `iter.max = 10,` | `max_iterations = 1000,`
 `normalize = FALSE,`  | `standardize = TRUE,`
 `init = "none",` | `init = c("Furthest","Random", "PlusPlus"),`
-`seed = 0,` | `seed)`
+`seed = 0,` | `seed,`
+&nbsp; | `nfolds = 0,`
+&nbsp; | `fold_column = NULL,` 
+&nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+&nbsp; | `keep_cross_validation_predictions = FALSE)`
 
 ###Output
 
@@ -410,8 +442,6 @@ H2O Classic | H2O 3.0
 
 <a name="DL"></a>
 ##Deep Learning
-
-N-fold cross-validation and grid search will be supported in a future version of H2O 3.0. 
 
 **Note**: If the results in the confusion matrix are incorrect, verify that `score_training_samples` is equal to 0. By default, only the first 10,000 rows are included. 
 
@@ -452,7 +482,7 @@ The following options for the `loss` parameter have been added:
 
 H2O Classic  | H2O 3.0 
 ------------- | -------------
-`h2o.deeplearning <- function(x,` | `h2o.deeplearning <- function(x, `
+`h2o.deeplearning <- function(x,` | `h2o.deeplearning (x, `
 `y,` | `y,`
 `data,` | `training_frame,` 
 `key = "",` | `model_id = "",`
@@ -486,13 +516,21 @@ H2O Classic  | H2O 3.0
 `max_w2,` | `max_w2 = Inf,`
 `initial_weight_distribution,` | `initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
 `initial_weight_scale,` | `initial_weight_scale = 1.0,`
-`loss,` | `loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
+`loss,` | `loss = "Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"),`
+&nbsp; | ` distribution = c("AUTO",
+"gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
+"laplace", "huber"),`
+&nbsp; | `tweedie_power = 1.5,`
 `score_interval,` | `score_interval = 5,` 
 `score_training_samples,` | `score_training_samples = 10000l,` 
 `score_validation_samples,` | `score_validation_samples = 0l,`
 `score_duty_cycle,` | `score_duty_cycle = 0.1,` 
 `classification_stop,` | `classification_stop = 0`
 `regression_stop,` | `regression_stop = 1e-6,`
+&nbsp; | `stopping_rounds = 5,`
+&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2",
+"misclassification"),`
+&nbsp; | `stopping_tolerance = 0,`
 `quiet_mode,` | `quiet_mode = false,`
 `max_confusion_matrix_size,` | `max_confusion_matrix_size,`
 `max_hit_ratio_k,` | `max_hit_ratio_k,`
@@ -510,11 +548,17 @@ H2O Classic  | H2O 3.0
 `shuffle_training_data,` | `shuffle_training_data = false,`
 `sparse,` | `sparse = false,` 
 `col_major,` | `col_major = false,`
-`max_categorical_features,` | `max_categorical_features = Integer.MAX_VALUE,`
+`max_categorical_features,` | `max_categorical_features,`
 `reproducible)` | `reproducible=FALSE,` 
 `average_activation` | `average_activation = 0,`
  &nbsp; | `sparsity_beta = 0`
- &nbsp; | `export_weights_and_biases=FALSE)`
+ &nbsp; | `export_weights_and_biases=FALSE,`
+ &nbsp; | `offset_column = NULL,` 
+ &nbsp; | `weights_column = NULL,`
+ &nbsp; | `nfolds = 0,`
+ &nbsp; | `fold_column = NULL,`
+ &nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+ &nbsp; | `keep_cross_validation_predictions = FALSE)`
 
 ###Output
 
@@ -603,15 +647,25 @@ H2O Classic | H2O 3.0
 `depth=20,` | `max_depth = 20,` 
  &nbsp; | `min_rows = 1,`
 `nbins=20,` | `nbins = 20,` 
+&nbsp; | `nbins_top_level,`
+&nbsp; | `nbins_cats =1024,`
+&nbsp; | `binomial_double_trees = FALSE,`
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
-`score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
 `seed = -1,` | `seed` 
 `nodesize = 1,` |  
 `classification=TRUE,` | 
 `importance=FALSE,` | 
-`nfolds=0,` | 
+&nbsp; | `weights_column = NULL,`
+`nfolds=0,` | `nfolds = 0,`
+&nbsp; | `fold_column = NULL,`
+&nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),` 
+&nbsp; | `keep_cross_validation_predictions = FALSE,`
+&nbsp; | `score_each_iteration = FALSE,`
+&nbsp; | `stopping_rounds = 0,`
+&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"), `
+&nbsp; | `stopping_tolerance = 0.001)`
 `holdout.fraction = 0,` | 
-`max.after.balance.size = 5,` | `max_after_balance_size)` 
+`max.after.balance.size = 5,` | `max_after_balance_size,` 
 `class.sampling.factors = NULL,` | &nbsp; 
 `doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |

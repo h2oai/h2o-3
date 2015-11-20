@@ -102,7 +102,7 @@ public class DRFCheckpointTest extends TestUtil {
       drfFromCheckpointParams._sample_rate = sampleRateInNewModel;
       modelFromCheckpoint = new DRF(drfFromCheckpointParams).trainModel().get();
 
-      // Compute a separated model containing the same numnber of trees as a model built from checkpoint
+      // Compute a separated model containing the same number of trees as a model built from checkpoint
       DRFModel.DRFParameters drfFinalParams = new DRFModel.DRFParameters();
       drfFinalParams._model_id = Key.make("Validation model");
       drfFinalParams._train = f._key;

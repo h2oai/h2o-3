@@ -22,6 +22,20 @@ public class DataInfo extends Keyed {
   public Frame _adaptedFrame;
   public int _responses;   // number of responses
 
+  public Vec setWeights(String name, Vec vec) {
+    if(_weights)
+      return _adaptedFrame.replace(weightChunkId(),vec);
+    _adaptedFrame.insertVec(weightChunkId(),name,vec);
+    _weights = true;
+    return null;
+  }
+
+  public void dropWeights() {
+    if(!_weights)return;
+    _adaptedFrame.remove(weightChunkId());
+    _weights = false;
+  }
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -56,7 +70,6 @@ public class DataInfo extends Keyed {
   public TransformType _response_transform;
   public boolean _useAllFactorLevels;
   public int _nums;
-  public int _bins;
   public int _cats;
   public int [] _catOffsets;
   public int [] _catMissing;  // bucket for missing categoricals
@@ -69,7 +82,7 @@ public class DataInfo extends Keyed {
   public double [] _numMeans;
   public boolean _intercept = true;
   public final boolean _offset;
-  public final boolean _weights;
+  public boolean _weights;
   public final boolean _fold;
   public int responseChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
@@ -207,7 +220,9 @@ public class DataInfo extends Keyed {
   }
 
   public double[] denormalizeBeta(double [] beta) {
-    assert beta.length == fullN()+1;
+    if(beta.length != fullN()+1)
+      System.out.println("haha");
+    assert beta.length == fullN()+1:"beta len = " + beta.length;
     beta = MemoryManager.arrayCopyOf(beta,beta.length);
     if (_predictor_transform == DataInfo.TransformType.STANDARDIZE) {
       double norm = 0.0;        // Reverse any normalization on the intercept
@@ -517,11 +532,10 @@ public class DataInfo extends Keyed {
       int numStart = numStart();
       for(int i = 0; i < nBins; ++i)
         res += vec[binIds[i]];
-      if(numIds == null) {
+      if(numIds == null || (vec.length == nBins + nNums + 1)) {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];
       } else {
-        res += etaOffset;
         for (int i = 0; i < nNums; ++i)
           res += numVals[i] * vec[numIds[i]];
       }
@@ -573,6 +587,9 @@ public class DataInfo extends Keyed {
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
     row.rid = rid + chunks[0].start();
+    if(_weights)
+      row.weight = chunks[weightChunkId()].atd(rid);
+    if(row.weight == 0) return row;
     if (_skipMissing)
       for (Chunk c : chunks)
         if(c.isNA(rid)) {
@@ -582,9 +599,11 @@ public class DataInfo extends Keyed {
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
       if (chunks[i].isNA(rid)) {
-          if (_imputeMissing)
-            row.binIds[nbins++] = _catModes[i];
-          else   // TODO: What if missingBucket = false?
+          if (_imputeMissing) {
+            int c = getCategoricalId(i,_catModes[i]);
+            if(c >= 0)
+              row.binIds[nbins++] = c;
+          } else   // TODO: What if missingBucket = false?
             row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
       } else {
         int c = getCategoricalId(i,(int)chunks[i].at8(rid));
@@ -613,9 +632,12 @@ public class DataInfo extends Keyed {
     }
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
-    if(_weights)
-      row.weight = chunks[weightChunkId()].atd(rid);
+
     return row;
+  }
+
+  public Vec getWeightsVec(){
+    return _adaptedFrame.vec(weightChunkId());
   }
   public Row newDenseRow(){
     return new Row(false,_nums,_cats,_responses,0);
@@ -630,26 +652,52 @@ public class DataInfo extends Keyed {
         etaOffset -= coefficients[i+numStart()] * _normSub[i] * _normMul[i];
     return etaOffset;
   }
-  public final Row[]  extractDenseRows(Chunk [] chunks) {
-    Row[] rows = new Row[chunks[0]._len];
-    for (int i = 0; i < rows.length; ++i) {
-      rows[i] = newDenseRow();
-      extractDenseRow(chunks, i, rows[i]);
+
+  public final class Rows {
+    public final int _nrows;
+    private final Row _denseRow;
+    private final Row [] _sparseRows;
+    public final boolean _sparse;
+    private final Chunk [] _chks;
+
+    private Rows(Chunk [] chks, boolean sparse) {
+      _nrows = chks[0]._len;
+      _sparse = sparse;
+      if(sparse) {
+        _denseRow = null;
+        _chks = null;
+        _sparseRows = extractSparseRows(chks,0);
+      } else {
+        _denseRow = DataInfo.this.newDenseRow();
+        _chks = chks;
+        _sparseRows = null;
+      }
     }
-    return rows;
+    public Row row(int i) {return _sparse?_sparseRows[i]:extractDenseRow(_chks,i,_denseRow);}
   }
+
+  public Rows rows(Chunk [] chks) {
+    int cnt = 0;
+    for(Chunk c:chks)
+      if(c.isSparse())
+        ++cnt;
+    return rows(chks,cnt > (chks.length >> 1));
+  }
+  public Rows rows(Chunk [] chks, boolean sparse) {return new Rows(chks,sparse);}
+
   /**
    * Extract (sparse) rows from given chunks.
+   * Note: 0 remains 0 - _normSub of DataInfo isn't used (mean shift during standarization is not reverted) - UNLESS offset is specified (for GLM only)
    * Essentially turns the dataset 90 degrees.
    * @param chunks - chunk of dataset
    * @param offset - adjustment for 0s if running with on-the-fly standardization (i.e. zeros are not really zeros because of centering)
    * @return array of sparse rows
    */
-  public final Row[]  extractSparseRows(Chunk [] chunks, double offset) {
+  public final Row[] extractSparseRows(Chunk [] chunks, double offset) {
     Row[] rows = new Row[chunks[0]._len];
 
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, offset);
+      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, offset);
       rows[i].rid = chunks[0].start() + i;
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
@@ -678,24 +726,12 @@ public class DataInfo extends Keyed {
       }
     }
     int numStart = numStart();
-    // binary cols
-    for (int cid = 0; cid < _bins; ++cid) {
-      Chunk c = chunks[cid + _cats];
-      for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        if(!c.isSparse() && c.atd(r) == 0)continue;
-        Row row = rows[r];
-        if (row.bad) continue;
-        if (c.isNA(r))
-          row.bad = _skipMissing;
-        row.addBinId(cid + numStart);
-      }
-    }
     // generic numbers
     for (int cid = 0; cid < _nums; ++cid) {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        if(!c.isSparse() && c.atd(r) == 0)continue;
+        if(c.atd(r) == 0)continue;
         assert r > oldRow;
         oldRow = r;
         Row row = rows[r];
@@ -703,8 +739,75 @@ public class DataInfo extends Keyed {
         if (c.isNA(r)) row.bad = _skipMissing;
         double d = c.atd(r);
         if(_normMul != null)
-          d *= _normMul[cid]; // no centering here, we already have etaOffset
-        row.addNum(cid + numStart + _bins, d);
+          d *= _normMul[cid];
+        row.addNum(cid + numStart, d);
+      }
+    }
+    // response(s)
+    for (int i = 1; i <= _responses; ++i) {
+      Chunk rChunk = chunks[responseChunkId()];
+      for (int r = 0; r < chunks[0]._len; ++r) {
+        Row row = rows[r];
+        if(row.bad) continue;
+        row.response[row.response.length - i] = rChunk.atd(r);
+        if (_normRespMul != null) {
+          row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
+        }
+        if (Double.isNaN(row.response[row.response.length - i]))
+          row.bad = true;
+      }
+    }
+    return rows;
+  }
+
+  /**
+   * Extract (dense) rows from given chunks, one Vec at a time - should be slightly faster than per-row
+   * @param chunks - chunk of dataset
+   * @return array of dense rows
+   */
+  public final Row[] extractDenseRowsVertical(Chunk[] chunks) {
+    Row[] rows = new Row[chunks[0]._len];
+
+    for (int i = 0; i < rows.length; ++i) {
+      rows[i] = new Row(false, _nums, _cats, _responses, 0);
+      rows[i].rid = chunks[0].start() + i;
+      if(_offset)  {
+        rows[i].offset = chunks[offsetChunkId()].atd(i);
+        if(Double.isNaN(rows[i].offset)) rows[i].bad = true;
+      }
+      if(_weights) {
+        rows[i].weight = chunks[weightChunkId()].atd(i);
+        if(Double.isNaN(rows[i].weight)) rows[i].bad = true;
+      }
+    }
+    for (int i = 0; i < _cats; ++i) {
+      for (int r = 0; r < chunks[0]._len; ++r) {
+        Row row = rows[r];
+        if(row.bad)continue;
+        if (chunks[i].isNA(r)) {
+          if (_skipMissing) {
+            row.bad = true;
+          } else
+            row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
+        } else {
+          int c = getCategoricalId(i,(int)chunks[i].at8(r));
+          if(c >=0)
+            row.binIds[row.nBins++] = c;
+        }
+      }
+    }
+    int numStart = numStart();
+    // generic numbers
+    for (int cid = 0; cid < _nums; ++cid) {
+      Chunk c = chunks[_cats + cid];
+      for (int r = 0; r < c._len; ++r) {
+        Row row = rows[r];
+        if (row.bad) continue;
+        if (c.isNA(r)) row.bad = _skipMissing;
+        double d = c.atd(r);
+        if(_normMul != null && _normSub != null) //either none or both
+          d = (d - _normSub[cid]) * _normMul[cid];
+        row.numVals[numStart + cid] = d;
       }
     }
     // response(s)

@@ -2,24 +2,10 @@
 # Purpose:  This test exercises building GLM/GBM/DL  model 
 #           for 376K rows and 6.9K columns 
 #----------------------------------------------------------------------
-    
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R') 
-
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-myIP   <- ipPort[[1]]
-myPort <- ipPort[[2]]
+test <-
+function() {
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
-
-library(RCurl)
-library(h2o)
-
-running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c28")
-
-heading("BEGIN TEST")
-h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
-h2o.removeAll()
 
 h2o.ls()
 #----------------------------------------------------------------------
@@ -44,4 +30,6 @@ model.gbm
 pred = predict(model.gbm, valid)
 perf <- h2o.performance(model.gbm, valid)
 
-PASS_BANNER()
+}
+
+doTest("Test", test)

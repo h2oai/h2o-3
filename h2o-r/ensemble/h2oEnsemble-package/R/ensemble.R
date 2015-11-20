@@ -5,8 +5,8 @@ h2o.ensemble <- function(x, y, training_frame,
                          metalearner = "h2o.glm.wrapper",
                          cvControl = list(V = 5, shuffle = TRUE),  #maybe change this to cv_control
                          seed = 1,
-                         parallel = "seq",
-                         ...) 
+                         parallel = "seq",  #only seq implemented
+                         keep_levelone_data = TRUE) 
 {
   
   starttime <- Sys.time()
@@ -36,21 +36,34 @@ h2o.ensemble <- function(x, y, training_frame,
     family <- match.arg(family)
   }
   if (family == "AUTO") {
-    if (is.factor(training_frame[,c(y)])) {
-      numcats <- length(unique(as.data.frame(training_frame)[,c(y)]))
+    if (is.factor(training_frame[,y])) {
+      numcats <- length(h2o.levels(training_frame[,y]))
       if (numcats == 2) {
         family <- "binomial" 
       } else {
-        stop("multinomial case not yet implemented.")
+        stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://0xdata.atlassian.net/browse/PUBDEV-2355")
       }
     } else {
       family <- "gaussian"
     }
   }
+  # Check that if specified, family matches data type for response
+  # binomial must be factor/enum and gaussian must be numeric
   if (family == c("gaussian")) {
-    # TO DO: (CHECK THIS UPDATE) Update this when h2o.range method gets implemented for H2OFrame cols
-    ylim <- c(min(training_frame[,c(y)]), max(training_frame[,c(y)]))  #Used to enforce bounds  
+    if (!is.numeric(training_frame[,y])) {
+      stop("When `family` is gaussian, the repsonse column must be numeric.")
+    }
+    # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OFrame cols
+    ylim <- c(min(training_frame[,y]), max(training_frame[,y]))  #Used to enforce bounds  
   } else {
+    if (!is.factor(training_frame[,y])) {
+      stop("When `family` is binomial, the repsonse column must be a factor.")
+    } else {
+      numcats <- length(h2o.levels(training_frame[,y]))
+      if (numcats > 2) {
+        stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://0xdata.atlassian.net/browse/PUBDEV-2355")
+      } 
+    }
     ylim <- NULL
   }
   
@@ -118,13 +131,14 @@ h2o.ensemble <- function(x, y, training_frame,
   print("Metalearning")
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
   if (grepl("^SL.", metalearner)) {
-    # this is very hacky and should be used only for testing until we get the h2o metalearner functions sorted out...
+    # this is very hacky and should be used only for testing
     if (is.character(family)) {
       familyFun <- get(family, mode = "function", envir = parent.frame())
       #print(familyFun$family)  #does not work for SL.glmnet
     } 
     Zdf <- as.data.frame(Z)
     Y <- as.data.frame(training_frame[,c(y)])[,1]
+    # TO DO: for parity, need to add y col to Z like we do below
     runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(Y = Y, 
                                                                           X = Zdf, 
                                                                           newX = Zdf, 
@@ -132,7 +146,7 @@ h2o.ensemble <- function(x, y, training_frame,
                                                                           id = seq(N), 
                                                                           obsWeights = rep(1,N)), gcFirst = FALSE)
   } else {
-    Z$y <- training_frame[,c(y)]
+    Z$y <- training_frame[,c(y)]  # do we want to add y to the Z frame?  
     runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner, 
                                                                           y = "y", 
                                                                           training_frame = Z, 
@@ -144,10 +158,17 @@ h2o.ensemble <- function(x, y, training_frame,
   runtime$baselearning <- NULL
   runtime$total <- Sys.time() - starttime
   
+  # Keep level-one data?
+  if (!keep_levelone_data) {
+    Z <- NULL
+  }
+  
   # Ensemble model
   out <- list(x = x,
               y = y, 
               family = family, 
+              learner = learner,
+              metalearner = metalearner,
               cvControl = cvControl,
               folds = folds,
               ylim = ylim, 
@@ -155,7 +176,7 @@ h2o.ensemble <- function(x, y, training_frame,
               parallel = parallel,
               basefits = basefits, 
               metafit = metafit,
-              Z = Z, 
+              levelone = Z,  #levelone = cbind(Z, y)
               runtime = runtime,
               h2o_version = packageVersion(pkg = "h2o"),
               h2oEnsemble_version = packageVersion(pkg = "h2oEnsemble"))
@@ -185,7 +206,7 @@ h2o.ensemble <- function(x, y, training_frame,
   .compress_cvpred_into_1col <- function(l, family) {
     # return the frame_id of the resulting 1-col Hdf of cvpreds for learner l
     if (family %in% c("bernoulli", "binomial")) {
-      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$p1, simplify = FALSE)
+      predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)[,3], simplify = FALSE)
     } else {
       predlist <- sapply(1:V, function(v) h2o.getFrame(basefits[[l]]@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
     }
@@ -205,6 +226,7 @@ h2o.ensemble <- function(x, y, training_frame,
   if (!is.null(fold_column)) cv = TRUE
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
   fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
+  #fit <- get(learner[l], mode = "function", envir = parent.frame())(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
   return(fit)
 }
 
@@ -236,34 +258,43 @@ h2o.ensemble <- function(x, y, training_frame,
 }
 
 
-# TO DO:check if this is working
 predict.h2o.ensemble <- function(object, newdata, ...) {
   
-  L <- length(object$basefits)
-  basepreddf <- as.data.frame(matrix(NA, nrow = nrow(newdata), ncol = L))
-  for (l in seq(L)) {
-    if (object$family == "binomial") {
-      basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))$p1 
-    } else {
-      basepreddf[, l] <- as.data.frame(do.call('h2o.predict', list(object = object$basefits[[l]],
-                                                                   newdata = newdata)))$predict
-    }
+  if (object$family == "binomial") {
+    basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,3]))
+  } else {
+    basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,1]))
   }
-  names(basepreddf) <- names(object$basefits)
-  basepred <- as.h2o(basepreddf, destination_frame = "basepred")
+  names(basepred) <- names(object$basefits)
   
   if (grepl("H2O", class(object$metafit))) {
     # H2O ensemble metalearner from wrappers.R
     pred <- h2o.predict(object = object$metafit, newdata = basepred)
   } else {
     # SuperLearner wrapper function metalearner
-    pred <- predict(object = object$metafit$fit, newdata = basepred)
+    basepreddf <- as.data.frame(basepred)  
+    pred <- predict(object = object$metafit$fit, newdata = basepreddf)
   }
   out <- list(pred = pred, basepred = basepred)
   return(out)
 }
 
 
+print.h2o.ensemble <- function(x, ...) {
+  cat("\nH2O Ensemble fit")
+  cat("\n----------------")
+  cat("\nfamily: ")
+  cat(x$family)
+  cat("\nlearner: ")
+  cat(x$learner)
+  cat("\nmetalearner: ")
+  cat(x$metalearner)
+  cat("\n\n")
+}
+
+
+# plot.h2o.ensemble <- function(x, ...) {
+#   cat("\nPlotting for an H2O Ensemble fit is not implemented at this time.")
+# }
 
 

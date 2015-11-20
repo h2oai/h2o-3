@@ -5,8 +5,8 @@
 ##
 ####################################################################################################
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.splitframe <- function() {
   # add datasets here: paste( DIRECTORY, LIST OF FILES, sep = "/")

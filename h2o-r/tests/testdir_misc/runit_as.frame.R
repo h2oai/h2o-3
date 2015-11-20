@@ -2,8 +2,8 @@
 # Testing number of rows in as.data.frame 
 ##
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 # setupRandomSeed(1994831827)
 

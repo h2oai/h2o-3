@@ -1,14 +1,19 @@
+\documentclass{standalone}
+\usepackage{placeins}
+\begin{document}
+
+
 \section{Design}
 Sparkling Water is designed to be executed as a regular Spark application. It provides a way to initialize H2O services on each node in the Spark cluster and access data stored in data structures of Spark and H2O.
 
 Since Sparkling Water is primarily designed as Spark application, it is launched
-inside a Spark executor, which is created after application submission. At this
-point, H2O starts services, including distributed K/V store and memory manager, and orchestrates them into a cloud. The topology of the created cloud matches the topology of the underlying Spark cluster exactly.
+inside a Spark executor created after submitting the application. At this
+point, H2O starts services, including distributed key-value (K/V) store and memory manager, and orchestrates them into a cloud. The topology of the created cloud replicates the topology of the underlying Spark cluster.
 
-\begin{figure}[h]
+\begin{figure}[h!]
 	\centering
-	\includegraphics[width=\textwidth]{sw/images/Topology.png}
-	\caption{Sparkling Water design. The scenario depicts deployment of Sparkling Water application to standalone Spark cluster.}
+	\includegraphics[scale=0.6]{sw/images/Topology.png}
+	\caption{Sparkling Water design depicting deployment of the Sparkling Water application to the standalone Spark cluster.}
 \end{figure}
 
 
@@ -16,23 +21,26 @@ point, H2O starts services, including distributed K/V store and memory manager, 
 
 Sparkling Water enables transformation between different types of RDDs and H2O's H2OFrame, and vice versa.
 
-When converting from H2OFrame to RDD, a wrapper is created around the H2O H2OFrame to provide an RDD-like API. In this case, no data is duplicated; instead, the data is served directly from then underlying H2OFrame.
+When converting from an H2OFrame to an RDD, a wrapper is created around the H2OFrame to provide an RDD-like API. In this case,  data is not duplicated but served directly from the underlying H2OFrame.
 
-Converting in the opposite direction (from RDD/DataFrame to H2OFrame) introduces data duplication, since it transfers data from RDD storage into H2OFrame. However, data stored in H2OFrame is heavily compressed and does not need to be preserved in RDD anymore.
-\begin{figure}[h]
+Converting from an RDD/DataFrame to an H2OFrame requires data duplication because it transfers data from the RDD storage into H2OFrame. However, data stored in an H2OFrame is heavily compressed and does not need to be preserved in RDD.
+
+\begin{figure}[h!]
 	\centering
-	\includegraphics[width=0.7\textwidth]{sw/images/DataShare.png}
+	\includegraphics[scale=1]{sw/images/DataShare.png}
 	\caption{Sharing between Spark and H2O inside an executor JVM.}
 \end{figure}
 
 
 \subsection{Provided Primitives}
 
-The Sparkling Water provides several primitives (see Table~\ref{tab:primitives}). The first step before using H2O algorithms and data structures is to create and start \texttt{H2OContext} via \texttt{val hc = new H2OContext(sc).start()} call. The context holds information about running H2O services and exposes methods to transform data between Spark RDD/DataFrame and H2O Frame. The start of \texttt{H2OContext} involves distributed operation which contacts all accessible Spark executor nodes and initialize H2O services (KV store, RPC) inside executors' JVMs.
+Sparkling Water provides several primitives (for more information, refer to Table~\ref{tab:primitives}). Before using H2O algorithms and data structures, the first step is to create and start the \texttt{H2OContext} instance using the \texttt{val hc = new H2OContext(sc).start()} call. 
 
-When \texttt{H2OContext} is running, H2O data structures and algorithms can be manipulated. The key data structure is \texttt{H2OFrame} which represents a distributed table composed of vectors. A new H2O frame can be created by:
+The \texttt{H2OContext} contains the necessary information for running H2O services and exposes methods for data transformation between the Spark RDD or DataFrame and the H2O Frame. Starting \texttt{H2OContext} involves a distributed operation that contacts all accessible Spark executor nodes and initializes H2O services (such as the key-value store and RPC) inside the executors' JVMs.
+
+When \texttt{H2OContext} is running, H2O data structures and algorithms can be manipulated. The key data structure is \texttt{H2OFrame}, which represents a distributed table composed of vectors. A new H2O frame can be created using one of the following methods:
 \begin{itemize}
-	\item loading a cluster local file\footnote{A file which is located on each node of the cluster.}:
+	\item loading a cluster local file (a file located on each node of the cluster):
 \begin{lstlisting}[style=Scala]
 val h2oFrame = new H2OFrame(new File("/data/iris.csv"))
 \end{lstlisting}
@@ -50,40 +58,43 @@ val h2oFrame = new H2OFrame("iris.hex")
 \end{lstlisting}		
 \end{itemize}
 
-
-\begin{table}
+\begin{table}[!ht]
 \centering
-\begin{tabularx}{\textwidth}{l l p{5.2cm}}
+%\begin{adjustbox}{width=\textwidth} %resizes table to text width
+
+\begin{tabular}{c c p{5.2cm}}
+%\begin{tabularx}{\textwidth}{l l p{5.2cm}}
 \toprule
 Concept & API Representation & Description \\
 \midrule
-H2O context & \texttt{H2OContext}\footnote{Fullname of class is \texttt{org.apache.spark.h2o.H2OContext}} & Holds
+H2O context & \texttt{H2OContext}\footnote{Fullname of class is \texttt{org.apache.spark.h2o.H2OContext}} & Contains the
 H2O state and provides primitives to publish \texttt{RDD} as \texttt{H2OFrame} and
-vice versa. It follows design principles of Spark primitives such as
+vice versa. Follows design principles of Spark primitives such as
 \texttt{SparkContext} or \texttt{SQLContext} \\  \addlinespace
 
 H2O entry point & \texttt{H2O}\footnote{Fullname of class is \texttt{water.H2Ot}} & Represents the entry point for accessing
-H2O services. It holds information about running H2O services including a list of
-nodes and the status of distributed K/V datastore. \\  \addlinespace
+H2O services. Contains information about running H2O services, including a list of
+nodes and the status of the distributed K/V datastore. \\  \addlinespace
 
-H2O Frame & \texttt{H2OFrame}\footnote{Fullname of class is \texttt{water.fvec.H2OFrame}} & A data structure that
-represents a table of values. The table is column-based and provides column and
+H2O Frame & \texttt{H2OFrame}\footnote{Fullname of class is \texttt{water.fvec.H2OFrame}} & A data structure 
+representing a table of values. The table is column-based and provides column and
 row accessors. \\  \addlinespace
 
 H2O Algorithm & package \texttt{hex} & Represents the H2O machine learning
-algorithms library, including DeepLearning, GBM, GLM, RandomForest and other
+algorithms library, including DeepLearning, GBM, GLM, DRF, and other
 algorithms. \\
 
 \bottomrule
-\end{tabularx}
+\end{tabular} 
+%\end{tabularx}
 \caption{Sparkling Water primitives}
 \label{tab:primitives}
 \end{table}
 
-When \texttt{H2OContext} is running any H2O algorithm can be called. Most of provided algorithms are located in the package \texttt{hex}. The call of an algorithm is composed of two step:
+When the \texttt{H2OContext} is running, any H2O algorithm can be called. Most of provided algorithms are located in the \texttt{hex} package. Calling an algorithm is composed of two steps:
 
 \begin{itemize}
-	\item parameters specification:
+	\item Specifying parameters:
 \begin{lstlisting}[style=Scala]
 val train: H2OFrame = new H2OFrame(new File("prostate.csv"))
 val gbmParams = new GBMParameters()
@@ -92,10 +103,10 @@ gbmParams._response_column = 'CAPSULE
 gbmParams._ntrees = 10
 \end{lstlisting}
 
-	\item creating model builder and launching computation. The \texttt{trainModel} method is non-blocking and returns a job which represents computation.
+	\item Creating the model builder and launching computations. The \texttt{trainModel} method is non-blocking and returns a job representing the computation.
 \begin{lstlisting}[style=Scala]
 val gbmModel = new GBM(gbmParams).trainModel.get
 \end{lstlisting}
 \end{itemize}
 
-
+\end{document}

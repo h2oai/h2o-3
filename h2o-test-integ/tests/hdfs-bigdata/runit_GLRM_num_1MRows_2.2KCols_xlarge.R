@@ -3,22 +3,10 @@
 # Purpose:  This test exercises building a GLRM model on numeric
 #           data with 1M rows and 2.2K cols.
 #----------------------------------------------------------------------
-
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R') 
-
-ipPort <- get_args(commandArgs(trailingOnly = TRUE))
-myIP   <- ipPort[[1]]
-myPort <- ipPort[[2]]
+test <-
+function() {
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
-
-library(RCurl)
-library(h2o)
-
-heading("BEGIN TEST")
-h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
-h2o.removeAll()
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -31,7 +19,7 @@ k_dim <- 15
 print(paste("Matrix decomposition rank k =", k_dim))
 
 print(paste("Creating numeric data frame with rows =", rows, "and cols =", cols))
-sst <- system.time(myframe <- h2o.createFrame('myframe', rows = rows, cols = cols, 
+sst <- system.time(myframe <- h2o.createFrame(rows = rows, cols = cols, 
                                               randomize = TRUE, real_range = 100, categorical_fraction = 0.0, 
                                               integer_fraction = 0.0, binary_fraction = 0.0, 
                                               missing_fraction = 0, has_response = FALSE))
@@ -49,5 +37,7 @@ myframe <- NULL
 gc()
 h2o.rm("myframe")
 
-PASS_BANNER()
+}
+
+doTest("Test", test)
 

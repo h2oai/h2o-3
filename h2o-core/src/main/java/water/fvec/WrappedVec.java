@@ -9,9 +9,9 @@ abstract class WrappedVec extends Vec {
   final Key<Vec> _masterVecKey;
   /** Cached instances of underlying vector. */
   transient Vec _masterVec;
-  public WrappedVec(Key key, long[] espc, Key masterVecKey ) { this(key,espc,null,masterVecKey);  }
-  public WrappedVec(Key key, long[] espc, String[] domain, Key masterVecKey) {
-    super(key, espc, domain);
+  public WrappedVec(Key key, int rowLayout, Key masterVecKey ) { this(key,rowLayout,null,masterVecKey);  }
+  public WrappedVec(Key key, int rowLayout, String[] domain, Key masterVecKey) {
+    super(key, rowLayout, domain);
     _masterVecKey = masterVecKey;
   }
 

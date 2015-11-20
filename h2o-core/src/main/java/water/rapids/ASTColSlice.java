@@ -8,13 +8,59 @@ import water.parser.BufferedString;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Column slice */
+/** Column slice; allows R-like syntax.
+ *  Numbers past the largest column are an error.
+ *  Negative numbers and number lists are allowed, and represent an *exclusion* list */
 class ASTColSlice extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "cols"}; }
+  @Override public String[] args() { return new String[]{"ary", "cols"}; }
   @Override int nargs() { return 1+2; } // (cols src [col_list])
-  @Override
-  public String str() { return "cols" ; }
+  @Override public String str() { return "cols" ; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Val v = stk.track(asts[1].exec(env));
+    if( v instanceof ValRow ) {
+      ValRow vv = (ValRow)v;
+      return vv.slice(asts[2].columns(vv._names));
+    }
+    Frame src = v.getFrame();
+    int[] cols = col_select(src.names(),asts[2]);
+    Frame dst = new Frame();
+    Vec[] vecs = src.vecs();
+    for( int col : cols )  dst.add(src._names[col],vecs[col]);
+    return new ValFrame(dst);
+  }
+
+  // Complex column selector; by list of names or list of numbers or single
+  // name or number.  Numbers can be ranges or negative.
+  static int[] col_select( String[] names, AST col_selector ) {
+    int[] cols = col_selector.columns(names);
+    if( cols.length==0 ) return cols; // Empty inclusion list?
+    if( cols[0] >= 0 ) { // Positive (inclusion) list
+      if( cols[cols.length-1] >= names.length )
+        throw new IllegalArgumentException("Column must be an integer from 0 to "+(names.length-1));
+      return cols;
+    }
+
+    // Negative (exclusion) list; convert to positive inclusion list
+    int[] pos = new int[names.length];
+    for( int col : cols ) // more or less a radix sort, filtering down to cols to ignore
+      if( 0 <= -col-1 && -col-1 < names.length ) 
+        pos[-col-1] = -1;
+    int j=0;
+    for( int i=0; i<names.length; i++ )  if( pos[i] == 0 ) pos[j++] = i;
+    return Arrays.copyOfRange(pos,0,j);
+  }
+
+}
+
+/** Column slice; allows python-like syntax.
+ *  Numbers past last column are allowed and ignored in NumLists, but throw an
+ *  error for single numbers.  Negative numbers have the number of columns
+ *  added to them, before being checked for range.
+ */
+class ASTColPySlice extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary", "cols"}; }
+  @Override int nargs() { return 1+2; } // (cols_py src [col_list])
+  @Override public String str() { return "cols_py" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val v = stk.track(asts[1].exec(env));
     if( v instanceof ValRow ) {
@@ -25,44 +71,45 @@ class ASTColSlice extends ASTPrim {
     int[] cols = asts[2].columns(fr.names());
 
     Frame fr2 = new Frame();
-    if( cols.length==0 ) {        // Empty inclusion list?
-    } else if( cols[0] >= 0 ) { // Positive (inclusion) list
-      if( cols[cols.length-1] > fr.numCols() )
-        throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
-      for( int col : cols )
+    if( cols.length==0 )        // Empty inclusion list?
+      return new ValFrame(fr2);
+    if( cols[0] < 0 )           // Negative cols have number of cols added
+      for( int i=0; i<cols.length; i++ )
+        cols[i] += fr.numCols();
+    if( asts[2] instanceof ASTNum && // Singletons must be in-range
+        (cols[0] < 0 || cols[0] >= fr.numCols()) )
+      throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
+    for( int col : cols )       // For all included columns
+      if( col >= 0 && col < fr.numCols() ) // Ignoring out-of-range ones
         fr2.add(fr.names()[col],fr.vecs()[col]);
-    } else {                    // Negative (exclusion) list
-      fr2 = new Frame(fr);      // All of them at first
-      Arrays.sort(cols);     // This loop depends on the values in sorted order
-      for( int col : cols )
-        if( 0 <= -col-1 && -col-1 < fr.numCols() ) 
-          fr2.remove(-col-1);   // Remove named column
-    }
-    
     return new ValFrame(fr2);
   }
 }
 
 /** Row Slice */
 class ASTRowSlice extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "rows"}; }
+  @Override public String[] args() { return new String[]{"ary", "rows"}; }
   @Override int nargs() { return 1+2; } // (rows src [row_list])
-  @Override
-  public String str() { return "rows" ; }
+  @Override public String str() { return "rows" ; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame returningFrame;
     long nrows = fr.numRows();
     if( asts[2] instanceof ASTNumList ) {
       final ASTNumList nums = (ASTNumList)asts[2];
-      long[] rows = nums._isList?nums.expand8Sort():null;
+
+      if( !nums._isSort && !nums.isEmpty() && nums._bases[0] >= 0)
+        throw new IllegalArgumentException("H2O does not currently reorder rows, please sort your row selection first");
+
+      long[] rows = (nums._isList || nums.min()<0) ? nums.expand8Sort() : null;
       if( rows!=null ) {
         if (rows.length == 0) {      // Empty inclusion list?
         } else if (rows[0] >= 0) { // Positive (inclusion) list
           if (rows[rows.length - 1] > nrows)
             throw new IllegalArgumentException("Row must be an integer from 0 to " + (nrows - 1));
         } else {                  // Negative (exclusion) list
+          if (rows[rows.length - 1] >= 0)
+            throw new IllegalArgumentException("Cannot mix negative and postive row selection");
           // Invert the list to make a positive list, ignoring out-of-bounds values
           BitSet bs = new BitSet((int) nrows);
           for (int i = 0; i < rows.length; i++) {
@@ -80,6 +127,7 @@ class ASTRowSlice extends ASTPrim {
       returningFrame = new MRTask(){
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
           if( nums.cnt()==0 ) return;
+          if( ls != null && ls.length == 0 ) return;
           long start = cs[0].start();
           long end   = start + cs[0]._len;
           long min = ls==null?(long)nums.min():ls[0], max = ls==null?(long)nums.max()-1:ls[ls.length-1]; // exclusive max to inclusive max when stride == 1
@@ -103,7 +151,7 @@ class ASTRowSlice extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(), fr).outputFrame(fr.names(),fr.domains());
+      }.doAll(fr.types(), fr).outputFrame(fr.names(),fr.domains());
     } else if( (asts[2] instanceof ASTNum) ) {
       long[] rows = new long[]{(long)(((ASTNum)asts[2])._v.getNum())};
       returningFrame = fr.deepSlice(rows,null);
@@ -118,19 +166,15 @@ class ASTRowSlice extends ASTPrim {
 }
 
 class ASTFlatten extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary"}; }
+  @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (flatten fr)
-  @Override
-  public String str() { return "flatten"; }
+  @Override public String str() { return "flatten"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols()==1 && fr.numRows()==1 ) {
-      if( fr.anyVec().isNumeric() || fr.anyVec().isBad() ) return new ValNum(fr.anyVec().at(0));
-      else if( fr.anyVec().isString() ) return new ValStr(fr.anyVec().atStr(new BufferedString(),0).toString());
-      return new ValStr(fr.domains()[0][(int) fr.anyVec().at8(0)]);
-    }
-    return new ValFrame(fr); // did not flatten
+    if( fr.numCols()!=1 || fr.numRows()!=1 ) return new ValFrame(fr); // did not flatten
+    Vec vec = fr.anyVec();
+    if( vec.isNumeric() || vec.isBad() ) return new ValNum(vec.at(0));
+    return new ValStr( vec.isString() ? vec.atStr(new BufferedString(),0).toString() : vec.factor(vec.at8(0)));
   }
 }
 
@@ -210,7 +254,7 @@ class ASTRBind extends ASTPrim {
   @Override int nargs() { return -1; } // variable number of args
   @Override
   public String str() { return "rbind" ; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
 
     // Execute all args.  Find a canonical frame; all Frames must look like this one.
     // Each argument turns into either a Frame (whose rows are entirely
@@ -235,15 +279,15 @@ class ASTRBind extends ASTPrim {
     // Verify all Frames are the same columns, names, and types.  Domains can vary, and will be the union
     final Frame frs[] = new Frame[asts.length]; // Input frame
     final byte[] types = fr.types();  // Column types
-    final int ncols = fr.numCols();
-    final long[] espc = new long[nchks+1];
+    final long[] espc = new long[nchks+1]; // Compute a new layout!
     int coffset = 0;
 
+    Frame[] tmp_frs = new Frame[asts.length];
     for( int i=1; i<asts.length; i++ ) {
       Val val = vals[i];        // Save values computed for pass 2
       Frame fr0 = val.isFrame() ? val.getFrame() 
         // Scalar: auto-expand into a 1-row frame
-        : stk.track(new Frame(fr._names,Vec.makeCons(val.getNum(),1L,fr.numCols())));
+        : (tmp_frs[i] = new Frame(fr._names,Vec.makeCons(val.getNum(),1L,fr.numCols())));
 
       // Check that all frames are compatible
       if( fr.numCols() != fr0.numCols() ) 
@@ -257,7 +301,7 @@ class ASTRBind extends ASTPrim {
 
       // Roll up the ESPC row counts
       long roffset = espc[coffset];
-      long[] espc2 = fr0.anyVec().get_espc();
+      long[] espc2 = fr0.anyVec().espc();
       for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
         espc[coffset + j] = (roffset+espc2[j]);
       coffset += espc2.length-1; // Chunk offset
@@ -294,14 +338,16 @@ class ASTRBind extends ASTPrim {
     // Now make Keys for the new Vecs
     Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
     Vec[] vecs = new Vec[fr.numCols()];
+    int rowLayout = Vec.ESPC.rowLayout(keys[0],espc);
     for( int i=0; i<vecs.length; i++ )
-      vecs[i] = new Vec( keys[i], espc, domains[i], types[i]);
+      vecs[i] = new Vec( keys[i], rowLayout, domains[i], types[i]);
 
 
     // Do the row-binds column-by-column.
     // Switch to F/J thread for continuations
     ParallelRbinds t;
     H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs,cmaps)).join();
+    for( Frame tfr : tmp_frs ) if( tfr != null ) tfr.delete();
     return new ValFrame(new Frame(fr.names(), t._vecs));
   }
 

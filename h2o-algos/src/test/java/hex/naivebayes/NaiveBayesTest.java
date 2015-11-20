@@ -14,7 +14,7 @@ import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import java.util.concurrent.ExecutionException;
 
 public class NaiveBayesTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void testIris() throws InterruptedException, ExecutionException {
     NaiveBayes job = null;

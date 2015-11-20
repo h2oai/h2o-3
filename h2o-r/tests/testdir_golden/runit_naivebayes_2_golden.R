@@ -1,5 +1,5 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 test.nbayes.golden <- function() {
   Log.info("Importing iris_wheader.csv data...") 

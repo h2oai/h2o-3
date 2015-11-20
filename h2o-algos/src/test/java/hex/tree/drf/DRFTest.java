@@ -12,6 +12,7 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -255,7 +256,7 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 Vec resp = fr.remove("C2");
-                fr.add("C2", resp.toCategoricalVec());
+                fr.add("C2", VecUtils.toCategoricalVec(resp));
                 resp.remove();
                 return fr.find("C3");
               }
@@ -277,10 +278,10 @@ public class DRFTest extends TestUtil {
               int prep(Frame fr) {
                 String[] names = fr.names().clone();
                 Vec[] en = fr.remove(new int[]{1,4,5,8});
-                fr.add(names[1], en[0].toCategoricalVec()); //CAPSULE
-                fr.add(names[4], en[1].toCategoricalVec()); //DPROS
-                fr.add(names[5], en[2].toCategoricalVec()); //DCAPS
-                fr.add(names[8], en[3].toCategoricalVec()); //GLEASON
+                fr.add(names[1], VecUtils.toCategoricalVec(en[0])); //CAPSULE
+                fr.add(names[4], VecUtils.toCategoricalVec(en[1])); //DPROS
+                fr.add(names[5], VecUtils.toCategoricalVec(en[2])); //DCAPS
+                fr.add(names[8], VecUtils.toCategoricalVec(en[3])); //GLEASON
                 for (Vec v : en) v.remove();
                 fr.remove(0).remove(); //drop ID
                 return 4; //CAPSULE
@@ -367,7 +368,7 @@ public class DRFTest extends TestUtil {
     Vec ret = null;
     if (classification) {
       ret = fr.remove(idx);
-      fr.add(rname,resp.toCategoricalVec());
+      fr.add(rname, VecUtils.toCategoricalVec(resp));
     } else {
       fr.remove(idx);
       fr.add(rname,resp);
@@ -400,6 +401,7 @@ public class DRFTest extends TestUtil {
       drf._ntrees = ntree;
       drf._max_depth = max_depth;
       drf._min_rows = min_rows;
+      drf._stopping_rounds = 0; //no early stopping
 //      drf._binomial_double_trees = new Random().nextBoolean();
       drf._nbins = nbins;
       drf._nbins_cats = nbins;
@@ -618,12 +620,12 @@ public class DRFTest extends TestUtil {
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
       DRFModel drf = job.trainModel().get();
-      Log.info("Training set AUC:   " + drf._output._training_metrics.auc()._auc);
-      Log.info("Validation set AUC: " + drf._output._validation_metrics.auc()._auc);
+      Log.info("Training set AUC:   " + drf._output._training_metrics.auc_obj()._auc);
+      Log.info("Validation set AUC: " + drf._output._validation_metrics.auc_obj()._auc);
 
       // all numerical
-      assertEquals(drf._output._training_metrics.auc()._auc, 0.6498819479528417, 1e-8);
-      assertEquals(drf._output._validation_metrics.auc()._auc, 0.6479974533672835, 1e-8);
+      assertEquals(drf._output._training_metrics.auc_obj()._auc, 0.6498819479528417, 1e-8);
+      assertEquals(drf._output._validation_metrics.auc_obj()._auc, 0.6479974533672835, 1e-8);
 
       job.remove();
       drf.delete();
@@ -663,7 +665,7 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
@@ -702,7 +704,7 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
@@ -741,7 +743,7 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
@@ -780,7 +782,7 @@ public class DRFTest extends TestUtil {
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(_AUC, mm.auc()._auc, 1e-8);
+      assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
@@ -819,7 +821,7 @@ public class DRFTest extends TestUtil {
       // OOB
       // Shuffling changes the row sampling -> results differ
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.975, mm.auc()._auc, 1e-8);
+      assertEquals(0.975, mm.auc_obj()._auc, 1e-8);
       assertEquals(0.09254807692307693, mm.mse(), 1e-8);
       assertEquals(0.6089843749999999, mm.r2(), 1e-6);
       assertEquals(0.24567709133200652, mm.logloss(), 1e-6);
@@ -858,7 +860,7 @@ public class DRFTest extends TestUtil {
       // OOB
       // Reduced number of rows changes the row sampling -> results differ
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.9, mm.auc()._auc, 1e-8);
+      assertEquals(0.9, mm.auc_obj()._auc, 1e-8);
       assertEquals(0.09090909090909091, mm.mse(), 1e-8);
       assertEquals(0.6333333333333333, mm.r2(), 1e-6);
       assertEquals(3.1398887631736985, mm.logloss(), 1e-6);
@@ -869,7 +871,7 @@ public class DRFTest extends TestUtil {
       hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
 
       // Non-OOB
-      assertEquals(1, mm2.auc()._auc, 1e-8);
+      assertEquals(1, mm2.auc_obj()._auc, 1e-8);
       assertEquals(0.006172839506172841, mm2.mse(), 1e-8);
       assertEquals(0.9753086419753086, mm2.r2(), 1e-8);
       assertEquals(0.02252583933934247, mm2.logloss(), 1e-8);
@@ -916,7 +918,7 @@ public class DRFTest extends TestUtil {
       drf = job.trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._cross_validation_metrics;
-      assertEquals(0.7276154565296726, mm.auc()._auc, 1e-8); // 1 node
+      assertEquals(0.7276154565296726, mm.auc_obj()._auc, 1e-8); // 1 node
       assertEquals(0.21211607823987555, mm.mse(), 1e-8);
       assertEquals(0.14939930970822446, mm.r2(), 1e-6);
       assertEquals(0.6121968624307211, mm.logloss(), 1e-6);
@@ -1005,7 +1007,7 @@ public class DRFTest extends TestUtil {
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._cross_validation_metrics;
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
-      assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
+      assertEquals(mm1.auc_obj()._auc, mm2.auc_obj()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
@@ -1141,7 +1143,7 @@ public class DRFTest extends TestUtil {
       tfr.remove("name").remove(); // Remove unique id
       tfr.remove("economy").remove();
       old = tfr.remove("economy_20mpg");
-      tfr.add("economy_20mpg", old.toCategoricalVec()); // response to last column
+      tfr.add("economy_20mpg", VecUtils.toCategoricalVec(old)); // response to last column
       DKV.put(tfr);
 
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1161,7 +1163,7 @@ public class DRFTest extends TestUtil {
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._cross_validation_metrics;
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
-      assertEquals(mm1.auc()._auc, mm2.auc()._auc, 1e-12);
+      assertEquals(mm1.auc_obj()._auc, mm2.auc_obj()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
@@ -1196,7 +1198,7 @@ public class DRFTest extends TestUtil {
         tfr.remove("name").remove(); // Remove unique id
         tfr.remove("economy").remove();
         old = tfr.remove("economy_20mpg");
-        tfr.add("economy_20mpg", old.toCategoricalVec()); // response to last column
+        tfr.add("economy_20mpg", VecUtils.toCategoricalVec(old)); // response to last column
         DKV.put(tfr);
 
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();

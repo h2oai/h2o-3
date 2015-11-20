@@ -1,11 +1,15 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o, tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 
 
 def user():
 
-    a = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))[0:4]
+    a = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     a.head()
 
     print a[0].names  # Column header
@@ -14,7 +18,7 @@ def user():
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant
     (a[0] + a[1]).show()  # Add 2 columns; broadcast parallel add
     sum(a).show()
-    print a["sepal_len"].mean()
+    print a["sepal_len"].mean()[0]
 
     print
     print "Rows 50 through 77 in the `sepal_len` column"
@@ -27,7 +31,7 @@ def user():
 
     a.show()
 
-    colmeans = [v.mean() for v in a]
+    colmeans = a.mean()
 
     print "The column means: "
     print colmeans
@@ -36,7 +40,7 @@ def user():
     try:                   print a["Sepal_len"].dim  # Error, mispelt column name
     except Exception: pass  # Expected error
 
-    b = h2o.import_file(path=tests.locate("smalldata/iris/iris_wheader.csv"))[0:4]
+    b = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
     d = c + c + sum(a)
     e = c + a + 1
@@ -47,11 +51,11 @@ def user():
     c = None
     # Internal "ExprNode(c=a+b)" not dead!
 
-    print 1 + (a[0] + b[1]).mean()
+    print 1 + (a[0] + b[1]).mean()[0]
 
     import collections
 
-    c = h2o.H2OFrame(python_obj=collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
+    c = h2o.H2OFrame(collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
     c.show()
 
     c.describe()
@@ -64,5 +68,9 @@ def user():
     sliced = a[0:51,0]
     sliced.show()
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, user)
+    pyunit_utils.standalone_test(user)
+else:
+    user()

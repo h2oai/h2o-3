@@ -25,38 +25,43 @@ abstract public class Log {
 
   static String LOG_DIR = null;
 
-  static final int FATAL= 0;
-  static final int ERRR = 1;
-  static final int WARN = 2;
-  static final int INFO = 3;
-  static final int DEBUG= 4;
-  static final int TRACE= 5;
-  static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
+  public static final byte FATAL= 0;
+  public static final byte ERRR = 1;
+  public static final byte WARN = 2;
+  public static final byte INFO = 3;
+  public static final byte DEBUG= 4;
+  public static final byte TRACE= 5;
+  public static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
   static int _level=INFO;
   static boolean _quiet = false;
 
   // Common pre-header
   private static String _preHeader;
 
+  public static byte valueOf( String slvl ) {
+    if( slvl == null ) return -1;
+    slvl = slvl.toLowerCase();
+    if( slvl.startsWith("fatal") ) return FATAL;
+    if( slvl.startsWith("err"  ) ) return ERRR;
+    if( slvl.startsWith("warn" ) ) return WARN;
+    if( slvl.startsWith("info" ) ) return INFO;
+    if( slvl.startsWith("debug") ) return DEBUG;
+    if( slvl.startsWith("trace") ) return TRACE;
+    return -1;
+  }
   public static void init( String slvl, boolean quiet ) {
-    if( slvl != null ) {
-      slvl = slvl.toLowerCase();
-      if( slvl.startsWith("fatal") ) _level = FATAL;
-      if( slvl.startsWith("err"  ) ) _level = ERRR;
-      if( slvl.startsWith("warn" ) ) _level = WARN;
-      if( slvl.startsWith("info" ) ) _level = INFO;
-      if( slvl.startsWith("debug") ) _level = DEBUG;
-      if( slvl.startsWith("trace") ) _level = TRACE;
-    }
+    int lvl = valueOf(slvl);
+    if( lvl != -1 ) _level = lvl;
     _quiet = quiet;
   }
   
-  public static void trace( Object... objs ) { write(TRACE,objs); }
-  public static void debug( Object... objs ) { write(DEBUG,objs); }
-  public static void info ( Object... objs ) { write(INFO ,objs); }
-  public static void warn ( Object... objs ) { write(WARN, objs); }
-  public static void err  ( Object... objs ) { write(ERRR, objs); }
-  public static void fatal( Object... objs ) { write(FATAL, objs); }
+  public static void trace( Object... objs ) { log(TRACE,objs); }
+  public static void debug( Object... objs ) { log(DEBUG,objs); }
+  public static void info ( Object... objs ) { log(INFO ,objs); }
+  public static void warn ( Object... objs ) { log(WARN ,objs); }
+  public static void err  ( Object... objs ) { log(ERRR ,objs); }
+  public static void fatal( Object... objs ) { log(FATAL,objs); }
+  public static void log  ( int level, Object... objs ) { if( _level >= level ) write(level, objs); }
 
   public static void httpd( String msg ) {
     // This is never called anymore.
@@ -69,7 +74,7 @@ abstract public class Log {
     l.info(s);
   }
 
-  public static void info( String s, boolean stdout ) { write0(INFO, stdout, s); }
+  public static void info( String s, boolean stdout ) { if( _level >= INFO ) write0(INFO, stdout, s); }
 
   // This call *throws* an unchecked exception and never returns (after logging).
   public static RuntimeException throwErr( Throwable e ) {
@@ -209,7 +214,15 @@ abstract public class Log {
     String logPathFileName = getLogPathFileNameStem();
 
     // H2O-wide logging
-    p.setProperty("log4j.logger.water.default", "TRACE, R1, R2, R3, R4, R5, R6");
+    String appenders = new String[]{
+      "TRACE, R6",
+      "TRACE, R5, R6",
+      "TRACE, R4, R5, R6",
+      "TRACE, R3, R4, R5, R6",
+      "TRACE, R2, R3, R4, R5, R6",
+      "TRACE, R1, R2, R3, R4, R5, R6",
+    }[_level];
+    p.setProperty("log4j.logger.water.default", appenders);
     p.setProperty("log4j.additivity.water.default",   "false");
 
     p.setProperty("log4j.appender.R1",                          "org.apache.log4j.RollingFileAppender");

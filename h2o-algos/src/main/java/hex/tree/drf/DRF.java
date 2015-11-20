@@ -7,16 +7,11 @@ import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
-import water.AutoBuffer;
 import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.Log;
-import water.util.Timer;
-
-import java.util.Arrays;
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
@@ -36,8 +31,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       ModelCategory.Multinomial,
     };
   }
-
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
 
   // Called from an http request
   public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF", parms); init(false); }
@@ -188,7 +181,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
       Sample ss[] = new Sample[_nclass];
       for( int k=0; k<_nclass; k++)
-        if (ktrees[k] != null) ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(0,new Frame(vec_nids(_train,k),vec_resp(_train)), _parms._build_tree_one_node);
+        if (ktrees[k] != null) ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(null,new Frame(vec_nids(_train,k),vec_resp(_train)), _parms._build_tree_one_node);
       for( int k=0; k<_nclass; k++)
         if( ss[k] != null ) ss[k].getResult();
 

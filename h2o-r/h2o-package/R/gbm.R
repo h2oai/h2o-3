@@ -43,10 +43,19 @@
 #'        Must be "AUTO", "Random" or "Modulo".
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric.
+#'        Stop if simple moving average of length k of the stopping_metric does not improve
+#'        (by stopping_tolerance) for k=stopping_rounds scoring events.
+#'        Can only trigger after at least 2k scoring events. Use 0 to disable.
+#' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
+#'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
+#'        improvement is not at least this much, stop)
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #'
@@ -58,6 +67,7 @@
 #' dependent <- "runoffnew"
 #' h2o.gbm(y = dependent, x = independent, training_frame = australia.hex,
 #'         ntrees = 3, max_depth = 3, min_rows = 2)
+#' }
 #' @export
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
@@ -83,6 +93,9 @@ h2o.gbm <- function(x, y, training_frame,
                     fold_assignment = c("AUTO","Random","Modulo"),
                     keep_cross_validation_predictions = FALSE,
                     score_each_iteration = FALSE,
+                    stopping_rounds=0,
+                    stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
+                    stopping_tolerance=1e-3,
                     offset_column = NULL,
                     weights_column = NULL)
 {
@@ -158,6 +171,9 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if(!missing(stopping_rounds)) parms$stopping_rounds <- stopping_rounds
+  if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
+  if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
 
   .h2o.modelJob('gbm', parms)
 }

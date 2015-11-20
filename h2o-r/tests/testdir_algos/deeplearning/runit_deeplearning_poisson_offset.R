@@ -1,7 +1,7 @@
 ####### This tests offset in deeplearing for poisson by comparing results with expected behavior ######
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test <- function() {
 	ca = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T)

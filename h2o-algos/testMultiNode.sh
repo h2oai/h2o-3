@@ -27,11 +27,25 @@ function cleanup () {
 
 trap cleanup SIGTERM SIGINT
 
+# Find java command
+if [ -z "$TEST_JAVA_HOME" ]; then
+  # Use default
+  JAVA_CMD="java"
+else
+  # Use test java home
+  JAVA_CMD="$TEST_JAVA_HOME/bin/java"
+  # Increase XMX since JAVA_HOME can point to java6
+  JAVA6_REGEXP=".*1\.6.*"
+  if [[ $TEST_JAVA_HOME =~ $JAVA6_REGEXP ]]; then
+    JAVA_CMD="${JAVA_CMD} -Xmx2g"
+  fi
+fi
 # Gradle puts files:
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-JVM="nice java -ea -Xmx2g -Xms2g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD -ea -Xmx2g -Xms2g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+echo "$JVM" > $OUTDIR/jvm_cmd.txt
 # Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.
 # Also, sometimes see test files in the main-class directory, so put the test
 # classpath before the main classpath.

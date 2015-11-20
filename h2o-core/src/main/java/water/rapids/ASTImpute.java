@@ -14,11 +14,9 @@ import java.util.Arrays;
 // (h2o.impute data col method combine_method gb in.place)
 
 public class ASTImpute extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "col", "method", "combineMethod", "groupByCols", "inPlace"}; }
-  @Override
-  public String str(){ return "h2o.impute";}
-  @Override int nargs() { return 1+6; } // (h2o.impute data col method combine_method groupby in.place)
+  @Override public String[] args() { return new String[]{"ary", "col", "method", "combineMethod", "groupByCols"}; }
+  @Override public String str(){ return "h2o.impute";}
+  @Override int nargs() { return 1+5; } // (h2o.impute data col method combine_method groupby)
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     // Argument parsing and sanity checking
     // Whole frame being imputed
@@ -59,37 +57,28 @@ public class ASTImpute extends ASTPrim {
     else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
     final ASTNumList by = by2;  // Make final, for MRTask closure
 
-    // Inplace updates, or return a new frame?
-    final boolean inplace = asts[6].exec(env).getNum() == 1;
-    if( inplace && fr._key==null )
-      throw new IllegalArgumentException("Can only update in-place named Frames");
-
     // Compute the imputed value per-group.  Empty groups are allowed and OK.
     IcedHashMap<ASTGroup.G,IcedDouble> group_impute_map;
     if( by.isEmpty() ) {        // Empty group?  Skip the grouping work
       double res = Double.NaN;
       if( method instanceof ASTMean   ) res = vec.mean();
-      if( method instanceof ASTMedian ) res = ASTMedian.median(stk.track(new Frame(vec)),combine);
+      if( method instanceof ASTMedian ) res = ASTMedian.median(new Frame(vec), combine);
       if( method instanceof ASTMode   ) res = ASTMode.mode(vec);
       (group_impute_map = new IcedHashMap<>()).put(new ASTGroup.G(0,null).fill(0,null,new int[0]),new IcedDouble(res));
 
     } else {                    // Grouping!
       // Build and run a GroupBy command
       AST ast_grp = new ASTGroup();
-      Frame imputes = ast_grp.apply(env,stk,new AST[]{ast_grp,new ASTFrame(fr),by,new ASTNumList(),method,new ASTNumList(col,col+1),new ASTStr("rm")}).getFrame();
+      Frame imputes = ast_grp.apply(env,stk,new AST[]{ast_grp,new ASTFrame(fr),by,method,new ASTNumList(col,col+1),new ASTStr("rm")}).getFrame();
      
       // Convert the Frame result to a group/imputation mapping
-      final int[] bycols = ArrayUtils.seq(0,imputes.numCols()-1);
+      final int[] bycols = ArrayUtils.seq(0, imputes.numCols() - 1);
       group_impute_map = new Gather(bycols).doAll(imputes)._group_impute_map;
       imputes.delete();
     }
 
-    // In not in-place, return a new frame which is the old frame cloned, but
-    // for the imputed column which is a copy.
-    if( !inplace ) {
-      fr = new Frame(fr);
-      stk.track(fr).replace(col,vec.makeCopy());
-    }
+    // Copy the target column as needed
+    env._ses.copyOnWrite(fr,new int[]{col});
 
     // Now walk over the data, replace NAs with the imputed results
     final IcedHashMap<ASTGroup.G,IcedDouble> final_group_impute_map = group_impute_map;

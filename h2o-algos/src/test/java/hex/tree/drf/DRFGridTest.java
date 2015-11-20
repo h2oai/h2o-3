@@ -96,7 +96,6 @@ public class DRFGridTest extends TestUtil {
                                       usedModelParams);
       // Verify model failure
       Map<String, Set<Object>> failedHyperParams = GridTestUtils.initMap(hyperParamNames);
-      ;
       for (Model.Parameters failedParams : grid.getFailedParameters()) {
         GridTestUtils.extractParams(failedHyperParams, failedParams, hyperParamNames);
       }

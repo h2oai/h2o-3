@@ -1,19 +1,30 @@
+\documentclass{standalone}
+
+\begin{document}
+
 \section{Sparkling Water Introduction}
 
-Sparkling Water integrates H2O's fast scalable machine learning engine with Spark.
+Sparkling Water allows users to combine the fast, scalable machine learning algorithms of H2O with the capabilities of Spark. With Sparkling Water, users can drive computation from Scala, R, or Python and use the H2O Flow UI, providing an ideal machine learning platform for application developers.
 
-\subsection{Typical Use-Case}
-Sparkling Water excels in leveraging existing Spark-based workflows that need to call advanced machine learning algorithms. A typical example involves data munging with help of Spark API, where a prepared table is passed to an H2O algorithm. The constructed model estimates different metrics based on the testing data or gives prediction which can be used then in the rest of the Spark workflow.
+Spark is an elegant and powerful general-purpose, open-source, in-memory platform with tremendous momentum. H2O is an in-memory application for machine learning that is reshaping how people apply math and predictive analytics to their business problems.
 
-\subsection{Provided Features}
+Integrating these two open-source environments provides a seamless experience for users who want to make a query using Spark SQL, feed the results into H2O Deep Learning to build a model, make predictions, and then use the results again in Spark. For any given problem, better interoperability between tools provides a better experience. 
+
+For additional examples, please visit the Sparkling Water GitHub repository at {\url{https://github.com/h2oai/sparkling-water/tree/master/examples}}. 
+
+\subsection{Typical Use Case}
+Sparkling Water excels in leveraging existing Spark-based workflows needed to call advanced machine learning algorithms. A typical example involves data munging with help of Spark API, where a prepared table is passed to an H2O algorithm. The constructed model estimates different metrics based on the testing data or gives a prediction that can then be used in the rest of the Spark workflow.
+
+\subsection{Features}
 
 Sparkling Water provides transparent integration for the H2O engine and its machine learning algorithms into the Spark platform, enabling:
 
 \begin{itemize}
+
  \item Use of H2O algorithms in Spark workflow
  \item Transformation between H2O and Spark data structures
  \item Use of Spark RDDs and DataFrames as input for H2O algorithms
- \item Use of H2O Frame as input for MLlib algorithms
+ \item Use of H2O Frames as input for MLlib algorithms
  \item Transparent execution of Sparkling Water applications on top of Spark
 \end{itemize}
 
@@ -22,42 +33,43 @@ Sparkling Water provides transparent integration for the H2O engine and its mach
 Currently, Sparkling Water can use the following data source types:
 
 \begin{itemize}
- \item Standard RDD API to load data and transform them into H2OFrame
- \item H2O API to load data directly into H2OFrame from file(s) stored on:
+
+ \item Standard Resilient Distributed Dataset (RDD) API for loading data and transforming it into H2OFrames
+ \item H2O API for loading data directly into H2OFrame from file(s) stored on:
   \begin{itemize}
-    \item local filesystem
+    \item local filesystems
     \item HDFS
-    \item S3)
+    \item S3
     \item HTTP/HTTPS
   \end{itemize}
 \end{itemize}
 
-For more details please consult H2O documentation~\footnote{\url{http://docs.h2o.ai}}.
+For more details, please refer to the H2O documentation at {\url{http://docs.h2o.ai}}.
 
 \subsection{Supported Data Formats}
 
 Sparkling Water can read data stored in the following formats:
 
 \begin{itemize}
+
   \item CSV
   \item SVMLight
   \item ARFF
 \end{itemize}
 
-For more details please consult H2O documentation~\footnote{\url{http://docs.h2o.ai}}.
+For more details, please refer to the H2O documentation at {\url{http://docs.h2o.ai}}.
 
 \subsection{Supported Spark Execution Environments}
-
 Sparkling Water can run on top of Spark in the following ways:
-
 \begin{itemize}
-  \item as a local cluster (master points to one of values \texttt{local},
+  \item as a local cluster (where the master node is \texttt{local},
 \texttt{local[*]}, or \texttt{local-cluster[...]})
-  \item as a standalone cluster\footnote{See Spark documentation
+  \item as a standalone cluster\footnote{Refer to the Spark documentation
 \href{http://spark.apache.org/docs/latest/spark-standalone.html}{Spark
 Standalone Model}}
-  \item in a YARN environment\footnote{See Spark documentation \href{http://spark.apache.org/docs/latest/running-on-yarn.html}{Running
+  \item in a YARN environment\footnote{Refer to the Spark documentation \href{http://spark.apache.org/docs/latest/running-on-yarn.html}{Running
 Spark on YARN}}
 
 \end{itemize}
+\end{document}
 

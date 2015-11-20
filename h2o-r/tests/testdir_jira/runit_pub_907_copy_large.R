@@ -5,8 +5,8 @@
 ##
 
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+
+
 
 
 test <- function() {
@@ -18,7 +18,7 @@ test <- function() {
         dataset.copy = h2o.assign(dataset, "dataset.copy")
         endTime = proc.time()
 
-        elapsedTime = endTime - startTime
+        elapsedTime = endTime['elapsed'] - startTime['elapsed']
         print(elapsedTime)
 
     print("Assert runtime less than 180 seconds")

@@ -185,7 +185,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     NewChunk cs[] = new NewChunk[vecs.length];
     AppendableVec avs[] = new AppendableVec[vecs.length];
     for (int i = 0; i < vecs.length; i++) {
-      avs[i] = new AppendableVec(keys[i]);
+      avs[i] = new AppendableVec(keys[i], Vec.T_NUM);
       cs[i] = new NewChunk(avs[i], 0);
     }
     //fill in vector values
@@ -196,10 +196,11 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     }
 
     //finalize vectors
+    final int rowLayout = avs[0].compute_rowLayout();
     for (int i = 0; i < vecs.length; i++) {
       colNames[i] = new String("V"+i);
       cs[i].close(0, fs);
-      vecs[i] = avs[i].close(fs);
+      vecs[i] = avs[i].close(rowLayout,fs);
     }
 
     fs.blockForPending();

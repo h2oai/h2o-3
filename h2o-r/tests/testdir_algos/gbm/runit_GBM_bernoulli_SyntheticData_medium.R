@@ -1,8 +1,8 @@
 #   This test is to check bernoulli gbm implementation, 
 #   It creates a synthetic dataset, runs gbm grid in H2O and R and compares aucs
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+
+
 
 test.GBM.bernoulli.SyntheticData <- function() {
 

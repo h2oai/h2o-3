@@ -1,38 +1,21 @@
 import sys
-sys.path.insert(1, "../../")
-import h2o,tests
+sys.path.insert(1,"../../")
+import h2o
+from tests import pyunit_utils
+
+
+
 from h2o.assembly import *
 from h2o.transforms.preprocessing import *
 
 def lending_club_munging_assembly():
 
-  small_test = [h2o.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
+  small_test = [pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
 
   # lending-club munging assembly
   print "Import and Parse data"
 
-  col_names = ['id', 'member_id', 'loan_amnt', 'funded_amnt', 'funded_amnt_inv', 'term',
-               'int_rate', 'installment', 'grade', 'sub_grade', 'emp_title', 'emp_length',
-               'home_ownership', 'annual_inc', 'verification_status', 'issue_d', 'loan_status',
-               'pymnt_plan', 'url', 'desc', 'purpose', 'title', 'zip_code', 'addr_state', 'dti',
-               'delinq_2yrs', 'earliest_cr_line', 'inq_last_6mths', 'mths_since_last_delinq',
-               'mths_since_last_record', 'open_acc', 'pub_rec', 'revol_bal', 'revol_util',
-               'total_acc', 'initial_list_status', 'out_prncp', 'out_prncp_inv',
-               'total_pymnt', 'total_pymnt_inv', 'total_rec_prncp', 'total_rec_int',
-               'total_rec_late_fee', 'recoveries', 'collection_recovery_fee', 'last_pymnt_d',
-               'last_pymnt_amnt', 'next_pymnt_d', 'last_credit_pull_d',
-               'collections_12_mths_ex_med', 'mths_since_last_major_derog', 'policy_code']
-  col_types = ['Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Enum', 'Enum', 'Numeric',
-               'Enum', 'Enum', 'Enum', 'Enum', 'Enum', 'Numeric', 'Enum', 'Enum', 'Enum', 'Enum',
-               'String', 'Enum', 'Enum', 'Enum', 'Enum', 'Enum', 'Numeric', 'Numeric', 'Enum',
-               'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Enum', 'Numeric',
-               'Enum', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric', 'Numeric',
-               'Numeric', 'Numeric', 'Enum', 'Numeric', 'Enum', 'Enum', 'Numeric', 'Enum', 'Numeric']
-
-  types = dict(zip(col_names,col_types))
-  types["int_rate"]   = "String"
-  types["revol_util"] = "String"
-  types["emp_length"] = "String"
+  types = {"int_rate":"String", "revol_util":"String", "emp_length":"String"}
 
   data = h2o.import_file(path=small_test, col_types=types)
   data[["int_rate","revol_util","emp_length"]].show()
@@ -73,19 +56,32 @@ def lending_club_munging_assembly():
 
   res = assembly.fit(data)
   res.show()
-  assembly.to_pojo("LendingClubMungingDemo") #, path="/Users/spencer/Desktop/munging_pojo/lending_club_demo", get_jar=True)
+  assembly.to_pojo("LendingClubMungingDemo")#, path="/Users/spencer/Desktop/munging_pojo/lending_club_demo", get_jar=True)
 
-  # java api usage:
-  #
-  #   String rawRow = framework.nextTuple();
-  #   H2OMungingPOJO munger = new GeneratedH2OMungingPojo_001();
-  #   EasyPredictModelWrapper model = new EasyPredictModelWrapper(new GeneratedH2OGbmPojo_001());
-  #
-  #   RowData row = new RowData();
-  #   row.fill(rawRow);
-  #   row = munger.fit(row);
-  #   BinomialModelPrediction pred = model.predictBinomial(row);
-#   // Use prediction!
+  y="int_rate"
+  x=["loan_amnt", "longest_credit_length", "revol_util", "emp_length",
+     "home_ownership", "annual_inc", "purpose", "addr_state", "dti",
+     "delinq_2yrs", "total_acc", "verification_status", "term"]
+
+  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+  model = H2OGradientBoostingEstimator(model_id="InterestRateModel",
+                                       score_each_iteration=False,
+                                       ntrees=100,
+                                       max_depth=5,
+                                       learn_rate=0.05)
+
+  model.train(x=x, y=y, training_frame=data)
+
+
+  model.download_pojo() # path="/Users/spencer/Desktop/munging_pojo/lending_club_demo"
+
+
+  # Java API Usage:
+  #  LendingClubMungingDemo munger = new LendingClubMungingDemo();   // instantiate a new munging pojo
+  #  RowData row = myRowDataBuilder(<<tuple of data from stream>>);  // fill in a RowData object (just a wrapper on HashMap, from hex.genmodel)
+  #  row = munger.fit(row);                                          // call fit on the row, and return the mutated row (easy!)
 
 if __name__ == "__main__":
-  tests.run_test(sys.argv, lending_club_munging_assembly)
+    pyunit_utils.standalone_test(lending_club_munging_assembly)
+else:
+    lending_club_munging_assembly()

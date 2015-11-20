@@ -9,11 +9,11 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void testBasic() {
     Frame fr = null;
-    String tree = "(GB hex [1] [0] mean 2 \"all\")"; // Group-By on col 1 (not 0), no order-by, mean of col 2
+    String tree = "(GB hex [1] mean 2 \"all\")"; // Group-By on col 1 (not 0), no order-by, mean of col 2
     try {
       fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
       chkDim(fr,2,23);
@@ -35,7 +35,7 @@ public class GroupByTest extends TestUtil {
 
   @Test public void testCatGroup() {
     Frame fr = null;
-    String tree = "(GB hex [4] [0] nrow 0 \"all\" mean 2 \"all\")"; // Group-By on col 4, no order-by, nrow and mean of col 2
+    String tree = "(GB hex [4] nrow 0 \"all\" mean 2 \"all\")"; // Group-By on col 4, no order-by, nrow and mean of col 2
     try {
       fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
       chkDim(fr,3,3);
@@ -50,7 +50,7 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,2,2,5.552);
       fr.delete();
 
-      fr = chkTree("(GB hex [1] [] mode 4 \"all\" )","smalldata/iris/iris_wheader.csv");
+      fr = chkTree("(GB hex [1] mode 4 \"all\" )","smalldata/iris/iris_wheader.csv");
       chkDim(fr,2,23);
 
     } finally {
@@ -62,7 +62,7 @@ public class GroupByTest extends TestUtil {
   @Test public void testNAHandle() {
     Frame fr = null;
     try {
-      String tree = "(GB hex [7] [0] nrow 0 \"all\" mean 1 \"all\")"; // Group-By on year, no order-by, mean of economy
+      String tree = "(GB hex [7] nrow 0 \"all\" mean 1 \"all\")"; // Group-By on year, no order-by, mean of economy
       fr = chkTree(tree,"smalldata/junit/cars.csv");
       chkDim(fr,3,13);
 
@@ -75,7 +75,7 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,2,2,18.714,1e-1);
       fr.delete();
 
-      tree = "(GB hex [7] [] nrow 1 \"all\" nrow 1 \"rm\" nrow 1 \"ignore\")"; // Group-By on year, no order-by, nrow of economy
+      tree = "(GB hex [7] nrow 1 \"all\" nrow 1 \"rm\" nrow 1 \"ignore\")"; // Group-By on year, no order-by, nrow of economy
       fr = chkTree(tree,"smalldata/junit/cars.csv");
       chkDim(fr,4,13);
       chkFr(fr,0,0,70);         // 1970, 35 cars, 29 have economy
@@ -84,7 +84,7 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,3,0,29);         // IGNORE
       fr.delete();
 
-      tree = "(GB hex [7] [] mean 1 \"all\" mean 1 \"rm\" mean 1 \"ignore\")"; // Group-By on year, no order-by, mean of economy
+      tree = "(GB hex [7] mean 1 \"all\" mean 1 \"rm\" mean 1 \"ignore\")"; // Group-By on year, no order-by, mean of economy
       fr = chkTree(tree,"smalldata/junit/cars.csv");
       chkDim(fr,4,13);
       chkFr(fr,0,0,70);          // 1970, 35 cars, 29 have economy
@@ -101,7 +101,7 @@ public class GroupByTest extends TestUtil {
   @Test public void testAllAggs() {
     Frame fr = null;
     try {
-      String tree = "(GB hex [4] [0]  nrow 0 \"rm\"  mean 1 \"rm\"  sum 1 \"rm\"  min 1 \"rm\"  max 1 \"rm\" )";
+      String tree = "(GB hex [4] nrow 0 \"rm\"  mean 1 \"rm\"  sum 1 \"rm\"  min 1 \"rm\"  max 1 \"rm\" )";
       fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
       chkDim(fr,6,3);
 
@@ -136,7 +136,7 @@ public class GroupByTest extends TestUtil {
     Frame fr = null;
     try {
       // Impute fuel economy via the "mean" method, no.
-      String tree = "(h2o.impute hex 1 \"mean\" \"low\" [] TRUE)";
+      String tree = "(h2o.impute hex 1 \"mean\" \"low\" [])";
       fr = chkTree(tree,"smalldata/junit/cars.csv");
       chkDim(fr,8,406);
 
@@ -145,7 +145,7 @@ public class GroupByTest extends TestUtil {
       fr.delete();
 
       // Impute fuel economy via the "mean" method, after grouping by year.  Update in place.
-      tree = "(h2o.impute hex 1 \"mean\" \"low\" [7] TRUE)";
+      tree = "(h2o.impute hex 1 \"mean\" \"low\" [7])";
       fr = chkTree(tree,"smalldata/junit/cars.csv");
       chkDim(fr,8,406);
 
@@ -183,6 +183,50 @@ public class GroupByTest extends TestUtil {
       Keyed.remove(Key.make("hex"));
     }
   }
+
+
+  // covtype.altered response column has this distribution:
+  //      -1  20510
+  //       1 211840
+  //       2 283301
+  //       3  35754
+  //       4   2747
+  //       6  17367
+  //   10000   9493
+  @Test public void testSplitCats() {
+    Frame cov = parse_test_file(Key.make("cov"),"smalldata/covtype/covtype.altered.gz");
+    System.out.println(cov.toString(0,10));
+
+    Val v_ddply = Exec.exec("(ddply cov [54] nrow)");
+    System.out.println(v_ddply.toString());
+    ((ValFrame)v_ddply)._fr.delete();
+
+    Val v_groupby = Exec.exec("(GB cov [54] nrow 54 \"all\")");
+    System.out.println(v_groupby.toString());
+    ((ValFrame)v_groupby)._fr.delete();
+
+    cov.delete();
+  }
+
+  @Test public void testGroupbyTableSpeed() {
+    Frame ids = parse_test_file(Key.make("cov"),"smalldata/junit/id_cols.csv");
+    ids.replace(0,ids.anyVec().toCategoricalVec()).remove();
+    System.out.println(ids.toString(0,10));
+
+    long start = System.currentTimeMillis();
+    Val v_gb = Exec.exec("(GB cov [0] nrow 0 \"all\")");
+    System.out.println("GB Time= "+(System.currentTimeMillis()-start)+"msec");
+    System.out.println(v_gb.toString());
+    ((ValFrame)v_gb)._fr.delete();
+    
+    long start2 = System.currentTimeMillis();
+    Val v_tb = Exec.exec("(table cov)");
+    System.out.println("Table Time= "+(System.currentTimeMillis()-start2)+"msec");
+    System.out.println(v_tb.toString());
+    ((ValFrame)v_tb)._fr.delete();
+
+    ids.delete();
+  }    
 
 
   private void chkDim( Frame fr, int col, int row ) {

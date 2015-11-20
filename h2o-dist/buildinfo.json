@@ -44,6 +44,11 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.2.zip"
         },
         {
+            "distribution" : "hdp2.3",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp2.3.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.3.zip"
+        },
+        {
             "distribution" : "mapr3.1.1",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip"
@@ -146,6 +151,11 @@
             "name" : "R",
             "id"   : "booklet-r",
             "path" : "docs-website/h2o-docs/booklets/R_Vignette.pdf"
+        },
+        {
+            "name" : "Python",
+            "id"   : "booklet-python",
+            "path" : "docs-website/h2o-docs/booklets/Python_booklet.pdf"
         },
         {
             "name" : "SparklingWater",

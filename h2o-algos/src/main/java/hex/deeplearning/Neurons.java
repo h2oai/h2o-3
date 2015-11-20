@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.Distribution;
 import water.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.nio.ByteBuffer;
@@ -246,7 +247,10 @@ public abstract class Neurons {
 
       //this is the actual gradient dE/dw
       double grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
-      if (_wEA !=null) grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
+      if (_wEA !=null) {
+        grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
+//        Log.info("weight: my: " + _w.raw()[w] + ", consensus: " + _wEA.raw()[w] + ", delta: " + (_w.raw()[w] -_wEA.raw()[w]) + ", relative delta: " + (_w.raw()[w] -_wEA.raw()[w])/_w.raw()[w]);
+      }
 
       // store the gradient (grad is the negative gradient)
       if (DeepLearningModelInfo.gradientCheck != null)

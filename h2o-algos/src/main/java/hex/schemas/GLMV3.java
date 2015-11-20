@@ -38,6 +38,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "lambda_search",
             "nlambdas",
             "standardize",
+            "compute_p_values",
             "intercept",
             "non_negative",
             "max_iterations",
@@ -58,7 +59,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     };
 
     // Input fields
-    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
+    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","multinomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
@@ -100,6 +101,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver", level = Level.expert)
     public double gradient_epsilon;
+
+    @API(help="likelihood divider in objective value computation, default is 1/nobs")
+    public double obj_reg;
 
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
     public GLMParameters.Link link;
@@ -159,6 +163,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
      */
     @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
     public int max_hit_ratio_k;
+
+    @API(help="request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
+    public boolean compute_p_values;
 
     /////////////////////
 

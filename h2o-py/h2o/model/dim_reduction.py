@@ -1,14 +1,9 @@
-"""
-DimReduction Models
-"""
-
+from model_base import ModelBase
 from metrics_base import *
+
 
 class H2ODimReductionModel(ModelBase):
 
-    def __init__(self, dest_key, model_json):
-        super(H2ODimReductionModel, self).__init__(dest_key, model_json,H2ODimReductionModelMetrics)
-    
     def num_iterations(self):
       """
       Get the number of iterations that it took to converge or reach max iterations.
@@ -46,6 +41,42 @@ class H2ODimReductionModel(ModelBase):
       for yidx, yval in enumerate(yvals):
         archetypes.append(list(yvals[yidx])[1:])
       return archetypes
+    
+    def reconstruct(self,test_data,reverse_transform=False):
+        """Reconstruct the training data from the GLRM model and impute all missing values.
+
+        Parameters
+        ----------
+          test_data : H2OFrame
+            The dataset upon which the H2O GLRM model was trained.
+          reverse_transform : logical
+            Whether the transformation of the training data during model-building should be reversed on the reconstructed frame.
+
+        Returns
+        -------
+          Return the approximate reconstruction of the training data.
+        """
+        if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
+        j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, reconstruct_train=True, reverse_transform=reverse_transform)
+        return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
+    
+    def proj_archetypes(self,test_data,reverse_transform=False):
+        """Convert archetypes of a GLRM model into original feature space.
+
+        Parameters
+        ----------
+          test_data : H2OFrame
+            The dataset upon which the H2O GLRM model was trained.
+          reverse_transform : logical
+            Whether the transformation of the training data during model-building should be reversed on the projected archetypes.
+
+        Returns
+        -------
+          Return the GLRM archetypes projected back into the original training data's feature space.
+        """
+        if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
+        j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, project_archetypes=True, reverse_transform=reverse_transform)
+        return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
     
     def screeplot(self, type="barplot", **kwargs):
         """

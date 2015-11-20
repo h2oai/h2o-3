@@ -19,7 +19,7 @@ import java.util.Iterator;
  * */
 public class CBSChunkTest extends TestUtil {
   void testImpl(long[] ls, int[] xs, int expBpv, int expGap, int expClen, int expNA) {
-    AppendableVec av = new AppendableVec(Vec.newKey());
+    AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
     // Create a new chunk
     NewChunk nc = new NewChunk(av,0, ls, xs, null, null);
     nc.type();                  // Compute rollups, including NA
@@ -28,7 +28,7 @@ public class CBSChunkTest extends TestUtil {
     Chunk cc = nc.compress();
     assert cc instanceof CBSChunk;
     Futures fs = new Futures();
-    cc._vec = av.close(fs);
+    cc._vec = av.layout_and_close(fs);
     fs.blockForPending();
     Assert.assertTrue("Found chunk class " + cc.getClass() + " but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc));
     assertEquals(nc._len, cc._len);
@@ -41,7 +41,7 @@ public class CBSChunkTest extends TestUtil {
       else assertTrue(cc.isNA(i));
 
     // materialize the vector (prerequisite to free the memory)
-    Vec vv = av.close(fs);
+    Vec vv = av.layout_and_close(fs);
     fs.blockForPending();
     vv.remove();
   }
@@ -133,7 +133,8 @@ public class CBSChunkTest extends TestUtil {
 
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
-    Vec vec = new Vec(Vec.newKey(), new long[]{0,15}).makeZero();
+    water.Key key = Vec.newKey();
+    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15})).makeZero();
     int[] vals = new int[]{0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1};
     Vec.Writer w = vec.open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);

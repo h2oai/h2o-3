@@ -1,36 +1,53 @@
 package water;
 
+import com.brsanthu.googleanalytics.DefaultRequest;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
-import hex.ModelBuilder;
+
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
+
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+
+import water.UDPRebooted.ShutdownTsk;
 import water.api.ModelCacheManager;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.*;
+import water.init.AbstractBuildVersion;
+import water.init.AbstractEmbeddedH2OConfig;
+import water.init.JarHash;
+import water.init.NetworkInit;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
 import water.util.GAUtils;
 import water.util.Log;
 import water.util.OSUtils;
 import water.util.PrettyPrint;
-
-import java.io.*;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
-import com.brsanthu.googleanalytics.DefaultRequest;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -100,6 +117,10 @@ final public class H2O {
             "    -log_dir <fileSystemPath>\n" +
             "          The directory where H2O writes logs to disk.\n" +
             "          (This usually has a good default that you need not change.)\n" +
+            "\n" +
+            "    -log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>\n" +
+            "          Write messages at this logging level, or above.  Default is INFO." +
+            "\n" +
             "\n" +
             "    -flow_dir <server side directory or HDFS directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
@@ -173,7 +194,10 @@ final public class H2O {
     /** -baseport=####; Port to start upward searching from. */
     public int baseport = 54321;
 
-    /** -port=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
+    public String web_ip = null;
+
+    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
     public String ip;
 
     /** -network=network; Network specification for acceptable interfaces to bind to */
@@ -236,8 +260,6 @@ final public class H2O {
     /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
     public boolean quiet = false;
 
-    /** -beta, -experimental */
-    public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
     public boolean useUDP = false;
 
     @Override public String toString() {
@@ -364,6 +386,10 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.ip = args[i];
       }
+      else if (s.matches("web_ip")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.web_ip = args[i];
+      }
       else if (s.matches("network")) {
         i = s.incrementAndCheck(i, args);
         ARGS.network = args[i];
@@ -426,12 +452,6 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
-      }
-      else if (s.matches("beta")) {
-        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Beta;
-      }
-      else if (s.matches("experimental")) {
-        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
       } else if(s.matches("useUDP")) {
           ARGS.useUDP = true;
       } else {
@@ -479,9 +499,7 @@ final public class H2O {
   public static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
     try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
-    try { NetworkInit._tcpSocketBig.close(); } catch( IOException ignore ) { }
-    if(!H2O.ARGS.useUDP)
-      try { NetworkInit._tcpSocketSmall.close(); } catch( IOException ignore ) { }
+    try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
   }
@@ -501,10 +519,35 @@ final public class H2O {
 
   /** Cluster shutdown itself by sending a shutdown UDP packet. */
   public static void shutdown(int status) {
-    (status==0 ? UDPRebooted.T.shutdown : UDPRebooted.T.error).send(H2O.SELF);
+    if(status == 0) H2O.orderlyShutdown();
+    UDPRebooted.T.error.send(H2O.SELF);
     H2O.exit(status);
   }
 
+  public static int orderlyShutdown() {
+    return orderlyShutdown(-1);
+  }
+  public static int orderlyShutdown(int timeout) {
+    boolean [] confirmations = new boolean[H2O.CLOUD.size()];
+    if (H2O.SELF.index() >= 0) { // Do not wait for clients to shutdown
+      confirmations[H2O.SELF.index()] = true;
+    }
+    Futures fs = new Futures();
+    for(H2ONode n:H2O.CLOUD._memary) {
+      if(n != H2O.SELF)
+        fs.add(new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call());
+    }
+    if(timeout > 0)
+      try { Thread.sleep(timeout); }
+      catch (Exception ignore) {}
+    else fs.blockForPending(); // todo, should really have block for pending with a timeout
+
+    int failedToShutdown = 0;
+    // shutdown failed
+    for(boolean b:confirmations)
+      if(!b) failedToShutdown++;
+    return failedToShutdown;
+  }
   private static volatile boolean _shutdownRequested = false;
 
   public static void requestShutdown() {
@@ -948,9 +991,16 @@ final public class H2O {
   static int getWrkQueueSize  (int i) { return FJPS[i]==null ? -1 : FJPS[i].getQueuedSubmissionCount();}
   static int getWrkThrPoolSize(int i) { return FJPS[i]==null ? -1 : FJPS[i].getPoolSize();             }
 
+  // For testing purposes (verifying API work exceeds grunt model-build work)
+  // capture the class of any submitted job lower than this priority;
+  static public int LOW_PRIORITY_API_WORK;
+  static public String LOW_PRIORITY_API_WORK_CLASS;
+
   // Submit to the correct priority queue
   public static <T extends H2OCountedCompleter> T submitTask( T task ) {
     int priority = task.priority();
+    if( priority < LOW_PRIORITY_API_WORK )
+      LOW_PRIORITY_API_WORK_CLASS = task.getClass().toString();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY:"priority " + priority + " is out of range, expected range is < " + MIN_PRIORITY + "," + MAX_PRIORITY + ">";
     if( FJPS[priority]==null )
       synchronized( H2O.class ) { if( FJPS[priority] == null ) FJPS[priority] = new PrioritizedForkJoinPool(priority,-1); }
@@ -977,7 +1027,7 @@ final public class H2O {
    *  TaskGetKey} can block an entire node for lack of some small piece of
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
-  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable {
+  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
     public final byte _priority;
     public H2OCountedCompleter( ) { this(false); }
     public H2OCountedCompleter( boolean bumpPriority ) {
@@ -1019,8 +1069,11 @@ final public class H2O {
         if( pp == MIN_PRIORITY && set_t_prior ) t.setPriority(Thread.NORM_PRIORITY-1);
       }
       // Now run the task as planned
-      compute2();
+      if( this instanceof DTask ) icer().compute1(this);
+      else compute2();
     }
+
+    public void compute1() { compute2(); }
 
     /** Override to specify actual work to do */
     protected abstract void compute2();
@@ -1096,8 +1149,11 @@ final public class H2O {
   public static InetAddress      CLOUD_MULTICAST_GROUP;
   public static int              CLOUD_MULTICAST_PORT ;
 
-  // Myself, as a Node in the Cloud
+  /** Myself, as a Node in the Cloud */
   public static H2ONode SELF = null;
+  /** IP address of this node used for communication
+   * with other nodes.
+   */
   public static InetAddress SELF_ADDRESS;
 
   // Place to store temp/swap files
@@ -1269,7 +1325,7 @@ final public class H2O {
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread(NetworkInit._tcpSocketBig).start();
+    new TCPReceiverThread(NetworkInit._tcpSocket).start();
     // Register the default Requests
     Object x = water.api.RequestServer.class;
   }
@@ -1412,7 +1468,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   // The (local) set of Key/Value mappings.
-  static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<>();
+  public static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<>();
 
   // PutIfMatch
   // - Atomically update the STORE, returning the old Value on success
@@ -1457,13 +1513,18 @@ final public class H2O {
     }
     return old; // Return success
   }
+  public static String foo( Value v ) {
+    if( v==null ) return null;
+    if( v.isNull() ) return "Null";
+    return Integer.toString(((water.fvec.Vec.ESPC)(v.get()))._espcs.length);
+  }
 
   // Get the value from the store
-  public static Value get( Key key ) { return STORE.get(key); }
-  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
+  public static Value     get(Key key) { return STORE.get(key); }
   public static Value raw_get(Key key) { return STORE.get(key); }
   public static void raw_remove(Key key) { STORE.remove(key); }
   public static void raw_clear() { STORE.clear(); }
+  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
@@ -1479,6 +1540,7 @@ final public class H2O {
       Object ov = kvs[i+1];
       if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
       Value val = (Value)ov;
+      if( val.isNull() ) { Value.STORE_get(val._key); continue; } // Another variant of NULL
       int t = val.type();
       while( t >= cnts.length ) cnts = Arrays.copyOf(cnts,cnts.length<<1);
       cnts[t]++;

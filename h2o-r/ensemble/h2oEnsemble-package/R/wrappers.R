@@ -1,5 +1,15 @@
 # Set of default wrappers to create a uniform interface for h2o supervised ML functions (H2O 3.0 and above)
-# Wrappers for: h2o.glm, h2o.randomForest, h2o.gbm, h2o.deeplearning
+
+# Example of a wrapper function:
+h2o.example.wrapper <- function(x, y, training_frame, model_id = "", family = c("gaussian", "binomial"), ...) {
+  # This function is just an example.  
+  # You can wrap any H2O learner inside a wrapper function, example: h2o.glm
+  h2o.glm(x = x, y = y, training_frame = training_frame, family = family)
+}
+
+
+
+# Wrappers for: h2o.glm, h2o.randomForest, h2o.gbm, h2o.deeplearning:
 
 
 # This is a version of the h2o.glm.wrapper which doesn't pass along all the args
@@ -98,7 +108,9 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = "",
                                      autoencoder = FALSE, use_all_factor_levels = TRUE,
                                      activation = c("Rectifier", "Tanh", "TanhWithDropout",
                                                    "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 
-                                     hidden = c(200, 200), epochs = 10, train_samples_per_iteration = -2, seed, 
+                                     hidden = c(200, 200), epochs = 10, train_samples_per_iteration = -2, 
+                                     #target_ratio_comm_to_comp = 0.05,  #not on stable yet
+                                     seed, 
                                      adaptive_rate = TRUE, rho = 0.99, epsilon = 1e-08, rate = 0.005,
                                      rate_annealing = 1e-06, rate_decay = 1, momentum_start = 0,
                                      momentum_ramp = 1e+06, momentum_stable = 0,
@@ -129,6 +141,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = "",
                    autoencoder = autoencoder, use_all_factor_levels = use_all_factor_levels, 
                    activation = match.arg(activation), 
                    hidden = hidden, epochs = epochs, train_samples_per_iteration = train_samples_per_iteration, 
+                   #target_ratio_comm_to_comp = target_ratio_comm_to_comp, 
                    seed = seed, 
                    adaptive_rate = adaptive_rate, rho = rho, epsilon = epsilon, rate = rate,
                    rate_annealing = rate_annealing, rate_decay = rate_decay, momentum_start = momentum_start,

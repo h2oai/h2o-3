@@ -1,11 +1,14 @@
-import sys, shutil
-sys.path.insert(1, "../../../")
-import h2o, tests
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 import random
 
 def cars_checkpoint():
 
-    cars = h2o.upload_file(tests.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars.runif()
     train = cars[s > .2]
     valid = cars[s <= .2]
@@ -42,15 +45,21 @@ def cars_checkpoint():
     print "*** ntrees model 1: {0}".format(ntrees1)
     print "*** max_depth model 1: {0}".format(max_depth1)
     print "*** min_rows model 1: {0}".format(min_rows1)
-    model1 = h2o.random_forest(x=train[predictors],
-                     y=train[response_col],
-                     ntrees=ntrees1,
-                     max_depth=max_depth1,
-                     min_rows=min_rows1,
-                     score_each_iteration=True,
-                     validation_x=valid[predictors],
-                     validation_y=valid[response_col],
-                     seed=1234)
+    model1 = H2ORandomForestEstimator(ntrees=ntrees1,
+                                      max_depth=max_depth1,
+                                      min_rows=min_rows1,
+                                      score_each_iteration=True,
+                                      seed=1234)
+    model1.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+    # model1 = h2o.random_forest(x=train[predictors],
+    #                  y=train[response_col],
+    #                  ntrees=ntrees1,
+    #                  max_depth=max_depth1,
+    #                  min_rows=min_rows1,
+    #                  score_each_iteration=True,
+    #                  validation_x=valid[predictors],
+    #                  validation_y=valid[response_col],
+    #                  seed=1234)
 
     # save the model, then load the model
     model_path = h2o.save_model(model1, name="delete_model", force=True)
@@ -65,16 +74,23 @@ def cars_checkpoint():
     print "*** ntrees model 2: {0}".format(ntrees2)
     print "*** max_depth model 2: {0}".format(max_depth2)
     print "*** min_rows model 2: {0}".format(min_rows2)
-    model2 = h2o.random_forest(x=train[predictors],
-                     y=train[response_col],
-                     ntrees=ntrees2,
-                     max_depth=max_depth2,
-                     min_rows=min_rows2,
-                     score_each_iteration=True,
-                     validation_x=valid[predictors],
-                     validation_y=valid[response_col],
-                     checkpoint=restored_model._id,
-                     seed=1234)
+    model2 = H2ORandomForestEstimator(ntrees=ntrees2,
+                                      max_depth=max_depth2,
+                                      min_rows=min_rows2,
+                                      score_each_iteration=True,
+                                      checkpoint=restored_model._id,
+                                      seed=1234)
+    model2.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+    # model2 = h2o.random_forest(x=train[predictors],
+    #                  y=train[response_col],
+    #                  ntrees=ntrees2,
+    #                  max_depth=max_depth2,
+    #                  min_rows=min_rows2,
+    #                  score_each_iteration=True,
+    #                  validation_x=valid[predictors],
+    #                  validation_y=valid[response_col],
+    #                  checkpoint=restored_model._id,
+    #                  seed=1234)
 
     # continue building the model, but with different number of trees
     ntrees3 = ntrees2 + 50
@@ -84,28 +100,41 @@ def cars_checkpoint():
     print "*** ntrees model 3: {0}".format(ntrees3)
     print "*** max_depth model 3: {0}".format(max_depth3)
     print "*** min_rows model 3: {0}".format(min_rows3)
-    model3 = h2o.random_forest(x=train[predictors],
-                     y=train[response_col],
-                     ntrees=ntrees3,
-                     max_depth=max_depth3,
-                     min_rows=min_rows3,
-                     score_each_iteration=True,
-                     validation_x=valid[predictors],
-                     validation_y=valid[response_col],
-                     checkpoint=restored_model._id,
-                     seed=1234)
+    model3 = H2ORandomForestEstimator(ntrees=ntrees3,
+                                      max_depth=max_depth3,
+                                      min_rows=min_rows3,
+                                      score_each_iteration=True,
+                                      checkpoint=restored_model._id,
+                                      seed=1234)
+    model3.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+    # model3 = h2o.random_forest(x=train[predictors],
+    #                  y=train[response_col],
+    #                  ntrees=ntrees3,
+    #                  max_depth=max_depth3,
+    #                  min_rows=min_rows3,
+    #                  score_each_iteration=True,
+    #                  validation_x=valid[predictors],
+    #                  validation_y=valid[response_col],
+    #                  checkpoint=restored_model._id,
+    #                  seed=1234)
 
     # build the equivalent of model 2 in one shot
     print "\n*** Building the equivalent of model 2 (called model 4) in one shot:"
-    model4 = h2o.random_forest(x=train[predictors],
-                     y=train[response_col],
-                     ntrees=ntrees2,
-                     max_depth=max_depth2,
-                     min_rows=min_rows2,
-                     score_each_iteration=True,
-                     validation_x=valid[predictors],
-                     validation_y=valid[response_col],
-                     seed=1234)
+    model4 = H2ORandomForestEstimator(ntrees=ntrees2,
+                                      max_depth=max_depth2,
+                                      min_rows=min_rows2,
+                                      score_each_iteration=True,
+                                      seed=1234)
+    model4.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+    # model4 = h2o.random_forest(x=train[predictors],
+    #                  y=train[response_col],
+    #                  ntrees=ntrees2,
+    #                  max_depth=max_depth2,
+    #                  min_rows=min_rows2,
+    #                  score_each_iteration=True,
+    #                  validation_x=valid[predictors],
+    #                  validation_y=valid[response_col],
+    #                  seed=1234)
 
     print "\n*** Model Summary for model 2:"
     print model2.summary()
@@ -146,5 +175,9 @@ def cars_checkpoint():
         assert model2.r2(valid=True)==model4.r2(valid=True), "Expected Model 2 R2: {0} to be the same as Model 4 R2: {1}".format(model2.r2(valid=True), model4.r2(valid=True))
         #assert model3.r2(valid=True)!=model4.r2(valid=True), "Expected Model 3 R2: {0} to be different from Model 4 R2: {1}".format(model3.r2(valid=True), model4.r2(valid=True))
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, cars_checkpoint)
+    pyunit_utils.standalone_test(cars_checkpoint)
+else:
+    cars_checkpoint()

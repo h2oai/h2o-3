@@ -182,12 +182,16 @@ setMethod("summary", "H2OModel", function(object, ...) {
 .showMultiMetrics <- function(o, which="Training") {
   arg <- "train"
   if( which == "Validation" ) { arg <- "valid"
-  } else if ( which == "Cross-Validation" ) { arg <- "xval" }
+  } else if ( which == "Cross-Validation" ) { arg <- "xval"
+  } else if ( which == "Test" ) { arg <- "test" }
   tm <- o@metrics
   cat(which, "Set Metrics: \n")
   cat("=====================\n")
   if( !is.null(tm$description)     )  cat(tm$description, "\n")
-  if( !is.null(tm[["frame"]]) && !is.null(tm[["frame"]][["name"]]) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
+  if (arg != "test") {
+    if( !is.null(tm[["frame"]]) && !is.null(tm[["frame"]][["name"]]) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
+  }
+  #if( !is.null(tm[["frame"]]) && !is.null(tm[["frame"]][["name"]]) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
   if( !is.null(tm$MSE)                                             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
   if( !is.null(tm$r2)                                              )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
   if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
@@ -196,9 +200,17 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
   if( !is.null(tm$AIC)                                             )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
-  if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n")); } }
+  if (arg != "test") {
+    if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, " = TRUE)`)\n")); } }
+  } else {
+    if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>, <data>)`)\n")); } }
+  }
   if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) } }
-  if( !is.null(tm$hit_ratio_table)                                 )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
+  if (arg != "test") {
+    if( !is.null(tm$hit_ratio_table)                                 )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, " = TRUE)`\n"))
+  } else {
+    if( !is.null(tm$hit_ratio_table)                                 )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>, <data>)`\n"))
+  }
   if( !is.null(tm$hit_ratio_table)                                 )  { cat("=======================================================================\n"); print(h2o.hit_ratio_table(tm$hit_ratio_table)); }
   cat("\n")
   invisible(tm)
@@ -365,6 +377,12 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
       cat("\n")
     }
     print(object@metrics$max_criteria_and_metric_scores)
+
+    if (!is.null(object@metrics$gains_lift_table)) {
+      #Maybe don't print by default, but instruct the user how to access
+      cat("\n")
+      print(object@metrics$gains_lift_table)
+    }
 })
 
 #' @rdname H2OModelMetrics-class
@@ -378,6 +396,7 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
     if( object@on_train ) .showMultiMetrics(object, "Training")
     if( object@on_valid ) .showMultiMetrics(object, "Validation")
     if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
+    if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
   } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class
@@ -445,6 +464,8 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
     if( object@algorithm == "glrm" ) {
       cat("Sum of Squared Error (Numeric): ", m$numerr)
       cat("\nMisclassification Error (Categorical): ", m$caterr)
+      cat("\nNumber of Numeric Entries: ", m$numcnt)
+      cat("\nNumber of Categorical Entries: ", m$catcnt)
     }
   } else print(NULL)
 })
@@ -538,7 +559,7 @@ setMethod("show", "H2OGrid", function(object) {
 #' @param show_stack_traces  a flag to show stack traces for model failures
 #' @export
 setMethod("summary", "H2OGrid",
-          function(object, show_stack_traces = F) {
+          function(object, show_stack_traces = FALSE) {
             show(object)
             cat("H2O Grid Summary\n")
             cat("================\n\n")
@@ -565,4 +586,3 @@ setMethod("summary", "H2OGrid",
               cat("\nNote: To see exception stack traces please pass parameter `show_stack_traces = T` to this function.\n")
             }
 })
-

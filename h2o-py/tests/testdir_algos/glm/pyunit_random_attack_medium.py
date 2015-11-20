@@ -1,11 +1,14 @@
 import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
 import random
 
 def random_attack():
-    
-    
+
+
 
     def attack(family, train, valid, x, y):
         kwargs = {}
@@ -43,9 +46,9 @@ def random_attack():
                     upper_bound = lower_bound + random.random()
                     bc.append([name, lower_bound, upper_bound])
             if len(bc) > 0:
-                beta_constraints = h2o.H2OFrame(python_obj=bc)
+                beta_constraints = h2o.H2OFrame(zip(*bc))
                 beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
-                kwargs['beta_constraints'] = beta_constraints._id
+                kwargs['beta_constraints'] = beta_constraints.frame_id
 
         # display the parameters and their corresponding values
         print "-----------------------"
@@ -58,21 +61,25 @@ def random_attack():
                 beta_constraints.show()
             else:
                 print k + ": {0}".format(v)
-        if do_validation: h2o.glm(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
-        else: h2o.glm(x=train[x], y=train[y], **kwargs)
+        if do_validation:
+ #         h2o.glm(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
+          H2OGeneralizedLinearEstimator(**kwargs).train(x=x,y=y,training_frame=train,validation_frame=valid)
+        else:
+ #         h2o.glm(x=train[x], y=train[y], **kwargs)
+          H2OGeneralizedLinearEstimator(**kwargs).train(x=x,y=y,training_frame=train)
         print "-----------------------"
 
     print "Import and data munging..."
     seed = random.randint(1,10000)
     print "SEED: {0}".format(seed)
-    pros = h2o.upload_file(tests.locate("smalldata/prostate/prostate.csv.zip"))
+    pros = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
     pros[1] = pros[1].asfactor()
     r = pros[0].runif(seed=seed) # a column of length pros.nrow with values between 0 and 1
     # ~80/20 train/validation split
     pros_train = pros[r > .2]
     pros_valid = pros[r <= .2]
 
-    cars = h2o.upload_file(tests.locate("smalldata/junit/cars.csv"))
+    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars.csv"))
     r = cars[0].runif(seed=seed)
     cars_train = cars[r > .2]
     cars_valid = cars[r <= .2]
@@ -105,5 +112,9 @@ def random_attack():
     for i in range(10):
         attack("gamma", pros_train, pros_valid, random.sample([1,2,3,5,6,7,8],random.randint(1,7)), 4)
 
+
+
 if __name__ == "__main__":
-    tests.run_test(sys.argv, random_attack)
+    pyunit_utils.standalone_test(random_attack)
+else:
+    random_attack()

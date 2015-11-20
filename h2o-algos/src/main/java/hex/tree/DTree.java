@@ -404,15 +404,43 @@ public class DTree extends Iced {
       DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
       if( hs == null ) return best;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
+      FindSplits[] findSplits = new FindSplits[maxCols];
+      //total work is to find the best split across sum_over_cols_to_split(nbins)
+      long nbinsSum = 0;
       for( int i=0; i<maxCols; i++ ) {
         int col = u._scoreCols == null ? i : u._scoreCols[i];
         if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
-        DTree.Split s = hs[col].scoreMSE(col, _tree._min_rows);
+        nbinsSum += hs[col].nbins();
+      }
+      // for small work loads, do a serial loop, otherwise, submit work to FJ thread pool
+      final boolean isSmall = (nbinsSum <= 1024); //heuristic - 50 cols with 20 nbins, or 1 column with 1024 bins, etc.
+      for( int i=0; i<maxCols; i++ ) {
+        int col = u._scoreCols == null ? i : u._scoreCols[i];
+        if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
+        findSplits[i] = new FindSplits(hs, col);
+        if (isSmall) findSplits[i].compute2();
+        else H2O.submitTask(findSplits[i]);
+      }
+      for( int i=0; i<maxCols; i++ ) {
+        if (findSplits[i]==null) continue;
+        findSplits[i].join();
+        DTree.Split s = findSplits[i]._s;
         if( s == null ) continue;
-        if( s.se() < best.se() ) best = s;
-        if( s.se() <= 0 ) break; // No point in looking further!
+        if (s.se() < best.se()) best = s;
       }
       return best;
+    }
+
+    class FindSplits extends H2O.H2OCountedCompleter<FindSplits> {
+      FindSplits(DHistogram[] hs, int col) { _hs = hs; _col = col; }
+      final DHistogram[] _hs;
+      final int _col;
+      DTree.Split _s;
+      @Override
+      protected void compute2() {
+        _s = _hs[_col].scoreMSE(_col, _tree._min_rows);
+        tryComplete();
+      }
     }
 
     public DecidedNode( UndecidedNode n, DHistogram hs[] ) {

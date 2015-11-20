@@ -57,6 +57,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
 
+    @Override protected long nFoldSeed() { return _seed; }
+
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
@@ -131,7 +133,15 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public ScoreKeeper _scored_train[/*ntrees+1*/];
     public ScoreKeeper _scored_valid[/*ntrees+1*/];
-
+    public ScoreKeeper[] scoreKeepers() {
+      List<ScoreKeeper> sk = new ArrayList<>();
+      ScoreKeeper[] ska = _validation_metrics != null ? _scored_valid : _scored_train;
+      for (int i=0;i<ska.length;++i) {
+        if (!ska[i].isEmpty())
+          sk.add(ska[i]);
+      }
+      return sk.toArray(new ScoreKeeper[0]);
+    }
     /** Training time */
     public long _training_time_ms[/*ntrees+1*/] = new long[]{System.currentTimeMillis()};
 

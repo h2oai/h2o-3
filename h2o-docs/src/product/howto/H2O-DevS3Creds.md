@@ -65,21 +65,20 @@ For more information, refer to the [H2O EC2 repo](https://github.com/h2oai/h2o-3
 Build a cluster of EC2 instances by running the following commands on the host that can access the nodes using a public DNS name. 
 
 0. Edit `h2o-cluster-launch-instances.py` to include your SSH key name and security group name, as well as any other environment-specific variables. 
-
-	```
- 	./h2o-cluster-launch-instances.py
- 	./h2o-cluster-distribute-h2o.sh  
+        
+   ```		
+   ./h2o-cluster-launch-instances.py
+   ./h2o-cluster-distribute-h2o.sh  
+   ```		
  
-	``` 
- 
-   --OR--
-   
- 	```
- 	./h2o-cluster-launch-instances.py
- 	./h2o-cluster-download-h2o.sh
-	```
-   >**Note**: The second method may be faster than the first, since download pulls from S3. 
+    --OR--
+		
+   ```		  
+   ./h2o-cluster-launch-instances.py
+   ./h2o-cluster-download-h2o.sh
+   ```		
 
+   **Note**: The second method may be faster than the first, since download pulls from S3. 
 
 0. Distribute the credentials using `./h2o-cluster-distribute-aws-credentials.sh`. 
   >**Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key. 

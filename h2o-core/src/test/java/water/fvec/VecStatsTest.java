@@ -16,14 +16,14 @@ public class VecStatsTest extends TestUtil {
       Futures fs = new Futures();
       Random random = new Random();
       Vec[] vecs = new Vec[1];
-      AppendableVec vec = new AppendableVec(Vec.newKey());
+      AppendableVec vec = new AppendableVec(Vec.newKey(), Vec.T_NUM);
       for( int i = 0; i < 2; i++ ) {
         NewChunk chunk = new NewChunk(vec, i);
         for( int r = 0; r < 1000; r++ )
           chunk.addNum(random.nextInt(1000));
         chunk.close(i, fs);
       }
-      vecs[0] = vec.close(fs);
+      vecs[0] = vec.layout_and_close(fs);
       fs.blockForPending();
       frame = new Frame(Key.make(), null, vecs);
 
@@ -60,14 +60,14 @@ public class VecStatsTest extends TestUtil {
     // Simplified version of tests in runit_quantile_1_golden.R. There we test probs=seq(0,1,by=0.01)
     Vec vec = vec(5 , 8 ,  9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43,  45,  48, 161);
     double[] pctiles = vec.pctiles();
-    // System.out.println(java.util.Arrays.toString(pctiles));
-    Assert.assertEquals(13.75,pctiles[3],1e-5);
+    //System.out.println(java.util.Arrays.toString(pctiles));
+    Assert.assertEquals(13.75,pctiles[4],1e-5);
     vec.remove();
 
     vec = vec(5 , 8 ,  9 , 9 , 9 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 31 , 34 , 43,  43,  43, 161);
     pctiles = vec.pctiles();
-    // System.out.println(java.util.Arrays.toString(pctiles));
-    Assert.assertEquals(10.75,pctiles[3],1e-5);
+    //System.out.println(java.util.Arrays.toString(pctiles));
+    Assert.assertEquals(10.75,pctiles[4],1e-5);
     vec.remove();
 
   }

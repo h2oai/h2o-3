@@ -78,7 +78,6 @@ abstract public class AST extends Iced<AST> {
     init(new ASTNcol  ());
     init(new ASTNot   ());
     init(new ASTNrow  ());
-    init(new ASTPop());
     init(new ASTRound ());
     init(new ASTSgn());
     init(new ASTSignif());
@@ -175,22 +174,28 @@ abstract public class AST extends Iced<AST> {
     init(new ASTCBind());
     init(new ASTColNames());
     init(new ASTColSlice());
+    init(new ASTColPySlice());
     init(new ASTFilterNACols());
     init(new ASTFlatten());
     init(new ASTIsFactor());
-    init(new ASTAnyFactor());
+    init(new ASTRename());
     init(new ASTRBind());
     init(new ASTRowSlice());
     init(new ASTSetDomain());
     init(new ASTSetLevel());
-    init(new ASTTmpAssign());
+
+    // Assignment; all of these lean heavily on Copy-On-Write optimizations.
+    init(new ASTAppend());      // Add a column
+    init(new ASTAssign());      // Overwrite a global
+    init(new ASTRectangleAssign()); // Overwrite a rectangular slice
+    init(new ASTRm());          // Remove a frame, but maintain internal sharing
+    init(new ASTTmpAssign());   // Create a new immutable tmp frame
 
     // Matrix Ops
     init(new ASTTranspose());
     init(new ASTMMult());
 
     // Complex data mungers
-    init(new ASTAssign());
     init(new ASTCut());
     init(new ASTDdply());
     init(new ASTGroup());
@@ -248,10 +253,10 @@ class ASTStr extends ASTParameter {
   @Override public String str() { return _v.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override public Val exec(Env env) { return _v; }
   @Override public String toJavaString() { return "\"" + str() + "\""; }
-  @Override int[] columns( String[] names ) { 
+  @Override int[] columns( String[] names ) {
     int i = water.util.ArrayUtils.find(names,_v.getStr());
     if( i == -1 ) throw new IllegalArgumentException("Column "+_v.getStr()+" not found");
-    return new int[]{i}; 
+    return new int[]{i};
   }
 }
 
@@ -260,7 +265,7 @@ class ASTFrame extends AST {
   final ValFrame _fr;
   ASTFrame(Frame fr) { _fr = new ValFrame(fr); }
   @Override public String str() { return _fr.toString(); }
-  @Override public Val exec(Env env) { return _fr; }
+  @Override public Val exec(Env env) { return env.returning(_fr); }
   @Override int nargs() { return 1; }
 }
 
@@ -279,7 +284,7 @@ class ASTId extends ASTParameter {
   ASTId(Exec e) { _id = e.token(); }
   ASTId(String id) { _id=id; }
   @Override public String str() { return _id; }
-  @Override public Val exec(Env env) { return env.lookup(_id); }
+  @Override public Val exec(Env env) { return env.returning(env.lookup(_id)); }
   @Override int nargs() { return 1; }
   @Override public String toJavaString() { return "\"" + str() + "\""; }
 }

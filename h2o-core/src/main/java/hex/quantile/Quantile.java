@@ -41,8 +41,6 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     return new ModelCategory[]{ModelCategory.Unknown};
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; };
-
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
@@ -95,11 +93,13 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
             double prob = _parms._probs[p];
             Histo h = h1;  // Start from the first global histogram
 
-            while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) )
+            model._output._iterations++; // At least one iter per-prob-per-column
+            while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) ) {
               h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
+              model._output._iterations++; // also count refinement iterations
+            }
 
             // Update the model
-            model._output._iterations++; // One iter per-prob-per-column
             model.update(_key); // Update model in K/V store
             update(1);          // One unit of work
           }
@@ -303,7 +303,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     // Unequal, linear interpolation
     double plo = (double)(row+0)/(nrows-1); // Note that row numbers are inclusive on the end point, means we need a -1
     double phi = (double)(row+1)/(nrows-1); // Passed in the row number for the low value, high is the next row, so +1
-    assert plo <= prob && prob < phi;
+    assert plo <= prob && prob <= phi;
     return lo + (hi-lo)*(prob-plo)/(phi-plo); // Classic linear interpolation
   }
 }

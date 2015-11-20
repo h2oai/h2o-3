@@ -3,25 +3,15 @@ An H2OConnection represents the latest active handle to a cloud. No more than a 
 H2OConnection object will be active at any one time.
 """
 
-import requests
-import math
-import re
-import os
-import sys
-import string
-import time
-import tempfile
-import tabulate
-import subprocess
-import atexit
-import pkg_resources
+import requests, math, re, os, sys, string, time, tempfile, tabulate, subprocess, atexit, pkg_resources
 from two_dim_table import H2OTwoDimTable
 import h2o
-import logging
+import h2o_logging
 import site
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
+
 
 class H2OConnection(object):
   """
@@ -35,7 +25,7 @@ class H2OConnection(object):
   """
 
   def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True):
+               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True, proxies=None):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
@@ -57,16 +47,12 @@ class H2OConnection(object):
     self._cld = None
     self._ip = ip
     self._port = port
+    self._proxies = proxies
     self._session_id = None
     self._rest_version = __H2O_REST_API_VERSION__
     self._child = getattr(__H2OCONN__, "_child") if hasattr(__H2OCONN__, "_child") else None
     __H2OCONN__ = self
-    jar_path = None
-    jarpaths = [os.path.join(sys.prefix, "h2o_jar", "h2o.jar"),
-                os.path.join(os.path.sep,"usr","local","h2o_jar","h2o.jar"),
-                os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar"),
-                os.path.join(site.USER_BASE, "h2o_jar", "h2o.jar")
-                ]
+    jarpaths = H2OConnection.jar_paths()
     if os.path.exists(jarpaths[0]):   jar_path = jarpaths[0]
     elif os.path.exists(jarpaths[1]): jar_path = jarpaths[1]
     elif os.path.exists(jarpaths[2]): jar_path = jarpaths[2]
@@ -113,13 +99,21 @@ class H2OConnection(object):
       else:
         print "Warning: {0}".format(message)
 
+    self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()
+
+  @staticmethod
+  def jar_paths():
+    return [os.path.join(sys.prefix, "h2o_jar", "h2o.jar"),
+                os.path.join(os.path.sep,"usr","local","h2o_jar","h2o.jar"),
+                os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar"),
+                os.path.join(site.USER_BASE, "h2o_jar", "h2o.jar"),
+           ]
 
   @staticmethod
   def _cluster_info():
     global __H2OCONN__
     cld = __H2OCONN__._cld
-    # self._session_id = self.get_session_id()
     ncpus = sum([n['num_cpus'] for n in cld['nodes']])
     allowed_cpus = sum([n['cpus_allowed'] for n in cld['nodes']])
     mmax = sum([n['max_mem'] for n in cld['nodes']])
@@ -136,6 +130,7 @@ class H2OConnection(object):
       ["H2O cluster healthy: ", str(cluster_health)],
       ["H2O Connection ip: ", ip],
       ["H2O Connection port: ", __H2OCONN__._port],
+      ["H2O Connection proxy: ", __H2OCONN__._proxies],
       ]
     __H2OCONN__._cld = H2OConnection.get_json(url_suffix="Cloud")   # update the cached version of cld
     h2o.H2ODisplay(cluster_info)
@@ -143,7 +138,9 @@ class H2OConnection(object):
   def _connect(self, size, max_retries=5, print_dots=False):
     """
     Does not actually "connect", instead simply tests that the cluster can be reached,
-    is of a certain size, and is taking basic status commands.
+    is of a certain size, and is taking basic status commands.df = h2o.H2OFrame(((1, 2, 3),
+                   ('a', 'b', 'c'),
+                   (0.1, 0.2, 0.3)))
     :param size: The number of H2O instances in the cloud.
     :return: The JSON response from a "stable" cluster.
     """
@@ -159,7 +156,7 @@ class H2OConnection(object):
         if not cld['cloud_healthy']:
           raise ValueError("Cluster reports unhealthy status", cld)
         if cld['cloud_size'] >= size and cld['consensus']:
-          if print_dots: print " Connection sucessful!"
+          if print_dots: print " Connection successful!"
           return cld
       except EnvironmentError:
         pass
@@ -245,7 +242,7 @@ class H2OConnection(object):
       return os.path.join(os.getenv("JAVA_HOME"), "bin", "java.exe")
 
     # check /Program Files/ and /Program Files (x86)/ if os is windoz
-    if sys.platform == "windows":
+    if sys.platform == "win32":
       program_folder = os.path.join("C:", "{}", "Java")
       program_folders = [program_folder.format("Program Files"),
                          program_folder.format("Program Files (x86)")]
@@ -320,19 +317,23 @@ class H2OConnection(object):
     :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
     :return: None
     """
+    global __H2OCONN__
     if not isinstance(conn, H2OConnection): raise ValueError("`conn` must be an H2OConnection object")
-    if not conn.cluster_is_up(conn):  raise ValueError("There is no H2O instance running at ip: {0} and port: "
+    try:
+      if not conn.cluster_is_up(conn):  raise ValueError("There is no H2O instance running at ip: {0} and port: "
                                                        "{1}".format(conn.ip(), conn.port()))
-
+    except:
+      #H2O is already shutdown on the java side
+      print "The H2O instance running at {0}:{1} has already been shutdown.".format(conn.ip(), conn.port())
+      __H2OCONN__= None
+      return 
     if not isinstance(prompt, bool): raise ValueError("`prompt` must be TRUE or FALSE")
     if prompt: response = raw_input("Are you sure you want to shutdown the H2O instance running at {0}:{1} "
                                     "(Y/N)? ".format(conn.ip(), conn.port()))
     else: response = "Y"
-    if response == "Y" or response == "y": conn.post(url_suffix="Shutdown")
-
-  @staticmethod
-  def get_session_id():
-      return H2OConnection.get_json(url_suffix="InitID")["session_key"]
+    if response == "Y" or response == "y": 
+      conn.post(url_suffix="Shutdown")
+      __H2OCONN__ = None #so that the "Did you run `h2o.init()`" ValueError is triggered
 
   @staticmethod
   def rest_version(): return __H2OCONN__._rest_version
@@ -345,6 +346,9 @@ class H2OConnection(object):
 
   @staticmethod
   def ip(): return __H2OCONN__._ip
+
+  @staticmethod
+  def proxies(): return __H2OCONN__._proxies
 
   @staticmethod
   def current_connection(): return __H2OCONN__
@@ -364,7 +368,7 @@ class H2OConnection(object):
     """
     if not isinstance(conn, H2OConnection): raise ValueError("`conn` must be an H2OConnection object")
     rv = conn.current_connection()._attempt_rest(url="http://{0}:{1}/".format(conn.ip(), conn.port()), method="GET",
-                                                 post_body="", file_upload_info="")
+                                                 post_body="", file_upload_info="", proxies=conn.proxies())
     return rv.status_code == 200 or rv.status_code == 301
 
   """
@@ -391,19 +395,19 @@ class H2OConnection(object):
   def get(url_suffix, **kwargs):
     if __H2OCONN__ is None:
       raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
-    return __H2OCONN__._do_raw_rest(url_suffix, "GET", None, **kwargs)
+    return __H2OCONN__._do_raw_rest(url_suffix, "GET", None, proxies=__H2OCONN__._proxies, **kwargs)
 
   @staticmethod
   def post(url_suffix, file_upload_info=None, **kwargs):
     if __H2OCONN__ is None:
       raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
-    return __H2OCONN__._do_raw_rest(url_suffix, "POST", file_upload_info, **kwargs)
+    return __H2OCONN__._do_raw_rest(url_suffix, "POST", file_upload_info, proxies=__H2OCONN__._proxies, **kwargs)
 
   @staticmethod
   def delete(url_suffix, **kwargs):
     if __H2OCONN__ is None:
       raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
-    return __H2OCONN__._do_raw_rest(url_suffix, "DELETE", None, **kwargs)
+    return __H2OCONN__._do_raw_rest(url_suffix, "DELETE", None, proxies=__H2OCONN__._proxies, **kwargs)
 
   @staticmethod
   def get_json(url_suffix, **kwargs):
@@ -417,15 +421,15 @@ class H2OConnection(object):
       raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
     return __H2OCONN__._rest_json(url_suffix, "POST", file_upload_info, **kwargs)
 
-  def _rest_json(self, url_suffix, method, file_upload_info, **kwargs):
-    raw_txt = self._do_raw_rest(url_suffix, method, file_upload_info, **kwargs)
+  def _rest_json(self, url_suffix, method, file_upload_info, proxies=None, **kwargs):
+    raw_txt = self._do_raw_rest(url_suffix, method, file_upload_info, proxies=__H2OCONN__._proxies, **kwargs)
     return self._process_tables(raw_txt.json())
 
   # Massage arguments into place, call _attempt_rest
-  def _do_raw_rest(self, url_suffix, method, file_upload_info, **kwargs):
+  def _do_raw_rest(self, url_suffix, method, file_upload_info, proxies=None, **kwargs):
     if not url_suffix:
       raise ValueError("No url suffix supplied.")
-    
+
     # allow override of REST version, currently used for Rapids which is /99
     if '_rest_version' in kwargs:
       _rest_version = kwargs['_rest_version']
@@ -466,16 +470,17 @@ class H2OConnection(object):
       if query_string != '':
         url = "{}?{}".format(url, query_string)
 
-    if logging._is_logging():
-      logging._log_rest("------------------------------------------------------------\n")
-      logging._log_rest("\n")
-      logging._log_rest("Time:     {0}\n".format(time.strftime('Y-%m-%d %H:%M:%OS3')))
-      logging._log_rest("\n")
-      logging._log_rest("{0} {1}\n".format(method, url))
-      logging._log_rest("postBody: {0}\n".format(post_body))
+    if h2o_logging._is_logging():
+      h2o_logging._log_rest("------------------------------------------------------------\n")
+      h2o_logging._log_rest("\n")
+      h2o_logging._log_rest("Time:     {0}\n".format(time.strftime('Y-%m-%d %H:%M:%OS3')))
+      h2o_logging._log_rest("\n")
+      h2o_logging._log_rest("{0} {1}\n".format(method, url))
+      h2o_logging._log_rest("postBody: {0}\n".format(post_body))
 
+    global _rest_ctr; _rest_ctr = _rest_ctr+1
     begin_time_seconds = time.time()
-    http_result = self._attempt_rest(url, method, post_body, file_upload_info)
+    http_result = self._attempt_rest(url, method, post_body, file_upload_info, proxies)
     end_time_seconds = time.time()
     elapsed_time_seconds = end_time_seconds - begin_time_seconds
     elapsed_time_millis = elapsed_time_seconds * 1000
@@ -484,8 +489,7 @@ class H2OConnection(object):
       try:
         result = http_result.json()
         if 'messages' in result.keys():
-          detailed_error_msgs = '\n'.join([m['message'] for m in result['messages'] if m['message_type'] in \
-                                          ['ERROR']])
+          detailed_error_msgs = '\n'.join([m['message'] for m in result['messages'] if m['message_type'] in ['ERRR']])
         elif 'exception_msg' in result.keys():
           detailed_error_msgs = result['exception_msg']
       except ValueError:
@@ -495,39 +499,39 @@ class H2OConnection(object):
                               .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
 
 
-    if logging._is_logging():
-      logging._log_rest("\n")
-      logging._log_rest("httpStatusCode:    {0}\n".format(http_result.status_code))
-      logging._log_rest("httpStatusMessage: {0}\n".format(http_result.reason))
-      logging._log_rest("millis:            {0}\n".format(elapsed_time_millis))
-      logging._log_rest("\n")
-      logging._log_rest("{0}\n".format(http_result.json()))
-      logging._log_rest("\n")
+    if h2o_logging._is_logging():
+      h2o_logging._log_rest("\n")
+      h2o_logging._log_rest("httpStatusCode:    {0}\n".format(http_result.status_code))
+      h2o_logging._log_rest("httpStatusMessage: {0}\n".format(http_result.reason))
+      h2o_logging._log_rest("millis:            {0}\n".format(elapsed_time_millis))
+      h2o_logging._log_rest("\n")
+      h2o_logging._log_rest("{0}\n".format(http_result.json()))
+      h2o_logging._log_rest("\n")
 
 
     return http_result
 
   # Low level request call
-  def _attempt_rest(self, url, method, post_body, file_upload_info):
+  def _attempt_rest(self, url, method, post_body, file_upload_info, proxies=None):
+    proxies = proxies or {}
+
     headers = {'User-Agent': 'H2O Python client/'+string.replace(sys.version, '\n', '')}
     try:
       if method == "GET":
-        return requests.get(url, headers=headers)
+        return requests.get(url, headers=headers, proxies=proxies)
       elif file_upload_info:
         files = {file_upload_info["file"] : open(file_upload_info["file"], "rb")}
-        return requests.post(url, files=files, headers=headers)
+        return requests.post(url, files=files, headers=headers, proxies=proxies)
       elif method == "POST":
         headers["Content-Type"] = "application/x-www-form-urlencoded"
-        return requests.post(url, data=post_body, headers=headers)
+        return requests.post(url, data=post_body, headers=headers, proxies=proxies)
       elif method == "DELETE":
-        return requests.delete(url, headers=headers)
+        return requests.delete(url, headers=headers, proxies=proxies)
       else:
         raise ValueError("Unknown HTTP method " + method)
 
     except requests.ConnectionError as e:
       raise EnvironmentError("h2o-py encountered an unexpected HTTP error:\n {}".format(e))
-
-    return http_result
 
   # TODO:
   # @staticmethod
@@ -567,6 +571,18 @@ class H2OConnection(object):
           x[it] = H2OConnection._process_tables(x[it])
     return x
 
+  global _rest_ctr
+  _rest_ctr = 0
+  @staticmethod
+  def rest_ctr(): global _rest_ctr; return _rest_ctr
+
+# On exit, close the session to allow H2O to cleanup any temps
+def end_session():
+  try:
+    H2OConnection.delete(url_suffix="InitID")
+    print "Sucessfully closed the H2O Session."
+  except:
+    pass
 
 def get_human_readable_size(num):
   exp_str = [(0, 'B'), (10, 'KB'), (20, 'MB'), (30, 'GB'), (40, 'TB'), (50, 'PB'), ]
@@ -616,3 +632,4 @@ def _kill_jvm_fork():
       print "Successfully stopped H2O JVM started by the h2o python module."
 
 atexit.register(_kill_jvm_fork)
+atexit.register(end_session)

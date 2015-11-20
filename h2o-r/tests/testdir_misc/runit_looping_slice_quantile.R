@@ -4,10 +4,8 @@
 
 options(error=traceback, warn=1)
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_misc")
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
 options(echo=TRUE)
-TEST_ROOT_DIR <- ".."
-source(sprintf("%s/%s", TEST_ROOT_DIR, "h2o-runit.R"))
 
 
 #----------------------------------------------------------------------
@@ -149,10 +147,7 @@ h2o.removeLastValues <- function() {
     df <- h2o.ls()
     keys_to_remove <- grep("^Last\\.value\\.", perl=TRUE, x=df$Key, value=TRUE)
     # TODO: Why are there duplicates?  Probably a bug.
-    unique_keys_to_remove = unique(keys_to_remove)
-    if (length(unique_keys_to_remove) > 0) {
-        h2o.rm(unique_keys_to_remove)
-    }
+    h2o.rm(unique(keys_to_remove))
 }
 
 for (i in 1:nrow(slices)) {

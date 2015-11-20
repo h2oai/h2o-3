@@ -34,7 +34,7 @@ Grid search in R provides the following capabilities:
 
 ###Example
 
-```R
+```r
 ntrees_opts = c(1, 5)
 learn_rate_opts = c(0.1, 0.01)
 hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
@@ -43,6 +43,30 @@ grid_models <- lapply(grid@model_ids, function(mid) {
     model = h2o.getModel(mid)
   })
 ```
+
+For more information, refer to the [R grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R). 
+
+##Grid Search in Python
+
+- Class is `H2OGridSearch`
+- `<grid_name>.show()`: Display a list of models (including model IDs, hyperparameters, and MSE) explored by grid search  (where `<grid_name>` is an instance of an `H2OGridSearch` class)
+- `grid_search = H2OGridSearch(<model_type), hyper_params=hyper_parameters)`: Start a new grid search parameterized by:
+	- `model_type` is the type of H2O estimator model with its unchanged parameters 
+	- `hyper_params` in Python is a dictionary of string parameters (keys) and a list of values to be explored by grid search (values) (e.g., `{'ntrees':[1,100], 'learn_rate':[0.1, 0.001]}`
+
+###Example
+
+
+```python
+ hyper_parameters = {'ntrees':[10,50], 'max_depth':[20,10]}
+  grid_search = H2OGridSearch(H2ORandomForestEstimator, hyper_params=hyper_parameters)
+  grid_search.train(x=["x1", "x2"], y="y", training_frame=train)
+  grid_search.show()
+
+```
+
+For more information, refer to the [Python grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py). 
+
 
 ##Grid Search Java API
 

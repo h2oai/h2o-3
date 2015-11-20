@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import hex.Distribution;
 import hex.Model;
+import hex.ScoreKeeper;
 import water.H2O;
 import static water.H2O.technote;
 import water.exceptions.H2OIllegalArgumentException;
@@ -16,6 +17,11 @@ import java.util.Arrays;
  * Deep Learning Parameters
  */
 public class DeepLearningParameters extends Model.Parameters {
+  @Override protected double defaultStoppingTolerance() { return 0; }
+  public DeepLearningParameters() {
+    super();
+    _stopping_rounds = 5;
+  }
 
   @Override
   public double missingColumnsType() {
@@ -78,7 +84,7 @@ public class DeepLearningParameters extends Model.Parameters {
    */
   public long _train_samples_per_iteration = -2;
 
-  public double _target_ratio_comm_to_comp = 0.02;
+  public double _target_ratio_comm_to_comp = 0.05;
 
   /**
    * The random seed controls sampling and initialization. Reproducible
@@ -91,6 +97,7 @@ public class DeepLearningParameters extends Model.Parameters {
    * still lead to some weak sense of determinism in the model.
    */
   public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
+  @Override protected long nFoldSeed() { return _seed; }
 
 /*Adaptive Learning Rate*/
   /**
@@ -614,6 +621,9 @@ public class DeepLearningParameters extends Model.Parameters {
       if (_elastic_averaging_regularization < 0)
         dl.error("_elastic_averaging_regularization", "Elastic averaging regularization strength must be >= 0.");
     }
+    if (_autoencoder && _stopping_metric != ScoreKeeper.StoppingMetric.AUTO && _stopping_metric != ScoreKeeper.StoppingMetric.MSE) {
+      dl.error("_stopping_metric", "Stopping metric must either be AUTO or MSE for autoencoder.");
+    }
   }
 
   static class Sanity {
@@ -631,6 +641,9 @@ public class DeepLearningParameters extends Model.Parameters {
             "_score_validation_sampling",
             "_classification_stop",
             "_regression_stop",
+            "_stopping_rounds",
+            "_stopping_metric",
+            "_stopping_tolerance",
             "_quiet_mode",
             "_max_confusion_matrix_size",
             "_max_hit_ratio_k",
@@ -758,7 +771,8 @@ public class DeepLearningParameters extends Model.Parameters {
                 if (fAfter.get(newP) == null || fBefore.get(actualNewP) == null || !fBefore.get(actualNewP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
                   if (fBefore.get(actualNewP) == null && fAfter.get(newP) == null)
                     continue; //if both parameters are null, we don't need to do anything
-                  Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
+                  if (!actualNewP._quiet_mode)
+                    Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
                   fBefore.set(actualNewP, fAfter.get(newP));
                 }
               } catch (IllegalAccessException e) {
@@ -793,24 +807,29 @@ public class DeepLearningParameters extends Model.Parameters {
         toParms._hidden_dropout_ratios = fromParms._hidden_dropout_ratios.clone();
       }
       if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
-        Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
+        if (!fromParms._quiet_mode)
+          Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
         toParms._replicate_training_data = false;
       }
       if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
-        Log.info("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
+        if (!fromParms._quiet_mode)
+          Log.info("_single_node_mode: Disabling single_node_mode (only for multi-node operation with replicated training data).");
         toParms._single_node_mode = false;
       }
       if (!fromParms._use_all_factor_levels && fromParms._autoencoder) {
-        Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
+        if (!fromParms._quiet_mode)
+          Log.info("_use_all_factor_levels: Automatically enabling all_factor_levels for auto-encoders.");
         toParms._use_all_factor_levels = true;
       }
       if (fromParms._overwrite_with_best_model && fromParms._nfolds != 0) {
-        Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
+        if (!fromParms._quiet_mode)
+          Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
         toParms._overwrite_with_best_model = false;
       }
       if (fromParms._adaptive_rate) {
-        Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
-                + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable.");
+        if (!fromParms._quiet_mode)
+          Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "
+                  + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable.");
         toParms._rate = 0;
         toParms._rate_decay = 0;
         toParms._rate_annealing = 0;
@@ -818,22 +837,30 @@ public class DeepLearningParameters extends Model.Parameters {
         toParms._momentum_ramp = 0;
         toParms._momentum_stable = 0;
       } else {
-        Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
-                + "rho, epsilon.");
+        if (!fromParms._quiet_mode)
+          Log.info("_adaptive_rate: Using manual learning rate. Ignoring the following input parameters: "
+                  + "rho, epsilon.");
         toParms._rho = 0;
         toParms._epsilon = 0;
       }
       if (fromParms._activation == Activation.Rectifier || fromParms._activation == Activation.RectifierWithDropout) {
         if (fromParms._max_w2 == Float.POSITIVE_INFINITY) {
-          Log.info("_max_w2: Automatically setting max_w2 to 1000 to keep (unbounded) Rectifier activation in check.");
+          if (!fromParms._quiet_mode)
+            Log.info("_max_w2: Automatically setting max_w2 to 1000 to keep (unbounded) Rectifier activation in check.");
           toParms._max_w2 = 1e3f;
         }
       }
       if (fromParms._nfolds != 0) {
         if (fromParms._overwrite_with_best_model) {
-          Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+          if (!fromParms._quiet_mode)
+            Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;
         }
+      }
+      if (fromParms._autoencoder && fromParms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
+        if (!fromParms._quiet_mode)
+          Log.info("_stopping_metric: Automatically setting stopping_metric to MSE for autoencoder.");
+        toParms._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
       }
 
       // Automatically set the distribution
@@ -886,8 +913,9 @@ public class DeepLearningParameters extends Model.Parameters {
         }
       }
       if (fromParms._reproducible) {
-        Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
-                + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
+        if (!fromParms._quiet_mode)
+          Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
+                  + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
         toParms._force_load_balance = true;
         toParms._single_node_mode = false;
         toParms._train_samples_per_iteration = -1;

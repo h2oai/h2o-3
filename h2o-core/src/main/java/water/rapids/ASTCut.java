@@ -4,6 +4,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 public class ASTCut extends ASTPrim {
   @Override
@@ -73,7 +74,7 @@ public class ASTCut extends ASTPrim {
           }
         }
       }
-    }.doAll(1, fr).outputFrame(fr.names(), domains);
+    }.doAll(1, Vec.T_NUM, fr).outputFrame(fr.names(), domains);
     return new ValFrame(fr2);
   }
 

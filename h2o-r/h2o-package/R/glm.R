@@ -52,6 +52,11 @@
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
 #' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
+
+#' @param objective_epsilon Convergence criteria. Converge if relative change in objective function is below this threshold.
+#' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold.
+#' @param non_negative Logical, allow only positive coefficients.
+#' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are co-linear predictors.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -66,6 +71,7 @@
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}}, \code{\link{h2o.logloss}},
 #'          \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
 #' @examples
+#' \donttest{
 #' h2o.init()
 #'
 #' # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
@@ -79,16 +85,16 @@
 #' h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
 #'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #'
-#' \donttest{
-#'  # GLM variable importance
-#'  # Also see:
-#'  #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-#'  data.hex = h2o.importFile(
-#'    path = "https://raw.github.com/h2oai/h2o/master/smalldata/bank-additional-full.csv",
-#'    destination_frame = "data.hex")
-#'  myX = 1:20
-#'  myY="y"
-#'  my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
+#'
+#' # GLM variable importance
+#' # Also see:
+#' #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
+#' data.hex = h2o.importFile(
+#'   path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
+#'   destination_frame = "data.hex")
+#' myX = 1:20
+#' myY="y"
+#' my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
 #'                  lambda_search=TRUE)
 #' }
 #' @export
@@ -116,14 +122,21 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     offset_column = NULL,
                     weights_column = NULL,
                     intercept = TRUE,
-                    max_active_predictors = -1)
+                    max_active_predictors = -1,
+                    objective_epsilon = -1,
+                    gradient_epsilon = -1,
+                    non_negative = FALSE,
+                    compute_p_values = FALSE)
 {
-  if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
-        stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
-      if (inherits(beta_constraints, "data.frame")) {
+  # if (!is.null(beta_constraints)) {
+  #     if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
+  #       stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
+  #     if (inherits(beta_constraints, "data.frame")) {
+  #       beta_constraints <- as.h2o(beta_constraints)
+  #     }
+  # }
+  if (inherits(beta_constraints, "data.frame")) {
         beta_constraints <- as.h2o(beta_constraints)
-      }
   }
 
   if (!is.Frame(training_frame))
@@ -164,16 +177,17 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
   if( !missing(max_active_predictors) )     parms$max_active_predictors  <- max_active_predictors
-
+  if( !missing(objective_epsilon) )         parms$objective_epsilon      <- objective_epsilon
+  if( !missing(gradient_epsilon) )          parms$gradient_epsilon       <- gradient_epsilon
+  if( !missing(non_negative) )              parms$non_negative           <- non_negative
+  if( !missing(compute_p_values) )          parms$compute_p_values       <- compute_p_values
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
   if (!missing(nfolds) && nfolds > 1)
     parms$nfolds <- nfolds
-  if(!missing(beta_constraints)){
-    .eval.frame(beta_constraints)
+  if(!missing(beta_constraints))
     parms$beta_constraints <- beta_constraints
-  }
   m <- .h2o.modelJob('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
@@ -187,7 +201,6 @@ h2o.glm <- function(x, y, training_frame, model_id,
 #' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
-   cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
    res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
    m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
@@ -201,81 +214,81 @@ h2o.makeGLMModel <- function(model,beta) {
 #' @inheritParams h2o.glm
 #' @return Returns a \linkS4class{H2OModelFuture} class object.
 #' @export
-h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
-                    #AUTOGENERATED Params
-                    max_iterations = 50,
-                    beta_epsilon = 0,
-                    solver = c("IRLSM", "L_BFGS"),
-                    standardize = TRUE,
-                    family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
-                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
-                    tweedie_variance_power = NaN,
-                    tweedie_link_power = NaN,
-                    alpha = 0.5,
-                    prior = 0.0,
-                    lambda = 1e-05,
-                    lambda_search = FALSE,
-                    nlambdas = -1,
-                    lambda_min_ratio = 1.0,
-                    nfolds = 0,
-                    beta_constraints = NULL,
-                    ...
-                    )
-{
-  if (!is.null(beta_constraints)) {
-      if (!inherits(beta_constraints, "data.frame") && !is.Frame("Frame"))
-        stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
-      if (inherits(beta_constraints, "data.frame")) {
-        beta_constraints <- as.h2o(beta_constraints)
-      }
-  }
-
-  if (!is.Frame(training_frame))
-      tryCatch(training_frame <- h2o.getFrame(training_frame),
-               error = function(err) {
-                 stop("argument \"training_frame\" must be a valid Frame or model ID")
-              })
-
-    parms <- list()
-    args <- .verify_dataxy(training_frame, x, y)
-    parms$ignored_columns <- args$x_ignore
-    parms$response_column <- args$y
-    parms$training_frame  = training_frame
-    parms$beta_constraints = beta_constraints
-    if(!missing(model_id))
-      parms$model_id <- model_id
-    if(!missing(validation_frame))
-      parms$validation_frame <- validation_frame
-    if(!missing(max_iterations))
-      parms$max_iterations <- max_iterations
-    if(!missing(beta_epsilon))
-      parms$beta_epsilon <- beta_epsilon
-    if(!missing(solver))
-      parms$solver <- solver
-    if(!missing(standardize))
-      parms$standardize <- standardize
-    if(!missing(family))
-      parms$family <- family
-    if(!missing(link))
-      parms$link <- link
-    if(!missing(tweedie_variance_power))
-      parms$tweedie_variance_power <- tweedie_variance_power
-    if(!missing(tweedie_link_power))
-      parms$tweedie_link_power <- tweedie_link_power
-    if(!missing(alpha))
-      parms$alpha <- alpha
-    if(!missing(prior))
-      parms$prior <- prior
-    if(!missing(lambda))
-      parms$lambda <- lambda
-    if(!missing(lambda_search))
-      parms$lambda_search <- lambda_search
-    if(!missing(nlambdas))
-      parms$nlambdas <- nlambdas
-    if(!missing(lambda_min_ratio))
-      parms$lambda_min_ratio <- lambda_min_ratio
-    if(!missing(nfolds))
-      parms$nfolds <- nfolds
-
-    .h2o.startModelJob('glm', parms, h2oRestApiVersion=.h2o.__REST_API_VERSION)
-}
+#h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
+#                    #AUTOGENERATED Params
+#                    max_iterations = 50,
+#                    beta_epsilon = 0,
+#                    solver = c("IRLSM", "L_BFGS"),
+#                    standardize = TRUE,
+#                    family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
+#                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
+#                    tweedie_variance_power = NaN,
+#                    tweedie_link_power = NaN,
+#                    alpha = 0.5,
+#                    prior = 0.0,
+#                    lambda = 1e-05,
+#                    lambda_search = FALSE,
+#                    nlambdas = -1,
+#                    lambda_min_ratio = 1.0,
+#                    nfolds = 0,
+#                    beta_constraints = NULL,
+#                    ...
+#                    )
+#{
+#  # if (!is.null(beta_constraints)) {
+#  #     if (!inherits(beta_constraints, "data.frame") && !is.Frame("Frame"))
+#  #       stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
+#  #     if (inherits(beta_constraints, "data.frame")) {
+#  #       beta_constraints <- as.h2o(beta_constraints)
+#  #     }
+#  # }
+#
+#  if (!is.Frame(training_frame))
+#      tryCatch(training_frame <- h2o.getFrame(training_frame),
+#               error = function(err) {
+#                 stop("argument \"training_frame\" must be a valid Frame or model ID")
+#              })
+#
+#    parms <- list()
+#    args <- .verify_dataxy(training_frame, x, y)
+#    parms$ignored_columns <- args$x_ignore
+#    parms$response_column <- args$y
+#    parms$training_frame  = training_frame
+#    parms$beta_constraints = beta_constraints
+#    if(!missing(model_id))
+#      parms$model_id <- model_id
+#    if(!missing(validation_frame))
+#      parms$validation_frame <- validation_frame
+#    if(!missing(max_iterations))
+#      parms$max_iterations <- max_iterations
+#    if(!missing(beta_epsilon))
+#      parms$beta_epsilon <- beta_epsilon
+#    if(!missing(solver))
+#      parms$solver <- solver
+#    if(!missing(standardize))
+#      parms$standardize <- standardize
+#    if(!missing(family))
+#      parms$family <- family
+#    if(!missing(link))
+#      parms$link <- link
+#    if(!missing(tweedie_variance_power))
+#      parms$tweedie_variance_power <- tweedie_variance_power
+#    if(!missing(tweedie_link_power))
+#      parms$tweedie_link_power <- tweedie_link_power
+#    if(!missing(alpha))
+#      parms$alpha <- alpha
+#    if(!missing(prior))
+#      parms$prior <- prior
+#    if(!missing(lambda))
+#      parms$lambda <- lambda
+#    if(!missing(lambda_search))
+#      parms$lambda_search <- lambda_search
+#    if(!missing(nlambdas))
+#      parms$nlambdas <- nlambdas
+#    if(!missing(lambda_min_ratio))
+#      parms$lambda_min_ratio <- lambda_min_ratio
+#    if(!missing(nfolds))
+#      parms$nfolds <- nfolds
+#
+#    .h2o.startModelJob('glm', parms, h2oRestApiVersion=.h2o.__REST_API_VERSION)
+#}

@@ -1,16 +1,25 @@
 package water.util;
 
-import java.io.*;
+import jsr166y.CountedCompleter;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Random;
 
-import jsr166y.CountedCompleter;
-import water.*;
+import water.DKV;
+import water.H2O;
+import water.Job;
+import water.Key;
+import water.MRTask;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.parser.ParseSetup;
 
 public class FrameUtils {
 
@@ -44,13 +53,26 @@ public class FrameUtils {
    * @throws IOException in case of parse error.
    */
   public static Frame parseFrame(Key okey, URI ...uris) throws IOException {
+    return parseFrame(okey, null, uris);
+  }
+
+  public static Frame parseFrame(Key okey, ParseSetup parseSetup, URI ...uris) throws IOException {
     if (uris == null || uris.length == 0) {
       throw new IllegalArgumentException("List of uris is empty!");
     }
     if(okey == null) okey = Key.make(uris[0].toString());
     Key[] inKeys = new Key[uris.length];
     for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
-    return ParseDataset.parse(okey, inKeys);
+    // Return result
+    return parseSetup != null ? ParseDataset.parse(okey, inKeys, true, ParseSetup.guessSetup(inKeys, parseSetup))
+                              : ParseDataset.parse(okey, inKeys);
+  }
+
+  public static ParseSetup guessParserSetup(ParseSetup userParserSetup, URI ...uris) throws IOException {
+    Key[] inKeys = new Key[uris.length];
+    for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
+
+    return ParseSetup.guessSetup(inKeys, userParserSetup);
   }
 
   private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {

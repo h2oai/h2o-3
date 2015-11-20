@@ -69,7 +69,7 @@ public class EmptyChunkTest extends TestUtil {
     for (int i=0; i<numOfChunks; i++) {
       espc[i+1] = espc[i] + chunkLens[i];
     }
-    Assert.assertArrayEquals("Vector espc is wrong!", espc, vec._espc);
+    Assert.assertArrayEquals("Vector espc is wrong!", espc, vec.espc());
     Assert.assertEquals("Number of chunks in vec is wrong!", numOfChunks, vec.nChunks());
 
     for (int i=0; i<numOfChunks; i++) {

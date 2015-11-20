@@ -65,3 +65,24 @@ class H2OTwoDimTable(object):
         else:  # string?
           continue
     return zip(*values)  # transpose the values! <3 splat ops
+
+  def __getitem__(self, item):
+    if item in self.col_header: #single col selection returns list
+      return list(zip(*self.cell_values)[self.col_header.index(item)])
+    elif isinstance(item, slice): #row selection if item is slice returns H2OTwoDimTable
+      self.cell_values = [self.cell_values[ii] for ii in xrange(*item.indices(len(self.cell_values)))]
+      return self
+    elif isinstance(item, list) and set(item).issubset(self.col_header): #multiple col selection returns list of cols
+      return [list(zip(*self.cell_values)[self.col_header.index(i)]) for i in item]
+    else:
+      raise TypeError('can not support getting item for ' + str(item))
+
+  def __setitem__(self, key, value):
+    cols = zip(*self.cell_values)
+    if len(cols[0]) != len(value): raise ValueError('value must be same length as columns')
+    if key not in self.col_header:
+      self.col_header.append(key)
+      cols.append(tuple(value))
+    else:
+      cols[self.col_header.index(key)] = value
+    self.cell_values = [list(x) for x in zip(*cols)]

@@ -43,6 +43,7 @@ public class H2OTestRunner {
     jcore.addListener(new XMLTestReporter());
     Result result = jcore.run(classes.toArray(new Class[0]));
     for (Failure each : missingClasses) {
+      System.err.println("FAIL Missing class in H2OTestRunner: " + each);
       result.getFailures().add(each);
     }
     return result;

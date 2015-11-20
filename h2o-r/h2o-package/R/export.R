@@ -66,6 +66,7 @@ h2o.exportHDFS <- function(object, path, force=FALSE) { h2o.exportFile(object,pa
 #' @param filename A string indicating the name that the CSV file should be
 #'        should be saved to.
 #' @examples
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
@@ -75,13 +76,14 @@ h2o.exportHDFS <- function(object, path, force=FALSE) { h2o.exportFile(object,pa
 #' h2o.downloadCSV(iris.hex, myFile)
 #' file.info(myFile)
 #' file.remove(myFile)
+#' }
 #' @export
 h2o.downloadCSV <- function(data, filename) {
   if (!is.Frame(data))
     stop("`data` must be an H2O Frame object")
 
   conn = h2o.getConnection()
-  str <- paste0('http://', conn@ip, ':', conn@port, '/3/DownloadDataset?frame_id=', attr(.eval.frame(data), "id"))
+  str <- paste0('http://', conn@ip, ':', conn@port, '/3/DownloadDataset?frame_id=', h2o.getId(data))
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))
@@ -130,7 +132,6 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
-  force <- as.integer(force)
   path <- file.path(path, object@model_id)
   res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
   res$dir

@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from tests import pyunit_utils
 ##
 # Test out the dim functionality
 # If data frame, get back a vector of two numbers: [1] nrows ncols
@@ -5,9 +9,9 @@
 # If not a frame, expect NULL
 ##
 
-import sys
-sys.path.insert(1, "../../../")
-import h2o, tests
+
+
+
 import numpy as np
 
 def dim_checks():
@@ -15,8 +19,8 @@ def dim_checks():
   
 
   # Log.info("Uploading logreg/princeton/cuse.dat")
-  h2o_data = h2o.import_file(path=tests.locate("smalldata/logreg/prostate.csv"))
-  np_data = np.loadtxt(tests.locate("smalldata/logreg/prostate.csv"), delimiter=',', skiprows=1)
+  h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+  np_data = np.loadtxt(pyunit_utils.locate("smalldata/logreg/prostate.csv"), delimiter=',', skiprows=1)
 
   h2o_rows, h2o_cols = h2o_data.dim
   np_rows, np_cols = list(np_data.shape)
@@ -45,5 +49,9 @@ def dim_checks():
 
   assert h2oColAmpFive.nrow == h2o_rows, "expected the number of rows to remain unchanged"
 
+
+
 if __name__ == "__main__":
-  tests.run_test(sys.argv, dim_checks)
+    pyunit_utils.standalone_test(dim_checks)
+else:
+    dim_checks()

@@ -10,7 +10,6 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -466,7 +465,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // Called from either a F/J thread (generally with a UDP packet) or from the
   // TCPReceiver thread.
   static void remote_exec( AutoBuffer ab ) {
-    long lo = ab.get8(0), hi = ab.get8(8);
+    long lo = ab.get8(0), hi = ab._size >= 16 ? ab.get8(8) : 0;
     final int task = ab.getTask();
     final int flag = ab.getFlag();
     assert flag==CLIENT_UDP_SEND || flag==CLIENT_TCP_SEND; // Client-side send
@@ -580,6 +579,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     return ab.clearForWriting(H2O.ACK_ACK_PRIORITY).putTask(UDP.udp.ackack.ordinal(),tnum);
   }
   protected AutoBuffer response( AutoBuffer ab ) {
+
     assert _tasknum==ab.getTask();
     if( _done ) {
       if(!ab.hasTCP())
@@ -599,7 +599,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           _dt.read(ab);             // Read the answer (under lock?)
           _size_rez = ab.size();    // Record received size
           ab.close();               // Also finish the read (under lock?  even if canceled, since need to drain TCP)
-          if (!isCancelled())      // Can be canceled already (locally by MRTask while recieving remote answer)
+          if (!isCancelled())       // Can be canceled already (locally by MRTask while recieving remote answer)
             _dt.onAck();            // One time only execute (before sending ACKACK)
           _done = true;             // Only read one (of many) response packets
           _sentMsg = null;
@@ -618,19 +618,25 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     final Exception e = _dt.getDException();
     // Also notify any and all pending completion-style tasks
     if( _fjtasks != null )
-      for( final H2OCountedCompleter task : _fjtasks )
+      for( final H2OCountedCompleter task : _fjtasks ) {
         H2O.submitTask(new H2OCountedCompleter() {
-            @Override public void compute2() {
-              if(e != null) // re-throw exception on this side as if it happened locally
-                task.completeExceptionally(e);
-              else try {
-                  task.tryComplete();
-                } catch(Throwable e) {
-                  task.completeExceptionally(e);
-                }
+          @Override
+          public void compute2() {
+            if (e != null) // re-throw exception on this side as if it happened locally
+              task.completeExceptionally(e);
+            else try {
+              task.__tryComplete(_dt);
+            } catch (Throwable e) {
+              task.completeExceptionally(e);
             }
-            @Override public byte priority() { return task.priority(); }
-          });
+          }
+
+          @Override
+          public byte priority() {
+            return task.priority();
+          }
+        });
+      }
   }
 
   // ---
