@@ -3,6 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.grid.grid_search import H2OGridSearch
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 def fiftycatRF():
 
@@ -11,7 +12,7 @@ def fiftycatRF():
   train["y"] = train["y"].asfactor()
 
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   # Train H2O DRF Grid:
   hyper_parameters = {'ntrees':[10,50], 'max_depth':[20,10]}
@@ -19,6 +20,7 @@ def fiftycatRF():
   model.show()
   model.train(x=["x1", "x2"], y="y", training_frame=train)
   model.show()
+  model.summary()
 
 
 

@@ -2,15 +2,15 @@ import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 
 def tweedie_weights():
 
   data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/cancar_logIn.csv"))
-  data["C1M3"] = (data["Class"] == 1 and data["Merit"] == 3).asfactor()
-  data["C3M3"] = (data["Class"] == 3 and data["Merit"] == 3).asfactor()
-  data["C4M3"] = (data["Class"] == 4 and data["Merit"] == 3).asfactor()
-  data["C1M2"] = (data["Class"] == 1 and data["Merit"] == 2).asfactor()
+  data["C1M3"] = ((data["Class"] == 1) & (data["Merit"] == 3)).asfactor()
+  data["C3M3"] = ((data["Class"] == 3) & (data["Merit"] == 3)).asfactor()
+  data["C4M3"] = ((data["Class"] == 4) & (data["Merit"] == 3)).asfactor()
+  data["C1M2"] = ((data["Class"] == 1) & (data["Merit"] == 2)).asfactor()
   data["Merit"] = data["Merit"].asfactor()
   data["Class"] = data["Class"].asfactor()
   loss = data["Cost"] / data["Insured"]
@@ -20,7 +20,7 @@ def tweedie_weights():
   # Without weights
   myX = ["Merit","Class","C1M3","C4M3"]
 
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
   dl = H2ODeepLearningEstimator(distribution="tweedie",hidden=[1],epochs=1000,
                                 train_samples_per_iteration=-1,reproducible=True,
                                 activation="Tanh",balance_classes=False,

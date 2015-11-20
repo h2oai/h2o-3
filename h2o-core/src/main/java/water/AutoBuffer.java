@@ -521,7 +521,6 @@ public /* final */ class AutoBuffer {
   private int udpSend() throws IOException {
     assert _chan == null;
     TimeLine.record_send(this,false);
-    // assert _size == 0;
     _size = _bb.position();
     assert _size < AutoBuffer.BBP_SML.size();
     _bb.flip();                 // Flip for sending
@@ -1122,17 +1121,6 @@ public /* final */ class AutoBuffer {
     for( int i=x; i<x+y; i++ ) ary[i] = getA8d();
     return ary;
   }
-    @SuppressWarnings("unused")  public byte[][][] getAAA1( ) {
-        //_arys++;
-        long xy = getZA();
-        if( xy == -1 ) return null;
-        int x=(int)(xy>>32);         // Leading nulls
-        int y=(int)xy;               // Middle non-zeros
-        int z = y==0 ? 0 : getInt(); // Trailing nulls
-        byte[][][] ary  = new byte[x+y+z][][];
-        for( int i=x; i<x+y; i++ ) ary[i] = getAA1();
-        return ary;
-    }
   @SuppressWarnings("unused")  public int[][][] getAAA4( ) {
     //_arys++;
     long xy = getZA();
@@ -1361,15 +1349,6 @@ public /* final */ class AutoBuffer {
     int x=(int)(xy>>32);
     int y=(int)xy;
     for( int i=x; i<x+y; i++ ) putA8d(ary[i]);
-    return this;
-  }
-  public AutoBuffer putAAA1( byte[][][] ary ) {
-    //_arys++;
-    long xy = putZA(ary);
-    if( xy == -1 ) return this;
-    int x=(int)(xy>>32);
-    int y=(int)xy;
-    for( int i=x; i<x+y; i++ ) putAA1(ary[i]);
     return this;
   }
   public AutoBuffer putAAA4( int[][][] ary ) {
@@ -1646,20 +1625,9 @@ public /* final */ class AutoBuffer {
     }
     return put1(']');
   }
-    private AutoBuffer putJSONAAA1(byte ary[][][]) {
-        if( ary == null ) return putJNULL();
-        put1('[');
-        for( int i=0; i<ary.length; i++ ) {
-            if( i>0 ) put1(',');
-            putJSONAA1(ary[i]);
-        }
-        return put1(']');
-    }
-
   @SuppressWarnings("unused")  public AutoBuffer putJSON1  (String name, byte b    ) { return putJSONStr(name).put1(':').putJSON1(b); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONA1 (String name, byte b[]  ) { return putJSONStr(name).put1(':').putJSONA1(b); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAA1(String name, byte b[][]) { return putJSONStr(name).put1(':').putJSONAA1(b); }
-  @SuppressWarnings("unused")  public AutoBuffer putJSONAAA1(String name, byte b[][][]) { return putJSONStr(name).put1(':').putJSONAAA1(b); }
 
   public AutoBuffer putJSONAEnum(String name, Enum[] enums) {
     return putJSONStr(name).put1(':').putJSONAEnum(enums);

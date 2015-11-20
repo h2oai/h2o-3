@@ -3,12 +3,10 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 
-
-
-
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import Imputer
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 def benignKmeans():
   # Connect to a pre-existing cluster
@@ -26,7 +24,7 @@ def benignKmeans():
 
   # Log.info(paste("H2O K-Means with ", i, " clusters:\n", sep = ""))
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
 
   for i in range(1,7):
     benign_h2o_km = H2OKMeansEstimator(k=i)

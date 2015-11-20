@@ -11,6 +11,10 @@ import water.fvec.Vec;
  */
 public class ChunkSummary extends MRTask<ChunkSummary> {
 
+  private final byte _priority; // Allow higher priority for GUI work
+  ChunkSummary() {  _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY - 2; }
+  @Override public byte priority() { return _priority; }
+
   // static list of chunks for which statistics are to be gathered
   final transient static String[] chunkTypes = new String[]{
     "C0L",

@@ -20,9 +20,10 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
       "pca_method",
       "k",
       "max_iterations",
-      "seed",
       "use_all_factor_levels",
-      "compute_metrics"
+      "compute_metrics",
+      "impute_missing",
+      "seed"
     };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true)  // TODO: pull out of categorical class
@@ -45,5 +46,8 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
 
     @API(help = "Whether to compute metrics on the training data", direction = API.Direction.INOUT)
     public boolean compute_metrics;
+
+    @API(help = "Whether to impute missing entries with the column mean", direction = API.Direction.INOUT)
+    public boolean impute_missing;
   }
 }

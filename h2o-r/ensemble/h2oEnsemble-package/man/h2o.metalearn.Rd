@@ -157,7 +157,7 @@ cvAUC::AUC(predictions = predictions, labels = labels)
 
 # We see that on this dataset & base learner combination,
 # that an ensemble with a GLM metalearner performs better, 
-# in terms of test set AUC, than an emseble wtih a GBM metalearner.
+# in terms of test set AUC, than an ensemble with a GBM metalearner.
 
 }
 }

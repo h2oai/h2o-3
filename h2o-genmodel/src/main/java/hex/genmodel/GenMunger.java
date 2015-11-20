@@ -8,15 +8,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class GenMunger implements Serializable {
-  protected Step[] _steps;
+  public Step[] _steps;
   public String[] inTypes() { return _steps[0].types(); }
   public String[] inNames() { return _steps[0].names(); }
-  public abstract class Step<T> {
+  public String[] outNames() { return _steps[_steps.length-1].outNames(); }
+  public abstract class Step<T> implements Serializable {
     private final String[] _names;
     private final String[] _types;
+    private final String[] _outNames;
     protected HashMap<String, String[]> _params;
     public abstract RowData transform(RowData row);
-    public Step(String[] inNames, String[] inTypes) {_names=inNames; _types=inTypes; _params = new HashMap<>(); }
+    public Step(String[] inNames, String[] inTypes, String[] outNames) {_names=inNames; _types=inTypes; _outNames=outNames; _params = new HashMap<>(); }
+    public String[] outNames() { return _outNames; }
     public String[] names() { return _names; }
     public String[] types() { return _types; }
     public HashMap<String,String[]> params() { return _params; }
@@ -36,11 +39,15 @@ public class GenMunger implements Serializable {
     return row;
   }
 
+  private static Double parseNum(String n){
+    if(n==null || n.equals("") || n.isEmpty()) return Double.NaN;
+    return Double.valueOf(n);
+  }
+
   private static Object valueOf(String type, String val) {
+    val = val.replaceAll("^\"|\"$", ""); // strip any bounding quotes
     return type.equals("Numeric")
-            ? val.equals("")
-              ? Double.NaN
-              : Double.valueOf(val)
+            ? parseNum(val)
             : val;
   }
 
@@ -67,45 +74,45 @@ public class GenMunger implements Serializable {
   public static double add(double d, HashMap<String, String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
     String[] riteArg = parameters.get("rightArg");
-    if( leftArg==null ) return d + Double.valueOf(riteArg[0]);
-    return Double.valueOf(leftArg[0]) + d;
+    if( leftArg==null ) return d + parseNum(riteArg[0]);
+    return parseNum(leftArg[0]) + d;
   }
   public static double minus(double d, HashMap<String, String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
     String[] riteArg = parameters.get("rightArg");
-    if( leftArg==null ) return d - Double.valueOf(riteArg[0]);
-    return Double.valueOf(leftArg[0]) - d;
+    if( leftArg==null ) return d - parseNum(riteArg[0]);
+    return parseNum(leftArg[0]) - d;
   }
   public static double multiply(double d, HashMap<String,String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
     String[] riteArg = parameters.get("rightArg");
-    if( leftArg==null ) return d * Double.valueOf(riteArg[0]);
-    return Double.valueOf(leftArg[0]) * d;
+    if( leftArg==null ) return d * parseNum(riteArg[0]);
+    return parseNum(leftArg[0]) * d;
   }
   public static double divide(double d, HashMap<String,String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
     String[] riteArg = parameters.get("rightArg");
-    if( leftArg==null ) return d / Double.valueOf(riteArg[0]);
-    return Double.valueOf(leftArg[0]) / d;
+    if( leftArg==null ) return d / parseNum(riteArg[0]);
+    return parseNum(leftArg[0]) / d;
   }
   public static double mod(double d, HashMap<String,String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
     String riteArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return d % Double.valueOf(riteArg);
-    return Double.valueOf(leftArg) % d;
+    if( leftArg==null ) return d % parseNum(riteArg);
+    return parseNum(leftArg) % d;
   }
   public static double pow(double d, HashMap<String, String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
     String riteArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return Math.pow(d,Double.valueOf(riteArg));
-    return Math.pow(Double.valueOf(leftArg),d);
+    if( leftArg==null ) return Math.pow(d,parseNum(riteArg));
+    return Math.pow(parseNum(leftArg),d);
   }
   public static String[] strsplit(String s, HashMap<String,String[]> parameters) {
     String pattern = parameters.get("split")[0];
     return s.split(pattern);
   }
   public static double asnumeric(String s, HashMap<String, String[]> parameters) {
-    return Double.valueOf(s);
+    return parseNum(s);
   }
   public static String trim(String s, HashMap<String, String[]> parameters) {
     return s.trim();
@@ -129,15 +136,15 @@ public class GenMunger implements Serializable {
     String[] labels = parameters.get("labels");
     boolean lowest = parameters.get("include_lowest")[0].equals("TRUE");
     boolean rite = parameters.get("right")[0].equals("TRUE");
-    if( Double.isNaN(d) || (lowest && d < Double.valueOf(breaks[0]))
-            || (!lowest && d <= Double.valueOf(breaks[0]))
-            || (rite    && d >  Double.valueOf(breaks[breaks.length-1]))
-            || (!rite   && d >= Double.valueOf(breaks[breaks.length-1]))) return "";
+    if( Double.isNaN(d) || (lowest && d < parseNum(breaks[0]))
+            || (!lowest && d <= parseNum(breaks[0]))
+            || (rite    && d >  parseNum(breaks[breaks.length-1]))
+            || (!rite   && d >= parseNum(breaks[breaks.length-1]))) return "";
     else {
       for(int i=1;i<breaks.length;++i) {
         if( rite )
-          if( d <= Double.valueOf(breaks[i]) ) return labels[i-1];
-        else if( d < Double.valueOf(breaks[i]) ) return labels[i-1];
+          if( d <= parseNum(breaks[i]) ) return labels[i-1];
+        else if( d < parseNum(breaks[i]) ) return labels[i-1];
       }
     }
     return "";

@@ -267,7 +267,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     long t0 = System.nanoTime();
     Futures fs = new Futures();
     for (int msb =0; msb <_o.length /*256*/; ++msb) {   // TODO this can be done in parallel, surely
-      // “I found my A’s (msb=0) and now I'll send them to the node doing all the A's”
+      // "I found my A's (msb=0) and now I'll send them to the node doing all the A's"
       // "I'll send you a long vector of _o and _x (batched if very long) along with where the boundaries are."
       // "You don't need to know the chunk numbers of these boundaries, because you know the node of each chunk from your local Vec header"
       if(_o[msb] == null) continue;

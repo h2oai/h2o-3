@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.kmeans import H2OKMeansEstimator
 
 
 import random
@@ -17,7 +17,7 @@ def init_err_casesKmeans():
   numcol = benign_h2o.ncol
   numrow = benign_h2o.nrow
 
-  from h2o.estimators.kmeans import H2OKMeansEstimator
+
   # Log.info("Non-numeric entry that isn't 'Random', 'PlusPlus', or 'Furthest'")
   try:
     H2OKMeansEstimator(k=5, init='Test123').train(x=range(numcol), training_frame=benign_h2o)

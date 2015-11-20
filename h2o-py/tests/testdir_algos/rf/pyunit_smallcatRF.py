@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -33,7 +33,7 @@ def smallcatRF():
 
   # Train H2O GBM Model:
   #Log.info("H2O GBM (Naive Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
   rf_h2o = H2ORandomForestEstimator(ntrees=1, max_depth=1, nbins=100)
   rf_h2o.train(x='X', y="y", training_frame=alphabet)
 

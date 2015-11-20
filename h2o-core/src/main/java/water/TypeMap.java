@@ -32,6 +32,7 @@ public class TypeMap {
     water.fvec.Vec.ESPC.class.getName(), // Used in TestUtil
 
     // Status pages looked at without locking the cloud
+    water.api.RequestSchema.class.getName(),
     CloudV3.class.getName(),
     CloudV3.NodeV3.class.getName(),
     water.H2OError.class.getName(),
@@ -54,6 +55,8 @@ public class TypeMap {
     water.api.MetadataBase.class.getName(),
     water.api.RouteV3.class.getName(),
     water.api.RouteBase.class.getName(),
+    water.api.ModelBuildersV3.class.getName(),
+    water.api.ModelBuildersBase.class.getName(),
     ShutdownTsk.class.getName(),
   };
   // Class name -> ID mapping

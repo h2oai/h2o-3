@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.transforms.decomposition import H2OPCA
 
 
 
@@ -13,7 +13,7 @@ def pca_scoring():
   arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
 
   print "Run PCA with transform = 'DEMEAN'"
-  from h2o.transforms.decomposition import H2OPCA
+
 
   fitH2O = H2OPCA(k = 4, transform = "DEMEAN")
   fitH2O.train(x=range(4), training_frame=arrestsH2O)

@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
 
@@ -13,7 +13,7 @@ def imbalanced():
   covtype = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
   covtype[54] = covtype[54].asfactor()
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   imbalanced = H2ORandomForestEstimator(ntrees=10, balance_classes=False, nfolds=3)
   imbalanced.train(x=range(54), y=54, training_frame=covtype)

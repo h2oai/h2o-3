@@ -84,7 +84,8 @@ public class RapidsTest extends TestUtil {
     tree = "(cols (rows a.hex [0:4 6 7]) [0])";
     checkTree(tree);
     // Checking `hex[c(8,1,1,7),1]`
-    tree = "(rows a.hex [8 1 1 7])";
+    // No longer handle dup or out-of-order rows
+    tree = "(rows a.hex [2 7 8])";
     checkTree(tree);
   }
 
@@ -473,7 +474,7 @@ public class RapidsTest extends TestUtil {
       exec_str("(tmp= nary_op_37 (merge subset_35 census.hex TRUE FALSE))", ses);
 
       // nary_op_38 = merge( nary_op_37 subset_36_2); Vecs in nary_op_38 and nary_pop_37 and X shared
-      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36_2 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8))))", ses);
+      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36_2 TRUE FALSE NULL NULL \"auto\")) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8))))", ses);
 
       // Standard "head of 10 rows" pattern for printing
       exec_str("(tmp= subset_44 (rows subset_41 [0:10]))", ses);

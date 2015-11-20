@@ -3,7 +3,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 import os
-
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 import random
 
 def milsong_checkpoint():
@@ -11,7 +11,7 @@ def milsong_checkpoint():
   milsong_train = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
   milsong_valid = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
 
-  from h2o.estimators.random_forest import H2ORandomForestEstimator
+
 
   # build first model
   ntrees1 = random.sample(range(50,100),1)[0]

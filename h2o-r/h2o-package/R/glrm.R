@@ -46,6 +46,10 @@
 #' @param max_iterations The maximum number of iterations to run the optimization loop.
 #'        Each iteration consists of an update of the X matrix, followed by an update
 #'        of the Y matrix.
+#' @param max_updates The maximum number of updates of X or Y to run. Each update consists
+#'        of an update of either the X matrix or the Y matrix. For example, if max_updates = 1
+#'        and max_iterations = 1, the algorithm will initialize X and Y, update X once, and
+#'        terminate without updating Y.
 #' @param init_step_size Initial step size. Divided by number of columns in the training
 #'        frame when calculating the proximal gradient update. The algorithm begins at
 #'        init_step_size and decreases the step size at each iteration until a
@@ -103,6 +107,7 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
                      gamma_x = 0,
                      gamma_y = 0,
                      max_iterations = 1000,
+                     max_updates = 2 * max_iterations,
                      init_step_size = 1.0,
                      min_step_size = 0.001,
                      init = c("Random", "PlusPlus", "SVD"),
@@ -159,6 +164,8 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     parms$gamma_y <- gamma_y
   if(!missing(max_iterations))
     parms$max_iterations <- max_iterations
+  if(!missing(max_updates))
+    parms$max_updates <- max_updates
   if(!missing(init_step_size))
     parms$init_step_size <- init_step_size
   if(!missing(min_step_size))
@@ -212,4 +219,71 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
   
   # Error check and build model
   .h2o.modelJob('glrm', parms, h2oRestApiVersion=3)
+}
+
+#' Reconstruct Training Data via H2O GLRM Model
+#' 
+#' Reconstruct the training data and impute missing values from the H2O GLRM model
+#' by computing the matrix product of X and Y, and transforming back to the original
+#' feature space by minimizing each column's loss function.
+#' 
+#' @param object An \linkS4class{H2ODimReductionModel} object that represents the
+#'        model to be used for reconstruction.
+#' @param data An H2O Frame object representing the training data for the H2O GLRM model.
+#'        Used to set the domain of each column in the reconstructed frame.
+#' @param reverse_transform (Optional) A logical value indicating whether to reverse the
+#'        transformation from model-building by re-scaling columns and adding back the 
+#'        offset to each column of the reconstructed frame.
+#' @return Returns an H2O Frame object containing the approximate reconstruction of the
+#'         training data;
+#' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.uploadFile(path = irisPath)
+#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, transform = "STANDARDIZE",
+#'                       loss = "Quadratic", multi_loss = "Categorical", max_iterations = 1000)
+#' iris.rec <- h2o.reconstruct(iris.glrm, iris.hex, reverse_transform = TRUE)
+#' head(iris.rec)
+#' }
+h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", reconstruct_train=TRUE, reverse_transform=reverse_transform)
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  h2o.getFrame(key)
+}
+
+#' Convert Archetypes to Features from H2O GLRM Model
+#'
+#' Project each archetype in a H2O GLRM model into the corresponding feature
+#' space from the H2O training frame.
+#'
+#' @param object An \linkS4class{H2ODimReductionModel} object that represents the
+#'        model containing archetypes to be projected.
+#' @param data An H2O Frame object representing the training data for the H2O GLRM model.
+#' @param reverse_transform (Optional) A logical value indicating whether to reverse the
+#'        transformation from model-building by re-scaling columns and adding back the 
+#'        offset to each column of the projected archetypes.
+#' @return Returns an H2O Frame object containing the projection of the archetypes
+#'         down into the original feature space, where each row is one archetype.
+#' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.uploadFile(path = irisPath)
+#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, loss = "Quadratic", 
+#'                       multi_loss = "Categorical", max_iterations = 1000)
+#' iris.parch <- h2o.proj_archetypes(iris.glrm, iris.hex)
+#' head(iris.parch)
+#' }
+#' @export
+h2o.proj_archetypes <- function(object, data, reverse_transform=FALSE) {
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", project_archetypes=TRUE, reverse_transform=reverse_transform)
+  key <- res$model_metrics[[1L]]$predictions$frame_id$name
+  h2o.getFrame(key)
 }
