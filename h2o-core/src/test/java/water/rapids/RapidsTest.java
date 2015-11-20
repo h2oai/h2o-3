@@ -272,7 +272,7 @@ public class RapidsTest extends TestUtil {
       r = new Frame(r);
       DKV.put(r);
       System.out.println(r);
-      String x = String.format("(merge %s %s #1 #0 )",l._key,r._key);
+      String x = String.format("(merge %s %s #1 #0 [] [] \"auto\")",l._key,r._key);
       Val res = Exec.exec(x);
       f = res.getFrame();
       System.out.println(f);
