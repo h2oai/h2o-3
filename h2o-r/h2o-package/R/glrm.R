@@ -248,6 +248,7 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
 #' iris.rec <- h2o.reconstruct(iris.glrm, iris.hex, reverse_transform = TRUE)
 #' head(iris.rec)
 #' }
+#' @export
 h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
   url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data))
   res <- .h2o.__remoteSend(url, method = "POST", reconstruct_train=TRUE, reverse_transform=reverse_transform)

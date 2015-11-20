@@ -52,6 +52,11 @@
 #'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
 #' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
+
+#' @param objective_epsilon Convergence criteria. Converge if relative change in objective function is below this threshold.
+#' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold.
+#' @param non_negative Logical, allow only positive coefficients.
+#' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are co-linear predictors.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a

@@ -55,6 +55,8 @@ public class TypeMap {
     water.api.MetadataBase.class.getName(),
     water.api.RouteV3.class.getName(),
     water.api.RouteBase.class.getName(),
+    water.api.ModelBuildersV3.class.getName(),
+    water.api.ModelBuildersBase.class.getName(),
     ShutdownTsk.class.getName(),
   };
   // Class name -> ID mapping
