@@ -1659,12 +1659,12 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' hex <- h2o.uploadFile(prosPath)
 #' hex[,2] <- as.factor(hex[,2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, validation_frame = hex, distribution = "bernoulli")
-#' h2o.gainsLift(model)           ## extract training metrics
-#' h2o.gainsLift(model, valid=T)  ## extract validation metrics
-#' h2o.gainsLift(model, hex)      ## score on potentially new data (here: the same)
+#' h2o.gainsLift(model)              ## extract training metrics
+#' h2o.gainsLift(model, valid=TRUE)  ## extract validation metrics
+#' h2o.gainsLift(model, hex)         ## score on potentially new data (here: the same)
 #' # Generating a ModelMetrics object
 #' perf <- h2o.performance(model, hex)
-#' h2o.gainsLift(perf)            ## extract from existing metrics object
+#' h2o.gainsLift(perf)               ## extract from existing metrics object
 #' }
 #' @export
 setGeneric("h2o.gainsLift", function(object, ...) {})
