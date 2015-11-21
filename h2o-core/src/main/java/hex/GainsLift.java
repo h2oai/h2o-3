@@ -3,6 +3,7 @@ package hex;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.*;
+import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -15,7 +16,6 @@ import java.util.*;
 
 public class GainsLift extends Iced {
   private double[] _quantiles;
-  private long _goodRows;
 
   //INPUT
   public int _groups = 20;
@@ -31,8 +31,12 @@ public class GainsLift extends Iced {
   TwoDimTable table;
 
   public GainsLift(Vec preds, Vec labels) {
+    this(preds, labels, null);
+  }
+  public GainsLift(Vec preds, Vec labels, Vec weights) {
     _preds = preds;
     _labels = labels;
+    _weights = weights;
   }
 
   private void init() throws IllegalArgumentException {
@@ -46,9 +50,9 @@ public class GainsLift extends Iced {
     if (_labels.cardinality() != -1 && _labels.cardinality() != 2)
       throw new IllegalArgumentException("Actual column must contain binary class labels, but found cardinality " + _labels.cardinality() + "!");
     if (_preds.isCategorical())
-      throw new IllegalArgumentException("predictedProbs cannot be class labels, expect probabilities.");
+      throw new IllegalArgumentException("Predicted probabilities cannot be class labels, expect probabilities.");
     if (_weights != null && !_weights.isNumeric())
-      throw new IllegalArgumentException("weight must be numeric.");
+      throw new IllegalArgumentException("Observation weights must be numeric.");
 
     // The vectors are from different groups => align them, but properly delete it after computation
     if (!_labels.group().equals(_preds.group())) {
@@ -74,63 +78,50 @@ public class GainsLift extends Iced {
       };
     } else {
       // ACCURATE VERSION: multi-pass
-      QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
-      Frame fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
-      DKV.put(fr);
-      qp._train = fr._key;
+      Frame fr = null;
+      QuantileModel qm = null;
+      try {
+        QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
+        fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
+        DKV.put(fr);
+        qp._train = fr._key;
 //      qp._combine_method = QuantileModel.CombineMethod.HIGH;
-      qp._probs = new double[_groups];
-      for (int i = 0; i < _groups; ++i) {
-        qp._probs[i] = (_groups - i - 1.) / _groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
+        qp._probs = new double[_groups];
+        for (int i = 0; i < _groups; ++i) {
+          qp._probs[i] = (_groups - i - 1.) / _groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
+        }
+        if (_weights != null) {
+          if (_weights.min() != 1.0 && _weights.max() != 1.0) {
+            Log.warn("Quantiles computation is not implemented for observation weights. Gains/Lift table might be approximate.");
+          }
+        }
+        Quantile q = new Quantile(qp);
+        qm = q.trainModel().get();
+        _quantiles = qm._output._quantiles[0];
+        // find uniques (is there a more elegant way?)
+        TreeSet<Double> hs = new TreeSet<>();
+        for (double d : _quantiles) hs.add(d);
+        _quantiles = new double[hs.size()];
+        Iterator<Double> it = hs.descendingIterator();
+        int i = 0;
+        while (it.hasNext()) _quantiles[i++] = it.next();
+      } finally {
+        if (qm!=null) qm.remove();
+        DKV.remove(fr._key);
       }
-      if (_weights != null) throw H2O.unimpl("Quantile cannot handle weights yet.");
-      Quantile q = new Quantile(qp);
-      QuantileModel qm = q.trainModel().get();
-      _quantiles = qm._output._quantiles[0];
-
-      // find uniques (is there a more elegant way?)
-      TreeSet<Double> hs = new TreeSet<>();
-      for (double d : _quantiles) hs.add(d);
-      _quantiles = new double[hs.size()];
-      Iterator<Double> it = hs.descendingIterator();
-      int i=0; while(it.hasNext()) _quantiles[i++]=it.next();
-
-      qm.remove();
-      DKV.remove(fr._key);
     }
-  }
-
-  private static class GoodRowCounter extends MRTask<GoodRowCounter> {
-    long _goodrows;
-    @Override public void map(Chunk ca, Chunk cp) { for (int i=0;i<ca.len();++i) if (!ca.isNA(i) && !cp.isNA(i)) _goodrows++; }
-    @Override public void reduce(GoodRowCounter mrt) { _goodrows += mrt._goodrows; }
   }
 
   public void exec() {
     Scope.enter();
     init(); //check parameters and obtain _quantiles from _preds
     try {
-      if (ArrayUtils.minValue(_quantiles) != ArrayUtils.maxValue(_quantiles)) {
-        _goodRows = _labels.length();
-        if (_labels.naCnt()>0 && _preds.naCnt()>0) {
-          _goodRows = new GoodRowCounter().doAll(_labels, _preds)._goodrows;
-        }
-        else if (_labels.naCnt()>0) {
-          _goodRows = _labels.length() - _labels.naCnt();
-        }
-        else if (_preds.naCnt()>0) {
-          _goodRows = _preds.length() - _preds.naCnt();
-        }
-        GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles, _goodRows);
-        gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
-        response_rates = gt.response_rates();
-        avg_response_rate = gt.avg_response_rate();
-        events = gt.events();
-        observations = gt.observations();
-        assert(ArrayUtils.sum(observations) == _goodRows);
-      } else {
-        Log.info("Not computing Gains/Lift table from trivial (constant) predictions.");
-      }
+      GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
+      gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
+      response_rates = gt.response_rates();
+      avg_response_rate = gt.avg_response_rate();
+      events = gt.events();
+      observations = gt.observations();
     } finally {       // Delete adaptation vectors
       Scope.exit();
     }
@@ -154,7 +145,7 @@ public class GainsLift extends Iced {
     long sum_e_i = 0;
     long sum_n_i = 0;
     double P = avg_response_rate; // E/N
-    long N = _goodRows;
+    long N = ArrayUtils.sum(observations);
     long E = Math.round(N * P);
     for (int i = 0; i < events.length; ++i) {
       long e_i = events[i];
@@ -202,16 +193,12 @@ public class GainsLift extends Iced {
     private double _avg_response_rate;
     private double[] _response_rates;
 
-    public GainsLiftBuilder(double[] thresh, long goodRows) {
+    public GainsLiftBuilder(double[] thresh) {
       _thresh = thresh.clone();
     }
 
-    @Override public void map( Chunk ca, Chunk cp, Chunk w) {
-      throw H2O.unimpl("GainsLiftBuilder with weights not yet implemented - requires weighted quantiles as well.");
-    }
-
-    @Override public void map( Chunk ca, Chunk cp ) {
-      final double w = 1.0;
+    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,new C0DChunk(1.0, ca.len())); }
+    @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
       _events = new long[_thresh.length];
       _observations = new long[_thresh.length];
       _avg_response = 0;
@@ -222,24 +209,24 @@ public class GainsLift extends Iced {
         if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
         if (cp.isNA(i)) continue;
         final double pr = cp.atd(i);
+        final double w = cw.atd(i);
         perRow(pr, a, w);
       }
     }
 
     public void perRow(double pr, int a, double w) {
-      if (w!=1.0) throw H2O.unimpl("GainsLiftBuilder perRow cannot handle weights != 1 for now");
       assert (!Double.isNaN(pr));
       assert (!Double.isNaN(a));
       assert (!Double.isNaN(w));
       //for-loop is faster than binary search for small number of thresholds
       for( int t=0; t < _thresh.length; t++ ) {
         if (pr >= _thresh[t] && (t==0 || pr <_thresh[t-1])) {
-          _observations[t]++;
-          if (a == 1) _events[t]++;
+          _observations[t]+=w;
+          if (a == 1) _events[t]+=w;
           break;
         }
       }
-      if (a == 1) _avg_response++;
+      if (a == 1) _avg_response+=w;
     }
 
     @Override public void reduce(GainsLiftBuilder other) {
