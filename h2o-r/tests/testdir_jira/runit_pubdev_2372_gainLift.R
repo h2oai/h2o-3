@@ -33,8 +33,13 @@ test.pubdev.2372 <- function(conn){
 	
 	h2o_quantile = as.numeric(h2o.quantile(pred[,3],probs = seq(0,.95,.05)))
 	gain_prob = sort(gain_table$lower_threshold)
+#  print(h2o_quantile)
+#  print(gain_prob)
 	expect_equal(h2o_quantile,gain_prob,tolerance= 1e-8)
+
 	R_quantile = as.numeric(quantile(pred_prob[,1],probs = seq(0,.95,.05)))
+#  print(R_quantile)
+#  print(h2o_quantile)
 	expect_equal(R_quantile,h2o_quantile,tolerance= 1e-8)
 
 	print("Get gain table from performance metric on test set")
