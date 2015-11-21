@@ -77,7 +77,7 @@ function() {
     test.ip <- get.test.ip()
     test.port <- get.test.port()
     cat(sprintf("[%s] %s\n", Sys.time(), paste0("Connect to h2o on IP: ",test.ip,", PORT: ",test.port)))
-    h2o.init(ip = test.ip, port = test.port, startH2O = FALSE)
+    h2o.init(ip = test.ip, port = test.port, startH2O = FALSE, strict_version_check=FALSE)
 
     h2o.startLogging(paste(results.dir(), "/rest.log", sep = ""))
     cat(sprintf("[%s] %s\n", Sys.time(),paste0("Started rest logging in: ",results.dir(),"/rest.log.")))
