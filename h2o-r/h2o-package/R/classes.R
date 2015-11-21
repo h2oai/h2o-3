@@ -378,11 +378,10 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     }
     print(object@metrics$max_criteria_and_metric_scores)
 
-    if (!is.null(object@metrics$gains_lift_table)) {
-      #Maybe don't print by default, but instruct the user how to access
-      cat("\n")
-      print(object@metrics$gains_lift_table)
-    }
+    cat("\nGains/Lift Table: Extract with `h2o.gainsLift(<model>, <data>)` or `h2o.gainsLift(<metrics>)`")
+    #if (!is.null(object@metrics$gains_lift_table)) {
+    #  print(object@metrics$gains_lift_table)
+    #}
 })
 
 #' @rdname H2OModelMetrics-class
