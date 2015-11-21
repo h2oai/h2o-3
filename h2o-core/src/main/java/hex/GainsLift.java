@@ -153,8 +153,8 @@ public class GainsLift extends Iced {
       double p_i = response_rates[i];
       sum_e_i += e_i;
       sum_n_i += n_i;
-      double lift=p_i/P;
-      double sum_lift=(double)sum_e_i/sum_n_i/P;
+      double lift=p_i/P; //can be NaN if P==0
+      double sum_lift=(double)sum_e_i/sum_n_i/P; //can be NaN if P==0
       table.set(i,0,i+1); //group
       table.set(i,1,_quantiles[i]); //lower_threshold
       table.set(i,2,(double)sum_n_i/N); //cumulative_data_fraction
@@ -167,10 +167,10 @@ public class GainsLift extends Iced {
       table.set(i,9,100*(lift-1)); //gain
       table.set(i,10,100*(sum_lift-1)); //cumulative gain
       if (i== events.length-1) {
-        assert(sum_n_i == N);
-        assert(sum_e_i == E);
-        assert(Math.abs(sum_lift - 1.0) < 1e-8);
-        assert(Math.abs((double)sum_e_i/sum_n_i - avg_response_rate) < 1e-8);
+        assert(sum_n_i == N) : "Cumulative data fraction must be 1.0, but is " + (double)sum_n_i/N;
+        assert(sum_e_i == E) : "Cumulative capture rate must be 1.0, but is " + (double)sum_e_i/E;
+        if (!Double.isNaN(sum_lift)) assert(Math.abs(sum_lift - 1.0) < 1e-8) : "Cumulative lift must be 1.0, but is " + sum_lift;
+        assert(Math.abs((double)sum_e_i/sum_n_i - avg_response_rate) < 1e-8) : "Cumulative response rate must be " + avg_response_rate + ", but is " + (double)sum_e_i/sum_n_i;
       }
     }
     return this.table = table;
