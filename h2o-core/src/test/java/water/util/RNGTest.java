@@ -108,7 +108,7 @@ public class RNGTest extends TestUtil {
     Log.info((float)suspect/reps*100 + "% suspect sequences.");
 
     if (suspect > 0.08 * reps)
-      Log.warn("Too many (>10%) suspect (between 1-th and 5-th and between 95-th and 99-th percentile) RNG sequences found!");
+      Log.warn("Too many (>8%) suspect (between 1-th and 5-th and between 95-th and 99-th percentile) RNG sequences found!");
     if (nonrandom > 0.02 * reps)
       Log.warn("Too many (>2%) non-random (outside 1-th and 99-th percentile) RNG sequences found!");
 
