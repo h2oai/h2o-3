@@ -142,7 +142,7 @@ public class GainsLift extends Iced {
   }
 
   public TwoDimTable createTwoDimTable() {
-    if (response_rates == null) return null;
+    if (response_rates == null || Double.isNaN(avg_response_rate)) return null;
     TwoDimTable table = new TwoDimTable(
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
