@@ -215,6 +215,7 @@ public class GainsLift extends Iced {
     }
 
     public void perRow(double pr, int a, double w) {
+      if (w==0) return;
       assert (!Double.isNaN(pr));
       assert (!Double.isNaN(a));
       assert (!Double.isNaN(w));
