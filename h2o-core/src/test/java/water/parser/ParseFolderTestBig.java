@@ -1,6 +1,7 @@
 package water.parser;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import org.junit.*;
 import water.Job;
@@ -69,4 +70,24 @@ public class ParseFolderTestBig extends TestUtil {
       if( k1 != null ) k1.delete();
     }
   }
+
+  // "bigdata directory is not usually available"
+  @Test 
+  public void testParseMemoryStress() {
+    ArrayList<Frame> frames = new ArrayList<>();
+    try {
+      for( int i=0; i<10; i++ ) {
+        frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98LRN_z.csv"));
+        frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98VAL_z.csv"));
+      }
+    } finally {
+      for( Frame fr : frames )
+        fr.delete();
+    }
+
+    // find swapped-out files, reverse to keys
+    
+
+  }
+
 }

@@ -71,7 +71,7 @@ public abstract class Persist {
   }
 
   // Verify bijection of key/file-name mappings.
-  private static String key2Str(Key k) {
+  protected static String key2Str(Key k) {
     String s = key2Str_impl(k);
     Key x;
     assert (x = str2Key_impl(s)).equals(k) : "bijection fail " + k + " <-> " + s + " <-> " + x;

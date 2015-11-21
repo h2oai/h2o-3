@@ -141,7 +141,7 @@ abstract public class MemoryManager {
 
     // No logging if under memory pressure: can deadlock the cleaner thread
     String s = m+msg+", HEAP_LAST_GC="+(heapUsed>>20)+"M, KV="+(cacheUsage>>20)+"M, POJO="+(pojoUsedGC>>20)+"M, free="+(freeHeap>>20)+"M, MAX="+(MEM_MAX>>20)+"M, DESIRED="+(Cleaner.DESIRED>>20)+"M"+(oom?" OOM!":" NO-OOM");
-    if( CAN_ALLOC ) Log.trace(s);
+    if( false && CAN_ALLOC ) Log.trace(s);
     else            System.err.println(s);
   }
 

@@ -1522,7 +1522,10 @@ final public class H2O {
   // Get the value from the store
   public static Value     get(Key key) { return STORE.get(key); }
   public static Value raw_get(Key key) { return STORE.get(key); }
-  public static void raw_remove(Key key) { STORE.remove(key); }
+  public static void raw_remove(Key key) { 
+    Value v = STORE.remove(key); 
+    if( v != null ) v.removePersist();
+  }
   public static void raw_clear() { STORE.clear(); }
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }

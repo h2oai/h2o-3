@@ -3,11 +3,13 @@ package water.persist;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
+import java.nio.file.*;
 
 import water.*;
 import water.api.FSIOException;
 import water.fvec.NFSFileVec;
 import water.util.Log;
+import java.nio.file.Paths;
 
 /**
  * Persistence backend using local file system.
@@ -65,7 +67,7 @@ final class PersistFS extends Persist {
     catch( FileNotFoundException e ) { throw Log.throwErr(e); }
     try {
       byte[] m = v.memOrLoad(); // we are not single threaded anymore
-      if( m != null && m.length == v._max ) {
+      if( m != null && m.length != v._max ) {
         Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
         v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
       }
@@ -78,11 +80,25 @@ final class PersistFS extends Persist {
 
   @Override public void delete(Value v) {
     assert !v.isPersisted();   // Upper layers already cleared out
-    File f = getFile(v);
-    f.delete();
-    if( v.isVec() ) { // Also nuke directory if the top-level Vec dies
-      f = new File(_dir.toString(), getIceDirectory(v._key));
-      f.delete();
+    String dirs = getIceDirectory(v._key);
+    //File f = new File(_dir,  dirs + File.separator + key2Str(v._key));
+    //if( !f.delete() ) 
+    //  System.err.print("CRUNK: FAILED TO DELETE "+f);
+    Path fpath = Paths.get(_dir.toString(),dirs,key2Str(v._key));
+    try { Files.delete(fpath); }
+    catch( IOException ex ) { //NoSuchFileException | DirectoryNotEmptyException ) {
+      System.err.print("CRUNK: FAILED TO DELETE "+fpath+" because "+ex);
+    }
+    // Attempt to delete empty containing directory
+    //File d = new File(_dir,dirs);
+    //if( !d.delete() )
+    //  System.err.print("DRUNK: FAILED TO DELETE "+d);
+    Path dpath = Paths.get(_dir.toString(),dirs);
+    try(DirectoryStream<Path> dirStream = Files.newDirectoryStream(dpath)) {
+        if( !dirStream.iterator().hasNext() )
+          Files.delete(dpath);
+      } catch( IOException ex ) { //NoSuchFileException | DirectoryNotEmptyException ) {
+      System.err.print("DRUNK: FAILED TO DELETE "+dpath+" because "+ex);
     }
   }
 
