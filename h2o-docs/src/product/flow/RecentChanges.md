@@ -17,9 +17,6 @@ The following changes are improvements to existing features (which includes chan
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/1038cdf9372b799d): Cleaned up counter iteration logic
 
 
-#####Algorithms
-
-
 ####Bug Fixes
 
 The following changes resolve incorrect software behavior: 
