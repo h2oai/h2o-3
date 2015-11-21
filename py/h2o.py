@@ -1,4 +1,4 @@
-import sys, os, getpass, logging, time, inspect, requests, json
+import sys, os, getpass, logging, time, inspect, requests, json, pprint
 import h2o_test_utils
 from h2o_test_utils import log, log_rest
 import h2o_print as h2p
@@ -283,9 +283,18 @@ class H2O(object):
 
         if raiseIfNon200 and 200 != r.status_code:
             print "JSON call returned non-200 status: ", url
+            pp = pprint.PrettyPrinter(indent=4)
+            json = r.json()
+            if None != json and 'dev_msg' in json:
+                print "dev_msg: " + str(json['dev_msg'])
             print "r.status_code: " + str(r.status_code)
             print "r.headers: " + repr(r.headers)
-            print "r.text: " + r.text
+            if None == json:
+                print 'ERROR: the error output from H2O is not JSON!'
+                print "r.text: " + r.text
+            else:
+                print "r.json: "
+                pp.pprint(json)
 
         log_rest("")
         try:
@@ -610,6 +619,23 @@ class H2O(object):
         return result
 
 
+    '''
+    Use Rapids to execute as.factor on the column of a Frame.
+    '''
+    def as_factor(self, key, column, timeoutSecs=60):
+        assert key is not None, 'FAIL: "key" parameter is null'
+        assert column is not None, 'FAIL: "column" parameter is null'
+
+        # quote column names; leave integer column indexes alone
+        if isinstance(column, basestring):
+            column = '"' + column + '"'
+
+        params_dict = {
+            'ast': "(assign {0} (:= {0} (as.factor (cols_py {0} {1})) {1} []))".format(key, column)
+        }
+        result = self.__do_json_request('/99/Rapids', cmd='post', timeout=timeoutSecs, postData=params_dict)
+        return result
+    
     '''
     Delete a frame on the h2o cluster, given its key.
     '''

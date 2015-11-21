@@ -87,10 +87,6 @@ test_models.build_and_test(a_node, pp, datasets, algos, algo_additional_default_
 # Metadata used to get corrupted, so test again
 test_metadata.test(a_node, pp)  
 
-
-print("WARNING: Terminating test before the end because we don't have as.factor yet. . .")   # TODO: Remove after deeplearning_prostate_binomial is updated in test_models.build_and_test()
-sys.exit(0)
-
 import test_predict_and_model_metrics
 test_predict_and_model_metrics.test(a_node, pp)
 
