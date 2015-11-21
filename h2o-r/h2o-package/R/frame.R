@@ -1346,16 +1346,6 @@ is.numeric <- function(x) {
   else as.logical(.eval.scalar(.newExpr("is.numeric",x)))
 }
 
-#' Check if character
-#'
-#' @rdname is.character
-#' @param x An H2O Frame object
-#' @export
-is.character <- function(x) {
-  if( !is.Frame(x) ) .Primitive("is.character")(x)
-  else as.logical(.eval.scalar(.newExpr("is.character",x)))
-}
-
 #' Print An H2O Frame
 #'
 #' @param x An H2O Frame object
