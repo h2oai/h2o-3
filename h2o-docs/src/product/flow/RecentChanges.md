@@ -2,7 +2,7 @@
 
 ##H2O
 
-###Tibshirani (3.6.0.6) - 11/20/15
+###Tibshirani (3.6.0.6) - 11/20/15  
 
 
 ####Enhancements
@@ -24,8 +24,10 @@ The following changes are improvements to existing features (which includes chan
 
 The following changes resolve incorrect software behavior: 
 
-- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bd784804b5ba09fd21eb0ee67d13925b668496a3): Fixed scoring speed display for autoencoder, was showing 0 because wrong runtime was used (ms since 1970 instead of actual runtime)
 
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bd784804b5ba09fd21eb0ee67d13925b668496a3): Fixed scoring speed display for autoencoder, was showing 0 because wrong runtime was used (ms since 1970 instead of actual runtime)
 
 ---
 
