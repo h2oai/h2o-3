@@ -9,6 +9,7 @@ import water.Job;
 import water.Key;
 import water.api.*;
 import water.api.ValidationMessageBase;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.*;
 
 import java.lang.reflect.Constructor;
@@ -123,8 +124,14 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   @Override public S fillFromImpl(B builder) {
     // DO NOT, because it can already be running: builder.init(false); // check params
 
-    this.algo = builder.getAlgo();
-    this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
+    try {
+      this.algo = builder.getAlgo();
+      this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
+    }
+    catch (H2OIllegalArgumentException e) {
+      this.algo = builder.getClass().getSimpleName();
+      this.algo_full_name = this.algo;
+    }
 
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
