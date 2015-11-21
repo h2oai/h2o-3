@@ -6,12 +6,16 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
-import java.util.Arrays;
+import java.util.*;
 
 public class GainsLift extends Iced {
   private double[] _quantiles;
+  private long _goodRows;
 
   //INPUT
   public int _groups = 20;
@@ -74,7 +78,7 @@ public class GainsLift extends Iced {
       Frame fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
       DKV.put(fr);
       qp._train = fr._key;
-      qp._combine_method = QuantileModel.CombineMethod.HIGH;
+//      qp._combine_method = QuantileModel.CombineMethod.HIGH;
       qp._probs = new double[_groups];
       for (int i = 0; i < _groups; ++i) {
         qp._probs[i] = (_groups - i - 1.) / _groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
@@ -83,9 +87,23 @@ public class GainsLift extends Iced {
       Quantile q = new Quantile(qp);
       QuantileModel qm = q.trainModel().get();
       _quantiles = qm._output._quantiles[0];
+
+      // find uniques (is there a more elegant way?)
+      TreeSet<Double> hs = new TreeSet<>();
+      for (double d : _quantiles) hs.add(d);
+      _quantiles = new double[hs.size()];
+      Iterator<Double> it = hs.descendingIterator();
+      int i=0; while(it.hasNext()) _quantiles[i++]=it.next();
+
       qm.remove();
       DKV.remove(fr._key);
     }
+  }
+
+  private static class GoodRowCounter extends MRTask<GoodRowCounter> {
+    long _goodrows;
+    @Override public void map(Chunk ca, Chunk cp) { for (int i=0;i<ca.len();++i) if (!ca.isNA(i) && !cp.isNA(i)) _goodrows++; }
+    @Override public void reduce(GoodRowCounter mrt) { _goodrows += mrt._goodrows; }
   }
 
   public void exec() {
@@ -93,12 +111,23 @@ public class GainsLift extends Iced {
     init(); //check parameters and obtain _quantiles from _preds
     try {
       if (ArrayUtils.minValue(_quantiles) != ArrayUtils.maxValue(_quantiles)) {
-        GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
+        _goodRows = _labels.length();
+        if (_labels.naCnt()>0 && _preds.naCnt()>0) {
+          _goodRows = new GoodRowCounter().doAll(_labels, _preds)._goodrows;
+        }
+        else if (_labels.naCnt()>0) {
+          _goodRows = _labels.length() - _labels.naCnt();
+        }
+        else if (_preds.naCnt()>0) {
+          _goodRows = _preds.length() - _preds.naCnt();
+        }
+        GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles, _goodRows);
         gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
         response_rates = gt.response_rates();
         avg_response_rate = gt.avg_response_rate();
         events = gt.events();
         observations = gt.observations();
+        assert(ArrayUtils.sum(observations) == _goodRows);
       } else {
         Log.info("Not computing Gains/Lift table from trivial (constant) predictions.");
       }
@@ -113,20 +142,20 @@ public class GainsLift extends Iced {
   }
 
   public TwoDimTable createTwoDimTable() {
-    if (response_rates == null) return null;
+    if (response_rates == null || Double.isNaN(avg_response_rate)) return null;
     TwoDimTable table = new TwoDimTable(
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
-            new String[_groups],
+            new String[events.length],
             new String[]{"Group", "Lower Threshold", "Cumulative Data Fraction", "Response Rate", "Cumulative Response Rate", "Capture Rate", "Cumulative Capture Rate", "Lift", "Cumulative Lift", "Gain", "Cumulative Gain"},
             new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
             new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
             "");
-    double sum_e_i = 0;
-    double sum_n_i = 0;
+    long sum_e_i = 0;
+    long sum_n_i = 0;
     double P = avg_response_rate; // E/N
-    double N = _preds.length(); //TODO: Add obs. weights
-    double E = N * P;
+    long N = _goodRows;
+    long E = Math.round(N * P);
     for (int i = 0; i < events.length; ++i) {
       long e_i = events[i];
       long n_i = observations[i];
@@ -134,18 +163,24 @@ public class GainsLift extends Iced {
       sum_e_i += e_i;
       sum_n_i += n_i;
       double lift=p_i/P;
-      double sum_lift=sum_e_i/sum_n_i/P;
+      double sum_lift=(double)sum_e_i/sum_n_i/P;
       table.set(i,0,i+1); //group
       table.set(i,1,_quantiles[i]); //lower_threshold
-      table.set(i,2,sum_n_i/N); //cumulative_data_fraction
+      table.set(i,2,(double)sum_n_i/N); //cumulative_data_fraction
       table.set(i,3,p_i); //response_rate
-      table.set(i,4,sum_e_i/sum_n_i); //cumulative_response_rate
-      table.set(i,5,e_i/E); //capture_rate
-      table.set(i,6,sum_e_i/E); //cumulative_capture_rate
+      table.set(i,4,(double)sum_e_i/sum_n_i); //cumulative_response_rate
+      table.set(i,5,(double)e_i/E); //capture_rate
+      table.set(i,6,(double)sum_e_i/E); //cumulative_capture_rate
       table.set(i,7,lift); //lift
       table.set(i,8,sum_lift); //cumulative_lift
       table.set(i,9,100*(lift-1)); //gain
       table.set(i,10,100*(sum_lift-1)); //cumulative gain
+      if (i== events.length-1) {
+        assert(sum_n_i == N);
+        assert(sum_e_i == E);
+        assert(Math.abs(sum_lift - 1.0) < 1e-8);
+        assert(Math.abs((double)sum_e_i/sum_n_i - avg_response_rate) < 1e-8);
+      }
     }
     return this.table = table;
   }
@@ -167,7 +202,7 @@ public class GainsLift extends Iced {
     private double _avg_response_rate;
     private double[] _response_rates;
 
-    public GainsLiftBuilder(double[] thresh) {
+    public GainsLiftBuilder(double[] thresh, long goodRows) {
       _thresh = thresh.clone();
     }
 
@@ -191,20 +226,14 @@ public class GainsLift extends Iced {
       }
     }
 
-    long partial_sum(long[] arr, int I) {
-      long sum=0;
-      for (int i=0; i<I; ++i) sum+=arr[i];
-      return sum;
-    }
-
     public void perRow(double pr, int a, double w) {
       if (w!=1.0) throw H2O.unimpl("GainsLiftBuilder perRow cannot handle weights != 1 for now");
-      if (Double.isNaN(pr)) return;
-      if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
+      assert (!Double.isNaN(pr));
+      assert (!Double.isNaN(a));
+      assert (!Double.isNaN(w));
+      //for-loop is faster than binary search for small number of thresholds
       for( int t=0; t < _thresh.length; t++ ) {
         if (pr >= _thresh[t] && (t==0 || pr <_thresh[t-1])) {
-          // handle tie breaking in quantiles - push row to the next (lower) group
-          while (t != _thresh.length-1 && partial_sum(_observations, t+1) >= ((t+1)*_fr.numRows())/_events.length) t++;
           _observations[t]++;
           if (a == 1) _events[t]++;
           break;

@@ -33,6 +33,7 @@ function() {
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
         TEST.NAME <<- removeH2OInit(test.name())
+        strict_version_check = TRUE
     } else if (test.is.runit()) {
         # source h2o-r/h2o-package/R. overrides h2o package load
         to_src <- c("classes.R", "connection.R", "constants.R", "logging.R", "communication.R", "kvstore.R",
@@ -60,6 +61,7 @@ function() {
         if (file.exists(ms)) seed <- read.table(ms)[[1]]
         setupRandomSeed(seed)
         h2o.logIt("[SEED] :", get.test.seed())
+        strict_version_check = FALSE
     } else if (test.is.rbooklet()) {
         if (!"h2o" %in% rownames(installed.packages())) {
             stop("The H2O package has not been installed on this system. Cannot execute the H2O R booklet without it!")
@@ -70,6 +72,7 @@ function() {
         to_src <- c("utilsR.R")
         src_path <- paste(h2oDocsDir,"src","booklets","v2_2015","source","rbookletUtils",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
+        strict_version_check = TRUE
     } else {
         stop(paste0("Unrecognized test type. Must be of type rdemo, runit, or rbooklet, but got: ", test.name()))
     }
@@ -77,7 +80,7 @@ function() {
     test.ip <- get.test.ip()
     test.port <- get.test.port()
     cat(sprintf("[%s] %s\n", Sys.time(), paste0("Connect to h2o on IP: ",test.ip,", PORT: ",test.port)))
-    h2o.init(ip = test.ip, port = test.port, startH2O = FALSE)
+    h2o.init(ip = test.ip, port = test.port, startH2O = FALSE, strict_version_check=strict_version_check)
 
     h2o.startLogging(paste(results.dir(), "/rest.log", sep = ""))
     cat(sprintf("[%s] %s\n", Sys.time(),paste0("Started rest logging in: ",results.dir(),"/rest.log.")))
