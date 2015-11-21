@@ -75,10 +75,10 @@ weather$date <- NULL
 
 print("Merge crimes and census data on community area number")
 names(census)[names(census) == "Community.Area.Number"] <- "Community.Area"
-crimeMerge <- h2o.merge(crimes, census)
+crimeMerge <- h2o.merge(crimes, census, all.x=TRUE)
 print("Merge crimes and weather data on month, day and year")
 names(weather)[match(c("month", "day", "year"), names(weather))] <- c("Month", "Day", "Year")
-crimeMerge <- h2o.merge(crimeMerge, weather)
+crimeMerge <- h2o.merge(crimeMerge, weather, all.x=TRUE)
 
 print("Split final dataset into test/train (ratio = 20/80)")
 # BUG: h2o.splitFrame call causes an NPE. See PUBDEV-1235.
@@ -118,7 +118,7 @@ crimeExamples <- as.h2o(crimeExamples.r)
 names(crimeExamples) <- make.names(names(crimeExamples))
 crimeExamples <- RefineDateColumn(crimeExamples, which(colnames(crimeExamples) == "Date"), datePattern = "%m/%d/%Y %I:%M:%S %p")
 crimeExamples$Date <- NULL   # Remove redundant date columns
-crimeExamplesMerge <- h2o.merge(crimeExamples, census)
+crimeExamplesMerge <- h2o.merge(crimeExamples, census, all.x=TRUE)
 
 predGBM <- predict(gbmModel, crimeExamplesMerge)
 predDL <- predict(dlModel, crimeExamplesMerge)

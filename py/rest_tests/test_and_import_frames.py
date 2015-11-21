@@ -43,6 +43,10 @@ def load_and_test(a_node, pp):
     datasets = {} # the dataset spec
     for dataset_spec in datasets_to_import:
         dataset = dataset_spec.import_and_validate_dataset(a_node) # it's also stored in dataset_spec['dataset']
+
+        if dataset_spec['model_category'] == 'Binomial':
+            a_node.as_factor(dataset_spec['dest_key'], dataset_spec['response_column'])
+
         datasets[dataset_spec['dest_key']] = dataset_spec
     
     
@@ -51,7 +55,6 @@ def load_and_test(a_node, pp):
     frames = a_node.frames(row_count=5)['frames']
     frames_dict = h2o_test_utils.list_to_dict(frames, 'frame_id/name')
     
-    # TODO: remove:
     if h2o_test_utils.isVerboser():
         print "frames: "
         pp.pprint(frames)
@@ -126,7 +129,7 @@ def load_and_test(a_node, pp):
     smaller = a_node.frames(key='smaller')['frames'][0]
     assert bigger['rows'] == 304, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 304; got: ' + bigger['rows']
     assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
-    # TODO: h2o_test_utils.validate_job_exists(a_node, splits['frame_id']['name'])
+    h2o_test_utils.validate_job_exists(a_node, splits['key']['name'])
     
     if h2o_test_utils.isVerbose(): print 'Testing SplitFrame with generated destination_frames. . .'
     splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
@@ -138,7 +141,8 @@ def load_and_test(a_node, pp):
     second = a_node.frames(key=splits['destination_frames'][1]['name'])['frames'][0]
     assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + first['rows']
     assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
-    # TODO: h2o_test_utils.validate_job_exists(a_node, splits['frame_id']['name'])
+
+    h2o_test_utils.validate_job_exists(a_node, splits['key']['name'])
     
     
     
