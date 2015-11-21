@@ -342,7 +342,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         train = tra_fr;
         if (mp._force_load_balance) {
           new ProgressUpdate("Load balancing training data...").fork(_progressKey);
-          train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/, mp._train.toString() + "." + model._key.toString() + ".temporary.train");
+          train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/, mp._train.toString() + "." + model._key.toString() + ".tmptrain");
         }
         if (model._output.isClassifier() && mp._balance_classes) {
           new ProgressUpdate("Balancing class distribution of training data...").fork(_progressKey);
@@ -378,7 +378,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           }
           if (mp._force_load_balance) {
             new ProgressUpdate("Balancing class distribution of validation data...").fork(_progressKey);
-            validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/, mp._valid.toString() + "." + model._key.toString() + ".temporary.valid");
+            validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/, mp._valid.toString() + "." + model._key.toString() + ".tmpval");
           }
           if (!_parms._quiet_mode) Log.info("Number of chunks of the validation data: " + validScoreFrame.anyVec().nChunks());
         }
@@ -483,7 +483,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
       }
       if (!_parms._quiet_mode)
         Log.info("ReBalancing dataset into (at least) " + chunks + " chunks.");
-      Key newKey = Key.make(name + ".chunks" + chunks);
+      Key newKey = Key.make(name + ".chks" + chunks);
       RebalanceDataSet rb = new RebalanceDataSet(fr, newKey, chunks);
       H2O.submitTask(rb);
       rb.join();
