@@ -1701,7 +1701,6 @@ h2o.summary <- function(object, factors=6L, ...) {
 }
 
 #' @rdname h2o.summary
-#' @S3method summary Frame
 #' @usage \\method{summary}{Frame}(object, factors, ...)
 #' @export
 summary.Frame <- h2o.summary
@@ -1957,7 +1956,6 @@ as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' @name as.vector
 #' @param x An H2O Frame object
 #' @param mode Unused
-#' @S3method as.vector Frame
 #' @usage \\method{as.vector}{Frame}(x,mode)
 #' @export
 as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
