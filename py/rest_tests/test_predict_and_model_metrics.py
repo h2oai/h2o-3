@@ -88,8 +88,8 @@ def test(a_node, pp):
     
     ###################################
     # Predict with reversed keys (should get an H2OErrorV1):
-    # TODO: this works, but I'm not handling 500s yet in the automated test:
-    # p = a_node.predict(frame='kmeans_prostate', model='prostate_regression')
-    # print repr(p)
-    
-    
+    try:
+        p = a_node.predict(frame='kmeans_prostate', model='prostate_regression')
+        assert 1 == 0, "FAIL: expected a ValueError exception looking for Model 'prostate_regression'"
+    except Exception as e:
+        pass
