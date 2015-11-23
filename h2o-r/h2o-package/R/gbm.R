@@ -72,6 +72,7 @@
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
                     checkpoint,
+                    ignore_const_cols = TRUE,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
                     tweedie_power = 1.5,
                     ntrees = 50,
@@ -130,6 +131,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$model_id <- model_id
   if(!missing(checkpoint))
     parms$checkpoint <- checkpoint
+  if(!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
   if (!missing(distribution))
     parms$distribution <- distribution
   if (!missing(tweedie_power))

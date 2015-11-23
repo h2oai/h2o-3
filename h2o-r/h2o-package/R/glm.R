@@ -100,6 +100,7 @@
 #' @export
 h2o.glm <- function(x, y, training_frame, model_id, 
                     validation_frame = NULL,
+                    ignore_const_cols = TRUE,
                     max_iterations = 50,
                     beta_epsilon = 0,
                     solver = c("IRLSM", "L_BFGS"),
@@ -156,6 +157,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   parms$response_column <- args$y
   if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
   if( !missing(model_id) )                  parms$model_id               <- model_id
+  if( !missing(ignore_const_cols)  )        parms$ignore_const_cols      <- ignore_const_cols
   if( !missing(max_iterations) )            parms$max_iterations         <- max_iterations
   if( !missing(beta_epsilon) )              parms$beta_epsilon           <- beta_epsilon
   if( !missing(solver) )                    parms$solver                 <- solver

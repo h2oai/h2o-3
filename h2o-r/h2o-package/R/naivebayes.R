@@ -41,6 +41,7 @@
 #' @export
 h2o.naiveBayes <- function(x, y, training_frame,
                            model_id,
+                           ignore_const_cols = TRUE,
                            laplace = 0,
                            threshold = 0.001,
                            eps = 0,
@@ -62,6 +63,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   parms$training_frame <- training_frame
+  parms$ignore_const_cols <- ignore_const_cols
   if(!missing(model_id))
     parms$model_id <- model_id
   if(!missing(laplace))

@@ -49,6 +49,7 @@
 #' @export
 h2o.kmeans <- function(training_frame, x, k,
                        model_id,
+                       ignore_const_cols = TRUE,
                        max_iterations = 1000,
                        standardize = TRUE,
                        init = c("Furthest","Random", "PlusPlus"),
@@ -74,6 +75,8 @@ h2o.kmeans <- function(training_frame, x, k,
   parms$training_frame <- training_frame
   if(!missing(model_id))
     parms$model_id <- model_id
+  if(!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
   if(!missing(max_iterations))
     parms$max_iterations <- max_iterations
   if(!missing(standardize))

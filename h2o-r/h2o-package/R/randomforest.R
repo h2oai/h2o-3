@@ -59,6 +59,7 @@
 h2o.randomForest <- function(x, y, training_frame,
                              model_id,
                              validation_frame = NULL,
+                             ignore_const_cols = TRUE,
                              checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
@@ -112,6 +113,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$model_id <- model_id
   if(!missing(validation_frame))
     parms$validation_frame <- validation_frame
+  if(!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
   if(!missing(checkpoint))
     parms$checkpoint <- checkpoint
   if(!missing(mtries))
