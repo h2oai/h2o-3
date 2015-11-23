@@ -1645,6 +1645,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param newdata An H2O Frame object that can be scored on.
 #'        Requires a valid response column.
 #' @param valid Retrieve the validation metric.
+#' @param xval Retrieve the cross-validation metric.
 #' @param \dots further arguments to be passed to/from this method.
 #' @return Calling this function on \linkS4class{H2OModel} objects returns a
 #'         Gains/Lift table corresponding to the \code{\link{predict}} function.
@@ -1658,25 +1659,38 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' hex <- h2o.uploadFile(prosPath)
 #' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' h2o.gainsLift(model, hex)
+#' model <- h2o.gbm(x = 3:9, y = 2, distribution = "bernoulli",
+#'                  training_frame = hex, validation_frame = hex, nfolds=3)
+#' h2o.gainsLift(model)              ## extract training metrics
+#' h2o.gainsLift(model, valid=TRUE)  ## extract validation metrics (here: the same)
+#' h2o.gainsLift(model, xval =TRUE)  ## extract cross-validation metrics
+#' h2o.gainsLift(model, newdata=hex) ## score on new data (here: the same)
 #' # Generating a ModelMetrics object
 #' perf <- h2o.performance(model, hex)
-#' h2o.gainsLift(perf)
+#' h2o.gainsLift(perf)               ## extract from existing metrics object
 #' }
 #' @export
 setGeneric("h2o.gainsLift", function(object, ...) {})
 
 #' @rdname h2o.gainsLift
 #' @export
-setMethod("h2o.gainsLift", "H2OModel", function(object, newdata, valid=FALSE, ...) {
+setMethod("h2o.gainsLift", "H2OModel", function(object, newdata, valid=FALSE, xval=FALSE,...) {
   model.parts <- .model.parts(object)
   if( missing(newdata) ) {
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( h2o.gainsLift(model.parts$vm) )
-    } else                          return( h2o.gainsLift(model.parts$tm) )
-  } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return( invisible(.warn.no.cross.validation()))
+      else                          return( h2o.gainsLift(model.parts$xm) )
+    }
+    return( h2o.gainsLift(model.parts$tm) )
+  } else {
+    if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
+    if( xval )  stop("Cannot have both `newdata` and `xval=TRUE`", call.=FALSE)
+  }
+
 
   # ok need to score on the newdata
   url <- paste0("Predictions/models/",object@model_id, "/frames/", h2o.getId(newdata))

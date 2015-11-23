@@ -214,8 +214,9 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
       GainsLift gl = null;
       if (preds!=null) {
         Vec resp = f.vec(m._parms._response_column);
+        Vec weights = f.vec(m._parms._weights_column);
         if (resp != null) {
-          gl = new GainsLift(preds.lastVec(), resp);
+          gl = new GainsLift(preds.lastVec(), resp, weights);
           gl.exec();
         }
       }

@@ -12,6 +12,10 @@ test.pubdev.2118 <- function(conn){
 
   t <- h2o.gainsLift(m,df)
   expect_true(max(abs(t$lift-expected))<1e-6)
+
+  m <- h2o.gbm(1:ncol(df),"CAPSULE",df, validation_frame=df, nfolds=3, seed=1234)
+  t <- h2o.gainsLift(m,xval=T)
+  expect_true(abs(t$lift[1] - 1.960784) < 1e-5) ## lift in top group
 }
 
 doTest("PUBDEV-2118", test.pubdev.2118)

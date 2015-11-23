@@ -97,8 +97,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         GainsLift gl = null;
         if (preds!=null) {
           Vec resp = f.vec(m._parms._response_column);
+          Vec weight = f.vec(m._parms._weights_column);
           if (resp != null) {
-            gl = new GainsLift(preds.lastVec(), resp);
+            gl = new GainsLift(preds.lastVec(), resp, weight);
             gl.exec();
           }
         }
