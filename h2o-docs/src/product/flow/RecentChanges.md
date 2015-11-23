@@ -2,11 +2,35 @@
 
 ##H2O
 
+###Tibshirani (3.6.0.6) - 11/20/15  
+
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/47f4b754e8f4178b86d5c4f929a46223b3f7b042): Added Iterations and Epochs to DL job status updates, added Iterations to scoring history
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/aa25d5f71b281): Cleaned up iteration counter to work for checkpointing
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/1038cdf9372b799d): Cleaned up counter iteration logic
+
+
+####Bug Fixes
+
+The following changes resolve incorrect software behavior: 
+
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/bd784804b5ba09fd21eb0ee67d13925b668496a3): Fixed scoring speed display for autoencoder, was showing 0 because wrong runtime was used (ms since 1970 instead of actual runtime)
+
+---
 
 ###Tibshirani (3.6.0.2) - 11/5/15
 
 ####New Features
-The following changes represent features that have been added since the previous release:
 
 #####Algorithms
 
@@ -26,9 +50,6 @@ The following changes represent features that have been added since the previous
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/723d552f7f1a9977c6fc837704b73cf1b85f0524): PUBDEV-2289: Enabled convergence-based early stopping for R API of Deep Learning
 
 ####Enhancements
-
-The following changes are improvements to existing features (which includes changed default values):
-
 
 #####Algorithms
 
@@ -70,8 +91,6 @@ The following changes are improvements to existing features (which includes chan
 
 
 ####Bug Fixes
-
-The following changes resolve incorrect software behavior: 
 
 
 #####Algorithms 

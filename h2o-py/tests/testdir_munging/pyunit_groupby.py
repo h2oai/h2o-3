@@ -15,7 +15,7 @@ def group_by():
     h2o_iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     pd_iris = pd.read_csv(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
-    na_handling = ["ignore","rm","all"]
+    na_handling = ["rm","all"]
     col_names = h2o_iris.col_names[0:4]
 
     print "Running smoke test"

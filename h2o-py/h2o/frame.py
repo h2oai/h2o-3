@@ -335,8 +335,9 @@ class H2OFrame(object):
     return (self[i] for i in range(self.ncol))
   def __str__(self):
     if sys.gettrace() is None:
-      row_string = ' rows x ' if self.nrow > 1 else ' row x '
-      column_string = ' columns]' if self.ncol > 1 else ' column]'
+      if self._ex is None: return "This H2OFrame has been removed."
+      row_string = ' rows x ' if self.nrow != 1 else ' row x '
+      column_string = ' columns]' if self.ncol != 1 else ' column]'
       return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore") + '\n\n[' + str(self.nrow) \
     + row_string + str(self.ncol) + column_string
     return ""
@@ -354,6 +355,9 @@ class H2OFrame(object):
     If called from IPython, displays an html'ized result
     Else prints a tabulate'd result
     """
+    if self._ex is None: 
+      print "This H2OFrame has been removed."
+      return
     if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
     if h2o.H2ODisplay._in_ipy():
       import IPython.display
@@ -445,9 +449,14 @@ class H2OFrame(object):
   def __gt__  (self, i): return H2OFrame._expr(expr=ExprNode(">",   self,i), cache=self._ex._cache)
   def __le__  (self, i): return H2OFrame._expr(expr=ExprNode("<=",  self,i), cache=self._ex._cache)
   def __lt__  (self, i): return H2OFrame._expr(expr=ExprNode("<",   self,i), cache=self._ex._cache)
-  def __eq__  (self, i): return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
-  def __ne__  (self, i): return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
+  def __eq__  (self, i):
+    if i is None: i = float("nan")
+    return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
+  def __ne__  (self, i):
+    if i is None: i = float("nan")
+    return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)
   def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
+  def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
   # rops
   def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("mod",i,self), cache=self._ex._cache)
   def __radd__(self, i): return self.__add__(i)
@@ -459,9 +468,13 @@ class H2OFrame(object):
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return H2OFrame._expr(expr=ExprNode("^",i,  self), cache=self._ex._cache)
   # unops
-  def __abs__ (self):        return H2OFrame._expr(expr=ExprNode("abs",self), cache=self._ex._cache)
-  def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
-  def __invert__(self): return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
+  def __abs__ (self):    return H2OFrame._expr(expr=ExprNode("abs",self), cache=self._ex._cache)
+  def __invert__(self):  return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
+  def __nonzero__(self): 
+    if self.nrow > 1 or self.ncol > 1: 
+      raise ValueError('This operation is not supported on an H2OFrame. Try using parantheses. Did you mean & (logical and), | (logical or), or ~ (logical not)?')
+    else:
+      return self.__len__()
 
 
   def mult(self, matrix):
@@ -741,7 +754,20 @@ class H2OFrame(object):
       True if the column is a character column, otherwise False (same as isstring)
     """
     return self.isstring()
-
+  
+  def isin(self, item):
+    """Test whether elements of an H2OFrame are contained in the item.
+    
+    Parameters
+    ----------
+      items : any element or a list of elements
+        An item or a list of items to compare the H2OFrame against.
+    Returns
+    -------
+      An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
+    """
+    return reduce(H2OFrame.__or__, (self == i for i in item)) if _is_list(item) else self == item
+  
   def kfold_column(self, n_folds=3, seed=-1):
     """Build a fold assignments column for cross-validation. This call will produce a
     column having the same data layout as the calling object.
@@ -1309,7 +1335,7 @@ class H2OFrame(object):
     if isinstance(by, basestring):     by     = self.names.index(by)
     return H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
 
-  def merge(self, other, allLeft=True, allRite=False):
+  def merge(self, other, all_x = False, all_y = False, by_x = None, by_y = None, method="auto"):
     """Merge two datasets based on common column names
 
     Parameters
@@ -1319,16 +1345,22 @@ class H2OFrame(object):
       and all columns in common are used as the merge key.  If you want to use only a
       subset of the columns in common, rename the other columns so the columns are unique
       in the merged result.
-    allLeft: bool, default=True
+    all_x: bool, default=False
       If True, include all rows from the left/self frame
-    allRite: bool, default=True
+    all_y: bool, default=False
       If True, include all rows from the right/other frame
 
     Returns
     -------
       Original self frame enhanced with merged columns and rows
     """
-    return H2OFrame._expr(expr=ExprNode("merge", self, other, allLeft, allRite))
+
+    common_names = set(self.names).intersection(set(other.names))
+    common_names = list(common_names)
+    if (len(common_names) == 0): raise ValueError("No columns in common to merge on!")
+    if (by_x==None): by_x = [self.names.index(c) for c in common_names]
+    if (by_y==None): by_y = [other.names.index(c) for c in common_names]
+    return H2OFrame._expr(expr=ExprNode("merge", self, other, all_x, all_y, by_x, by_y, method))
 
   def insert_missing_values(self, fraction=0.1, seed=None):
     """Inserting Missing Values into an H2OFrame.

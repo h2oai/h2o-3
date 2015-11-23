@@ -415,6 +415,22 @@ public class Vec extends Keyed<Vec> {
     fs.blockForPending();
     return v;
   }
+
+  // allow missing (NaN) categorical values
+  public static Vec makeVec(double [] vals, String [] domain, Key<Vec> vecKey){
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(double d:vals) {
+      assert(Double.isNaN(d) || (long)d == d);
+      nc.addNum(d);
+    }
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+  // Warning: longs are lossily converted to doubles in nc.addNum(d)
   public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
     NewChunk nc = new NewChunk(v,0);
@@ -615,8 +631,8 @@ public class Vec extends Keyed<Vec> {
   /** Size of compressed vector data. */
   public long byteSize(){return rollupStats()._size; }
 
-  /** Default Histogram bins. */
-  public static final double PERCENTILES[] = {0.001,0.01,0.1,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.9,0.99,0.999};
+  /** Default percentiles for approximate (single-pass) quantile computation (histogram-based). */
+  public static final double PERCENTILES[] = {0.001,0.01,0.1,0.2,0.25,0.3,1.0/3.0,0.4,0.5,0.6,2.0/3.0,0.7,0.75,0.8,0.9,0.99,0.999};
   /** A simple and cheap histogram of the Vec, useful for getting a broad
    *  overview of the data.  Each bin is row-counts for the bin's range.  The
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
@@ -712,7 +728,7 @@ public class Vec extends Keyed<Vec> {
    *  shift-and-add math.  For variable-sized chunks this is a binary search,
    *  with a sane API (JDK has an insane API).  Overridden by subclasses that
    *  compute chunks in an alternative way, such as file-backed Vecs. */
-   int elem2ChunkIdx( long i ) {
+   public int elem2ChunkIdx( long i ) {
     if( !(0 <= i && i < length()) ) throw new ArrayIndexOutOfBoundsException("0 <= "+i+" < "+length());
     long[] espc = espc();       // Preload
     int lo=0, hi = nChunks();
@@ -749,7 +765,7 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
   // Filled in lazily and racily... but all writers write the exact identical Key
-  Key rollupStatsKey() { 
+  public Key rollupStatsKey() { 
     if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
     return _rollupStatsKey;
   }

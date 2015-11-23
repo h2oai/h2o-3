@@ -22,15 +22,15 @@ class RapidsNumbersV3 extends RapidsSchema<Iced,RapidsNumbersV3> {
 }
 
 class RapidsStringV3 extends RapidsSchema<Iced,RapidsStringV3> {
-  @API(help="String result"          , direction=API.Direction.OUTPUT) String scalar;
+  @API(help="String result"          , direction=API.Direction.OUTPUT) String string;
   RapidsStringV3( ) { }
-  RapidsStringV3( String s ) { scalar = s; }
+  RapidsStringV3( String s ) { string = s; }
 }
 
 class RapidsStringsV3 extends RapidsSchema<Iced,RapidsStringsV3> {
-  @API(help="String array result"     , direction=API.Direction.OUTPUT) String[] scalar;
+  @API(help="String array result"     , direction=API.Direction.OUTPUT) String[] string;
   RapidsStringsV3( ) { }
-  RapidsStringsV3( String[] ss ) { scalar = ss; }
+  RapidsStringsV3( String[] ss ) { string = ss; }
 }
 
 class RapidsFunctionV3 extends RapidsSchema<Iced,RapidsFunctionV3> {

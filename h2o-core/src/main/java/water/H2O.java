@@ -32,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
-import hex.ModelBuilder;
 import water.UDPRebooted.ShutdownTsk;
 import water.api.ModelCacheManager;
 import water.api.RequestServer;
@@ -195,7 +194,10 @@ final public class H2O {
     /** -baseport=####; Port to start upward searching from. */
     public int baseport = 54321;
 
-    /** -port=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
+    public String web_ip = null;
+
+    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
     public String ip;
 
     /** -network=network; Network specification for acceptable interfaces to bind to */
@@ -258,8 +260,6 @@ final public class H2O {
     /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
     public boolean quiet = false;
 
-    /** -beta, -experimental */
-    public ModelBuilder.BuilderVisibility model_builders_visibility = ModelBuilder.BuilderVisibility.Stable;
     public boolean useUDP = false;
 
     @Override public String toString() {
@@ -386,6 +386,10 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.ip = args[i];
       }
+      else if (s.matches("web_ip")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.web_ip = args[i];
+      }
       else if (s.matches("network")) {
         i = s.incrementAndCheck(i, args);
         ARGS.network = args[i];
@@ -448,12 +452,6 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
-      }
-      else if (s.matches("beta")) {
-        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Beta;
-      }
-      else if (s.matches("experimental")) {
-        ARGS.model_builders_visibility = ModelBuilder.BuilderVisibility.Experimental;
       } else if(s.matches("useUDP")) {
           ARGS.useUDP = true;
       } else {
@@ -501,9 +499,7 @@ final public class H2O {
   public static void closeAll() {
     try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
     try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
-    try { NetworkInit._tcpSocketBig.close(); } catch( IOException ignore ) { }
-    if(!H2O.ARGS.useUDP)
-      try { NetworkInit._tcpSocketSmall.close(); } catch( IOException ignore ) { }
+    try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
   }
@@ -995,9 +991,16 @@ final public class H2O {
   static int getWrkQueueSize  (int i) { return FJPS[i]==null ? -1 : FJPS[i].getQueuedSubmissionCount();}
   static int getWrkThrPoolSize(int i) { return FJPS[i]==null ? -1 : FJPS[i].getPoolSize();             }
 
+  // For testing purposes (verifying API work exceeds grunt model-build work)
+  // capture the class of any submitted job lower than this priority;
+  static public int LOW_PRIORITY_API_WORK;
+  static public String LOW_PRIORITY_API_WORK_CLASS;
+
   // Submit to the correct priority queue
   public static <T extends H2OCountedCompleter> T submitTask( T task ) {
     int priority = task.priority();
+    if( priority < LOW_PRIORITY_API_WORK )
+      LOW_PRIORITY_API_WORK_CLASS = task.getClass().toString();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY:"priority " + priority + " is out of range, expected range is < " + MIN_PRIORITY + "," + MAX_PRIORITY + ">";
     if( FJPS[priority]==null )
       synchronized( H2O.class ) { if( FJPS[priority] == null ) FJPS[priority] = new PrioritizedForkJoinPool(priority,-1); }
@@ -1066,8 +1069,11 @@ final public class H2O {
         if( pp == MIN_PRIORITY && set_t_prior ) t.setPriority(Thread.NORM_PRIORITY-1);
       }
       // Now run the task as planned
-      compute2();
+      if( this instanceof DTask ) icer().compute1(this);
+      else compute2();
     }
+
+    public void compute1() { compute2(); }
 
     /** Override to specify actual work to do */
     protected abstract void compute2();
@@ -1143,8 +1149,11 @@ final public class H2O {
   public static InetAddress      CLOUD_MULTICAST_GROUP;
   public static int              CLOUD_MULTICAST_PORT ;
 
-  // Myself, as a Node in the Cloud
+  /** Myself, as a Node in the Cloud */
   public static H2ONode SELF = null;
+  /** IP address of this node used for communication
+   * with other nodes.
+   */
   public static InetAddress SELF_ADDRESS;
 
   // Place to store temp/swap files
@@ -1316,7 +1325,7 @@ final public class H2O {
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread(NetworkInit._tcpSocketBig).start();
+    new TCPReceiverThread(NetworkInit._tcpSocket).start();
     // Register the default Requests
     Object x = water.api.RequestServer.class;
   }
@@ -1459,7 +1468,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   // The (local) set of Key/Value mappings.
-  static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<>();
+  public static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<>();
 
   // PutIfMatch
   // - Atomically update the STORE, returning the old Value on success

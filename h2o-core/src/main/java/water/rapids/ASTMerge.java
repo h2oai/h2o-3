@@ -26,9 +26,9 @@ import java.util.Arrays;
  *  allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
  */
 public class ASTMerge extends ASTPrim {
-  @Override public String[] args() { return new String[]{"left","rite", "all_left", "all_rite"}; }
+  @Override public String[] args() { return new String[]{"left","rite", "all_left", "all_rite", "by_left", "by_right", "method"}; }
   @Override public String str(){ return "merge";}
-  @Override int nargs() { return 1+4; } // (merge left rite all.left all.rite)
+  @Override int nargs() { return 1+7; } // (merge left rite all.left all.rite method)
 
   // Size cutoff before switching between a hashed-join vs a sorting join.
   // Hash tables beyond this count are assumed to be inefficient, and we're
@@ -41,6 +41,9 @@ public class ASTMerge extends ASTPrim {
     Frame r = stk.track(asts[2].exec(env)).getFrame();
     boolean allLeft = asts[3].exec(env).getNum() == 1;
     boolean allRite = asts[4].exec(env).getNum() == 1;
+    int[] byLeft = check(asts[5]);
+    int[] byRight = check(asts[6]);
+    String method = asts[7].exec(env).getStr();
 
     // Look for the set of columns in common; resort left & right to make the
     // leading prefix of column names match.  Bail out if we find any weird
@@ -92,6 +95,18 @@ public class ASTMerge extends ASTPrim {
         id_maps[i] = CategoricalWrappedVec.computeMap(hashed.vecs()[i].domain(),lv.domain());
     }
 
+    // GC now to sync nodes and get them to use young gen for the working memory. This helps get stable
+    // repeatable timings.  Otherwise full GCs can cause blocks. Adding System.gc() here suggested by Cliff
+    // during F2F pair-programming and it for sure worked.
+    // TODO - would be better at the end to clean up, but there are several exit paths here.
+    new MRTask() {
+      @Override public void setupLocal() { System.gc(); }
+    }.doAllNodes();
+
+    if (method.equals("radix")) {
+      return sortingMerge(l,r,allLeft,allRite,ncols,id_maps);
+    }
+    
     // Build the hashed version of the hashed frame.  Hash and equality are
     // based on the known-integer key columns.  Duplicates are either ignored
     // (!allRite) or accumulated, and can force replication of the walked set.
@@ -102,8 +117,8 @@ public class ASTMerge extends ASTPrim {
     final Key uniq = ms._uniq;
     IcedHashMap<Row,String> rows = MergeSet.MERGE_SETS.get(uniq)._rows;
     new MRTask() { @Override public void setupLocal() { MergeSet.MERGE_SETS.remove(uniq);  } }.doAllNodes();
-    if( rows == null )          // Blew out hash size; switch to a sorting join
-      return sortingMerge(walked,hashed,allLeft,allRite,ncols,id_maps);
+    if (method.equals("auto") && (rows == null || rows.size() > MAX_HASH_SIZE ))  // Blew out hash size; switch to a sorting join.  Matt: even with 0, rows was size 3 hence added ||
+      return sortingMerge(l,r,allLeft,allRite,ncols,id_maps);
 
     // All of the walked set, and no dup handling on the right - which means no
     // need to replicate rows of the walked dataset.  Simple 1-pass over the
@@ -146,8 +161,8 @@ public class ASTMerge extends ASTPrim {
    *  The walked and hashed frames are sorted according to allLeft; if allRite
    *  is set then allLeft will also be set (but not vice-versa).
    *
-   *  @param walked is the LHS frame; not-null.
-   *  @param hashed is the RHS frame; not-null.
+   *  @param left is the LHS frame; not-null.
+   *  @param right is the RHS frame; not-null.
    *  @param allLeft all rows in the LHS frame will appear in the result frame.
    *  @param allRite all rows in the RHS frame will appear in the result frame.
    *  @param ncols is the number of columns to join on, and these are ordered
@@ -155,8 +170,11 @@ public class ASTMerge extends ASTPrim {
    *  @param id_maps if not-null denote simple integer mappings from one
    *  categorical column to another; the width is ncols
    */
-  private ValFrame sortingMerge( Frame walked, Frame hashed, boolean allLeft, boolean allRite, int ncols, int[][] id_maps) {
-    throw H2O.unimpl();
+
+  private ValFrame sortingMerge( Frame left, Frame right, boolean allLeft, boolean allRite, int ncols, int[][] id_maps) {
+    int cols[] = new int[ncols];
+    for (int i=0; i<ncols; i++) cols[i] = i;
+    return new ValFrame(Merge.merge(left, right, cols, cols, allLeft));
   }
 
   // One Row object per row of the hashed dataset, so kept as small as
@@ -313,6 +331,17 @@ public class ASTMerge extends ASTPrim {
         }
       }
     }
+  }
+
+  private int[] check(AST ast) {
+    double[] n;
+    if( ast instanceof ASTNumList  ) n = ((ASTNumList)ast).expand();
+    else if( ast instanceof ASTNum ) n = new double[]{((ASTNum)ast)._v.getNum()};  // this is the number of breaks wanted...
+    else throw new IllegalArgumentException("Requires a number-list, but found a "+ast.getClass());
+    int[] ni = new int[n.length];
+    for (int i=0; i<ni.length; ++i)
+      ni[i] = (int) n[i];
+    return ni;
   }
 
   // Build the join-set by iterating over all the local Chunks of the walked

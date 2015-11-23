@@ -33,18 +33,19 @@ public class PrettyPrint {
 
   // Return X such that (bytes < 1L<<(X*10))
   static int byteScale(long bytes) {
+    if (bytes<0) return -1;
     for( int i=0; i<6; i++ )
       if( bytes < 1L<<(i*10) )
         return i;
     return 6;
   }
   static double bytesScaled(long bytes, int scale) {
-    if( scale == 0 ) return bytes;
+    if( scale <= 0 ) return bytes;
     return bytes / (double)(1L<<((scale-1)*10));
   }
-  static final String[] SCALE = new String[] {"N/A","%4.0f  B","%.1f KB","%.1f MB","%.2f GB","%.3f TB","%.3f PB"};
+  static final String[] SCALE = new String[] {"N/A (-ve)","Zero  ","%4.0f  B","%.1f KB","%.1f MB","%.2f GB","%.3f TB","%.3f PB"};
   public static String bytes(long bytes) { return bytes(bytes,byteScale(bytes)); }
-  static String bytes(long bytes, int scale) { return String.format(SCALE[scale],bytesScaled(bytes,scale)); }
+  static String bytes(long bytes, int scale) { return String.format(SCALE[scale+1],bytesScaled(bytes,scale)); }
   public static String bytesPerSecond(long bytes) {
     if( bytes < 0 ) return "N/A";
     return bytes(bytes)+"/S";

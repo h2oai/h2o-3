@@ -11,45 +11,53 @@ import java.util.Arrays;
 /**
  * Map/Reduce style distributed computation.
  * <p>
- * MRTask provides several <code>map</code> and <code>reduce</code> methods that can be
- * overridden to specify a computation. Several instances of this class will be
- * created to distribute the computation over F/J threads and machines.  Non-transient
- * fields are copied and serialized to instances created for map invocations. Reduce
- * methods can store their results in fields. Results are serialized and reduced all the
- * way back to the invoking node. When the last reduce method has been called, fields
- * of the initial MRTask instance contains the computation results.</p>
+ * MRTask provides several <code>map</code> and <code>reduce</code> methods
+ * that can be overridden to specify a computation. Several instances of this
+ * class will be created to distribute the computation over F/J threads and
+ * machines.  Non-transient fields are copied and serialized to instances
+ * created for map invocations.  Reduce methods can store their results in
+ * fields.  Results are serialized and reduced all the way back to the invoking
+ * node.  When the last reduce method has been called, fields of the initial
+ * MRTask instance contains the computation results.</p>
  * <p>
  * Apart from small reduced POJO returned to the calling node, MRTask can
  * produce output vector(s) as a result.  These will have chunks co-located
- * with the input dataset, however, their number of lines will generally
- * differ, (so they won't be strictly compatible with the original). To produce
- * output vectors, call doAll.dfork version with required number of outputs and
+ * with the input dataset, however, their number of lines will generally differ
+ * so they won't be strictly compatible with the original.  To produce output
+ * vectors, call doAll.dfork version with required number of outputs and
  * override appropriate <code>map</code> call taking required number of
- * NewChunks.  MRTask will automatically close the new Appendable vecs and
- * produce an output frame with newly created Vecs.
+ * NewChunks.  MRTask will automatically close the new Appendable vecs and a
+ * call to <code>outputFrame</code> will make a frame with newly created Vecs.
  * </p>
  *
- * <p><b>Overview</b>
- *
- *  Distributed computation may be invoked by an MRTask instance via the
- *  <code>doAll</code>, <code>dfork</code>, or <code>asyncExec</code> calls. A call to
- *  <code>doAll</code> is blocking, yet <code>doAll</code> does pass control to
- *  <code>dfork</code> and <code>asyncExec</code>, both of which are non-blocking.
- *  Computation only occurs on instances of Frame, Vec, and Key. The amount of work to do
- *  depends on the mode of computation: the first mode is over an array of Chunk instances;
- *  the second is over an array Key instances. In both modes, divide-conquer-combine using
- *  ForkJoin is the computation paradigm, which is manifested by the <code>compute2</code>
- *  call.
- * </p>
- *
- * <p><b>MRTask Method Overriding</b>
- *
- *  Computation is tailored primarily by overriding the <code>map</code> call, with any
- *  additional customization done by overriding the <code>reduce</code>,
- *  <code>setupLocal</code>, <code>closeLocal</code>, or <code>postGlobal</code> calls.
- *  An overridden <code>setupLocal</code> is invoked during the call to
- *  <code>setupLocal0</code>.
- * </p>
+ * <p><b>Overview</b></p>
+ * <p>
+ * Distributed computation starts by calling <code>doAll</code>,
+ * <code>dfork</code>, or <code>asyncExec</code>.  <code>doAll</code> simply
+ * calls <code>dfork</code> and <code>asyncExec</code> before blocking;
+ * <code>dfork</code> and <code>asyncExec</code> are non-blocking.  The main
+ * pardigm is divide-conquer-combine using ForkJoin. </p>
+ * <p>
+ * If <code>doAll</code> is called with Keys, then one <code>map</code> call is
+ * made per Key, on the Key's home node.  If MRTask is invoked on a Frame (or
+ * equivalently a Vec[]), then one <code>map</code> call is made per Chunk for
+ * all Vecs at once, on the Chunk's home node.  In both modes,
+ * <code>reduce</code> is called between each pair of calls to
+ * <code>map</code>.  </p>
+ * <p>
+ * MRTask can also be called with <code>doAllNodes</code>, in which case only
+ * the setupLocal call is made once per node; neither map nor reduce are
+ * called.</p>
+ * <p>
+
+ * Computation is tailored primarily by overriding.  The main method is the
+ * <code>map</code> call, coupled sometimes with a <code>reduce</code> call.
+ * <code>setupLocal</code> is called once per node before any map calls are
+ * made on that node (but perhaps other nodes have already started); in reverse
+ * <code>closeLocal</code> is called after the last map call completes on a
+ * node (but perhaps other nodes are still computing maps).
+ * <code>postGlobal</code> is called once only after all maps, reduces and
+ * closeLocals, and only on the home node.</p>
  */
 public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements ForkJoinPool.ManagedBlocker {
 
@@ -105,10 +113,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   *                     - (continue splitting)                      - (continue splitting)
   *                   H2O.submitTask(this) => compute2            H2O.submitTask(this) => compute2
   *
-  *
-  *
   */
-
 
   public MRTask() {}
   protected MRTask(H2O.H2OCountedCompleter cmp) {super(cmp); }
@@ -172,16 +177,15 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
 
+  /** @return priority of this MRTask */
+  @Override public byte priority() { return _priority; }
+  private byte _priority;
+
   public String profString() { return _profile != null ? _profile.toString() : "Profiling turned off"; }
   MRProfile _profile;
 
-  public void setProfile(boolean b) { if( b ) _profile = new MRProfile(this); }
-
-  /**
-   * @return priority of this MRTask
-   */
-  @Override public byte priority() { return _priority; }
-  private byte _priority;
+  /** Used to invoke profiling.  Call as: <code>new MRTask().profile().doAll();*/
+  public T profile() { _profile = new MRProfile(this); return (T)this; }
 
   /** Get the resulting Frame from this invoked MRTask.  <b>This Frame is not
    *  in the DKV.</b> AppendableVec instances are closed into Vec instances,
@@ -250,21 +254,29 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  <strong>local</strong> Chunks.  All map variants are called, but only one
    *  is expected to be overridden. */
   public void map( Chunk c0, Chunk c1 ) { }
-  public void map( Chunk c0, Chunk c1, NewChunk nc) { }
-  public void map( Chunk c0, Chunk c1, NewChunk nc1, NewChunk nc2 ) { }
+  //public void map( Chunk c0, Chunk c1, NewChunk nc) { }
+  //public void map( Chunk c0, Chunk c1, NewChunk nc1, NewChunk nc2 ) { }
 
   /** Override with your map implementation.  This overload is given three
    * <strong>local</strong> input Chunks.  All map variants are called, but only one
    * is expected to be overridden. */
   public void map( Chunk c0, Chunk c1, Chunk c2 ) { }
-  public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc ) { }
-  public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc1, NewChunk nc2 ) { }
+  //public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc ) { }
+  //public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc1, NewChunk nc2 ) { }
 
   /** Override with your map implementation.  This overload is given an array
    *  of <strong>local</strong> input Chunks, for Frames with arbitrary column
    *  numbers.  All map variants are called, but only one is expected to be
    *  overridden. */
   public void map( Chunk cs[] ) { }
+
+  /** The handy method to generate a new vector based on existing vectors.
+   *
+   * Note: This method is used by Sparkling Water examples.
+   *
+   * @param cs  input vectors
+   * @param nc  output vector
+   */
   public void map( Chunk cs[], NewChunk nc ) { }
   public void map( Chunk cs[], NewChunk nc1, NewChunk nc2 ) { }
   public void map( Chunk cs[], NewChunk [] ncs ) { }
@@ -320,8 +332,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if( first._onCdone > _done1st ) { _time1st = first.sumTime(); _done1st = first._onCdone; }
       }
       if( size_rez !=0 )        // Record i/o result size
-        if( _size_rez0 == 0 ) {      _size_rez0=size_rez; }
-        else { /*assert _size_rez1==0;*/ _size_rez1=size_rez; }
+        if( _size_rez0 == 0 ) _size_rez0=size_rez;
+        else                  _size_rez1=size_rez;
       assert _userstart !=0 || _last != null;
       assert _last._onCdone >= _done1st;
     }
@@ -653,14 +665,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
           if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0]);
           if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0]);
-          if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0]);
-          if( true                  )  map(bvs,    appendableChunks[0]);
+          //if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0]);
+          //if( true                  )  map(bvs,    appendableChunks[0]);
         }
         if( _output_types != null && _output_types.length == 2) { // convenience versions for cases with 2 outputs (e.g split).
           if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
           if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0],appendableChunks[1]);
-          if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0],appendableChunks[1]);
-          if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0],appendableChunks[1]);
+          //if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0],appendableChunks[1]);
+          //if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0],appendableChunks[1]);
           if( true                  )  map(bvs,    appendableChunks[0],appendableChunks[1]);
         }
         map(bvs,appendableChunks);

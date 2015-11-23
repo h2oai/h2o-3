@@ -58,19 +58,28 @@ def lending_club_munging_assembly():
   res.show()
   assembly.to_pojo("LendingClubMungingDemo")#, path="/Users/spencer/Desktop/munging_pojo/lending_club_demo", get_jar=True)
 
-  # java api usage:
-  #
-  #   String rawRow = framework.nextTuple();
-  #   H2OMungingPOJO munger = new GeneratedH2OMungingPojo_001();
-  #   EasyPredictModelWrapper model = new EasyPredictModelWrapper(new GeneratedH2OGbmPojo_001());
-  #
-  #   RowData row = new RowData();
-  #   row.fill(rawRow);
-  #   row = munger.fit(row);
-  #   BinomialModelPrediction pred = model.predictBinomial(row);
-#   // Use prediction!
+  y="int_rate"
+  x=["loan_amnt", "longest_credit_length", "revol_util", "emp_length",
+     "home_ownership", "annual_inc", "purpose", "addr_state", "dti",
+     "delinq_2yrs", "total_acc", "verification_status", "term"]
+
+  from h2o.estimators.gbm import H2OGradientBoostingEstimator
+  model = H2OGradientBoostingEstimator(model_id="InterestRateModel",
+                                       score_each_iteration=False,
+                                       ntrees=100,
+                                       max_depth=5,
+                                       learn_rate=0.05)
+
+  model.train(x=x, y=y, training_frame=data)
 
 
+  model.download_pojo() # path="/Users/spencer/Desktop/munging_pojo/lending_club_demo"
+
+
+  # Java API Usage:
+  #  LendingClubMungingDemo munger = new LendingClubMungingDemo();   // instantiate a new munging pojo
+  #  RowData row = myRowDataBuilder(<<tuple of data from stream>>);  // fill in a RowData object (just a wrapper on HashMap, from hex.genmodel)
+  #  row = munger.fit(row);                                          // call fit on the row, and return the mutated row (easy!)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(lending_club_munging_assembly)

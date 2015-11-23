@@ -42,6 +42,42 @@ class H2ODimReductionModel(ModelBase):
         archetypes.append(list(yvals[yidx])[1:])
       return archetypes
     
+    def reconstruct(self,test_data,reverse_transform=False):
+        """Reconstruct the training data from the GLRM model and impute all missing values.
+
+        Parameters
+        ----------
+          test_data : H2OFrame
+            The dataset upon which the H2O GLRM model was trained.
+          reverse_transform : logical
+            Whether the transformation of the training data during model-building should be reversed on the reconstructed frame.
+
+        Returns
+        -------
+          Return the approximate reconstruction of the training data.
+        """
+        if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
+        j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, reconstruct_train=True, reverse_transform=reverse_transform)
+        return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
+    
+    def proj_archetypes(self,test_data,reverse_transform=False):
+        """Convert archetypes of a GLRM model into original feature space.
+
+        Parameters
+        ----------
+          test_data : H2OFrame
+            The dataset upon which the H2O GLRM model was trained.
+          reverse_transform : logical
+            Whether the transformation of the training data during model-building should be reversed on the projected archetypes.
+
+        Returns
+        -------
+          Return the GLRM archetypes projected back into the original training data's feature space.
+        """
+        if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
+        j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, project_archetypes=True, reverse_transform=reverse_transform)
+        return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
+    
     def screeplot(self, type="barplot", **kwargs):
         """
         Produce the scree plot

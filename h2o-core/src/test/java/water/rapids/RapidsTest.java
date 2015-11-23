@@ -84,7 +84,8 @@ public class RapidsTest extends TestUtil {
     tree = "(cols (rows a.hex [0:4 6 7]) [0])";
     checkTree(tree);
     // Checking `hex[c(8,1,1,7),1]`
-    tree = "(rows a.hex [8 1 1 7])";
+    // No longer handle dup or out-of-order rows
+    tree = "(rows a.hex [2 7 8])";
     checkTree(tree);
   }
 
@@ -271,7 +272,7 @@ public class RapidsTest extends TestUtil {
       r = new Frame(r);
       DKV.put(r);
       System.out.println(r);
-      String x = String.format("(merge %s %s #1 #0 )",l._key,r._key);
+      String x = String.format("(merge %s %s #1 #0 [] [] \"auto\")",l._key,r._key);
       Val res = Exec.exec(x);
       f = res.getFrame();
       System.out.println(f);
@@ -470,10 +471,10 @@ public class RapidsTest extends TestUtil {
       exec_str("(rm weather.hex)",ses);
 
       // nary_op_37 = merge( X Y ); Vecs in X & nary_op_37 shared
-      exec_str("(tmp= nary_op_37 (merge subset_35 census.hex TRUE FALSE))", ses);
+      exec_str("(tmp= nary_op_37 (merge subset_35 census.hex TRUE FALSE [] [] \"auto\"))", ses);
 
       // nary_op_38 = merge( nary_op_37 subset_36_2); Vecs in nary_op_38 and nary_pop_37 and X shared
-      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36_2 TRUE FALSE)) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8))))", ses);
+      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36_2 TRUE FALSE [] [] \"auto\")) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8))))", ses);
 
       // Standard "head of 10 rows" pattern for printing
       exec_str("(tmp= subset_44 (rows subset_41 [0:10]))", ses);

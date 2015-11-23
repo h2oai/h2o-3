@@ -13,8 +13,8 @@ test <- function() {
         arcene.train.full = h2o.uploadFile(locate("smalldata/arcene/shuffle_test_version/arcene.csv"), destination_frame="arcene.train.full", header=FALSE)
         arcene.train.full_shuffled = h2o.uploadFile(locate("smalldata/arcene/shuffle_test_version/arcene_shuffled.csv"), destination_frame="arcene.train.full_shuffled", header=FALSE)
     
-    print("Shuffle rows of dataset.")
-        arcene.train.full_shuffled = h2o.assign(arcene.train.full[sample(nrow(arcene.train.full),replace=F),],"arcene.train.full_shuffled")
+    #print("Shuffle rows of dataset.")
+    #    arcene.train.full_shuffled = h2o.assign(arcene.train.full[sample(nrow(arcene.train.full),replace=F),],"arcene.train.full_shuffled")
     
     print("Create model on original Arcene dataset.")
         h2o.model <- h2o.glm(x=c(1:1000), y=1001, training_frame=arcene.train.full, family="binomial", lambda_search=TRUE, alpha=0.5, nfolds=0)

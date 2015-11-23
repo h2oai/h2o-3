@@ -23,11 +23,16 @@ class H2OAssembly:
   greater_than_equal = H2OFrame.__ge__
 
   def __init__(self, steps):
-    """
-    Build a new H2OAssembly.
+    """Build a new H2OAssembly.
 
-    :param steps: A list of steps that sequentially transforms the input data.
-    :return: An H2OFrame.
+    Parameters
+    ----------
+    steps : list
+      A list of steps that sequentially transforms the input data.
+
+    Returns
+    -------
+      H2OFrame
     """
     self.id = None
     self.steps = steps
@@ -74,11 +79,14 @@ class H2OAssembly:
     self.id = j["assembly"]["name"]
     return get_frame(j["result"]["name"])
 
+
 class H2OCol:
-  """
-  Wrapper class for H2OBinaryOp step's left/right args.
+  """Wrapper class for H2OBinaryOp step's left/right args.
 
   Use if you want to signal that a column actually comes from the train to be fitted on.
   """
   def __init__(self, column):
     self.col = column
+
+
+# TODO: handle arbitrary (non H2OFrame) inputs -- sql, web, file, generated

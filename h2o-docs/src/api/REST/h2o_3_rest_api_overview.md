@@ -1,4 +1,23 @@
 # H2O 3 REST API Overview
+
+## Why?
+When we look to using H2O in a production environment there are two major aspects to consider: model training, and model deployment (aka predictions).
+
+### Model Training
+Model training is the set of steps you use to load your training and optional validation data into H2O, prepare it, and train one or more models.  You will generally do this in Flow, Python, R, Scala or Java.
+
+If you've done this work in Flow, *or* if you want to drive the workflow from another application (e.g., a data collection pipline), you can use the REST API to automate these steps.
+
+### Predictions
+There are two ways to use the models you've trained in H2O to generate new predictions:
+
+ - by exporting your model as a POJO (Plain Old Java object) and incorporating it into a JVM-based application, or
+ - by using the REST API to call a model which is loaded into a running H2O instance.
+ 
+In general, if you are able to use a POJO it is the better choice because it doesn't depend on running H2O at prediction time.  However if you don't have a JVM-based application to integrate with, or if you want to generate predictions during the model training workflow in order to evaluate your models, you may wish to use the REST API for predictions.
+
+
+## What?
 The H2O REST API allows you to access all the capabilities of H2O from an external program or script, via JSON over HTTP.  
 
 The REST API is used by the Flow UI, as well as both the R and Python bindings: everything that you can do with those clients can be done by using the REST API, including data import, model building and generating predictions.

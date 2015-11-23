@@ -38,6 +38,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "lambda_search",
             "nlambdas",
             "standardize",
+            "compute_p_values",
             "intercept",
             "non_negative",
             "max_iterations",
@@ -162,6 +163,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
      */
     @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
     public int max_hit_ratio_k;
+
+    @API(help="request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
+    public boolean compute_p_values;
 
     /////////////////////
 

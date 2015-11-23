@@ -77,22 +77,23 @@ class H2OEstimator(ModelBase):
 
     Parameters
     ----------
-      x : list
-        A list of column names or indices indicating the predictor columns.
-      y : str
-        An index or a column name indicating the response column.
-      training_frame : H2OFrame
-        The H2OFrame having the columns indicated by x and y (as well as any
-        additional columns specified by fold, offset, and weights).
-      offset_column : str, optional
-        The name or index of the column in training_frame that holds the offsets.
-      fold_column : str, optional
-        The name or index of the column in training_frame that holds the per-row fold
-        assignments.
-      weights_column : str, optional
-        The name or index of the column in training_frame that holds the per-row weights.
-      validation_frame : H2OFrame, optional
-        H2OFrame with validation data to be scored on while training.
+
+    x : list
+      A list of column names or indices indicating the predictor columns.
+    y : str
+      An index or a column name indicating the response column.
+    training_frame : H2OFrame
+      The H2OFrame having the columns indicated by x and y (as well as any
+      additional columns specified by fold, offset, and weights).
+    offset_column : str, optional
+      The name or index of the column in training_frame that holds the offsets.
+    fold_column : str, optional
+      The name or index of the column in training_frame that holds the per-row fold
+      assignments.
+    weights_column : str, optional
+      The name or index of the column in training_frame that holds the per-row weights.
+    validation_frame : H2OFrame, optional
+      H2OFrame with validation data to be scored on while training.
     """
     algo_params = locals()
     parms = self._parms.copy()
@@ -154,6 +155,7 @@ class H2OEstimator(ModelBase):
     m._model_json = model_json
     m._metrics_class = metrics_class
     m._parms = self._parms
+    m._estimator_type = self._estimator_type
 
     if model_id is not None and model_json is not None and metrics_class is not None:
       # build Metric objects out of each metrics

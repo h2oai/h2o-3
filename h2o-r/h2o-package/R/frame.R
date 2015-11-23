@@ -72,7 +72,7 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
 # Make a raw named data frame.  The key will exist on the server, and will be
 # the passed-in ID.  Because it is named, it is not GCd.  It is fully evaluated.
 .newFrame <- function(op,id,nrow,ncol) {
-  stopifnot( is.character(id) )
+  stopifnot( base::is.character(id) )
   node <- structure(new.env(parent = emptyenv()), class="Frame")
   .set(node,"op",op)
   .set(node,"id",id)
@@ -139,7 +139,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   res <- paste(sapply( eval, function(child) {
     if(      is.Frame    (child) )                      .eval.impl(child)  # recurse
     else if( is.numeric  (child) && length(child) > 1L ) .num.list(child)  # [ numberz ]  TODO: sup with those NaNs tho
-    else if( is.character(child) && length(child) > 1L ) .str.list(child)  # [ stringz ]
+    else if( base::is.character(child) && length(child) > 1L ) .str.list(child)  # [ stringz ]
     else                                                           child   # base; e.g. raw single numbers or strings
   }),collapse=" ")
   res <- paste0("(",op," ",res,")")
@@ -157,9 +157,9 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 .clear.impl <- function(x) {
   if( !is.Frame(x) ) return()
   eval <- attr(x, "eval")
-  if( !is.list(eval) ) { stopifnot(is.character( attr(x, "id") )); return() }
+  if( !is.list(eval) ) { stopifnot(base::is.character( attr(x, "id") )); return() }
   lapply(eval, function(child) .clear.impl(child))
-  if( is.character( attr(x, "id")) )
+  if( base::is.character( attr(x, "id")) )
     .set(x,"eval",TRUE) # GC-able temp
 }
 
@@ -173,7 +173,7 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
 #
 .eval.frame <- function(x) {
   id <- attr(chk.Frame(x), "id")
-  if( is.character(id) ) return(x)  # Already executed and named
+  if( base::is.character(id) ) return(x)  # Already executed and named
   # Frame does not have a name in the cluster?
   # Act "as if" they're on the 2nd execution - and
   # they will get assigned a temp
@@ -437,7 +437,7 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
   if(!is.numeric(min_occurrence)) stop("min_occurrence must be a numeric value")
 
   parms <- list()
-  if(missing(destination_frame) || !is.character(destination_frame) || !nzchar(destination_frame))
+  if(missing(destination_frame) || !base::is.character(destination_frame) || !nzchar(destination_frame))
     parms$dest = .key.make(prefix = "interaction")
   .key.validate(parms$dest)
   parms$source_frame <- h2o.getId(data)
@@ -533,7 +533,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
   if (length(ratios) < 1) stop("ratios must have length of at least 1")
 
   if (! missing(destination_frames)) {
-    if (! is.character(destination_frames)) stop("destination_frames must be of type character")
+    if (! base::is.character(destination_frames)) stop("destination_frames must be of type character")
     if ((length(ratios) + 1) != length(destination_frames)) {
       stop("The number of provided destination_frames must be one more than the number of provided ratios")
     }
@@ -721,7 +721,7 @@ cut.Frame <- h2o.cut
 #' }
 #' @export
 h2o.match <- function(x, table, nomatch = 0, incomparables = NULL) {
-  if( !is.Frame(table) && length(table)==1 && is.character(table) ) table <- .quote(table)
+  if( !is.Frame(table) && length(table)==1 && base::is.character(table) ) table <- .quote(table)
   .newExpr("match", chk.Frame(x), table, nomatch, incomparables)
 }
 
@@ -928,7 +928,7 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
 
 #' @export
 as.Date.Frame <- function(x, format, ...) {
-  if(!is.character(format)) stop("format must be a string")
+  if(!base::is.character(format)) stop("format must be a string")
   .newExpr("as.Date", chk.Frame(x), .quote(format), ...)
 }
 
@@ -1070,7 +1070,7 @@ NULL
   if( nargs() == 2 &&   # Only row, no column; nargs==2 distinguishes "df[2,]" (row==2) from "df[2]" (col==2)
       # is.char tells cars["cylinders"], or if there are multiple columns.
       # Single column with numeric selector is row: car$cylinders[100]
-      (is.character(row) || ncol(data) > 1) ) {
+      (base::is.character(row) || ncol(data) > 1) ) {
     # Row is really column: cars[3] or cars["cylinders"] or cars$cylinders
     col <- row
     row <- NA
@@ -1078,7 +1078,7 @@ NULL
   if( !missing(col) ) {     # Have a column selector?
     if( is.logical(col) ) { # Columns by boolean choice
       col <- which(col)     # Pick out all the TRUE columns by index
-    } else if( is.character(col) ) {   # Columns by name
+    } else if( base::is.character(col) ) {   # Columns by name
       idx <- match(col,colnames(data)) # Match on name
       if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
       col <- idx
@@ -1110,7 +1110,7 @@ NULL
 `[[.Frame` <- function(x, i, exact = TRUE) {
   if( missing(i) )  return(x)
   if( length(i) > 1L )  stop("`[[` can only select one column")
-  if( is.character(i)) {
+  if( base::is.character(i)) {
     if( exact )  i <-  match(i, colnames(x))
     else         i <- pmatch(i, colnames(x))
   }
@@ -1128,8 +1128,8 @@ NULL
 #' @export
 Ops.Frame <- function(e1,e2)
   .newExpr(.Generic,
-           if( is.character(e1) ) .quote(e1) else e1,
-           if( is.character(e2) ) .quote(e2) else e2)
+           if( base::is.character(e1) ) .quote(e1) else e1,
+           if( base::is.character(e2) ) .quote(e2) else e2)
 
 #' @rdname Frame
 #' @param x object
@@ -1346,6 +1346,16 @@ is.numeric <- function(x) {
   else as.logical(.eval.scalar(.newExpr("is.numeric",x)))
 }
 
+#' Check if character
+#'
+#' @rdname is.character
+#' @param x An H2O Frame object
+#' @export
+is.character <- function(x) {
+  if( !is.Frame(x) ) .Primitive("is.character")(x)
+  else as.logical(.eval.scalar(.newExpr("is.character",x)))
+}
+
 #' Print An H2O Frame
 #'
 #' @param x An H2O Frame object
@@ -1403,7 +1413,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
 `[[.Frame` <- function(x, i, exact = TRUE) {
   if( missing(i) )  return(x)
   if( length(i) > 1L )  stop("`[[` can only select one column")
-  if( is.character(i)) {
+  if( base::is.character(i)) {
     if( exact )  i <-  match(i, colnames(x))
     else         i <- pmatch(i, colnames(x))
   }
@@ -1428,7 +1438,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
   # Named column assignment; the column name was passed in as "row"
   # fr["baz"] <- qux
   # fr$ baz   <- qux
-  if( !allRow && is.character(row) && allCol ) {
+  if( !allRow && base::is.character(row) && allCol ) {
     allRow <- TRUE
     allCol <- FALSE
     col <- row
@@ -1436,11 +1446,11 @@ str.Frame <- function(object, ..., cols=FALSE) {
 
   if(!allRow && !is.numeric(row))
     stop("`row` must be missing or a numeric vector")
-  if(!allCol && !is.numeric(col) && !is.character(col))
+  if(!allCol && !is.numeric(col) && !base::is.character(col))
     stop("`col` must be missing or a numeric or character vector")
   if( !is.null(value) && !is.Frame(value) ) {
     if( is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
-    else if( !is.numeric(value) && !is.character(value) )
+    else if( !is.numeric(value) && !base::is.character(value) )
       stop("`value` can only be an H2O Frame object or a numeric or character vector")
   }
 
@@ -1452,7 +1462,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
   if( allCol ) {   # Col arg is missing, means "all the cols"
     cols <- paste0("[]") # Shortcut for "all cols"
   } else {
-    if( is.character(col) ) {
+    if( base::is.character(col) ) {
       idx <- match(col, colnames(data))
       if( any(is.na(idx)) ) { # Any unknown names?
         if( length(col) > 1 ) stop("unknown column names")
@@ -1464,7 +1474,7 @@ str.Frame <- function(object, ..., cols=FALSE) {
     cols <- .row.col.selector(idx, envir=parent.frame())
   }
 
-  if( is.character(value) ) value <- .quote(value)
+  if( base::is.character(value) ) value <- .quote(value)
   # Set col name and return updated frame
   if( is.na(name) ) .newExpr(":=", data, value, cols, rows)
   else              .newExpr("append", data, value, .quote(name))
@@ -1596,10 +1606,12 @@ h2o.summary <- function(object, factors=6L, ...) {
       if( !(is.null(col.sum$maxs) || length(col.sum$maxs) == 0L) ) cmax <- max(col.sum$maxs,na.rm=TRUE)  # set the max
       if( !(is.null(col.sum$mean))                               ) cmean<- col.sum$mean                  # set the mean
 
+      #               1      2    3    4    5     6        7          8    9   10   11          12    13   14   15    16  17
+      # new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
       if( !is.null(col.sum$percentiles) ){# set the 1st quartile, median, and 3rd quartile
-        c1Q     <- col.sum$percentiles[4] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
-        cmedian <- col.sum$percentiles[6] # p=.5
-        c3Q     <- col.sum$percentiles[8] # p=.75
+        c1Q     <- col.sum$percentiles[5] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
+        cmedian <- col.sum$percentiles[9] # p=.5
+        c3Q     <- col.sum$percentiles[13] # p=.75
       }
 
       missing.count <- NULL
@@ -1617,15 +1629,11 @@ h2o.summary <- function(object, factors=6L, ...) {
       result
     } else if( col.type == "enum" ) {
       domains <- col.sum$domain
-      domain.cnts <- col.sum$histogram_bins
-      if( length(domain.cnts) < length(domains) ) {
-        if( length(domain.cnts) == 1 )  {   # Constant categorical column
-          cnt <- domain.cnts[1]
-          domain.cnts <- rep(NA, length(domains))
-          domain.cnts[col.sum$data[1]+1] <- cnt
-        } else
-          domain.cnts <- c(domain.cnts, rep(NA, length(domains) - length(domain.cnts)))
-      }
+      histo <- col.sum$histogram_bins
+      base <- col.sum$histogram_base
+      domain.cnts <- numeric(length(domains))
+      for( i in 1:length(histo) )
+        domain.cnts[i+base] <- histo[i]
       missing.count <- 0L
       if( !is.null(col.sum$missing_count) && col.sum$missing_count > 0L ) missing.count <- col.sum$missing_count    # set the missing count
       # create a dataframe of the counts and factor levels, then sort in descending order (most frequent levels at the top)
@@ -1693,7 +1701,6 @@ h2o.summary <- function(object, factors=6L, ...) {
 }
 
 #' @rdname h2o.summary
-#' @S3method summary Frame
 #' @usage \\method{summary}{Frame}(object, factors, ...)
 #' @export
 summary.Frame <- h2o.summary
@@ -1949,7 +1956,6 @@ as.matrix.Frame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' @name as.vector
 #' @param x An H2O Frame object
 #' @param mode Unused
-#' @S3method as.vector Frame
 #' @usage \\method{as.vector}{Frame}(x,mode)
 #' @export
 as.vector.Frame <- function(x, mode) base::as.vector(as.matrix.Frame(x))
@@ -2041,7 +2047,7 @@ h2o.removeVecs <- function(data, cols) {
   chk.Frame(data)
   if( missing(cols) ) stop("`cols` must be specified")
   del.cols <- cols
-  if( is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
+  if( base::is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
   .newExpr("cols",data,.row.col.selector(-del.cols,envir=parent.frame()))
 }
 
@@ -2073,8 +2079,8 @@ h2o.removeVecs <- function(data, cols) {
 #' }
 #' @export
 h2o.ifelse <- function(test, yes, no) {
-  if( !is.Frame(yes) && is.character(yes) ) yes <- .quote(yes)
-  if( !is.Frame(no)  && is.character(no ) ) no  <- .quote(no )
+  if( !is.Frame(yes) && base::is.character(yes) ) yes <- .quote(yes)
+  if( !is.Frame(no)  && base::is.character(no ) ) no  <- .quote(no )
   .newExpr("ifelse",test,yes,no)
 }
 
@@ -2171,10 +2177,12 @@ h2o.rbind <- function(...) {
 #' function only supports \code{all.x = TRUE}. All other permutations will fail.
 #'
 #' @param x,y Frame objects
-#' @param all.x a logical value indicating whether or not shared values are
-#'        preserved or ignored in \code{x}.
-#' @param all.y a logical value indicating whether or not shared values are
-#'        preserved or ignored in \code{y}.
+#' @param all.x If all.x is true, all rows in the x will be included, even if there is no matching
+#'        row in y, and vice-versa for all.y.
+#' @param all.y see all.x
+#' @param by.x x columns used for merging.
+#' @param by.y y columns used for merging.
+#' @param method auto, radix, or hash (default)
 #' @examples
 #' \donttest{
 #' h2o.init()
@@ -2187,7 +2195,13 @@ h2o.rbind <- function(...) {
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' }
 #' @export
-h2o.merge <- function(x, y, all.x = TRUE, all.y = FALSE) .newExpr("merge", x, y, all.x, all.y)
+h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE, by.x=NULL, by.y=NULL, method="hash") {
+  common.names = intersect(names(x), names(y))
+  if (length(common.names) == 0) stop("No columns in common to merge on!")
+  if (is.null(by.x)) by.x = match(common.names, names(x))
+  if (is.null(by.y)) by.y = match(common.names, names(y))
+  .newExpr("merge", x, y, all.x, all.y, by.x, by.y, .quote(method))
+}
 
 #' Group and Apply by Column
 #'
@@ -2215,7 +2229,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 
   ### handle the columns
   # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
-  if(is.character(by)) {
+  if(base::is.character(by)) {
     group.cols <- match(by, colnames(data))
     if (any(is.na(group.cols)))
       stop('No column named ', by, ' in ', substitute(data), '.')
@@ -2365,7 +2379,7 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
   # handle the data
   gb.cols <- "[]"
   if( !is.null(by) ) {
-    if(is.character(by)) {
+    if(base::is.character(by)) {
       vars <- match(by, colnames(data))
       if( any(is.na(vars)) )
         stop('No column named ', by, ' in ', substitute(data), '.')
@@ -2428,7 +2442,7 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
 
   # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
   # as column names.  This is a bit complicated
-  if(is.character(.variables)) {
+  if(base::is.character(.variables)) {
     vars <- match(.variables, colnames(X))
     if (any(is.na(vars)))
       stop('No column named ', .variables, ' in ', substitute(X), '.')
@@ -2511,7 +2525,7 @@ apply <- function(X, MARGIN, FUN, ...) {
   # Basic sanity checking on function
   if( missing(FUN) ) stop("FUN must be an R function")
   .FUN <- NULL
-  if( is.character(FUN) ) .FUN <- get(FUN)
+  if( base::is.character(FUN) ) .FUN <- get(FUN)
   if( !is.null(.FUN) && !is.function(.FUN) )    stop("FUN must be an R function!")
   else if( is.null(.FUN) && !is.function(FUN) ) stop("FUN must be an R function")
   if( !is.null(.FUN) ) FUN <- as.name(FUN)
@@ -2566,7 +2580,7 @@ apply <- function(X, MARGIN, FUN, ...) {
 #' @param plot A logical value indicating whether or not a plot should be generated (default is TRUE).
 #' @export
 h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
-  if( is.character(breaks) ) {
+  if( base::is.character(breaks) ) {
     if( breaks=="Sturges" ) breaks <- "sturges"
     if( breaks=="Rice"    ) breaks <- "rice"
     if( breaks=="Doane"   ) breaks <- "doane"

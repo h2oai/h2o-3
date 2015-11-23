@@ -37,7 +37,7 @@ Term | Definition|
 **Gzipped (gz) file** | Gzip is a type of file compression commonly used for H2O file dependencies. 
 **HEX format** |  Records made up of hexadecimal numbers representing machine language code or constant data. In H2O, data must be parsed into .hex format before you can perform operations on it.   
 <a name="Independent"></a>**Independent variable** | The factors can be manipulated or controlled (also known as predictors). The opposite of a [**dependent variable**](#Dependent). 
-**Hit ratio** | The number of times the prediction was correct out of the total number of predictions. 
+**Hit ratio** | (Multinomial only) The number of times the prediction was correct out of the total number of predictions. 
 **Instance** | Occurs each time H2O is started. This process builds a cluster of nodes (even if it is only a one-node cluster on a local machine). The instance begins when the cluster is formed and ends when the program is closed.
 **Integer** | A whole number (can be negative but cannot be a fraction). Can be represented in H2O as an `int`, which is not a type but a property of the data. 
 <a name="Iteration"></a>**Iteration** | A round or instance of model testing or training. Also known as an [**epoch**](#Epoch). 

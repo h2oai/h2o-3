@@ -198,10 +198,6 @@ public class RequestServer extends NanoHTTPD {
             "Return all grids from H2O distributed K/V store.");
 
 
-    register("/3/Configuration/ModelBuilders/visibility"         ,"POST"  ,ModelBuildersHandler.class, "setVisibility", null,
-      "Set Model Builders visibility level.");
-    register("/3/Configuration/ModelBuilders/visibility"         ,"GET"   ,ModelBuildersHandler.class, "getVisibility", null,
-      "Get Model Builders visibility level.");
     register("/3/ModelBuilders/(?<algo>.*)/model_id"             ,"POST"  ,ModelBuildersHandler.class, "calcModelId", null,
       "Return a new unique model_id for the specified algorithm.");
     register("/3/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch", null,

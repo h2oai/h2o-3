@@ -76,18 +76,30 @@ h2o.removeAll <- function(timeout_secs=0) {
 #'
 #' Remove the h2o Big Data object(s) having the key name(s) from ids.
 #'
-#' @param ids The hex key associated with the object to be removed.
+#' @param ids The object or hex key associated with the object to be removed or a vector/list of those things.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
 h2o.rm <- function(ids) {
-  if( is.Frame(ids) ) {
-    if( is.null( attr(ids, "id")) ) stop("Trying to remove a client-managed temp; try assigning NULL over the variable instead")
-    ids <- attr(ids, "id")
+  if( !is.vector(ids) ) x_list = c(ids) else x_list = ids
+  for (xi in x_list) {
+    if( is.null(xi) ) stop("h2o.rm with NULL object is not supported")
+    if( is.Frame(xi) ) {
+      xi_id <- attr(xi, "id")       # String or None
+      if( is.null(xi_id) ) return() # Lazy frame, never evaluated, nothing in cluster
+      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",xi_id[[1]],")"), method = "POST")
+    } else if( is(xi, "H2OModel") ) {
+      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi@model_id), method = "DELETE")
+    } else if( is.character(xi) ) {
+      .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE")
+    } else {
+      stop("input to h2o.rm must be one of: Frame, H2OModel, or character")
+    }
   }
-  if(!is.character(ids)) stop("`ids` must be of class character")
 
-  for(i in seq_len(length(ids)))
-    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",ids[[i]],")"), method = "POST")
+  #remove object from R client if possible (not possible for input of strings)
+  ids <- deparse(substitute(ids))
+  if( exists(ids, envir=parent.frame()) ) rm(list=ids, envir=parent.frame())
+  
 }
 
 #'

@@ -34,8 +34,7 @@ def _import(path):
 
 
 def upload_file(path, destination_frame="", header=(-1,0,1), sep="", col_names=None, col_types=None, na_strings=None):
-  """
-  Upload a dataset at the path given from the local machine to the H2O cluster.
+  """Upload a dataset at the path given from the local machine to the H2O cluster.
 
   Parameters
   ----------
@@ -411,19 +410,33 @@ def log_and_echo(message):
 
 
 def remove(x):
-  """Remove object from H2O.
+  """Remove object(s) from H2O.
 
   Parameters
   ----------
-  x : H2OFrame or str
-    The object pointing to the object to be removed.
+  x : H2OFrame, H2OEstimator, or basestring, or a list/tuple of those things.
+    The object(s) or unique id(s) pointing to the object(s) to be removed.
   """
-  if x is None:
-    raise ValueError("remove with no object is not supported, for your protection")
-  if isinstance(x, H2OFrame):
-    x = x._ex._cache._id       # String or None
-    if x is None: return       # Lazy frame, never evaluated, nothing in cluster
-  if isinstance(x, str): H2OConnection.delete("DKV/"+x)
+  if not isinstance(x, (list, tuple)): x = (x,)
+  for xi in x:
+    if xi is None:
+      raise ValueError("h2o.remove with no object is not supported, for your protection")
+    if isinstance(xi, H2OFrame):
+      xi_id = xi._ex._cache._id      # String or None
+      if xi_id is None: return       # Lazy frame, never evaluated, nothing in cluster
+      rapids("(rm {})".format(xi_id))
+      xi._ex = None
+    elif isinstance(xi, H2OEstimator):
+      H2OConnection.delete("DKV/"+xi.model_id)
+      xi._id = None
+    elif isinstance(xi, basestring):
+      # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
+      try:
+        rapids("(rm {})".format(xi))
+      except:
+        H2OConnection.delete("DKV/"+xi)
+    else:
+      raise ValueError('input to h2o.remove must one of: H2OFrame, H2OEstimator, or basestring')
 
 
 def remove_all():
@@ -453,11 +466,11 @@ def ls():
   -------
     A list of keys in the current H2O instance.
   """
-  return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=False)
+  return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
 
 
 def frame(frame_id, exclude=""):
-  """Retrieve metadata for a id that points to a Frame.
+  """Retrieve metadata for an id that points to a Frame.
 
   Parameters
   ----------
@@ -494,12 +507,12 @@ def download_pojo(model,path="", get_jar=True):
   get_jar : bool
     Retrieve the h2o-genmodel.jar also.
   """
-  java = H2OConnection.get( "Models.java/"+model._id )
+  java = H2OConnection.get( "Models.java/"+model.model_id )
 
   # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
   # TODO: clients should extract Java class name from header.
   regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-  pojoname = regex.sub("_",model._id)
+  pojoname = regex.sub("_",model.model_id)
 
   filepath = path + "/" + pojoname + ".java"
   print "Filepath: {}".format(filepath)
@@ -633,13 +646,11 @@ def cluster_status():
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False):
-  """
-  Initiate an H2O connection to the specified ip and port.
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=False, proxies=None):
+  """Initiate an H2O connection to the specified ip and port.
 
   Parameters
   ----------
-
   ip : str
     A string representing the hostname or IP address of the server where H2O is running.
   port : int
@@ -647,7 +658,8 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   size : int
     The expected number of h2o instances (ignored if start_h2o is True)
   start_h2o : bool
-    A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
+    A boolean dictating whether this module should start the H2O jvm. An attempt is made
+    anyways if _connect fails.
   enable_assertions : bool
     If start_h2o, pass `-ea` as a VM option.s
   license : str
@@ -657,15 +669,31 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   min_mem_size_GB : int
     Minimum heap size (jvm option Xms) in gigabytes.
   ice_root : str
-    A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
+    A temporary directory (default location is determined by tempfile.mkdtemp()) to hold
+    H2O log files.
+  proxies : dict
+    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy
+    path.
+
+  Examples
+  --------
+  Using the 'proxies' parameter
+
+  >>> import h2o
+  >>> import urllib
+  >>> proxy_dict = urllib.getproxies()
+  >>> h2o.init(proxies=proxy_dict)
+  Starting H2O JVM and connecting: ............... Connection successful!
+
   """
-  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check)
+  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies)
   return None
 
 
 def export_file(frame,path,force=False):
   """
-  Export a given H2OFrame to a path on the machine this python session is currently connected to. To view the current session, call h2o.cluster_info().
+  Export a given H2OFrame to a path on the machine this python session is currently
+  connected to. To view the current session, call h2o.cluster_info().
 
   Parameters
   ----------
@@ -1474,8 +1502,8 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
   return unsupervised(parms)
 
 
-def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,transform=None,seed=None,
-         ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
+def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,max_updates=None,transform=None,
+         seed=None,ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
          user_y=None,user_x=None,expand_user_y=None,impute_original=None,recover_svd=None):
   """
@@ -1489,6 +1517,9 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
   max_iterations : int
     The maximum number of iterations to run the optimization loop. Each iteration consists of an update of the X matrix, followed by an
     update of the Y matrix.
+  max_updates : int
+    The maximum number of updates of X or Y to run. Each update consists of an update of either the X matrix or the Y matrix. For example, 
+    if max_updates = 1 and max_iterations = 1, the algorithm will initialize X and Y, update X once, and terminate without updating Y.
   transform : str
     A character string that indicates how the training data should be transformed before running GLRM.
     Possible values are "NONE": for no transformation, "DEMEAN": for subtracting the mean of each column, "DESCALE": for
@@ -1880,20 +1911,18 @@ class H2ODisplay:
   def _html_row(row, bold=False):
     res = "<tr>{}</tr>"
     entry = "<td><b>{}</b></td>"if bold else "<td>{}</td>"
-    #format full floating point numbers to only 1 decimal place
+    #format full floating point numbers to 7 decimal places
     entries = "\n".join([entry.format(str(r))
-                         if len(str(r)) < 10 or not H2ODisplay._is_number(str(r))
-                         else entry.format("{0:.1f}".format(float(str(r)))) for r in row])
+                         if len(str(r)) < 10 or not _is_number(str(r))
+                         else entry.format("{0:.7f}".format(float(str(r)))) for r in row])
     return res.format(entries)
 
-  @staticmethod
-  def _is_number(s):
-    try:
-      float(s)
-      return True
-    except ValueError:
-      return False
-
+def _is_number(s):
+  try:
+    float(s)
+    return True
+  except ValueError:
+    return False
 
 def can_use_pandas():
   try:

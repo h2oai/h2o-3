@@ -121,7 +121,7 @@ public class AppendableVec extends Vec {
   @Override public Value chunkIdx( int cidx ) { throw H2O.fail(); }
   @Override public long length() { throw H2O.fail(); }
   @Override public int nChunks() { throw H2O.fail(); }
-  @Override int elem2ChunkIdx( long i ) { throw H2O.fail(); }
+  @Override public int elem2ChunkIdx( long i ) { throw H2O.fail(); }
   @Override protected long chunk2StartElem( int cidx ) { throw H2O.fail(); }
   @Override public long byteSize() { return 0; }
   @Override public String toString() { return "[AppendableVec, unknown size]"; }

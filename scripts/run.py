@@ -75,7 +75,8 @@ def is_gradle_build_python_test(file_name):
     """
     Return True if file_name matches a regexp for on of the python test run during gradle build.  False otherwise.
     """
-    return file_name in ["generate_rest_api_docs.py", "generate_java_bindings.py"]
+    return file_name in ["generate_rest_api_docs.py", "generate_java_bindings.py", "test_gbm_prostate.py",
+                         "test_rest_api.py"]
 
 def is_javascript_test_file(file_name):
     """
@@ -223,7 +224,7 @@ class H2OCloudNode:
             main_class = "water.H2OClientApp"
         else:
             main_class = "water.H2OApp"
-        if "JAVA_HOME" in os.environ:
+        if "JAVA_HOME" in os.environ and not sys.platform == "win32":
             java = os.environ["JAVA_HOME"] + "/bin/java"
         else:
             java = "java"
@@ -1012,6 +1013,8 @@ class TestRunner:
                 if (is_pyunit(f)):
                     is_test = True
                 if (is_pybooklet(f)):
+                    is_test = True
+                if (is_gradle_build_python_test(f)):
                     is_test = True
                 if (not is_test):
                     continue
@@ -2075,7 +2078,9 @@ def wipe_test_state(test_root_dir):
             if ("Rsandbox" in s):
                 rsandbox_dir = os.path.join(d, s)
                 try:
-                    shutil.rmtree(rsandbox_dir)
+                    if sys.platform == "win32":
+                        os.system(r'C:/cygwin64/bin/rm.exe -r -f "{0}"'.format(rsandbox_dir))
+                    else: shutil.rmtree(rsandbox_dir)
                 except OSError as e:
                     print("")
                     print("ERROR: Removing RSandbox directory failed: " + rsandbox_dir)

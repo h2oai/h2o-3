@@ -14,15 +14,20 @@ public class ModelBuilderJobV3<J extends ModelBuilder, S extends ModelBuilderJob
   @API(help="Model builder parameters.", direction = API.Direction.OUTPUT)
   public ModelParametersSchema parameters;
   
+  @API(help="Info, warning and error messages; NOTE: can be appended to while the Job is running", direction=API.Direction.OUTPUT)
+  public ValidationMessageBase messages[];
+
+  @API(help="Count of error messages", direction=API.Direction.OUTPUT)
+  public int error_count;
+
   @Override
   public S fillFromImpl(ModelBuilder builder) {
     super.fillFromImpl((Job)builder);
 
-    this.messages = new ValidationMessageBase[builder._messages.length];
-    int i = 0;
-    for( ModelBuilder.ValidationMessage vm : builder._messages ) {
-      this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
-    }
+    ModelBuilder.ValidationMessage[] vms = builder._messages;
+    this.messages = new ValidationMessageBase[vms.length];
+    for( int i=0; i<vms.length; i++ )
+      this.messages[i] = new ValidationMessageV3().fillFromImpl(vms[i]); // TODO: version // Note: does default field_name mapping
     // default fieldname hacks
     ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
     this.error_count = builder.error_count();
