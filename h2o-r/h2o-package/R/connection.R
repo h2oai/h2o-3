@@ -48,7 +48,7 @@
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
                      beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = tempdir(), strict_version_check = FALSE) {
+                     ice_root = tempdir(), strict_version_check = TRUE) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
