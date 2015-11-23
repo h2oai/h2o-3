@@ -19,7 +19,7 @@ import water.util.Log;
  */
 public abstract class Persist {
   /** Store a Value into persistent storage, consuming some storage space. */
-  abstract public void store(Value v);
+  abstract public void store(Value v) throws IOException;
 
   /** Load a previously stored Value */
   abstract public byte[] load(Value v) throws IOException;

@@ -6,6 +6,7 @@ import java.util.Arrays;
 import org.junit.*;
 import water.Job;
 import water.Key;
+import water.MemoryManager;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
@@ -60,7 +61,7 @@ public class ParseFolderTestBig extends TestUtil {
       Job<Frame> job = ParseDataset.parse(Key.make("BIGSVM.hex"),new Key[]{nfs._key},true,ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER),false);
       while( job.progress() < 1.0 ) {
         System.out.print(((int)(job.progress()*1000.0))/10.0 + "% ");
-        try { Thread.sleep(1000); } catch( InterruptedException ie ) { }
+        try { Thread.sleep(1000); } catch( InterruptedException _ ) { /*comment to disable ideaJ warning*/}
       }
       System.out.println();
       k1 = job.get();
@@ -75,19 +76,22 @@ public class ParseFolderTestBig extends TestUtil {
   @Test 
   public void testParseMemoryStress() {
     ArrayList<Frame> frames = new ArrayList<>();
+    File ice = new File(water.H2O.ICE_ROOT.toString(),"ice" + water.H2O.API_PORT);
+    Assert.assertTrue(MemoryManager.MEM_MAX <= 2L*1024L*1024L*1024L); // No more than 2Gig of heap; forces swapping
     try {
-      for( int i=0; i<10; i++ ) {
+      // Force much swap-to-disk
+      for( int i=0; i<5; i++ ) {
         frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98LRN_z.csv"));
         frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98VAL_z.csv"));
       }
     } finally {
+      String[] dirs = ice.list();
+      Assert.assertTrue(dirs.length>0); // Much got swapped to disk
       for( Frame fr : frames )
-        fr.delete();
+        fr.delete();            // Cleanup swap-to-disk
     }
-
-    // find swapped-out files, reverse to keys
-    
-
+    // Assert nothing remains
+    String[] dirs = ice.list();
+    Assert.assertTrue(dirs.length==0);
   }
-
 }

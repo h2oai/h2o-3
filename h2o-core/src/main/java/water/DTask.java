@@ -87,7 +87,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
 
     @Override public final void compute2(){
       if(_key.home()){
-        Value val = H2O.get(_key);
+        Value val = Value.STORE_get(_key);
         if( val != null )
           map(val.<V>get());    // Call map locally
         tryComplete();

@@ -1,8 +1,9 @@
 package water;
 
-import org.joda.time.DateTime;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import org.joda.time.DateTime;
 import water.fvec.Chunk;
 import water.util.Log;
 
@@ -144,19 +145,18 @@ class Cleaner extends Thread {
         // Should I write this value out to disk?
         // Should I further force it from memory?
         if( isChunk && !val.isPersisted() && !diskFull && ((Key)ok).home() ) { // && (force || (lazyPersist() && lazy_clean(key)))) {
-          try {
-            val.storePersist(); // Write to disk
-            if( m == null ) m = val.rawMem();
-            if( m != null ) cleaned += m.length;
-          } catch(IOException e) {
-            if( isDiskFull() )
-              Log.warn("Disk full! Disabling swapping to disk." + (force?" Memory low! Please free some space in " + H2O.ICE_ROOT + "!":""));
-            else
-              Log.warn("Disk swapping failed! " + e.getMessage());
+          try { val.storePersist(); } // Write to disk
+          catch( FileNotFoundException fnfe ) { continue; } // Can happen due to racing key delete/remove
+          catch( IOException e ) {
+            Log.warn( isDiskFull()
+                      ? "Disk full! Disabling swapping to disk." + (force?" Memory low! Please free some space in " + H2O.ICE_ROOT + "!":"")
+                      : "Disk swapping failed! " + e.getMessage());
             // Something is wrong so mark disk as full anyways so we do not
             // attempt to write again.  (will retry next run when memory is low)
             diskFull = true;
           }
+          if( m == null ) m = val.rawMem();
+          if( m != null ) cleaned += m.length;
         }
         // And, under pressure, free all
         if( isChunk && force && (val.isPersisted() || !((Key)ok).home()) ) {

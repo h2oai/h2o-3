@@ -58,47 +58,32 @@ final class PersistFS extends Persist {
   }
 
   // Store Value v to disk.
-  @Override public void store(Value v) {
+  @Override public void store(Value v) throws IOException {
     assert !v.isPersisted();
-    new File(_dir, getIceDirectory(v._key)).mkdirs();
-    // Nuke any prior file.
-    FileOutputStream s = null;
-    try { s = new FileOutputStream(getFile(v)); }
-    catch( FileNotFoundException e ) { throw Log.throwErr(e); }
-    try {
-      byte[] m = v.memOrLoad(); // we are not single threaded anymore
-      if( m != null && m.length != v._max ) {
-        Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
-        v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
-      }
-      new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
-      v.setdsk();             // Set as write-complete to disk
-    } finally {
-      if( s!=null ) try { s.close(); } catch( IOException ie ) { }
+    File dirs = new File(_dir, getIceDirectory(v._key));
+    if( !dirs.mkdirs() )
+      throw new java.io.IOException("mkdirs failed making "+dirs);
+    try(FileOutputStream s = new FileOutputStream(getFile(v))) {
+        byte[] m = v.memOrLoad(); // we are not single threaded anymore
+        if( m != null && m.length != v._max ) {
+          Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
+          v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
+        }
+        new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
+      } catch( AutoBuffer.AutoBufferException abe ) {
+      throw abe._ioe;
     }
   }
 
   @Override public void delete(Value v) {
-    assert !v.isPersisted();   // Upper layers already cleared out
-    String dirs = getIceDirectory(v._key);
-    //File f = new File(_dir,  dirs + File.separator + key2Str(v._key));
-    //if( !f.delete() ) 
-    //  System.err.print("CRUNK: FAILED TO DELETE "+f);
-    Path fpath = Paths.get(_dir.toString(),dirs,key2Str(v._key));
-    try { Files.delete(fpath); }
-    catch( IOException ex ) { //NoSuchFileException | DirectoryNotEmptyException ) {
-      System.err.print("CRUNK: FAILED TO DELETE "+fpath+" because "+ex);
-    }
+    getFile(v).delete();        // Silently ignore errors
     // Attempt to delete empty containing directory
-    //File d = new File(_dir,dirs);
-    //if( !d.delete() )
-    //  System.err.print("DRUNK: FAILED TO DELETE "+d);
-    Path dpath = Paths.get(_dir.toString(),dirs);
+    Path dpath = Paths.get(_dir.toString(),getIceDirectory(v._key));
     try(DirectoryStream<Path> dirStream = Files.newDirectoryStream(dpath)) {
         if( !dirStream.iterator().hasNext() )
           Files.delete(dpath);
-      } catch( IOException ex ) { //NoSuchFileException | DirectoryNotEmptyException ) {
-      System.err.print("DRUNK: FAILED TO DELETE "+dpath+" because "+ex);
+      } catch( IOException ex ) {
+      // Silently ignore errors; due to racing writes & deletes, this can fail
     }
   }
 

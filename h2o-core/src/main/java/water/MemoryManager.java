@@ -43,7 +43,7 @@ import water.util.PrettyPrint;
 abstract public class MemoryManager {
 
   // max heap memory
-  static final long MEM_MAX = Runtime.getRuntime().maxMemory();
+  public static final long MEM_MAX = Runtime.getRuntime().maxMemory();
 
   // Callbacks from GC
   static final HeapUsageMonitor HEAP_USAGE_MONITOR = new HeapUsageMonitor();
