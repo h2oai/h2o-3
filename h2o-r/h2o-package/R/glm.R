@@ -8,6 +8,7 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
 #' @param validation_frame An H2O Frame object containing the variables in the model.  Defaults to NULL.
 #' @param max_iterations A non-negative integer specifying the maximum number of iterations.
+#' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param beta_epsilon A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
 #'        Defines the convergence criterion for \code{h2o.glm}.
 #' @param solver A character string specifying the solver used: IRLSM (supports more features), L_BFGS (scales better for datasets with many columns)

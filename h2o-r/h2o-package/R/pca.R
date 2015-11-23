@@ -12,6 +12,8 @@
 #'        between 1 and min(ncol(training_frame), nrow(training_frame)) inclusive.
 #' @param model_id (Optional) The unique hex key assigned to the
 #'        resulting model. Automatically generated if none is provided.
+#' @param ignore_const_cols A logical value indicating whether or not to ignore
+#'        all the constant columns in the training frame.
 #' @param max_iterations The maximum number of iterations to run each power
 #'        iteration loop. Must be between 1 and 1e6 inclusive.
 #' @param transform A character string that indicates how the training data

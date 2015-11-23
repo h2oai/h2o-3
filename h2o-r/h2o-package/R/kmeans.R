@@ -15,6 +15,7 @@
 #'        user-specified centers.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
+#' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param max_iterations The maximum number of iterations allowed. Must be between 0
 #         and 1e6 inclusive.
 #' @param standardize Logical, indicates whether the data should be

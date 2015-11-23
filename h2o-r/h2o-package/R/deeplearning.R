@@ -132,7 +132,6 @@ h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
                              overwrite_with_best_model,
                              validation_frame = NULL,
-                             ignore_const_cols = TRUE,
                              checkpoint,
                              autoencoder = FALSE,
                              use_all_factor_levels = TRUE,
@@ -231,8 +230,6 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$nfolds <- nfolds
   if(!missing(validation_frame))
     parms$validation_frame <- validation_frame
-  if(!missing(ignore_const_cols))
-    parms$ignore_const_cols <- TRUE
   if(!missing(checkpoint))
     parms$checkpoint <- checkpoint
   if(!missing(autoencoder))
