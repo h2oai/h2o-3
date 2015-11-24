@@ -319,11 +319,12 @@ class H2OFrame(object):
 
     Returns
     -------
-      A list of column indices
+      A list of column indices that have a fewer count of NAs.
+      If all columns are filtered, None is returned.
     """
     return ExprNode("filterNACols", self, frac)._eager_scalar()
 
-  def type(self,name):
+  def type(self, name):
     """
     Returns
     -------
