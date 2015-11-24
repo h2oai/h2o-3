@@ -53,7 +53,7 @@ abstract public class MemoryManager {
   static long MEM_CRITICAL;
 
   // Block allocations?
-  private static volatile boolean CAN_ALLOC = true;
+  static volatile boolean CAN_ALLOC = true;
   private static volatile boolean MEM_LOW_CRITICAL = false;
 
   // Lock for blocking on allocations
@@ -119,18 +119,17 @@ abstract public class MemoryManager {
 
     String m="";
     if( cacheUsageGC > Cleaner.DESIRED ) {
-      m = (CAN_ALLOC?"Blocking!  ":"blocked:   ");
+      m = (CAN_ALLOC?"Swapping!  ":"blocked:   ");
       if( oom ) setMemLow(); // Stop allocations; trigger emergency clean
       Cleaner.kick_store_cleaner();
     } else { // Else we are not *emergency* cleaning, but may be lazily cleaning.
       setMemGood();             // Cache is below desired level; unblock allocations
       if( oom ) {               // But still have an OOM?
-        m = "Unblock allocations; cache emptied but memory is low: ";
+        m = "Unblock allocations; cache below desired, but also OOM: ";
         // Means the heap is full of uncached POJO's - which cannot be spilled.
         // Here we enter the zone of possibly dieing for OOM.  There's no point
         // in blocking allocations, as no more memory can be freed by more
         // cache-flushing.  Might as well proceed on a "best effort" basis.
-        Log.warn(m+" OOM but cache is emptied:  MEM_MAX = " + PrettyPrint.bytes(MEM_MAX) + ", DESIRED_CACHE = " + PrettyPrint.bytes(d) +", CACHE = " + PrettyPrint.bytes(cacheUsageGC) + ", POJO = " + PrettyPrint.bytes(p) + ", this request bytes = " + PrettyPrint.bytes(bytes));
       } else { 
         m = "MemGood:   "; // Cache is low enough, room for POJO allocation - full steam ahead!
       }
@@ -138,7 +137,7 @@ abstract public class MemoryManager {
 
     // No logging if under memory pressure: can deadlock the cleaner thread
     String s = m+msg+", (K/V:"+PrettyPrint.bytes(cacheUsageGC)+" + POJO:"+PrettyPrint.bytes(pojoUsedGC)+" + FREE:"+PrettyPrint.bytes(freeHeap)+" == MEM_MAX:"+PrettyPrint.bytes(MEM_MAX)+"), desiredKV="+PrettyPrint.bytes(Cleaner.DESIRED)+(oom?" OOM!":" NO-OOM");
-    if( CAN_ALLOC ) Log.debug(s);
+    if( CAN_ALLOC ) { if( oom ) Log.warn(s); else Log.debug(s); }
     else            System.err.println(s);
   }
 
@@ -190,13 +189,12 @@ abstract public class MemoryManager {
       Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
       Cleaner.KV_USED_AT_LAST_GC = HeartBeatThread.myHisto.cached();
       MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
-      if( MEM_LOW_CRITICAL ) { // emergency measure - really low on memory, stop allocations right now!
-        setMemLow();
-      } else // enable new allocations (even if cleaner is still running, we have enough RAM)
-        setMemGood();
-      // No call to logging from inside the call-back
-      System.err.println("GC CALLBACK: "+Cleaner.TIME_AT_LAST_GC+", USED:"+PrettyPrint.bytes(Cleaner.HEAP_USED_AT_LAST_GC)+", CRIT: "+MEM_LOW_CRITICAL);
-      Cleaner.kick_store_cleaner();
+      Log.debug("GC CALLBACK: "+Cleaner.TIME_AT_LAST_GC+", USED:"+PrettyPrint.bytes(Cleaner.HEAP_USED_AT_LAST_GC)+", CRIT: "+MEM_LOW_CRITICAL);
+      set_goals("GC CALLBACK",MEM_LOW_CRITICAL);
+      //if( MEM_LOW_CRITICAL ) { // emergency measure - really low on memory, stop allocations right now!
+      //  setMemLow();           // In-use memory is > 3/4 heap; block allocations
+      //} else if( Cleaner.HEAP_USED_AT_LAST_GC < (MEM_MAX - (MEM_MAX >> 1)) )
+      //  setMemGood(); // In use memory is < 1/2 heap; allow allocations even if Cleaner is still running
     }
   }
 
@@ -219,7 +217,7 @@ abstract public class MemoryManager {
           // logging-induced deadlock!) which will probably be recycled quickly.
           !(Thread.currentThread() instanceof Cleaner) ) {
         synchronized(_lock) {
-          try { _lock.wait(3*1000); } catch (InterruptedException ex) { }
+          try { _lock.wait(300*1000); } catch (InterruptedException ex) { }
         }
       }
       MEM_ALLOC.addAndGet(bytes);

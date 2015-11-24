@@ -81,19 +81,22 @@ public class ParseFolderTestBig extends TestUtil {
     String[] dirs = ice.list();
     Assert.assertTrue(dirs == null || dirs.length==0); // ICE empty before we start
     try {
-      // Force much swap-to-disk
+      // Force much swap-to-disk.  Setting iters to 20 on a 2G JVM will fail in
+      // a OOM death-spiral without swapping.  With swapping it succeeds (very
+      // slowly).  
+      // TODO: Swap speed is miserable.
       for( int i=0; i<10; i++ ) {
         frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98LRN_z.csv"));
         frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98VAL_z.csv"));
       }
     } finally {
       dirs = ice.list();
-      Assert.assertTrue(dirs.length>0); // Much got swapped to disk
+      Assert.assertTrue((dirs != null && dirs.length>0) || !water.H2O.ARGS.cleaner ); // Much got swapped to disk
       for( Frame fr : frames )
         fr.delete();            // Cleanup swap-to-disk
     }
     // Assert nothing remains
     dirs = ice.list();
-    Assert.assertTrue(dirs.length==0);
+    Assert.assertTrue(dirs == null || dirs.length==0); // ICE empty after we are done
   }
 }

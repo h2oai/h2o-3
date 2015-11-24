@@ -97,8 +97,8 @@ class Cleaner extends Thread {
       // caching levels. If forced, be exact (toss out the minimal amount).
       // If lazy, store-to-disk things down to 1/2 the desired cache level
       // and anything older than 5 secs.
-      final boolean force = (h._cached >= DESIRED); // Forced to clean
-      if( force && diskFull )
+      boolean force = (h._cached >= DESIRED || !MemoryManager.CAN_ALLOC); // Forced to clean
+      if( force && diskFull )   // Try to clean the diskFull flag
         diskFull = isDiskFull();
       long clean_to_age = h.clean_to(force ? DESIRED : (DESIRED>>1));
       // If not forced cleaning, expand the cleaning age to allows Values
@@ -182,7 +182,12 @@ class Cleaner extends Thread {
           val.freeMem();
           freed += val._max;
         }
+
+        // If a GC cycle happened and we can no longer alloc, start forcing
+        // from RAM as we go
+        force = (h._cached >= DESIRED || !MemoryManager.CAN_ALLOC); // Forced to clean
       }
+
       String s1 = "Cleaner pass took: "+PrettyPrint.msecs(System.currentTimeMillis()-now,true)+
                   ", spilled "+PrettyPrint.bytes(cleaned)+" in "+PrettyPrint.usecs(io_ns>>10);
       h = _myHisto.histo(true); // Force a new histogram
@@ -279,7 +284,6 @@ class Cleaner extends Thread {
       _oldest = oldest; // Oldest seen in this pass
       _vold = vold;
       _clean = clean && _dirty==Long.MAX_VALUE; // Looks like a clean K/V the whole time?
-      System.err.println("Histo pass took: "+PrettyPrint.msecs(System.currentTimeMillis()-_when,true));
     }
 
     // Compute the time (in msec) for which we need to throw out things
