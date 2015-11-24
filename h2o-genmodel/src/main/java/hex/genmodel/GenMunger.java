@@ -25,6 +25,7 @@ public class GenMunger implements Serializable {
     public HashMap<String,String[]> params() { return _params; }
   }
   public RowData fit(RowData row) {
+    if( row==null ) return null;
     for(Step s: _steps)
       row = s.transform(row);
     return row;
@@ -34,8 +35,8 @@ public class GenMunger implements Serializable {
     RowData row = new RowData();
     String[] types = inTypes();
     String[] names = inNames();
-    for(int i=0;i<vals.length;++i)
-      row.put(names[i],valueOf(types[i],vals[i]));
+    for(int i=0;i<types.length;++i)
+      row.put(names[i],vals==null?null:valueOf(types[i],vals[i]));
     return row;
   }
 
