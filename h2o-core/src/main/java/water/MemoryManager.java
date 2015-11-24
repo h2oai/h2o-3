@@ -71,6 +71,7 @@ abstract public class MemoryManager {
     Log.warn("Continuing after swapping");
   }
   static void setMemLow() {
+    if( !H2O.ARGS.cleaner ) return; // Cleaner turned off
     if( !CAN_ALLOC ) return;
     synchronized(_lock) { CAN_ALLOC = false; }
     // NO LOGGING UNDER LOCK!
@@ -137,7 +138,7 @@ abstract public class MemoryManager {
 
     // No logging if under memory pressure: can deadlock the cleaner thread
     String s = m+msg+", (K/V:"+PrettyPrint.bytes(cacheUsageGC)+" + POJO:"+PrettyPrint.bytes(pojoUsedGC)+" + FREE:"+PrettyPrint.bytes(freeHeap)+" == MEM_MAX:"+PrettyPrint.bytes(MEM_MAX)+"), desiredKV="+PrettyPrint.bytes(Cleaner.DESIRED)+(oom?" OOM!":" NO-OOM");
-    if( false && CAN_ALLOC ) Log.trace(s);
+    if( CAN_ALLOC ) Log.debug(s);
     else            System.err.println(s);
   }
 
@@ -193,6 +194,7 @@ abstract public class MemoryManager {
         setMemLow();
       } else // enable new allocations (even if cleaner is still running, we have enough RAM)
         setMemGood();
+      // No call to logging from inside the call-back
       System.err.println("GC CALLBACK: "+Cleaner.TIME_AT_LAST_GC+", USED:"+PrettyPrint.bytes(Cleaner.HEAP_USED_AT_LAST_GC)+", CRIT: "+MEM_LOW_CRITICAL);
       Cleaner.kick_store_cleaner();
     }

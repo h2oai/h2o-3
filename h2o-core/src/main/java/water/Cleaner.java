@@ -108,7 +108,7 @@ class Cleaner extends Thread {
 
       // No logging if under memory pressure: can deadlock the cleaner thread
       String s = h+" DESIRED="+(DESIRED>>20)+"M dirtysince="+(now-dirty)+" force="+force+" clean2age="+(now-clean_to_age);
-      if( false && MemoryManager.canAlloc() ) Log.debug(s);
+      if( MemoryManager.canAlloc() ) Log.debug(s);
       else                           System.err.println(s);
       long cleaned = 0;         // Disk i/o bytes
       long freed = 0;           // memory freed bytes
@@ -145,6 +145,8 @@ class Cleaner extends Thread {
           dirty_store(touched); // But may write it out later
           continue;             // Too young
         }
+        // Spiller turned off?
+        if( !H2O.ARGS.cleaner ) continue;
 
         // CNC - Memory cleaning turned off, except for Chunks
         // Too many POJOs are written to dynamically; cannot spill & reload
@@ -181,14 +183,14 @@ class Cleaner extends Thread {
           freed += val._max;
         }
       }
-      System.err.println("Cleaner pass took: "+PrettyPrint.msecs(System.currentTimeMillis()-now,true)+
-                         ", spilled "+PrettyPrint.bytes(cleaned)+" in "+PrettyPrint.usecs(io_ns>>10));
+      String s1 = "Cleaner pass took: "+PrettyPrint.msecs(System.currentTimeMillis()-now,true)+
+                  ", spilled "+PrettyPrint.bytes(cleaned)+" in "+PrettyPrint.usecs(io_ns>>10);
       h = _myHisto.histo(true); // Force a new histogram
       MemoryManager.set_goals("postclean",false);
       // No logging if under memory pressure: can deadlock the cleaner thread
       String s2 = h+" diski_o="+PrettyPrint.bytes(cleaned)+", freed="+(freed>>20)+"M, DESIRED="+(DESIRED>>20)+"M";
-      if( false && MemoryManager.canAlloc() ) Log.debug(s2);
-      else                           System.err.println(s2);
+      if( MemoryManager.canAlloc() ) Log.debug(s1,s2);
+      else                           System.err.println(s1+"\n"+s2);
       // For testing thread
       synchronized(this) {
         _did_sweep = true;

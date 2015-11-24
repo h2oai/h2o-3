@@ -215,6 +215,9 @@ final public class H2O {
     /** -ice_root=ice_root; ice root directory; where temp files go */
     public String ice_root;
 
+    /** -cleaner; enable user-mode spilling of big data to disk in ice_root */
+    public boolean cleaner = false;
+
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
     public int nthreads=Runtime.getRuntime().availableProcessors();
 
