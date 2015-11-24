@@ -193,6 +193,24 @@ If the distribution is skewed, the quantile results may not be as accurate as th
 ##Building H2O
 
 
+**During the build process, the following error message displays. What do I need to do to resolve it?**
+
+```
+Error: Missing name at classes.R:19
+In addition: Warning messages:
+1: @S3method is deprecated. Please use @export instead 
+2: @S3method is deprecated. Please use @export instead 
+Execution halted
+```
+
+To build H2O, [Roxygen2](https://cran.r-project.org/web/packages/roxygen2/vignettes/roxygen2.html) version 4.1.1 is required. 
+ 
+To update your Roxygen2 version, install the `versions` package in R, then use `install.versions("roxygen2", "4.1.1")`. 
+
+
+
+---
+
 **Using `./gradlew build` doesn't generate a build successfully - is there anything I can do to troubleshoot?**
 
 Use `./gradlew clean` before running `./gradlew build`. 
@@ -878,9 +896,8 @@ If you are encountering errors related to missing Python packages when using H2O
         <td><code>beautifulsoup4</code></td>
         <td><code></code></td>
         <td><code></code></td>
-    </tr>
-    </table>
-
+   </tr>
+</table>
 
 ---
 
@@ -906,7 +923,7 @@ Downloading/unpacking http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Pyt
 
 IOError: [Errno 2] No such file or directory: '/tmp/pip-nTu3HK-build/setup.py' 
 
----------------------------------------- 
+--- 
 Command python setup.py egg_info failed with error code 1 in /tmp/pip-nTu3HK-build
 ```
 
