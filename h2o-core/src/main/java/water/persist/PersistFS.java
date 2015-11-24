@@ -61,7 +61,7 @@ final class PersistFS extends Persist {
   @Override public void store(Value v) throws IOException {
     assert !v.isPersisted();
     File dirs = new File(_dir, getIceDirectory(v._key));
-    if( !dirs.mkdirs() )
+    if( !dirs.mkdirs() && !dirs.exists() )
       throw new java.io.IOException("mkdirs failed making "+dirs);
     try(FileOutputStream s = new FileOutputStream(getFile(v))) {
         byte[] m = v.memOrLoad(); // we are not single threaded anymore

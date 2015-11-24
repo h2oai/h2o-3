@@ -3,9 +3,9 @@ package water;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
-import org.joda.time.DateTime;
 import water.fvec.Chunk;
 import water.util.Log;
+import water.util.PrettyPrint;
 
 /** Store Cleaner: User-Mode Swap-To-Disk */
 
@@ -21,19 +21,22 @@ class Cleaner extends Thread {
   }
 
   static volatile long HEAP_USED_AT_LAST_GC;
+  static volatile long KV_USED_AT_LAST_GC;
   static volatile long TIME_AT_LAST_GC=System.currentTimeMillis();
   static final Cleaner THE_CLEANER = new Cleaner();
   static void kick_store_cleaner() {
     synchronized(THE_CLEANER) { THE_CLEANER.notifyAll(); }
   }
   private static void block_store_cleaner() {
-    try { THE_CLEANER.wait(5000); } catch (InterruptedException ignore) { }
+    synchronized(THE_CLEANER) { try { THE_CLEANER.wait(5000); } catch (InterruptedException ignore) { } }
   }
   volatile boolean _did_sweep;
   static void block_for_test() throws InterruptedException {
     THE_CLEANER._did_sweep = false;
-    while( !THE_CLEANER._did_sweep )
-      THE_CLEANER.wait();
+    synchronized(THE_CLEANER) {
+      while( !THE_CLEANER._did_sweep )
+        THE_CLEANER.wait();
+    }
   }
 
 
@@ -59,7 +62,11 @@ class Cleaner extends Thread {
     return space >= 0 && space < (5 << 10);
   }
 
-  @Override synchronized public void run() {
+  // Cleaner thread runs in a forever loop.  (This call cannot be synchronized,
+  // lest we hold the lock during a (very long) clean process - and various
+  // async callbacks attempt to "kick" the Cleaner awake - which will require
+  // taking the lock... blocking the kicking thread for the duration.
+  @Override /*synchronized*/ public void run() {
     boolean diskFull = false;
     while( true ) {
       // Sweep the K/V store, writing out Values (cleaning) and free'ing
@@ -103,8 +110,9 @@ class Cleaner extends Thread {
       String s = h+" DESIRED="+(DESIRED>>20)+"M dirtysince="+(now-dirty)+" force="+force+" clean2age="+(now-clean_to_age);
       if( false && MemoryManager.canAlloc() ) Log.debug(s);
       else                           System.err.println(s);
-      long cleaned = 0;
-      long freed = 0;
+      long cleaned = 0;         // Disk i/o bytes
+      long freed = 0;           // memory freed bytes
+      long io_ns = 0;           // i/o ns writing
 
       // For faster K/V store walking get the NBHM raw backing array,
       // and walk it directly.
@@ -145,6 +153,7 @@ class Cleaner extends Thread {
         // Should I write this value out to disk?
         // Should I further force it from memory?
         if( isChunk && !val.isPersisted() && !diskFull && ((Key)ok).home() ) { // && (force || (lazyPersist() && lazy_clean(key)))) {
+          long now_ns = System.nanoTime();
           try { val.storePersist(); } // Write to disk
           catch( FileNotFoundException fnfe ) { continue; } // Can happen due to racing key delete/remove
           catch( IOException e ) {
@@ -156,7 +165,8 @@ class Cleaner extends Thread {
             diskFull = true;
           }
           if( m == null ) m = val.rawMem();
-          if( m != null ) cleaned += m.length;
+          if( m != null ) cleaned += m.length; // Accumulate i/o bytes
+          io_ns += System.nanoTime() - now_ns; // Accumulate i/o time
         }
         // And, under pressure, free all
         if( isChunk && force && (val.isPersisted() || !((Key)ok).home()) ) {
@@ -171,17 +181,20 @@ class Cleaner extends Thread {
           freed += val._max;
         }
       }
-      // For testing thread
-      _did_sweep = true;
-      if( DESIRED == -1 ) DESIRED = 0; // Turn off test-mode after 1 sweep
-      notifyAll();                     // Wake up testing thread
-
+      System.err.println("Cleaner pass took: "+PrettyPrint.msecs(System.currentTimeMillis()-now,true)+
+                         ", spilled "+PrettyPrint.bytes(cleaned)+" in "+PrettyPrint.usecs(io_ns>>10));
       h = _myHisto.histo(true); // Force a new histogram
       MemoryManager.set_goals("postclean",false);
       // No logging if under memory pressure: can deadlock the cleaner thread
-      String s2 = h+" cleaned="+(cleaned>>20)+"M, freed="+(freed>>20)+"M, DESIRED="+(DESIRED>>20)+"M";
+      String s2 = h+" diski_o="+PrettyPrint.bytes(cleaned)+", freed="+(freed>>20)+"M, DESIRED="+(DESIRED>>20)+"M";
       if( false && MemoryManager.canAlloc() ) Log.debug(s2);
       else                           System.err.println(s2);
+      // For testing thread
+      synchronized(this) {
+        _did_sweep = true;
+        if( DESIRED == -1 ) DESIRED = 0; // Turn off test-mode after 1 sweep
+        notifyAll(); // Wake up testing thread
+      }
     }
   }
 
@@ -201,8 +214,12 @@ class Cleaner extends Thread {
     Value _vold;  // For assertions: record the oldest Value
     boolean _clean; // Was "clean" K/V when built?
 
+    // Latest best-effort cached amount, without forcing a histogram to be
+    // built nor blocking for one being in-progress.
+    long cached() { return _cached; }
+
     // Return the current best histogram, recomputing in-place if it is
-    // getting stale. Synchronized so the same histogram can be called into
+    // getting stale.  Synchronized so the same histogram can be called into
     // here and will be only computed into one-at-a-time.
     synchronized Histo histo( boolean force ) {
       final Histo h = H; // Grab current best histogram
@@ -260,6 +277,7 @@ class Cleaner extends Thread {
       _oldest = oldest; // Oldest seen in this pass
       _vold = vold;
       _clean = clean && _dirty==Long.MAX_VALUE; // Looks like a clean K/V the whole time?
+      System.err.println("Histo pass took: "+PrettyPrint.msecs(System.currentTimeMillis()-_when,true));
     }
 
     // Compute the time (in msec) for which we need to throw out things
@@ -280,8 +298,7 @@ class Cleaner extends Thread {
     @Override public String toString() {
       long x = _eldest;
       long now = System.currentTimeMillis();
-      String eldest_str = new DateTime(x).toString();
-      return "H(cached:"+(_cached>>20)+"M, eldest:"+eldest_str+" < +"+(_oldest-x)+"ms <...{"+_hStep+"ms}...< +"+(_hStep*_hs.length)+"ms < +"+(now-x)+")";
+      return "H(cached:"+(_cached>>20)+"M, eldest:"+x+"L < +"+(_oldest-x)+"ms <...{"+_hStep+"ms}...< +"+(_hStep*_hs.length)+"ms < +"+(now-x)+")";
     }
   }
 }
