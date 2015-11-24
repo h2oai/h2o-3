@@ -531,7 +531,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     f = new Frame((null == destination_key ? Key.make() : destination_key), f.names(), f.vecs());
     DKV.put(f);
-    gs._mb.makeModelMetrics(GLRMModel.this, orig, null);   // save error metrics based on imputed data
+    gs._mb.makeModelMetrics(GLRMModel.this, orig, null, null);   // save error metrics based on imputed data
     return f;
   }
 
@@ -679,7 +679,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     fullFrm.add(loadingFrm);
 
     GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
-    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr, null);   // save error metrics based on imputed data
+    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr, null, null);   // save error metrics based on imputed data
     return (ModelMetricsGLRM) mm;
   }
 

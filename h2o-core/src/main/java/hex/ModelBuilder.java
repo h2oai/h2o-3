@@ -505,7 +505,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           for (Key k : predictionKeys) ((Frame)DKV.getGet(k)).remove();
         }
       }
-      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), preds);
+      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
       if (preds!=null) preds.remove();
       mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
       Log.info(mainModel._output._cross_validation_metrics.toString());

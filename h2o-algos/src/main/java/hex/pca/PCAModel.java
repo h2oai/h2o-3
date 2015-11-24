@@ -114,7 +114,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig, null);
+    makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
     return f;
   }
 

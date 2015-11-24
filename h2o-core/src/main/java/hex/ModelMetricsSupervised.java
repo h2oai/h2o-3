@@ -45,9 +45,9 @@ public class ModelMetricsSupervised extends ModelMetrics {
      * Create a model metrics object
      * @param m Model
      * @param f Frame
-     * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems
-     * @return
+     * @param adaptedFrame
+     *@param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
      */
-    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) { return null; }
+    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) { return null; }
   }
 }

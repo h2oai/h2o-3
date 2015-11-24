@@ -8,11 +8,12 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.TreeSet;
 
 public class GainsLift extends Iced {
   private double[] _quantiles;
@@ -82,7 +83,12 @@ public class GainsLift extends Iced {
       QuantileModel qm = null;
       try {
         QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
-        fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
+        if (_weights==null) {
+          fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
+        } else {
+          fr = new Frame(Key.make(), new String[]{"predictions", "weights"}, new Vec[]{_preds, _weights});
+          qp._weights_column = "weights";
+        }
         DKV.put(fr);
         qp._train = fr._key;
 //      qp._combine_method = QuantileModel.CombineMethod.HIGH;
@@ -90,13 +96,9 @@ public class GainsLift extends Iced {
         for (int i = 0; i < _groups; ++i) {
           qp._probs[i] = (_groups - i - 1.) / _groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
         }
-        if (_weights != null) {
-          if (_weights.min() != 1.0 && _weights.max() != 1.0) {
-            Log.warn("Quantiles computation is not implemented for observation weights. Gains/Lift table might be approximate.");
-          }
-        }
         Quantile q = new Quantile(qp);
         qm = q.trainModel().get();
+        DKV.remove(q._key);
         _quantiles = qm._output._quantiles[0];
         // find uniques (is there a more elegant way?)
         TreeSet<Double> hs = new TreeSet<>();
