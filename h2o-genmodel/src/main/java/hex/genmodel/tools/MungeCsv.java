@@ -133,7 +133,7 @@ public class MungeCsv {
         if (lineNum == 1)
           continue;
 
-        // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
+        // Parse the CSV line.  Somewhat handles quoted commas.  But this ain't no parser test!
         RowData row;
         try {
           row = parseDataRow(line, rawMunger);
