@@ -658,7 +658,7 @@ MAIN_LOOP:
       data[0] = determineTokens(lines[0], sep, singleQuotes);
       ncols = (ncols > 0) ? ncols : data[0].length;
       if( checkHeader == GUESS_HEADER) {
-        if (ParseSetup.allStrings(data[0])) {
+        if (ParseSetup.allStrings(data[0]) && !data[0][0].isEmpty()) {
           labels = data[0];
           checkHeader = HAS_HEADER;
         } else {
