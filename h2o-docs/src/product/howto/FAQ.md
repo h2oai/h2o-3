@@ -543,12 +543,6 @@ The H2O launch failed because more memory was requested than was available. Make
 This [PDF](https://github.com/h2oai/h2o-meetups/blob/master/2014_11_18_H2O_in_Big_Data_Environments/H2OinBigDataEnvironments.pdf) includes diagrams and slides depicting how H2O works in big data environments. 
 
 ---
-**How does H2O work with Excel?**
-
-For more information on how H2O works with Excel, refer to this [page](http://learn.h2o.ai/content/demos/excel.html). 
-
-
----
 
 **I received the following error message when launching H2O - how do I resolve the error?**
 
@@ -1580,20 +1574,6 @@ import org.apache.spark.h2o._
 val h2oContext = new H2OContext(sc)
 ```
 After setting up `H2OContext`, try to run Sparkling Water again. 
-
----
-
-
-
-
-
----
-
-##Tableau
-
-**Where can I learn more about running H2O with Tableau?**
-
-For more information about using H2O with Tableau, refer to [this link](http://learn.h2o.ai/content/demos/integration_with_tableau_and_excel.html) and our [demo](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_demos/runit_demo_tableau.R) in our GitHub repository. Other demos are available [here](https://s3-us-west-1.amazonaws.com/testing-amy/Demo_Template_9.0Windows.twb) and [here](https://github.com/h2oai/h2o/blob/master/tableau/meta_data/airlines_meta.csv). 
 
 ---
 
