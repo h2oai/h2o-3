@@ -3,6 +3,7 @@ package water.api;
 import hex.ModelBuilder;
 import water.*;
 import water.exceptions.H2ONotFoundArgumentException;
+import water.util.Log;
 
 public class JobsHandler extends Handler {
   /** Impl class for a collection of jobs; only used in the API to make it easier to cons up the jobs array via the magic of PojoUtils.copyProperties.  */
@@ -28,7 +29,14 @@ public class JobsHandler extends Handler {
     for (Job j : jobs) {
       if (j instanceof ModelBuilder) {
         // special case: need to add a ModelBuilderJobV3 next.
-        s.jobs[i] = new ModelBuilderJobV3().fillFromImpl((ModelBuilder)j);
+        try {
+          s.jobs[i] = new ModelBuilderJobV3().fillFromImpl((ModelBuilder) j);
+        }
+        catch (Exception e) {
+          // can happen if, e.g., someone overwrites a Model in the DKV with an object of another kind, and _dest ModelKeyV3 creation fails
+          Log.warn("Caught exception filling a ModelBuilderJobV3; falling back to JobV3: " + e);
+          s.jobs[i] = new JobV3().fillFromImpl(j);
+        }
       } else {
         try {
           s.jobs[i] = (JobV3) Schema.schema(version, j).fillFromImpl(j);
