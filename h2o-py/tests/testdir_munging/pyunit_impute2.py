@@ -62,7 +62,7 @@ def impute2():
     assert c4_imputed == 5, "Wrong value imputed. Expected imputed value of 5, but got {0}".format(c4_imputed)
 
     # mode-categorical
-    h2o_data = h2o.H2OFrame(zip(*data))
+    h2o_data = h2o.H2OFrame.from_python(zip(*data), na_strings=[''])
     h2o_data = h2o_data.impute(column="C5", method="mode")
     c5_imputed = h2o_data[4,4]
     assert c5_imputed == 'b', "Wrong value imputed. Expected imputed value of b, but got {0}".format(c5_imputed)

@@ -229,11 +229,11 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], **kwargs)
 
   if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
-  if column_names:
+  if column_names is not None:
     if not isinstance(column_names, list): raise ValueError("col_names should be a list")
     if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
     j["column_names"] = column_names
-  if column_types:
+  if column_types is not None:
     if isinstance(column_types, dict):
       #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
       if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
@@ -254,7 +254,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
     else:  # not dictionary or list
       raise ValueError("col_types should be a list of types or a dictionary of column names to types")
     j["column_types"] = column_types
-  if na_strings:
+  if na_strings is not None:
     if isinstance(na_strings, dict):
       #overwrite dictionary to ordered list of lists of na_strings
       if not j["column_names"]: raise ValueError("column names should be specified")
