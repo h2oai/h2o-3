@@ -346,7 +346,7 @@ class ASTGT   extends ASTBinOp { public String str() { return ">" ; } double op(
 class ASTLE   extends ASTBinOp { public String str() { return "<="; } double op( double l, double r ) { return l<=r?1:0; } }
 class ASTLT   extends ASTBinOp { public String str() { return "<" ; } double op( double l, double r ) { return l< r?1:0; } }
 
-class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op( double l, double r ) { return (Double.isNaN(l) && Double.isNaN(r) || MathUtils.equalsWithinOneSmallUlp(l,r))?1:0; }
+class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?1:0; }
   double str_op( BufferedString l, BufferedString r ) { return (l==null||l.equals("")) ? (r==null||(r.equals(""))?1:0) : (l.equals(r) ? 1 : 0); }
   @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
     return new ValFrame(new MRTask() {
@@ -369,7 +369,7 @@ class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op(
   @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
 
-class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op( double l, double r ) { return (Double.isNaN(l) && Double.isNaN(r) || MathUtils.equalsWithinOneSmallUlp(l,r))?0:1; }
+class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?0:1; }
   double str_op( BufferedString l, BufferedString r ) { return (l==null||l.equals("")) ? ((r==null)||(r.equals(""))?0:1) : (l.equals(r) ? 0 : 1); }
   @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
     return new ValFrame(new MRTask() {
