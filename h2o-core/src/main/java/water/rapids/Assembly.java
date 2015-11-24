@@ -34,7 +34,7 @@ public class Assembly extends Keyed<Assembly> {
     StringBuilder sb = new StringBuilder(
             "import hex.genmodel.GenMunger;\n"+
             "import hex.genmodel.easy.RowData;\n\n" +
-            "class " + pojoName + " extends GenMunger {\n"+
+            "public class " + pojoName + " extends GenMunger {\n"+
             "  public " + pojoName + "() {\n"+
             "    _steps = new Step[" + _steps.length + "];\n"
     );
