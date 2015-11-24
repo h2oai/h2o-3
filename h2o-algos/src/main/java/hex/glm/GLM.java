@@ -172,11 +172,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return 1;
   }
 
-  @Override
-  protected  boolean ignoreConstColumns(){
-    return _parms._beta_constraints == null;
-  }
-
   @Override public void init(boolean expensive) {
     _sc = new ScoringHistory();
     _t0 = System.currentTimeMillis();

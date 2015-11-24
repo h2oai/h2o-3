@@ -193,6 +193,24 @@ If the distribution is skewed, the quantile results may not be as accurate as th
 ##Building H2O
 
 
+**During the build process, the following error message displays. What do I need to do to resolve it?**
+
+```
+Error: Missing name at classes.R:19
+In addition: Warning messages:
+1: @S3method is deprecated. Please use @export instead 
+2: @S3method is deprecated. Please use @export instead 
+Execution halted
+```
+
+To build H2O, [Roxygen2](https://cran.r-project.org/web/packages/roxygen2/vignettes/roxygen2.html) version 4.1.1 is required. 
+ 
+To update your Roxygen2 version, install the `versions` package in R, then use `install.versions("roxygen2", "4.1.1")`. 
+
+
+
+---
+
 **Using `./gradlew build` doesn't generate a build successfully - is there anything I can do to troubleshoot?**
 
 Use `./gradlew clean` before running `./gradlew build`. 
@@ -523,12 +541,6 @@ The H2O launch failed because more memory was requested than was available. Make
 **How does the architecture of H2O work?**
 
 This [PDF](https://github.com/h2oai/h2o-meetups/blob/master/2014_11_18_H2O_in_Big_Data_Environments/H2OinBigDataEnvironments.pdf) includes diagrams and slides depicting how H2O works in big data environments. 
-
----
-**How does H2O work with Excel?**
-
-For more information on how H2O works with Excel, refer to this [page](http://learn.h2o.ai/content/demos/excel.html). 
-
 
 ---
 
@@ -878,9 +890,8 @@ If you are encountering errors related to missing Python packages when using H2O
         <td><code>beautifulsoup4</code></td>
         <td><code></code></td>
         <td><code></code></td>
-    </tr>
-    </table>
-
+   </tr>
+</table>
 
 ---
 
@@ -906,7 +917,7 @@ Downloading/unpacking http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Pyt
 
 IOError: [Errno 2] No such file or directory: '/tmp/pip-nTu3HK-build/setup.py' 
 
----------------------------------------- 
+--- 
 Command python setup.py egg_info failed with error code 1 in /tmp/pip-nTu3HK-build
 ```
 
@@ -1563,20 +1574,6 @@ import org.apache.spark.h2o._
 val h2oContext = new H2OContext(sc)
 ```
 After setting up `H2OContext`, try to run Sparkling Water again. 
-
----
-
-
-
-
-
----
-
-##Tableau
-
-**Where can I learn more about running H2O with Tableau?**
-
-For more information about using H2O with Tableau, refer to [this link](http://learn.h2o.ai/content/demos/integration_with_tableau_and_excel.html) and our [demo](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_demos/runit_demo_tableau.R) in our GitHub repository. Other demos are available [here](https://s3-us-west-1.amazonaws.com/testing-amy/Demo_Template_9.0Windows.twb) and [here](https://github.com/h2oai/h2o/blob/master/tableau/meta_data/airlines_meta.csv). 
 
 ---
 

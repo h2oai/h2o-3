@@ -8,6 +8,7 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
 #' @param validation_frame An H2O Frame object containing the variables in the model.  Defaults to NULL.
 #' @param max_iterations A non-negative integer specifying the maximum number of iterations.
+#' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param beta_epsilon A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
 #'        Defines the convergence criterion for \code{h2o.glm}.
 #' @param solver A character string specifying the solver used: IRLSM (supports more features), L_BFGS (scales better for datasets with many columns)
@@ -100,6 +101,7 @@
 #' @export
 h2o.glm <- function(x, y, training_frame, model_id, 
                     validation_frame = NULL,
+                    ignore_const_cols = TRUE,
                     max_iterations = 50,
                     beta_epsilon = 0,
                     solver = c("IRLSM", "L_BFGS"),
@@ -156,6 +158,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   parms$response_column <- args$y
   if( !missing(validation_frame) )          parms$validation_frame       <- validation_frame
   if( !missing(model_id) )                  parms$model_id               <- model_id
+  if( !missing(ignore_const_cols)  )        parms$ignore_const_cols      <- ignore_const_cols
   if( !missing(max_iterations) )            parms$max_iterations         <- max_iterations
   if( !missing(beta_epsilon) )              parms$beta_epsilon           <- beta_epsilon
   if( !missing(solver) )                    parms$solver                 <- solver

@@ -15,6 +15,7 @@
 #'        user-specified centers.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
+#' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param max_iterations The maximum number of iterations allowed. Must be between 0
 #         and 1e6 inclusive.
 #' @param standardize Logical, indicates whether the data should be
@@ -49,6 +50,7 @@
 #' @export
 h2o.kmeans <- function(training_frame, x, k,
                        model_id,
+                       ignore_const_cols = TRUE,
                        max_iterations = 1000,
                        standardize = TRUE,
                        init = c("Furthest","Random", "PlusPlus"),
@@ -74,6 +76,8 @@ h2o.kmeans <- function(training_frame, x, k,
   parms$training_frame <- training_frame
   if(!missing(model_id))
     parms$model_id <- model_id
+  if(!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
   if(!missing(max_iterations))
     parms$max_iterations <- max_iterations
   if(!missing(standardize))

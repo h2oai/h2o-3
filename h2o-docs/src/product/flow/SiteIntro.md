@@ -116,12 +116,13 @@ The best way to get started is to modify the core module or create a new module,
 
 Users of our Spark-compatible solution, Sparkling Water, should be aware that Sparkling Water is only supported with the latest version of H2O. For more information about Sparkling Water, refer to the following links. 
 
-Sparkling Water is versioned according to the Spark versioning: 
+Sparkling Water is versioned according to the Spark versioning, so make sure to use the Sparkling Water version that corresponds to the installed version of Spark: 
 
 - Use [Sparkling Water 1.2](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.2/6/index.html) for Spark 1.2
 - Use [Sparkling Water 1.3](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.3/7/index.html) for Spark 1.3+
 - Use [Sparkling Water 1.4](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.4/3/index.html) for Spark 1.4
 - Use [Sparkling Water 1.5](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html) for Spark 1.5
+
 
 ###Getting Started with Sparkling Water
 
@@ -163,6 +164,20 @@ Sparkling Water is versioned according to the Spark versioning:
 
 - <a href="http://www.slideshare.net/0xdata/2014-09-30sparklingwaterhandson" target="_blank">Sparkling Water Hands-On</a>
 
+
+###PySparkling
+
+  >*Note*: PySparkling requires [Sparkling Water 1.5](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html) or later. 
+
+H2O's PySparkling package is not available through `pip` (there is [another](https://pypi.python.org/pypi/pysparkling/) similarly-named package). H2O's PySparkling package requires [EasyInstall](http://peak.telecommunity.com/DevCenter/EasyInstall). 
+
+To install H2O's PySparkling package, use the egg file included in the distribution. 
+
+0. Download [Spark 1.5.1](https://spark.apache.org/downloads.html).
+0. Set the `SPARK_HOME` and `MASTER` variables as described on the [Downloads page](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/6/index.html). 
+0. Download [Sparkling Water 1.5](http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/6/index.html)
+0. In the unpacked Sparkling Water directory, run the following command: `easy_install --upgrade sparkling-water-1.5.6/py/dist/pySparkling-1.5.6-py2.7.egg`
+
 ---
 
 <a name="Py"></a>
@@ -190,6 +205,7 @@ We have provided the following helpful resources to assist R users in upgrading 
 
 Currently, the only version of R that is known to be incompatible with H2O is R version 3.1.0 (codename "Spring Dance"). If you are using that version, we recommend upgrading the R version before using H2O. 
 
+To check which version of H2O is installed in R, use `versions::installed.versions("h2o")`. 
 
 - Click [here](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#R) to view instructions for using H2O with R. 
 
