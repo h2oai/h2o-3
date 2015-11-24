@@ -56,7 +56,9 @@ class H2OConnection(object):
     if os.path.exists(jarpaths[0]):   jar_path = jarpaths[0]
     elif os.path.exists(jarpaths[1]): jar_path = jarpaths[1]
     elif os.path.exists(jarpaths[2]): jar_path = jarpaths[2]
-    else:                             jar_path = jarpaths[3]
+    elif os.path.exists(jarpaths[3]): jar_path = jarpaths[3]
+    elif os.path.exists(jarpaths[4]): jar_path = jarpaths[4]
+    else:                             jar_path = jarpaths[5]
     if start_h2o:
       if not ice_root:
         ice_root = tempfile.mkdtemp()
@@ -104,10 +106,15 @@ class H2OConnection(object):
 
   @staticmethod
   def jar_paths():
-    return [os.path.join(sys.prefix, "h2o_jar", "h2o.jar"),
-                os.path.join(os.path.sep,"usr","local","h2o_jar","h2o.jar"),
-                os.path.join(sys.prefix, "local", "h2o_jar", "h2o.jar"),
-                os.path.join(site.USER_BASE, "h2o_jar", "h2o.jar"),
+    sys_prefix1 = sys_prefix2 = sys.prefix
+    if sys_prefix1.startswith('/Library'): sys_prefix2 = '/System'+sys_prefix1
+    elif sys_prefix1.startswith('/System'): sys_prefix2 = sys_prefix1.split('/System')[1]
+    return [os.path.join(sys_prefix1, "h2o_jar", "h2o.jar"),
+            os.path.join(os.path.sep,"usr","local","h2o_jar","h2o.jar"),
+            os.path.join(sys_prefix1, "local", "h2o_jar", "h2o.jar"),
+            os.path.join(site.USER_BASE, "h2o_jar", "h2o.jar"),
+            os.path.join(sys_prefix2, "h2o_jar", "h2o.jar"),
+            os.path.join(sys_prefix2, "h2o_jar", "h2o.jar"),
            ]
 
   @staticmethod
