@@ -206,7 +206,7 @@ class H2OFrame(object):
     tmp_handle,tmp_path = tempfile.mkstemp(suffix=".csv")
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
-    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")#, quoting=csv.QUOTE_ALL)
+    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",", quoting=csv.QUOTE_ALL)
     #csv_writer.writeheader()              # write the header
     if column_names is None: column_names = col_header
     csv_writer.writerows(data_to_write)    # write the data
