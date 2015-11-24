@@ -206,7 +206,7 @@ class H2OFrame(object):
     tmp_handle,tmp_path = tempfile.mkstemp(suffix=".csv")
     tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
-    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
+    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",", quoting=csv.QUOTE_ALL)
     #csv_writer.writeheader()              # write the header
     if column_names is None: column_names = col_header
     csv_writer.writerows(data_to_write)    # write the data
@@ -1830,11 +1830,11 @@ class H2OFrame(object):
     return fr
 
   def isna(self):
-    """For each row in a column, determine if it is NA or not.
+    """For each element in an H2OFrame, determine if it is NA or not.
 
     Returns
     -------
-      Single-column H2OFrame of 1s and 0s. 1 means the value was NA.
+      H2OFrame of 1s and 0s. 1 means the value was NA.
     """
     fr = H2OFrame._expr(expr=ExprNode("is.na", self))
     fr._ex._cache.nrows = self._ex._cache.nrows

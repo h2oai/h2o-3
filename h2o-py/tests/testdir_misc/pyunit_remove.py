@@ -1,9 +1,7 @@
-from h2o.estimators.estimator_base import H2OEstimator
 import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-import os
 
 
 def remove_obj_client():

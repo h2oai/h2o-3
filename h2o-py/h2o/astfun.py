@@ -74,7 +74,7 @@ def _lambda_bytecode_to_ast(co,ops):
   if is_return(instr):
     s-=1
     instr = keys[s]
-  if is_bytecode_instruction(instr):
+  if is_bytecode_instruction(instr) or is_load_fast(instr) or is_load_global(instr):
     body,s = _opcode_read_arg(s,ops,keys)
   else:
     raise ValueError("unimpl bytecode instr: " + instr)

@@ -132,7 +132,7 @@ java -jar build/h2o.jar
 
 ```
 
-#### Recipe 2: Clone fresh, build, and run tests
+#### Recipe 2: Clone fresh, build, and run tests (requires a working install of R)
 
 ```
 git clone https://github.com/h2oai/h2o-3.git

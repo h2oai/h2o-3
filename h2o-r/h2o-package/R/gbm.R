@@ -14,6 +14,7 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+#' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
 #' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
@@ -72,6 +73,7 @@
 h2o.gbm <- function(x, y, training_frame,
                     model_id,
                     checkpoint,
+                    ignore_const_cols = TRUE,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
                     tweedie_power = 1.5,
                     ntrees = 50,
@@ -130,6 +132,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$model_id <- model_id
   if(!missing(checkpoint))
     parms$checkpoint <- checkpoint
+  if(!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
   if (!missing(distribution))
     parms$distribution <- distribution
   if (!missing(tweedie_power))

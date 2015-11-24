@@ -108,6 +108,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
+    if (_valid != null && _valid.numRows() != _train.numRows()) error("_valid", "_valid must have same number of rows as _train");
 
     _ncolY = _train.numColsExp(true, false);
     if (_ncolY > MAX_COLS_EXPANDED)

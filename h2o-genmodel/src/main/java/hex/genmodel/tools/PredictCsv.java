@@ -1,12 +1,14 @@
 package hex.genmodel.tools;
 
 import hex.ModelCategory;
-
-import java.io.*;
-
-import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
 
 /**
  * Simple driver program for reading a CSV file and making predictions.
@@ -121,7 +123,7 @@ public class PredictCsv {
     return row;
   }
 
-  private static String myDoubleToString(double d) {
+  static String myDoubleToString(double d) {
     if (Double.isNaN(d)) {
       return "NA";
     }

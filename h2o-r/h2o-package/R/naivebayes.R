@@ -17,6 +17,7 @@
 #' @param training_frame An H2O Frame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
+#' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param laplace A positive number controlling Laplace smoothing. The default zero disables smoothing.
 #' @param threshold The minimum standard deviation to use for observations without enough data. Must be
 #'        at least 1e-10.
@@ -41,6 +42,7 @@
 #' @export
 h2o.naiveBayes <- function(x, y, training_frame,
                            model_id,
+                           ignore_const_cols = TRUE,
                            laplace = 0,
                            threshold = 0.001,
                            eps = 0,
@@ -62,6 +64,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   parms$training_frame <- training_frame
+  parms$ignore_const_cols <- ignore_const_cols
   if(!missing(model_id))
     parms$model_id <- model_id
   if(!missing(laplace))
