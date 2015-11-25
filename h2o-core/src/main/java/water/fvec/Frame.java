@@ -1293,17 +1293,6 @@ public class Frame extends Lockable<Frame> {
     return row >= lastRowOfCurrentChunk;
   }
 
-  /**
-   * Flush a chunk if it's not homed here.
-   * Do this to avoid filling up memory when streaming a large dataset.
-   */
-  private void hintFlushRemoteChunk(Vec v, int cidx) {
-    Key k = v.chunkKey(cidx);
-    if( ! k.home() ) {
-      H2O.raw_remove(k);
-    }
-  }
-
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally
    *  is compatible with R 3.1's recent change to read.csv()'s behavior.
    *  @return An InputStream containing this Frame as a CSV */
@@ -1383,7 +1372,9 @@ public class Frame extends Lockable<Frame> {
       // Flush non-empty remote chunk if we're done with it.
       if (isLastRowOfCurrentNonEmptyChunk(_curChkIdx, _row)) {
         for (Vec v : vecs()) {
-          hintFlushRemoteChunk(v, _curChkIdx);
+          Key k = v.chunkKey(_curChkIdx);
+          if( !k.home() )
+            H2O.raw_remove(k);
         }
       }
 

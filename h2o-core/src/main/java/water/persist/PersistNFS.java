@@ -84,7 +84,6 @@ public final class PersistNFS extends Persist {
         byte[] m = v.memOrLoad();
         assert (m == null || m.length == v._max); // Assert not saving partial files
         if (m != null) new AutoBuffer(s.getChannel(), false, Value.NFS).putA1(m, m.length).close();
-        v.setdsk(); // Set as write-complete to disk
       }
     } catch (IOException e) {
       Log.err(e);

@@ -33,7 +33,7 @@ public class HeartBeatThread extends Thread {
 
   // My Histogram. Called from any thread calling into the MM.
   // Singleton, allocated now so I do not allocate during an OOM event.
-  static private final Cleaner.Histo myHisto = new Cleaner.Histo();
+  static final Cleaner.Histo myHisto = new Cleaner.Histo();
 
   // uniquely number heartbeats for better timelines
   static private int HB_VERSION;

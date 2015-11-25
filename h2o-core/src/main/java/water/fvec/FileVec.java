@@ -100,7 +100,7 @@ public abstract class FileVec extends ByteVec {
     int len = (int)(cidx < nchk-1 ? _chunkSize : (_len-chunk2StartElem(cidx)));
     // DVec is just the raw file data with a null-compression scheme
     Value val2 = new Value(dkey,len,null,TypeMap.C1NCHUNK,_be);
-    val2.setdsk(); // It is already on disk.
+    val2.setDsk(); // It is already on disk.
     // If not-home, then block till the Key is everywhere.  Most calls here are
     // from the parser loading a text file, and the parser splits the work such
     // that most puts here are on home - so this is a simple speed optimization: 

@@ -215,6 +215,9 @@ final public class H2O {
     /** -ice_root=ice_root; ice root directory; where temp files go */
     public String ice_root;
 
+    /** -cleaner; enable user-mode spilling of big data to disk in ice_root */
+    public boolean cleaner = false;
+
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
     public int nthreads=Runtime.getRuntime().availableProcessors();
 
@@ -1520,9 +1523,10 @@ final public class H2O {
   }
 
   // Get the value from the store
-  public static Value     get(Key key) { return STORE.get(key); }
-  public static Value raw_get(Key key) { return STORE.get(key); }
-  public static void raw_remove(Key key) { STORE.remove(key); }
+  public static void raw_remove(Key key) { 
+    Value v = STORE.remove(key); 
+    if( v != null ) v.removePersist();
+  }
   public static void raw_clear() { STORE.clear(); }
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
   static Key getk( Key key ) { return STORE.getk(key); }
