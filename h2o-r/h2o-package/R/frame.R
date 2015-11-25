@@ -195,8 +195,10 @@ pfr <- function(x) { chk.Frame(x); .pfr(x) }
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   if( !is.null(res$scalar) ) { # Fetch out a scalar answer
     y <- res$scalar
-    if( y=="TRUE" ) y <- TRUE
-    else if( y=="FALSE" ) y <- FALSE
+    if( length(y) == 1 ) {
+      if( y=="TRUE" )       y <- TRUE
+      else if( y=="FALSE" ) y <- FALSE
+    }
     .set(x,"data",y)
   } else if( !is.null(res$funstr) ) {
     stop("Unimplemented: handling of function returns")
@@ -602,9 +604,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
 #' @param data A dataset to filter on.
 #' @param frac The threshold of NAs to allow per column (columns >= this threshold are filtered)
 #' @export
-h2o.filterNACols <- function(data, frac=0.2) {
-  (as.data.frame(.newExpr("filterNACols", data, frac)) + 1)[,1]  # 0 to 1 based index
-}
+h2o.filterNACols <- function(data, frac=0.2) .eval.scalar(.newExpr("filterNACols", data, frac)) + 1  # 0 to 1 based index
 
 #' Cross Tabulation and Table Creation in H2O
 #'
