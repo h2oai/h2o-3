@@ -347,6 +347,7 @@ class H2OFrame(object):
 
   def __repr__(self):
     if sys.gettrace() is None:
+      # PUBDEV-2278: using <method>? from IPython caused everything to dump
       stk = traceback.extract_stack()
       if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
         self.show()

@@ -67,6 +67,7 @@ class ModelBase(object):
     return self._estimator_type
 
   def __repr__(self):
+    # PUBDEV-2278: using <method>? from IPython caused everything to dump
     stk = traceback.extract_stack()
     if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
       self.show()
@@ -438,7 +439,7 @@ class ModelBase(object):
     :param train: If train is True, then return the Log Loss value for the training data.
     :param valid: If valid is True, then return the Log Loss value for the validation data.
     :param xval:  If xval is True, then return the Log Loss value for the cross validation data.
-    :return: The Log Loss for this binomial model.  
+    :return: The Log Loss for this binomial model.
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
