@@ -39,7 +39,7 @@ def test(a_node, pp):
             assert 'Key<Frame>' == mm['frame']['type'], "FAIL: mm[frame] type is not Key<Frame>: " + repr(mm)
     
             model_key = mm['model']['name']
-            frame_key = mm['frame']['name'] # TODO: should match
+            frame_key = mm['frame']['name']
             if model_key == 'deeplearning_prostate_binomial' and frame_key == 'prostate_binomial':
                 found_mm = True
         else:
