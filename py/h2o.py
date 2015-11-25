@@ -414,6 +414,51 @@ class H2O(object):
     # REST API ACCESSORS
 
     '''
+    Fetch all the cluster status from the /Cloud endpoint.
+    '''
+    def cloud(self, timeoutSecs=10, **kwargs):
+        params_dict = {
+        }
+        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'cloud', H2O.verbose)
+        result = self.__do_json_request('/3/Cloud', timeout=timeoutSecs, params=params_dict)
+        return result
+
+
+    '''
+    Determine if the cluster status is not good.  Returns a message (which evaluates as True) 
+    if cloud status is bad; else returns None (which evluates as False);
+    '''
+    def cloud_is_bad(self, timeoutSecs=10, **kwargs):
+        try:
+            cloud = self.cloud()
+        except Exception as e:
+            return str(e)
+
+        if cloud is None:
+            return '/3/Cloud returned None'
+        if 'cloud_size' not in cloud:
+            return '/3/Cloud return value does not contain cloud_size'
+        if 'nodes' not in cloud:
+            return '/3/Cloud return value does not contain nodes'
+        if type(cloud['nodes']) is not list:
+            return '/3/Cloud nodes element is not a list'
+        if cloud['cloud_size'] < 1:
+            return 'cloud_size < 1: ' + cloud['cloud_size']
+
+        size = cloud['cloud_size']
+        if cloud['cloud_size'] != len(cloud['nodes']):
+            return '/3/Cloud nodes list length != cloud_size'
+
+        node_num = 0
+        for node in cloud['nodes']:
+            if 'healthy' not in node:
+                return '/3/Cloud node return value does not contain healthy'
+            if not node['healthy']:
+                return 'node ' + str(node_num) + ' is not healthy'
+
+        return None
+
+    '''
     Fetch all the jobs or a single job from the /Jobs endpoint.
     '''
     def jobs(self, job_key=None, timeoutSecs=10, **kwargs):
