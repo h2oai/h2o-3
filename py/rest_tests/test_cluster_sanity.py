@@ -57,10 +57,14 @@ def test(a_node, pp, algos):
     model_metrics = a_node.model_metrics(timeoutSecs=240)
     
     if h2o_test_utils.isVerboser():
-        print 'ModelMetrics: '
-        pp.pprint(model_metrics)
+        print 'ModelMetrics[0]: '
+        pp.pprint(model_metrics['model_metrics'][0])
+
+    # TODO: validate the results
+
     
     ####################################
     # test model_metrics individual GET
-    # TODO
+    model_metrics = a_node.model_metrics(timeoutSecs=240, model="deeplearning_prostate_binomial", frame="prostate_binomial")
+    # TODO: validate the result
     

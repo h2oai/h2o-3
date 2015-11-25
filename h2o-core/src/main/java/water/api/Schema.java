@@ -1,40 +1,18 @@
 package water.api;
 
-import org.reflections.Reflections;
-
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import hex.schemas.ModelBuilderSchema;
-import water.DKV;
-import water.H2O;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.Value;
+import org.reflections.Reflections;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.MarkdownBuilder;
-import water.util.Pair;
-import water.util.PojoUtils;
-import water.util.ReflectionUtils;
+import water.util.*;
+
+import java.lang.reflect.*;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -569,6 +547,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       } catch( IllegalAccessException iae ) {
         // Come here if field is final or private
         throw H2O.fail("Broken internal schema; field cannot be private nor final: " + key);
+      } catch( Exception e) {
+        throw new H2OIllegalArgumentException(key, this.getClass().getSimpleName() + ".fillFromParms", parms.getProperty(key));
       }
     }
     // Here every thing in 'parms' was set into some field - so we have already

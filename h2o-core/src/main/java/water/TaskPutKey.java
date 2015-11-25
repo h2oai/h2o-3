@@ -25,9 +25,9 @@ public class TaskPutKey extends DTask<TaskPutKey> {
     if( _val != null ) _val.initReplicaHome(sender,_key);
     else if( _key.home() ) _val = Value.makeNull(_key);
     // Spin, until we update something.
-    Value old = H2O.raw_get(_key); // Raw-get: do not lazy-manifest if overwriting
+    Value old = H2O.STORE.get(_key); // Raw-get: do not lazy-manifest if overwriting
     while( H2O.putIfMatch(_key,_val,old) != old )
-      old = H2O.raw_get(_key);  // Repeat until we update something.
+      old = H2O.STORE.get(_key);  // Repeat until we update something.
     // Invalidate remote caches.  Block, so that all invalidates are done
     // before we return to the remote caller.  This is conservative, but
     // otherwise we have to send the invalidate-completion message to the
