@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
  * http://man7.org/linux/man-pages/man5/proc.5.html
  */
 public abstract class LinuxProcFileReader {
+  private static final char[] buffer = new char[8 * 1024]; // MUST be first in file, or else clinit ordering problems
 
   // --------- Process ID --------------
   /** @return process id for this node  */
@@ -191,7 +192,6 @@ public abstract class LinuxProcFileReader {
 
 
   // Read all of a file, throwing IOE on buffer-full or returning a String
-  private static char[] buffer = new char[8 * 1024];
   private static String readFile(File f) throws IOException {
     int bytesRead = 0;
     try(FileReader fr = new FileReader(f)) {
