@@ -4,9 +4,9 @@
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GLM model.
 #' @param y A character string or index that represent the response variable in the model.
-#' @param training_frame An H2O Frame object containing the variables in the model.
+#' @param training_frame An H2O H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
-#' @param validation_frame An H2O Frame object containing the variables in the model.  Defaults to NULL.
+#' @param validation_frame An H2O H2OFrame object containing the variables in the model.  Defaults to NULL.
 #' @param max_iterations A non-negative integer specifying the maximum number of iterations.
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param beta_epsilon A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
@@ -133,8 +133,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     compute_p_values = FALSE)
 {
   # if (!is.null(beta_constraints)) {
-  #     if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
-  #       stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
+  #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame(beta_constraints))
+  #       stop(paste("`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ", class(beta_constraints)))
   #     if (inherits(beta_constraints, "data.frame")) {
   #       beta_constraints <- as.h2o(beta_constraints)
   #     }
@@ -143,10 +143,10 @@ h2o.glm <- function(x, y, training_frame, model_id,
         beta_constraints <- as.h2o(beta_constraints)
   }
 
-  if (!is.Frame(training_frame))
+  if (!is.H2OFrame(training_frame))
    tryCatch(training_frame <- h2o.getFrame(training_frame),
             error = function(err) {
-              stop("argument \"training_frame\" must be a valid Frame or ID")
+              stop("argument \"training_frame\" must be a valid H2OFrame or ID")
             })
 
   # Parameter list to send to model builder
@@ -241,17 +241,17 @@ h2o.makeGLMModel <- function(model,beta) {
 #                    )
 #{
 #  # if (!is.null(beta_constraints)) {
-#  #     if (!inherits(beta_constraints, "data.frame") && !is.Frame("Frame"))
-#  #       stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
+#  #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame("H2OFrame"))
+#  #       stop(paste("`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ", class(beta_constraints)))
 #  #     if (inherits(beta_constraints, "data.frame")) {
 #  #       beta_constraints <- as.h2o(beta_constraints)
 #  #     }
 #  # }
 #
-#  if (!is.Frame(training_frame))
+#  if (!is.H2OFrame(training_frame))
 #      tryCatch(training_frame <- h2o.getFrame(training_frame),
 #               error = function(err) {
-#                 stop("argument \"training_frame\" must be a valid Frame or model ID")
+#                 stop("argument \"training_frame\" must be a valid H2OFrame or model ID")
 #              })
 #
 #    parms <- list()

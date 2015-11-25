@@ -41,7 +41,7 @@ check.hdfs_basic <- function() {
   if (n != 150) {
       stop("nrows is wrong")
   }
-  if (class(iris.hex) != "Frame") {
+  if (class(iris.hex) != "H2OFrame") {
       stop("iris.hex is the wrong type")
   }
   print ("Import worked")
@@ -60,7 +60,7 @@ check.hdfs_basic <- function() {
   if (n != 150) {
       stop("nrows is wrong")
   }
-  if (class(iris.dir.hex) != "Frame") {
+  if (class(iris.dir.hex) != "H2OFrame") {
       stop("iris.dir.hex is the wrong type")
   }
   print ("Import worked")

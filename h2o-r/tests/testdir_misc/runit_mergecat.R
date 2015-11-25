@@ -28,4 +28,4 @@ test.mergecat <- function() {
   
 }
 
-doTest("Merging H2O Frames that contain categorical columns", test.mergecat)
+doTest("Merging H2O H2OFrames that contain categorical columns", test.mergecat)

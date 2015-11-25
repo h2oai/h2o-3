@@ -1,5 +1,5 @@
 ##
-# Test: ifelse is added as method for H2OFrame properly
+# Test: ifelse is added as method for H2OH2OFrame properly
 # Description: push a dataset into H2O and convert column using ifelse
 ##
 

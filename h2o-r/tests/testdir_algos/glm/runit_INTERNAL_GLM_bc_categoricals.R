@@ -23,14 +23,14 @@ test <- function() {
 
   Log.info("Pull data frame into R to run GLMnet...")
   data <- as.data.frame(a)
-  Log.info("Prep Data Frame for run in GLMnet, includes categorical expansions...")
+  Log.info("Prep Data H2OFrame for run in GLMnet, includes categorical expansions...")
   x_1 <- data[,setdiff(indVars, cat_col)]
   x_2 <- data.frame(C217.1 <- ifelse(data[,cat_col] == 1, 1, 0),
                     C217.2 <- ifelse(data[,cat_col] == 2, 1, 0),
                     C217.3 <- ifelse(data[,cat_col] == 3, 1, 0),
                     C217.6 <- ifelse(data[,cat_col] == 6, 1, 0))
-  xDataFrame <- cbind(x_1, x_2)
-  xMatrix <- as.matrix(xDataFrame)
+  xDataH2OFrame <- cbind(x_1, x_2)
+  xMatrix <- as.matrix(xDataH2OFrame)
   yMatrix <- as.matrix(data[,depVars])
 
 

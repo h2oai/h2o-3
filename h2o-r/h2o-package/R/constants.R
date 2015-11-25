@@ -74,7 +74,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__COL_SUMMARY <- function(key, col) URLencode(paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/"))
 .h2o.__COL_DOMAIN  <- function(key, col) URLencode(paste(.h2o.__FRAMES, key, "columns", col, "domain", sep = "/"))
 
-#' Frame Manipulation
+#' H2OFrame Manipulation
 .h2o.__CREATE_FRAME   <- "CreateFrame"
 
 .h2o.__GLMMakeModel <- "MakeGLMModel"

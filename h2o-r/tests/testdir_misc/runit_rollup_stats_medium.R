@@ -9,7 +9,7 @@ checkRollups <- function(h2o_data, r_data) {
     print(paste0("R cols: ",r_num_cols))
     expect_equal(h2o_num_cols, r_num_cols)
 
-    h2o_sum <- .h2o.__remoteSend(paste0("Frames/", attr(h2o_data, "id"), "/summary"), method = "GET")$frames[[1]]
+    h2o_sum <- .h2o.__remoteSend(paste0("H2OFrames/", attr(h2o_data, "id"), "/summary"), method = "GET")$frames[[1]]
     for (c in 1:h2o_num_cols) {
         print("")
         print(paste0("--- Column number ---: ",c))

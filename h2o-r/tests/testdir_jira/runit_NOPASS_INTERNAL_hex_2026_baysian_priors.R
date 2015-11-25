@@ -5,7 +5,7 @@ test <- function(){
   ## Helper functions
   # Function to standardize data
   standardizeVec <- function(v) {(v - mean(v))/sd(v)}
-  standardizeFrame <- function(X) {
+  standardizeH2OFrame <- function(X) {
     X2 <- X
     for(i in seq(1,ncol(X)-1))
       X2[,i] <- standardizeVec(X2[,i])
@@ -56,7 +56,7 @@ test <- function(){
   ## Standardize Data Set
   Log.info("Standardize Data in R: ")
   data.df <- as.data.frame(h2oData)
-  data.standardize <- standardizeFrame(data.df)
+  data.standardize <- standardizeH2OFrame(data.df)
   ## check standardization is done correctly
   checkEqualsNumeric(apply(data.standardize[,1:22], 2, mean), rep(0, 22), 1E-10)
   checkEqualsNumeric(apply(data.standardize[,1:22], 2, sd), rep(1, 22), 1E-10)

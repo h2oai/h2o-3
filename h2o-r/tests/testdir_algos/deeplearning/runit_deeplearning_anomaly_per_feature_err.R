@@ -14,7 +14,7 @@ check.deeplearning_anomaly_mse <- function(conn) {
   ecg_recreate <- h2o.predict(object = ecg_anomaly, newdata = ecg_original)
   ecg_mse      <- h2o.anomaly(ecg_anomaly, ecg_original, per_feature = F)
   
-  # Normalize Original and Recreated Frame
+  # Normalize Original and Recreated H2OFrame
   ecg_original.R <- as.data.frame(ecg_original)
   ecg_recreate.R <- as.data.frame(ecg_recreate)
   
@@ -50,7 +50,7 @@ check.deeplearning_anomaly_mse <- function(conn) {
   iris_recreate <- h2o.predict(object = iris_anomaly, newdata = iris_original)
   iris_mse      <- h2o.anomaly(iris_anomaly, iris_original, per_feature = F)
   
-  # Normalize Original and Recreated Frame
+  # Normalize Original and Recreated H2OFrame
   iris_original.R <- data.frame(Species.setosa = ifelse(iris$Species == "setosa", 1, 0),
                                 Species.versicolor = ifelse(iris$Species == "versicolor", 1, 0),
                                 Species.virginica = ifelse(iris$Species == "virginica", 1, 0),

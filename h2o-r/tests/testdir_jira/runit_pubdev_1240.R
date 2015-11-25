@@ -43,4 +43,4 @@ test.merge.examples <- function() {
   
 }
 
-doTest("Merging H2O Frames causes IllegalArgumentException", test.merge.examples)
+doTest("Merging H2O H2OFrames causes IllegalArgumentException", test.merge.examples)

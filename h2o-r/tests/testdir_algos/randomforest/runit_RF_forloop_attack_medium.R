@@ -41,8 +41,8 @@ randomParams <- function(train, test, x, y) {
       if (!is.null(val))
         if (is.vector(val))
           Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
-        else if (class(val) == "Frame")
-          Log.info(paste("Frame: ", head(val)))
+        else if (class(val) == "H2OFrame")
+          Log.info(paste("H2OFrame: ", head(val)))
         else
           Log.info(paste0(sub("_", " ", parm), ": ", val))
       return(val)

@@ -311,7 +311,7 @@
     cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
     cat("\n")
 
-    jsonObject = jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE)
+    jsonObject = jsonlite::fromJSON(rv$payload, simplifyDataH2OFrame=FALSE)
 
     exceptionType = jsonObject$exception_type
     if (! is.null(exceptionType)) {
@@ -534,7 +534,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   else                    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
 
   if( raw ) rawREST
-  else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
+  else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataH2OFrame=FALSE))
 }
 
 
@@ -579,7 +579,7 @@ h2o.clusterInfo <- function() {
     stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
-  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataH2OFrame=FALSE))
   nodeInfo <- res$nodes
   numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
@@ -589,7 +589,7 @@ h2o.clusterInfo <- function() {
     # to post its information yet.
     threeSeconds = 3L
     Sys.sleep(threeSeconds)
-    res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
+    res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataH2OFrame=FALSE))
   }
 
   nodeInfo <- res$nodes
@@ -642,7 +642,7 @@ h2o.clusterInfo <- function() {
          sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
   }
 
-  cloudStatus <- .h2o.fromJSON(jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE))
+  cloudStatus <- .h2o.fromJSON(jsonlite::fromJSON(rv$payload, simplifyDataH2OFrame=FALSE))
   nodes = cloudStatus$nodes
   overallHealthy = TRUE
   for (i in 1:length(nodes)) {
@@ -677,7 +677,7 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
     while (keepRunning) {
       myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
       rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
-      jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
+      jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataH2OFrame=FALSE))
       jobs <- jsonObject$jobs
       if (length(jobs) > 1) {
         stop("Job list has more than 1 entry")

@@ -6,9 +6,9 @@ readMultiChar <- function(fileName, separators) {
   data <- readLines(con <- file(fileName))
   close(con)
   records <- sapply(data, strsplit, split = separators)
-  dataFrame <- data.frame(t(sapply(records,c)))
-  rownames(dataFrame) <- 1: nrow(dataFrame)
-  return(as.data.frame(dataFrame, stringsAsFactors = FALSE))
+  dataH2OFrame <- data.frame(t(sapply(records,c)))
+  rownames(dataH2OFrame) <- 1: nrow(dataH2OFrame)
+  return(as.data.frame(dataH2OFrame, stringsAsFactors = FALSE))
 }
 
 ## Find and import data into H2O

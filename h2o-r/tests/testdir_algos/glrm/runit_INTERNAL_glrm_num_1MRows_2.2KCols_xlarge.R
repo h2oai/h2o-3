@@ -15,7 +15,7 @@ k_dim <- 15
 print(paste("Matrix decomposition rank k =", k_dim))
 
 print(paste("Creating numeric data frame with rows =", rows, "and cols =", cols))
-sst <- system.time(myframe <- h2o.createFrame(rows = rows, cols = cols, 
+sst <- system.time(myframe <- h2o.createFrame(rows = rows, cols = cols,
                                               randomize = TRUE, real_range = 100, categorical_fraction = 0.0, 
                                               integer_fraction = 0.0, binary_fraction = 0.0, 
                                               missing_fraction = 0, has_response = FALSE))

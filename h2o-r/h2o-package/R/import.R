@@ -38,7 +38,7 @@
 #' @param sep (Optional) The field separator character. Values on each line of
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
-#' @param col.names (Optional) A Frame object containing a single
+#' @param col.names (Optional) A H2OFrame object containing a single
 #'        delimited line with the column names for the file.
 #' @param col.types (Optional) A vector to specify whether columns should be
 #'        forced to a certain type upon import parsing.
@@ -67,14 +67,14 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
     stop("`parse` must be TRUE or FALSE")
 
   if(length(path) > 1L) {
-    destFrames <- c()
+    destH2OFrames <- c()
     fails <- c()
     for(path2 in path){
       res <-.h2o.__remoteSend(.h2o.__IMPORT, path=path2)
-      destFrames <- c(destFrames, res$destination_frames)
+      destH2OFrames <- c(destH2OFrames, res$destination_frames)
       fails <- c(fails, res$fails)
     }
-    res$destination_frames <- destFrames
+    res$destination_frames <- destH2OFrames
     res$fails <- fails
   } else {
     res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path)
@@ -88,10 +88,10 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
   if(length(res$files) <= 0L) stop("all files failed to import")
   if(parse) {
     srcKey <- res$destination_frames
-    return( h2o.parseRaw(data=.newFrame(op="ImportFolder",id=srcKey,-1,-1), destination_frame=destination_frame,
+    return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1), destination_frame=destination_frame,
                          header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings) )
   }
-  myData <- lapply(res$destination_frames, function(x) .newFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
+  myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
     return( myData[[1L]] )
   else
@@ -141,7 +141,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
   fileUploadInfo <- fileUpload(path)
   .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
 
-  rawData = .newFrame(op="PostFile",id=srcKey,-1,-1)
+  rawData = .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
   if (parse) {
     h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type)
   } else {
