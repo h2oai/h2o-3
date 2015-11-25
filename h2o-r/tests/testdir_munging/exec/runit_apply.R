@@ -45,6 +45,12 @@ test.apply <- function() {
   zzz <- 2.5
   print(apply( hex, 2, function(x) { zzz }))
 
+
+  fun1 <- function(x) { x + x }
+  fun <-  function(x) { x * fun1(x) }
+
+  print(apply(hex, 2, fun))
+
   
 }
 
