@@ -247,9 +247,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             m.put(names[i], i);
           int[] newMap = MemoryManager.malloc4(dom.length);
           for (int i = 0; i < map.length; ++i) {
+            if(_removedCols.contains(dom[map[i]])){
+              newMap[i] = -1;
+              continue;
+            }
             Integer I = m.get(dom[map[i]]);
-            if (I == null)
+            if (I == null) {
               throw new IllegalArgumentException("Unrecognized coefficient name in beta-constraint file, unknown name '" + dom[map[i]] + "'");
+            }
             newMap[i] = I;
           }
           map = newMap;
@@ -262,35 +267,35 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             error("beta_constraints","Unknown column name '" + s + "'");
         if ((v = beta_constraints.vec("beta_start")) != null) {
           betaStart = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
-          for (int i = 0; i < (int) v.length(); ++i)
-            betaStart[map == null ? i : map[i]] = v.at(i);
+          for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
+            betaStart[map[i]] = v.at(i);
         }
         if ((v = beta_constraints.vec("beta_given")) != null) {
           betaGiven = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
-          for (int i = 0; i < (int) v.length(); ++i)
+          for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
             betaGiven[map == null ? i : map[i]] = v.at(i);
         }
         if ((v = beta_constraints.vec("upper_bounds")) != null) {
           betaUB = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           Arrays.fill(betaUB, Double.POSITIVE_INFINITY);
-          for (int i = 0; i < (int) v.length(); ++i)
+          for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
             betaUB[map == null ? i : map[i]] = v.at(i);
         }
         if ((v = beta_constraints.vec("lower_bounds")) != null) {
           betaLB = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           Arrays.fill(betaLB, Double.NEGATIVE_INFINITY);
-          for (int i = 0; i < (int) v.length(); ++i)
+          for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
             betaLB[map == null ? i : map[i]] = v.at(i);
         }
         if ((v = beta_constraints.vec("rho")) != null) {
           rho = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
-          for (int i = 0; i < (int) v.length(); ++i)
+          for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
             rho[map == null ? i : map[i]] = v.at(i);
         }
         // mean override (for data standardization)
         if ((v = beta_constraints.vec("mean")) != null) {
           for(int i = 0; i < v.length(); ++i) {
-            if(!v.isNA(i)) {
+            if(!v.isNA(i) && map[i] != -1) {
               int idx = map == null ? i : map[i];
               if (idx > _dinfo.numStart() && idx < _dinfo.fullN()) {
                 _dinfo._normSub[idx - _dinfo.numStart()] = v.at(i);
@@ -303,7 +308,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         // standard deviation override (for data standardization)
         if ((v = beta_constraints.vec("std_dev")) != null) {
           for (int i = 0; i < v.length(); ++i) {
-            if (!v.isNA(i)) {
+            if (!v.isNA(i) && map[i] != -1) {
               int idx = map == null ? i : map[i];
               if (idx > _dinfo.numStart() && idx < _dinfo.fullN()) {
                 _dinfo._normMul[idx - _dinfo.numStart()] = 1.0/v.at(i);
@@ -999,7 +1004,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   double objVal(double likelihood, double[] beta, double lambda) {
     double alpha = _parms._alpha[0];
     double proximalPen = 0;
-    if (_bc._betaGiven != null) {
+    if (_bc._betaGiven != null && _bc._rho != null) {
       for (int i = 0; i < _bc._betaGiven.length; ++i) {
         double diff = beta[i] - _bc._betaGiven[i];
         proximalPen += diff * diff * _bc._rho[i];
