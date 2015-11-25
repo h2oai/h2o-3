@@ -273,24 +273,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if ((v = beta_constraints.vec("beta_given")) != null) {
           betaGiven = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
-            betaGiven[map == null ? i : map[i]] = v.at(i);
+            betaGiven[map[i]] = v.at(i);
         }
         if ((v = beta_constraints.vec("upper_bounds")) != null) {
           betaUB = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           Arrays.fill(betaUB, Double.POSITIVE_INFINITY);
           for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
-            betaUB[map == null ? i : map[i]] = v.at(i);
+            betaUB[map[i]] = v.at(i);
         }
         if ((v = beta_constraints.vec("lower_bounds")) != null) {
           betaLB = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           Arrays.fill(betaLB, Double.NEGATIVE_INFINITY);
           for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
-            betaLB[map == null ? i : map[i]] = v.at(i);
+            betaLB[map[i]] = v.at(i);
         }
         if ((v = beta_constraints.vec("rho")) != null) {
           rho = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           for (int i = 0; i < (int) v.length(); ++i) if(map[i] != -1)
-            rho[map == null ? i : map[i]] = v.at(i);
+            rho[map[i]] = v.at(i);
         }
         // mean override (for data standardization)
         if ((v = beta_constraints.vec("mean")) != null) {
@@ -2011,6 +2011,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _taskInfo._beta = glmt._beta;
             // compute KKTs
             if(_parms._compute_p_values) { // compute p-values
+              if(gslvr._addedL2)
+                throw new IllegalArgumentException("Can not compute p-values due to colinear columns");
               double se = 1;
               boolean seEst = false;
               if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
