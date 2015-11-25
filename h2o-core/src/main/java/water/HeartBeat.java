@@ -26,7 +26,7 @@ public class HeartBeat extends Iced<HeartBeat> {
   public int _process_num_open_fds;
   public int _cpus_allowed;   // Number of CPUs allowed by process
   public int _nthreads;
-  public String _pid;
+  public int _pid;
 
   // Scaled by K or by M setters & getters.
   private int _free_mem;         // Free memory in K (goes up and down with GC)

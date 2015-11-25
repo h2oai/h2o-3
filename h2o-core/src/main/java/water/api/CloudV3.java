@@ -151,7 +151,7 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
     public int sys_cpu_pct;
 
     @API(help="PID", direction=API.Direction.OUTPUT)
-    public String pid;
+    public int pid;
 
     NodeV3(H2ONode h2o, boolean skip_ticks) {
       HeartBeat hb = h2o._heartbeat;
