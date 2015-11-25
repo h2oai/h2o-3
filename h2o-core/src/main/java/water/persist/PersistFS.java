@@ -3,13 +3,11 @@ package water.persist;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
-import java.nio.file.*;
 
 import water.*;
 import water.api.FSIOException;
 import water.fvec.NFSFileVec;
 import water.util.Log;
-import java.nio.file.Paths;
 
 /**
  * Persistence backend using local file system.
@@ -78,13 +76,7 @@ final class PersistFS extends Persist {
   @Override public void delete(Value v) {
     getFile(v).delete();        // Silently ignore errors
     // Attempt to delete empty containing directory
-    Path dpath = Paths.get(_dir.toString(),getIceDirectory(v._key));
-    try(DirectoryStream<Path> dirStream = Files.newDirectoryStream(dpath)) {
-        if( !dirStream.iterator().hasNext() )
-          Files.delete(dpath);
-      } catch( IOException ex ) {
-      // Silently ignore errors; due to racing writes & deletes, this can fail
-    }
+    new File(_dir, getIceDirectory(v._key)).delete();
   }
 
   @Override public long getUsableSpace() {

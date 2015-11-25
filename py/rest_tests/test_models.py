@@ -16,8 +16,8 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         ModelSpec.for_dataset('glm_prostate_regression', 'glm', datasets['prostate_regression'], {'family': 'gaussian'} ),
     
         ModelSpec.for_dataset('glm_prostate_binomial', 'glm', datasets['prostate_binomial'], {'family': 'binomial'} ),
-        # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
-        # TODO: Multinomial is new for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
+        ModelSpec.for_dataset('glm_airlines_binomial', 'glm', datasets['airlines_binomial'], {'response_column': 'IsDepDelayed', 'family': 'binomial' } ),
+        ModelSpec.for_dataset('glm_iris_multinomial', 'glm', datasets['iris_multinomial'], {'response_column': 'class', 'family': 'multinomial' } ),
     
         ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 1, 'loss': 'Quadratic' } ),
         ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': [20, 20], 'loss': 'CrossEntropy' } ),
@@ -43,16 +43,16 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         GridSpec.for_dataset('glm_prostate_regression_grid', 'glm', datasets['prostate_regression'], {'family': 'gaussian'}, { 'lambda': [0.0001, 0.001, 0.01, 0.1] } ),
     
         GridSpec.for_dataset('glm_prostate_binomial_grid', 'glm', datasets['prostate_binomial'], {'family': 'binomial'}, { 'lambda': [0.0001, 0.001, 0.01, 0.1] }  ),
-        # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
-        # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
+        GridSpec.for_dataset('glm_airlines_binomial_grid', 'glm', datasets['airlines_binomial'], {'response_column': 'IsDepDelayed', 'family': 'binomial'}, { 'lambda': [0.0001, 0.001, 0.01, 0.025] } ),
+        GridSpec.for_dataset('glm_iris_multinomial_grid', 'glm', datasets['iris_multinomial'], {'response_column': 'class', 'family': 'multinomial'}, { 'lambda': [0.0001, 0.001, 0.01, 0.025] } ),
     
         GridSpec.for_dataset('deeplearning_prostate_regression_grid', 'deeplearning', datasets['prostate_regression'], { 'loss': 'Quadratic' }, { 'epochs': [0.1, 0.5, 1] } ),
         GridSpec.for_dataset('deeplearning_prostate_binomial_grid', 'deeplearning', datasets['prostate_binomial'], { 'hidden': [20, 20], 'loss': 'CrossEntropy' }, { 'epochs': [0.1, 0.5, 1] }  ),
         GridSpec.for_dataset('deeplearning_airlines_binomial_grid', 'deeplearning', datasets['airlines_binomial'], { 'hidden': [10, 10], 'loss': 'CrossEntropy' }, { 'epochs': [0.1, 0.5, 1] }  ),
         GridSpec.for_dataset('deeplearning_iris_multinomial_grid', 'deeplearning', datasets['iris_multinomial'], { 'loss': 'CrossEntropy' }, { 'epochs': [0.1, 0.5, 1] }  ),
     
-        GridSpec.for_dataset('gbm_prostate_regression_grid', 'gbm', datasets['prostate_regression'], { 'distribution': 'gaussian' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] }  ),
-        # TODO: add toEnum of the response column and put back:        ModelSpec.for_dataset('gbm_prostate_binomial_grid', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'distribution': 'multinomial' } ),
+        GridSpec.for_dataset('gbm_prostate_regression_grid', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 5, 10], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }  ),
+        GridSpec.for_dataset('gbm_prostate_binomial_grid', 'gbm', datasets['prostate_binomial'], {  }, { 'ntrees': [5, 7], 'max_depth': [1, 3, 5] } ),
         GridSpec.for_dataset('gbm_airlines_binomial_grid', 'gbm', datasets['airlines_binomial'], { 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
         GridSpec.for_dataset('gbm_iris_multinomial_grid', 'gbm', datasets['iris_multinomial'], { 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
         # TODO: this should trigger a parameter validation error, but instead the non-grid ntrees silently overrides the drid values:        GridSpec.for_dataset('gbm_iris_multinomial_grid', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
