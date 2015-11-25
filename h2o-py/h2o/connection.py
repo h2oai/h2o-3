@@ -2,8 +2,8 @@
 An H2OConnection represents the latest active handle to a cloud. No more than a single
 H2OConnection object will be active at any one time.
 """
-
-import requests, math, re, os, sys, string, time, tempfile, tabulate, subprocess, atexit, pkg_resources
+import requests, math, re, os, sys, string, time, tempfile, subprocess, atexit, pkg_resources, warnings
+warnings.simplefilter('always', UserWarning)
 from two_dim_table import H2OTwoDimTable
 import h2o
 import h2o_logging
@@ -325,15 +325,16 @@ class H2OConnection(object):
     :return: None
     """
     global __H2OCONN__
-    if not isinstance(conn, H2OConnection): raise ValueError("`conn` must be an H2OConnection object")
+    if conn is None: raise ValueError("There is no H2O instance running.")
     try:
       if not conn.cluster_is_up(conn):  raise ValueError("There is no H2O instance running at ip: {0} and port: "
                                                        "{1}".format(conn.ip(), conn.port()))
     except:
       #H2O is already shutdown on the java side
-      print "The H2O instance running at {0}:{1} has already been shutdown.".format(conn.ip(), conn.port())
+      ip = conn.ip()
+      port = conn.port()
       __H2OCONN__= None
-      return 
+      raise ValueError("The H2O instance running at {0}:{1} has already been shutdown.".format(ip, port))
     if not isinstance(prompt, bool): raise ValueError("`prompt` must be TRUE or FALSE")
     if prompt: response = raw_input("Are you sure you want to shutdown the H2O instance running at {0}:{1} "
                                     "(Y/N)? ".format(conn.ip(), conn.port()))
@@ -376,6 +377,7 @@ class H2OConnection(object):
     if not isinstance(conn, H2OConnection): raise ValueError("`conn` must be an H2OConnection object")
     rv = conn.current_connection()._attempt_rest(url="http://{0}:{1}/".format(conn.ip(), conn.port()), method="GET",
                                                  post_body="", file_upload_info="", proxies=conn.proxies())
+    if rv.status_code == 401: warnings.warn("401 Unauthorized Access. Did you forget to provide a username and password?") 
     return rv.status_code == 200 or rv.status_code == 301
 
   """
@@ -428,7 +430,7 @@ class H2OConnection(object):
       raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
     return __H2OCONN__._rest_json(url_suffix, "POST", file_upload_info, **kwargs)
 
-  def _rest_json(self, url_suffix, method, file_upload_info, proxies=None, **kwargs):
+  def _rest_json(self, url_suffix, method, file_upload_info, **kwargs):
     raw_txt = self._do_raw_rest(url_suffix, method, file_upload_info, proxies=__H2OCONN__._proxies, **kwargs)
     return self._process_tables(raw_txt.json())
 

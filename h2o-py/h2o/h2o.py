@@ -737,7 +737,7 @@ def shutdown(conn=None, prompt=True):
 
   :return: None
   """
-  if conn == None: conn = H2OConnection.current_connection()
+  if conn is None: conn = H2OConnection.current_connection()
   H2OConnection._shutdown(conn=conn, prompt=prompt)
 
 
