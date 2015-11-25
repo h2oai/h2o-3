@@ -5,14 +5,13 @@ A job can be polled for completion and reports the progress so far if it is stil
 
 from connection import H2OConnection
 import time
-import sys
+import sys, signal
 
 
 class H2OJob:
-  """
-  A class representing an H2O Job.
-  """
+  """A class representing an H2O Job."""
   __PROGRESS_BAR__ = True  # display & update progress bar while polling
+  POLLING=False
   def __init__(self, jobs, job_type):
     if "jobs" in jobs:  job = jobs["jobs"][0]
     elif "job" in jobs: job = jobs["job"]
@@ -28,8 +27,11 @@ class H2OJob:
     self._progress_bar_width = 50
     self._job_type = job_type
     self.exception = job['exception'] if 'exception' in job else None
+    signal.signal(signal.SIGINT,  self.signal_handler)
 
   def poll(self):
+    global POLLING
+    POLLING=True
     sleep = 0.1
     running = True
     if H2OJob.__PROGRESS_BAR__: print  # create a new line for distinguished progress bar
@@ -39,6 +41,7 @@ class H2OJob:
       if sleep < 1.0: sleep += 0.1
       self._refresh_job_view()
       running = self._is_running()
+    POLLING=False
     self._update_progress()
     if H2OJob.__PROGRESS_BAR__: print
 
@@ -81,3 +84,10 @@ class H2OJob:
       sys.stdout.write("\r" + self._job_type + " Progress: [%s%s] %02d%%" %
                        ("#" * p, " " * (self._progress_bar_width - p), 100 * progress))
       sys.stdout.flush()
+
+  def signal_handler(self, signum, stackframe):
+    if POLLING:
+      H2OConnection.post(url_suffix="Jobs/" + self.job_key + "/cancel")
+      print "Job {} was cancelled.".format(self.job_key)
+    else:
+      signal.default_int_handler()
