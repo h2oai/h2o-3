@@ -1021,9 +1021,56 @@ Out[26]:
 [(u'Month', 69.27436828613281, 1.0, 1.0)]
 ```
 
+---
+
+**What is PySparkling? How can I use it for grid search or early stopping?**
+
+PySparkling basically calls H2O Python functions for all operations on H2O data frames. You can perform all H2O Python operations available in H2O Python version 3.6.0.3 or later from PySparkling. 
+
+For help on a function within IPython Notebook, run `H2OGridSearch?`
+
+Here is an example of grid search in PySparkling: 
+
+```
+from h2o.grid.grid_search import H2OGridSearch
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
+iris = h2o.import_file("/Users/nidhimehta/h2o-dev/smalldata/iris/iris.csv")
+
+ntrees_opt = [5, 10, 15]
+max_depth_opt = [2, 3, 4]
+learn_rate_opt = [0.1, 0.2]
+hyper_parameters = {"ntrees": ntrees_opt, "max_depth":max_depth_opt,
+          "learn_rate":learn_rate_opt}
+
+gs = H2OGridSearch(H2OGradientBoostingEstimator(distribution='multinomial'), hyper_parameters)
+gs.train(x=range(0,iris.ncol-1), y=iris.ncol-1, training_frame=iris, nfold=10)
+
+#gs.show
+print gs.sort_by('logloss', increasing=True)
+```
+
+Here is an example of early stopping in PySparkling:
+
+```
+from h2o.grid.grid_search import H2OGridSearch
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+
+hidden_opt = [[32,32],[32,16,8],[100]]
+l1_opt = [1e-4,1e-3]
+hyper_parameters = {"hidden":hidden_opt, "l1":l1_opt}
+
+model_grid = H2OGridSearch(H2ODeepLearningEstimator, hyper_params=hyper_parameters)
+model_grid.train(x=x, y=y, distribution="multinomial", epochs=1000, training_frame=train,
+   validation_frame=test, score_interval=2, stopping_rounds=3, stopping_tolerance=0.05, stopping_metric="misclassification")
+```
+
+
+
 
 
 ---
+
 
 ##R
 
@@ -1428,6 +1475,50 @@ Filtering rows is a little bit harder. There are two ways:
   or 
   
 - Create a new frame with the filtered rows. This is a harder task, since you have to copy data. For reference, look at the #deepSlice call on Frame (`H2OFrame`)
+
+
+---
+
+**How can I save and load a K-means model using Sparkling Water?**
+
+
+The following example code defines the save and load functions explicitly. 
+
+```
+import water._
+import _root_.hex._
+import java.net.URI
+import water.serial.ObjectTreeBinarySerializer
+// Save H2O model (as binary)
+def exportH2OModel(model : Model[_,_,_], destination: URI): URI = {
+  val modelKey = model._key.asInstanceOf[Key[_ <: Keyed[_ <: Keyed[_ <: AnyRef]]]]
+  val keysToExport = model.getPublishedKeys()
+  // Prepend model key
+  keysToExport.add(0, modelKey)
+
+  new ObjectTreeBinarySerializer().save(keysToExport, destination)
+  destination
+}
+
+// Get model from H2O DKV and Save to disk
+val gbmModel: _root_.hex.tree.gbm.GBMModel = DKV.getGet("model")
+exportH2OModel(gbmModel, new File("../h2omodel.bin").toURI)
+
+
+
+def loadH2OModel[M <: Model[_, _, _]](source: URI) : M = {
+    val l = new ObjectTreeBinarySerializer().load(source)
+    l.get(0).get().asInstanceOf[M]
+  }
+// Load H2O model
+def loadH2OModel[M <: Model[_, _, _]](source: URI) : M = {
+    val l = new ObjectTreeBinarySerializer().load(source)
+    l.get(0).get().asInstanceOf[M]
+  }
+  
+// Load model
+val h2oModel: Model[_, _, _] = loadH2OModel(new File("../h2omodel.bin").toURI)
+```
 
 
 ---

@@ -577,6 +577,11 @@ By default, the following output displays:
 
   Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
 
+- **How is variable importance calculated for DRF?**
+
+Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result. 
+
+
 ###DRF Algorithm 
 
 
