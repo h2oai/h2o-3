@@ -1405,6 +1405,15 @@ final public class H2O {
     return memsz;
   }
 
+  // Quick health check; no reason given for bad health
+  public boolean healthy() {
+    long now = System.currentTimeMillis();
+    for( H2ONode h2o : H2O.CLOUD.members() )
+      if( now - h2o._last_heard_from >= HeartBeatThread.TIMEOUT )
+        return false;
+    return true;
+  }
+
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
     while( System.currentTimeMillis() - start < ms ) {
