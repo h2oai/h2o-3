@@ -42,18 +42,14 @@ class Cleaner extends Thread {
 
   // Desired cache level. Set by the MemoryManager asynchronously.
   static volatile long DESIRED;
-  // Histogram used by the Cleaner
-  private final Histo _myHisto;
 
   Cleaner() {
     super("MemCleaner");
     setDaemon(true);
     setPriority(MAX_PRIORITY-2);
     _dirty = Long.MAX_VALUE;  // Set to clean-store
-    _myHisto = new Histo();   // Build/allocate a first histogram
-    _myHisto.compute(0);      // Compute lousy histogram; find eldest
-    H = _myHisto;             // Force to be the most recent
-    _myHisto.histo(true);     // Force a recompute with a good eldest
+    Histo.current(true);      // Build/allocate a first histogram
+    Histo.current(true);      // Force a recompute with a good eldest
     MemoryManager.set_goals("init",false);
   }
 
@@ -75,7 +71,7 @@ class Cleaner extends Thread {
       // Do not let optimistic cleaning get in the way of emergency cleaning.
 
       // Get a recent histogram, computing one as needed
-      Histo h = _myHisto.histo(false);
+      Histo h = Histo.current(false);
       long now = System.currentTimeMillis();
       long dirty = _dirty; // When things first got dirtied
 
@@ -190,7 +186,7 @@ class Cleaner extends Thread {
 
       String s1 = "Cleaner pass took: "+PrettyPrint.msecs(System.currentTimeMillis()-now,true)+
                   ", spilled "+PrettyPrint.bytes(cleaned)+" in "+PrettyPrint.usecs(io_ns>>10);
-      h = _myHisto.histo(true); // Force a new histogram
+      h = Histo.current(true); // Force a new histogram
       MemoryManager.set_goals("postclean",false);
       // No logging if under memory pressure: can deadlock the cleaner thread
       String s2 = h+" diski_o="+PrettyPrint.bytes(cleaned)+", freed="+(freed>>20)+"M, DESIRED="+(DESIRED>>20)+"M";
@@ -206,11 +202,29 @@ class Cleaner extends Thread {
   }
 
 
-  // Current best histogram
-  static private volatile Histo H;
-
   // Histogram class
   static class Histo {
+    // Current best histogram
+    static private volatile Histo H;
+
+    // Return the current best histogram, recomputing in-place if it is getting
+    // stale.  Synchronized so the same histogram can be called into here and
+    // will be only computed into one-at-a-time.
+    synchronized static Histo current( boolean force ) {
+      final Histo h = H; // Grab current best histogram
+      if( !force && System.currentTimeMillis() < h._when+2000 )
+        return h; // It is recent; use it
+      if( h != null && h._clean && _dirty==Long.MAX_VALUE )
+        return h; // No change to the K/V store, so no point
+      // Use last oldest value for computing the next histogram in-place
+      return (H = new Histo(h==null ? 0 : h._oldest)); // Record current best histogram & return it
+    }
+
+    // Latest best-effort cached amount, without forcing a histogram to be
+    // built nor blocking for one being in-progress.
+    static long cached() { return H._cached; }
+    static long swapped(){ return H._swapped;}
+
     final long[] _hs = new long[128];
     long _oldest; // Time of the oldest K/V discovered this pass
     long _eldest; // Time of the eldest K/V found in some prior pass
@@ -218,28 +232,12 @@ class Cleaner extends Thread {
     long _cached; // Total alive data in the histogram
     long _total;  // Total data in local K/V
     long _when;   // When was this histogram computed
+    long _swapped;// On-disk stuff
     Value _vold;  // For assertions: record the oldest Value
     boolean _clean; // Was "clean" K/V when built?
 
-    // Latest best-effort cached amount, without forcing a histogram to be
-    // built nor blocking for one being in-progress.
-    long cached() { return _cached; }
-
-    // Return the current best histogram, recomputing in-place if it is
-    // getting stale.  Synchronized so the same histogram can be called into
-    // here and will be only computed into one-at-a-time.
-    synchronized Histo histo( boolean force ) {
-      final Histo h = H; // Grab current best histogram
-      if( !force && System.currentTimeMillis() < h._when+2000 )
-        return h; // It is recent; use it
-      if( h._clean && _dirty==Long.MAX_VALUE )
-        return h; // No change to the K/V store, so no point
-      compute(h._oldest); // Use last oldest value for computing the next histogram in-place
-      return (H = this);      // Record current best histogram & return it
-    }
-
     // Compute a histogram
-    void compute( long eldest ) {
+    Histo( long eldest ) {
       Arrays.fill(_hs, 0);
       _when = System.currentTimeMillis();
       _eldest = eldest; // Eldest seen in some prior pass
@@ -249,6 +247,7 @@ class Cleaner extends Thread {
       Object[] kvs = H2O.STORE.raw_array();
       long cached = 0; // Total K/V cached in ram
       long total = 0;  // Total K/V in local node
+      long swapped=0;  // Total K/V persisted
       long oldest = Long.MAX_VALUE; // K/V with the longest time since being touched
       Value vold = null;
       // Start the walk at slot 2, because slots 0,1 hold meta-data
@@ -260,12 +259,13 @@ class Cleaner extends Thread {
         Value val = (Value)ov;
         if( val.isNull() ) { Value.STORE_get(val._key); continue; } // Another flavor of NULL
         total += val._max;
+        if( val.isPersisted() ) swapped += val._max;
         int len = 0;
         byte[] m = val.rawMem();
         Object p = val.rawPOJO();
         if( m != null ) len += val._max;
         if( p != null ) len += val._max;
-        if( p instanceof Chunk ) len -= val._max; // Do not double-count Chunks
+        if( m != null && p instanceof Chunk ) len -= val._max; // Do not double-count Chunks
         if( len == 0 ) continue;
         cached += len; // Accumulate total amount of cached keys
 
@@ -281,6 +281,7 @@ class Cleaner extends Thread {
       }
       _cached = cached; // Total cached; NOTE: larger than sum of histogram buckets
       _total = total;   // Total used data
+      _swapped = swapped;
       _oldest = oldest; // Oldest seen in this pass
       _vold = vold;
       _clean = clean && _dirty==Long.MAX_VALUE; // Looks like a clean K/V the whole time?

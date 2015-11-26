@@ -17,6 +17,20 @@ import java.util.regex.Pattern;
  */
 public abstract class LinuxProcFileReader {
   private static final char[] buffer = new char[8 * 1024]; // MUST be first in file, or else clinit ordering problems
+  // Read all of a file, throwing IOE on buffer-full or returning a String
+  private static String readFile(File f) throws IOException {
+    int bytesRead = 0;
+    try(FileReader fr = new FileReader(f)) {
+        synchronized(buffer) {
+          while (true) {
+            int n = fr.read(buffer, bytesRead, buffer.length - bytesRead);
+            if( n < 0 ) return new String(buffer, 0, bytesRead);
+            bytesRead += n;
+            if( bytesRead >= buffer.length ) throw new IOException("LinuxProcFileReader readFile unexpected buffer full");
+          }
+        }
+    }
+  }
 
   // --------- Process ID --------------
   /** @return process id for this node  */
@@ -32,18 +46,17 @@ public abstract class LinuxProcFileReader {
       : Integer.parseInt(jvmName.substring(0, index));
   }
 
-
   // --------- /proc/pid/status --- Number of available processors
   /** @return number of CPUs allowed by this process. */
-  public static int getProcessCpusAllowed() { return PROCESS_CPUS_ALLOWED; }
-  private static final int PROCESS_CPUS_ALLOWED;
+  public static char getProcessCpusAllowed() { return PROCESS_CPUS_ALLOWED; }
+  private static final char PROCESS_CPUS_ALLOWED;
   static { PROCESS_CPUS_ALLOWED = parseProcessStatusFile(readProcessStatusFile(PID)); }
   private static String readProcessStatusFile(int pid) {
     try { return pid== -1 ? null : readFile(new File("/proc/"+pid+"/status")); }
     catch( IOException _ ) { return null; }
   }
-  private static int parseProcessStatusFile(String s) {
-    int cpus = Runtime.getRuntime().availableProcessors();
+  private static char parseProcessStatusFile(String s) {
+    char cpus = (char) Runtime.getRuntime().availableProcessors();
     if(s == null) return cpus;
     try {
       Matcher m = Pattern.compile("Cpus_allowed:\\s+([A-Fa-f0-9,]+)").matcher(s);
@@ -52,10 +65,10 @@ public abstract class LinuxProcFileReader {
     catch( Exception ignore ) { return cpus; }
   }
   /** @return number of set bits in hexadecimal string (chars must be 0-F) */
-  private static int numSetBitsHex(String s) {
+  private static char numSetBitsHex(String s) {
     // Look-up table for num set bits in 4-bit char
     final int[] bits_set = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
-    int nset = 0;
+    char nset = 0;
     for(int i = 0; i < s.length(); i++) {
       Character ch = s.charAt(i);
       if (ch == ',') continue;
@@ -190,21 +203,6 @@ public abstract class LinuxProcFileReader {
     _processNumOpenFds = arr == null ? 0 : arr.length;
   }
 
-
-  // Read all of a file, throwing IOE on buffer-full or returning a String
-  private static String readFile(File f) throws IOException {
-    int bytesRead = 0;
-    try(FileReader fr = new FileReader(f)) {
-        synchronized(buffer) {
-          while (true) {
-            int n = fr.read(buffer, bytesRead, buffer.length - bytesRead);
-            if( n < 0 ) return new String(buffer, 0, bytesRead);
-            bytesRead += n;
-            if( bytesRead >= buffer.length ) throw new IOException("LinuxProcFileReader readFile unexpected buffer full");
-          }
-        }
-    }
-  }
 
   /** Read and parse data from /proc/stat and /proc/pid/stat.
    *  If this doesn't work for some reason, the values will be -1.  */

@@ -56,8 +56,9 @@ public class CreateFrame extends Job<Frame> {
             + rows * 1 //response is
             : 0; // all constants - should be small
 
-    if (byte_estimate > H2O.CLOUD._memary[0].get_max_mem() * H2O.CLOUD.size())
-      throw new IllegalArgumentException("Frame is expected to require " + PrettyPrint.bytes((long) byte_estimate) + ", won't fit into H2O's memory.");
+    long cluster_free_mem = H2O.CLOUD.free_mem();
+    if (byte_estimate > cluster_free_mem)
+      throw new IllegalArgumentException("Frame is expected to require " + PrettyPrint.bytes((long) byte_estimate) + ", won't fit into H2O's free memory of "+ cluster_free_mem);
 
     if (!randomize) {
       if (integer_fraction != 0 || categorical_fraction != 0)

@@ -64,7 +64,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       HeartBeat hb = H2O.SELF._heartbeat;
       double p = dinfo.fullN() - dinfo.largestCat();
       long mem_usage = (long)(hb._cpus_allowed * (p*p + dinfo.largestCat()) * 8/*doubles*/ * (1+.5*Math.log((double)_train.lastVec().nChunks())/Math.log(2.))); //one gram per core
-      long max_mem = hb.get_max_mem();
+      long max_mem = hb.get_free_mem();
       if (mem_usage > max_mem) {
         String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
                 + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
