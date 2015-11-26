@@ -11,7 +11,7 @@
 #` compiler AST Nodes (to hold future calculations).  They are implemented with
 #` simple R environment objects.
 #`
-#` Like AST Nodes in compilers all over, H2OFrames build a simple DAG where the
+#` Like AST Nodes in compilers all over, Frames build a simple DAG where the
 #` nodes contain an operator and some outgoing edges.  There is a GC finalizer
 #` to delete the server-side copy of a H2OFrame
 #`
@@ -1503,7 +1503,7 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
 }
 
 #'
-#' Quantiles of H2O H2OFrames.
+#' Quantiles of H2O Frames.
 #'
 #' Obtain and display quantiles for H2O parsed data.
 #'
@@ -1593,7 +1593,7 @@ h2o.summary <- function(object, factors=6L, ...) {
   # for each numeric column, collect [min,1Q,median,mean,3Q,max]
   # for each categorical column, collect the first 6 domains
   # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
-  fr.sum <- .h2o.__remoteSend(paste0("H2OFrames/", attr(object, "id"), "/summary"), method = "GET")$frames[[1]]
+  fr.sum <- .h2o.__remoteSend(paste0("Frames/", attr(object, "id"), "/summary"), method = "GET")$frames[[1]]
   col.sums <- fr.sum$columns
   cols <- sapply(col.sums, function(col) {
     col.sum <- col
@@ -2166,7 +2166,7 @@ h2o.rbind <- function(...) {
   .newExprList("rbind", l)
 }
 
-#' Merge Two H2O Data H2OFrames
+#' Merge Two H2O Data Frames
 #'
 #' Merges two H2OFrame objects by shared column names. Unlike the
 #' base R implementation, \code{h2o.merge} only supports merging through shared

@@ -106,7 +106,7 @@
 #'        Experimental)
 #' @param reproducible Force reproducibility on small data (requires setting the \code{seed} argument and this will be slow - only uses 1 thread)
 #' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O
-#'        H2OFrames"
+#'        Frames"
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.

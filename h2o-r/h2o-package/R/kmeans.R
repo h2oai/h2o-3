@@ -26,7 +26,7 @@
 #'        initialization at the furthest point from each successive center.
 #'        Additionally, the user may specify a the initial centers as a matrix,
 #'        data.frame, H2OFrame, or list of vectors. For matrices,
-#'        data.frames, and H2OFrames, each row of the respective structure
+#'        data.frames, and Frames, each row of the respective structure
 #'        is an initial center. For lists of vectors, each vector is an
 #'        initial center.
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.

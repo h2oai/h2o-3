@@ -27,7 +27,7 @@ class H2OJob:
     self._progress_bar_width = 50
     self._job_type = job_type
     self.exception = job['exception'] if 'exception' in job else None
-    signal.signal(signal.SIGINT,  self.signal_handler)
+    # signal.signal(signal.SIGINT,  self.signal_handler)
 
   def poll(self):
     global POLLING

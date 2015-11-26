@@ -67,14 +67,14 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
     stop("`parse` must be TRUE or FALSE")
 
   if(length(path) > 1L) {
-    destH2OFrames <- c()
+    destFrames <- c()
     fails <- c()
     for(path2 in path){
       res <-.h2o.__remoteSend(.h2o.__IMPORT, path=path2)
-      destH2OFrames <- c(destH2OFrames, res$destination_frames)
+      destFrames <- c(destFrames, res$destination_frames)
       fails <- c(fails, res$fails)
     }
-    res$destination_frames <- destH2OFrames
+    res$destination_frames <- destFrames
     res$fails <- fails
   } else {
     res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path)
