@@ -123,7 +123,7 @@ class H2OConnection(object):
     cld = __H2OCONN__._cld
     ncpus = sum([n['num_cpus'] for n in cld['nodes']])
     allowed_cpus = sum([n['cpus_allowed'] for n in cld['nodes']])
-    mmax = sum([n['max_mem'] for n in cld['nodes']])
+    mfree = sum([n['free_mem'] for n in cld['nodes']])
     cluster_health = all([n['healthy'] for n in cld['nodes']])
     ip = "127.0.0.1" if __H2OCONN__._ip=="localhost" else __H2OCONN__._ip
     cluster_info = [
@@ -131,7 +131,7 @@ class H2OConnection(object):
       ["H2O cluster version: ", cld["version"]],
       ["H2O cluster name: ", cld["cloud_name"]],
       ["H2O cluster total nodes: ", cld["cloud_size"]],
-      ["H2O cluster total memory: ", get_human_readable_size(mmax)],
+      ["H2O cluster total free memory: ", get_human_readable_size(mfree)],
       ["H2O cluster total cores: ", str(ncpus)],
       ["H2O cluster allowed cores: ", str(allowed_cpus)],
       ["H2O cluster healthy: ", str(cluster_health)],

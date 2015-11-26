@@ -282,9 +282,9 @@ h2o.clusterStatus <- function() {
     time_diff <- cur_time - as.POSIXct(last_contact_sec, origin = "1970-01-01")
     res$nodes[[i]]$last_contact <- as.numeric(time_diff)
   }
-  cnames <- c("h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size", "total_value_size",
-              "free_mem", "tot_mem", "max_mem", "free_disk", "max_disk",
-              "pid", "num_keys", "tcps_active", "open_fds", "rpcs_active")
+  cnames <- c("h2o", "healthy", "last_ping", "num_cpus", "sys_load", 
+              "mem_value_size", "free_mem", "pojo_mem", "swap_mem", 
+              "free_disk", "max_disk", "pid", "num_keys", "tcps_active", "open_fds", "rpcs_active")
   temp <- data.frame(t(sapply(res$nodes, c)))
   temp[,cnames]
 }
