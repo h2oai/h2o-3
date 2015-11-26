@@ -638,8 +638,9 @@ def cluster_status():
   status = []
   for node in cluster_json['nodes']:
     for k, v in zip(node.keys(),node.values()):
-      if k in ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size", "total_value_size",
-               "free_mem", "tot_mem", "max_mem", "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
+      if k in ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", 
+               "mem_value_size", "free_mem", "pojo_mem", "swap_mem",
+               "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
                "open_fds", "rpcs_active"]: status.append(k+": {0}".format(v))
     print ', '.join(status)
     print
@@ -736,7 +737,7 @@ def shutdown(conn=None, prompt=True):
 
   :return: None
   """
-  if conn == None: conn = H2OConnection.current_connection()
+  if conn is None: conn = H2OConnection.current_connection()
   H2OConnection._shutdown(conn=conn, prompt=prompt)
 
 

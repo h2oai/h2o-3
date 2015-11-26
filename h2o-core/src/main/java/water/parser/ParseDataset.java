@@ -110,7 +110,7 @@ public final class ParseDataset extends Job<Frame> {
       }
     }
 
-    long memsz = H2O.CLOUD.memsz();
+    long memsz = H2O.CLOUD.free_mem();
     if( totalParseSize > memsz*4 )
       throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(totalParseSize)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
 

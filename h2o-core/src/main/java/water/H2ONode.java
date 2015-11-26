@@ -34,7 +34,7 @@ import water.util.UnsafeUtils;
  * @version 1.0
  */
 
-public class H2ONode extends Iced<H2ONode> implements Comparable {
+public final class H2ONode extends Iced<H2ONode> implements Comparable {
   short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
   public long _last_heard_from; // Time in msec since we last heard from this Node
@@ -48,7 +48,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     H2Okey(InetAddress inet, int port) {
       super(inet,port);
       byte[] b = inet.getAddress();
-      _ipv4 = ((b[0]&0xFF)<<0)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
+      _ipv4 = (b[0]&0xFF)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
     }
     public int htm_port() { return getPort()-1; }
     public int udp_port() { return getPort()  ; }
@@ -134,16 +134,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     catch( UnknownHostException e ) { throw Log.throwErr(e); }
   }
 
-  static H2ONode intern( int ip, int port ) {
-    byte[] b = new byte[4];
-    b[0] = (byte)(ip>> 0);
-    b[1] = (byte)(ip>> 8);
-    b[2] = (byte)(ip>>16);
-    b[3] = (byte)(ip>>24);
-    try { return intern(InetAddress.getByAddress(b),port); } 
-    catch( UnknownHostException e ) { throw Log.throwErr(e); }
-  }
-
   // Get a nice Node Name for this Node in the Cloud.  Basically it's the
   // InetAddress we use to communicate to this Node.
   public static H2ONode self(InetAddress local) {
@@ -209,10 +199,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // index of this node in the current cloud... can change at the next cloud.
   public int index() { return H2O.CLOUD.nidx(this); }
-
-  // max memory for this node.
-  // no need to ask the (possibly not yet populated) heartbeat if we want to know the local max memory.
-  public long get_max_mem() { return this == H2O.SELF ? Runtime.getRuntime().maxMemory() : _heartbeat.get_max_mem(); }
 
   // ---------------
   // A queue of available TCP sockets
