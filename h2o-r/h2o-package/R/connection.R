@@ -97,10 +97,6 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     min_mem_size <- Xmx
   }
 
-  if (nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
-    strict_version_check = FALSE
-  }
-
   doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_IP")
   doc_port <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT")
   if (nchar(doc_ip)) ip <- doc_ip
@@ -152,16 +148,11 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   h2o.clusterInfo()
   cat("\n")
 
-  if( strict_version_check ) {
+  if( strict_version_check && !nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
     verH2O <- h2o.getVersion()
     verPkg <- packageVersion("h2o")
-    if (verH2O != verPkg) {
-      message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
-      if (strict_version_check)
-        stop(message)
-      else
-        warning(message)
-    }
+    if( verH2O != verPkg )
+      stop(sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg)))
   }
 
   if (warnNthreads) {

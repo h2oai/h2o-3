@@ -87,19 +87,14 @@ class H2OConnection(object):
           raise
     __H2OCONN__._cld = cld
 
-    ver_h2o = cld['version']
-    try:
-      ver_pkg = pkg_resources.get_distribution("h2o").version
-    except:
-      ver_pkg = "UNKNOWN"
-
-    if ver_h2o != ver_pkg:
-      message = \
-        "Version mismatch. H2O is version {0}, but the python package is version {1}.".format(ver_h2o, str(ver_pkg))
-      if strict_version_check:
-        raise EnvironmentError, message
-      else:
-        print "Warning: {0}".format(message)
+    if strict_version_check and os.environ.get('H2O_DISABLE_STRICT_VERSION_CHECK') is None:
+      ver_h2o = cld['version']
+      try:
+        ver_pkg = pkg_resources.get_distribution("h2o").version
+      except:
+        ver_pkg = "UNKNOWN"
+      if ver_h2o != ver_pkg:
+        raise EnvironmentError, "Version mismatch. H2O is version {0}, but the python package is version {1}.".format(ver_h2o, str(ver_pkg))
 
     self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()
