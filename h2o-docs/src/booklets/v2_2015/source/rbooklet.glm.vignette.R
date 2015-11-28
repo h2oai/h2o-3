@@ -55,4 +55,4 @@ function() {
     checkStory("story12",story12)
 }
 
-doBooklet("GLM Vignette Booklet", glmBooklet)
+glmBooklet()

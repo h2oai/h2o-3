@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 rtest <- function() {
 
-hdfs_name_node = hadoop.namenode()
+hdfs_name_node = HADOOP.NAMENODE
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------

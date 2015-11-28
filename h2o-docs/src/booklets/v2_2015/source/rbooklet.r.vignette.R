@@ -56,4 +56,4 @@ function() {
     checkStory("story5",story5)
 }
 
-doBooklet("R Vignette Booklet", rBooklet)
+rBooklet()

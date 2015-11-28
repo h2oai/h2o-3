@@ -37,4 +37,4 @@ function() {
     checkStory("story1",story1)
 }
 
-doBooklet("Deeplearning Vignette Booklet", deeplearningBooklet)
+deeplearningBooklet()

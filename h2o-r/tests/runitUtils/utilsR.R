@@ -6,7 +6,7 @@
 
 #' Hadoop helper
 hadoop.namenode.is.accessible <- function() {
-    url <- sprintf("http://%s:50070", hadoop.namenode());
+    url <- sprintf("http://%s:50070", HADOOP.NAMENODE);
     internal <- url.exists(url, timeout = 5)
     return(internal)
 }
@@ -15,7 +15,7 @@ hadoop.namenode.is.accessible <- function() {
 #' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
 locate<-
 function(pathStub, root.parent = NULL) {
-  if (test.is.on.hadoop()) {
+  if (ON.HADOOP) {
     # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
     # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
     # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
@@ -77,7 +77,7 @@ function(cur.dir, root, root.parent = NULL) {
     if (parent.name == root) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
 
     # the root is h2o-dev, check the children here (and fail if `root` not found)
-    if (parent.name == get.project.root() || parent.name == "workspace") {
+    if (parent.name == PROJECT.ROOT || parent.name == "workspace") {
       if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
       else stop(paste("Could not find the dataset bucket: ", root, sep = "" ))
     }
@@ -96,8 +96,8 @@ function(cur.dir, root, root.parent = NULL) {
       return(path.compute(parent.dir, root, root.parent)) }
 
     # fail if reach h2o-dev
-    if (parent.name == get.project.root()) {
-        stop(paste0("Reached the root ", get.project.root(), ". Didn't find the bucket with the root.parent")) }
+    if (parent.name == PROJECT.ROOT) {
+        stop(paste0("Reached the root ", PROJECT.ROOT, ". Didn't find the bucket with the root.parent")) }
   }
   return(path.compute(parent.dir, root, root.parent))
 }
@@ -124,7 +124,7 @@ function(zipfile, exdir,header=T) {
 # returns the directory of the sandbox for the given test.
 sandbox<-
 function(create=FALSE) {
-  Rsandbox <- paste0("./Rsandbox_", basename(test.name()))
+  Rsandbox <- paste0("./Rsandbox_", basename(TEST.NAME))
   if (create) { dir.create(Rsandbox, showWarnings=FALSE) }
   if (dir.exists(Rsandbox)) { return(normalizePath(Rsandbox))
   } else { Log.err(paste0("Sandbox directory: ",Rsandbox," does not exists")) }
@@ -372,17 +372,13 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
 
 doTest<-
 function(testDesc, test) {
-    h2o.removeAll()
-    Log.info("======================== Begin Test ===========================\n")
-    conn <- h2o.getConnection()
-    conn@mutable$session_id <- .init.session_id()
     tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
     PASS()
 }
 
-setupRandomSeed<-
+setupSeed<-
 function(seed = NULL, master_seed = FALSE) {
-    possible_seed_path <- paste("./Rsandbox_", test.name(), "/seed", sep = "")
+    possible_seed_path <- paste("./Rsandbox_", TEST.NAME, "/seed", sep = "")
 
     if (!is.null(seed)) {
         SEED <<- seed
