@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../h2o-r/scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This test exercises HDFS operations from R.
 #----------------------------------------------------------------------
@@ -12,7 +14,7 @@ hdfs_airlines_file = "/datasets/airlines_all.csv"
 # Single file cases.
 #----------------------------------------------------------------------
 
-heading("Testing single file importHDFS")
+#heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
 data.hex <- h2o.importFile(url)
 

@@ -1,10 +1,9 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../h2o-r/scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This test exercises building GLM/GBM/DL  model 
 #           for 186K rows and 3.2K columns 
 #----------------------------------------------------------------------
-    
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R') 
 
 ipPort <- get_args(commandArgs(trailingOnly = TRUE))
 myIP   <- ipPort[[1]]
@@ -17,7 +16,7 @@ library(h2o)
 
 running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c25/df_h2o.csv")
 
-heading("BEGIN TEST")
+#heading("BEGIN TEST")
 h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
@@ -57,4 +56,4 @@ data1.rf = h2o.randomForest(x = myX, y = myY, training_frame = data.hex,
                     ntrees = 10, max_depth = 5)
 data1.rf
 
-PASS_BANNER()
+
