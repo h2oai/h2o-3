@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This test compares k-means centers between H2O and MLlib.
 #----------------------------------------------------------------------

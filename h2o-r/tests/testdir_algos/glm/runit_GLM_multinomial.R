@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 glmMultinomial <- function() {
   D <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"), destination_frame="covtype.hex")  
   D[,55] <- as.factor(D[,55])

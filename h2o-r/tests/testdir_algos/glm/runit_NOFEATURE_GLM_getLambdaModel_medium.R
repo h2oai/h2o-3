@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 #Build glm model with lambda search on.
 #Randomly choose a lambda and get the model specific to that lambda
 #Change the 1st parameter of the getLambdaModel method and make sure you get the same model for the same lambda

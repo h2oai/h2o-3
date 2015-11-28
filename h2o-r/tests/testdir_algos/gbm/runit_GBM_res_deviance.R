@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 ####### This tests deviance for poisson, tweedie and gamma distributions in gbm by comparing results with R ######
 
 

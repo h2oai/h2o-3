@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 # Run speedRf. Get Mean Squared error from the model.
 # Predict on the same dataset and calculate Mean Squared error in R by pulling in the predictions
 

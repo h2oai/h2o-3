@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 #'
 #' PUB-685: Throw error when MARGIN = c(1,2)
 #'

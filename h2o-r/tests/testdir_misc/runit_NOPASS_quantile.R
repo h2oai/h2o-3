@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 #This tests quantile and weighted quantile on synthetic data by comparing with R
 
 test.quantile <- function(conn){

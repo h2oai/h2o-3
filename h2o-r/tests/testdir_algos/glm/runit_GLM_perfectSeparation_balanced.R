@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 ##
 # Testing glm performance (reasonable coefficients) on balanced synthetic dataset with perfect separation.
 # Separation recognized by R glm with following warning: 

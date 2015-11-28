@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 ####### This tests offset in deeplearing for poisson by comparing results with expected behavior ######
 
 

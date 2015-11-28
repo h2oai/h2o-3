@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ##
 # Test: ifelse is added as method for H2OFrame properly
 # Description: push a dataset into H2O and convert column using ifelse

@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 # This tests weighted quantile
 # by comparing results with R's wtd.quntile function and sanity checking by ignoring rows with zero weight
 # dataset - http://mlr.cs.umass.edu/ml/datasets/Bank+Marketing

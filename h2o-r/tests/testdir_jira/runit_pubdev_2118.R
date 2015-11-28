@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 test.pubdev.2118 <- function(conn){
   df <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
   df$CAPSULE <- as.factor(df$CAPSULE)
