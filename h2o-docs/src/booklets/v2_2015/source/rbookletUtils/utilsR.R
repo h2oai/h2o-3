@@ -37,7 +37,7 @@ function(storyName, paragraphs) {
     if (length(remove_lines) > 0) story <- story[-remove_lines]
 
     # write the story that will executed to the results directory for future reference
-    story_file <- paste(results.dir(), paste0(TEST.NAME,".",storyName,".code"), sep=.Platform$file.sep)
+    story_file <- paste(RESULTS.DIR, paste0(TEST.NAME,".",storyName,".code"), sep=.Platform$file.sep)
     writeLines(story, story_file)
 
     source(story_file)
