@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 # Check for 2 parts
 test1 <- function() {
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))

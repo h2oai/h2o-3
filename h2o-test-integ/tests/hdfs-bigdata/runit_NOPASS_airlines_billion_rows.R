@@ -1,9 +1,9 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../h2o-r/scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This test exercises HDFS operations from R.
 #----------------------------------------------------------------------
 
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R')
 
 ipPort <- get_args(commandArgs(trailingOnly = TRUE))
 myIP   <- ipPort[[1]]
@@ -15,7 +15,7 @@ library(RCurl)
 library(testthat)
 library(h2o)
 
-heading("BEGIN TEST")
+#heading("BEGIN TEST")
 h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
@@ -25,7 +25,7 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 # Single file cases.
 #----------------------------------------------------------------------
 
-heading("Testing single file importHDFS")
+#heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 data.hex <- h2o.importFile(url)
 data1.hex <- data.hex
@@ -65,4 +65,4 @@ data3.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_f
 #data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.train, validation_frame=data.valid, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5))
 #data1.dl 
 
-PASS_BANNER()
+

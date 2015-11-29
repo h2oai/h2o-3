@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ##
 # Test: Saving and Loading H2O Models
 # Description: Build an H2O model, save it, then load it again in H2O and verify no information was lost

@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 # This tests lift calculation consistency for xval models
 # by comparing xval models created using user defined fold column vs model built using weights(0-1) column
 # dataset - http://mlr.cs.umass.edu/ml/datasets/Bank+Marketing

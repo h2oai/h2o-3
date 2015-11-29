@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 test <- function() {
 
     e <- tryCatch(locate("this_file_does_not_exist.csv"), error = function(x) x)

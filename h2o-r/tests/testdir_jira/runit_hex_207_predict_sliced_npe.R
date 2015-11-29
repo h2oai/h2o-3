@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ######################################################################
 # Test for HEXDEV-207
 # In R, predict fails with NPE when newdata is set to a sliced frame

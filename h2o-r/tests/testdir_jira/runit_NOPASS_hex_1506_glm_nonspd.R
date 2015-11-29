@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ######################################################################
 # Test for HEX-1506
 # h2o.glm() should return warning if matrix is non-SPD

@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../h2o-r/scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This test exercises HDFS operations from R.
 #----------------------------------------------------------------------
@@ -17,7 +19,7 @@ data.hex <- h2o.importFile(url)
 data.hex[,55] <- ifelse(data.hex[,55] == 1, 1, 0)
 print(summary(data.hex))
 
-#heading("Running covtype GLM")
+##heading("Running covtype GLM")
 covtype.glm <- h2o.glm(x = setdiff(1:54, c(21,29)), y = 55, training_frame = data.hex, family = "gaussian", alpha = 0, lambda = 0)
 covtype.glm
 

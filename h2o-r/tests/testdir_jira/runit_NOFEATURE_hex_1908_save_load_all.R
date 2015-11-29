@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ##
 # Test: Saving and Loading GLM Model (HEX-1775)
 # Description: Build GLM model, save model in R, copy model and load in R

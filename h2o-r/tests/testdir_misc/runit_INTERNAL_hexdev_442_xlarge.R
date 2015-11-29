@@ -1,9 +1,11 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 
 
 
 rtest <- function() {
 
-hdfs_name_node = hadoop.namenode()
+hdfs_name_node = HADOOP.NAMENODE
 z_file = "/datasets/z_repro.csv.gz"
 url <- sprintf("hdfs://%s%s", hdfs_name_node, z_file)
 fr <- h2o.importFile(url)

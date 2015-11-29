@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ##
 # Testing memory performance of Strong Rules. 
 # Affirm that strong rules sucessfully lowers memory usage when running GLM

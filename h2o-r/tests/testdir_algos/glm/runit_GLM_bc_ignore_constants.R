@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 ### This tests ignore_constant_columns argument when used in conjunction with beta constraints ######
 test.GLM.bc.ignore.constants <- function() {
   

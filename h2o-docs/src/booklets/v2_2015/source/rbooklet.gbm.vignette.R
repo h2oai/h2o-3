@@ -31,4 +31,4 @@ function() {
     checkStory("story1",story1)
 }
 
-doBooklet("GBM Vignette Booklet", gbmBooklet)
+gbmBooklet()
