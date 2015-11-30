@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, urllib2, sys, urllib,imp,copy, tabulate
+import collections, csv, itertools, os, re, tempfile, urllib2, sys, urllib,imp, traceback
 import h2o
 from expr import ExprNode
 from astfun import _bytecode_decompile_lambda
@@ -319,11 +319,12 @@ class H2OFrame(object):
 
     Returns
     -------
-      A list of column indices
+      A list of column indices that have a fewer count of NAs.
+      If all columns are filtered, None is returned.
     """
     return ExprNode("filterNACols", self, frac)._eager_scalar()
 
-  def type(self,name):
+  def type(self, name):
     """
     Returns
     -------
@@ -346,7 +347,10 @@ class H2OFrame(object):
 
   def __repr__(self):
     if sys.gettrace() is None:
-      self.show()
+      # PUBDEV-2278: using <method>? from IPython caused everything to dump
+      stk = traceback.extract_stack()
+      if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
+        self.show()
     return ""
 
   def show(self, use_pandas=False):

@@ -341,8 +341,8 @@ public /* final */ class AutoBuffer {
   // ByteBuffer write.  It *appears* that the reader is unaware that a writer
   // was told "go ahead and write" by the TCP stack, so all these fails are
   // only on the writer-side.
-  static class AutoBufferException extends RuntimeException {
-    final IOException _ioe;
+  public static class AutoBufferException extends RuntimeException {
+    public final IOException _ioe;
     AutoBufferException( IOException ioe ) { _ioe = ioe; }
   }
 

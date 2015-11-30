@@ -502,6 +502,7 @@ public class JettyHTTPD {
     response.setHeader("X-h2o-build-project-version", H2O.ABV.projectVersion());
     response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
+    response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
   }
 
   public static class H2oDatasetServlet extends HttpServlet {

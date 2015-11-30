@@ -110,7 +110,7 @@ public final class ParseDataset extends Job<Frame> {
       }
     }
 
-    long memsz = H2O.CLOUD.memsz();
+    long memsz = H2O.CLOUD.free_mem();
     if( totalParseSize > memsz*4 )
       throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(totalParseSize)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
 
@@ -557,7 +557,7 @@ public final class ParseDataset extends Job<Frame> {
             // locally-homed chunks only - to keep the data distribution.
             int nlines = 0;
             for( Vec vec : _f.vecs() ) {
-              Value val = H2O.get(vec.chunkKey(fi)); // Local-get only
+              Value val = Value.STORE_get(vec.chunkKey(fi)); // Local-get only
               if( val != null ) {
                 nlines = ((Chunk)val.get())._len;
                 break;
@@ -568,7 +568,7 @@ public final class ParseDataset extends Job<Frame> {
             for(int j = 0; j < _f.numCols(); ++j) {
               Vec vec = _f.vec(j);
               Key k = vec.chunkKey(fi);
-              Value val = H2O.get(k);   // Local-get only
+              Value val = Value.STORE_get(k);   // Local-get only
               if( val == null )         // Missing?  Fill in w/zero chunk
                 H2O.putIfMatch(k, new Value(k, new C0LChunk(0, fnlines)), null);
             }
@@ -894,7 +894,7 @@ public final class ParseDataset extends Job<Frame> {
         for(int i=0; i < 2; i++) {  // iterate over this chunk and the next one
           cidx += i;
           if (!_visited.add(cidx)) { // Second visit
-            Value v = H2O.get(in.vec().chunkKey(cidx));
+            Value v = Value.STORE_get(in.vec().chunkKey(cidx));
             if (v == null || !v.isPersisted()) return; // Not found, or not on disk somewhere
             v.freePOJO();           // Eagerly toss from memory
             v.freeMem();

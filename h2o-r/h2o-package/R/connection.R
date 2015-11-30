@@ -97,10 +97,6 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     min_mem_size <- Xmx
   }
 
-  if (nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
-    strict_version_check = FALSE
-  }
-
   doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_IP")
   doc_port <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT")
   if (nchar(doc_ip)) ip <- doc_ip
@@ -152,16 +148,11 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   h2o.clusterInfo()
   cat("\n")
 
-  if( strict_version_check ) {
+  if( strict_version_check && !nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
     verH2O <- h2o.getVersion()
     verPkg <- packageVersion("h2o")
-    if (verH2O != verPkg) {
-      message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
-      if (strict_version_check)
-        stop(message)
-      else
-        warning(message)
-    }
+    if( verH2O != verPkg )
+      stop(sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg)))
   }
 
   if (warnNthreads) {
@@ -184,7 +175,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 h2o.getConnection <- function() {
   conn <- .attemptConnection()
   if (is.null(conn))
-    stop("no active connection to an H2O cluster")
+    stop("No active connection to an H2O cluster. Did you run `h2o.init()` ?")
   conn
 }
 
@@ -197,9 +188,9 @@ h2o.getConnection <- function() {
   conn <- get("SERVER", .pkg.env)
   if (is.null(conn)) {
     # Try to recover an H2OConnection object from a saved session
-    for (objname in ls(globalenv(), all.names = TRUE)) {
+    for (objname in ls(parent.frame(), all.names = TRUE)) {
       object <- get(objname, globalenv())
-      if (is(object, "H2OConnection")) {
+      if (is(object, "H2OConnection") && h2o.clusterIsUp(object)) {      
         conn <- object
         assign("SERVER", conn, .pkg.env)
         break
@@ -229,7 +220,8 @@ h2o.getConnection <- function() {
 #' @export
 h2o.shutdown <- function(prompt = TRUE) {
   conn <- get("SERVER", .pkg.env)
-  if( !h2o.clusterIsUp(conn) )     stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
+  if( is.null(conn) ) stop("There is no H2O instance running.")
+  if( !h2o.clusterIsUp(conn) ) stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
   if(!is.logical(prompt) || length(prompt) != 1L || is.na(prompt)) stop("`prompt` must be TRUE or FALSE")
   if( prompt ) {
@@ -238,7 +230,10 @@ h2o.shutdown <- function(prompt = TRUE) {
     temp <- substr(ans, 1L, 1L)
   } else { temp <- "y" }
 
-  if(temp == "Y" || temp == "y") .h2o.doRawREST(conn = conn, method="POST", urlSuffix = .h2o.__SHUTDOWN, h2oRestApiVersion = .h2o.__REST_API_VERSION)
+  if(temp == "Y" || temp == "y") {
+    .h2o.doRawREST(conn = conn, method="POST", urlSuffix = .h2o.__SHUTDOWN, h2oRestApiVersion = .h2o.__REST_API_VERSION)
+    assign("SERVER", NULL, .pkg.env)
+   }
 
   if((conn@ip == "localhost" || conn@ip == "127.0.0.1") && .h2o.startedH2O()) {
     pid_file <- .h2o.getTmpFile("pid")
@@ -282,9 +277,9 @@ h2o.clusterStatus <- function() {
     time_diff <- cur_time - as.POSIXct(last_contact_sec, origin = "1970-01-01")
     res$nodes[[i]]$last_contact <- as.numeric(time_diff)
   }
-  cnames <- c("h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size", "total_value_size",
-              "free_mem", "tot_mem", "max_mem", "free_disk", "max_disk",
-              "pid", "num_keys", "tcps_active", "open_fds", "rpcs_active")
+  cnames <- c("h2o", "healthy", "last_ping", "num_cpus", "sys_load", 
+              "mem_value_size", "free_mem", "pojo_mem", "swap_mem", 
+              "free_disk", "max_disk", "pid", "num_keys", "tcps_active", "open_fds", "rpcs_active")
   temp <- data.frame(t(sapply(res$nodes, c)))
   temp[,cnames]
 }
@@ -368,10 +363,10 @@ h2o.clusterStatus <- function() {
       warning(msg)
     })
   }
-  .h2o.__remoteSend("InitID", method = "DELETE")
+  try(.h2o.__remoteSend("InitID", method = "DELETE"), TRUE)
 }
 
-.Last <- function() { if ( .isConnected() ) tryCatch(.h2o.__remoteSend("InitID", method = "DELETE"),finally = function(){})}
+.Last <- function() { if ( .isConnected() ) try(.h2o.__remoteSend("InitID", method = "DELETE"), TRUE)}
 
 .h2o.startJar <- function(nthreads = -1, max_memory = NULL, min_memory = NULL, beta = FALSE, assertion = TRUE, forceDL = FALSE, license = NULL, ice_root, stdout) {
   command <- .h2o.checkJava()

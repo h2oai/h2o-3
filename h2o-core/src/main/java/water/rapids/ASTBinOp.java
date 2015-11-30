@@ -347,15 +347,19 @@ class ASTLE   extends ASTBinOp { public String str() { return "<="; } double op(
 class ASTLT   extends ASTBinOp { public String str() { return "<" ; } double op( double l, double r ) { return l< r?1:0; } }
 
 class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?1:0; }
-  double str_op( BufferedString l, BufferedString r ) { return l==null ? (r==null?1:0) : (l.equals(r) ? 1 : 0); }
+  double str_op( BufferedString l, BufferedString r ) { return (l==null||l.equals("")) ? (r==null||(r.equals(""))?1:0) : (l.equals(r) ? 1 : 0); }
   @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
     return new ValFrame(new MRTask() {
         @Override public void map( Chunk[] chks, NewChunk[] cress ) {
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
-            if( !chk.vec().isNumeric() ) cres.addZeros(chk._len);
-            else 
+            BufferedString bStr = new BufferedString();
+            if( chk.vec().isString() )
+              for( int i=0; i<chk._len; i++ )
+                cres.addNum(str_op(chk.atStr(bStr,i), Double.isNaN(d)?null:new BufferedString(String.valueOf(d))));
+            else if( !chk.vec().isNumeric() ) cres.addZeros(chk._len);
+            else
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(chk.atd(i),d));
           }
@@ -366,7 +370,25 @@ class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op(
 }
 
 class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op( double l, double r ) { return MathUtils.equalsWithinOneSmallUlp(l,r)?0:1; }
-  double str_op( BufferedString l, BufferedString r ) { return l==null ? (r==null?0:1) : (l.equals(r) ? 0 : 1); }
+  double str_op( BufferedString l, BufferedString r ) { return (l==null||l.equals("")) ? ((r==null)||(r.equals(""))?0:1) : (l.equals(r) ? 0 : 1); }
+  @Override ValFrame frame_op_scalar( Frame fr, final double d ) {
+    return new ValFrame(new MRTask() {
+      @Override public void map( Chunk[] chks, NewChunk[] cress ) {
+        for( int c=0; c<chks.length; c++ ) {
+          Chunk chk = chks[c];
+          NewChunk cres = cress[c];
+          BufferedString bStr = new BufferedString();
+          if( chk.vec().isString() )
+            for( int i=0; i<chk._len; i++ )
+              cres.addNum(str_op(chk.atStr(bStr,i), Double.isNaN(d)?null:new BufferedString(String.valueOf(d))));
+          else if( !chk.vec().isNumeric() ) cres.addZeros(chk._len);
+          else
+            for( int i=0; i<chk._len; i++ )
+              cres.addNum(op(chk.atd(i),d));
+        }
+      }
+    }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
+  }
   @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
 

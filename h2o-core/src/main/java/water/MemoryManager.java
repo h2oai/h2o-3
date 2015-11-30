@@ -43,27 +43,23 @@ import water.util.PrettyPrint;
 abstract public class MemoryManager {
 
   // max heap memory
-  static final long MEM_MAX = Runtime.getRuntime().maxMemory();
+  public static final long MEM_MAX = Runtime.getRuntime().maxMemory();
 
   // Callbacks from GC
   static final HeapUsageMonitor HEAP_USAGE_MONITOR = new HeapUsageMonitor();
 
   // Keep the K/V store below this threshold AND this is the FullGC call-back
   // threshold - which is limited in size to the old-gen pool size.
-  static long MEM_CRITICAL = HEAP_USAGE_MONITOR._gc_callback;
+  static long MEM_CRITICAL;
 
   // Block allocations?
-  private static volatile boolean CAN_ALLOC = true;
+  static volatile boolean CAN_ALLOC = true;
   private static volatile boolean MEM_LOW_CRITICAL = false;
 
   // Lock for blocking on allocations
   private static Object _lock = new Object();
 
-  // My Histogram. Called from any thread calling into the MM.
-  // Singleton, allocated now so I do not allocate during an OOM event.
-  static private final Cleaner.Histo myHisto = new Cleaner.Histo();
-
-  // A monitonically increasing total count memory allocated via MemoryManager.
+  // A monotonically increasing total count memory allocated via MemoryManager.
   // Useful in tracking total memory consumed by algorithms - just ask for the
   // before & after amounts and diff them.
   static final AtomicLong MEM_ALLOC = new AtomicLong();
@@ -75,6 +71,7 @@ abstract public class MemoryManager {
     Log.warn("Continuing after swapping");
   }
   static void setMemLow() {
+    if( !H2O.ARGS.cleaner ) return; // Cleaner turned off
     if( !CAN_ALLOC ) return;
     synchronized(_lock) { CAN_ALLOC = false; }
     // NO LOGGING UNDER LOCK!
@@ -92,14 +89,14 @@ abstract public class MemoryManager {
   // Called on any OOM allocation
   static void set_goals( String msg, boolean oom , long bytes) {
     // Our best guess of free memory, as of the last GC cycle
-    final long heapUsed = Cleaner.HEAP_USED_AT_LAST_GC;
+    final long heapUsedGC = Cleaner.HEAP_USED_AT_LAST_GC;
     final long timeGC = Cleaner.TIME_AT_LAST_GC;
-    final long freeHeap = MEM_MAX - heapUsed;
-    assert freeHeap >= 0 : "I am really confused about the heap usage; MEM_MAX="+MEM_MAX+" heapUsed="+heapUsed;
+    final long freeHeap = MEM_MAX - heapUsedGC;
+    assert freeHeap >= 0 : "I am really confused about the heap usage; MEM_MAX="+MEM_MAX+" heapUsedGC="+heapUsedGC;
     // Current memory held in the K/V store.
-    final long cacheUsage = myHisto.histo(false)._cached;
+    final long cacheUsageGC = Cleaner.KV_USED_AT_LAST_GC;
     // Our best guess of POJO object usage: Heap_used minus cache used
-    final long pojoUsedGC = Math.max(heapUsed - cacheUsage,0);
+    final long pojoUsedGC = Math.max(heapUsedGC - cacheUsageGC,0);
 
     // Block allocations if:
     // the cache is > 7/8 MEM_MAX, OR
@@ -109,52 +106,50 @@ abstract public class MemoryManager {
     // double the POJO amount.
     // Keep at least 1/8th heap for caching.
     // Emergency-clean the cache down to the blocking level.
-    long d = MEM_CRITICAL;
+    long d = MEM_CRITICAL;      // Block-allocation level; cache can grow till this
     // Decay POJO amount
     long p = pojoUsedGC;
     long age = (System.currentTimeMillis() - timeGC); // Age since last FullGC
     age = Math.min(age,10*60*1000 ); // Clip at 10mins
     while( (age-=5000) > 0 ) p = p-(p>>3); // Decay effective POJO by 1/8th every 5sec
-    d -= 2*p - bytes; // Allow for the effective POJO, and again to throttle GC rate
+    d -= 2*p - bytes; // Allow for the effective POJO, and again to throttle GC rate (and allow for this allocation)
     d = Math.max(d,MEM_MAX>>3); // Keep at least 1/8th heap
     if( Cleaner.DESIRED != -1 ) // Set to -1 only for OOM/Cleaner testing.  Never negative normally
-      Cleaner.DESIRED = d;
+      Cleaner.DESIRED = d;      // Desired caching level
+    final long cacheUsageNow = Cleaner.Histo.cached();
 
     String m="";
-    if( cacheUsage > Cleaner.DESIRED ) {
-      m = (CAN_ALLOC?"Blocking!  ":"blocked:   ");
+    if( cacheUsageNow > Cleaner.DESIRED ) {
+      m = (CAN_ALLOC?"Swapping!  ":"blocked:   ");
       if( oom ) setMemLow(); // Stop allocations; trigger emergency clean
       Cleaner.kick_store_cleaner();
     } else { // Else we are not *emergency* cleaning, but may be lazily cleaning.
-      setMemGood();             // Cache is as low as we'll go; unblock
+      setMemGood();             // Cache is below desired level; unblock allocations
       if( oom ) {               // But still have an OOM?
-        m = "Unblock allocations; cache emptied but memory is low: ";
+        m = "Unblock allocations; cache below desired, but also OOM: ";
         // Means the heap is full of uncached POJO's - which cannot be spilled.
         // Here we enter the zone of possibly dieing for OOM.  There's no point
         // in blocking allocations, as no more memory can be freed by more
         // cache-flushing.  Might as well proceed on a "best effort" basis.
-        Log.warn(m+" OOM but cache is emptied:  MEM_MAX = " + PrettyPrint.bytes(MEM_MAX) + ", DESIRED_CACHE = " + PrettyPrint.bytes(d) +", CACHE = " + PrettyPrint.bytes(cacheUsage) + ", POJO = " + PrettyPrint.bytes(p) + ", this request bytes = " + PrettyPrint.bytes(bytes));
       } else { 
-        m = "MemGood:   ";
+        m = "MemGood:   "; // Cache is low enough, room for POJO allocation - full steam ahead!
       }
     }
 
     // No logging if under memory pressure: can deadlock the cleaner thread
-    String s = m+msg+", HEAP_LAST_GC="+(heapUsed>>20)+"M, KV="+(cacheUsage>>20)+"M, POJO="+(pojoUsedGC>>20)+"M, free="+(freeHeap>>20)+"M, MAX="+(MEM_MAX>>20)+"M, DESIRED="+(Cleaner.DESIRED>>20)+"M"+(oom?" OOM!":" NO-OOM");
-    if( CAN_ALLOC ) Log.trace(s);
+    String s = m+msg+", (K/V:"+PrettyPrint.bytes(cacheUsageGC)+" + POJO:"+PrettyPrint.bytes(pojoUsedGC)+" + FREE:"+PrettyPrint.bytes(freeHeap)+" == MEM_MAX:"+PrettyPrint.bytes(MEM_MAX)+"), desiredKV="+PrettyPrint.bytes(Cleaner.DESIRED)+(oom?" OOM!":" NO-OOM");
+    if( CAN_ALLOC ) { if( oom ) Log.warn(s); else Log.debug(s); }
     else            System.err.println(s);
   }
 
-  /**
-   * Monitors the heap usage after full gc run and tells Cleaner to free memory
-   * if mem usage is too high. Stops new allocation if mem usage is critical.
-   * @author tomas
-   */
+  /** Monitors the heap usage after full gc run and tells Cleaner to free memory
+   *  if mem usage is too high.  Stops new allocation if mem usage is critical.
+   *  @author tomas   */
   private static class HeapUsageMonitor implements javax.management.NotificationListener {
     MemoryMXBean _allMemBean = ManagementFactory.getMemoryMXBean(); // general
-    MemoryPoolMXBean _oldGenBean;
-    long _gc_callback;
 
+    // Determine the OldGen GC pool size - which is saved in MEM_CRITICAL as
+    // the max desirable K/V store size.
     HeapUsageMonitor() {
       int c = 0;
       for( MemoryPoolMXBean m : ManagementFactory.getMemoryPoolMXBeans() ) {
@@ -162,55 +157,45 @@ abstract public class MemoryManager {
           continue;
         if( m.isCollectionUsageThresholdSupported()
             && m.isUsageThresholdSupported()) {
-          // should be Old pool, get called when memory is critical
-          _oldGenBean = m;
-          _gc_callback = MEM_MAX;
           // Really idiotic API: no idea what the usageThreshold is, so I have
-          // to guess. Start high, catch IAE & lower by 1/8th and try again.
+          // to guess.  Start high, catch IAE & lower by 1/8th and try again.
+          long gc_callback = MEM_MAX;
           while( true ) {
             try {
-              m.setCollectionUsageThreshold(_gc_callback);
+              m.setCollectionUsageThreshold(gc_callback);
               break;
             } catch( IllegalArgumentException iae ) {
-              // Do NOT log this exception, it is expected and unavoidable and
-              // entirely handled.
-
-              _gc_callback -= (_gc_callback>>3);
+              // Expected IAE: means we used too high a callback level
+              gc_callback -= (gc_callback>>3);
             }
           }
+          m.setCollectionUsageThreshold(1); // Call back for every fullgc
           NotificationEmitter emitter = (NotificationEmitter) _allMemBean;
           emitter.addNotificationListener(this, null, m);
           ++c;
+          MEM_CRITICAL = gc_callback; // Set old-gen heap level
         }
       }
       assert c == 1;
     }
 
-    /**
-     * Callback routine called by JVM after full gc run. Has two functions:
-     * 1) sets the amount of memory to be cleaned from the cache by the Cleaner
-     * 2) sets the CAN_ALLOC flag to false if memory level is critical
-     *
-     * The callback happens in a system thread, and hence not through the usual
-     * water.Boot loader - and so any touched classes are in the wrong class
-     * loader and you end up with new classes with uninitialized global vars.
-     * Limit to touching global vars in the Boot class.
-     */
+    /** Callback routine called by JVM after full gc run. Has two functions:
+     *  1) sets the amount of memory to be cleaned from the cache by the Cleaner
+     *  2) sets the CAN_ALLOC flag to false if memory level is critical  */
     @Override public void handleNotification(Notification notification, Object handback) {
-      // TODO:  re-enable when this works.
-
-//      String notifType = notification.getType();
-//      if( notifType.equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) {
-//        // Memory used after this FullGC
-//        Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
-//        Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
-//        MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
-//        if( Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 1))) { // emergency measure - really low on memory, stop allocations right now!
-//          setMemLow();
-//        } else // enable new allocations (even if cleaner is still running, we have enough RAM)
-//          setMemGood();
-//        Cleaner.kick_store_cleaner();
-//      }
+      String notifType = notification.getType();
+      if( !notifType.equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) return;
+      // Memory used after this FullGC
+      Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
+      Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
+      Cleaner.KV_USED_AT_LAST_GC = Cleaner.Histo.cached();
+      MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
+      Log.debug("GC CALLBACK: "+Cleaner.TIME_AT_LAST_GC+", USED:"+PrettyPrint.bytes(Cleaner.HEAP_USED_AT_LAST_GC)+", CRIT: "+MEM_LOW_CRITICAL);
+      set_goals("GC CALLBACK",MEM_LOW_CRITICAL);
+      //if( MEM_LOW_CRITICAL ) { // emergency measure - really low on memory, stop allocations right now!
+      //  setMemLow();           // In-use memory is > 3/4 heap; block allocations
+      //} else if( Cleaner.HEAP_USED_AT_LAST_GC < (MEM_MAX - (MEM_MAX >> 1)) )
+      //  setMemGood(); // In use memory is < 1/2 heap; allow allocations even if Cleaner is still running
     }
   }
 
@@ -233,7 +218,7 @@ abstract public class MemoryManager {
           // logging-induced deadlock!) which will probably be recycled quickly.
           !(Thread.currentThread() instanceof Cleaner) ) {
         synchronized(_lock) {
-          try { _lock.wait(3*1000); } catch (InterruptedException ex) { }
+          try { _lock.wait(300*1000); } catch (InterruptedException ex) { }
         }
       }
       MEM_ALLOC.addAndGet(bytes);

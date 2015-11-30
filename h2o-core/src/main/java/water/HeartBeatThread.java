@@ -31,12 +31,8 @@ public class HeartBeatThread extends Thread {
   // to remove him.  This must be strictly greater than the TIMEOUT.
   static final int SUSPECT = TIMEOUT+500;
 
-  // My Histogram. Called from any thread calling into the MM.
-  // Singleton, allocated now so I do not allocate during an OOM event.
-  static private final Cleaner.Histo myHisto = new Cleaner.Histo();
-
   // uniquely number heartbeats for better timelines
-  static private int HB_VERSION;
+  static private char HB_VERSION;
 
   // Timeout in msec for all kinds of I/O operations on unresponsive clients.
   // Endlessly retry until this timeout, and then declare the client "dead", 
@@ -64,21 +60,27 @@ public class HeartBeatThread extends Thread {
       HeartBeat hb = H2O.SELF._heartbeat;
       hb._hb_version = HB_VERSION++;
       hb._jvm_boot_msec= TimeLine.JVM_BOOT_MSEC;
-      final Runtime run = Runtime.getRuntime();
-      hb.set_free_mem  (run. freeMemory());
-      hb.set_max_mem   (run.  maxMemory());
-      hb.set_tot_mem   (run.totalMemory());
-      hb._keys       = (H2O.STORE.size ());
-      hb.set_mvalsz    (myHisto.histo(false)._cached);
-      hb.set_tvalsz    (myHisto             ._total );
-      hb._num_cpus   = (char)run.availableProcessors();
+
+      // Memory utilization as of last FullGC
+      long kv_gc = Cleaner.KV_USED_AT_LAST_GC;
+      long heap_gc = Cleaner.HEAP_USED_AT_LAST_GC;
+      long pojo_gc = Math.max(heap_gc - kv_gc,0);
+      long kv_mem = Cleaner.Histo.cached(); // More current than last FullGC numbers; can skyrocket
+      // Since last FullGC, assuming POJO remains constant and KV changed: new free memory
+      long free_mem = Math.max(MemoryManager.MEM_MAX-kv_mem-pojo_gc,0);
+      long pojo_mem = MemoryManager.MEM_MAX-kv_mem-free_mem;
+      hb.set_kv_mem(kv_mem);
+      hb.set_pojo_mem(pojo_mem);
+      hb.set_free_mem(free_mem);
+      hb.set_swap_mem(Cleaner.Histo.swapped());
+      hb._keys = H2O.STORE.size();
 
       // Run mini-benchmark every 5 mins.  However, on startup - do not have
       // all JVMs immediately launch a all-core benchmark - they will fight
       // with each other.  Stagger them using the hashcode.
       if( (counter+Math.abs(H2O.SELF.hashCode())) % 300 == 0) {
-        hb._gflops   = Linpack.run(hb._cpus_allowed);
-        hb._membw    = MemoryBandwidth.run(hb._cpus_allowed);
+        hb._gflops   = (float)Linpack.run(hb._cpus_allowed);
+        hb._membw    = (float)MemoryBandwidth.run(hb._cpus_allowed);
       }
 
       Object load = null;
@@ -109,26 +111,15 @@ public class HeartBeatThread extends Thread {
       hb.set_max_disk(H2O.getPM().getIce().getTotalSpace());
 
       // get cpu utilization for the system and for this process.  (linux only.)
-      LinuxProcFileReader lpfr = new LinuxProcFileReader();
-      lpfr.read();
-      if (lpfr.valid()) {
-        hb._system_idle_ticks = lpfr.getSystemIdleTicks();
-        hb._system_total_ticks = lpfr.getSystemTotalTicks();
-        hb._process_total_ticks = lpfr.getProcessTotalTicks();
-        hb._process_num_open_fds = lpfr.getProcessNumOpenFds();
-      }
-      else {
-        hb._system_idle_ticks = -1;
-        hb._system_total_ticks = -1;
-        hb._process_total_ticks = -1;
-        hb._process_num_open_fds = -1;
-      }
-      hb._cpus_allowed = lpfr.getProcessCpusAllowed();
-      if (H2O.ARGS.nthreads < hb._cpus_allowed) {
-        hb._cpus_allowed = H2O.ARGS.nthreads;
-      }
+      LinuxProcFileReader.refresh();
+      hb._pid = LinuxProcFileReader.getProcessID();
+      hb._system_idle_ticks = LinuxProcFileReader.getSystemIdleTicks();
+      hb._system_total_ticks = LinuxProcFileReader.getSystemTotalTicks();
+      hb._process_total_ticks = LinuxProcFileReader.getProcessTotalTicks();
+      hb._process_num_open_fds = LinuxProcFileReader.getProcessNumOpenFds();
+      hb._num_cpus = LinuxProcFileReader.getProcessCpusAllowed();
       hb._nthreads = H2O.ARGS.nthreads;
-      hb._pid = lpfr.getProcessID();
+      hb._cpus_allowed = (char)Math.min(LinuxProcFileReader.getProcessCpusAllowed(),H2O.ARGS.nthreads);
 
       // Announce what Cloud we think we are in.
       // Publish our health as well.

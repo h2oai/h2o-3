@@ -109,7 +109,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
       @Override public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
-      @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) {
+      @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
         return m._output.addModelMetrics(new ModelMetricsSVD(m, f));
       }
     }
@@ -138,7 +138,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig, null);
+    makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
     return f;
   }
 

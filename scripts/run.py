@@ -758,8 +758,11 @@ class Test:
         return (os.path.join(self.output_dir, self.output_file_name))
 
     def _rtest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
-        cmd = ["R", "-f", g_r_test_setup, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
+        if is_runit(test_name): r_test_driver = test_name
+        else: r_test_driver = g_r_test_setup
+        cmd = ["R", "-f", r_test_driver, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
+
         if is_runit(test_name):
             if on_hadoop:         cmd = cmd + ["--onHadoop"]
             if hadoop_namenode:   cmd = cmd + ["--hadoopNamenode", hadoop_namenode]

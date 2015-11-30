@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 ##
 # The following bug is associated with JIRA PUB-857
 # 'GLM models differ on data after shuffling'

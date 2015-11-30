@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This tests k-means on a large dataset.
 #----------------------------------------------------------------------
@@ -14,7 +16,7 @@
 hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
 
 if (hadoop_namenode_is_accessible) {
-    hdfs_name_node = hadoop.namenode()
+    hdfs_name_node = HADOOP.NAMENODE
     hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
     hdfs_covtype_file = "/datasets/runit/covtype.data"
 } else {

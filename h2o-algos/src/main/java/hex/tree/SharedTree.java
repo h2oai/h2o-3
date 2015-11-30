@@ -787,7 +787,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     Log.debug("Average tree size (for all classes): " + PrettyPrint.bytes((long)avg_tree_mem_size));
 
     // all the compressed trees are stored on the driver node
-    long max_mem = H2O.SELF.get_max_mem();
+    long max_mem = H2O.SELF._heartbeat.get_free_mem();
     if (_parms._ntrees * avg_tree_mem_size > max_mem) {
       String msg = "The tree model will not fit in the driver node's memory ("
               + PrettyPrint.bytes((long)avg_tree_mem_size)

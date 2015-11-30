@@ -1,9 +1,11 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 
 
 
 rtest <- function() {
 
-hdfs_name_node = hadoop.namenode()
+hdfs_name_node = HADOOP.NAMENODE
 hdfs_airlines_file = "/datasets/airlines_all.csv"
 #----------------------------------------------------------------------
 # Single file cases.

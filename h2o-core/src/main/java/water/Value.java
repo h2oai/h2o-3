@@ -1,14 +1,14 @@
 package water;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import jsr166y.ForkJoinPool;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /** The core Value stored in the distributed K/V store, used to cache Plain Old
  *  Java Objects, and maintain coherency around the cluster.  It contains an
@@ -166,67 +166,83 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   void touchAt(long time) {_lastAccessedTime = time;}
 
   // ---
+
   // Backend persistence info.  3 bits are reserved for 8 different flavors of
   // backend storage.  1 bit for whether or not the latest _mem field is
-  // entirely persisted on the backend storage, or not.  Note that with only 1
-  // bit here there is an unclosable datarace: one thread could be trying to
-  // change _mem (e.g. to null for deletion) while another is trying to write
-  // the existing _mem to disk (for persistence).  This datarace only happens
-  // if we have racing deletes of an existing key, along with racing persist
-  // attempts.  There are other races that are stopped higher up the stack: we
-  // do not attempt to write to disk, unless we have *all* of a Value, so
-  // extending _mem (from a remote read) should not conflict with writing _mem
-  // to disk.
-  //
-  // The low 3 bits are final.
-  // The on/off disk bit is strictly cleared by the higher layers (e.g. Value.java)
-  // and strictly set by the persistence layers (e.g. PersistIce.java).
-  private volatile byte _persist; // 3 bits of backend flavor; 1 bit of disk/notdisk
+  // entirely persisted on the backend storage.  The low 3 bits are final.  The
+  // other bit monotonically changes from 0->1.  The deleted bit ALSO
+  // monotonically changes 0->1.  These two bits cannot be combined without the
+  // use of atomic operations.
+  private volatile byte _persist; // 1 bit of disk/notdisk; 3 bits of backend flavor
   public  final static byte ICE = 1<<0; // ICE: distributed local disks
   public  final static byte HDFS= 2<<0; // HDFS: backed by Hadoop cluster
   public  final static byte S3  = 3<<0; // Amazon S3
   public  final static byte NFS = 4<<0; // NFS: Standard file system
   public  final static byte TCP = 7<<0; // TCP: For profile purposes, not a storage system
   private final static byte BACKEND_MASK = (8-1);
-  private final static byte NOTdsk = 0<<3; // latest _mem is persisted or not
-  private final static byte ON_dsk = 1<<3;
-  private void clrdsk() { _persist &= ~ON_dsk; } // note: not atomic
-  /** Used by the persistance subclass to mark this Value as saved-on-disk. */
-  public final void setdsk() { _persist |=  ON_dsk; } // note: not atomic
-  /** Check if the backing byte[] has been saved-to-disk */
-  public final boolean isPersisted() { return (_persist&ON_dsk)!=0; }
   final byte backend() { return (byte)(_persist&BACKEND_MASK); }
-
-  // ---
-  // Interface for using the persistence layer(s).
   boolean onICE (){ return (backend()) ==  ICE; }
   private boolean onHDFS(){ return (backend()) == HDFS; }
   private boolean onNFS (){ return (backend()) ==  NFS; }
   private boolean onS3  (){ return (backend()) ==   S3; }
+ 
+ // Manipulate the on-disk bit
+  private final static byte NOTdsk = 0<<3; // latest _mem is persisted or not
+  private final static byte ON_dsk = 1<<3;
+  /** Check if the backing byte[] has been saved-to-disk */
+  public final boolean isPersisted() { return (_persist&ON_dsk)!=0; }
+  public final void setDsk() { _persist |=  ON_dsk; } // note: not atomic, but only monotonically set bit
+  private volatile byte _deleted; // 1 bit of deleted
+  public final boolean isDeleted() { return _deleted != 0; }
+  public final void setDel() { _deleted=1; } // note: not atomic, but only monotonically set bit
 
-  /** Store complete Values to disk */
-  void storePersist() throws IOException {
-    if( isPersisted() ) return;
-    H2O.getPM().store(backend(), this);
-    assert isPersisted();
+
+  /** Best-effort store complete Values to disk.  */
+  void storePersist() throws java.io.IOException {
+    // 00       then start writing
+    // 01       delete requested; do not write
+    // 10       already written; do nothing
+    // 11       already written & deleted; do nothing
+    if( isDeleted() ) return;   // 01 and 11 cases
+    if( isPersisted() ) return; // 10 case
+    H2O.getPM().store(backend(), this); // Write to disk
+
+    // 00 -> 10 expected, set write bit
+    // 10       assert; only Cleaner writes
+    // 01       delete-during-write; delete again
+    // 11       assert; only Cleaner writes
+    assert !isPersisted();      // Only Cleaner writes
+    setDsk(); // Not locked, not atomic, so can only called by one thread: Cleaner
+    if( isDeleted() ) // Check del bit AFTER setting persist bit; close race with deleting user thread
+      H2O.getPM().delete(backend(), this); // Possibly nothing to delete (race with writer)
   }
 
   /** Remove dead Values from disk */
-  void removePersist() {
+  public void removePersist() {
     // do not yank memory, as we could have a racing get hold on to this
     //  free_mem();
-    if( !isPersisted() || !onICE() ) return; // Never hit disk?
-    clrdsk();  // Not persisted now
-    H2O.getPM().delete(backend(), this);
+    // 00 -> 01 try to delete (racing, probably nothing to delete)
+    // 01       double delete; do nothing
+    // 10 -> 11 delete
+    // 11       double delete; do nothing
+    if( !onICE() ) return;      // Wrong filestore?
+    if( isDeleted() ) return;   // Already deleted?
+    setDel();                   // Set del bit BEFORE testing isPersist
+    if( !isPersisted() ) return;// Nothing there
+    H2O.getPM().delete(backend(), this); // Possibly nothing to delete (race with writer)
   }
   /** Load some or all of completely persisted Values */
   byte[] loadPersist() {
+    // 00       assert: not written yet
+    // 01       assert: load-after-delete
+    // 10       expected; read
+    // 11       assert: load-after-delete
     assert isPersisted();
-    try { 
-      return H2O.getPM().load(backend(), this);
-    } catch( IOException ioe ) {
-      throw Log.throwErr(ioe);
-    }
+    try {
+      byte[] res = H2O.getPM().load(backend(), this);
+      assert !isDeleted();        // Race in user-land: load-after-delete
+      return res;
+    } catch( IOException ioe ) { throw Log.throwErr(ioe); }
   }
 
   String nameOfPersist() { return nameOfPersist(backend()); }
@@ -241,17 +257,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     case TCP : return "TCP";
     default  : return null;
     }
-  }
-
-  /** Set persistence to HDFS from ICE */
-  private void setHdfs() throws IOException {
-    assert onICE();
-    byte[] mem = memOrLoad();   // Get into stable memory
-    removePersist();            // Remove from ICE disk
-    _persist = Value.HDFS|Value.NOTdsk;
-    storePersist();
-    assert onHDFS();       // Flipped to HDFS
-    _mem = mem; // Close a race with the H2O cleaner zapping _mem while removing from ice
   }
 
   /** Check if the Value's POJO is a subtype of given type integer.  Does not require the POJO.
@@ -348,8 +353,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Custom serializer: set _max from _mem length; set replicas & timestamp.
   @Override public Value read_impl(AutoBuffer bb) {
     assert _key == null;        // Not set yet
-    _persist = bb.get1();       // Set persistence backend but...
-    if( onICE() ) clrdsk();     // ... the on-disk flag is local, just deserialized thus not on MY disk
+    // Set persistence backend but... strip off saved-to-disk bit
+    _persist = (byte)(bb.get1()&BACKEND_MASK); 
     _type = (short) bb.get2();
     _mem = bb.getA1();
     _max = _mem.length;
@@ -569,7 +574,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // are pending invalidates on it), upgrade it in-place to a true null.
   // Return the not-Null value, or the true null.
   public static Value STORE_get( Key key ) {
-    Value val = H2O.get(key);
+    Value val = H2O.STORE.get(key);
     if( val == null ) return null; // A true null
     if( !val.isNull() ) return val; // Not a special Null
     if( val._rwlock.get()>0 ) return val; // Not yet invalidates all completed

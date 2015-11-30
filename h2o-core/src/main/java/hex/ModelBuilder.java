@@ -20,6 +20,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -504,7 +505,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           for (Key k : predictionKeys) ((Frame)DKV.getGet(k)).remove();
         }
       }
-      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), preds);
+      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
       if (preds!=null) preds.remove();
       mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
       Log.info(mainModel._output._cross_validation_metrics.toString());
@@ -1001,6 +1002,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
   }
 
+  protected transient HashSet<String> _removedCols = new HashSet<String>();
   abstract class FilterCols {
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
@@ -1014,6 +1016,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           if( any ) msg += ", "; // Log dropped cols
           any = true;
           msg += f._names[i];
+          _removedCols.add(f._names[i]);
           f.remove(i);
           i--; // Re-run at same iteration after dropping a col
         }

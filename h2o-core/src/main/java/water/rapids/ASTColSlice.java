@@ -184,18 +184,20 @@ class ASTFilterNACols extends ASTPrim {
   @Override int nargs() { return 1+2; } // (filterNACols frame frac)
   @Override
   public String str() { return "filterNACols"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNums apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double frac = asts[2].exec(env).getNum();
     double nrow = fr.numRows()*frac;
     Vec vecs[] = fr.vecs();
-    long[] idxs = new long[fr.numCols()];
-    int j=0;
-    for( int i=0; i<idxs.length; i++ )
-      if( vecs[i].naCnt() < nrow )
-        idxs[j++] = i;
-    Vec vec = Vec.makeVec(Arrays.copyOf(idxs,j),null,Vec.VectorGroup.VG_LEN1.addVec());
-    return new ValFrame(new Frame(vec));
+    ArrayList<Double> idxs = new ArrayList<>();
+    for( double i=0; i<fr.numCols(); i++ )
+      if( vecs[(int)i].naCnt() < nrow )
+        idxs.add(i);
+    double[] include_cols = new double[idxs.size()];
+    int i=0;
+    for(double d: idxs)
+      include_cols[i++] = d;
+    return new ValNums(include_cols);
   }
 }
 

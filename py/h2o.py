@@ -158,7 +158,7 @@ class H2O(object):
     '''
 #    @profile
     def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
-                          cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, raiseIfNon200=True, **kwargs):
+                          cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, raiseIfNon200=True, suppressErrorMsg=False, **kwargs):
         H2O.verboseprint("__do_json_request, timeout: " + str(timeout))
         # if url param is used, use it as full url. otherwise crate from the jsonRequest
         if fullUrl:
@@ -281,20 +281,28 @@ class H2O(object):
 
             H2O.verboseprint("r: " + repr(r))
 
-        if raiseIfNon200 and 200 != r.status_code:
-            print "JSON call returned non-200 status: ", url
+        if 200 != r.status_code:
             pp = pprint.PrettyPrinter(indent=4)
+            msg = "JSON call returned non-200 status: " + url
+
             json = r.json()
             if None != json and 'dev_msg' in json:
-                print "dev_msg: " + str(json['dev_msg'])
-            print "r.status_code: " + str(r.status_code)
-            print "r.headers: " + repr(r.headers)
+                msg += "\ndev_msg: "
+                msg += str(json['dev_msg'])
+            msg += "\nr.status_code: " + str(r.status_code)
+            msg += "\nr.headers: " + repr(r.headers)
             if None == json:
-                print 'ERROR: the error output from H2O is not JSON!'
-                print "r.text: " + r.text
+                msg += '\nERROR: the error output from H2O is not JSON!'
+                msg += "\nr.text: " + r.text
             else:
-                print "r.json: "
-                pp.pprint(json)
+                msg += "\nr.json: "
+                msg += pp.pformat(json)
+
+            if raiseIfNon200:
+                pass  # we'll pass msg up with the exception
+            elif not suppressErrorMsg:
+                print(msg)
+            log_rest(msg)
 
         log_rest("")
         try:
@@ -319,7 +327,7 @@ class H2O(object):
 
         # fatal if no response
         if raiseIfNon200 and not r:
-            raise Exception("Maybe bad url? no r in __do_json_request in %s:" % inspect.stack()[1][3])
+            raise Exception("Maybe bad url? no r in __do_json_request in %s:" % inspect.stack()[1][3] + "\n\n" + msg)
 
         # this is used to open a browser on results, or to redo the operation in the browser
         # we don't' have that may urls flying around, so let's keep them all
@@ -404,6 +412,51 @@ class H2O(object):
 
     ###################
     # REST API ACCESSORS
+
+    '''
+    Fetch all the cluster status from the /Cloud endpoint.
+    '''
+    def cloud(self, timeoutSecs=10, **kwargs):
+        params_dict = {
+        }
+        h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'cloud', H2O.verbose)
+        result = self.__do_json_request('/3/Cloud', timeout=timeoutSecs, params=params_dict)
+        return result
+
+
+    '''
+    Determine if the cluster status is not good.  Returns a message (which evaluates as True) 
+    if cloud status is bad; else returns None (which evluates as False);
+    '''
+    def cloud_is_bad(self, timeoutSecs=10, **kwargs):
+        try:
+            cloud = self.cloud()
+        except Exception as e:
+            return str(e)
+
+        if cloud is None:
+            return '/3/Cloud returned None'
+        if 'cloud_size' not in cloud:
+            return '/3/Cloud return value does not contain cloud_size'
+        if 'nodes' not in cloud:
+            return '/3/Cloud return value does not contain nodes'
+        if type(cloud['nodes']) is not list:
+            return '/3/Cloud nodes element is not a list'
+        if cloud['cloud_size'] < 1:
+            return 'cloud_size < 1: ' + cloud['cloud_size']
+
+        size = cloud['cloud_size']
+        if cloud['cloud_size'] != len(cloud['nodes']):
+            return '/3/Cloud nodes list length != cloud_size'
+
+        node_num = 0
+        for node in cloud['nodes']:
+            if 'healthy' not in node:
+                return '/3/Cloud node return value does not contain healthy'
+            if not node['healthy']:
+                return 'node ' + str(node_num) + ' is not healthy'
+
+        return None
 
     '''
     Fetch all the jobs or a single job from the /Jobs endpoint.
@@ -742,7 +795,7 @@ class H2O(object):
 
         if model_id is not None:
             parameters['model_id'] = model_id
-        result = self.__do_json_request('/3/ModelBuilders/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
+        result = self.__do_json_request('/3/ModelBuilders/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False, suppressErrorMsg=True)  # NOTE: DO NOT die if validation errors
 
         if asynchronous:
             return result
@@ -846,6 +899,8 @@ class H2O(object):
         assert frame is not None, 'FAIL: "frame" parameter is null'
 
         models = self.models(key=model, timeoutSecs=timeoutSecs)
+        # print("models (key={0}): ".format(model))
+        # pprint.PrettyPrinter(indent=4).pprint(models)
         assert models is not None, "FAIL: /Models REST call failed"
         assert models['models'][0]['model_id']['name'] == model, "FAIL: /Models/{0} returned Model {1} rather than Model {2}".format(model, models['models'][0]['model_id']['name'], model)
 

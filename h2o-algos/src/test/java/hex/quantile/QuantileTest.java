@@ -1,10 +1,15 @@
 package hex.quantile;
 
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.Job;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+
+import java.util.Arrays;
 
 public class QuantileTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -66,11 +71,239 @@ public class QuantileTest extends TestUtil {
       Job<QuantileModel> job = new Quantile(parms).trainModel();
       kmm = job.get();
       job.remove();
-      Assert.assertTrue(kmm._output._quantiles[0][5]==d[3][0]);
+      Assert.assertTrue(kmm._output._quantiles[0][5] == d[3][0]);
 
     } finally {
       if( fr  != null ) fr .remove();
       if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testShuffled() {
+    QuantileModel kmm1;
+    QuantileModel kmm2;
+    Frame fr1 = null;
+    Frame fr2 = null;
+    try {
+      fr1 = parse_test_file("smalldata/junit/no_weights.csv");
+      fr2 = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+
+      for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
+              QuantileModel.CombineMethod.AVERAGE,
+              QuantileModel.CombineMethod.LOW,
+              QuantileModel.CombineMethod.HIGH,
+              QuantileModel.CombineMethod.INTERPOLATE
+      }) {
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr1._key;
+          parms._combine_method = comb;
+          Job<QuantileModel> job1 = new Quantile(parms).trainModel();
+          kmm1 = job1.get();
+          job1.remove();
+        }
+
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr2._key;
+          parms._combine_method = comb;
+          Job<QuantileModel> job2 = new Quantile(parms).trainModel();
+          kmm2 = job2.get();
+          job2.remove();
+        }
+
+        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        if( kmm1 != null ) kmm1.delete();
+        if( kmm2 != null ) kmm2.delete();
+      }
+
+    } finally {
+      if( fr1  != null ) fr1.remove();
+      if( fr2  != null ) fr2.remove();
+    }
+  }
+
+  @Test public void testWeights0() {
+    QuantileModel kmm1;
+    QuantileModel kmm2;
+    Frame fr1 = null;
+    Frame fr2 = null;
+    try {
+      fr1 = parse_test_file("smalldata/junit/no_weights.csv");
+      fr2 = parse_test_file("smalldata/junit/weights_all_ones.csv");
+
+      for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
+              QuantileModel.CombineMethod.AVERAGE,
+              QuantileModel.CombineMethod.LOW,
+              QuantileModel.CombineMethod.HIGH,
+              QuantileModel.CombineMethod.INTERPOLATE
+      }) {
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr1._key;
+          parms._combine_method = comb;
+          parms._weights_column = null;
+          Job<QuantileModel> job1 = new Quantile(parms).trainModel();
+          kmm1 = job1.get();
+          job1.remove();
+        }
+
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr2._key;
+          parms._combine_method = comb;
+          parms._weights_column = "weight";
+          Job<QuantileModel> job2 = new Quantile(parms).trainModel();
+          kmm2 = job2.get();
+          job2.remove();
+        }
+
+        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        if( kmm1 != null ) kmm1.delete();
+        if( kmm2 != null ) kmm2.delete();
+      }
+
+    } finally {
+      if( fr1  != null ) fr1.remove();
+      if( fr2  != null ) fr2.remove();
+    }
+  }
+
+  @Test public void testWeights1() {
+    QuantileModel kmm1;
+    QuantileModel kmm2;
+    Frame fr1 = null;
+    Frame fr2 = null;
+    try {
+      fr1 = parse_test_file("smalldata/junit/no_weights.csv");
+      fr2 = parse_test_file("smalldata/junit/weights.csv");
+
+      for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
+              QuantileModel.CombineMethod.AVERAGE,
+              QuantileModel.CombineMethod.LOW,
+              QuantileModel.CombineMethod.HIGH,
+              QuantileModel.CombineMethod.INTERPOLATE
+      }) {
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr1._key;
+          parms._combine_method = comb;
+          parms._weights_column = null;
+          Job<QuantileModel> job1 = new Quantile(parms).trainModel();
+          kmm1 = job1.get();
+          job1.remove();
+        }
+
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr2._key;
+          parms._combine_method = comb;
+          parms._weights_column = "weight";
+          Job<QuantileModel> job2 = new Quantile(parms).trainModel();
+          kmm2 = job2.get();
+          job2.remove();
+        }
+
+        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        if( kmm1 != null ) kmm1.delete();
+        if( kmm2 != null ) kmm2.delete();
+      }
+
+    } finally {
+      if( fr1  != null ) fr1.remove();
+      if( fr2  != null ) fr2.remove();
+    }
+  }
+
+  @Ignore @Test public void testWeights2() {
+    QuantileModel kmm1;
+    QuantileModel kmm2;
+    Frame fr1 = null;
+    Frame fr2 = null;
+    try {
+      fr1 = parse_test_file("smalldata/junit/weights_all_twos.csv");
+      fr2 = parse_test_file("smalldata/junit/weights_all_ones.csv");
+
+      for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
+              QuantileModel.CombineMethod.AVERAGE,
+              QuantileModel.CombineMethod.LOW,
+              QuantileModel.CombineMethod.HIGH,
+              QuantileModel.CombineMethod.INTERPOLATE
+      }) {
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr1._key;
+          parms._combine_method = comb;
+          parms._weights_column = "weight";
+          Job<QuantileModel> job1 = new Quantile(parms).trainModel();
+          kmm1 = job1.get();
+          job1.remove();
+        }
+
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr2._key;
+          parms._combine_method = comb;
+          parms._weights_column = "weight";
+          Job<QuantileModel> job2 = new Quantile(parms).trainModel();
+          kmm2 = job2.get();
+          job2.remove();
+        }
+
+        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        if( kmm1 != null ) kmm1.delete();
+        if( kmm2 != null ) kmm2.delete();
+      }
+
+    } finally {
+      if( fr1  != null ) fr1.remove();
+      if( fr2  != null ) fr2.remove();
+    }
+  }
+
+  @Ignore @Test public void testWeights3() {
+    QuantileModel kmm1;
+    QuantileModel kmm2;
+    Frame fr1 = null;
+    Frame fr2 = null;
+    try {
+      fr1 = parse_test_file("smalldata/junit/weights_all_tiny.csv");
+      fr2 = parse_test_file("smalldata/junit/weights_all_ones.csv");
+
+      for (QuantileModel.CombineMethod comb : new QuantileModel.CombineMethod[]{
+              QuantileModel.CombineMethod.AVERAGE,
+              QuantileModel.CombineMethod.LOW,
+              QuantileModel.CombineMethod.HIGH,
+              QuantileModel.CombineMethod.INTERPOLATE
+      }) {
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr1._key;
+          parms._combine_method = comb;
+          parms._weights_column = "weight";
+          Job<QuantileModel> job1 = new Quantile(parms).trainModel();
+          kmm1 = job1.get();
+          job1.remove();
+        }
+
+        {
+          QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+          parms._train = fr2._key;
+          parms._combine_method = comb;
+          parms._weights_column = "weight";
+          Job<QuantileModel> job2 = new Quantile(parms).trainModel();
+          kmm2 = job2.get();
+          job2.remove();
+        }
+
+        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        if( kmm1 != null ) kmm1.delete();
+        if( kmm2 != null ) kmm2.delete();
+      }
+
+    } finally {
+      if( fr1  != null ) fr1.remove();
+      if( fr2  != null ) fr2.remove();
     }
   }
 }

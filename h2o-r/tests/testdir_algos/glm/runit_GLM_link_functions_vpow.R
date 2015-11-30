@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 ##
 # Comparison of H2O to R with varying link functions for the TWEEDIE family on prostate dataset
 # Link functions: tweedie (canonical link)

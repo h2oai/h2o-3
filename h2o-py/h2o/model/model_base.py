@@ -5,7 +5,7 @@ This module implements the base model class.  All model things inherit from this
 from . import H2OFrame
 from . import H2OConnection
 import h2o
-import imp
+import imp, traceback
 
 
 class ModelBase(object):
@@ -67,7 +67,10 @@ class ModelBase(object):
     return self._estimator_type
 
   def __repr__(self):
-    self.show()
+    # PUBDEV-2278: using <method>? from IPython caused everything to dump
+    stk = traceback.extract_stack()
+    if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
+      self.show()
     return ""
 
   def predict(self, test_data):
@@ -408,10 +411,18 @@ class ModelBase(object):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param train: If train is True, then return the MSE value for the training data.
-    :param valid: If valid is True, then return the MSE value for the validation data.
-    :param xval:  If xval is True, then return the MSE value for the cross validation data.
-    :return: The MSE for this regression model.
+    Parameters
+    ----------
+    train : bool, default=True
+      If train is True, then return the MSE value for the training data.
+    valid : bool, default=True
+      If valid is True, then return the MSE value for the validation data.
+    xval : bool, default=True
+      If xval is True, then return the MSE value for the cross validation data.
+
+    Returns
+    -------
+      The MSE for this regression model.
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}

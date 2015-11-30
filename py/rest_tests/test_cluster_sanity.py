@@ -7,6 +7,23 @@ import h2o_test_utils
 
 def test(a_node, pp, algos):
     ##################################
+    # Test cluster status
+    cloud = a_node.cloud()
+    if h2o_test_utils.isVerboser():
+        print 'Cloud: '
+        pp.pprint(cloud)
+
+    not_ok = a_node.cloud_is_bad()
+    assert not not_ok, "FAIL: cloud status is not ok!  Reason: " + not_ok    
+
+    jobs = a_node.jobs()
+    if h2o_test_utils.isVerboser():
+        print 'Jobs: '
+        pp.pprint(jobs)
+    assert 'jobs' in jobs, "FAIL: 'jobs' element not found in the result of /Jobs"
+
+
+    ##################################
     # Test object collection endpoints
     models = a_node.models()
     if h2o_test_utils.isVerboser():
@@ -23,9 +40,6 @@ def test(a_node, pp, algos):
         print 'Frames: '
         pp.pprint(frames)
     
-    # TODO: all other collections, including /Jobs and eventually /DKV
-    # TODO: test /Cloud
-
 
     ####################################
     # test model_builders collection GET
@@ -57,10 +71,11 @@ def test(a_node, pp, algos):
     model_metrics = a_node.model_metrics(timeoutSecs=240)
     
     if h2o_test_utils.isVerboser():
-        print 'ModelMetrics: '
-        pp.pprint(model_metrics)
+        print 'ModelMetrics[0]: '
+        pp.pprint(model_metrics['model_metrics'][0])
     
     ####################################
     # test model_metrics individual GET
-    # TODO
+    model_metrics = a_node.model_metrics(timeoutSecs=240, model="deeplearning_prostate_binomial", frame="prostate_binomial")
+
     

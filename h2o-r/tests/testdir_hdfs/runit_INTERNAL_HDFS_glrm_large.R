@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This tests GLRM on a large dataset.
 #----------------------------------------------------------------------
@@ -14,7 +16,7 @@
 hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
 
 if (hadoop_namenode_is_accessible) {
-  hdfs_name_node = hadoop.namenode()
+  hdfs_name_node = HADOOP.NAMENODE
   hdfs_cross_file = "/datasets/runit/BigCross.data"
 } else {
   stop("Not running on H2O internal network. No access to HDFS.")

@@ -581,7 +581,7 @@ class H2OGridSearch(object):
     c_values.insert(1,[self.get_hyperparams(model_id, display=False) for model_id in c_values[0]])
     if not increasing:
       for col in c_values: col.reverse()
-    metric = metric[:-2]
+    if metric[-2] == '(': metric = metric[:-2]
     return h2o.H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']', metric],
                               table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=zip(*c_values))
 

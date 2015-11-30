@@ -4,7 +4,6 @@ import hex.Distribution;
 import hex.Model;
 import hex.ScoreKeeper;
 import water.H2O;
-import static water.H2O.technote;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -12,6 +11,8 @@ import water.util.RandomUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+
+import static water.H2O.technote;
 
 /**
  * Deep Learning Parameters
@@ -608,7 +609,7 @@ public class DeepLearningParameters extends Model.Parameters {
       if (_class_sampling_factors != null && !_balance_classes) {
         dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
       }
-      if (_replicate_training_data && null != train() && train().byteSize() > 1e10) {
+      if (_replicate_training_data && null != train() && train().byteSize() > 1e10 && H2O.CLOUD.size() > 1) {
         dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
       }
     }

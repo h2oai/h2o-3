@@ -25,6 +25,8 @@ public class RemoveAllHandler extends Handler {
       @Override public byte priority() { return H2O.GUI_PRIORITY; }
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
+    // Wipe the backing store without regard as well
+    H2O.getPM().getIce().cleanUp();
     Log.info("Finished removing objects");
     return u;
   }

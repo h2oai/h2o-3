@@ -1574,8 +1574,8 @@ public class GLMTest  extends TestUtil {
       GLMIterationTaskTest gtt = (GLMIterationTaskTest)new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu[0],model3).doAll(dinfo._adaptedFrame);
       System.out.println("val1 = " + gtt._val.toString());
       System.out.println("val2 = " + gtt._val2.toString());
-      ModelMetrics mm1 = gtt._val .makeModelMetrics(model3, dinfo._adaptedFrame, null);
-      ModelMetrics mm2 = gtt._val2.makeModelMetrics(model3, dinfo._adaptedFrame, null);
+      ModelMetrics mm1 = gtt._val .makeModelMetrics(model3, dinfo._adaptedFrame, null, null);
+      ModelMetrics mm2 = gtt._val2.makeModelMetrics(model3, dinfo._adaptedFrame, null, null);
       System.out.println("mm1 = " + mm1.toString());
       System.out.println("mm2 = " + mm2.toString());
       assert mm1.equals(mm2);
