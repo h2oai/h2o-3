@@ -71,32 +71,4 @@ public class ParseFolderTestBig extends TestUtil {
       if( k1 != null ) k1.delete();
     }
   }
-
-  // "bigdata directory is not usually available"
-  @Test @Ignore
-  public void testParseMemoryStress() {
-    ArrayList<Frame> frames = new ArrayList<>();
-    File ice = new File(water.H2O.ICE_ROOT.toString(),"ice" + water.H2O.API_PORT);
-    Assert.assertTrue(MemoryManager.MEM_MAX <= 2L*1024L*1024L*1024L); // No more than 2Gig of heap; forces swapping
-    String[] dirs = ice.list();
-    Assert.assertTrue(dirs == null || dirs.length==0); // ICE empty before we start
-    try {
-      // Force much swap-to-disk.  Setting iters to 20 on a 2G JVM will fail in
-      // a OOM death-spiral without swapping.  With swapping it succeeds (very
-      // slowly).  
-      // TODO: Swap speed is miserable.
-      for( int i=0; i<10; i++ ) {
-        frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98LRN_z.csv"));
-        frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98VAL_z.csv"));
-      }
-    } finally {
-      dirs = ice.list();
-      Assert.assertTrue((dirs != null && dirs.length>0) || !water.H2O.ARGS.cleaner ); // Much got swapped to disk
-      for( Frame fr : frames )
-        fr.delete();            // Cleanup swap-to-disk
-    }
-    // Assert nothing remains
-    dirs = ice.list();
-    Assert.assertTrue(dirs == null || dirs.length==0); // ICE empty after we are done
-  }
 }

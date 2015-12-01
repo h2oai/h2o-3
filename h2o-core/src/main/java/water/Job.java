@@ -128,7 +128,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  @param fjtask top-level job computation task.
    *  @param work Units of work to be completed
    *  @param restartTimer
-   * @return this job in {@link JobState#RUNNING} state
+   *  @return this job in {@link JobState#RUNNING} state
    *
    *  @see JobState
    *  @see H2OCountedCompleter
