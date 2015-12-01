@@ -1701,7 +1701,8 @@ h2o.summary <- function(object, factors=6L, ...) {
 }
 
 #' @rdname h2o.summary
-#' @usage \\method{summary}{H2OFrame}(object, factors, ...)
+#' @usage \method{summary}{H2OFrame}(object, factors, ...)
+#' @method summary H2OFrame
 #' @export
 summary.H2OFrame <- h2o.summary
 
@@ -1953,10 +1954,10 @@ as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 
 #' Convert an H2O H2OFrame to a vector
 #'
-#' @name as.vector
-#' @param x An H2O H2OFrame object
+#' @param x An H2OFrame object
 #' @param mode Unused
-#' @usage \\method{as.vector}{H2OFrame}(x,mode)
+#' @usage \method{as.vector}{H2OFrame}(x,mode)
+#' @method as.vector H2OFrame
 #' @export
 as.vector.H2OFrame <- function(x, mode) base::as.vector(as.matrix.H2OFrame(x))
 

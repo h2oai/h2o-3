@@ -26,10 +26,10 @@ if (inherits(try(getRefClass("H2OConnectionMutableState"), silent = TRUE), "try-
 #'
 #' This class represents the mutable aspects of a connection to an H2O cloud.
 #'
+#' @name H2OConnectionMutableState
 #' @slot session_id A \code{character} string specifying the H2O session identifier.
 #' @slot key_count A \code{integer} value specifying count for the number of keys generated for the \code{session_id}.
-#' @aliases H2OConnectionMutableStat
-#' @export
+#' @aliases H2OConnectionMutableState
 setRefClass("H2OConnectionMutableState",
             fields = list(session_id = "character", key_count = "integer"),
             methods = list(

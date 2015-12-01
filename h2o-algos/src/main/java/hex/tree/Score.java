@@ -72,7 +72,7 @@ public class Score extends MRTask<Score> {
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
   ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr) {
     Frame preds = model._output.nclasses()==2 && _computeGainsLift ? model.score(fr) : null;
-    ModelMetricsSupervised mms = (ModelMetricsSupervised) _mb.makeModelMetrics(model, fr, preds);
+    ModelMetricsSupervised mms = (ModelMetricsSupervised) _mb.makeModelMetrics(model, fr, null, preds);
     if (preds != null) preds.remove();
     return mms;
   }

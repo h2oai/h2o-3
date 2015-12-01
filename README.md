@@ -354,11 +354,10 @@ OS X should already have Git installed. To download and update h2o-3 source code
 
 ### 4.5. Setup on Ubuntu 14.04
 
-##### Step 1. Install Node.js, npm, and bower:
+##### Step 1. Install Node.js
 
-    sudo apt-get install npm
-    sudo ln -s /usr/bin/nodejs /usr/bin/node
-    npm install -g bower
+    curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
+    sudo apt-get install -y nodejs
 
 ##### Step 2. Install JDK:
 
@@ -393,15 +392,10 @@ Download and update h2o-3 source codes:
 
 ### 4.6. Setup on Ubuntu 13.10
 
-##### Step 1. Install Node.js, npm, and bower
+##### Step 1. Install Node.js
 
-On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default npm (v1.2.18) is too old, so use a fresh install from the npm website:
-
-    sudo apt-get install node
-    sudo ln -s /usr/bin/nodejs /usr/bin/node
-    wget http://npmjs.org/install.sh
-    sudo apt-get install curl
-    sudo sh install.sh
+    curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
+    sudo apt-get install -y nodejs
    
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
