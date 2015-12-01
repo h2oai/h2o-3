@@ -2011,6 +2011,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _taskInfo._beta = glmt._beta;
             // compute KKTs
             if(_parms._compute_p_values) { // compute p-values
+              gslvr._gram.solve(gslvr._xy.clone());
               if(gslvr._addedL2)
                 throw new IllegalArgumentException("Can not compute p-values due to colinear columns");
               double se = 1;

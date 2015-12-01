@@ -143,6 +143,60 @@ public final class Gram extends Iced<Gram> {
     return res;
   }
 
+  public int []  solve(double [] xy) {
+    int [] dropped_cols = new int[0];
+    double [][] Z = getXX(true);
+    // put intercept first
+    int icpt_id = Z.length-1;
+    double d = Z[0][0];
+    Z[0][0] = Z[icpt_id][icpt_id];
+    Z[icpt_id][icpt_id] = d;
+    for(int i = 1; i < Z.length-1; ++i) {
+      d = Z[i][0];
+      Z[i][0] = Z[icpt_id][i];
+      Z[icpt_id][i] = d;
+    }
+    d = xy[icpt_id];
+    xy[icpt_id] = xy[0];
+    xy[0] = d;
+    double [][] R = new double[Z.length][];
+    for(int j = 0; j < Z.length; ++j) {
+      double [] gamma = R[j] = new double[j+1];
+      for(int l = 0; l <= j; ++l) // compute gamma_l_j
+        gamma[l] = Z[j][l]/Z[l][l];
+      double zjj = Z[j][j];
+      for(int k = 0; k < j; ++k) // only need the diagonal, the rest is 0 (dot product of orthogonal vectors)
+        zjj += gamma[k] * (gamma[k] * Z[k][k] - 2*Z[j][k]);
+      Z[j][j] = zjj;
+      for(int i = j+1; i < Z.length; ++i) { // update xj to zj //
+        double sum = 0;
+        for(int k = 0; k < j; ++k)
+          sum += gamma[k]*Z[i][k];
+        Z[i][j] -= sum;
+      }
+      // update xy
+      double xy_j = xy[j];
+      for(int k = 0; k < j; ++k)
+        xy_j -= gamma[k]*xy[k];
+      xy[j] = xy_j;
+    }
+    // update the Qty - we compute (Qt*y)/sqrt(diag(Z)) and Rt/sqrt(diag(Z)) which we can dircetly use to solve the problem
+    for(int i = 0; i < R.length; ++i)
+      xy[i] /= Z[i][i];
+    // solve R*x = Qt*y (note that we have R transposed)
+    // since R is upper triangular, we can simply walk from the bottom, each time solving one variable and than substitute it to the remaining equations
+    for( int k = xy.length-1; k >= 0; --k ) {
+      double [] Rk = R[k];
+      double xyk = xy[k] / Rk[k];
+      for( int i = 0; i < k; ++i )
+        xy[i] -= xyk * Rk[i];
+      xy[k] = xyk;
+    }
+    System.out.println("============================================================================================");
+    System.out.println(ArrayUtils.pprint(new double[][]{xy}));
+    return dropped_cols;
+  }
+
   public String toString(){
     if(_fullN >= 1000){
       if(_denseN >= 1000) return "Gram(" + _fullN + ")";
@@ -309,17 +363,19 @@ public final class Gram extends Iced<Gram> {
     return chol;
   }
 
-  public double[][] getXX() {
+  public double[][] getXX(){return getXX(false);}
+  public double[][] getXX(boolean lowerDiag) {
     final int N = _fullN;
     double[][] xx = new double[N][];
     for( int i = 0; i < N; ++i )
-      xx[i] = MemoryManager.malloc8d(N);
+      xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
     for( int i = 0; i < _diag.length; ++i )
       xx[i][i] = _diag[i];
     for( int i = 0; i < _xx.length; ++i ) {
       for( int j = 0; j < _xx[i].length; ++j ) {
         xx[i + _diag.length][j] = _xx[i][j];
-        xx[j][i + _diag.length] = _xx[i][j];
+        if(!lowerDiag)
+          xx[j][i + _diag.length] = _xx[i][j];
       }
     }
     return xx;
