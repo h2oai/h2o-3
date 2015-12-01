@@ -54,12 +54,23 @@ public class HeartBeatThread extends Thread {
     }
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
     int counter = 0;
+    //noinspection InfiniteLoopStatement
     while( true ) {
       // Update the interesting health self-info for publication also
       H2O cloud = H2O.CLOUD;
       HeartBeat hb = H2O.SELF._heartbeat;
       hb._hb_version = HB_VERSION++;
       hb._jvm_boot_msec= TimeLine.JVM_BOOT_MSEC;
+
+      // Run mini-benchmark every 5 mins.  However, on startup - do not have
+      // all JVMs immediately launch a all-core benchmark - they will fight
+      // with each other.  Stagger them using the hashcode.
+      // Run this benchmark *before* testing the heap or GC, so the GC numbers
+      // are current as of the send time.
+      if( (counter+Math.abs(H2O.SELF.hashCode())) % 300 == 0) {
+        hb._gflops   = (float)Linpack.run(hb._cpus_allowed);
+        hb._membw    = (float)MemoryBandwidth.run(hb._cpus_allowed);
+      }
 
       // Memory utilization as of last FullGC
       long kv_gc = Cleaner.KV_USED_AT_LAST_GC;
@@ -75,23 +86,12 @@ public class HeartBeatThread extends Thread {
       hb.set_swap_mem(Cleaner.Histo.swapped());
       hb._keys = H2O.STORE.size();
 
-      // Run mini-benchmark every 5 mins.  However, on startup - do not have
-      // all JVMs immediately launch a all-core benchmark - they will fight
-      // with each other.  Stagger them using the hashcode.
-      if( (counter+Math.abs(H2O.SELF.hashCode())) % 300 == 0) {
-        hb._gflops   = (float)Linpack.run(hb._cpus_allowed);
-        hb._membw    = (float)MemoryBandwidth.run(hb._cpus_allowed);
-      }
-
-      Object load = null;
       try {
-        load = mbs.getAttribute(os, "SystemLoadAverage");
-        if( (double)load == -1 ) // SystemLoadAverage not available on windows
-          load = mbs.getAttribute(os, "SystemCpuLoad");
-      } catch( Exception e ) {
-        // Ignore, data probably not available on this VM
-      }
-      hb._system_load_average = load instanceof Double ? ((Double) load).floatValue() : 0;
+        hb._system_load_average = ((Double)mbs.getAttribute(os, "SystemLoadAverage")).floatValue();
+        if( hb._system_load_average == -1 )  // SystemLoadAverage not available on windows
+          hb._system_load_average = ((Double)mbs.getAttribute(os, "SystemCpuLoad")).floatValue();
+      } catch( Exception e ) {/*Ignore, data probably not available on this VM*/ }
+
       int rpcs = 0;
       for( H2ONode h2o : cloud._memary )
         rpcs += h2o.taskSize();
@@ -108,7 +108,7 @@ public class HeartBeatThread extends Thread {
       // get the usable and total disk storage for the partition where the
       // persistent KV pairs are stored
       hb.set_free_disk(H2O.getPM().getIce().getUsableSpace());
-      hb.set_max_disk(H2O.getPM().getIce().getTotalSpace());
+      hb.set_max_disk (H2O.getPM().getIce().getTotalSpace() );
 
       // get cpu utilization for the system and for this process.  (linux only.)
       LinuxProcFileReader.refresh();

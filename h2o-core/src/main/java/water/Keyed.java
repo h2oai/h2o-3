@@ -66,13 +66,8 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     return new BinarySerializer<>();
   }
 
-  public static final List<Key> EMPTY_KEY_LIST = Collections.emptyList();
-
-  /**
-   * Returns a list of keys which are published by this object.
-   * @return key list
-   */
-  public List<Key> getPublishedKeys() {
-    return EMPTY_KEY_LIST;
-  }
+  /** Returns a list of keys which are published by this object.
+   *  @return key list  */
+  private static final List<Key> EMPTY_KEY_LIST = Collections.emptyList();
+  public List<Key> getPublishedKeys() { return EMPTY_KEY_LIST; }
 }
