@@ -11,7 +11,7 @@
     },
     {
       "type": "cs",
-      "input": "importFiles [ \"https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/mnist/test.csv.gz\" ]"
+      "input": "importFiles [ \"https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz\" ]"
     },
     {
       "type": "md",
@@ -19,7 +19,7 @@
     },
     {
       "type": "cs",
-      "input": "setupParse paths:[ \"https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/mnist/test.csv.gz\" ]"
+      "input": "setupParse paths:[ \"https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz\" ]"
     },
     {
       "type": "cs",
