@@ -292,7 +292,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     assert _output._ntrees == _output._treeKeys.length :
             "Tree model is inconsistent: number of trees do not match number of tree keys!";
     List<Key> superP = super.getPublishedKeys();
-    List<Key> p = new ArrayList<Key>(_output._ntrees * _output.nclasses());
+    List<Key> p = new ArrayList<>(_output._ntrees * _output.nclasses());
     for (int i = 0; i < _output._treeKeys.length; i++) {
       for (int j = 0; j < _output._treeKeys[i].length; j++) {
         p.add(_output._treeKeys[i][j]);

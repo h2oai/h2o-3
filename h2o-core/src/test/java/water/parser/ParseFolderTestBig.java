@@ -1,12 +1,10 @@
 package water.parser;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import org.junit.*;
 import water.Job;
 import water.Key;
-import water.MemoryManager;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;

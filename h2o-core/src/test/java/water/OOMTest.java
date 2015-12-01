@@ -1,7 +1,8 @@
 package water;
 
+import java.io.File;
+import java.util.ArrayList;
 import org.junit.*;
-
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -84,6 +85,8 @@ public class OOMTest extends TestUtil {
 
 
   // "bigdata directory is not usually available"
+  // too slow for standard junit
+  // repeatedly throws OOM exception purpose, which breaks many things.
   @Test @Ignore
   public void testParseMemoryStress() {
     ArrayList<Frame> frames = new ArrayList<>();

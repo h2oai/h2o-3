@@ -25,12 +25,12 @@ class AutoBufferWithClassNames extends AutoBuffer {
     private static String NULL = "^";
 
     public static <T extends Freezable> T newInstance(String klazz) {
-      try {
+      //try {
         int typeId = TypeMap.onIce(klazz);
         return (T) TypeMap.newFreezable(typeId);
-      } catch (Exception e) {
-        throw H2O.fail("Cannot instantiate class: " + klazz + " because of " + e.getMessage());
-      }
+      //} catch (Exception e) {
+      //  throw H2O.fail("Cannot instantiate class: " + klazz + " because of " + e.getMessage());
+      //}
     }
     @Override public AutoBuffer put(Freezable f) {
       if( f == null ) return putStr(NULL);
