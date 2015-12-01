@@ -19,7 +19,7 @@ While H2O Deep Learning is written in pure Java, it is *competitive* with other 
 ### MNIST
 The [MNIST](http://yann.lecun.com/exdb/mnist/) database of handwritten digits has a training set of 60,000 examples, and a test set of 10,000 examples. Each digit is represented by 28x28=784 gray-scale pixel values (features).
 
-The following benchmark is available as an [example Flow pack](https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/flow/packs/examples) and is also part of the distribution (after November 18 2015). In Flow, on the right-hand-side, click on the 'HELP' tab, then 'view example Flows', then select 'DeepLearning_MNIST.flow'.
+The following benchmark is available as an [example Flow pack](https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/flow/packs/examples) and is also part of the distribution. In Flow, on the right-hand-side, click on the 'HELP' tab, then 'view example Flows', then select 'DeepLearning_MNIST.flow'.
 
 **Model parameters**: For illustration only, not tuned. 2 hidden layers (128,64), Rectifier with Dropout, L1/L2 regularization, mini-batch size 1. Auto-tuning for the number of training images per Map/Reduce iteration (`train_samples_per_iteration=-2`). The model is trained until convergence of the test set accuracy, and scored on the training and test sets every 5 seconds, with full confusion matrices and variable importances.
 
@@ -27,8 +27,8 @@ The following benchmark is available as an [example Flow pack](https://github.co
 
 | | test set error | speed | 
 | --- | ---: | ---: |
-| H2O 1 node | 2.8% | 80K images/sec |
-| H2O 2 nodes | 2.8% | 140K images/sec |
-| H2O 4 nodes | 2.8% | 280K images/sec | 
-| H2O 8 nodes | 2.8% | 550K images/sec |
+| H2O 1 node | 2.1% | 80K images/sec |
+| H2O 2 nodes | 2.1% | 140K images/sec |
+| H2O 4 nodes | 2.1% | 280K images/sec | 
+| H2O 8 nodes | 2.1% | 550K images/sec |
 | 1 GPU GTX980 (pick your tool)| | ~100K images/sec |
