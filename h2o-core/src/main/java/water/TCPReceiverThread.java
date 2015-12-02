@@ -1,6 +1,5 @@
 package water;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -8,6 +7,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import water.util.Log;
+import water.util.SB;
 
 /**
  * The Thread that looks for TCP Cloud requests.
@@ -63,12 +63,11 @@ public class TCPReceiverThread extends Thread {
         // todo compare against current cloud, refuse the con if no match
         H2ONode h2o = H2ONode.intern(sock.socket().getInetAddress(),port);
         // Pass off the TCP connection to a separate reader thread
-        if(chanType == 1) {
-          Log.info("starting new UDP-TCP receiver thread connected to " + sock.socket().getRemoteSocketAddress());
-          new UDP_TCP_ReaderThread(h2o, sock).start();
-        } else if(chanType == 2)
-          new TCPReaderThread(sock,new AutoBuffer(sock)).start();
-        else throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small and 2 - Big");
+        switch( chanType ) {
+        case 1: new UDP_TCP_ReaderThread(h2o, sock).start(); break;
+        case 2: new TCPReaderThread(sock,new AutoBuffer(sock)).start(); break;
+        default: throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small and 2 - Big");
+        }
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
       } catch( Exception e ) {
@@ -81,102 +80,6 @@ public class TCPReceiverThread extends Thread {
     }
   }
 
-  /**
-   * A private thread reading small messages from a tcp channel.
-   * The thread reads the raw bytes of a message from the channel, copies them into a byte array which is than passed on to FJQ.
-   * Each message is expected to be MSG_SZ(2B) MSG BODY(MSG_SZ*B) EOM MARKER (1B - 0xef).
-   */
-  static class UDP_TCP_ReaderThread extends Thread {
-    private final SocketChannel _chan;
-    private final ByteBuffer _bb;
-    private final H2ONode _h2o;
-
-    public UDP_TCP_ReaderThread(H2ONode h2o, SocketChannel chan) {
-      super("UDP-TCP-READ-" + h2o);
-      _h2o = h2o;
-      _chan = chan;
-      _bb = ByteBuffer.allocateDirect(AutoBuffer.BBP_BIG._size).order(ByteOrder.nativeOrder());
-//      _bb = ByteBuffer.wrap(new byte[AutoBuffer.BBP_BIG.size()]).order(ByteOrder.nativeOrder());
-    }
-
-    public String printBytes(ByteBuffer bb, int start, int sz) {
-      StringBuilder sb = new StringBuilder();
-      int idx = start + sz;
-      try {
-        for (int i = 5; i > 0; --i)
-          sb.append("-" + i + ":" + (0xFF & bb.get(idx - i)) + " ");
-        sb.append("0: " + (0xFF & bb.get(idx)) + " ");
-        for (int i = 1; i <= 5; ++i)
-          sb.append("+" + i + ":" + (0xFF & bb.get(idx + i)) + " ");
-      } catch(Throwable t) {}
-      return sb.toString();
-    }
-    private int read(int n)  throws IOException {
-      if(_bb.remaining() < n)
-        throw new IllegalStateException("Reading more bytes than available, reading " + n + " bytes, remaining = " + _bb.remaining());
-      int sizeRead = 0;
-      while(sizeRead < n) {
-        int res = _chan.read(_bb);
-        if( res == -1 )
-          throw new EOFException("Reading "+n+" bytes, AB="+this);
-        if( res ==  0 ) throw new RuntimeException("Reading zero bytes - so no progress?");
-        sizeRead += res;
-      }
-      return sizeRead;
-    }
-
-    public void run(){
-      int start = 0;
-      boolean idle = true;
-      try {
-        while (true) {
-          idle = true;
-          _h2o._last_heard_from = System.currentTimeMillis();
-          if (start > _bb.position() - 2) // make sure we have at least 2B (size of next message) ready
-            read(start + 2 - _bb.position());
-          idle = false;
-          int sz = ((0xFF & _bb.get(start+1)) << 8) | (0xFF & _bb.get(start)); // message size in bytes
-          assert sz < AutoBuffer.BBP_SML._size : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
-          read(start + 2 + sz + 1 - _bb.position()); // make sure we have the whole message ready + the EOM marker at the end
-          if ((0xFF & _bb.get(start + 2 + sz)) != 0xef)
-            throw H2O.fail("Missing expected sentinel (0xef==239) at the end of the message from " + _h2o + ", likely out of sync, start = " + start + ", size = " + sz + ", position = " + _bb.position() +", bytes = " + printBytes(_bb, start, sz));
-          // extract the bytes
-          byte[] ary = MemoryManager.malloc1(Math.max(16,sz)); // fixme: 16 for timeline which always accesses first 16 bytes
-          if( _bb.hasArray()){
-            System.arraycopy(_bb.array(),start+2,ary,0,sz);
-          } else {
-            int pos = _bb.position();
-            _bb.position(start+2);
-            _bb.get(ary,0,sz);
-            _bb.position(pos);
-          }
-          // package the raw bytes into an array and pass it on to FJQ for further processing
-          throw H2O.unimpl();
-          //UDPReceiverThread.basic_packet_handling(new AutoBuffer(_h2o, ary));
-          //start += sz + 2 + 1;
-          //if (_bb.remaining() < AutoBuffer.BBP_SML._size + 2 + 1) { // + 2 bytes for size + 1 byte for 0xef sentinel
-          //  _bb.limit(_bb.position());
-          //  _bb.position(start);
-          //  _bb.compact();
-          //  start = 0;
-          //}
-        }
-      } catch (IOException ioe) {
-        if (!idle) {
-          Log.err("Got IO Error when reading small messages over TCP");
-          Log.err(ioe);
-        }
-      } catch(Throwable t){
-        t.printStackTrace();
-        Log.err("unexpected error in UDP-TCP thread.");
-        Log.err(t);
-      } finally {
-        AutoBuffer.BBP_BIG.free(_bb);
-        if(_chan != null && _chan.isOpen())
-          try { _chan.close();} catch (IOException e) {/*ignore error on close*/}
-      }
-    }
-  }
   // A private thread for reading from this open socket.
   static class TCPReaderThread extends Thread {
     public SocketChannel _sock;
@@ -226,4 +129,79 @@ public class TCPReceiverThread extends Thread {
       }
     }
   }
+
+
+  /** A private thread reading small messages from a tcp channel.  The thread
+   *  reads the raw bytes of a message from the channel, copies them into a
+   *  byte array which is than passed on to FJQ.  Each message is expected to
+   *  be MSG_SZ(2B) MSG BODY(MSG_SZ*B) EOM MARKER (1B - 0xef). */
+  static class UDP_TCP_ReaderThread extends Thread {
+    private final SocketChannel _chan;
+    private final ByteBuffer _bb;
+    private final H2ONode _h2o;
+
+    public UDP_TCP_ReaderThread(H2ONode h2o, SocketChannel chan) {
+      super("UDP-TCP-READ-" + h2o);
+      _h2o = h2o;
+      _chan = chan;
+      _bb = ByteBuffer.allocateDirect(AutoBuffer.BBP_BIG._size).order(ByteOrder.nativeOrder());
+      _bb.flip();               // Prep for reading; zero bytes available
+    }
+
+    public String printBytes(ByteBuffer bb, int start, int sz) {
+      SB sb = new SB();
+      int idx = start + sz;
+      try {
+        for (int i = 5; i > 0; --i)
+          sb.p("-").p(i).p(":").p(0xFF & bb.get(idx - i)).p(" ");
+        sb.p("0: ").p(0xFF & bb.get(idx)).p(" ");
+        for (int i = 1; i <= 5; ++i)
+          sb.p("+").p(i).p(":").p(0xFF & bb.get(idx + i)).p(" ");
+      } catch(Throwable t) {/*ignore, just a debug print*/}
+      return sb.toString();
+    }
+
+    // Read until there are at least N bytes in the ByteBuffer
+    private ByteBuffer read(int n) throws IOException {
+      if( _bb.remaining() < n ) { // Not enuf bytes between position and limit
+        _bb.compact();            // move data down to 0, set position to remaining bytes
+        while(_bb.position() < n) {
+          int res = _chan.read(_bb); // Slide position forward (up to limit)
+          assert res > 0;         // no eof & progress made
+          _h2o._last_heard_from = System.currentTimeMillis();
+        }
+        _bb.flip();             // Limit to amount of data, poisition to 0
+      }
+      return _bb;
+    }
+
+    @Override public void run() {
+      assert !_bb.hasArray();   // Direct ByteBuffer only
+      boolean idle = false;
+      try {
+        //noinspection InfiniteLoopStatement
+        while (true) {
+          idle = true; // OK to have remote suicide while idle; happens during normal shutdown
+          int sz = read(2).getChar(); // 2 bytes of next-message-size
+          idle = false;
+          assert sz < AutoBuffer.BBP_SML._size : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes";
+          byte[] ary = MemoryManager.malloc1(Math.max(16,sz));
+          int sentinel = read(sz+1).get(ary,0,sz).get(); // extract the message bytes, then the sentinel byte
+          assert (0xFF & sentinel) == 0xef : "Missing expected sentinel (0xef) at the end of the message from " + _h2o + ", likely out of sync, size = " + sz + ", position = " + _bb.position() +", bytes = " + printBytes(_bb, _bb.position(), sz);
+          // package the raw bytes into an array and pass it on to FJQ for further processing
+          UDPReceiverThread.basic_packet_handling(new AutoBuffer(_h2o, ary, 0, sz));
+        }
+      } catch(Throwable t) {
+        if( !idle || !(t instanceof IOException) ) {
+          t.printStackTrace();
+          Log.err(t);
+        }
+      } finally {
+        AutoBuffer.BBP_BIG.free(_bb);
+        if(_chan != null && _chan.isOpen())
+          try { _chan.close();} catch (IOException e) {/*ignore error on close*/}
+      }
+    }
+  }
+
 }
