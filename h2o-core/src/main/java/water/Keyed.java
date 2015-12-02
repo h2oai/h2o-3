@@ -1,10 +1,6 @@
 package water;
 
 import water.fvec.*;
-import water.serial.AutoBufferSerializer;
-
-import java.util.Collections;
-import java.util.List;
 
 /** Iced, with a Key.  Support for DKV removal. */
 public abstract class Keyed<T extends Keyed> extends Iced<T> {
@@ -57,17 +53,4 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     if( x==0 ) x=1;
     return (_checksum=x);
   }
-
-  protected static class BinarySerializer<X extends Keyed> extends AutoBufferSerializer<X> {
-  }
-
-  /** Returns a model serializer into AutoBuffer. */
-  public AutoBufferSerializer<Keyed> getBinarySerializer() {
-    return new BinarySerializer<>();
-  }
-
-  /** Returns a list of keys which are published by this object.
-   *  @return key list  */
-  private static final List<Key> EMPTY_KEY_LIST = Collections.emptyList();
-  public List<Key> getPublishedKeys() { return EMPTY_KEY_LIST; }
 }

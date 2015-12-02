@@ -13,8 +13,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.VecUtils;
 
-import static water.serial.ModelSerializationTest.assertTreeEquals;
-import static water.serial.ModelSerializationTest.getTrees;
+import static water.ModelSerializationTest.assertTreeEquals;
+import static water.ModelSerializationTest.getTrees;
 
 public class GBMCheckpointTest extends TestUtil {
 

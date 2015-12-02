@@ -4,7 +4,6 @@ import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.H2O.FJWThr;
 import water.H2O.H2OCountedCompleter;
-import water.H2ONode.H2OSmallMessage;
 import water.UDP.udp;
 import water.util.Log;
 
@@ -161,7 +160,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     return this;
   }
 
-  private H2OSmallMessage _sentMsg;
   // Make an initial RPC, or re-send a packet.  Always called on 1st send; also
   // called on a timeout.
 
@@ -194,10 +192,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // make a new UDP-sized packet.  On a re-send of a TCP-sized hunk, just
       // send the basic UDP control packet.
       if( !_sentTcp ) {
-        if(_sentMsg != null) {
-          _sentMsg.increasePriority();
-          _target.sendMessage(_sentMsg);
-        } else while( true ) {         // Retry loop for broken TCP sends
+        while( true ) {         // Retry loop for broken TCP sends
           AutoBuffer ab = new AutoBuffer(_target,_dt.priority());
           try {
             final boolean t;
@@ -207,7 +202,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
             t = ab.hasTCP();
             assert sz_check(ab) : "Resend of " + _dt.getClass() + " changes size from " + _size + " to " + ab.size() + " for task#" + _tasknum;
             ab.close();        // Then close; send final byte
-            _sentMsg = ab.takeSentMessage();
             _sentTcp = t;  // Set after close (and any other possible fail)
             break;             // Break out of retry loop
           } catch( AutoBuffer.AutoBufferException e ) {
@@ -602,7 +596,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           if (!isCancelled())       // Can be canceled already (locally by MRTask while recieving remote answer)
             _dt.onAck();            // One time only execute (before sending ACKACK)
           _done = true;             // Only read one (of many) response packets
-          _sentMsg = null;
           ab._h2o.taskRemove(_tasknum); // Flag as task-completed, even if the result is null
           notifyAll();              // And notify in any case
         }

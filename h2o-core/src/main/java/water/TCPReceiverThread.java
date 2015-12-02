@@ -44,7 +44,7 @@ public class TCPReceiverThread extends Thread {
         // More common-case setup of a ServerSocket
         if( SOCK == null ) {
           SOCK = ServerSocketChannel.open();
-          SOCK.socket().setReceiveBufferSize(AutoBuffer.BBP_BIG.size());
+          SOCK.socket().setReceiveBufferSize(AutoBuffer.BBP_BIG._size);
           SOCK.socket().bind(H2O.SELF._key);
         }
         // Block for TCP connection and setup to read from it.
@@ -95,7 +95,7 @@ public class TCPReceiverThread extends Thread {
       super("UDP-TCP-READ-" + h2o);
       _h2o = h2o;
       _chan = chan;
-      _bb = ByteBuffer.allocateDirect(AutoBuffer.BBP_BIG.size()).order(ByteOrder.nativeOrder());
+      _bb = ByteBuffer.allocateDirect(AutoBuffer.BBP_BIG._size).order(ByteOrder.nativeOrder());
 //      _bb = ByteBuffer.wrap(new byte[AutoBuffer.BBP_BIG.size()]).order(ByteOrder.nativeOrder());
     }
 
@@ -136,10 +136,10 @@ public class TCPReceiverThread extends Thread {
             read(start + 2 - _bb.position());
           idle = false;
           int sz = ((0xFF & _bb.get(start+1)) << 8) | (0xFF & _bb.get(start)); // message size in bytes
-          assert sz < AutoBuffer.BBP_SML.size() : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
+          assert sz < AutoBuffer.BBP_SML._size : "Incoming message is too big, should've been sent by TCP-BIG, got " + sz + " bytes, start = " + start;
           read(start + 2 + sz + 1 - _bb.position()); // make sure we have the whole message ready + the EOM marker at the end
           if ((0xFF & _bb.get(start + 2 + sz)) != 0xef)
-            H2O.fail("Missing expected sentinel (0xef==239) at the end of the message from " + _h2o + ", likely out of sync, start = " + start + ", size = " + sz + ", position = " + _bb.position() +", bytes = " + printBytes(_bb, start, sz));
+            throw H2O.fail("Missing expected sentinel (0xef==239) at the end of the message from " + _h2o + ", likely out of sync, start = " + start + ", size = " + sz + ", position = " + _bb.position() +", bytes = " + printBytes(_bb, start, sz));
           // extract the bytes
           byte[] ary = MemoryManager.malloc1(Math.max(16,sz)); // fixme: 16 for timeline which always accesses first 16 bytes
           if( _bb.hasArray()){
@@ -151,18 +151,15 @@ public class TCPReceiverThread extends Thread {
             _bb.position(pos);
           }
           // package the raw bytes into an array and pass it on to FJQ for further processing
-//          AutoBuffer ab = new AutoBuffer(_h2o, ary);
-//          int ctrl = ab.getCtrl();
-//          TimeLine.record_recv(ab, false, 0);
-          UDPReceiverThread.basic_packet_handling(new AutoBuffer(_h2o, ary));
-//          H2O.submitTask(new FJPacket(ab, ctrl));
-          start += sz + 2 + 1;
-          if (_bb.remaining() < AutoBuffer.BBP_SML.size() + 2 + 1) { // + 2 bytes for size + 1 byte for 0xef sentinel
-            _bb.limit(_bb.position());
-            _bb.position(start);
-            _bb.compact();
-            start = 0;
-          }
+          throw H2O.unimpl();
+          //UDPReceiverThread.basic_packet_handling(new AutoBuffer(_h2o, ary));
+          //start += sz + 2 + 1;
+          //if (_bb.remaining() < AutoBuffer.BBP_SML._size + 2 + 1) { // + 2 bytes for size + 1 byte for 0xef sentinel
+          //  _bb.limit(_bb.position());
+          //  _bb.position(start);
+          //  _bb.compact();
+          //  start = 0;
+          //}
         }
       } catch (IOException ioe) {
         if (!idle) {
@@ -176,7 +173,7 @@ public class TCPReceiverThread extends Thread {
       } finally {
         AutoBuffer.BBP_BIG.free(_bb);
         if(_chan != null && _chan.isOpen())
-          try { _chan.close();} catch (IOException e) {}
+          try { _chan.close();} catch (IOException e) {/*ignore error on close*/}
       }
     }
   }

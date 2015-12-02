@@ -1283,8 +1283,15 @@ final public class H2O {
     // Start the UDPReceiverThread, to listen for requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     // Started first, so we can start parsing UDP packets
-    if(H2O.ARGS.useUDP)
+    if(H2O.ARGS.useUDP) {
       new UDPReceiverThread().start();
+      // Start a UDP timeout worker thread. This guy only handles requests for
+      // which we have not received a timely response and probably need to
+      // arrange for a re-send to cover a dropped UDP packet.
+      new UDPTimeOutThread().start();
+      // Same same for a dropped ACK needing an ACKACK back.
+      new H2ONode.AckAckTimeOutThread().start();
+    }
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
@@ -1296,12 +1303,6 @@ final public class H2O {
     // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
     // an initial histogram state.
     Cleaner.THE_CLEANER.start();
-
-    // Start a UDP timeout worker thread. This guy only handles requests for
-    // which we have not received a timely response and probably need to
-    // arrange for a re-send to cover a dropped UDP packet.
-    new UDPTimeOutThread().start();
-    new H2ONode.AckAckTimeOutThread().start();
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
