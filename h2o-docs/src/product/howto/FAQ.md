@@ -579,7 +579,7 @@ Currently, we do not support this capability. If you are interested in contribut
 There are a number of ways you can save your model in H2O: 
 
 - In the web UI, click the **Flow** menu then click **Save Flow**. Your flow is saved to the *Flows* tab in the **Help** sidebar on the right. 
-- In the web UI, click the **Flow** menu then click **Download this Flow...**. Your flow is saved to the location you specify in the pop-up **Save As** window that appears. 
+- In the web UI, click the **Flow** menu then click **Download this Flow...**. Depending on your browser and configuration, your flow is saved to the "Downloads" folder (by default) or to the location you specify in the pop-up **Save As** window if it appears. 
 - (For DRF, GBM, and DL models only): Use model checkpointing to resume training a model. Copy the `model_id` number from a built model and paste it into the *checkpoint* field in the `buildModel` cell. 
 
 
