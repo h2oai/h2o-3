@@ -1169,7 +1169,7 @@ class H2OFrame(object):
     col._ex._cache.names = [old_cache.names[i]]
     return col
 
-  def quantile(self, prob=None, combine_method="interpolate"):
+  def quantile(self, prob=None, combine_method="interpolate", weights_column=None):
     """Compute quantiles.
 
     Parameters
@@ -1179,6 +1179,8 @@ class H2OFrame(object):
     combine_method : str, default="interpolate"
       For even samples, how to combine quantiles.
       Should be one of ["interpolate", "average", "low", "hi"]
+    weights_column : str, default=None
+      Name of column with optional observation weights in this H2OFrame
 
     Returns
     -------
@@ -1186,7 +1188,8 @@ class H2OFrame(object):
     """
     if len(self) == 0: return self
     if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
-    return H2OFrame._expr(expr=ExprNode("quantile",self,prob,combine_method))
+    if not weights_column: weights_column="_"
+    return H2OFrame._expr(expr=ExprNode("quantile",self,prob,combine_method,weights_column))
 
   def cbind(self,data):
     """Append data to this H2OFrame column-wise.

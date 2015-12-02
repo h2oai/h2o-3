@@ -304,7 +304,7 @@ public class RapidsTest extends TestUtil {
               ard(3.383532e-04),
               ard(2.561221e-05)));
       double[] probs = new double[]{0.001, 0.005, .01, .02, .05, .10, .50, .8883, .90, .99};
-      String x = String.format("(quantile %s %s \"interpolate\")", fr._key, Arrays.toString(probs));
+      String x = String.format("(quantile %s %s \"interpolate\" _)", fr._key, Arrays.toString(probs));
       Val val = Exec.exec(x);
       fr.delete();
       f = val.getFrame();
