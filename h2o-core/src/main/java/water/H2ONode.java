@@ -273,7 +273,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
      */
     public void sendMessage(ByteBuffer bb, byte msg_priority) {
       assert bb.position()==0 && bb.limit() > 0;
-      bb.rewind();
       // Secret back-channel priority: the position field (capped at bb.limit);
       // this is to avoid making Yet Another Object per send.
   
@@ -283,6 +282,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       // priorities a little for this hack to work.
       if( msg_priority >= H2O.MIN_HI_PRIORITY ) msg_priority = (byte)((msg_priority-H2O.MIN_HI_PRIORITY)+10);
       else if( msg_priority >= 10 ) msg_priority = 10;
+      if( msg_priority > bb.limit() ) msg_priority = (byte)bb.limit();
       bb.position(msg_priority);
   
       _msgQ.put(bb); 
