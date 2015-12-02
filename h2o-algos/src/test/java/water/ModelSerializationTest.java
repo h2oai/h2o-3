@@ -1,4 +1,4 @@
-package water.serial;
+package water;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -215,41 +215,42 @@ public class ModelSerializationTest extends TestUtil {
     return saveAndLoad(model,true);
   }
   private <M extends Model> M saveAndLoad(M model, boolean deleteModel) throws IOException {
-    // Serialize to a file
-    // Cannot use following call since it is available since Java 1.7
-    // File file = Files.createTempDirectory("H2O_ModelSerializationTest").toFile();
-    File file = com.google.common.io.Files.createTempDir();
-    try {
-      // Enable the following URI to save model to HDFS (+disable delete below + configure classpath to H2O assembly)
-      // java.net.URI uri = java.net.URI.create("hdfs://mr-0x6/tmp/xo.model");// file.toURI()
-      java.net.URI uri = file.toURI();
-      // Fetch model all model keys
-      List<Key> modelKeys = new LinkedList<>();
-      modelKeys.add(model._key);
-      modelKeys.addAll(model.getPublishedKeys());
-      ObjectTreeBinarySerializer serializer = new ObjectTreeBinarySerializer();
-      // And save to given temporary directory
-      serializer.save(modelKeys, uri);
-      // Delete model
-      if (deleteModel) model.delete();
-      // Make sure that serialized keys are not available
-      for (Key k : modelKeys) {
-        if (k != null)
-          Assert.assertNull(DKV.get(k));
-      }
-      // Deserialize
-      List<Key> loadedModelKeys = serializer.load(uri);
-      Assert.assertEquals("Number of saved and loaded keys has to be equal", modelKeys.size(), loadedModelKeys.size());
-      for (int i = 0; i < modelKeys.size(); i++) {
-        Assert.assertEquals("Saved and loaded keys has to match", modelKeys.get(i), loadedModelKeys.get(i));
-      }
-      M m = (M) loadedModelKeys.get(0).get();
-      // Delete temporary directory
-      // And return
-      return m;
-    } finally {
-      FileUtils.delete(file);
-    }
+    throw water.H2O.unimpl();
+    //// Serialize to a file
+    //// Cannot use following call since it is available since Java 1.7
+    //// File file = Files.createTempDirectory("H2O_ModelSerializationTest").toFile();
+    //File file = com.google.common.io.Files.createTempDir();
+    //try {
+    //  // Enable the following URI to save model to HDFS (+disable delete below + configure classpath to H2O assembly)
+    //  // java.net.URI uri = java.net.URI.create("hdfs://mr-0x6/tmp/xo.model");// file.toURI()
+    //  java.net.URI uri = file.toURI();
+    //  // Fetch model all model keys
+    //  List<Key> modelKeys = new LinkedList<>();
+    //  modelKeys.add(model._key);
+    //  modelKeys.addAll(model.getPublishedKeys());
+    //  ObjectTreeBinarySerializer serializer = new ObjectTreeBinarySerializer();
+    //  // And save to given temporary directory
+    //  serializer.save(modelKeys, uri);
+    //  // Delete model
+    //  if (deleteModel) model.delete();
+    //  // Make sure that serialized keys are not available
+    //  for (Key k : modelKeys) {
+    //    if (k != null)
+    //      Assert.assertNull(DKV.get(k));
+    //  }
+    //  // Deserialize
+    //  List<Key> loadedModelKeys = serializer.load(uri);
+    //  Assert.assertEquals("Number of saved and loaded keys has to be equal", modelKeys.size(), loadedModelKeys.size());
+    //  for (int i = 0; i < modelKeys.size(); i++) {
+    //    Assert.assertEquals("Saved and loaded keys has to match", modelKeys.get(i), loadedModelKeys.get(i));
+    //  }
+    //  M m = (M) loadedModelKeys.get(0).get();
+    //  // Delete temporary directory
+    //  // And return
+    //  return m;
+    //} finally {
+    //  FileUtils.delete(file);
+    //}
   }
 
   public static void assertModelBinaryEquals(Model a, Model b) {

@@ -11,8 +11,8 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import static water.serial.ModelSerializationTest.assertTreeEquals;
-import static water.serial.ModelSerializationTest.getTrees;
+import static water.ModelSerializationTest.assertTreeEquals;
+import static water.ModelSerializationTest.getTrees;
 
 public class DRFCheckpointTest extends TestUtil {
 

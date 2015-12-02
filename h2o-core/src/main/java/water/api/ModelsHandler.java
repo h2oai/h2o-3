@@ -25,7 +25,6 @@ import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2OKeyWrongTypeArgumentException;
 import water.exceptions.H2OKeysNotFoundArgumentException;
 import water.fvec.Frame;
-import water.serial.ObjectTreeBinarySerializer;
 import water.util.FileUtils;
 import water.util.JCodeGen;
 
@@ -205,32 +204,32 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
 
   public ModelsV3 importModel(int version, ModelImportV3 mimport) {
     ModelsV3 s = (ModelsV3) Schema.newInstance(ModelsV3.class);
-
-    try {
-      List<Key> importedKeys = new ObjectTreeBinarySerializer().load(FileUtils.getURI(mimport.dir));
-      Model model = (Model) importedKeys.get(0).get();
-      s.models = new ModelSchema[1];
-      s.models[0] = (ModelSchema) Schema.schema(version, model).fillFromImpl(model);
-    } catch (IOException e) {
-      throw new H2OIllegalArgumentException("dir", "importModel", e);
-    }
-
-    return s;
+    throw water.H2O.unimpl();
+    //try {
+    //  List<Key> importedKeys = new ObjectTreeBinarySerializer().load(FileUtils.getURI(mimport.dir));
+    //  Model model = (Model) importedKeys.get(0).get();
+    //  s.models = new ModelSchema[1];
+    //  s.models[0] = (ModelSchema) Schema.schema(version, model).fillFromImpl(model);
+    //} catch (IOException e) {
+    //  throw new H2OIllegalArgumentException("dir", "importModel", e);
+    //}
+    //return s;
   }
 
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     List<Key> keysToExport = new LinkedList<>();
     keysToExport.add(model._key);
-    keysToExport.addAll(model.getPublishedKeys());
-    try {
-      URI targetUri = FileUtils.getURI(mexport.dir);
-      new ObjectTreeBinarySerializer(mexport.force).save(keysToExport, targetUri);
-      // Send back
-      mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
-    } catch (IOException e) {
-      throw new H2OIllegalArgumentException("dir", "exportModel", e);
-    }
-    return mexport;
+    throw water.H2O.unimpl();
+    //keysToExport.addAll(model.getPublishedKeys());
+    //try {
+    //  URI targetUri = FileUtils.getURI(mexport.dir);
+    //  new ObjectTreeBinarySerializer(mexport.force).save(keysToExport, targetUri);
+    //  // Send back
+    //  mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
+    //} catch (IOException e) {
+    //  throw new H2OIllegalArgumentException("dir", "exportModel", e);
+    //}
+    //return mexport;
   }
 }
