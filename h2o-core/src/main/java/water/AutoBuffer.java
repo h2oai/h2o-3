@@ -757,8 +757,8 @@ public final class AutoBuffer {
     f.write(this);
     if( f instanceof Key ) {
       Iced x = DKV.getGet((Key)f);
-      if( !_ices.contains(x) ) {
-        System.out.println("=== RECURSIVELY WRITING "+((Key)f));
+      if( x==null || !_ices.contains(x) ) {
+        System.out.println("=== RECURSIVELY WRITING "+((Key)f)+" : "+x==null?null:x.getClass().getSimpleName());
         put(x);
       }
     }
@@ -768,22 +768,20 @@ public final class AutoBuffer {
   public <T extends Freezable> T get() {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
-    if( _typeMap != null ) id = _typeMap[id];
+    if( _is==null ) return (T)TypeMap.newFreezable(id).read(this);
+    id = _typeMap[id];
     T t = (T)TypeMap.newFreezable(id);
+    _ices.add(t);
     // Key returns Yet Another New Key because of interning
     // Most everything else return t==t2
     T t2 = (T)t.read(this);
-    if( _is==null ) return t2;
-    throw H2O.unimpl();
-    //if( _is != null && t2 instanceof Key ) {
-    //  Key k = (Key)t2;
-    //  if( _ices.add(k) ) {
-    //    System.out.println("=== RECURSIVELY READING "+k);
-    //    Iced x = get();
-    //    DKV.put(k,x,null,false);
-    //  }
-    //}
-    //return t;
+    if( t instanceof Key ) {
+      if( t != t2 ) _ices.add(t2);
+      System.out.println("=== RECURSIVELY READING "+t);
+      Iced x = get();
+      DKV.put((Key)t,x,null,false);
+    } else assert t==t2;
+    return t;
   }
 
   // Put a (compressed) integer.  Specifically values in the range -1 to ~250
