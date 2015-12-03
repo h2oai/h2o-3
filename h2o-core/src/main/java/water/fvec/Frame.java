@@ -1273,7 +1273,7 @@ public class Frame extends Lockable<Frame> {
     Vec v2 = f.anyVec();
     if(v1.length() != v2.length())
       throw new IllegalArgumentException("Can not make vectors of different length compatible!");
-    if (v2 == null || Vec.VectorGroup.sameGroup(v1,v2))
+    if (v2 == null || v1.checkCompatible(v2))
       return f;
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
