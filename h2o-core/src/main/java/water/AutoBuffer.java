@@ -8,7 +8,6 @@ import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.Random;
 
-import water.nbhm.NonBlockingHashSet;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -60,7 +59,6 @@ public final class AutoBuffer {
   private OutputStream _os;
   private  InputStream _is;
   private short[] _typeMap; // Mapping from input stream map to current map, or null
-  private NonBlockingHashSet<Freezable> _ices;
 
   // If we need a SocketChannel, raise the priority so we get the I/O over
   // with.  Do not want to have some TCP socket open, blocking the TCP channel
@@ -238,7 +236,6 @@ public final class AutoBuffer {
     _os = os; 
     if( persist ) put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(TypeMap.CLAZZES); 
     else put1(0);
-    _ices = new NonBlockingHashSet<>(); // Prevent recursive key content writing
 
     _chan = null;
     _h2o = null;
@@ -269,7 +266,6 @@ public final class AutoBuffer {
     _typeMap = new short[typeMap.length];
     for( int i=0; i<typeMap.length; i++ )
       _typeMap[i] = (short)(typeMap[i]==null ? 0 : TypeMap.onIce(typeMap[i]));
-    _ices = new NonBlockingHashSet<>(); // Prevent recursive key content reading
   }
 
 
@@ -502,14 +498,11 @@ public final class AutoBuffer {
   // True if we opened a TCP channel, or will open one to close-and-send
   boolean hasTCP() { assert !isClosed(); return _chan instanceof SocketChannel || (_h2o!=null && _bb.position() >= MTU); }
 
-  // True if we are in read-mode
-  boolean readMode() { return _read; }
   // Size in bytes sent, after a close()
   int size() { return _size; }
   //int zeros() { return _zeros; }
 
   public int position () { return _bb.position(); }
-  void position(int pos) { _bb.position(pos); }
   /** Skip over some bytes in the byte buffer.  Caller is responsible for not
    *  reading off end of the bytebuffer; generally this is easy for
    *  array-backed autobuffers and difficult for i/o-backed bytebuffers. */
@@ -521,31 +514,11 @@ public final class AutoBuffer {
     return MemoryManager.arrayCopyOfRange(_bb.array(), _bb.arrayOffset(), _bb.position());
   }
 
-  /**
-   * Copy raw bits from the (direct) buffer out.
-   * @param off offset marking the start of copied region.
-   * @return
-   */
-  public final byte[] copyRawBits(int off) {
-    int sz = position() - off;
-    byte [] res = MemoryManager.malloc1(sz);
-    // loop over individual bytes since the bulk interface does not work (throws AIOB even though it should not)
-    // and it does internally loop in the same way anyways.
-    for(int i = 0; i < res.length; ++i)
-      res[i] = _bb.get(i + off);
-    return res;
-  }
-
   public final byte[] bufClose() {
     byte[] res = _bb.array();
     bbFree();
     return res;
   }
-  final boolean eof() {
-    assert _h2o==null && _chan==null;
-    return _bb.position()==_bb.limit();
-  }
-
   // For TCP sockets ONLY, raise the thread priority.  We assume we are
   // blocking other Nodes with our network I/O, so try to get the I/O
   // over with.
@@ -750,38 +723,31 @@ public final class AutoBuffer {
     if( f == null ) return putInt(TypeMap.NULL);
     assert f.frozenType() > 0 : "No TypeMap for "+f.getClass().getName();
     putInt(f.frozenType());
-    if( _os == null ) return f.write(this);
-
-    // And if a Key and Streaming, the Key contents as well
-    _ices.add(f);
-    f.write(this);
-    if( f instanceof Key ) {
-      Iced x = DKV.getGet((Key)f);
-      if( x==null || !_ices.contains(x) ) {
-        System.out.println("=== RECURSIVELY WRITING "+((Key)f)+" : "+x==null?null:x.getClass().getSimpleName());
-        put(x);
-      }
-    }
-    return this;
+    return f.write(this);
   }
 
   public <T extends Freezable> T get() {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
-    if( _is==null ) return (T)TypeMap.newFreezable(id).read(this);
-    id = _typeMap[id];
-    T t = (T)TypeMap.newFreezable(id);
-    _ices.add(t);
-    // Key returns Yet Another New Key because of interning
-    // Most everything else return t==t2
-    T t2 = (T)t.read(this);
-    if( t instanceof Key ) {
-      if( t != t2 ) _ices.add(t2);
-      System.out.println("=== RECURSIVELY READING "+t);
-      Iced x = get();
-      DKV.put((Key)t,x,null,false);
-    } else assert t==t2;
-    return t;
+    if( _is!=null ) id = _typeMap[id];
+    return (T)TypeMap.newFreezable(id).read(this);
+  }
+
+  // Write Key's target IFF the Key is not null; target can be null.
+  public AutoBuffer putKey(Key k) {
+    if( k==null ) return this;    // Key is null ==> write nothing
+    Keyed kd = (Keyed)DKV.getGet(k);
+    put(kd);
+    return kd == null ? this : kd.writeAll_impl(this);
+  }
+  public Keyed getKey(Key k, Futures fs) { 
+    return k==null ? null : getKey(fs); // Key is null ==> read nothing
+  }
+  public Keyed getKey(Futures fs) { 
+    Keyed kd = get(Keyed.class);
+    if( kd == null ) return null;
+    DKV.put(kd,fs);
+    return kd.readAll_impl(this,fs);
   }
 
   // Put a (compressed) integer.  Specifically values in the range -1 to ~250
@@ -830,14 +796,8 @@ public final class AutoBuffer {
     return ((long)x<<32)|(long)nz; // Return both ints
   }
 
-  @SuppressWarnings("unused")
   // TODO: untested. . .
-  public AutoBuffer putAEnum(String name, Enum[] enums) {
-    return putAEnum(enums);
-  }
-
   @SuppressWarnings("unused")
-  // TODO: untested. . .
   public AutoBuffer putAEnum(Enum[] enums) {
     //_arys++;
     long xy = putZA(enums);
@@ -848,6 +808,7 @@ public final class AutoBuffer {
     return this;
   }
 
+  @SuppressWarnings("unused")
   public <E extends Enum> E[] getAEnum(E[] values) {
     //_arys++;
     long xy = getZA();
@@ -860,8 +821,7 @@ public final class AutoBuffer {
     return ts;
   }
 
-
-
+  @SuppressWarnings("unused")
   public AutoBuffer putA(Freezable[] fs) {
     //_arys++;
     long xy = putZA(fs);

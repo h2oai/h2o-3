@@ -1053,7 +1053,7 @@ public class Vec extends Keyed<Vec> {
       @Override public void setupLocal() { bulk_remove(_key,ncs); }
     }.doAllNodes();
     return fs;
- }
+  }
   // Bulk remove: removes LOCAL keys only, without regard to total visibility.
   // Must be run in parallel on all nodes to preserve semantics, completely
   // removing the Vec without any JMM communication.
@@ -1065,6 +1065,23 @@ public class Vec extends Keyed<Vec> {
     Key kr = chunkKey(vkey,-2); // Rollup Stats
     H2O.raw_remove(kr);
     H2O.raw_remove(vkey);
+  }
+
+  /** Write out K/V pairs */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    int ncs = nChunks();
+    for( int i=0; i<ncs; i++ ) {
+      Key ck = chunkKey(i);
+      ab.put(DKV.getGet(ck));   // Pull all Chunks local
+      if( !ck.home() ) H2O.raw_remove(ck); // Remove the non-local ones as you go
+    }
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    int ncs = nChunks();
+    for( int i=0; i<ncs; i++ )
+      DKV.put(chunkKey(i),ab.get(Chunk.class),fs,true); // Push chunk remote; do not cache local
+    return super.readAll_impl(ab,fs);
   }
 
   // ======= Whole Vec Transformations ======
@@ -1229,6 +1246,9 @@ public class Vec extends Keyed<Vec> {
     // Fail to remove a VectorGroup unless you also remove all related Vecs,
     // Chunks, Rollups (and any Frame that uses them), etc.
     @Override protected Futures remove_impl( Futures fs ) { throw H2O.fail(); }
+    /** Write out K/V pairs */
+    @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { throw H2O.fail(); }
+    @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { throw H2O.unimpl(); }
   }
 
   // ---------------------------------------

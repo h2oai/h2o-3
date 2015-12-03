@@ -9,6 +9,7 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   public Keyed() { _key = null; } // NOTE: every Keyed that can come out of the REST API has to have a no-arg constructor.
   public Keyed( Key<T> key ) { _key = key; }
 
+  // ---
   /** Remove this Keyed object, and all subparts; blocking. */
   public final void remove( ) { remove(new Futures()).blockForPending(); }
   /** Remove this Keyed object, and all subparts.  */
@@ -34,6 +35,21 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     if( val==null ) return;
     ((Keyed)val.get()).remove(fs);
   }
+
+  // ---
+  /** Read/Write this Keyed object, and all subparts. */
+  public AutoBuffer writeAll(AutoBuffer ab) { return writeAll_impl(ab.put(this)); }
+  // Override this to write out subparts
+  protected AutoBuffer writeAll_impl(AutoBuffer ab) { return ab; }
+
+  public static Keyed readAll(AutoBuffer ab) { 
+    Futures fs = new Futures();
+    Keyed k = ab.getKey(fs);
+    fs.blockForPending();       // Settle out all internal Key puts
+    return k;
+  }
+  // Override this to read in subparts
+  protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { return this; }
 
   /**
    * High-quality 64-bit checksum of the <i>content</i> of the

@@ -881,7 +881,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         k.remove(fs);
-    return fs;
+    return super.remove_impl(fs);
+  }
+
+  /** Write out K/V pairs, in this case model metrics. */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+    if (_output._model_metrics != null)
+      for( Key k : _output._model_metrics )
+        ab.putKey(k);
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    if (_output._model_metrics != null)
+      for( Key k : _output._model_metrics )
+        ab.getKey(k,fs);        // Load model metrics
+    return super.readAll_impl(ab,fs);
   }
 
   @Override protected long checksum_impl() { return _parms.checksum_impl() * _output.checksum_impl(); }

@@ -49,7 +49,7 @@ public class ModelSerializationTest extends TestUtil {
 
   @Test
   public void testGBMModelMultinomial() throws IOException {
-    GBMModel model = null, loadedModel = null;
+    GBMModel model, loadedModel = null;
     try {
       model = prepareGBMModel("smalldata/iris/iris.csv", ESA, "C5", true, 5);
       CompressedTree[][] trees = getTrees(model);
@@ -65,7 +65,7 @@ public class ModelSerializationTest extends TestUtil {
 
   @Test
   public void testGBMModelBinomial() throws IOException {
-    GBMModel model = null, loadedModel = null;
+    GBMModel model, loadedModel = null;
     try {
       model = prepareGBMModel("smalldata/logreg/prostate.csv", ar("ID"), "CAPSULE", true, 5);
       CompressedTree[][] trees = getTrees(model);
@@ -81,7 +81,7 @@ public class ModelSerializationTest extends TestUtil {
 
   @Test
   public void testDRFModelMultinomial() throws IOException {
-    DRFModel model = null, loadedModel = null;
+    DRFModel model, loadedModel = null;
     try {
       model = prepareDRFModel("smalldata/iris/iris.csv", ESA, "C5", true, 5);
       CompressedTree[][] trees = getTrees(model);
@@ -114,7 +114,7 @@ public class ModelSerializationTest extends TestUtil {
 
   @Test
   public void testGLMModel() throws IOException {
-    GLMModel model = null, loadedModel = null;
+    GLMModel model, loadedModel = null;
     try {
       model = prepareGLMModel("smalldata/junit/cars.csv", ESA, "power (hp)", GLMModel.GLMParameters.Family.poisson);
       loadedModel = saveAndLoad(model);
@@ -164,7 +164,6 @@ public class ModelSerializationTest extends TestUtil {
 
   private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLMModel.GLMParameters.Family family) {
     Frame f = parse_test_file(dataset);
-    Key modelKey = Key.make("GLM_model_for_"+dataset);
     try {
       GLMModel.GLMParameters params = new GLMModel.GLMParameters();
       params._train = f._key;
@@ -197,9 +196,9 @@ public class ModelSerializationTest extends TestUtil {
   private <M extends Model> M saveAndLoad(M model, boolean deleteModel) throws IOException {
     File file = File.createTempFile(model.getClass().getSimpleName(),null);
     try {
-      new AutoBuffer(new FileOutputStream(file),true).put(model).close();
+      model.writeAll(new AutoBuffer(new FileOutputStream(file),true)).close();
       if( deleteModel ) model.delete();
-      return new AutoBuffer(new FileInputStream(file)).get();
+      return (M)Keyed.readAll(new AutoBuffer(new FileInputStream(file)));
     } finally {
       file.delete();
     }
@@ -211,7 +210,7 @@ public class ModelSerializationTest extends TestUtil {
 
   public static void assertIcedBinaryEquals(String msg, Iced a, Iced b) {
     if (a == null) {
-      Assert.assertEquals(msg, a, b);
+      Assert.assertEquals(msg, null, b);
     } else {
       assertArrayEquals(msg, a.write(new AutoBuffer()).buf(), b.write(new AutoBuffer()).buf());
     }
