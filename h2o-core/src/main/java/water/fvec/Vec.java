@@ -279,7 +279,7 @@ public class Vec extends Keyed<Vec> {
   boolean checkCompatible( Vec v ) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
-            (VectorGroup.sameGroup(this, v) || length() < 1e5);
+            (VectorGroup.sameGroup(this, v) || length() < 1e3);
   }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */

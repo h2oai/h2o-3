@@ -17,22 +17,29 @@ import java.util.Arrays;
 
 public class ConfusionMatrixTest extends TestUtil {
   @BeforeClass
-  public static void stall() { stall_till_cloudsize(5); }
+  public static void stall() { stall_till_cloudsize(1); }
 
   final boolean debug = false;
 
   @Test
   public void testIdenticalVectors() {
-    simpleCMTest(
-            "smalldata/junit/cm/v1.csv",
-            "smalldata/junit/cm/v1.csv",
-            ar("A", "B", "C"),
-            ar("A", "B", "C"),
-            ar("A", "B", "C"),
-            ard( ard(2, 0, 0),
-                    ard(0, 2, 0),
-                    ard(0, 0, 1)),
-            debug);
+    try {
+      Scope.enter();
+
+      simpleCMTest(
+              "smalldata/junit/cm/v1.csv",
+              "smalldata/junit/cm/v1.csv",
+              ar("A", "B", "C"),
+              ar("A", "B", "C"),
+              ar("A", "B", "C"),
+              ard(ard(2, 0, 0),
+                      ard(0, 2, 0),
+                      ard(0, 0, 1)),
+              debug);
+
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
@@ -191,7 +198,11 @@ public class ConfusionMatrixTest extends TestUtil {
     try {
       Frame v1 = parseFrame(Key.make("v1.hex"), find_test_file(f1));
       Frame v2 = parseFrame(Key.make("v2.hex"), find_test_file(f2));
-      v2 = v1.makeCompatible(v2);
+      if (!v1.isCompatible(v2)) {
+        Frame old = null;
+        v2 = new Frame(v1.makeCompatible(old = v2));
+        old.delete();
+      }
       simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug);
     } catch (IOException e) {
       e.printStackTrace();
