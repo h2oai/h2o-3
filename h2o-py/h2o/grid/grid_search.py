@@ -18,12 +18,15 @@ class H2OGridSearch(object):
   
     Parameters
     ----------
-    model : H2O Estimator model
-      The type of model to be explored initalized with optional parameters that will be unchanged across explored models.
+    model : H2OEstimator
+      The type of model to be explored initialized with optional parameters that will be
+      unchanged across explored models.
     hyper_params: dict
-      A dictionary of string parameters (keys) and a list of values to be explored by grid search (values).
+      A dictionary of string parameters (keys) and a list of values to be explored by grid
+      search (values).
     grid_id : str, optional
-      The unique id assigned to the resulting grid object. If none is given, an id will automatically be generated.
+      The unique id assigned to the resulting grid object. If none is given, an id will
+      automatically be generated.
      
     Returns
     -------
