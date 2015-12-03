@@ -2,6 +2,7 @@
 This module implements grid search class. All grid search things inherit from this class.
 """
 from .. import H2OConnection, H2OJob, H2OFrame, H2OEstimator
+from ..two_dim_table import H2OTwoDimTable
 import h2o
 from metrics import *
 import itertools
@@ -356,7 +357,7 @@ class H2OGridSearch(object):
     hyper_combos = itertools.product(*self.hyper_params.values())
     if not self.models:
       c_values = [[idx+1, list(val)] for idx, val in enumerate(hyper_combos)]
-      print h2o.H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'],
+      print H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'],
                                table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values)
     else:
       if self.failed_raw_params:
@@ -589,7 +590,7 @@ class H2OGridSearch(object):
     if not increasing:
       for col in c_values: col.reverse()
     if metric[-2] == '(': metric = metric[:-2]
-    return h2o.H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']', metric],
+    return H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']', metric],
                               table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=zip(*c_values))
 
 
