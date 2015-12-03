@@ -93,7 +93,7 @@ For now, we recommend using a non-zero l1 penalty (alpha  > 0) and considering a
 **How do I specify regression or classification for Distributed Random Forest in the web UI?**
 
 
-If the response column is numeric, H2O generates a regression model. If the response column is enum, the model uses classification. To specify the column type, select it from the drop-down column heading list in the **Data Preview** section during parsing. 
+If the response column is numeric, H2O generates a regression model. If the response column is enum, the model uses classification. To specify the column type, select it from the drop-down column name list in the **Edit Column Names and Types** section during parsing. 
 
 ---
 
@@ -186,6 +186,26 @@ The behavior for unseen categorical levels depends on the algorithm and how it h
 
 The quantile results in Flow are computed lazily on-demand and cached. It is a fast approximation (max - min / 1024) that is very accurate for most use cases. 
 If the distribution is skewed, the quantile results may not be as accurate as the results obtained using `h2o.quantile` in R or `H2OFrame.quantile` in Python.  
+
+
+---
+
+**How do I create a classification model? The model always defaults to regression.**
+
+To create a classification model, the response column type must be `enum` - if the response is `numeric`, a regression model is created. 
+
+To convert the response column: 
+
+- Before parsing, click the drop-down menu to the right of the column name or number and select `Enum`
+
+  ![Parsing - Convert to Enum](images/Flow_Parse_ConvertEnum.png)
+
+  or  
+
+- Click on the .hex link for the data frame (or use the `getFrameSummary "<frame_name>.hex"` command, where `<frame_name>` is the name of the frame), then click the **Convert to enum** link to the right of the column name or number
+
+  ![Summary - Convert to Enum](images/Flow_Summary_ConvertToEnum.png)
+
 
 
 ---
@@ -579,7 +599,7 @@ Currently, we do not support this capability. If you are interested in contribut
 There are a number of ways you can save your model in H2O: 
 
 - In the web UI, click the **Flow** menu then click **Save Flow**. Your flow is saved to the *Flows* tab in the **Help** sidebar on the right. 
-- In the web UI, click the **Flow** menu then click **Download this Flow...**. Your flow is saved to the location you specify in the pop-up **Save As** window that appears. 
+- In the web UI, click the **Flow** menu then click **Download this Flow...**. Depending on your browser and configuration, your flow is saved to the "Downloads" folder (by default) or to the location you specify in the pop-up **Save As** window if it appears. 
 - (For DRF, GBM, and DL models only): Use model checkpointing to resume training a model. Copy the `model_id` number from a built model and paste it into the *checkpoint* field in the `buildModel` cell. 
 
 

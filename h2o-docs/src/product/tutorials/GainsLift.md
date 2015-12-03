@@ -12,17 +12,19 @@ The lift is calculated from the gains. H2O uses the following formula to calcula
 
 where /(λk/) is the lift for /(k/), /(rk/) is the response rate for /(k/), and /(r/) is the average response rate for /(k/). In other words, /(λk/) defines how much more likely /(k/) customers are to respond in comparison to the average response rate.
 
-Requirements:
+##Requirements:
 
-The vactual column must contain actual binary class labels.
-The vpredict column must contain probabilities.
-To create a Gains/Lift table:
+The training frame column must contain actual binary class labels.
+The prediction column used as the response must contain probabilities.
 
-Enter the .hex key of the original dataset in the actual entry field.
-From the drop-down vactual list, select the column specified in the original dataset.
-Enter the .hex key of the prediction in the predict entry field.
-From the drop-down vpredict list, select the column specified in the prediction.
-Enter the number of rows to include in the table in the groups field. The default is 10.
+##Creating a Gains/Lift table
+
+0. Specify the original dataset in the `training_frame` entry field.
+0. From the drop-down vactual list, select the column specified in the original dataset.
+0. Enter the .hex key of the prediction in the predict entry field.
+0. From the drop-down vpredict list, select the column specified in the prediction.
+0. Enter the number of rows to include in the table in the groups field. The default is 10.
+
 The quantiles, response rate, lift, and cumulative lift display in the Gains/Lift table.
 
 The quantiles column defines the group for the row. The response rate column lists the likelihood of response, the lift column lists the lift rate, and the cumulative lift column provides the percentage of increase in response based on the lift.

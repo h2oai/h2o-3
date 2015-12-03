@@ -79,7 +79,7 @@ The output is a matrix of the cluster assignments and the coordinates of the clu
 
 - **How does the algorithm handle missing values during training?**
    
-  Missing values are automatically imputed by the column mean.
+  Missing values are automatically imputed by the column mean.  K-means also handles missing values by assuming that missing feature distance contributions are equal to the average of all other distance term contributions.
 
 - **How does the algorithm handle missing values during testing?**
    
@@ -1425,7 +1425,7 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **How does the algorithm handle missing values during training?**
 
-  User-specifiable treatment of missing values via `missing_values_handling`. Specify either the skip or mean-impute option.
+Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default. 
 
 - **How does the algorithm handle missing values during testing?**
 
