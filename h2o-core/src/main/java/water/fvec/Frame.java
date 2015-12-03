@@ -8,15 +8,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Iced;
-import water.Key;
-import water.Keyed;
-import water.Lockable;
-import water.MRTask;
-import water.Value;
+import water.*;
 import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -526,7 +518,7 @@ public class Frame extends Lockable<Frame> {
     int N = names.length;
     assert(names.length == vecs.length):"names = " + Arrays.toString(names) + ", vecs len = " + vecs.length;
     for (int i=0; i<N; ++i) {
-      vecs[i] = vecs[i] != null ? makeCompatible(new Frame(vecs[i])).anyVec() : null;
+      vecs[i] = vecs[i] != null ? makeCompatible(new Frame(vecs[i]))[0] : null;
       checkCompatible(tmpnames[i]=uniquify(tmpnames[i]),vecs[i]);  // Throw IAE is mismatch
     }
 
@@ -545,7 +537,7 @@ public class Frame extends Lockable<Frame> {
    *  unique number if needed.
    *  @return the added Vec, for flow-coding */
   public Vec add( String name, Vec vec ) {
-    vec = makeCompatible(new Frame(vec)).anyVec();
+    vec = makeCompatible(new Frame(vec))[0];
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
     _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
@@ -672,10 +664,10 @@ public class Frame extends Lockable<Frame> {
    *  @return The old column, for flow-coding */
   public Vec replace(int col, Vec nv) {
     Vec rv = vecs()[col];
-    nv = ((new Frame(rv)).makeCompatible(new Frame(nv))).anyVec();
+    nv = ((new Frame(rv)).makeCompatible(new Frame(nv)))[0];
     DKV.put(nv);
     assert DKV.get(nv._key)!=null; // Already in DKV
-    assert rv.group().equals(nv.group());
+    assert rv.checkCompatible(nv);
     _vecs[col] = nv;
     _keys[col] = nv._key;
     return rv;
@@ -1260,27 +1252,28 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
-  /** Return Frame 'f' if 'f' is compatible with 'this', else return a new
-   *  Frame compatible with 'this' and a copy of 'f's data otherwise.  Note
+  /** Return array of Vectors if 'f' is compatible with 'this', else return a new
+   *  array of Vectors compatible with 'this' and a copy of 'f's data otherwise.  Note
    *  that this can, in the worst case, copy all of {@code this}s' data.
-   *  @return This Frame's data in a Frame that is compatible with {@code f}. */
-  public Frame makeCompatible( Frame f) {
+   *  @return This Frame's data in an array of Vectors that is compatible with {@code f}. */
+  public Vec[] makeCompatible( Frame f) {
     // Small data frames are always "compatible"
     if (anyVec() == null)      // Or it is small
-      return f;                 // Then must be compatible
+      return f.vecs();                 // Then must be compatible
     // Same VectorGroup is also compatible
     Vec v1 = anyVec();
     Vec v2 = f.anyVec();
     if(v1.length() != v2.length())
       throw new IllegalArgumentException("Can not make vectors of different length compatible!");
     if (v2 == null || v1.checkCompatible(v2))
-      return f;
+      return f.vecs();
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
     H2O.submitTask(new RebalanceDataSet(this, f, k)).join();
     Frame f2 = (Frame)k.get();
     DKV.remove(k);
-    return f2;
+    for (Vec v : f2.vecs()) Scope.track(v._key);
+    return f2.vecs();
   }
 
   private boolean isLastRowOfCurrentNonEmptyChunk(int chunkIdx, long row) {
