@@ -8,6 +8,7 @@ import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.Random;
 
+import water.nbhm.NonBlockingHashSet;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -48,6 +49,18 @@ public final class AutoBuffer {
   // for open AutoBuffers doing file i/o or reading any TCP/UDP or having
   // written at least one buffer to TCP/UDP.
   private ByteChannel _chan;
+
+  // A Stream for moving data in or out.  Null unless this AutoBuffer is
+  // stream-based, in which case _chan field is null.  This path supports
+  // persistance: reading and writing objects from different H2O cluster
+  // instances (but exactly the same H2O revision).  The only required
+  // similarity is same-classes-same-fields; changes here will probably
+  // silently crash.  If the fields are named the same but the semantics
+  // differ, then again the behavior is probably silent crash.
+  private OutputStream _os;
+  private  InputStream _is;
+  private short[] _typeMap; // Mapping from input stream map to current map, or null
+  private NonBlockingHashSet<Freezable> _ices;
 
   // If we need a SocketChannel, raise the priority so we get the I/O over
   // with.  Do not want to have some TCP socket open, blocking the TCP channel
@@ -217,6 +230,49 @@ public final class AutoBuffer {
     _persist = 0;               // No persistance
   }
 
+  /** Write to a persistent Stream, including all TypeMap info to allow later
+   *  reloading (by the same exact rev of H2O). */
+  public AutoBuffer( OutputStream os, boolean persist ) { 
+    _bb = ByteBuffer.wrap(MemoryManager.malloc1(BBP_BIG._size)).order(ByteOrder.nativeOrder());
+    _read = false;
+    _os = os; 
+    if( persist ) put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(TypeMap.CLAZZES); 
+    else put1(0);
+    _ices = new NonBlockingHashSet<>(); // Prevent recursive key content writing
+
+    _chan = null;
+    _h2o = null;
+    _firstPage = true;
+    _persist = 0;
+  }
+
+  /** Read from a persistent Stream (including all TypeMap info) into same
+   *  exact rev of H2O). */
+  public AutoBuffer( InputStream is ) {
+    _chan = null;
+    _h2o = null;
+    _firstPage = true;
+    _persist = 0;
+
+    _read = true;
+    _bb = ByteBuffer.wrap(MemoryManager.malloc1(BBP_BIG._size)).order(ByteOrder.nativeOrder());
+    _bb.flip();
+    _is = is;
+    int b = get1U();
+    if( b==0 ) return;          // No persistence info
+    int magic = get1U();
+    if( b!=0x1C || magic != 0xED ) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
+    String version = getStr();
+    if( !version.equals(H2O.ABV.projectVersion()) )
+      throw new IllegalArgumentException("Found version "+version+", but running version "+H2O.ABV.projectVersion());
+    String[] typeMap = getAStr();
+    _typeMap = new short[typeMap.length];
+    for( int i=0; i<typeMap.length; i++ )
+      _typeMap[i] = (short)(typeMap[i]==null ? 0 : TypeMap.onIce(typeMap[i]));
+    _ices = new NonBlockingHashSet<>(); // Prevent recursive key content reading
+  }
+
+
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[AB ").append(_read ? "read " : "write ");
@@ -339,8 +395,6 @@ public final class AutoBuffer {
   // bytes out.  If the write is to an H2ONode and is short, send via UDP.
   // AutoBuffer close calls order; i.e. a reader close() will block until the
   // writer does a close().
-
-
   public final int close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
     if( isClosed() ) return 0;            // Already closed
@@ -348,11 +402,22 @@ public final class AutoBuffer {
 
     try {
       if( _chan == null ) {     // No channel?
-        if( _read ) return 0;
-        // For small-packet write, send via UDP.  Since nothing is sent until
-        // now, this close() call trivially orders - since the reader will not
-        // even start (much less close()) until this packet is sent.
-        if( _bb.position() < MTU) return udpSend();
+        if( _read ) {
+          if( _is != null ) _is.close();
+          return 0;
+        } else {                // Write
+          if( _os != null ) {   // Final stream write bits
+            _os.write(_bb.array(),0,_bb.position());
+            _os.close();
+            return 0;
+          } else {
+            // For small-packet write, send via UDP.  Since nothing is sent until
+            // now, this close() call trivially orders - since the reader will not
+            // even start (much less close()) until this packet is sent.
+            if( _bb.position() < MTU) return udpSend();
+          }
+          // oops - Big Write, switch to TCP and finish out there
+        }
       }
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
@@ -551,20 +616,19 @@ public final class AutoBuffer {
 
   private ByteBuffer getImpl( int sz ) {
     assert _read : "Reading from a buffer in write mode";
-    assert _chan != null : "Read to much data from a byte[] backed buffer, AB="+this;
     _bb.compact();            // Move remaining unread bytes to start of buffer; prep for reading
     // Its got to fit or we asked for too much
     assert _bb.position()+sz <= _bb.capacity() : "("+_bb.position()+"+"+sz+" <= "+_bb.capacity()+")";
     long ns = System.nanoTime();
     while( _bb.position() < sz ) { // Read until we got enuf
       try {
-        int res = _chan.read(_bb); // Read more
+        int res = _is == null ? _chan.read(_bb) : _is.read(_bb.array(),0,_bb.remaining()); // Read more
         // Readers are supposed to be strongly typed and read the exact expected bytes.
         // However, if a TCP connection fails mid-read we'll get a short-read.
         // This is indistinguishable from a mis-alignment between the writer and reader!
-        if( res == -1 )
+        if( res <= 0 )
           throw new AutoBufferException(new EOFException("Reading "+sz+" bytes, AB="+this));
-        if( res ==  0 ) throw new RuntimeException("Reading zero bytes - so no progress?");
+        if( _is != null ) _bb.position(_bb.position()+res); // Advance BB for Streams manually
         _size += res;            // What we read
       } catch( IOException e ) { // Dunno how to handle so crash-n-burn
         // Linux/Ubuntu message for a reset-channel
@@ -683,10 +747,43 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer put8d(double d) { putSp(8).putDouble(d); return this; }
 
   public AutoBuffer put(Freezable f) {
-    if( f == null ) return put2(TypeMap.NULL);
+    if( f == null ) return putInt(TypeMap.NULL);
     assert f.frozenType() > 0 : "No TypeMap for "+f.getClass().getName();
-    put2((short)f.frozenType());
-    return f.write(this);
+    putInt(f.frozenType());
+    if( _os == null ) return f.write(this);
+
+    // And if a Key and Streaming, the Key contents as well
+    _ices.add(f);
+    f.write(this);
+    if( f instanceof Key ) {
+      Iced x = DKV.getGet((Key)f);
+      if( !_ices.contains(x) ) {
+        System.out.println("=== RECURSIVELY WRITING "+((Key)f));
+        put(x);
+      }
+    }
+    return this;
+  }
+
+  public <T extends Freezable> T get() {
+    int id = getInt();
+    if( id == TypeMap.NULL ) return null;
+    if( _typeMap != null ) id = _typeMap[id];
+    T t = (T)TypeMap.newFreezable(id);
+    // Key returns Yet Another New Key because of interning
+    // Most everything else return t==t2
+    T t2 = (T)t.read(this);
+    if( _is==null ) return t2;
+    throw H2O.unimpl();
+    //if( _is != null && t2 instanceof Key ) {
+    //  Key k = (Key)t2;
+    //  if( _ices.add(k) ) {
+    //    System.out.println("=== RECURSIVELY READING "+k);
+    //    Iced x = get();
+    //    DKV.put(k,x,null,false);
+    //  }
+    //}
+    //return t;
   }
 
   // Put a (compressed) integer.  Specifically values in the range -1 to ~250
@@ -795,13 +892,10 @@ public final class AutoBuffer {
     return this;
   }
 
-  public <T extends Freezable> T get() {
-    short id = (short)get2();
-    return id == TypeMap.NULL ? null : (T)TypeMap.newFreezable(id).read(this);
-  }
   public <T extends Freezable> T get(Class<T> tc) {
-    short id = (short)get2();
-    return id == TypeMap.NULL ? null : (T)TypeMap.newFreezable(id).read(this);
+    T t = get();
+    assert tc.isInstance(t);
+    return t;
   }
   public <T extends Freezable> T[] getA(Class<T> tc) {
     //_arys++;
