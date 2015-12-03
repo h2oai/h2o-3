@@ -1,16 +1,24 @@
 #Gains/Lift Table
 
-The Gains/Lift Table page uses predicted data to evaluate model performance. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used.
+The Gains/Lift table evaluates the prediction ability of a binary classification model. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used.
 
 The Gains/Lift Table is particularly useful for direct marketing applications, for example. The gains/lift chart shows the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model.
 
-To create a Gains/Lift table, H2O applies the model to each entry in the original dataset to find the response probability /(^Pi/), then orders the entries according to their predicted response probabilities. Finally, H2O divides the dataset into equal groups and calculates the average response rate for each group.
 
-H2O uses the response rate of the top ten groups to evaluate the model performance; the highest response and greatest variation rates indicate the best model.
+By default, H2O reports the Gains/Lift table for all binary classification models, except for GLM, which requires an explicit predict call on the dataset. 
 
-The lift is calculated from the gains. H2O uses the following formula to calculate the lift: /(λk=rk/r/)
+The Gains/Lift table is computed using the prediction probability and the true response (class) labels. 
 
-where /(λk/) is the lift for /(k/), /(rk/) is the response rate for /(k/), and /(r/) is the average response rate for /(k/). In other words, /(λk/) defines how much more likely /(k/) customers are to respond in comparison to the average response rate.
+To create a Gains/Lift table, H2O applies the model to the original dataset to find the response probability. 
+
+The data is divided into groups by quantile thresholds of the response probability. The default number of groups is 20; if there are fewer than 20 unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. 
+
+For each group, the lift is calculated as the proportion of observations that are events (targets) in the group to the overall proportion of events (targets). 
+
+The Gains/Lift table also reports for each group the threshold probability value, cumulative data fractions, response rates (proportion of observations that are events in a group), cumulative response rate, event capture rate, cumulative capture rate, gain (difference in percentages between the overall proportion of events and the observed proportion of observations that are events in the group), and cumulative gain. 
+
+During the Gains/Lift calculations, all rows containing missing values (NAs) in either the label (response) or the prediction probability are ignored. 
+
 
 ##Requirements:
 
