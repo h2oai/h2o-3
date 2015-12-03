@@ -2,7 +2,17 @@
 An H2OConnection represents the latest active handle to a cloud. No more than a single
 H2OConnection object will be active at any one time.
 """
-import requests, math, re, os, sys, string, time, tempfile, subprocess, atexit, pkg_resources, warnings
+import requests
+import math
+import re
+import os
+import sys
+import string
+import time
+import tempfile
+import subprocess
+import atexit
+import warnings
 warnings.simplefilter('always', UserWarning)
 from two_dim_table import H2OTwoDimTable
 import h2o
@@ -89,10 +99,7 @@ class H2OConnection(object):
 
     if strict_version_check and os.environ.get('H2O_DISABLE_STRICT_VERSION_CHECK') is None:
       ver_h2o = cld['version']
-      try:
-        ver_pkg = pkg_resources.get_distribution("h2o").version
-      except:
-        ver_pkg = "UNKNOWN"
+      ver_pkg = "UNKNOWN" if h2o.__version__ == "SUBST_PROJECT_VERSION" else h2o.__version__
       if ver_h2o != ver_pkg:
         raise EnvironmentError, "Version mismatch. H2O is version {0}, but the python package is version {1}.".format(ver_h2o, str(ver_pkg))
 

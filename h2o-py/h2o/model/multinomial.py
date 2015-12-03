@@ -1,6 +1,6 @@
-from . import H2OFrame
-from . import H2OConnection
-from model_base import ModelBase
+from ..frame import H2OFrame
+from ..h2o import H2OConnection
+from .model_base import ModelBase
 
 class H2OMultinomialModel(ModelBase):
 

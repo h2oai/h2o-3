@@ -1,6 +1,7 @@
 import warnings
 
 warnings.simplefilter('always', DeprecationWarning)
+from .__init__ import __version__
 import os
 import os.path
 import re
