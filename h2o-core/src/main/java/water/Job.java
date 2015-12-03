@@ -363,7 +363,17 @@ public class Job<T extends Keyed> extends Keyed<Job> {
 
   @Override protected Futures remove_impl(Futures fs) {
     if (null != _progressKey && deleteProgressKey()) DKV.remove(_progressKey, fs);
-    return fs;
+    return super.remove_impl(fs);
+  }
+
+  /** Write out K/V pairs, in this case progress. */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+    ab.putKey(_progressKey);
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    ab.getKey(_progressKey,fs);
+    return super.readAll_impl(ab,fs);
   }
 
   /** Default checksum; not really used by Jobs.  */

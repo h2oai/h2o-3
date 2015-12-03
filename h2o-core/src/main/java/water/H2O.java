@@ -1503,11 +1503,6 @@ final public class H2O {
     }
     return old; // Return success
   }
-  public static String foo( Value v ) {
-    if( v==null ) return null;
-    if( v.isNull() ) return "Null";
-    return Integer.toString(((water.fvec.Vec.ESPC)(v.get()))._espcs.length);
-  }
 
   // Get the value from the store
   public static void raw_remove(Key key) { 

@@ -200,6 +200,21 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return super.remove_impl(fs);
   }
 
+  /** Write out K/V pairs */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    for( Key<CompressedTree> ks[] : _output._treeKeys )
+      for( Key<CompressedTree> k : ks )
+        ab.putKey(k);
+    return super.writeAll_impl(ab);
+  }
+
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    for( Key<CompressedTree> ks[] : _output._treeKeys )
+      for( Key<CompressedTree> k : ks )
+        ab.getKey(k,fs);
+    return super.readAll_impl(ab,fs);
+  }
+
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected boolean toJavaCheckTooBig() {
     // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
