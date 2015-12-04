@@ -202,7 +202,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
     """
     super(H2ODeepLearningEstimator, self).__init__()
     self._parms = locals()
-    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+    self._parms = {k:v for k,v in self._parms.items() if k!="self"}
     self._parms["autoencoder"] = isinstance(self, H2OAutoEncoderEstimator)
 
   @property

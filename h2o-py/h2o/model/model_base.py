@@ -2,6 +2,10 @@
 This module implements the base model class.  All model things inherit from this class.
 """
 from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 
 import h2o
 import imp, traceback
@@ -138,7 +142,7 @@ class ModelBase(object):
     :return: an H2OFrame which represents the weight matrix identified by matrix_id
     """
     num_weight_matrices = len(self._model_json['output']['weights'])
-    if matrix_id not in range(num_weight_matrices):
+    if matrix_id not in list(range(num_weight_matrices)):
       raise ValueError("Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
                        "was requested.".format(num_weight_matrices, matrix_id))
     return h2o.get_frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
@@ -150,7 +154,7 @@ class ModelBase(object):
     :return: an H2OFrame which represents the bias vector identified by vector_id
     """
     num_bias_vectors = len(self._model_json['output']['biases'])
-    if vector_id not in range(num_bias_vectors):
+    if vector_id not in list(range(num_bias_vectors)):
       raise ValueError("Bias vector does not exist. Model has {0} bias vectors (0-based indexing), but vector {1} "
                        "was requested.".format(num_bias_vectors, vector_id))
     return h2o.get_frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
@@ -229,7 +233,7 @@ class ModelBase(object):
       The score history as an H2OTwoDimTable.
     """
     model = self._model_json["output"]
-    if 'scoring_history' in model.keys() and model["scoring_history"] != None:
+    if 'scoring_history' in list(model.keys()) and model["scoring_history"] != None:
       s = model["scoring_history"]
       if h2o.can_use_pandas():
         import pandas
@@ -278,8 +282,8 @@ class ModelBase(object):
     xm = model["cross_validation_metrics"]
     if xm: xm.show()
 
-    if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
-    if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
+    if "scoring_history" in list(model.keys()) and model["scoring_history"]: model["scoring_history"].show()
+    if "variable_importances" in list(model.keys()) and model["variable_importances"]: model["variable_importances"].show()
 
   def varimp(self, use_pandas=False):
     """
@@ -295,7 +299,7 @@ class ModelBase(object):
       A list or Pandas DataFrame.
     """
     model = self._model_json["output"]
-    if "variable_importances" in model.keys() and model["variable_importances"]:
+    if "variable_importances" in list(model.keys()) and model["variable_importances"]:
       vals = model["variable_importances"].cell_values
       header=model["variable_importances"].col_header
       if use_pandas and h2o.can_use_pandas():
@@ -400,8 +404,8 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.r2()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.r2()
+    return list(m.values())[0] if len(m) == 1 else m
 
   def mse(self, train=False, valid=False, xval=False):
     """
@@ -425,8 +429,8 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.mse()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.mse()
+    return list(m.values())[0] if len(m) == 1 else m
 
   def logloss(self, train=False, valid=False, xval=False):
     """
@@ -442,8 +446,8 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.logloss()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.logloss()
+    return list(m.values())[0] if len(m) == 1 else m
 
   def mean_residual_deviance(self, train=False, valid=False, xval=False):
     """
@@ -459,8 +463,8 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.mean_residual_deviance()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.mean_residual_deviance()
+    return list(m.values())[0] if len(m) == 1 else m
 
   def auc(self, train=False, valid=False, xval=False):
     """
@@ -476,8 +480,8 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.auc()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.auc()
+    return list(m.values())[0] if len(m) == 1 else m
 
   def aic(self, train=False, valid=False, xval=False):
     """
@@ -493,8 +497,8 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.aic()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.aic()
+    return list(m.values())[0] if len(m) == 1 else m
 
   def giniCoef(self, train=False, valid=False, xval=False):
     """
@@ -510,8 +514,8 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.giniCoef()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.giniCoef()
+    return list(m.values())[0] if len(m) == 1 else m
 
   def download_pojo(self,path=""):
     """
@@ -542,7 +546,7 @@ class ModelBase(object):
     try:
       imp.find_module('matplotlib')
       import matplotlib
-      if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
+      if 'server' in list(kwargs.keys()) and kwargs['server']: matplotlib.use('Agg', warn=False)
       import matplotlib.pyplot as plt
     except ImportError:
       print("matplotlib is required for this function!")
@@ -579,7 +583,7 @@ class ModelBase(object):
       validation_metric = "validation_{}".format(metric)
       if timestep == "duration":
         dur_colname = "duration_{}".format(scoring_history["duration"][1].split()[1])
-        scoring_history[dur_colname] = map(lambda x: str(x).split()[0],scoring_history["duration"])
+        scoring_history[dur_colname] = [str(x).split()[0] for x in scoring_history["duration"]]
         timestep = dur_colname
 
       if h2o.can_use_pandas():
@@ -608,7 +612,7 @@ class ModelBase(object):
 
     else: # algo is not glm, deeplearning, drf, gbm
       raise ValueError("Plotting not implemented for this type of model")
-    if "server" not in kwargs.keys() or not kwargs["server"]: plt.show()
+    if "server" not in list(kwargs.keys()) or not kwargs["server"]: plt.show()
 
   @staticmethod
   def _check_targets(y_actual, y_predicted):

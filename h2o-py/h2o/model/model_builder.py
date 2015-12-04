@@ -36,7 +36,7 @@ def _model_build(x, y, tframe, vframe, algo, kwargs):
 
 def _resolve_model(future_model, **kwargs):
   future_model.poll()
-  if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
+  if '_rest_version' in list(kwargs.keys()): model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
   else:                                model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
 
   model_type = model_json["output"]["model_category"]

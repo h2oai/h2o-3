@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import str
+from builtins import object
 from h2o.model.confusion_matrix import ConfusionMatrix
 import imp
 
@@ -388,7 +390,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     try:
       imp.find_module('matplotlib')
       import matplotlib
-      if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
+      if 'server' in list(kwargs.keys()) and kwargs['server']: matplotlib.use('Agg', warn=False)
       import matplotlib.pyplot as plt
     except ImportError:
       print("matplotlib is required for this function!")
@@ -403,7 +405,7 @@ class H2OBinomialModelMetrics(MetricsBase):
       plt.text(0.5, 0.5, r'AUC={0:.4f}'.format(self._metric_json["AUC"]))
       plt.plot(self.fprs, self.tprs, 'b--')
       plt.axis([0, 1, 0, 1])
-      if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
+      if not ('server' in list(kwargs.keys()) and kwargs['server']): plt.show()
 
   @property
   def fprs(self):
@@ -449,7 +451,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     else: thresholds_list = [thresholds]
 
     # error check the metrics_list and thresholds_list
-    if not all(isinstance(t, (int, float, long)) for t in thresholds_list) or \
+    if not all(isinstance(t, (int, float, int)) for t in thresholds_list) or \
             not all(t >= 0 or t <= 1 for t in thresholds_list):
       raise ValueError("All thresholds must be numbers between 0 and 1 (inclusive).")
 

@@ -3,6 +3,10 @@ This module implements grid search class. All grid search things inherit from th
 """
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 from .. import H2OConnection, H2OJob, H2OFrame, H2OEstimator
 from ..two_dim_table import H2OTwoDimTable
 from ..display import H2ODisplay
@@ -138,9 +142,9 @@ class H2OGridSearch(object):
     #same api as estimator_base train
     algo_params = locals()
     parms = self._parms.copy()
-    parms.update({k:v for k, v in algo_params.iteritems() if k not in ["self","params", "algo_params", "parms"] })
+    parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
     parms["hyper_parameters"] = self.hyper_params #unique to grid search
-    parms.update({k:v for k,v in self.model._parms.items() if v}) #unique to grid search
+    parms.update({k:v for k,v in list(self.model._parms.items()) if v}) #unique to grid search
     y = algo_params["y"]
     tframe = algo_params["training_frame"]
     if tframe is None: raise ValueError("Missing training_frame")
@@ -188,7 +192,7 @@ class H2OGridSearch(object):
       return
 
     grid.poll()
-    if '_rest_version' in kwargs.keys(): grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
+    if '_rest_version' in list(kwargs.keys()): grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
     else:                                grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
@@ -356,10 +360,10 @@ class H2OGridSearch(object):
 
   def show(self):
     """Print innards of grid, without regard to type"""
-    hyper_combos = itertools.product(*self.hyper_params.values())
+    hyper_combos = itertools.product(*list(self.hyper_params.values()))
     if not self.models:
       c_values = [[idx+1, list(val)] for idx, val in enumerate(hyper_combos)]
-      print(H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'],
+      print(H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']'],
                                table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values))
     else:
       if self.failed_raw_params:
@@ -592,8 +596,8 @@ class H2OGridSearch(object):
     if not increasing:
       for col in c_values: col.reverse()
     if metric[-2] == '(': metric = metric[:-2]
-    return H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']', metric],
-                              table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=zip(*c_values))
+    return H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']', metric],
+                              table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=list(zip(*c_values)))
 
 
   def get_hyperparams(self, id, display=True):
@@ -616,7 +620,7 @@ class H2OGridSearch(object):
     res = [model.params[h]['actual'][0] if isinstance(model.params[h]['actual'],list)
            else model.params[h]['actual']
            for h in self.hyper_params]
-    if display: print('Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']')
+    if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']')
     return res
 
 

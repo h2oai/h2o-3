@@ -77,7 +77,7 @@ class H2ORandomForestEstimator(H2OEstimator):
     """
     super(H2ORandomForestEstimator, self).__init__()
     self._parms = locals()
-    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+    self._parms = {k:v for k,v in self._parms.items() if k!="self"}
 
   @property
   def mtries(self):

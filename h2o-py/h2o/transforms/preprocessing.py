@@ -26,7 +26,7 @@ class H2OScaler(H2OTransformer):
     :return: An instance of H2OScaler.
     """
     self.parms = locals()
-    self.parms = {k:v for k,v in self.parms.iteritems() if k!="self"}
+    self.parms = {k:v for k,v in self.parms.items() if k!="self"}
     if center is None or scale is None: raise ValueError("centers and scales must not be None.")
     self._means=None
     self._stds=None

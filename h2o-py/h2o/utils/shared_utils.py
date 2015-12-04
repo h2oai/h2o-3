@@ -2,6 +2,11 @@
 
 This file INTENTIONALLY has NO module dependencies!
 """
+from builtins import map
+from builtins import str
+from builtins import zip
+from builtins import range
+from past.builtins import basestring
 
 import imp
 import itertools
@@ -49,8 +54,8 @@ def _handle_python_lists(python_obj):
   # create the header
   header = _gen_header(cols)
   # shape up the data for csv.DictWriter
-  rows = map(list, itertools.izip_longest(*python_obj))
-  data_to_write = [dict(zip(header,row)) for row in rows]
+  rows = list(map(list, itertools.zip_longest(*python_obj)))
+  data_to_write = [dict(list(zip(header,row))) for row in rows]
   return header, data_to_write
 
 def _is_list(l):
@@ -72,7 +77,7 @@ def _handle_pandas_data_frame(python_obj):
   return _handle_numpy_array(python_obj=python_obj.as_matrix())
 
 def _handle_python_dicts(python_obj):
-  header = python_obj.keys()
+  header = list(python_obj.keys())
   is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])  # is this a valid header?
   if not is_valid:
     raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
@@ -82,8 +87,8 @@ def _handle_python_dicts(python_obj):
       if _is_list_of_lists(v):
         raise ValueError("Values in the dictionary must be flattened!")
 
-  rows = map(list, itertools.izip_longest(*python_obj.values()))
-  data_to_write = [dict(zip(header, row)) for row in rows]
+  rows = list(map(list, itertools.zip_longest(*list(python_obj.values()))))
+  data_to_write = [dict(list(zip(header, row))) for row in rows]
   return header, data_to_write
 
 def _is_fr(o):

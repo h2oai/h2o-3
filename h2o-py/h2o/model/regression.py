@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import division
+from past.utils import old_div
 from .model_base import ModelBase
 
 
@@ -89,7 +91,7 @@ def h2o_explained_variance_score(y_actual, y_predicted, weights=None):
   _, denominator = _mean_var(y_actual, weights)
   if denominator == 0.0:
     return 1. if numerator == 0 else 0.  # 0/0 => 1, otherwise, 0
-  return 1 - numerator / denominator
+  return 1 - old_div(numerator, denominator)
 
 
 def h2o_r2_score(y_actual, y_predicted, weights=1.):
@@ -107,4 +109,4 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
 
   if denominator == 0.0:
     return 1. if numerator == 0. else 0.  # 0/0 => 1, else 0
-  return 1 - numerator / denominator
+  return 1 - old_div(numerator, denominator)

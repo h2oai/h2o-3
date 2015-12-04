@@ -115,7 +115,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     """
     super(H2OGeneralizedLowRankEstimator, self).__init__()
     self._parms = locals()
-    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+    self._parms = {k:v for k,v in self._parms.items() if k!="self"}
     self._parms['_rest_version']=99
 
   @property
