@@ -12,7 +12,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Random;
 
 import hex.genmodel.GenModel;
@@ -54,7 +53,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return 0.5;
     if (_output._validation_metrics != null && ((ModelMetricsBinomial)_output._validation_metrics)._auc != null)
       return ((ModelMetricsBinomial)_output._validation_metrics)._auc.defaultThreshold();
-    if (_output._training_metrics != null && ((ModelMetricsBinomial)_output._training_metrics)._auc != null)
+    if (((ModelMetricsBinomial)_output._training_metrics)._auc != null)
       return ((ModelMetricsBinomial)_output._training_metrics)._auc.defaultThreshold();
     return 0.5;
   }
@@ -882,7 +881,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         k.remove(fs);
-    return fs;
+    return super.remove_impl(fs);
+  }
+
+  /** Write out K/V pairs, in this case model metrics. */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+    if (_output._model_metrics != null)
+      for( Key k : _output._model_metrics )
+        ab.putKey(k);
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    if (_output._model_metrics != null)
+      for( Key k : _output._model_metrics )
+        ab.getKey(k,fs);        // Load model metrics
+    return super.readAll_impl(ab,fs);
   }
 
   @Override protected long checksum_impl() { return _parms.checksum_impl() * _output.checksum_impl(); }
@@ -1214,18 +1227,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Remove temp keys.
       cleanup_adapt(fr, data);
     }
-  }
-
-  @Override
-  public List<Key> getPublishedKeys() {
-    List<Key> p = Arrays.asList(_output._model_metrics);
-    p.addAll(super.getPublishedKeys());
-    return p;
-  }
-
-  @Override
-  public void delete() {
-    super.delete();
   }
 
   public void deleteCrossValidationModels( ) {

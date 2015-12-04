@@ -5,10 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import hex.Model;
-import water.Futures;
-import water.H2O;
-import water.Key;
-import water.Lockable;
+import water.*;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
@@ -332,18 +329,21 @@ public class Grid<MP extends Model.Parameters>
   }
 
   // Cleanup models and grid
-  @Override
-  protected Futures remove_impl(final Futures fs) {
-    for (Key<Model> k : _cache.values()) {
+  @Override protected Futures remove_impl(final Futures fs) {
+    for (Key<Model> k : _cache.values())
       k.remove(fs);
-    }
     _cache.clear();
     return fs;
   }
 
-  @Override
-  protected long checksum_impl() {
-    throw H2O.unimpl();
+  /** Write out K/V pairs */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+    for (Key<Model> k : _cache.values())
+      ab.putKey(k);
+    return super.writeAll_impl(ab);
   }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { throw H2O.unimpl(); }
+
+  @Override protected long checksum_impl() { throw H2O.unimpl(); }
 }
 

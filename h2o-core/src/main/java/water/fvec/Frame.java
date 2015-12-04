@@ -642,7 +642,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
-  @Override public Futures remove_impl(Futures fs) {
+  @Override protected Futures remove_impl(Futures fs) {
     final Key[] keys = _keys;
     if( keys.length==0 ) return fs;
     final int ncs = anyVec().nChunks(); // TODO: do not call anyVec which loads all Vecs... only to delete them
@@ -657,6 +657,18 @@ public class Frame extends Lockable<Frame> {
     }.doAllNodes();
 
     return fs;
+  }
+
+  /** Write out K/V pairs, in this case Vecs. */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    for( Key k : _keys )
+      ab.putKey(k);
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    for( Key k : _keys )
+      ab.getKey(k,fs);
+    return super.readAll_impl(ab,fs);
   }
 
   /** Replace one column with another. Caller must perform global update (DKV.put) on

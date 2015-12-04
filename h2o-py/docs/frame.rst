@@ -4,20 +4,30 @@ Data In H2O
 A H2OFrame represents a 2D array of data where each column is uniformly typed.
 
 The data may be local or it may be in an H2O cluster. The data are loaded from a CSV file
-or from a native python data structure, and is either a python-process-local file, a
-cluster-local file, or a list of H2OVec objects.
+or from a native Python data structure, and is either a Python client-relative file, a
+cluster-relative file, or a list of H2OVec objects.
 
 Loading Data From A CSV File
 ----------------------------
 
+Load data using either :mod:`h2o.import_file` or :mod:`h2o.upload_file`. 
+
+:mod:`h2o.import_file` uses cluster-relative names and ingests data in parallel. 
+
+:mod:`h2o.upload_file` uses Python client-relative names and single-threaded file upload from the client. 
+
 H2O's parser supports data of various formats from multiple sources.
 The following formats are supported:
 
-* SVMLight
+* ARFF
 * CSV (data may delimited by any of the 128 ASCII characters)
+* SVMLight
 * XLS
+* XLSX
+ 
 
 The following data sources are supported:
+
  * NFS / Local File / List of Files
  * HDFS
  * URL
@@ -64,7 +74,7 @@ Loading A Python Tuple
 ++++++++++++++++++++++
 
 Essentially, the tuple is an immutable list. This immutability does not map to
-the H2OFrame. So pythonistas beware!
+the H2OFrame. So Pythonistas beware!
 
 The restrictions on what goes inside the tuple are fairly relaxed, but if they
 are not recognized, a ValueError is raised.

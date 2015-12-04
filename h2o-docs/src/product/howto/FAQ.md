@@ -765,16 +765,15 @@ After creating and applying the desired node labels and associating them with sp
 To import from HDFS in R: 
 
 ```
-h2o.importHDFS(path, conn = h2o.getConnection(), pattern = "",
-destination_frame = "", parse = TRUE, header = NA, sep = "",
-col.names = NULL, na.strings = NULL)
+h2o.importHDFS(path, pattern = "", destination_frame = "", parse = TRUE,
+header = NA, sep = "", col.names = NULL, na.strings = NULL)
 ```
 
 Here is another example: 
 
 ```
 # pathToAirlines <- "hdfs://mr-0xd6.0xdata.loc/datasets/airlines_all.csv"
-# airlines.hex <- h2o.importFile(conn = h, path = pathToAirlines, destination_frame = "airlines.hex")
+# airlines.hex <- h2o.importFile(path = pathToAirlines, destination_frame = "airlines.hex")
 ```
 
 
@@ -1309,7 +1308,7 @@ Launch H2O and use your web browser to access the web UI, Flow, at `localhost:54
 ```
 library(h2o)
 localH2O = h2o.init(ip="sri.h2o.ai", port=54321, startH2O = F, strict_version_check=T)
-data_frame <- h2o.getFrame(frame_id = "YOUR_FRAME_ID",conn = localH2O)
+data_frame <- h2o.getFrame(frame_id = "YOUR_FRAME_ID")
 ``` 
 ---
 
@@ -1339,7 +1338,7 @@ Use `na.omit(myFrame)`, where `myFrame` represents the name of the frame you are
 
 ---
 
-**I installed H2O in R using OS X and updated all the dependencies, but the following error message displayed: `Error in .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, Unexpected CURL error: Empty reply from server` - what should I do?**
+**I installed H2O in R using OS X and updated all the dependencies, but the following error message displayed: `Error in .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, Unexpected CURL error: Empty reply from server` - what should I do?**
 
 
 This error message displays if the `JAVA_HOME` environment variable is not set correctly. The `JAVA_HOME` variable is likely points to Apple Java version 6 instead of Oracle Java version 8. 

@@ -1,47 +1,41 @@
 package water;
 
-import com.google.common.base.Charsets;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.lang.reflect.Array;
-import java.net.DatagramPacket;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
-import java.nio.ShortBuffer;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.FileChannel;
-import java.nio.channels.SocketChannel;
+import java.net.*;
+import java.nio.*;
+import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.Random;
 
-import water.H2ONode.H2OSmallMessage;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-/**
- * A ByteBuffer backed mixed Input/OutputStream class.
+/** A ByteBuffer backed mixed Input/Output streaming class, using Iced serialization.
  *
- * Reads/writes empty/fill the ByteBuffer as needed.  When it is empty/full it
- * we go to the ByteChannel for more/less.  Because DirectByteBuffers are
- * expensive to make, we keep a few pooled.
+ *  Reads/writes empty/fill the ByteBuffer as needed.  When it is empty/full it
+ *  we go to the ByteChannel for more/less.  Because DirectByteBuffers are
+ *  expensive to make, we keep a few pooled.
  *
- * @author <a href="mailto:cliffc@h2o.ai"></a>
+ *  When talking to a remote H2O node, switches between UDP and TCP transport
+ *  protocols depending on the message size.  The TypeMap is not included, and
+ *  is assumed to exist on the remote H2O node.
+ *
+ *  Supports direct NIO FileChannel read/write to disk, used during user-mode
+ *  swapping.  The TypeMap is not included on write, and is assumed to be the
+ *  current map on read.
+ *
+ *  Support read/write from byte[] - and this defeats the purpose of a
+ *  Streaming protocol, but is frequently handy for small structures.  The
+ *  TypeMap is not included, and is assumed to be the current map on read.
+ *
+ *  Supports read/write from a standard Stream, which by default assumes it is
+ *  NOT going in and out of the same Cloud, so the TypeMap IS included.  The
+ *  serialized object can only be read back into the same minor version of H2O.
+ *
+ *  @author <a href="mailto:cliffc@h2o.ai"></a>
  */
-public /* final */ class AutoBuffer {
+public final class AutoBuffer {
   // The direct ByteBuffer for schlorping data about.
   // Set to null to indicate the AutoBuffer is closed.
   ByteBuffer _bb;
@@ -54,6 +48,17 @@ public /* final */ class AutoBuffer {
   // for open AutoBuffers doing file i/o or reading any TCP/UDP or having
   // written at least one buffer to TCP/UDP.
   private ByteChannel _chan;
+
+  // A Stream for moving data in or out.  Null unless this AutoBuffer is
+  // stream-based, in which case _chan field is null.  This path supports
+  // persistance: reading and writing objects from different H2O cluster
+  // instances (but exactly the same H2O revision).  The only required
+  // similarity is same-classes-same-fields; changes here will probably
+  // silently crash.  If the fields are named the same but the semantics
+  // differ, then again the behavior is probably silent crash.
+  private OutputStream _os;
+  private  InputStream _is;
+  private short[] _typeMap; // Mapping from input stream map to current map, or null
 
   // If we need a SocketChannel, raise the priority so we get the I/O over
   // with.  Do not want to have some TCP socket open, blocking the TCP channel
@@ -95,8 +100,10 @@ public /* final */ class AutoBuffer {
   // Enable this to test random TCP fails on open or write
   static final Random RANDOM_TCP_DROP = null; //new Random();
 
-  // Incoming UDP request.  Make a read-mode AutoBuffer from the open Channel,
-  // figure the originating H2ONode from the first few bytes read.
+  static final java.nio.charset.Charset UTF_8 = java.nio.charset.Charset.forName("UTF-8");
+
+  /** Incoming UDP request.  Make a read-mode AutoBuffer from the open Channel,
+   *  figure the originating H2ONode from the first few bytes read. */
   AutoBuffer( DatagramChannel sock ) throws IOException {
     _chan = null;
     _bb = BBP_SML.make();       // Get a small / UDP-sized ByteBuffer
@@ -121,8 +128,8 @@ public /* final */ class AutoBuffer {
     _persist = 0;               // No persistance
   }
 
-  // Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
-  // figure the originating H2ONode from the first few bytes read.
+  /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
+   *  figure the originating H2ONode from the first few bytes read. */
   AutoBuffer( SocketChannel sock ) throws IOException {
     _chan = sock;
     raisePriority();            // Make TCP priority high
@@ -133,17 +140,24 @@ public /* final */ class AutoBuffer {
     // Read Inet from socket, port from the stream, figure out H2ONode
     _h2o = H2ONode.intern(sock.socket().getInetAddress(), getPort());
     _firstPage = true;          // Yes, must reset this.
-//    assert _h2o != null && _h2o != H2O.SELF:"h2o = " + _h2o + " SELF = " + H2O.SELF;
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;
   }
 
-  int _priority;
-  // Make an AutoBuffer to write to an H2ONode.  Requests for full buffer will
-  // open a TCP socket and roll through writing to the target.  Smaller
-  // requests will send via UDP.
-  AutoBuffer( H2ONode h2o, int priority ) {
-    _bb = ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());//BBP_SML.make();
+  /** Make an AutoBuffer to write to an H2ONode.  Requests for full buffer will
+   *  open a TCP socket and roll through writing to the target.  Smaller
+   *  requests will send via UDP.  Small requests get ordered by priority, so 
+   *  that e.g. NACK and ACKACK messages have priority over most anything else.
+   *  This helps in UDP floods to shut down flooding senders. */
+  private byte _msg_priority; 
+  AutoBuffer( H2ONode h2o, byte priority ) {
+    // If UDP goes via UDP, we write into a DBB up front - because we plan on
+    // sending it out via a Datagram socket send call.  If UDP goes via batched
+    // TCP, we write into a HBB up front, because this will be copied again
+    // into a large outgoing buffer.
+    _bb = H2O.ARGS.useUDP // Actually use UDP?
+      ? BBP_SML.make()    // Make DirectByteBuffers to start with
+      : ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());
     _chan = null;               // Channel made lazily only if we write alot
     _h2o = h2o;
     _read = false;              // Writing by default
@@ -151,10 +165,10 @@ public /* final */ class AutoBuffer {
     assert _h2o != null;
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;
-    _priority = priority;
+    _msg_priority = priority;
   }
 
-  // Spill-to/from-disk request.
+  /** Spill-to/from-disk request. */
   public AutoBuffer( FileChannel fc, boolean read, byte persist ) {
     _bb = BBP_BIG.make();       // Get a big / TPC-sized ByteBuffer
     _chan = fc;                 // Write to read/write
@@ -165,7 +179,7 @@ public /* final */ class AutoBuffer {
     _persist = persist;         // One of Value.ICE, NFS, S3, HDFS
   }
 
-  // Read from UDP multicast.  Same as the byte[]-read variant, except there is an H2O.
+  /** Read from UDP multicast.  Same as the byte[]-read variant, except there is an H2O. */
   AutoBuffer( DatagramPacket pack ) {
     _size = pack.getLength();
     _bb = ByteBuffer.wrap(pack.getData(), 0, pack.getLength()).order(ByteOrder.nativeOrder());
@@ -177,33 +191,23 @@ public /* final */ class AutoBuffer {
     _persist = 0;               // No persistance
   }
 
-  public AutoBuffer( H2ONode h2o, byte[] buf ) {
-    _h2o = h2o;
-    _bb = ByteBuffer.wrap(buf).order(ByteOrder.nativeOrder());
-    _chan = null;
-    _read = true;
-    _firstPage = true;
-    _persist = 0;               // No persistance
-    _size = buf.length;
-  }
-
-  /** Read from a fixed byte[]; should not be closed. */
-  public AutoBuffer( byte[] buf ) { this(buf,0); }
-  /** Read from a fixed byte[]; should not be closed. */
-  AutoBuffer( byte[] buf, int off ) {
+  /** Read from a UDP_TCP buffer; could be in the middle of a large buffer */
+  AutoBuffer( H2ONode h2o, byte[] buf, int off, int len ) {
     assert buf != null : "null fed to ByteBuffer.wrap";
-    _bb = ByteBuffer.wrap(buf).order(ByteOrder.nativeOrder());
-    _bb.position(off);
+    _h2o = h2o;
+    _bb = ByteBuffer.wrap(buf,off,len).order(ByteOrder.nativeOrder());
     _chan = null;
-    _h2o = null;
     _read = true;
     _firstPage = true;
     _persist = 0;               // No persistance
+    _size = len;
   }
 
-  /**  Write to an ever-expanding byte[].  Instead of calling {@link #close()},
-   *  call {@link #buf()} to retrieve the final byte[].
-   */
+  /** Read from a fixed byte[]; should not be closed. */
+  public AutoBuffer( byte[] buf ) { this(null,buf,0, buf.length); }
+
+  /** Write to an ever-expanding byte[].  Instead of calling {@link #close()},
+   *  call {@link #buf()} to retrieve the final byte[].  */
   public AutoBuffer( ) {
     _bb = ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());
     _chan = null;
@@ -214,8 +218,7 @@ public /* final */ class AutoBuffer {
   }
 
   /** Write to a known sized byte[].  Instead of calling close(), call
-   * {@link #bufClose()} to retrieve the final byte[].
-   */
+   * {@link #bufClose()} to retrieve the final byte[]. */
   public AutoBuffer( int len ) {
     _bb = ByteBuffer.wrap(MemoryManager.malloc1(len)).order(ByteOrder.nativeOrder());
     _chan = null;
@@ -224,6 +227,47 @@ public /* final */ class AutoBuffer {
     _firstPage = true;
     _persist = 0;               // No persistance
   }
+
+  /** Write to a persistent Stream, including all TypeMap info to allow later
+   *  reloading (by the same exact rev of H2O). */
+  public AutoBuffer( OutputStream os, boolean persist ) { 
+    _bb = ByteBuffer.wrap(MemoryManager.malloc1(BBP_BIG._size)).order(ByteOrder.nativeOrder());
+    _read = false;
+    _os = os; 
+    if( persist ) put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(TypeMap.CLAZZES); 
+    else put1(0);
+
+    _chan = null;
+    _h2o = null;
+    _firstPage = true;
+    _persist = 0;
+  }
+
+  /** Read from a persistent Stream (including all TypeMap info) into same
+   *  exact rev of H2O). */
+  public AutoBuffer( InputStream is ) {
+    _chan = null;
+    _h2o = null;
+    _firstPage = true;
+    _persist = 0;
+
+    _read = true;
+    _bb = ByteBuffer.wrap(MemoryManager.malloc1(BBP_BIG._size)).order(ByteOrder.nativeOrder());
+    _bb.flip();
+    _is = is;
+    int b = get1U();
+    if( b==0 ) return;          // No persistence info
+    int magic = get1U();
+    if( b!=0x1C || magic != 0xED ) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
+    String version = getStr();
+    if( !version.equals(H2O.ABV.projectVersion()) )
+      throw new IllegalArgumentException("Found version "+version+", but running version "+H2O.ABV.projectVersion());
+    String[] typeMap = getAStr();
+    _typeMap = new short[typeMap.length];
+    for( int i=0; i<typeMap.length; i++ )
+      _typeMap[i] = (short)(typeMap[i]==null ? 0 : TypeMap.onIce(typeMap[i]));
+  }
+
 
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -249,14 +293,10 @@ public /* final */ class AutoBuffer {
   static class BBPool {
     long _made, _cached, _freed;
     long _numer, _denom, _goal=4*H2O.NUMCPUS, _lastGoal;
-    final boolean _direct;
     final ArrayList<ByteBuffer> _bbs = new ArrayList<>();
     final int _size;            // Big or small size of ByteBuffers
-    BBPool( int sz, boolean direct) {
-      _size=sz; _direct = direct;
-    }
-    public final int size() { return _size; }
 
+    BBPool( int sz) { _size=sz; }
     private ByteBuffer stats( ByteBuffer bb ) {
       if( !DEBUG ) return bb;
       if( ((_made+_cached)&255)!=255 ) return bb; // Filter printing to 1 in 256
@@ -283,7 +323,7 @@ public /* final */ class AutoBuffer {
         if( bb != null ) return stats(bb);
         // Cache empty; go get one from C/Native memory
         try {
-          bb = _direct?ByteBuffer.allocateDirect(_size).order(ByteOrder.nativeOrder()):ByteBuffer.wrap(MemoryManager.malloc1(_size)).order(ByteOrder.nativeOrder());
+          bb = ByteBuffer.allocateDirect(_size).order(ByteOrder.nativeOrder());
           synchronized(this) { _made++; _denom++; _goal = Math.max(_goal,_made-_freed); _lastGoal=System.nanoTime(); } // Goal was too low, raise it
           return stats(bb);
         } catch( OutOfMemoryError oome ) {
@@ -324,9 +364,9 @@ public /* final */ class AutoBuffer {
       return 0;                 // Flow coding
     }
   }
-  static BBPool BBP_SML = new BBPool(2*1024, true); // Bytebuffer "common small size", for UDP
-  static BBPool BBP_BIG = new BBPool(64*1024, true); // Bytebuffer "common  big  size", for TCP
-  public static int TCP_BUF_SIZ = BBP_BIG.size();
+  static BBPool BBP_SML = new BBPool( 2*1024); // Bytebuffer "common small size", for UDP
+  static BBPool BBP_BIG = new BBPool(64*1024); // Bytebuffer "common  big  size", for TCP
+  public static int TCP_BUF_SIZ = BBP_BIG._size;
 
   private int bbFree() {
     if(_bb != null && _bb.isDirect())
@@ -351,20 +391,29 @@ public /* final */ class AutoBuffer {
   // bytes out.  If the write is to an H2ONode and is short, send via UDP.
   // AutoBuffer close calls order; i.e. a reader close() will block until the
   // writer does a close().
-
-
   public final int close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
     if( isClosed() ) return 0;            // Already closed
-    assert _h2o != null || _chan != null; // Byte-array backed should not be closed
+    assert _h2o != null || _chan != null || _os != null || _is != null; // Byte-array backed should not be closed
 
     try {
       if( _chan == null ) {     // No channel?
-        if( _read ) return 0;
-        // For small-packet write, send via UDP.  Since nothing is sent until
-        // now, this close() call trivially orders - since the reader will not
-        // even start (much less close()) until this packet is sent.
-        if( _bb.position() < MTU) return udpSend();
+        if( _read ) {
+          if( _is != null ) _is.close();
+          return 0;
+        } else {                // Write
+          if( _os != null ) {   // Final stream write bits
+            _os.write(_bb.array(),0,_bb.position());
+            _os.close();
+            return 0;
+          } else {
+            // For small-packet write, send via UDP.  Since nothing is sent until
+            // now, this close() call trivially orders - since the reader will not
+            // even start (much less close()) until this packet is sent.
+            if( _bb.position() < MTU) return udpSend();
+          }
+          // oops - Big Write, switch to TCP and finish out there
+        }
       }
       // Force AutoBuffer 'close' calls to order; i.e. block readers until
       // writers do a 'close' - by writing 1 more byte in the close-call which
@@ -449,14 +498,11 @@ public /* final */ class AutoBuffer {
   // True if we opened a TCP channel, or will open one to close-and-send
   boolean hasTCP() { assert !isClosed(); return _chan instanceof SocketChannel || (_h2o!=null && _bb.position() >= MTU); }
 
-  // True if we are in read-mode
-  boolean readMode() { return _read; }
   // Size in bytes sent, after a close()
   int size() { return _size; }
   //int zeros() { return _zeros; }
 
   public int position () { return _bb.position(); }
-  void position(int pos) { _bb.position(pos); }
   /** Skip over some bytes in the byte buffer.  Caller is responsible for not
    *  reading off end of the bytebuffer; generally this is easy for
    *  array-backed autobuffers and difficult for i/o-backed bytebuffers. */
@@ -468,31 +514,11 @@ public /* final */ class AutoBuffer {
     return MemoryManager.arrayCopyOfRange(_bb.array(), _bb.arrayOffset(), _bb.position());
   }
 
-  /**
-   * Copy raw bits from the (direct) buffer out.
-   * @param off offset marking the start of copied region.
-   * @return
-   */
-  public final byte[] copyRawBits(int off) {
-    int sz = position() - off;
-    byte [] res = MemoryManager.malloc1(sz);
-    // loop over individual bytes since the bulk interface does not work (throws AIOB even though it should not)
-    // and it does internally loop in the same way anyways.
-    for(int i = 0; i < res.length; ++i)
-      res[i] = _bb.get(i + off);
-    return res;
-  }
-
   public final byte[] bufClose() {
     byte[] res = _bb.array();
     bbFree();
     return res;
   }
-  final boolean eof() {
-    assert _h2o==null && _chan==null;
-    return _bb.position()==_bb.limit();
-  }
-
   // For TCP sockets ONLY, raise the thread priority.  We assume we are
   // blocking other Nodes with our network I/O, so try to get the I/O
   // over with.
@@ -510,11 +536,6 @@ public /* final */ class AutoBuffer {
     _oldPrior = -1;
   }
 
-  private H2OSmallMessage _sentMsg;
-
-  // essentially extra return value made available for resend logic
-  public H2OSmallMessage takeSentMessage(){return _sentMsg;}
-
   // Send via UDP socket.  Unlike eg TCP sockets, we only need one for sending
   // so we keep a global one.  Also, we do not close it when done, and we do
   // not connect it up-front to a target - but send the entire packet right now.
@@ -522,24 +543,24 @@ public /* final */ class AutoBuffer {
     assert _chan == null;
     TimeLine.record_send(this,false);
     _size = _bb.position();
-    assert _size < AutoBuffer.BBP_SML.size();
+    assert _size < AutoBuffer.BBP_SML._size;
     _bb.flip();                 // Flip for sending
     if( _h2o==H2O.SELF ) {      // SELF-send is the multi-cast signal
-      water.init.NetworkInit.multicast(_bb, _priority);
+      water.init.NetworkInit.multicast(_bb, _msg_priority);
     } else {                    // Else single-cast send
-      if(H2O.ARGS.useUDP)
+      if(H2O.ARGS.useUDP)       // Send via UDP directly
         water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);
-      else
-        _h2o.sendMessage(_sentMsg = H2OSmallMessage.make(_bb,_priority));
+      else                      // Send via bulk TCP
+        _h2o.sendMessage(_bb, _msg_priority);
     }
     return 0;                   // Flow-coding
   }
 
   // Flip to write-mode
-  AutoBuffer clearForWriting(int priority) {
+  AutoBuffer clearForWriting(byte priority) {
     assert _read;
     _read = false;
-    _priority = priority;
+    _msg_priority = priority;
     _bb.clear();
     _firstPage = true;
     return this;
@@ -568,20 +589,19 @@ public /* final */ class AutoBuffer {
 
   private ByteBuffer getImpl( int sz ) {
     assert _read : "Reading from a buffer in write mode";
-    assert _chan != null : "Read to much data from a byte[] backed buffer, AB="+this;
     _bb.compact();            // Move remaining unread bytes to start of buffer; prep for reading
     // Its got to fit or we asked for too much
     assert _bb.position()+sz <= _bb.capacity() : "("+_bb.position()+"+"+sz+" <= "+_bb.capacity()+")";
     long ns = System.nanoTime();
     while( _bb.position() < sz ) { // Read until we got enuf
       try {
-        int res = _chan.read(_bb); // Read more
+        int res = _is == null ? _chan.read(_bb) : _is.read(_bb.array(),0,_bb.remaining()); // Read more
         // Readers are supposed to be strongly typed and read the exact expected bytes.
         // However, if a TCP connection fails mid-read we'll get a short-read.
         // This is indistinguishable from a mis-alignment between the writer and reader!
-        if( res == -1 )
+        if( res <= 0 )
           throw new AutoBufferException(new EOFException("Reading "+sz+" bytes, AB="+this));
-        if( res ==  0 ) throw new RuntimeException("Reading zero bytes - so no progress?");
+        if( _is != null ) _bb.position(_bb.position()+res); // Advance BB for Streams manually
         _size += res;            // What we read
       } catch( IOException e ) { // Dunno how to handle so crash-n-burn
         // Linux/Ubuntu message for a reset-channel
@@ -667,7 +687,7 @@ public /* final */ class AutoBuffer {
   }
 
   @SuppressWarnings("unused")  public String getStr(int off, int len) {
-    return new String(_bb.array(), _bb.arrayOffset()+off, len, Charsets.UTF_8);
+    return new String(_bb.array(), _bb.arrayOffset()+off, len, UTF_8);
   }
 
   // -----------------------------------------------
@@ -700,10 +720,34 @@ public /* final */ class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer put8d(double d) { putSp(8).putDouble(d); return this; }
 
   public AutoBuffer put(Freezable f) {
-    if( f == null ) return put2(TypeMap.NULL);
+    if( f == null ) return putInt(TypeMap.NULL);
     assert f.frozenType() > 0 : "No TypeMap for "+f.getClass().getName();
-    put2((short)f.frozenType());
+    putInt(f.frozenType());
     return f.write(this);
+  }
+
+  public <T extends Freezable> T get() {
+    int id = getInt();
+    if( id == TypeMap.NULL ) return null;
+    if( _is!=null ) id = _typeMap[id];
+    return (T)TypeMap.newFreezable(id).read(this);
+  }
+
+  // Write Key's target IFF the Key is not null; target can be null.
+  public AutoBuffer putKey(Key k) {
+    if( k==null ) return this;    // Key is null ==> write nothing
+    Keyed kd = (Keyed)DKV.getGet(k);
+    put(kd);
+    return kd == null ? this : kd.writeAll_impl(this);
+  }
+  public Keyed getKey(Key k, Futures fs) { 
+    return k==null ? null : getKey(fs); // Key is null ==> read nothing
+  }
+  public Keyed getKey(Futures fs) { 
+    Keyed kd = get(Keyed.class);
+    if( kd == null ) return null;
+    DKV.put(kd,fs);
+    return kd.readAll_impl(this,fs);
   }
 
   // Put a (compressed) integer.  Specifically values in the range -1 to ~250
@@ -752,14 +796,8 @@ public /* final */ class AutoBuffer {
     return ((long)x<<32)|(long)nz; // Return both ints
   }
 
-  @SuppressWarnings("unused")
   // TODO: untested. . .
-  public AutoBuffer putAEnum(String name, Enum[] enums) {
-    return putAEnum(enums);
-  }
-
   @SuppressWarnings("unused")
-  // TODO: untested. . .
   public AutoBuffer putAEnum(Enum[] enums) {
     //_arys++;
     long xy = putZA(enums);
@@ -770,6 +808,7 @@ public /* final */ class AutoBuffer {
     return this;
   }
 
+  @SuppressWarnings("unused")
   public <E extends Enum> E[] getAEnum(E[] values) {
     //_arys++;
     long xy = getZA();
@@ -782,8 +821,7 @@ public /* final */ class AutoBuffer {
     return ts;
   }
 
-
-
+  @SuppressWarnings("unused")
   public AutoBuffer putA(Freezable[] fs) {
     //_arys++;
     long xy = putZA(fs);
@@ -812,13 +850,10 @@ public /* final */ class AutoBuffer {
     return this;
   }
 
-  public <T extends Freezable> T get() {
-    short id = (short)get2();
-    return id == TypeMap.NULL ? null : (T)TypeMap.newFreezable(id).read(this);
-  }
   public <T extends Freezable> T get(Class<T> tc) {
-    short id = (short)get2();
-    return id == TypeMap.NULL ? null : (T)TypeMap.newFreezable(id).read(this);
+    T t = get();
+    assert t==null || tc.isInstance(t);
+    return t;
   }
   public <T extends Freezable> T[] getA(Class<T> tc) {
     //_arys++;
@@ -1157,7 +1192,7 @@ public /* final */ class AutoBuffer {
 
   public String getStr( ) {
     int len = getInt();
-    return len == -1 ? null : new String(getA1(len), Charsets.UTF_8);
+    return len == -1 ? null : new String(getA1(len), UTF_8);
   }
 
   public <E extends Enum> E getEnum(E[] values ) {
@@ -1381,7 +1416,7 @@ public /* final */ class AutoBuffer {
   // Put a String as bytes (not chars!)
   public AutoBuffer putStr( String s ) {
     if( s==null ) return putInt(-1);
-    return putA1(s.getBytes(Charsets.UTF_8));
+    return putA1(s.getBytes(UTF_8));
   }
 
   @SuppressWarnings("unused")  public AutoBuffer putEnum( Enum x ) {

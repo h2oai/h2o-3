@@ -1,13 +1,13 @@
-package water.serial;
+package water;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
 
 import hex.Model;
 import hex.ModelMetrics;
@@ -19,13 +19,7 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import water.AutoBuffer;
-import water.DKV;
-import water.Iced;
-import water.Key;
-import water.TestUtil;
 import water.fvec.Frame;
-import water.util.FileUtils;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -55,7 +49,7 @@ public class ModelSerializationTest extends TestUtil {
 
   @Test
   public void testGBMModelMultinomial() throws IOException {
-    GBMModel model = null, loadedModel = null;
+    GBMModel model, loadedModel = null;
     try {
       model = prepareGBMModel("smalldata/iris/iris.csv", ESA, "C5", true, 5);
       CompressedTree[][] trees = getTrees(model);
@@ -71,7 +65,7 @@ public class ModelSerializationTest extends TestUtil {
 
   @Test
   public void testGBMModelBinomial() throws IOException {
-    GBMModel model = null, loadedModel = null;
+    GBMModel model, loadedModel = null;
     try {
       model = prepareGBMModel("smalldata/logreg/prostate.csv", ar("ID"), "CAPSULE", true, 5);
       CompressedTree[][] trees = getTrees(model);
@@ -87,7 +81,7 @@ public class ModelSerializationTest extends TestUtil {
 
   @Test
   public void testDRFModelMultinomial() throws IOException {
-    DRFModel model = null, loadedModel = null;
+    DRFModel model, loadedModel = null;
     try {
       model = prepareDRFModel("smalldata/iris/iris.csv", ESA, "C5", true, 5);
       CompressedTree[][] trees = getTrees(model);
@@ -120,7 +114,7 @@ public class ModelSerializationTest extends TestUtil {
 
   @Test
   public void testGLMModel() throws IOException {
-    GLMModel model = null, loadedModel = null;
+    GLMModel model, loadedModel = null;
     try {
       model = prepareGLMModel("smalldata/junit/cars.csv", ESA, "power (hp)", GLMModel.GLMParameters.Family.poisson);
       loadedModel = saveAndLoad(model);
@@ -170,7 +164,6 @@ public class ModelSerializationTest extends TestUtil {
 
   private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLMModel.GLMParameters.Family family) {
     Frame f = parse_test_file(dataset);
-    Key modelKey = Key.make("GLM_model_for_"+dataset);
     try {
       GLMModel.GLMParameters params = new GLMModel.GLMParameters();
       params._train = f._key;
@@ -185,26 +178,11 @@ public class ModelSerializationTest extends TestUtil {
 
   /** Dummy model to test model serialization */
   static class BlahModel extends Model<BlahModel, BlahModel.BlahParameters, BlahModel.BlahOutput> {
-
-    public BlahModel(Key selfKey, BlahParameters params, BlahOutput output) {
-      super(selfKey, params, output);
-    }
-
-    @Override
-    public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-      return null;
-    }
-
-    @Override
-    protected double[] score0(double[] data, double[] preds) {
-      return new double[0];
-    }
-
-    static class BlahParameters extends Model.Parameters {
-    }
-
+    public BlahModel(Key selfKey, BlahParameters params, BlahOutput output) { super(selfKey, params, output); }
+    @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { return null; }
+    @Override protected double[] score0(double[] data, double[] preds) { return new double[0]; }
+    static class BlahParameters extends Model.Parameters { }
     static class BlahOutput extends Model.Output {
-
       public BlahOutput(boolean hasWeights, boolean hasOffset, boolean hasFold) {
         super(hasWeights, hasOffset, hasFold);
       }
@@ -214,41 +192,15 @@ public class ModelSerializationTest extends TestUtil {
   private <M extends Model> M saveAndLoad(M model) throws IOException {
     return saveAndLoad(model,true);
   }
+  // Serialize to and from a file
   private <M extends Model> M saveAndLoad(M model, boolean deleteModel) throws IOException {
-    // Serialize to a file
-    // Cannot use following call since it is available since Java 1.7
-    // File file = Files.createTempDirectory("H2O_ModelSerializationTest").toFile();
-    File file = com.google.common.io.Files.createTempDir();
+    File file = File.createTempFile(model.getClass().getSimpleName(),null);
     try {
-      // Enable the following URI to save model to HDFS (+disable delete below + configure classpath to H2O assembly)
-      // java.net.URI uri = java.net.URI.create("hdfs://mr-0x6/tmp/xo.model");// file.toURI()
-      java.net.URI uri = file.toURI();
-      // Fetch model all model keys
-      List<Key> modelKeys = new LinkedList<>();
-      modelKeys.add(model._key);
-      modelKeys.addAll(model.getPublishedKeys());
-      ObjectTreeBinarySerializer serializer = new ObjectTreeBinarySerializer();
-      // And save to given temporary directory
-      serializer.save(modelKeys, uri);
-      // Delete model
-      if (deleteModel) model.delete();
-      // Make sure that serialized keys are not available
-      for (Key k : modelKeys) {
-        if (k != null)
-          Assert.assertNull(DKV.get(k));
-      }
-      // Deserialize
-      List<Key> loadedModelKeys = serializer.load(uri);
-      Assert.assertEquals("Number of saved and loaded keys has to be equal", modelKeys.size(), loadedModelKeys.size());
-      for (int i = 0; i < modelKeys.size(); i++) {
-        Assert.assertEquals("Saved and loaded keys has to match", modelKeys.get(i), loadedModelKeys.get(i));
-      }
-      M m = (M) loadedModelKeys.get(0).get();
-      // Delete temporary directory
-      // And return
-      return m;
+      model.writeAll(new AutoBuffer(new FileOutputStream(file),true)).close();
+      if( deleteModel ) model.delete();
+      return (M)Keyed.readAll(new AutoBuffer(new FileInputStream(file)));
     } finally {
-      FileUtils.delete(file);
+      file.delete();
     }
   }
 
@@ -258,7 +210,7 @@ public class ModelSerializationTest extends TestUtil {
 
   public static void assertIcedBinaryEquals(String msg, Iced a, Iced b) {
     if (a == null) {
-      Assert.assertEquals(msg, a, b);
+      Assert.assertEquals(msg, null, b);
     } else {
       assertArrayEquals(msg, a.write(new AutoBuffer()).buf(), b.write(new AutoBuffer()).buf());
     }

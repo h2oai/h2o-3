@@ -139,6 +139,5 @@ public class UDPReceiverThread extends Thread {
 
 
     H2O.submitTask(new FJPacket(ab,ctrl));
-    return;
   }
 }
