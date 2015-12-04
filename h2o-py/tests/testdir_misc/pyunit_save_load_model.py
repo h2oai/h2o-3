@@ -20,7 +20,7 @@ def save_load_model():
     assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
     model_path = h2o.save_model(prostate_glm, path=path, force=True)
 
-    assert os.path.isdir(model_path), "Expected load directory {0} to exist, but it does not.".format(model_path)
+    assert os.path.isfile(model_path), "Expected load file {0} to exist, but it does not.".format(model_path)
     the_model = h2o.load_model(model_path)
 
     assert isinstance(the_model, H2OEstimator), "Expected and H2OBinomialModel, but got {0}".format(the_model)
