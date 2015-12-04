@@ -773,7 +773,7 @@ class Test:
 
     def _pytest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
         pyver = "python3.5" if g_py3 else "python"
-        cmd = ["python", g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
+        cmd = [pyver, g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
         if is_pyunit(test_name):
             if on_hadoop:         cmd = cmd + ["--onHadoop"]
