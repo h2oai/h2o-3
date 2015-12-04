@@ -10,7 +10,6 @@ import water.api.FramesHandler.Frames;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.persist.Persist;
-import water.persist.PersistManager;
 import water.util.FileUtils;
 import water.util.JCodeGen;
 
@@ -42,18 +41,12 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
      * Fetch all the Frames so we can see if they are compatible with our Model(s).
      */
     protected Map<Frame, Set<String>> fetchFrameCols() {
-      Frame[] all_frames = null;
-      Map<Frame, Set<String>> all_frames_cols = null;
-
-      if (this.find_compatible_frames) {
-        // caches for this request
-        all_frames = Frames.fetchAll();
-        all_frames_cols = new HashMap<Frame, Set<String>>();
-
-        for (Frame f : all_frames) {
-          all_frames_cols.put(f, new HashSet<String>(Arrays.asList(f._names)));
-        }
-      }
+      if (!find_compatible_frames) return null;
+      // caches for this request
+      Frame[] all_frames = Frames.fetchAll();
+      Map<Frame, Set<String>> all_frames_cols = new HashMap<>();
+      for (Frame f : all_frames)
+        all_frames_cols.put(f, new HashSet<>(Arrays.asList(f._names)));
       return all_frames_cols;
     }
 
@@ -189,7 +182,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   }
 
   public ModelsV3 importModel(int version, ModelImportV3 mimport) {
-    ModelsV3 s = (ModelsV3) Schema.newInstance(ModelsV3.class);
+    ModelsV3 s = Schema.newInstance(ModelsV3.class);
     try {
       URI targetUri = FileUtils.getURI(mimport.dir);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
@@ -205,7 +198,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      URI targetUri = FileUtils.getURI(mexport.dir);
+      URI targetUri = FileUtils.getURI(mexport.dir); // Really file, not dir
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       OutputStream os = p.create(targetUri.toString(),mexport.force);
       model.writeAll(new AutoBuffer(os,true)).close();
