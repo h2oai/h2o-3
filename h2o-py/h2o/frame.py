@@ -872,12 +872,13 @@ class H2OFrame(object):
       use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame instance's
       data.
     """
-    url = "http://{}:{}/3/DownloadDataset?frame_id={}+&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(self.frame_id))
     if six.PY3:
       from urllib import request
+      url = "http://{}:{}/3/DownloadDataset?frame_id={}+&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(self.frame_id))
       response = request.urlopen(url).read()
     else:
-      import urllib2
+      import urllib2, urllib
+      url = 'http://' + h2o.H2OConnection.ip() + ':' + str(h2o.H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self.frame_id) + "&hex_string=false"
       response = urllib2.urlopen(url)
     if can_use_pandas() and use_pandas:
       import pandas
