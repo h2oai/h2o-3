@@ -596,7 +596,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     protected void compute2() {
       // get filtered dataset's mean and number of observations
-      new YMUTask(_dinfo, nclasses(), _parms._beta_constraints == null, new H2OCallback<YMUTask>(this) {
+      new YMUTask(_dinfo, nclasses(), _parms._weights_column != null, new H2OCallback<YMUTask>(this) {
         @Override
         public void callback(final YMUTask ymut) {
           _yMu = _parms._intercept ? ymut._yMu : new double[nclasses()];
