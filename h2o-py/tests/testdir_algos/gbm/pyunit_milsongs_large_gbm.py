@@ -36,7 +36,7 @@ def milsong_checkpoint():
   assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
   model_path = h2o.save_model(model1, path=path, force=True)
 
-  assert os.path.isdir(model_path), "Expected load directory {0} to exist, but it does not.".format(model_path)
+  assert os.path.isfile(model_path), "Expected load file {0} to exist, but it does not.".format(model_path)
   restored_model = h2o.load_model(model_path)
 
   # continue building the model
