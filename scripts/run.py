@@ -772,6 +772,7 @@ class Test:
         return cmd
 
     def _pytest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
+        pyver = "python3.5" if g_py3 else "python"
         cmd = ["python", g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
         if is_pyunit(test_name):
@@ -1680,6 +1681,7 @@ g_git_hash = None
 g_git_branch = None
 g_build_id = None
 g_job_name= None
+g_py3 = False
 
 
 # Global variables that are set internally.
@@ -1894,6 +1896,7 @@ def parse_args(argv):
     global g_ncpu
     global g_os
     global g_job_name
+    global g_py3
 
     i = 1
     while (i < len(argv)):
@@ -1904,6 +1907,11 @@ def parse_args(argv):
             if (i > len(argv)):
                 usage()
             g_base_port = int(argv[i])
+        elif s == "--py3":
+            i += 1
+            if i > len(argv):
+                usage()
+            g_py3 = True
         elif (s == "--numclouds"):
             i += 1
             if (i > len(argv)):
