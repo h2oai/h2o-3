@@ -433,7 +433,11 @@ final public class H2O {
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
       } else if(s.matches("useUDP")) {
-          ARGS.useUDP = true;
+        i = s.incrementAndCheck(i, args);
+        ARGS.useUDP = true;
+      } else if(s.matches("cleaner")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.cleaner = true;
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }
