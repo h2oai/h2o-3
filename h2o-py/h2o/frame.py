@@ -3,13 +3,13 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
+import six
 import collections
 import csv
 import imp
 import os
 import tempfile
 from datetime import datetime
-from future.backports.urllib.request import urlopen
 from future.backports.urllib.request import quote
 import sys
 import traceback
@@ -873,7 +873,12 @@ class H2OFrame(object):
       data.
     """
     url = "http://{}:{}/3/DownloadDataset?frame_id={}+&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(self.frame_id))
-    response = urlopen(url)
+    if six.PY3:
+      from urllib import request
+      response = request.urlopen(url).read()
+    else:
+      import urllib2
+      response = urllib2.urlopen(url)
     if can_use_pandas() and use_pandas:
       import pandas
       df = pandas.read_csv(response,low_memory=False)
