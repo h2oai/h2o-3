@@ -8,14 +8,12 @@ import csv
 import imp
 import os
 import tempfile
+from datetime import datetime
 from future.standard_library import install_aliases
 install_aliases()
-
-from urllib.parse import urlparse, urlencode
-from urllib.request import urlopen, Request
-from urllib.error import HTTPError
+from future.backports.urllib.request import urlopen
+from future.backports.urllib.request import quote
 import sys
-import urllib
 import traceback
 from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts
 from .display import H2ODisplay
@@ -408,7 +406,7 @@ class H2OFrame(object):
     # Force a fetch of 10 rows; the chunk & distribution summaries are not
     # cached, so must be pulled.  While we're at it, go ahead and fill in
     # the default caches if they are not already filled in
-    res = H2OConnection.get_json("Frames/"+urllib.quote(self.frame_id)+"?row_count="+str(10))["frames"][0]
+    res = H2OConnection.get_json("Frames/"+quote(self.frame_id)+"?row_count="+str(10))["frames"][0]
     self._ex._cache._fill_data(res)
     print("Rows:{:,}".format(self.nrow), "Cols:{:,}".format(self.ncol))
     res["chunk_summary"].show()
@@ -876,7 +874,7 @@ class H2OFrame(object):
       use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame instance's
       data.
     """
-    url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self.frame_id) + "&hex_string=false"
+    url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + quote(self.frame_id) + "&hex_string=false"
     response = urlopen(url)
     if can_use_pandas() and use_pandas:
       import pandas
@@ -891,7 +889,6 @@ class H2OFrame(object):
         #change Time to pandas datetime
         if time_cols:
           #hacky way to get the utc offset
-          from datetime import datetime
           sample_timestamp = 1380610868
           utc_offset = 1000 * ((datetime.utcfromtimestamp(sample_timestamp) - datetime.fromtimestamp(sample_timestamp)).total_seconds())
           try:
