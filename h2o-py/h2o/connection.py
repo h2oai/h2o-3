@@ -142,6 +142,7 @@ class H2OConnection(object):
       ["H2O Connection ip: ", ip],
       ["H2O Connection port: ", __H2OCONN__._port],
       ["H2O Connection proxy: ", __H2OCONN__._proxies],
+      ["Python Version: ", sys.version.split()[0]],
       ]
     __H2OCONN__._cld = H2OConnection.get_json(url_suffix="Cloud")   # update the cached version of cld
     H2ODisplay(cluster_info)
