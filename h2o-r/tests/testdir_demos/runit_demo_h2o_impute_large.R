@@ -1,8 +1,5 @@
-#----------------------------------------------------------------------
-# Imputation example.
-#
-# Purpose:  Demonstrate basic imputation example with H2O driven from R.
-#----------------------------------------------------------------------
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 
 # make a copy of a dataframe
 cp <- function(this) h2o.exec(this[seq(1, nrow(this), 1),seq(1, ncol(this), 1)])
@@ -18,7 +15,8 @@ if (TRUE) {
       setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_demos")
   }
 
-  source('../h2o-runit.R')
+#  source('../h2o-runit.R')
+
   options(echo=TRUE)
   filePath <- locate("smalldata/airlines/allyears2k_headers.zip")
 #  testFilePath <- normalizePath(locate("smalldata/airlines/allyears2k_headers.zip"))
@@ -33,10 +31,10 @@ if (TRUE) {
 #  testFilePath <-"https://raw.github.com/0xdata/h2o/master/smalldata/airlines/allyears2k_headers.zip"
 }
 
-conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
+#conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 # Uploading data file to h2o.
-air <- h2o.importFile(conn, filePath, "air")
+air <- h2o.importFile(filePath, "air")
 
 # Print dataset size.
 dim(air)
@@ -54,26 +52,43 @@ if (numNAs == nrow(air)) {
 DepTime_mean <- mean(air$DepTime, na.rm = TRUE)
 DepTime_mean
 
+print("number of NAs before imputing" )
+print(numNAs)
+naList = is.na(air$DepTime)
+naVal = air$DepTime[naList]
+print("some NA positions are ")
+print(naVal[1:10])
+
+
+
 # impute the column in place with h2o.impute(...)
 h2o.impute(air, "DepTime", method = "mean")   # can also have method = "median"
+
+
+naAVal = air$DepTime[naList]
+print(" Those NAs are now ")
+print(naAVal[1:10])
+
 numNAs <- sum(is.na(air$DepTime))
-stopifnot(numNAs == 0)
+print("Number of NAs after imputing")
+print(numNAs)
+#stopifnot(numNAs == 0)
 
 # revert imputations
-air <- h2o.importFile(conn, filePath, "air")
+air <- h2o.importFile(filePath, "air")
 
 # impute the column in place using a grouping based on the Origin and Distance
 # NB: If the Origin and Distance produce groupings of NAs, then no imputation will be done (NAs will result).
 h2o.impute(air, "DepTime", method = "mean", by = c("Dest"))
 
 # revert imputations
-air <- h2o.importFile(conn, filePath, "air")
+air <- h2o.importFile(filePath, "air")
 
 # impute a factor column by the most common factor in that column
 h2o.impute(air, "TailNum", method = "mode")
 
 # revert imputations
-air <- h2o.importFile(conn, filePath, "air")
+air <- h2o.importFile(filePath, "air")
 
 # impute a factor column using a grouping based on the Origin
 h2o.impute(air, "TailNum", method = "mode", by=c("Month"))

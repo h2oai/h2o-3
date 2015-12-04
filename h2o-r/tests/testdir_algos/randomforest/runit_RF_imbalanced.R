@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.rf.imbalanced <- function(conn) {
-  covtype <- h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
+test.rf.imbalanced <- function() {
+  covtype <- h2o.uploadFile( locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
 
   hh_imbalanced<-h2o.randomForest(x=1:54,y=55,ntrees=50,training_frame=covtype, balance_classes=F)
@@ -21,7 +21,6 @@ test.rf.imbalanced <- function(conn) {
 
   expect_true(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
 
-  testEnd()
 }
 
 doTest("rf imbalanced", test.rf.imbalanced)

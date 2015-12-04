@@ -1,12 +1,14 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def imbalancedGBM(ip,port):
+def imbalancedGBM():
     # Connect to h2o
     h2o.init(ip,port)
 
-    covtype = h2o.import_frame(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
+    covtype = h2o.import_frame(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
+
 
     hh_imbalanced = h2o.gbm(x=covtype[0:54], y=covtype[54], ntrees=50, balance_classes=False, nfolds=10, distribution="multinomial")
     hh_imbalanced_perf = hh_imbalanced.model_performance(covtype)
@@ -40,4 +42,6 @@ def imbalancedGBM(ip,port):
     assert class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, imbalancedGBM)
+	pyunit_utils.standalone_test(imbalancedGBM)
+else:
+	imbalancedGBM()

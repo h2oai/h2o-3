@@ -1,13 +1,8 @@
-#----------------------------------------------------------------------
-# Purpose:  Create random data and run 20 iterations of GLM on it.
-#----------------------------------------------------------------------
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
 
 # Data frame size 
 rows <- c(1e4,1e5) 
@@ -35,7 +30,7 @@ for(i in 1:length(rows)){ # changing number of rows
     col_grid[j] <- ncols 
     names <- c(names, nrows * ncols) # set the name to be the problem size 
     print("frame")
-    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrows, cols = ncols,
+    sst <- system.time(myframe <- h2o.createFrame(rows = nrows, cols = ncols,
                                                  seed = 12345, randomize = T, value = 0, real_range = 100, 
                                                  categorical_fraction = 0.0, factors = 10, 
                                                  integer_fraction = 0.4, integer_range = 100, 
@@ -56,7 +51,7 @@ for(i in 1:length(rows)){ # changing number of rows
 } 
 myframe <- NULL 
 gc() 
-h2o.rm(conn,"myframe") 
+h2o.rm("myframe")
 #col_grid 
 #row_grid 
 #create_frm_time 

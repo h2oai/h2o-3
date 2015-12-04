@@ -1,11 +1,13 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def pubdev_1696(ip, port):
+def pubdev_1696():
     
 
-    iris = h2o.import_frame(h2o.locate("smalldata/iris/iris.csv"))
+    iris = h2o.import_frame(pyunit_utils.locate("smalldata/iris/iris.csv"))
+
 
     try:
         h2o.gbm(x=iris[0:3], y=iris[3], nfolds=-99)
@@ -14,4 +16,6 @@ def pubdev_1696(ip, port):
         assert True
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, pubdev_1696)
+	pyunit_utils.standalone_test(pubdev_1696)
+else:
+	pubdev_1696()

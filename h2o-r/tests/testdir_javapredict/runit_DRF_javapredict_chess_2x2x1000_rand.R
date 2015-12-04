@@ -1,48 +1,59 @@
-#----------------------------------------------------------------------
-# Purpose:  This test exercises the GBM model downloaded as java code
-#           for the iris data set while randomly setting the parameters.
-#
-# Notes:    Assumes unix environment.
-#           curl, javac, java must be installed.
-#           java must be at least 1.6.
-#----------------------------------------------------------------------
-
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
+source("../../scripts/h2o-r-test-setup.R")
 
 
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
+test.drf.javapredict.chess <- function() {
+  heading("Choose random parameters")
 
-heading("Choose random parameters")
+  ntree <- sample(100, 1)
 
-ntree <- sample(100, 1)
-print(paste("ntree", ntree))
 
-depth <- sample(10, 1)
-print(paste("depth", depth))
+  depth <- sample(10, 1)
 
-nodesize <- sample(5, 1)
-print(paste("nodesize", nodesize))
 
-train <- locate("smalldata/chess/chess_2x2x1000/train.csv")
-print(paste("train", train))
+  nodesize <- sample(5, 1)
 
-test <- locate("smalldata/chess/chess_2x2x1000/test.csv")
-print(paste("test", test))
 
-x = c("x", "y")
-print("x")
-print(x)
+  train <- locate("smalldata/chess/chess_2x2x1000/train.csv")
 
-y = "color"
-print(paste("y", y))
+  training_frame <- h2o.importFile(train)
+
+  test <- locate("smalldata/chess/chess_2x2x1000/test.csv")
+
+  test_frame <- h2o.importFile(test)
+
+  x = c("x", "y")
+
+
+  y = "color"
+
+
+  params <- list()
+  params$ntrees <- ntree
+  params$max_depth <- depth
+  params$min_rows <- nodesize
+  params$x <- x
+  params$y <- y
+  params$training_frame <- training_frame
+
+  doJavapredictTest("randomForest",test,test_frame,params)
+    print(paste("ntree", ntree))
+    print(paste("depth", depth))
+    print(paste("nodesize", nodesize))
+    print(paste("train", train))
+    print(paste("test", test))
+    print("x")
+    print(x)
+    print(paste("y", y))
+
+}
 
 
 #----------------------------------------------------------------------
 # Run the test
 #----------------------------------------------------------------------
-source('../Utils/shared_javapredict_RF.R')
+#source('../Utils/shared_javapredict_RF.R')
+doTest("RF test",test.drf.javapredict.chess)

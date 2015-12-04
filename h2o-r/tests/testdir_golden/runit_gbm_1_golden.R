@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
-test.gbmMSEgauss.golden <- function(H2Oserver) {
+test.gbmMSEgauss.golden <- function() {
 	
 #Import data: 
 Log.info("Importing smtrees data...") 
-smtreesH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/gbm_test/smtrees.csv"), destination_frame="smtreesH2O")
+smtreesH2O <- h2o.uploadFile( locate("smalldata/gbm_test/smtrees.csv"), destination_frame="smtreesH2O")
 smtreesR <- read.csv(locate("smalldata/gbm_test/smtrees.csv"))
 
 Log.info("Test H2O generation of MSE for GBM")
@@ -31,7 +31,6 @@ expect_equal(fith2o@model$init_f, mean(smtreesH2O$vol), tolerance=1e-4) ## check
 expect_equal(REPMSE, EXPMSE, tolerance=1e-4)
 expect_equal(REPMSE>0, TRUE);
 
-testEnd()
 }
 
 doTest("GBM Test: Golden GBM - MSE for GBM Regression", test.gbmMSEgauss.golden)

@@ -1,9 +1,11 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def insert_missing(ip,port):
-  air_path = [h2o.locate("smalldata/airlines/allyears2k_headers.zip")]
+def insert_missing():
+  air_path = [pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip")]
+
 
   data = h2o.import_frame(path=air_path)
 
@@ -15,9 +17,11 @@ def insert_missing(ip,port):
   mins2 = data["CRSDepTime"] % 100
   depTime = hour2*60 + mins2
 
-  data["TravelTime"] = h2o.ifelse((arrTime-depTime)>0,(arrTime-depTime),float("nan"))[0]
+  data["TravelTime"] = ((arrTime-depTime)>0).ifelse((arrTime-depTime),float("nan"))[0]
 
   data.show()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, insert_missing)
+	pyunit_utils.standalone_test(insert_missing)
+else:
+	insert_missing()

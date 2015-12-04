@@ -1,16 +1,19 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import numpy as np
 
-def wide_dataset_large(ip,port):
+def wide_dataset_large():
     # Connect to h2o
     h2o.init(ip,port)
 
     print("Reading in Arcene training data for binomial modeling.")
-    trainDataResponse = np.genfromtxt(h2o.locate("smalldata/arcene/arcene_train_labels.labels"), delimiter=' ')
+    trainDataResponse = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_train_labels.labels"), delimiter=' ')
+
     trainDataResponse = np.where(trainDataResponse == -1, 0, 1)
-    trainDataFeatures = np.genfromtxt(h2o.locate("smalldata/arcene/arcene_train.data"), delimiter=' ')
+    trainDataFeatures = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_train.data"), delimiter=' ')
+
     trainData = h2o.H2OFrame(np.column_stack((trainDataResponse, trainDataFeatures)).tolist())
 
     print("Run model on 3250 columns of Arcene with strong rules off.")
@@ -18,9 +21,11 @@ def wide_dataset_large(ip,port):
                     use_all_factor_levels=True)
 
     print("Test model on validation set.")
-    validDataResponse = np.genfromtxt(h2o.locate("smalldata/arcene/arcene_valid_labels.labels"), delimiter=' ')
+    validDataResponse = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_valid_labels.labels"), delimiter=' ')
+
     validDataResponse = np.where(validDataResponse == -1, 0, 1)
-    validDataFeatures = np.genfromtxt(h2o.locate("smalldata/arcene/arcene_valid.data"), delimiter=' ')
+    validDataFeatures = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_valid.data"), delimiter=' ')
+
     validData = h2o.H2OFrame(np.column_stack((validDataResponse, validDataFeatures)).tolist())
     prediction = model.predict(validData)
 
@@ -31,4 +36,6 @@ def wide_dataset_large(ip,port):
     assert performance.auc() > 0.5, "predictions should be better then pure chance"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, wide_dataset_large)
+	pyunit_utils.standalone_test(wide_dataset_large)
+else:
+	wide_dataset_large()

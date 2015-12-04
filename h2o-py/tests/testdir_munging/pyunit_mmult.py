@@ -1,12 +1,13 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 import random
 import numpy as np
 
-def mmult(ip,port):
+def mmult():
     data = [[random.uniform(-10000,10000)] for c in range(100)]
-    h2o_data = h2o.H2OFrame(python_obj=data)
+    h2o_data = h2o.H2OFrame(zip(*data))
     np_data = np.array(data)
 
     h2o_mm = h2o_data.mult(h2o_data.transpose())
@@ -21,5 +22,8 @@ def mmult(ip,port):
             assert abs(h2o_val - np_val) < 1e-06, "check unsuccessful! h2o computed {0} and numpy computed {1}. expected " \
                                                   "equal quantile values between h2o and numpy".format(h2o_val,np_val)
 
+
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, mmult)
+	pyunit_utils.standalone_test(mmult)
+else:
+	mmult()

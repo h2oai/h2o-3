@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.km.empty <- function(conn) {
+test.km.empty <- function() {
   Log.info("Importing ozone.csv data...\n")
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
-  ozoneH2O <- h2o.uploadFile(conn, locate("smalldata/glm_test/ozone.csv"))
+  ozoneH2O <- h2o.uploadFile( locate("smalldata/glm_test/ozone.csv"))
   ozoneScale <- scale(ozoneR, center = TRUE, scale = TRUE)
   
   ncent <- 10
@@ -19,7 +19,6 @@ test.km.empty <- function(conn) {
   expect_error(kmeans(ozoneScale, init = initCent, iter.max = 1000, algorithm = "Lloyd"))
   fitKM <- h2o.kmeans(ozoneH2O, init = initCent, standardize = TRUE)
   print(fitKM)
-  testEnd()
 }
 
 doTest("KMeans Test: Handle multiple empty clusters", test.km.empty)

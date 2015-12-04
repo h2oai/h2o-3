@@ -1,15 +1,13 @@
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 # use this for interactive setup
 #    library(h2o)
 #    library(testthat)
 #    h2o.startLogging()
-#    conn = h2o.init()
 
 
-test.apply <- function(conn) {
+test.apply <- function() {
 
     a_initial <- data.frame(
     v1=c(1,0,1,0,1,0,1,0,1,0),
@@ -22,7 +20,7 @@ test.apply <- function(conn) {
     b <- apply(a, 1, sum)
 
 
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o( a_initial, destination_frame="r.hex")
     b.h2o <- apply(a.h2o, 1, sum)
 
     b.h2o.R <- as.matrix(b.h2o)
@@ -40,7 +38,6 @@ test.apply <- function(conn) {
 
 
 
-    testEnd()
 }
 
 doTest("Test for apply.", test.apply)

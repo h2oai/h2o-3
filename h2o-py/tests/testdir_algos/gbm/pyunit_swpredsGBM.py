@@ -1,8 +1,9 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def swpredsGBM(ip,port):
+def swpredsGBM():
   # Training set has two predictor columns
   # X1: 10 categorical levels, 100 observations per level; X2: Unif(0,1) noise
   # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)
@@ -11,7 +12,8 @@ def swpredsGBM(ip,port):
   
   
   #Log.info("Importing swpreds_1000x3.csv data...\n")
-  swpreds = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
+  swpreds = h2o.import_frame(path=pyunit_utils.locate("smalldata/gbm_test/swpreds_1000x3.csv"))
+
   swpreds["y"] = swpreds["y"].asfactor()
 
   #Log.info("Summary of swpreds_1000x3.csv from H2O:\n")
@@ -34,4 +36,6 @@ def swpredsGBM(ip,port):
   h2o_auc2 = h2o_gbm_perf2.auc()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, swpredsGBM)
+	pyunit_utils.standalone_test(swpredsGBM)
+else:
+	swpredsGBM()

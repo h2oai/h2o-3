@@ -1,16 +1,10 @@
-##
-# The following bug is associated with JIRA PUB-838
-# 'Inaccurate error message: h2o.performance()'
-# Testing h2o.performance with rogue label vector and original dataframe
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
 
-test <- function(conn) {
+test <- function() {
   print("Reading in original prostate data.")
-  prostate.hex <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex", header=TRUE)
+  prostate.hex <- h2o.importFile( locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex", header=TRUE)
 
   print("Run test/train split at 20/80.")
   prostate.hex$split <- ifelse(h2o.runif(prostate.hex)>0.8, yes=1, no=0)
@@ -32,7 +26,6 @@ test <- function(conn) {
   h2o.performance(h2o.glm.model, prostate.test) # works
   h2o.performance(h2o.glm.model, test.labels) # checking performance with separate vector containing labels
 
-  testEnd()
 }
 
 doTest("Testing h2o.performance with rogue label vector and original dataframe ", test)

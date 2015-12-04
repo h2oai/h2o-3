@@ -4,11 +4,12 @@
 ##
 ################################################################################
 
+from tests import pyunit_utils
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
 
-def continuous_or_categorical(ip, port):
+def continuous_or_categorical():
   # connect to h2o
   
 
@@ -50,4 +51,6 @@ def continuous_or_categorical(ip, port):
   assert (not df_hex['h3'].isfactor())
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, continuous_or_categorical)
+	pyunit_utils.standalone_test(continuous_or_categorical)
+else:
+	continuous_or_categorical()

@@ -1,13 +1,14 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
 
-test <- function(conn) {
+
+test <- function() {
   json_file <- locate("smalldata/jira/hex-1833.json")
 
-  print(fromJSON(file=json_file))
- 
-  testEnd()
+  print(jsonlite::fromJSON(json_file))
+
+
 }
 
 doTest("testing JSON parse", test)

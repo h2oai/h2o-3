@@ -1,16 +1,19 @@
+from tests import pyunit_utils
 import os, sys
 sys.path.insert(1,"../../../")
 import h2o
 
-def deeplearning_autoencoder(ip, port):
+def deeplearning_autoencoder():
     h2o.init(ip, port)
 
     resp = 784
     nfeatures = 20 # number of features (smallest hidden layer)
 
 
-    train_hex = h2o.import_frame(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
-    test_hex = h2o.import_frame(h2o.locate("bigdata/laptop/mnist/test.csv.gz"))
+    train_hex = h2o.import_frame(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
+
+    test_hex = h2o.import_frame(pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))
+
 
     # split data into two parts
     sid = train_hex[1].runif(1234)
@@ -56,5 +59,6 @@ def deeplearning_autoencoder(ip, port):
     assert abs(cm.cell_values[10][10] - 0.1057) < 0.001, "Error not as expected"
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, deeplearning_autoencoder)
-
+	pyunit_utils.standalone_test(deeplearning_autoencoder)
+else:
+	deeplearning_autoencoder()

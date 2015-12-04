@@ -2,12 +2,13 @@
 # Purpose:  This test compares k-means centers between H2O and MLlib.
 #----------------------------------------------------------------------
 
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 import numpy as np
 
-def kmeans_mllib(ip, port):
+def kmeans_mllib():
     
 
     # Check if we are running inside the H2O network by seeing if we can touch
@@ -23,7 +24,8 @@ def kmeans_mllib(ip, port):
         cross_h2o = h2o.import_frame(url)
         n = cross_h2o.nrow()
 
-        err_mllib = np.genfromtxt(h2o.locate("smalldata/mllib_bench/bigcross_wcsse.csv"), delimiter=",", skip_header=1)
+        err_mllib = np.genfromtxt(pyunit_utils.locate("smalldata/mllib_bench/bigcross_wcsse.csv"), delimiter=",", skip_header=1)
+
         ncent = [int(err_mllib[r][0]) for r in range(len(err_mllib))]
 
         for k in ncent:
@@ -31,7 +33,8 @@ def kmeans_mllib(ip, port):
             cross_km = h2o.kmeans(training_frame = cross_h2o, x = cross_h2o, k = k, init = "PlusPlus",
                                   max_iterations = 10, standardize = False)
 
-            clust_mllib = np.genfromtxt(h2o.locate("smalldata/mllib_bench/bigcross_centers_" + str(k) + ".csv"),
+            clust_mllib = np.genfromtxt(pyunit_utils.locate("smalldata/mllib_bench/bigcross_centers_" + str(k) + ".csv"),
+
                                         delimiter=",").tolist()
             clust_h2o = cross_km.centers()
 
@@ -52,4 +55,6 @@ def kmeans_mllib(ip, port):
                                              "got {1}".format(wcsse_mllib, wcsse_h2o)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, kmeans_mllib)
+	pyunit_utils.standalone_test(kmeans_mllib)
+else:
+	kmeans_mllib()

@@ -1,0 +1,9 @@
+testdir_algos/deeplearning/runit_deeplearning_grid_cars_medium.R
+testdir_algos/gbm/runit_GBM_forloop_attack_medium.R
+testdir_algos/gbm/runit_GBM_grid_cars.R
+testdir_algos/glm/runit_GLM_grid_cars.R
+testdir_algos/glm/runit_NOPASS_GLM_forloop_attack_medium.R
+testdir_algos/kmeans/runit_kmeans_grid_iris.R
+testdir_algos/naivebayes/runit_naivebayes_grid_cars.R
+testdir_algos/pca/runit_pca_grid_quasar.R
+testdir_algos/randomforest/runit_RF_grid_cars.R

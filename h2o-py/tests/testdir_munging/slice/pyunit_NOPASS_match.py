@@ -1,12 +1,14 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def match_check(ip,port):
+def match_check():
     # Connect to a pre-existing cluster
     
 
-    hex = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    hex = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+
 
     print "doing the match: h2o.match(hex$Species, [\"Iris-setosa\", \"Iris-versicolor\"]"
     sub_h2o_match = hex[4].match(["Iris-setosa", "Iris-versicolor"])
@@ -50,4 +52,6 @@ def match_check(ip,port):
     assert rows == 9 and cols == 5, "Unexpected dimensions. Got {0} rows and {1} cols.".format(rows,cols)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, match_check)
+	pyunit_utils.standalone_test(match_check)
+else:
+	match_check()

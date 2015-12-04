@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 Log.info("Loading LiblineaR and ROCR packages\n")
 
@@ -9,7 +9,7 @@ Log.info("Loading LiblineaR and ROCR packages\n")
 library(LiblineaR)
 library(ROCR)
 
-test.LiblineaR <- function(conn) {
+test.LiblineaR <- function() {
   L1logistic <- function(train,trainLabels,test,testLabels,trainhex,testhex) {
     Log.info("Using default parameters for LiblineaR: \n")
     Log.info("   type =    0: Logistic Regression L2-Regularized\n")
@@ -140,8 +140,8 @@ test.LiblineaR <- function(conn) {
   }
 
   #Log.info("Importing prostate test/train data...\n")
-  #prostate.train.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_train.csv"), "pTrain.hex")
-  #prostate.test.hex  <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_test.csv"), "pTest.hex")
+  #prostate.train.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate_train.csv"), "pTrain.hex")
+  #prostate.test.hex  <- h2o.uploadFile( locate("smalldata/logreg/prostate_test.csv"), "pTest.hex")
   #prostate.train.hex$CAPSULE <- as.factor(prostate.train.hex$CAPSULE)
   #prostate.test.hex$CAPSULE <- as.factor(prostate.test.hex$CAPSULE)
   #prostate.train.dat <- read.csv(locate("smalldata/logreg/prostate_train.csv")) #head(prostate.train.hex,nrow(prostate.train.hex))
@@ -153,7 +153,6 @@ test.LiblineaR <- function(conn) {
   #models             <- L1logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
   ##models2            <- L2logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
   #compareCoefs(models[[1]], models[[2]])
-  testEnd()
 }
 
 doTest("LiblineaR Test: Prostate", test.LiblineaR)

@@ -1,14 +1,16 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def plot_test(ip,port):
+def plot_test():
     
     
     kwargs = {}
     kwargs['server'] = True
 
-    air = h2o.import_frame(h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air = h2o.import_frame(pyunit_utils.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+
 
     # Constructing test and train sets by sampling (20/80)
     s = air[0].runif()
@@ -25,11 +27,14 @@ def plot_test(ip,port):
     air_gbm.plot(type="roc", train=True, **kwargs)
     air_gbm.plot(type="roc", valid=True, **kwargs)
 
-    air_test = h2o.import_frame(h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_frame(pyunit_utils.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+
     perf = air_gbm.model_performance(air_test)
 
     #Plot ROC for test set
     perf.plot(type="roc", **kwargs)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, plot_test)
+	pyunit_utils.standalone_test(plot_test)
+else:
+	plot_test()

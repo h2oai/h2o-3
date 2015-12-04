@@ -1,14 +1,17 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1,"../../../")
 import h2o
 
-def anomaly(ip, port):
+def anomaly():
     
 
     print "Deep Learning Anomaly Detection MNIST"
 
-    train = h2o.import_frame(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
-    test = h2o.import_frame(h2o.locate("bigdata/laptop/mnist/test.csv.gz"))
+    train = h2o.import_frame(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
+
+    test = h2o.import_frame(pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))
+
 
     predictors = range(0,784)
     resp = 784
@@ -38,4 +41,6 @@ def anomaly(ip, port):
     # In python, the visualization could be done with tools like numpy/matplotlib or numpy/PIL
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, anomaly)
+	pyunit_utils.standalone_test(anomaly)
+else:
+	anomaly()

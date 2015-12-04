@@ -1,10 +1,12 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def weights_gamma(ip,port):
+def weights_gamma():
 
-    htable  = h2o.upload_file(h2o.locate("smalldata/gbm_test/moppe.csv"))
+    htable  = h2o.upload_file(pyunit_utils.locate("smalldata/gbm_test/moppe.csv"))
+
     htable["premiekl"] = htable["premiekl"].asfactor()
     htable["moptva"] = htable["moptva"].asfactor()
     htable["zon"] = htable["zon"]
@@ -19,7 +21,9 @@ def weights_gamma(ip,port):
     assert abs(8.804447-hh._model_json['output']['init_f']) < 1e-6*8.804447
     assert abs(3751.01-ph[0].min()) < 1e-4*3751.01
     assert abs(15298.87-ph[0].max()) < 1e-4*15298.87
-    assert abs(8121.98-ph[0].mean()) < 1e-4*8121.98
+    assert abs(8121.98-ph[0].mean()[0]) < 1e-4*8121.98
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_gamma)
+	pyunit_utils.standalone_test(weights_gamma)
+else:
+	weights_gamma()

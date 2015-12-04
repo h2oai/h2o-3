@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-check.deeplearning_multi <- function(conn) {
+check.deeplearning_multi <- function() {
   Log.info("Test checks if Deep Learning works fine with a categorical dataset")
   
   print(locate("smalldata/logreg/prostate.csv"))
-  prostate <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), "prostate")
+  prostate <- h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), "prostate")
   prostate[,2] <- as.factor(prostate[,2]) #CAPSULE -> Factor (response)
   prostate[,3] <- as.factor(prostate[,3]) #AGE -> Factor
   prostate[,4] <- as.factor(prostate[,4]) #RACE -> Factor
@@ -16,7 +16,6 @@ check.deeplearning_multi <- function(conn) {
   hh <- h2o.deeplearning(x=c(3,4,5,6,7,8,9),y=2,training_frame=prostate,hidden=c(20,20),use_all_factor_levels=F,loss="CrossEntropy")
   print(hh)
 
-  testEnd()
 }
 
 doTest("Deep Learning MultiClass Test", check.deeplearning_multi)

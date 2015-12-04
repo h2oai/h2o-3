@@ -1,13 +1,15 @@
+from tests import pyunit_utils
 import os, sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def deeplearning_multi(ip, port):
+def deeplearning_multi():
     
 
     print("Test checks if Deep Learning works fine with a multiclass training and test dataset")
 
-    prostate = h2o.import_frame(h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate = h2o.import_frame(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+
 
     prostate[4] = prostate[4].asfactor()
 
@@ -19,4 +21,6 @@ def deeplearning_multi(ip, port):
     hh.show()
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, deeplearning_multi)
+	pyunit_utils.standalone_test(deeplearning_multi)
+else:
+	deeplearning_multi()

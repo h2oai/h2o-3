@@ -1,17 +1,11 @@
-######################################################################
-# Test for HEX-1613
-# Bad confusion matrix output for mixed inputs
-######################################################################
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-options(echo=TRUE)
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
 heading("BEGIN TEST")
 conn <- new("H2OConnection", ip=myIP, port=myPort)
 
 path <- locate("smalldata/logreg/prostate.csv")
-hex <- h2o.importFile(conn, path, destination_frame="p.hex")
+hex <- h2o.importFile( path, destination_frame="p.hex")
 
 m <- h2o.glm(x = 3:8, y = 2, family = "binomial", training_frame = hex)
 

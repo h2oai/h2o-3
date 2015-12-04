@@ -1,16 +1,19 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
 h2o.init()
 
-covtype = h2o.upload_file(h2o.locate("smalldata/covtype/covtype.20k.data"))
+covtype = h2o.upload_file(pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
+
 covtype[54] = covtype[54].asfactor()
 #dlmodel = h2o.deeplearning(x=covtype[0:54], y=covtype[54], hidden=[17,191], epochs=1, training_frame=covtype,
 #                           balance_classes=False, reproducible=True, seed=1234, export_weights_and_biases=True)
 
 
-train =h2o.import_frame(h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
+train =h2o.import_frame(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
+
 predictors = range(100)
 ae_model = h2o.deeplearning(x=train[predictors], training_frame=train, activation="Tanh", autoencoder=True,
                             hidden=[50], l1=1e-5, ignore_const_cols=False, epochs=1)
@@ -18,7 +21,8 @@ ae_model = h2o.deeplearning(x=train[predictors], training_frame=train, activatio
 foo = ae_model.anomaly(covtype)
 
 print foo
-# pros = h2o.upload_file(h2o.locate("smalldata/prostate/prostate.csv.zip"))
+# pros = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
+
 # pros[1] = pros[1].asfactor()
 # r = pros[0].runif() # a column of length pros.nrow() with values between 0 and 1
 # # ~80/20 train/validation split
@@ -58,9 +62,11 @@ print foo
 # glm.coef()
 # glm.show()
 
-#iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
+#iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader_65_rows.csv"))
+
 #iris = h2o.H2OFrame(vecs=[v for v in iris._vecs[0:4]])
-#air = h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
+#air = h2o.import_frame(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
+
 
 #foo = h2o.H2OFrame()
 #air.describe()

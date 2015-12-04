@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
-test.glm2RidgeObjective.golden <- function(H2Oserver) {
+test.glm2RidgeObjective.golden <- function() {
 	
 #IMPORT DATA:
 Log.info("Importing handmade data...") 
-handmadeH2O<- h2o.uploadFile(H2Oserver, locate("smalldata/glm_test/handmade.csv"), destination_frame="handmade")
+handmadeH2O<- h2o.uploadFile( locate("smalldata/glm_test/handmade.csv"), destination_frame="handmade")
 handmadeR<- read.csv(locate("smalldata/glm_test/handmade.csv"))
 
 Xvars<- as.matrix(cbind(handmadeR$a, handmadeR$b, handmadeR$c, handmadeR$d, handmadeR$e))
@@ -128,7 +128,6 @@ h2o2<- ridgeObjective(ridgeH2Obeta,X=Xvars.sc, y=Yvar, lambda=10)
     expect_equal(h2o2, ridge2, tolerance = 0.1)
     
     
-    testEnd()
 }
 
 doTest("GLM Test: GLM2 - RidgeObjective", test.glm2RidgeObjective.golden)

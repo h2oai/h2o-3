@@ -1,15 +1,9 @@
-##
-# Test out the h2o.glm R demo
-# It imports a dataset, parses it, and prints a summary
-# Then, it runs h2o.glm on a subset of the dataset
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
-test.tableau <- function(conn) {
+test.tableau <- function() {
   Log.info ('Importing data into H2O')
-  data.hex <- h2o.importFile(conn, path = normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
+  data.hex <- h2o.importFile( path = normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
   
   Log.info ('Grouping flights by months...')
   f1 <- h2o.group_by(data.hex, "Month", nrow("Month"), sum("Cancelled"))
@@ -51,7 +45,6 @@ test.tableau <- function(conn) {
   coeff <- sapply(originFactors, function(factor) tableau_catFormat( glmModelTemp, 'Origin' , factor) )
   if(!(length(coeff)>0)) stop("There are no coefficients filter back out!")
   
-  testEnd()
 }
 
 doTest("Test out the script used in tableau worksheet", test.tableau)

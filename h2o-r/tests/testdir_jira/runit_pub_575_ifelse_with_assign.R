@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
-test.pub_575 <- function(localH2O) {
+test.pub_575 <- function() {
 
-covtype.hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 
 hex <- covtype.hex
 
@@ -14,7 +14,6 @@ print(ifelse(1, hex, hex[,1] <- hex[,1] + 1))
 #ensure that base ifelse is not broken
 print(ifelse(TRUE, iris, iris[,1] <- iris[,1] + 1))
 
-testEnd()
 
 }
 

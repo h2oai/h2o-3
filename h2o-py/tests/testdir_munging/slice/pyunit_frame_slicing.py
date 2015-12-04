@@ -1,14 +1,18 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def frame_slicing(ip,port):
+def frame_slicing():
     
     
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    prostate = h2o.import_frame(path=h2o.locate("smalldata/prostate/prostate.csv.zip"))
-    airlines = h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k.zip"))
+    iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
+
+    prostate = h2o.import_frame(path=pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
+
+    airlines = h2o.import_frame(path=pyunit_utils.locate("smalldata/airlines/allyears2k.zip"))
+
     iris.show()
     prostate.show()
     airlines.show()
@@ -37,4 +41,6 @@ def frame_slicing(ip,port):
     assert abs(res5[0,0] - 6) < 1e-10 and abs(res5[1,1] - 0) < 1e-10 and abs(res5[2,2] - 61) < 1e-10, "incorrect values"
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, frame_slicing)
+	pyunit_utils.standalone_test(frame_slicing)
+else:
+	frame_slicing()

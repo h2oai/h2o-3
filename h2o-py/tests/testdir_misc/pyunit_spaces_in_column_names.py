@@ -1,12 +1,14 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def spaces_in_column_names(ip,port):
+def spaces_in_column_names():
     
     
 
-    train_data = h2o.upload_file(path=h2o.locate("smalldata/jira/spaces_in_column_names.csv"))
+    train_data = h2o.upload_file(path=pyunit_utils.locate("smalldata/jira/spaces_in_column_names.csv"))
+
     train_data.show()
     train_data.describe()
     X = ["p r e d i c t o r 1","predictor2","p r e d i ctor3","pre d ictor4","predictor5"]
@@ -14,4 +16,6 @@ def spaces_in_column_names(ip,port):
     gbm.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, spaces_in_column_names)
+	pyunit_utils.standalone_test(spaces_in_column_names)
+else:
+	spaces_in_column_names()

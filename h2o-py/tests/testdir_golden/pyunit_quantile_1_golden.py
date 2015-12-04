@@ -1,33 +1,34 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 import random
 import numpy as np
 
-def quantile_1_golden(ip, port):
-    
+def quantile_1_golden():
+
 
     probs = [0.01, 0.05, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.95, 0.99]
 
-    vec = [[random.gauss(0,1)] for i in range(1000)]
-    vec_h2o = h2o.H2OFrame(python_obj=vec)
+    vec = [[random.gauss(0,1) for i in range(1000)]]
+    vec_h2o = h2o.H2OFrame(vec)
 
     print "Check errors generated for probabilities outside [0,1]"
     try:
-        vec_h2o.quantile(prob=[-0.2])
-        assert False, "Expected error. Probabilities must be between 0 and 1"
+        print vec_h2o.quantile(prob=[-0.2]).names
+        assert False, "Expected error.  Probabilities must be between 0 and 1"
     except EnvironmentError:
         assert True
 
     try:
-        vec_h2o.quantile(prob=[1.2])
-        assert False, "Expected error. Probabilities must be between 0 and 1"
+        print vec_h2o.quantile(prob=[1.2]).names
+        assert False, "Expected error.  Probabilities must be between 0 and 1"
     except EnvironmentError:
         assert True
 
     try:
-        vec_h2o.quantile(prob=[0.1, -0.5, 0.2, 1.5])
-        assert False, "Expected error. Probabilities must be between 0 and 1"
+        print vec_h2o.quantile(prob=[0.1, -0.5, 0.2, 1.5]).names
+        assert False, "Expected error.  Probabilities must be between 0 and 1"
     except EnvironmentError:
         assert True
 
@@ -42,7 +43,7 @@ def quantile_1_golden(ip, port):
 
     print "Check constant vector returns constant for all quantiles"
     vec_cons = [[5] for i in range(1000)]
-    vec_cons_h2o = h2o.H2OFrame(python_obj=vec_cons)
+    vec_cons_h2o = h2o.H2OFrame(vec_cons)
 
     res = vec_cons_h2o.quantile(prob=probs)
     for r in range(len(res[0])):
@@ -50,12 +51,12 @@ def quantile_1_golden(ip, port):
         assert val == 5, "Expected value of {0} but got {1}".format(5, val)
 
     print "Check missing values are ignored in calculation"
-    vec_na_h2o = [[random.gauss(0,1) if random.uniform(0,1) > 0.1 else None] for i in range(1000)]
+    vec_na_h2o = [random.gauss(0,1) if random.uniform(0,1) > 0.1 else None for i in range(1000)]
     vec_na_np = []
     for v in vec_na_h2o:
-        if v[0] != None: vec_na_np.append(v)
+        if v != None: vec_na_np.append(v)
 
-    h2o_data = h2o.H2OFrame(python_obj=vec_na_h2o)
+    h2o_data = h2o.H2OFrame(vec_na_h2o)
     np_data = np.array(vec_na_np)
 
     h2o_quants = h2o_data.quantile(prob=probs)
@@ -63,11 +64,13 @@ def quantile_1_golden(ip, port):
 
     for e in range(9):
         h2o_val = h2o_quants[e,1]
-        np_val = np_quants[e][0]
+        np_val = np_quants[e]
         assert abs(h2o_val - np_val) < 1e-08, \
             "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal quantile values between h2o " \
             "and numpy".format(h2o_val,np_val)
 
-if __name__ == "__main__":
-    h2o.run_test(sys.argv, quantile_1_golden)
 
+if __name__ == "__main__":
+	pyunit_utils.standalone_test(quantile_1_golden)
+else:
+	quantile_1_golden()

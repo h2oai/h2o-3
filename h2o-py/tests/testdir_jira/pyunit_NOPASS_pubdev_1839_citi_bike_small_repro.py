@@ -1,11 +1,14 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def pubdev_1839(ip, port):
+def pubdev_1839():
 
-    train = h2o.import_frame(h2o.locate("smalldata/jira/pubdev_1839_repro_train.csv"))
-    test  = h2o.import_frame(h2o.locate("smalldata/jira/pubdev_1839_repro_test.csv"))
+    train = h2o.import_frame(pyunit_utils.locate("smalldata/jira/pubdev_1839_repro_train.csv"))
+
+    test  = h2o.import_frame(pyunit_utils.locate("smalldata/jira/pubdev_1839_repro_test.csv"))
+
 
     glm0 = h2o.glm(x           =train.drop("bikes"),
                    y           =train     ["bikes"],
@@ -15,4 +18,6 @@ def pubdev_1839(ip, port):
                    family="poisson")
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, pubdev_1839)
+	pyunit_utils.standalone_test(pubdev_1839)
+else:
+	pubdev_1839()

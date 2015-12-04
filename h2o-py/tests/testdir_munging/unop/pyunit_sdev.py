@@ -4,17 +4,20 @@
 # If any categorical columns, throw an error
 ##
 
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import numpy as np
 
-def sdev(ip,port):
+def sdev():
   
   
 
-  iris_h2o = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-  iris_np = np.genfromtxt(h2o.locate("smalldata/iris/iris_wheader.csv"),
+  iris_h2o = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
+
+  iris_np = np.genfromtxt(pyunit_utils.locate("smalldata/iris/iris_wheader.csv"),
+
                           delimiter=',',
                           skip_header=1,
                           usecols=(0, 1, 2, 3))
@@ -27,4 +30,6 @@ def sdev(ip,port):
   iris_h2o[0:2].sd()
   
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, sdev)
+	pyunit_utils.standalone_test(sdev)
+else:
+	sdev()

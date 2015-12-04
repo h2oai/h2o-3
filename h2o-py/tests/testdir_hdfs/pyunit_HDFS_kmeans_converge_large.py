@@ -2,25 +2,26 @@
 # Purpose:  This tests convergence of k-means on a large dataset.
 #----------------------------------------------------------------------
 
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def hdfs_kmeans_converge(ip, port):
-    
+def hdfs_kmeans_converge():
+
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    running_inside_h2o = h2o.is_running_internal_to_h2o()
+    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
 
-    if running_inside_h2o:
-        hdfs_name_node = h2o.get_h2o_internal_hdfs_name_node()
+    if hadoop_namenode_is_accessible:
+        hdfs_name_node = pyunit_utils.hadoop_namenode()
         hdfs_cross_file = "/datasets/runit/BigCross.data"
 
         print "Import BigCross.data from HDFS"
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_cross_file)
-        cross_h2o = h2o.import_frame(url)
-        n = cross_h2o.nrow()
+        cross_h2o = h2o.import_file(url)
+        n = cross_h2o.nrow
         print "rows: {0}".format(n)
         ncent = 3
         miters = 10
@@ -31,8 +32,7 @@ def hdfs_kmeans_converge(ip, port):
 
         print "Run k-means with init = final cluster centers and max_iterations = 1"
         init_centers = h2o.H2OFrame(cross1_km.centers())
-        init_centers_key = init_centers.send_frame()
-        cross2_km = h2o.kmeans(training_frame = cross_h2o, x=cross_h2o[0:57], k = ncent, user_points=init_centers_key,
+        cross2_km = h2o.kmeans(training_frame = cross_h2o, x=cross_h2o[0:57], k = ncent, user_points=init_centers,
                                max_iterations = 1)
         print cross2_km
 
@@ -44,7 +44,9 @@ def hdfs_kmeans_converge(ip, port):
         assert avg_change < 1e-6 or iters > miters, "Expected k-means to converge or reach max iterations. avg_change = " \
                                                     "{0} and iterations = {1}".format(avg_change, iters)
     else:
-        print "Not running on H2O internal network.  No access to HDFS."
+        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, hdfs_kmeans_converge)
+	pyunit_utils.standalone_test(hdfs_kmeans_converge)
+else:
+	hdfs_kmeans_converge()

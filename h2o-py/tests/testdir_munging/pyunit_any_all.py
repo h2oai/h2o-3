@@ -1,10 +1,12 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def test_any_all(ip,port):
+def test_any_all():
 
-    foo = h2o.import_frame(h2o.locate("smalldata/iris/iris.csv"))
+    foo = h2o.import_frame(pyunit_utils.locate("smalldata/iris/iris.csv"))
+
 
     foo["C6"] = foo["C1"] > 0.0
     any = foo[:,"C6"].any()
@@ -17,4 +19,6 @@ def test_any_all(ip,port):
     assert any and not all, "expected any to be True and all to be False but but got {0} and {1}".format(any, all)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, test_any_all)
+	pyunit_utils.standalone_test(test_any_all)
+else:
+	test_any_all()

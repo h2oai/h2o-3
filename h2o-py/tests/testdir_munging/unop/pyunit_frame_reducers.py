@@ -1,10 +1,11 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import numpy as np
 import random
 
-def frame_reducers(ip,port):
+def frame_reducers():
     
     
 
@@ -30,4 +31,6 @@ def frame_reducers(ip,port):
     #h2o.np_comparison_check(h2o.var(h2o_data), np.cov(np_data, rowvar=0, ddof=1), 10)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, frame_reducers)
+	pyunit_utils.standalone_test(frame_reducers)
+else:
+	frame_reducers()

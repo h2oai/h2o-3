@@ -1,12 +1,14 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def getModelGBM(ip,port):
+def getModelGBM():
   # Connect to h2o
   h2o.init(ip,port)
 
-  prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate = h2o.import_frame(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+
   #prostate.summary()
   prostate_gbm = h2o.gbm(y=prostate[1], x=prostate[2:9], nfolds=5, distribution="bernoulli")
   prostate_gbm.show()
@@ -23,4 +25,6 @@ def getModelGBM(ip,port):
   model.show()
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, getModelGBM)
+	pyunit_utils.standalone_test(getModelGBM)
+else:
+	getModelGBM()

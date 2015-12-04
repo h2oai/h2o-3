@@ -1,10 +1,12 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1,"../../../")
 import h2o
 
-def gbm_mean_residual_deviance(ip,port):
+def gbm_mean_residual_deviance():
 
-    cars =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars =  h2o.import_frame(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+
     s = cars[0].runif()
     train = cars[s > 0.2]
     valid = cars[s <= 0.2]
@@ -24,4 +26,6 @@ def gbm_mean_residual_deviance(ip,port):
                                              "{0}".format(type(gbm_mrd['xval']))
 
 if __name__ == '__main__':
-    h2o.run_test(sys.argv, gbm_mean_residual_deviance)
+	pyunit_utils.standalone_test(gbm_mean_residual_deviance)
+else:
+	gbm_mean_residual_deviance()

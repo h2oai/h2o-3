@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.GBM.ecology <- function(conn) {
+test.GBM.ecology <- function() {
   
   Log.info("==============================")
   Log.info("H2O GBM Params: ")
@@ -32,7 +32,7 @@ test.GBM.ecology <- function(conn) {
   print("=============================")
   print(locate("smalldata/gbm_test/ecology_model.csv"))
   print("=============================")
-  ecology.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/ecology_model.csv"))
+  ecology.hex <- h2o.uploadFile( locate("smalldata/gbm_test/ecology_model.csv"))
   ecology.sum <- summary(ecology.hex)
   Log.info("Summary of the ecology data from h2o: \n") 
   print(ecology.sum)
@@ -62,12 +62,11 @@ test.GBM.ecology <- function(conn) {
                   shrinkage = 0.1,
                   bag.fraction=1)
 
-  ecologyTest.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/ecology_eval.csv"))
+  ecologyTest.hex <- h2o.uploadFile( locate("smalldata/gbm_test/ecology_eval.csv"))
   ecologyTest.data <- read.csv(locate("smalldata/gbm_test/ecology_eval.csv")) 
 
   checkGBMModel(ecology.h2o, ecology.r, ecologyTest.hex, ecologyTest.data)
   
-  testEnd()
 }
 
 doTest("GBM: Ecology Data", test.GBM.ecology)

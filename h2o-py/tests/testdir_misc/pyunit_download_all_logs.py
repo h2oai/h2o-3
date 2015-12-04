@@ -1,9 +1,10 @@
+from tests import pyunit_utils
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
 import random
 
-def download_all_logs(ip,port):
+def download_all_logs():
     
     
 
@@ -28,4 +29,6 @@ def download_all_logs(ip,port):
     os.remove(log_location)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, download_all_logs)
+	pyunit_utils.standalone_test(download_all_logs)
+else:
+	download_all_logs()

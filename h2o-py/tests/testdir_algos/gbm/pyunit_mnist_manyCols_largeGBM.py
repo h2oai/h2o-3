@@ -1,13 +1,15 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def mnist_manyCols_largeGBM(ip,port):
+def mnist_manyCols_largeGBM():
     
     
 
     #Log.info("Importing mnist train data...\n")
-    train = h2o.import_frame(path=h2o.locate("bigdata/laptop/mnist/train.csv.gz"))
+    train = h2o.import_frame(path=pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
+
     #Log.info("Check that tail works...")
     train.tail()
 
@@ -16,4 +18,6 @@ def mnist_manyCols_largeGBM(ip,port):
     gbm_mnist.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, mnist_manyCols_largeGBM)
+	pyunit_utils.standalone_test(mnist_manyCols_largeGBM)
+else:
+	mnist_manyCols_largeGBM()

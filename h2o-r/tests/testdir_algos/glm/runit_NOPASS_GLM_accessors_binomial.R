@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.glm.bin.accessors <- function(conn) {
+test.glm.bin.accessors <- function() {
   Log.info("Making glm with and without validation_frame...")
-  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"))
+  pros.hex <- h2o.uploadFile( locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -118,7 +118,6 @@ test.glm.bin.accessors <- function(conn) {
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.glm))
 
-  testEnd()
 }
 
 doTest("Testing model accessors for GLM", test.glm.bin.accessors)

@@ -1,16 +1,22 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def test_locate(ip,port):
+def test_locate():
 
-    iris_path = h2o.locate("smalldata/iris/iris.csv")
+    iris_path = pyunit_utils.locate("smalldata/iris/iris.csv")
+
 
     try:
-        h2o.locate("smalldata/iris/afilethatdoesnotexist.csv")
-        assert False, "Expected h2o.locate to raise a ValueError"
+        pyunit_utils.locate("smalldata/iris/afilethatdoesnotexist.csv")
+
+        assert False, "Expected pyunit_utils.locate to raise a ValueError"
+
     except ValueError:
         assert True
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, test_locate)
+	pyunit_utils.standalone_test(test_locate)
+else:
+	test_locate()

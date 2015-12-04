@@ -1,11 +1,5 @@
-#----------------------------------------------------------------------
-# Purpose:  Split Airlines dataset into train and validation sets.
-#           Build model and predict on a test Set.
-#           Print Confusion matrix and performance measures for test set
-#----------------------------------------------------------------------
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
 options(echo=TRUE)
 
@@ -18,10 +12,9 @@ if (! exists("myIP")) {
   myPort = 54321
 }
 
-conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 #uploading data file to h2o
-air <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+air <- h2o.importFile( path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
 #Constructing validation and train sets by sampling (20/80)
 #creating a column as tall as airlines(nrow(air))
@@ -44,7 +37,7 @@ print(air.glm)
 print(air.glm@model$coefficients_magnitude[1:10,])
 
 #uploading test file to h2o
-air.test <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+air.test <- h2o.importFile( path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
 #predicting & performance on test file
 pred.gbm <- predict(air.gbm, air.test)

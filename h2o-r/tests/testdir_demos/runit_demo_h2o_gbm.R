@@ -1,16 +1,10 @@
-##
-# Test out the h2o.gbm R demo
-# It imports a dataset, parses it, and prints a summary
-# Then, it runs h2o.gbm on a subset of the dataset
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
-test.h2o.gbm <- function(conn) {
+test.h2o.gbm <- function() {
   prosPath <- system.file("extdata", "prostate.csv", package="h2o")
   Log.info(paste("Uploading", prosPath))
-  prostate.hex <- h2o.uploadFile(conn, path = prosPath, destination_frame = "prostate.hex")
+  prostate.hex <- h2o.uploadFile( path = prosPath, destination_frame = "prostate.hex")
 
   Log.info("Print out summary of prostate.csv")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
@@ -27,7 +21,7 @@ test.h2o.gbm <- function(conn) {
 
   irisPath <- system.file("extdata", "iris.csv", package="h2o")
   Log.info(paste("Uploading", irisPath))
-  iris.hex <- h2o.uploadFile(conn, path = irisPath, destination_frame = "iris.hex")
+  iris.hex <- h2o.uploadFile( path = irisPath, destination_frame = "iris.hex")
 
   Log.info("Print out summary of iris.csv")
   print(summary(iris.hex))
@@ -36,7 +30,6 @@ test.h2o.gbm <- function(conn) {
   iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex, distribution = "multinomial")
   print(iris.gbm)
 
-  testEnd()
 }
 
 doTest("Test out the h2o.gbm R demo", test.h2o.gbm)

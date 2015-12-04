@@ -1,16 +1,11 @@
-#
-# date parsing and field extraction tests
-#
-
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
 
 
-datetest <- function(conn){
+datetest <- function(){
   Log.info('uploading date testing dataset')
-  hdf <- h2o.importFile(conn, normalizePath(locate('smalldata/jira/v-11.csv')))
+  hdf <- h2o.importFile( normalizePath(locate('smalldata/jira/v-11.csv')))
   # df should be 5 columns: ds1:5
 
   Log.info('data as loaded into h2o:')
@@ -134,7 +129,7 @@ datetest <- function(conn){
   c11 = strftime(c1dt, formats[11], tz="America/Los_Angeles")
   
   ldf = data.frame(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)
-  hdf = as.h2o(conn, ldf, "hdf")
+  hdf = as.h2o( ldf, "hdf")
   hdf$c1 = as.Date(hdf$c1, formats[1])
   hdf$c2 = as.Date(hdf$c2, formats[2])
   hdf$c3 = as.Date(hdf$c3, formats[3])
@@ -161,7 +156,6 @@ datetest <- function(conn){
   expect_that(lmillis[,1], equals(res[,10]))
   expect_that(lmillis[,1], equals(res[,11]))
   
-  testEnd()
 }
 
 

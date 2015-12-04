@@ -1,8 +1,9 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def http_import(ip,port):
+def http_import():
     
     
 
@@ -11,4 +12,6 @@ def http_import(ip,port):
     aa.show()
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, http_import)
+	pyunit_utils.standalone_test(http_import)
+else:
+	http_import()

@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
-test.pcascore.golden <- function(H2Oserver) {
+test.pcascore.golden <- function() {
   # Import data: 
   Log.info("Importing arrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
+  arrestsH2O <- h2o.uploadFile( locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   
   Log.info("Compare with PCA when center = TRUE, scale. = FALSE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = FALSE)
@@ -20,7 +20,6 @@ test.pcascore.golden <- function(H2Oserver) {
   isFlipped2 <- checkSignedCols(as.matrix(predH2O), predR, tolerance = 5e-4)
   expect_equal(isFlipped1, isFlipped2)
   
-  testEnd()
 }
 
 doTest("PCA Golden Test: USArrests with Scoring", test.pcascore.golden)

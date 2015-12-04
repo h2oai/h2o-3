@@ -1,3 +1,4 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
@@ -5,15 +6,17 @@ import h2o
 import numpy as np
 from sklearn.cluster import KMeans
 
-def prostateKmeans(ip,port):
+def prostateKmeans():
   # Connect to a pre-existing cluster
     # connect to localhost:54321
 
   #Log.info("Importing prostate.csv data...\n")
-  prostate_h2o = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+  prostate_h2o = h2o.import_frame(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+
   #prostate.summary()
 
-  prostate_sci = np.loadtxt(h2o.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
+  prostate_sci = np.loadtxt(pyunit_utils.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
+
   prostate_sci = prostate_sci[:,1:]
   
   for i in range(5,9):
@@ -27,4 +30,6 @@ def prostateKmeans(ip,port):
     print prostate_km_sci.cluster_centers_
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, prostateKmeans)
+	pyunit_utils.standalone_test(prostateKmeans)
+else:
+	prostateKmeans()

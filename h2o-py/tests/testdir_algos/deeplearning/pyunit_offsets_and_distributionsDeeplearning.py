@@ -1,19 +1,22 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def offsets_and_distributions(ip,port):
+def offsets_and_distributions():
 
     # cars
-    cars = h2o.upload_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+
     cars = cars[cars["economy_20mpg"].isna() == 0]
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-    offset = h2o.H2OFrame(python_obj=[[.5] for x in range(398)])
-    offset.setNames(["x1"])
+    offset = h2o.H2OFrame([[.5] *398])
+    offset.set_names(["x1"])
     cars = cars.cbind(offset)
 
     # insurance
-    insurance = h2o.import_frame(h2o.locate("smalldata/glm_test/insurance.csv"))
+    insurance = h2o.import_frame(pyunit_utils.locate("smalldata/glm_test/insurance.csv"))
+
     insurance["offset"] = insurance["Holders"].log()
 
     # bernoulli - offset not supported
@@ -34,8 +37,10 @@ def offsets_and_distributions(ip,port):
     predictions = dl.predict(insurance)
 
     # tweedie
-    dl = h2o.deeplearning(x=insurance.names()[0:3], y="Claims", distribution="tweedie", offset_column="offset", training_frame=insurance)
+    dl = h2o.deeplearning(x=insurance.names[0:3], y="Claims", distribution="tweedie", offset_column="offset", training_frame=insurance)
     predictions = dl.predict(insurance)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, offsets_and_distributions)
+	pyunit_utils.standalone_test(offsets_and_distributions)
+else:
+	offsets_and_distributions()

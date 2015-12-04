@@ -1,11 +1,13 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 import random
 
-def pyunit_remove_vecs(ip,port):
+def pyunit_remove_vecs():
     # TODO PUBDEV-1789
-    pros = h2o.import_frame(h2o.locate("smalldata/prostate/prostate.csv"))
+    pros = h2o.import_frame(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
+
     rows, cols = pros.dim()
 
     remove = random.randint(1,5)
@@ -21,4 +23,6 @@ def pyunit_remove_vecs(ip,port):
                                                          "columns.".format(rows,cols,new_rows,new_cols)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, pyunit_remove_vecs)
+	pyunit_utils.standalone_test(pyunit_remove_vecs)
+else:
+	pyunit_remove_vecs()

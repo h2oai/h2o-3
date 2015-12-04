@@ -1,22 +1,11 @@
-#----------------------------------------------------------------------
-# Purpose:  This test exercises the GBM model downloaded as java code
-#           for the iris data set.
-#
-# Notes:    Assumes unix environment.
-#           curl, javac, java must be installed.
-#           java must be at least 1.6.
-#----------------------------------------------------------------------
-
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
+source("../../scripts/h2o-r-test-setup.R")
 
 
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-
+test.gbm.javapredict.cars <- function() {
 # Story:
 # The objective of the test is to verify java code generation
 # for big models containing huge amount of trees.
@@ -28,7 +17,9 @@ n.minobsinnode <- 1
 shrinkage <- 0.1
 
 train <- locate("smalldata/junit/cars_nice_header.csv")
+training_frame <- h2o.importFile(train)
 test <- locate("smalldata/junit/cars_nice_header.csv")
+test_frame <- h2o.importFile(test)
 
 x = c("name","economy", "displacement","power","weight","acceleration","year")
 y = "cylinders"
@@ -46,7 +37,21 @@ print(paste("test", test))
 print(paste("x=", paste(x, collapse = ", ")))
 print(paste("y=", y))
 print(paste("balance_classes=", balance_classes))
+
+params <- list()
+params$ntrees <- n.trees
+params$max_depth <- interaction.depth
+params$min_rows <- n.minobsinnode
+params$learn_rate <- shrinkage
+params$balance_classes <- balance_classes
+params$x <- x
+params$y <- y
+params$training_frame <- training_frame
+
+doJavapredictTest("gbm",test,test_frame,params)
+}
 #----------------------------------------------------------------------
 # Run the test
 #----------------------------------------------------------------------
-source('../Utils/shared_javapredict_GBM.R')
+#source('../Utils/shared_javapredict_GBM.R')
+doTest("GBM",test.gbm.javapredict.cars)

@@ -1,12 +1,14 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def sub_gsub_check(ip,port):
+def sub_gsub_check():
     # Connect to a pre-existing cluster
     
 
-    frame = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
+    frame = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+
 
     # single column (frame)
     frame["C5"] = frame["C5"].gsub("s", "z")
@@ -25,4 +27,6 @@ def sub_gsub_check(ip,port):
     assert vec[3,0] == "Iriz-zetoza", "Expected 'Iriz-zetoza', but got {0}".format(vec[3,0])
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, sub_gsub_check)
+	pyunit_utils.standalone_test(sub_gsub_check)
+else:
+	sub_gsub_check()

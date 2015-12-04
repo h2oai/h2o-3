@@ -1,20 +1,14 @@
-######################################################################################
-# Test for HEX-1799
-# h2o.glm with nfolds >= 2 should have model parameters that match the main glm model.
-######################################################################################
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-options(echo=TRUE)
-source('../h2o-runit.R')
+source("../../scripts/h2o-r-test-setup.R")
 
 heading("BEGIN TEST")
 
 
 hex_1799_test <-
-function(conn) {
+function() {
 
   path <- locate("smalldata/logreg/prostate.csv")
-  prostate.hex <- h2o.importFile(conn, path, destination_frame="prostate.hex")
+  prostate.hex <- h2o.importFile( path, destination_frame="prostate.hex")
   
   main_model <- h2o.glm(x = 3:8, y = 2, training_frame = prostate.hex, nfolds = 2, standardize = FALSE, family = "binomial")
 
@@ -32,7 +26,6 @@ function(conn) {
   Log.info("Expect that the xval model has standardize set to FALSE as it is in the main model.")
   expect_that(first_xval@model$params$standardize, equals("FALSE"))
   expect_that(as.logical(first_xval@model$params$standardize), equals(main_model@model$params$standardize))
-  testEnd()
 }
 
 

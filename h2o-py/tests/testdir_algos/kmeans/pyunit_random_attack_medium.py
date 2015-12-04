@@ -1,11 +1,12 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import random
 
-def random_attack(ip,port):
-    
-    
+def random_attack():
+
+
 
     def attack(train, x):
         kwargs = {}
@@ -18,10 +19,8 @@ def random_attack(ip,port):
         if random.randint(0,1):
             method = random.randint(0,3)
             if method == 3:
-                s = []
-                for p in range(kwargs['k']):
-                    s.append([random.uniform(train[c].mean()-100,train[c].mean()+100) for c in x])
-                start = h2o.H2OFrame(python_obj=s)
+                s = [[random.uniform(train[c].mean()[0]-100,train[c].mean()[0]+100) for p in range(kwargs['k'])] for c in x]
+                start = h2o.H2OFrame(s)
                 kwargs['user_points'] = start
             else:
                 kwargs['init'] = ["Furthest","Random", "PlusPlus"][method]
@@ -40,10 +39,14 @@ def random_attack(ip,port):
         print "-----------------------"
 
     print "Import and data munging..."
-    ozone = h2o.import_frame(path=h2o.locate("smalldata/glm_test/ozone.csv"))
+    ozone = h2o.import_frame(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
+
 
     for i in range(50):
         attack(ozone, random.sample([0,1,2,3],random.randint(1,4)))
 
+
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, random_attack)
+	pyunit_utils.standalone_test(random_attack)
+else:
+	random_attack()

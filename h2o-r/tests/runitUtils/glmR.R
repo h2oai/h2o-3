@@ -3,17 +3,17 @@ checkGLMModel <- function(myGLM.h2o, myGLM.r) {
   numcol = ncol(coeff.mat)
   coeff.R = c(coeff.mat[,numcol], Intercept = as.numeric(myGLM.r$a0[numcol]))
   print("H2O Coefficients")
-  print(myGLM.h2o@model$coefficients_table$Coefficients)
+  print(myGLM.h2o@model$coefficients_table$coefficients)
   print("R Coefficients")
   print(coeff.R)
 
   print("SORTED COEFFS")
   print("H2O Coefficients")
-  print(sort(myGLM.h2o@model$coefficients_table$Coefficients))
+  print(sort(myGLM.h2o@model$coefficients_table$coefficients))
   print("R Coefficients")
   print(sort(coeff.R))
-  checkEqualsNumeric(sort(myGLM.h2o@model$coefficients_table$Coefficients), sort(coeff.R), tolerance = 3.8)
-  checkEqualsNumeric(myGLM.h2o@model$null_deviance, myGLM.r$nulldev, tolerance = 1.5)
+  checkEqualsNumeric(sort(h2o.coef(myGLM.h2o)), sort(coeff.R), tolerance = 3.8)
+  checkEqualsNumeric(h2o.null_deviance(myGLM.h2o), myGLM.r$nulldev, tolerance = 1.5)
 }
 
 l1norm <- function(x) sum(abs(x))

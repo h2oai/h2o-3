@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 
-test.div.frame <- function(conn) {
-  hex <- as.h2o(conn, iris)
+test.div.frame <- function() {
+  hex <- as.h2o( iris)
  
   Log.info("Expectations here are to get NaN if 0/0; Inf if nonzero/0; or a number back")
   Log.info("Should get a warning message if there is an enum column and that column should be all NAs")
@@ -29,7 +29,6 @@ test.div.frame <- function(conn) {
   print(hexDivHex)
   print(head(hexDivHex))
   
-  testEnd()
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '/' on frames", test.div.frame)

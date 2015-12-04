@@ -1,9 +1,10 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 import random
 
-def get_set_list_timezones(ip,port):
+def get_set_list_timezones():
     
     
 
@@ -13,7 +14,7 @@ def get_set_list_timezones(ip,port):
     timezones = h2o.list_timezones()
     # don't use the first one..it's a header for the table
     print "timezones[0]:", timezones[0]
-    zone = timezones[random.randint(1,timezones.nrow()-1),0].split(" ")[1].split(",")[0]
+    zone = timezones[random.randint(1,timezones.nrow-1),0].split(" ")[1].split(",")[0]
     print "Setting the timezone: {0}".format(zone)
     h2o.set_timezone(zone)
 
@@ -24,4 +25,6 @@ def get_set_list_timezones(ip,port):
     h2o.set_timezone(origTZ)
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, get_set_list_timezones)
+	pyunit_utils.standalone_test(get_set_list_timezones)
+else:
+	get_set_list_timezones()

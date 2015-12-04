@@ -1,10 +1,11 @@
+from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import random
 import copy
 
-def weights_check(ip,port):
+def weights_check():
     
     
 
@@ -60,4 +61,6 @@ def weights_check(ip,port):
     # TODO: negative weights???
 
 if __name__ == "__main__":
-    h2o.run_test(sys.argv, weights_check)
+	pyunit_utils.standalone_test(weights_check)
+else:
+	weights_check()
