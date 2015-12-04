@@ -1,5 +1,7 @@
-from model_base import ModelBase
-from metrics_base import *
+from __future__ import print_function
+from __future__ import absolute_import
+from .model_base import ModelBase
+from .metrics_base import *
 
 
 class H2ODimReductionModel(ModelBase):
@@ -92,7 +94,7 @@ class H2ODimReductionModel(ModelBase):
             if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
             import matplotlib.pyplot as plt
         except ImportError:
-            print "matplotlib is required for this function!"
+            print("matplotlib is required for this function!")
             return
 
         variances = [s**2 for s in self._model_json['output']['importance'].cell_values[0][1:]]

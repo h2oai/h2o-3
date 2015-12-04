@@ -1,10 +1,13 @@
 """
 This module implements grid search class. All grid search things inherit from this class.
 """
+from __future__ import print_function
+from __future__ import absolute_import
 from .. import H2OConnection, H2OJob, H2OFrame, H2OEstimator
 from ..two_dim_table import H2OTwoDimTable
+from ..display import H2ODisplay
 import h2o
-from metrics import *
+from .metrics import *
 import itertools
 
 
@@ -312,8 +315,7 @@ class H2OGridSearch(object):
     return {model.model_id:model.catoffsets() for model in self.models}
 
   def model_performance(self, test_data=None, train=False, valid=False):
-    """
-    Generate model metrics for this model on test_data.
+    """Generate model metrics for this model on test_data.
 
     :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
     :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
@@ -323,16 +325,16 @@ class H2OGridSearch(object):
     return {model.model_id:model.model_performance(test_data, train, valid) for model in self.models}
 
   def score_history(self):
-    """
-    Retrieve Model Score History
-    :return: the score history (H2OTwoDimTable)
+    """Retrieve Model Score History
+
+    Returns
+    -------
+      Score history (H2OTwoDimTable)
     """
     return {model.model_id:model.score_history() for model in self.models}
 
   def summary(self, header=True):
-    """
-    Print a detailed summary of the explored models.
-    """
+    """Print a detailed summary of the explored models."""
     table = []
     for model in self.models:
       model_summary = model._model_json["output"]["model_summary"]
@@ -345,11 +347,11 @@ class H2OGridSearch(object):
     #  pandas.options.display.max_rows = 20
     #  print pandas.DataFrame(table,columns=self.col_header)
     #  return
-    print
+    print()
     if header:
-      print 'Grid Summary:'
-    print    
-    h2o.H2ODisplay(table, ['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
+      print('Grid Summary:')
+    print()    
+    H2ODisplay(table, ['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
 
 
   def show(self):
@@ -357,14 +359,14 @@ class H2OGridSearch(object):
     hyper_combos = itertools.product(*self.hyper_params.values())
     if not self.models:
       c_values = [[idx+1, list(val)] for idx, val in enumerate(hyper_combos)]
-      print H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'],
-                               table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values)
+      print(H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'],
+                               table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values))
     else:
       if self.failed_raw_params:
-        print 'Failed Hyperparameters and Message:'
+        print('Failed Hyperparameters and Message:')
         for i in range(len(self.failed_raw_params)):
-          print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
-      print self.sort_by('mse')
+          print([str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i])
+      print(self.sort_by('mse'))
 
 
   def varimp(self, use_pandas=False):
@@ -439,9 +441,9 @@ class H2OGridSearch(object):
     :return: None
     """
     for i, model in enumerate(self.models):
-      print 'Model', i
+      print('Model', i)
       model.pprint_coef()
-      print
+      print()
 
   def coef(self):
     """
@@ -585,7 +587,7 @@ class H2OGridSearch(object):
     """
 
     if metric[-1] != ')': metric += '()'
-    c_values = [list(x) for x in zip(*sorted(eval('self.' + metric + '.items()'), key = lambda(k,v): v))]
+    c_values = [list(x) for x in zip(*sorted(eval('self.' + metric + '.items()'), key = lambda k_v: k_v[1]))]
     c_values.insert(1,[self.get_hyperparams(model_id, display=False) for model_id in c_values[0]])
     if not increasing:
       for col in c_values: col.reverse()
@@ -614,7 +616,7 @@ class H2OGridSearch(object):
     res = [model.params[h]['actual'][0] if isinstance(model.params[h]['actual'],list)
            else model.params[h]['actual']
            for h in self.hyper_params]
-    if display: print 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'
+    if display: print('Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']')
     return res
 
 

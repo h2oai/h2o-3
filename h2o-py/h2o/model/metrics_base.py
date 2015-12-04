@@ -1,3 +1,4 @@
+from __future__ import print_function
 from h2o.model.confusion_matrix import ConfusionMatrix
 import imp
 
@@ -43,51 +44,51 @@ class MetricsBase(object):
     types_w_logloss =    types_w_bin + types_w_mult
     types_w_dim =        ["ModelMetricsGLRM"]
 
-    print
-    print metric_type + ": " + self._algo
+    print()
+    print(metric_type + ": " + self._algo)
     reported_on = "** Reported on {} data. **"
     if self._on_train:
-      print reported_on.format("train")
+      print(reported_on.format("train"))
     elif self._on_valid:
-      print reported_on.format("validation")
+      print(reported_on.format("validation"))
     elif self._on_xval:
-      print reported_on.format("cross-validation")
+      print(reported_on.format("cross-validation"))
     else:
-      print reported_on.format("test")
-    print
-    print   "MSE: "                                           + str(self.mse())
+      print(reported_on.format("test"))
+    print()
+    print("MSE: "                                           + str(self.mse()))
     if metric_type in types_w_r2:
-      print "R^2: "                                           + str(self.r2())
+      print("R^2: "                                           + str(self.r2()))
     if metric_type in types_w_mean_residual_deviance:
-      print "Mean Residual Deviance: "                        + str(self.mean_residual_deviance())
+      print("Mean Residual Deviance: "                        + str(self.mean_residual_deviance()))
     if metric_type in types_w_logloss:
-      print "LogLoss: "                                       + str(self.logloss())
+      print("LogLoss: "                                       + str(self.logloss()))
     if metric_type in types_w_glm:
-      print "Null degrees of freedom: "                       + str(self.null_degrees_of_freedom())
-      print "Residual degrees of freedom: "                   + str(self.residual_degrees_of_freedom())
-      print "Null deviance: "                                 + str(self.null_deviance())
-      print "Residual deviance: "                             + str(self.residual_deviance())
-      print "AIC: "                                           + str(self.aic())
+      print("Null degrees of freedom: "                       + str(self.null_degrees_of_freedom()))
+      print("Residual degrees of freedom: "                   + str(self.residual_degrees_of_freedom()))
+      print("Null deviance: "                                 + str(self.null_deviance()))
+      print("Residual deviance: "                             + str(self.residual_deviance()))
+      print("AIC: "                                           + str(self.aic()))
     if metric_type in types_w_bin:
-      print "AUC: "                                           + str(self.auc())
-      print "Gini: "                                          + str(self.giniCoef())
+      print("AUC: "                                           + str(self.auc()))
+      print("Gini: "                                          + str(self.giniCoef()))
       self.confusion_matrix().show()
       self._metric_json["max_criteria_and_metric_scores"].show()
       if self.gains_lift():
-          print self.gains_lift()
+          print(self.gains_lift())
 
     if metric_type in types_w_mult:
                                                                self.confusion_matrix().show()
                                                                self.hit_ratio_table().show()
     if metric_type in types_w_clustering:
-      print "Total Within Cluster Sum of Square Error: "      + str(self.tot_withinss())
-      print "Total Sum of Square Error to Grand Mean: "       + str(self.totss())
-      print "Between Cluster Sum of Square Error: "           + str(self.betweenss())
+      print("Total Within Cluster Sum of Square Error: "      + str(self.tot_withinss()))
+      print("Total Sum of Square Error to Grand Mean: "       + str(self.totss()))
+      print("Between Cluster Sum of Square Error: "           + str(self.betweenss()))
       self._metric_json['centroid_stats'].show()
 
     if metric_type in types_w_dim:
-        print "Sum of Squared Error (Numeric): "              + str(self.num_err())
-        print "Misclassification Error (Categorical): "       + str(self.cat_err())
+        print("Sum of Squared Error (Numeric): "              + str(self.num_err()))
+        print("Misclassification Error (Categorical): "       + str(self.cat_err()))
 
 
   def r2(self):
@@ -390,7 +391,7 @@ class H2OBinomialModelMetrics(MetricsBase):
       if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
       import matplotlib.pyplot as plt
     except ImportError:
-      print "matplotlib is required for this function!"
+      print("matplotlib is required for this function!")
       return
 
     # TODO: add more types (i.e. cutoffs)
@@ -515,8 +516,8 @@ class H2OBinomialModelMetrics(MetricsBase):
       threshold_diffs = [abs(t - threshold) for t in thresholds]
       closest_idx = threshold_diffs.index(min(threshold_diffs))
       closest_threshold = thresholds[closest_idx]
-      print "Could not find exact threshold {0}; using closest threshold found {1}." \
-      .format(threshold, closest_threshold)
+      print("Could not find exact threshold {0}; using closest threshold found {1}." \
+      .format(threshold, closest_threshold))
       return closest_idx
     raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
 

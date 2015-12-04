@@ -1,6 +1,7 @@
 """
 This module implements the base model class.  All model things inherit from this class.
 """
+from __future__ import print_function
 
 import h2o
 import imp, traceback
@@ -235,7 +236,7 @@ class ModelBase(object):
         pandas.options.display.max_rows = 20
         return pandas.DataFrame(s.cell_values,columns=s.col_header)
       return s
-    else: print "No score history for this model"
+    else: print("No score history for this model")
 
   def summary(self):
     """
@@ -254,21 +255,21 @@ class ModelBase(object):
       self._job.poll_once()
       return
     if self._model_json is None:
-      print "No model trained yet"
+      print("No model trained yet")
       return
     if self.model_id is None:
-      print "This H2OEstimator has been removed."
+      print("This H2OEstimator has been removed.")
       return
     model = self._model_json["output"]
-    print "Model Details"
-    print "============="
+    print("Model Details")
+    print("=============")
 
-    print self.__class__.__name__, ": ", self._model_json["algo_full_name"]
-    print "Model Key: ", self._id
+    print(self.__class__.__name__, ": ", self._model_json["algo_full_name"])
+    print("Model Key: ", self._id)
 
     self.summary()
 
-    print
+    print()
     # training metrics
     tm = model["training_metrics"]
     if tm: tm.show()
@@ -303,7 +304,7 @@ class ModelBase(object):
       else:
         return vals
     else:
-      print "Warning: This model doesn't have variable importances"
+      print("Warning: This model doesn't have variable importances")
 
   def residual_deviance(self,train=False,valid=False,xval=False):
     """
@@ -361,7 +362,7 @@ class ModelBase(object):
     """
     Pretty print the coefficents table (includes normalized coefficients)
     """
-    print self._model_json["output"]["coefficients_table"]  # will return None if no coefs!
+    print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
   def coef(self):
     """
@@ -544,7 +545,7 @@ class ModelBase(object):
       if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
       import matplotlib.pyplot as plt
     except ImportError:
-      print "matplotlib is required for this function!"
+      print("matplotlib is required for this function!")
       return
 
     scoring_history = self.score_history()

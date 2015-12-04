@@ -2,8 +2,10 @@
 A job is an object with states: CREATED, RUNNING, DONE, FAILED, CANCELLED
 A job can be polled for completion and reports the progress so far if it is still RUNNING.
 """
+from __future__ import print_function
+from __future__ import absolute_import
 
-from connection import H2OConnection
+from .connection import H2OConnection
 import time
 import sys, signal
 
@@ -34,7 +36,7 @@ class H2OJob:
     POLLING=True
     sleep = 0.1
     running = True
-    if H2OJob.__PROGRESS_BAR__: print  # create a new line for distinguished progress bar
+    if H2OJob.__PROGRESS_BAR__: print()  # create a new line for distinguished progress bar
     while running:
       self._update_progress()
       time.sleep(sleep)
@@ -43,7 +45,7 @@ class H2OJob:
       running = self._is_running()
     POLLING=False
     self._update_progress()
-    if H2OJob.__PROGRESS_BAR__: print
+    if H2OJob.__PROGRESS_BAR__: print()
 
     # check if failed... and politely print relevant message
     if self.status == "CANCELLED":
@@ -53,10 +55,10 @@ class H2OJob:
     return self
 
   def poll_once(self):
-    print
+    print()
     self._refresh_job_view()
     self._update_progress()
-    print
+    print()
 
     # check if failed... and politely print relevant message
     if self.status == "CANCELLED": raise EnvironmentError("Job with key {} was cancelled by the user.".format(self.job_key))
@@ -88,6 +90,6 @@ class H2OJob:
   def signal_handler(self, signum, stackframe):
     if POLLING:
       H2OConnection.post(url_suffix="Jobs/" + self.job_key + "/cancel")
-      print "Job {} was cancelled.".format(self.job_key)
+      print("Job {} was cancelled.".format(self.job_key))
     else:
       signal.default_int_handler()

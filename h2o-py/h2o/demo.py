@@ -1,5 +1,7 @@
-import h2o
-from h2o import _locate # private function. used to find files within h2o git project directory.
+from __future__ import print_function
+from __future__ import absolute_import
+from . import h2o
+from .h2o import _locate  # private function. used to find files within h2o git project directory.
 import sys, os
 import site
 
@@ -25,7 +27,7 @@ def system_file(name):
             h2o_data_path = _locate(os.path.join("smalldata", "prostate", name))
 
     if h2o_data_path is None or not os.path.exists(h2o_data_path):
-        raise(ValueError, "This demo depends on " + name + " which could not be found")
+        raise ValueError
 
     return h2o_data_path
 
@@ -46,7 +48,7 @@ def demo(func=None, interactive=True, echo=True, test=False):
     if   func == "gbm":          gbm_demo(         interactive, echo, test)
     elif func == "deeplearning": deeplearning_demo(interactive, echo, test)
     elif func == "glm":          glm_demo(         interactive, echo, test)
-    else: print "Demo for {0} has not been implemented.".format(func)
+    else: print("Demo for {0} has not been implemented.".format(func))
 
 def gbm_demo(interactive, echo, test):
     h2o_data_path = system_file("prostate.csv")
@@ -85,8 +87,8 @@ def gbm_demo(interactive, echo, test):
                      '>>> performance = prostate_gbm.model_performance(test)',
                      '>>> performance.show()\n']
 
-    for line in demo_description: print line
-    print
+    for line in demo_description: print(line)
+    print()
 
     echo_and_interact(demo_commands, interactive, echo)
     if not test: h2o.init()
@@ -157,8 +159,8 @@ def deeplearning_demo(interactive, echo, test):
                      '>>> performance = prostate_dl.model_performance(test)',
                      '>>> performance.show()\n']
 
-    for line in demo_description: print line
-    print
+    for line in demo_description: print(line)
+    print()
 
     echo_and_interact(demo_commands, interactive, echo)
     if not test: h2o.init()
@@ -229,8 +231,8 @@ def glm_demo(interactive, echo, test):
                      '>>> performance = prostate_glm.model_performance(test)',
                      '>>> performance.show()\n']
 
-    for line in demo_description: print line
-    print
+    for line in demo_description: print(line)
+    print()
 
     echo_and_interact(demo_commands, interactive, echo)
     if not test: h2o.init()
@@ -268,6 +270,6 @@ def glm_demo(interactive, echo, test):
 def echo_and_interact(demo_commands, interactive, echo, npop=2):
     if demo_commands:
         if echo:
-            for p in range(npop): print demo_commands.pop(0)
+            for p in range(npop): print(demo_commands.pop(0))
         if interactive:
             raw_input('Press ENTER...\n')

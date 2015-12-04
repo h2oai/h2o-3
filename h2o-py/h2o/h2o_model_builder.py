@@ -5,13 +5,13 @@ Supports functional algorithm calls found in the top-level h2o module.
 
 Current modeling is performed via estimator fitting (see estimators sub module for details)
 """
+from __future__ import absolute_import
 
 
-from connection import H2OConnection
-from frame      import H2OFrame
-from job        import H2OJob
-import h2o
-from model.model_future import H2OModelFuture
+from .connection import H2OConnection
+from .frame      import H2OFrame
+from .job        import H2OJob
+from .model.model_future import H2OModelFuture
 
 
 def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,weights=None,fold_column=None,kwargs=None):

@@ -1,4 +1,5 @@
-from model_base import ModelBase
+from __future__ import absolute_import
+from .model_base import ModelBase
 
 
 class H2ORegressionModel(ModelBase):

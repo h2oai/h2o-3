@@ -1,4 +1,6 @@
-import h2o, expr
+from __future__ import print_function
+from __future__ import absolute_import
+from .expr import ExprNode
 
 
 class GroupBy:
@@ -61,7 +63,7 @@ class GroupBy:
     if not self._res:
       aggs=[]
       for k in self._aggs: aggs += (self._aggs[k])
-      self._res = h2o.H2OFrame._expr(expr=expr.ExprNode("GB", self._fr,self._by, *aggs))
+      self._res = h2o.H2OFrame._expr(expr=ExprNode("GB", self._fr,self._by, *aggs))
     return self._res
 
   def _add_agg(self,op,col,na):
@@ -82,8 +84,8 @@ class GroupBy:
     return self
 
   def __repr__(self):
-    print "GroupBy: "
-    print "  Frame: {}; by={}".format(self._fr.frame_id,str(self._by))
-    print "  Aggregates: {}".format(str(self._aggs.keys()))
-    print "*** Use get_frame() to get groupby frame ***"
+    print("GroupBy: ")
+    print("  Frame: {}; by={}".format(self._fr.frame_id,str(self._by)))
+    print("  Aggregates: {}".format(str(self._aggs.keys())))
+    print("*** Use get_frame() to get groupby frame ***")
     return ""

@@ -1,13 +1,14 @@
+from __future__ import absolute_import
 from ..connection import H2OConnection
 from ..frame      import H2OFrame
 from ..job        import H2OJob
-from model_future import H2OModelFuture
-from dim_reduction import H2ODimReductionModel
-from autoencoder import H2OAutoEncoderModel
-from multinomial import H2OMultinomialModel
-from regression import H2ORegressionModel
-from binomial import H2OBinomialModel
-from clustering import H2OClusteringModel
+from .model_future import H2OModelFuture
+from .dim_reduction import H2ODimReductionModel
+from .autoencoder import H2OAutoEncoderModel
+from .multinomial import H2OMultinomialModel
+from .regression import H2ORegressionModel
+from .binomial import H2OBinomialModel
+from .clustering import H2OClusteringModel
 
 
 def build_model(algo_params):
