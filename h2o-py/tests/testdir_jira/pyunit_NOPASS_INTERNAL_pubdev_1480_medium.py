@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -7,11 +8,11 @@ import os
 
 def pubdev_1480():
 
-    if not pyunit_utils.hadoop_namenode_is_accessible(): raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
+    if not pyunit_utils.hadoop_namenode_is_accessible(): raise EnvironmentError
     train = h2o.import_file("hdfs://mr-0xd6/datasets/kaggle/sf.crime.train.gz")
     test = h2o.import_file("hdfs://mr-0xd6/datasets/kaggle/sf.crime.test.gz")
 
-    model = h2o.gbm(x=train[range(2,9)], y=train[1])
+    model = h2o.gbm(x=train[list(range(2,9))], y=train[1])
 
     predictions = model.predict(test)
 

@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -10,7 +11,7 @@ def frameslice_gbm():
 
 
   model = H2OGradientBoostingEstimator()
-  model.train(x=range(1,8),y=0, training_frame=prostate)
+  model.train(x=list(range(1,8)),y=0, training_frame=prostate)
 
 
 

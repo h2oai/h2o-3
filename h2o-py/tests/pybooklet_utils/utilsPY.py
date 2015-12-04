@@ -44,11 +44,11 @@ def check_story(story_name, paragraphs):
     with open(story_file, "r") as s: booklet = s.read()
     booklet_c = compile(booklet, '<string>', 'exec')
     p = {}
-    exec booklet_c in p
+    exec(booklet_c, p)
 
 def pybooklet_exec(test_name):
     pyunit = "import h2o\nfrom tests import pybooklet_utils\n"
     with open(test_name, "r") as t: pyunit = pyunit + t.read()
     pyunit_c = compile(pyunit, '<string>', 'exec')
     p = {}
-    exec pyunit_c in p
+    exec(pyunit_c, p)

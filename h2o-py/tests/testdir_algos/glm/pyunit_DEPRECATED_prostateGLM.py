@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -20,8 +21,8 @@ def prostate():
   h2o_glm = h2o.glm(y=h2o_data[1], x=h2o_data[2:], family="binomial", nfolds=10, alpha=[0.5])
   sm_glm = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Binomial()).fit()
 
-  print "statsmodels null deviance {0}".format(sm_glm.null_deviance)
-  print "h2o null deviance {0}".format(h2o_glm.null_deviance())
+  print("statsmodels null deviance {0}".format(sm_glm.null_deviance))
+  print("h2o null deviance {0}".format(h2o_glm.null_deviance()))
   assert abs(sm_glm.null_deviance - h2o_glm.null_deviance()) < 1e-5, "Expected null deviances to be the same"
 
 

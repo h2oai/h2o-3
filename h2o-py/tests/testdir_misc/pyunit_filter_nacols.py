@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -10,12 +12,12 @@ def pyunit_types():
 
   fr = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
   include_cols = fr.filter_na_cols()  # should be all columns
-  assert lists_equal(include_cols, range(fr.ncol))
+  assert lists_equal(include_cols, list(range(fr.ncol)))
 
   fr[1,1] = None  # make a value None, filter out the second column
 
   include_cols = fr.filter_na_cols(0.001)
-  print include_cols
+  print(include_cols)
   assert lists_equal(include_cols, [0,2,3,4,5,6,7,8])
 
 if __name__ == "__main__":

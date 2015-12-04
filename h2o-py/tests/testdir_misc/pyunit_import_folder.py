@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -7,9 +8,9 @@ from tests import pyunit_utils
 def import_folder():
 
   cars = h2o.import_file(path=pyunit_utils.locate("smalldata/smalldata/synthetic_perfect_separation"))  # without trailing slash
-  print cars.head()
+  print(cars.head())
   cars = h2o.import_file(path=pyunit_utils.locate("smalldata/smalldata/synthetic_perfect_separation/"))  # with trailing slash
-  print cars.head()
+  print(cars.head())
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(import_folder)

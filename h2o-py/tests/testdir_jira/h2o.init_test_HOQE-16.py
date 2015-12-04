@@ -1,3 +1,4 @@
+from __future__ import print_function
 #Currently, our R/python test suite is executed against an established h2o cluster (run.py sets up the cluster). However, we ignore the mode of 
 #operation where the h2o cluster is created by the client. Consequently, we may not recognize bugs in h2o.init() for this mode of operation. 
 #For this ticket, I think we should create a set of tests that check that h2o.init() is successful for each OS/client interface combination.
@@ -24,7 +25,7 @@ cluster_health = nodes['healthy']
 
 #Logical test to see if status is healthy or not
 if cluster_health == True & cluster_up == True:
-	print "Cluster health is up and healthy"
+	print("Cluster health is up and healthy")
 elif cluster_health != True & cluster_up == True:
 	raise ValueError('Cluster is up but not healthy')
 else:

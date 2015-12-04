@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -12,7 +13,7 @@ def space_headers():
 
     f = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/citibike_head.csv"))
 
-    print f.names
+    print(f.names)
 
     f["starttime"].show()
 

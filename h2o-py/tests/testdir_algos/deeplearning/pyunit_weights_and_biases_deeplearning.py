@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
@@ -7,7 +9,7 @@ from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 def weights_and_biases():
 
 
-  print "Test checks if Deep Learning weights and biases are accessible from R"
+  print("Test checks if Deep Learning weights and biases are accessible from R")
 
   covtype = h2o.upload_file(pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
   covtype[54] = covtype[54].asfactor()
@@ -19,8 +21,8 @@ def weights_and_biases():
                                      reproducible=True,
                                      seed=1234,
                                      export_weights_and_biases=True)
-  dlmodel.train(x=range(54),y=54,training_frame=covtype)
-  print dlmodel
+  dlmodel.train(x=list(range(54)),y=54,training_frame=covtype)
+  print(dlmodel)
 
   weights1 = dlmodel.weights(0)
   weights2 = dlmodel.weights(1)

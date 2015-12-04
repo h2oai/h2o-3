@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -19,7 +20,7 @@ def lambda_search():
     # GLM without lambda search, lambda is single user-provided value
     #Log.info("H2O GLM (binomial) with parameters: lambda_search = TRUE, nfolds: 2\n")
     prostate_nosearch = H2OGeneralizedLinearEstimator(family = "binomial", nlambdas = 5, lambda_search = False, n_folds = 2)
-    prostate_nosearch.train(x=range(2,9),y=1,training_frame=prostate.hex)
+    prostate_nosearch.train(x=list(range(2,9)),y=1,training_frame=prostate.hex)
  #   prostate_nosearch = h2o.glm(x=prostate[2:9], y=prostate[1], training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = False, n_folds = 2)
     params_nosearch = prostate_nosearch.params()
 
@@ -32,7 +33,7 @@ def lambda_search():
     # GLM with lambda search, return only model corresponding to best lambda as determined by H2O
     #Log.info("H2O GLM (binomial) with parameters: lambda_search: TRUE, nfolds: 2\n")
     prostate_search = H2OGeneralizedLinearEstimator(family = "binomial", nlambdas = 5, lambda_search = True, n_folds = 2)
-    prostate_search.train(x=range(2,9),y=1,training_frame=prostate.hex)
+    prostate_search.train(x=list(range(2,9)),y=1,training_frame=prostate.hex)
 
  #   prostate_search = h2o.glm(x=prostate[2:9], y=prostate[1], training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = True, n_folds = 2)
     params_search = prostate_search.params()

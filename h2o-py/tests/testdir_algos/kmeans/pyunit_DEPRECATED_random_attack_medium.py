@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -23,7 +26,7 @@ def random_attack():
             method = random.randint(0,3)
             if method == 3:
                 s = [[random.uniform(train[c].mean()[0]-100,train[c].mean()[0]+100) for p in range(kwargs['k'])] for c in x]
-                print "s: {0}".format(s)
+                print("s: {0}".format(s))
                 start = h2o.H2OFrame(s)
                 kwargs['user_points'] = start
             else:
@@ -31,18 +34,18 @@ def random_attack():
         if random.randint(0,1): kwargs['seed'] = random.randint(1,10000)
 
         # display the parameters and their corresponding values
-        print "-----------------------"
-        print "x: {0}".format(x)
-        for k, v in zip(kwargs.keys(), kwargs.values()):
+        print("-----------------------")
+        print("x: {0}".format(x))
+        for k, v in zip(list(kwargs.keys()), list(kwargs.values())):
             if k == 'user_points':
-                print k + ": "
+                print(k + ": ")
                 start.show()
             else:
-                print k + ": {0}".format(v)
+                print(k + ": {0}".format(v))
         h2o.kmeans(x=train[x],  **kwargs)
-        print "-----------------------"
+        print("-----------------------")
 
-    print "Import and data munging..."
+    print("Import and data munging...")
     ozone = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
 
     for i in range(50):

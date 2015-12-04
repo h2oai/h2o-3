@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -15,7 +17,7 @@ def cv_carsGBM():
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial
-    problem = random.sample(range(3),1)[0]
+    problem = random.sample(list(range(3)),1)[0]
 
     # pick the predictors and response column, along with the correct distribution
     predictors = ["displacement","power","weight","acceleration","year"]
@@ -31,8 +33,8 @@ def cv_carsGBM():
         response_col = "economy"
         distribution = "gaussian"
 
-    print "Distribution: {0}".format(distribution)
-    print "Response column: {0}".format(response_col)
+    print("Distribution: {0}".format(distribution))
+    print("Response column: {0}".format(response_col))
 
     ## cross-validation
     # 1. check that cv metrics are the same over repeated "Modulo" runs

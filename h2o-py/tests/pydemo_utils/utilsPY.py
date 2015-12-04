@@ -11,26 +11,26 @@ def ipy_notebook_exec(path, save_and_norun=None):
         with open(save_and_norun,"w") as f: f.write(program)
     else :
         d={}
-        exec program in d  # safe, but horrible (exec is horrible)
+        exec(program, d)  # safe, but horrible (exec is horrible)
 
 def ipy_blocks(notebook):
-    if 'worksheets' in notebook.keys():
+    if 'worksheets' in list(notebook.keys()):
         return notebook['worksheets'][0]['cells']  # just take the first worksheet
-    elif 'cells' in notebook.keys():
+    elif 'cells' in list(notebook.keys()):
         return notebook['cells']
     else:
-        raise NotImplementedError, "ipython notebook cell/block json format not handled"
+        raise NotImplementedError("ipython notebook cell/block json format not handled")
 
 def ipy_code_blocks(notebook):
     return [cell for cell in ipy_blocks(notebook) if cell['cell_type'] == 'code']
 
 def ipy_lines(block):
-    if 'source' in block.keys():
+    if 'source' in list(block.keys()):
         return block['source']
-    elif 'input' in block.keys():
+    elif 'input' in list(block.keys()):
         return block['input']
     else:
-        raise NotImplementedError, "ipython notebook source/line json format not handled"
+        raise NotImplementedError("ipython notebook source/line json format not handled")
 
 def ipy_valid_lines(block):
     lines = ipy_lines(block)
@@ -57,5 +57,5 @@ def pydemo_exec(test_name):
             program += line if '\n' in line else line + '\n'
     demo_c = compile(program, '<string>', 'exec')
     p = {}
-    exec demo_c in p
+    exec(demo_c, p)
 

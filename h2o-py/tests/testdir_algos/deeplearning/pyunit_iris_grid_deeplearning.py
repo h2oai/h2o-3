@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import map
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -15,14 +18,14 @@ def iris_dl_grid():
   loss_opts = ["Quadratic","CrossEntropy"]
   size_of_hyper_space = len(hidden_opts) * len(loss_opts)
   hyper_parameters = {"hidden": hidden_opts, "loss": loss_opts}
-  print "DL grid with the following hyper_parameters:", hyper_parameters
+  print("DL grid with the following hyper_parameters:", hyper_parameters)
 
   gs = H2OGridSearch(H2ODeepLearningEstimator, hyper_params=hyper_parameters)
-  gs.train(x=range(4), y=4, training_frame=train)
-  print gs.sort_by("mse")
+  gs.train(x=list(range(4)), y=4, training_frame=train)
+  print(gs.sort_by("mse"))
 
   assert len(gs) == size_of_hyper_space
-  total_grid_space = map(list, itertools.product(*hyper_parameters.values()))
+  total_grid_space = list(map(list, itertools.product(*list(hyper_parameters.values()))))
   for model in gs.models:
     combo = [model.parms['loss']['actual_value']] + [model.parms['hidden']['actual_value']]
     assert combo in total_grid_space

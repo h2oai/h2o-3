@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -18,7 +20,7 @@ def grid_lambda_search():
 
   # Log.info("H2O GLM (binomial) with parameters: alpha = c(0.25, 0.5), nlambda = 20, lambda_search = TRUE, nfolds: 2\n")
   model = H2OGeneralizedLinearEstimator(family="binomial", nlambdas=5, lambda_search=True, n_folds=2)
-  model.train(x=range(2,9), y=1, training_frame=prostate)
+  model.train(x=list(range(2,9)), y=1, training_frame=prostate)
 
 #  model = h2o.glm(x=prostate[2:9], y=prostate[1], family="binomial", nlambdas=5, lambda_search=True, n_folds=2)
   if random.random() < 0.5:
@@ -51,7 +53,7 @@ def grid_lambda_search():
 
   # Log.info("H2O GLM (binomial) with parameters: alpha = [0.25, 0.5], nlambda = 20, lambda_search = TRUE, nfolds: 2\n")
   prostate_search = H2OGeneralizedLinearEstimator(family="binomial", alpha=[0.25, 0.5], nlambdas=5, lambda_search=True, n_folds=2)
-  prostate_search.train(x=range(2,9),y=1,training_frame=prostate)
+  prostate_search.train(x=list(range(2,9)),y=1,training_frame=prostate)
 #  prostate_search = h2o.glm(x=prostate[2:9], y=prostate[1], family="binomial", alpha=[0.25, 0.5], nlambdas=5, lambda_search=True, n_folds=2)
   model_search = prostate_search.models(model_idx)
   models_best = model_search.models(model_search.best_model())

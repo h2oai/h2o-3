@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -9,24 +11,24 @@ from h2o.transforms.decomposition import H2OPCA
 def pca_prostate():
 
 
-  print "Importing prostate.csv data...\n"
+  print("Importing prostate.csv data...\n")
   prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
-  print "Converting CAPSULE, RACE, DPROS and DCAPS columns to factors"
+  print("Converting CAPSULE, RACE, DPROS and DCAPS columns to factors")
   prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
   prostate["RACE"] = prostate["RACE"].asfactor()
   prostate["DPROS"] = prostate["DPROS"].asfactor()
   prostate["DCAPS"] = prostate["DCAPS"].asfactor()
   prostate.describe()
 
-  print "PCA on columns 3 to 9 with k = 3, retx = FALSE, transform = 'STANDARDIZE'"
+  print("PCA on columns 3 to 9 with k = 3, retx = FALSE, transform = 'STANDARDIZE'")
 
 
   fitPCA = H2OPCA(k=3, transform="NONE", pca_method="Power")
-  fitPCA.train(x=range(2,9), training_frame=prostate)
+  fitPCA.train(x=list(range(2,9)), training_frame=prostate)
   pred = fitPCA.predict(prostate)
 
-  print "Projection matrix:\n"
+  print("Projection matrix:\n")
   pred.head()
 
 

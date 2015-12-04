@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -15,7 +17,7 @@ def vi_reg():
 
 
   rf = H2ORandomForestEstimator(ntrees=100, max_depth=20, nbins=100, seed=0)
-  rf.train(x=range(13), y=13, training_frame=data)
+  rf.train(x=list(range(13)), y=13, training_frame=data)
 
   ranking = [rf._model_json['output']['variable_importances'].cell_values[v][0] for v in range(data.ncol-1)]
   print(ranking)

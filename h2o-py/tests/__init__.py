@@ -2,6 +2,7 @@
 # module tests
 # from (tests)
 
-from pyunit_utils import *
-from pydemo_utils import *
-from pybooklet_utils import *
+from __future__ import absolute_import
+from .pyunit_utils import *
+from .pydemo_utils import *
+from .pybooklet_utils import *

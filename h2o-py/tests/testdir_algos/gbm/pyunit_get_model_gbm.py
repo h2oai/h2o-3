@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -10,7 +11,7 @@ def get_model_gbm():
   prostate[1] = prostate[1].asfactor()
 
   prostate_gbm = H2OGradientBoostingEstimator(distribution="bernoulli")
-  prostate_gbm.train(x=range(2,9),y=1, training_frame=prostate)
+  prostate_gbm.train(x=list(range(2,9)),y=1, training_frame=prostate)
   prostate_gbm.show()
 
   prostate_gbm.predict(prostate)

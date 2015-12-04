@@ -1,3 +1,5 @@
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -17,11 +19,11 @@ def vec_math_ops():
     zero_one_data = [random.randint(0,1) for c in range(10)]
     zero_one_data = [zero_one_data, zero_one_data]
 
-    h2o_data1 = h2o.H2OFrame(zip(*sin_cos_tan_atan_sinh_cosh_tanh_asinh_data))
-    h2o_data2 = h2o.H2OFrame(zip(*asin_acos_atanh_data))
-    h2o_data3 = h2o.H2OFrame(zip(*acosh_data))
-    h2o_data4 = h2o.H2OFrame(zip(*abs_data))
-    h2o_data5 = h2o.H2OFrame(zip(*zero_one_data))
+    h2o_data1 = h2o.H2OFrame(list(zip(*sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)))
+    h2o_data2 = h2o.H2OFrame(list(zip(*asin_acos_atanh_data)))
+    h2o_data3 = h2o.H2OFrame(list(zip(*acosh_data)))
+    h2o_data4 = h2o.H2OFrame(list(zip(*abs_data)))
+    h2o_data5 = h2o.H2OFrame(list(zip(*zero_one_data)))
 
     np_data1 = np.array(sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
     np_data2 = np.array(asin_acos_atanh_data)

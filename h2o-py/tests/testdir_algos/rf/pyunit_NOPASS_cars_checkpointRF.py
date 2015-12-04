@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -13,14 +15,14 @@ def cars_checkpoint():
     train = cars[s > .2]
     valid = cars[s <= .2]
 
-    print "\n*** Description (chunk distribution, etc) of training frame:"
+    print("\n*** Description (chunk distribution, etc) of training frame:")
     train.describe()
-    print "\n*** Description (chunk distribution, etc) of validation frame:"
+    print("\n*** Description (chunk distribution, etc) of validation frame:")
     valid.describe()
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial
-    problem = random.sample(range(3),1)[0]
+    problem = random.sample(list(range(3)),1)[0]
 
     # pick the predictors and response column, along with the correct
     predictors = ["displacement","power","weight","acceleration","year"]
@@ -35,16 +37,16 @@ def cars_checkpoint():
     else              :
         response_col = "economy"
 
-    print "\n*** Response column: {0}".format(response_col)
+    print("\n*** Response column: {0}".format(response_col))
 
     # build first model
     ntrees1 = 5
-    max_depth1 = random.sample(range(2,6),1)[0]
-    min_rows1 = random.sample(range(10,16),1)[0]
-    print "\n*** Building model 1 with the following parameters:"
-    print "*** ntrees model 1: {0}".format(ntrees1)
-    print "*** max_depth model 1: {0}".format(max_depth1)
-    print "*** min_rows model 1: {0}".format(min_rows1)
+    max_depth1 = random.sample(list(range(2,6)),1)[0]
+    min_rows1 = random.sample(list(range(10,16)),1)[0]
+    print("\n*** Building model 1 with the following parameters:")
+    print("*** ntrees model 1: {0}".format(ntrees1))
+    print("*** max_depth model 1: {0}".format(max_depth1))
+    print("*** min_rows model 1: {0}".format(min_rows1))
     model1 = H2ORandomForestEstimator(ntrees=ntrees1,
                                       max_depth=max_depth1,
                                       min_rows=min_rows1,
@@ -70,10 +72,10 @@ def cars_checkpoint():
     ntrees2 = ntrees1 + 5
     max_depth2 = max_depth1
     min_rows2 = min_rows1
-    print "\n*** Continuing to build model 1 (now called model 2) with the following parameters:"
-    print "*** ntrees model 2: {0}".format(ntrees2)
-    print "*** max_depth model 2: {0}".format(max_depth2)
-    print "*** min_rows model 2: {0}".format(min_rows2)
+    print("\n*** Continuing to build model 1 (now called model 2) with the following parameters:")
+    print("*** ntrees model 2: {0}".format(ntrees2))
+    print("*** max_depth model 2: {0}".format(max_depth2))
+    print("*** min_rows model 2: {0}".format(min_rows2))
     model2 = H2ORandomForestEstimator(ntrees=ntrees2,
                                       max_depth=max_depth2,
                                       min_rows=min_rows2,
@@ -96,10 +98,10 @@ def cars_checkpoint():
     ntrees3 = ntrees2 + 50
     max_depth3 = max_depth1
     min_rows3 = min_rows1
-    print "\n*** Continuing to build model 1 (now called model 3) with the following parameters:"
-    print "*** ntrees model 3: {0}".format(ntrees3)
-    print "*** max_depth model 3: {0}".format(max_depth3)
-    print "*** min_rows model 3: {0}".format(min_rows3)
+    print("\n*** Continuing to build model 1 (now called model 3) with the following parameters:")
+    print("*** ntrees model 3: {0}".format(ntrees3))
+    print("*** max_depth model 3: {0}".format(max_depth3))
+    print("*** min_rows model 3: {0}".format(min_rows3))
     model3 = H2ORandomForestEstimator(ntrees=ntrees3,
                                       max_depth=max_depth3,
                                       min_rows=min_rows3,
@@ -119,7 +121,7 @@ def cars_checkpoint():
     #                  seed=1234)
 
     # build the equivalent of model 2 in one shot
-    print "\n*** Building the equivalent of model 2 (called model 4) in one shot:"
+    print("\n*** Building the equivalent of model 2 (called model 4) in one shot:")
     model4 = H2ORandomForestEstimator(ntrees=ntrees2,
                                       max_depth=max_depth2,
                                       min_rows=min_rows2,
@@ -136,19 +138,19 @@ def cars_checkpoint():
     #                  validation_y=valid[response_col],
     #                  seed=1234)
 
-    print "\n*** Model Summary for model 2:"
-    print model2.summary()
-    print "\n*** Model Summary for model 3:"
-    print model3.summary()
-    print "\n*** Model Summary for model 4:"
-    print model4.summary()
+    print("\n*** Model Summary for model 2:")
+    print(model2.summary())
+    print("\n*** Model Summary for model 3:")
+    print(model3.summary())
+    print("\n*** Model Summary for model 4:")
+    print(model4.summary())
 
-    print "\n*** Score History for model 2:"
-    print model2.score_history()
-    print "\n*** Score History for model 3:"
-    print model3.score_history()
-    print "\n*** Score History for model 4:"
-    print model4.score_history()
+    print("\n*** Score History for model 2:")
+    print(model2.score_history())
+    print("\n*** Score History for model 3:")
+    print(model3.score_history())
+    print("\n*** Score History for model 4:")
+    print(model4.score_history())
 
     # checks
     if problem == 0:

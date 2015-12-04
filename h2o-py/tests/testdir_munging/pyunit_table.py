@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import zip
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -18,12 +20,12 @@ def table_check():
 
   # two-column (one argument)
   table2 = iris["C1"].table(iris["C5"])
-  print table2
+  print(table2)
 
   cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
   table = cars[2].table().as_data_frame()
   table = dict(zip(*table)[1:])
-  table = {k:int(v) for k,v in table.items()}
+  table = {k:int(v) for k,v in list(table.items())}
   expected = Counter(cars[2].as_data_frame()[0][1:])
   assert table == expected, "Expected {} for table counts but got {}".format(expected, table)
   

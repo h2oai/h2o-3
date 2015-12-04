@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -18,7 +19,7 @@ def offset_bernoulli_cars():
                                      max_depth=1,
                                      min_rows=1,
                                      learn_rate=1)
-  gbm.train(x=range(2,8),y="economy_20mpg", training_frame=cars, offset_column="x1")
+  gbm.train(x=list(range(2,8)),y="economy_20mpg", training_frame=cars, offset_column="x1")
 
   predictions = gbm.predict(cars)
 

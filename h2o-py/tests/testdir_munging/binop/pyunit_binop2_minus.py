@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -33,7 +36,7 @@ def binop_minus():
     try:
       res = 1.2 - iris[2]
       res2 = res[21,:] - iris
-      print res2.dim
+      print(res2.dim)
       assert False, " Expected Frame dimension mismatch error"
     except Exception:
       pass

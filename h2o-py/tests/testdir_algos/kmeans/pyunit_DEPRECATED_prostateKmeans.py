@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -28,7 +30,7 @@ def prostateKmeans():
 
     prostate_km_sci = KMeans(n_clusters=i, init='k-means++', n_init=1)
     prostate_km_sci.fit(prostate_sci)
-    print prostate_km_sci.cluster_centers_
+    print(prostate_km_sci.cluster_centers_)
 
 
 

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -14,9 +15,9 @@ def test_as_data():
   # that is, h2o cannot understand:
   # 1 integer days since epoch (or since any other date);
   # 2 dates formatted as %d/%m/%y (in strptime format strings)
-  print hdf.summary()
+  print(hdf.summary())
 
-  print 'adding date columns'
+  print('adding date columns')
   # NB: h2o automagically recognizes and if it doesn't recognize, you're out of luck
   hdf["ds5"] = hdf["ds5"].as_date("%d/%m/%y %H:%M")
   hdf["ds6"] = hdf["ds6"].as_date("%d/%m/%Y %H:%M:%S")
@@ -25,7 +26,7 @@ def test_as_data():
   hdf["ds9"] = hdf["ds9"].asfactor().as_date("%Y%m%d")
   hdf["ds10"] = hdf["ds10"].as_date("%Y_%m_%d")
 
-  print 'extracting year and month from posix date objects'
+  print('extracting year and month from posix date objects')
   hdf["year2"] = hdf["ds2"].year()
   hdf["year3"] = hdf["ds3"].year()
   hdf["year4"] = hdf["ds4"].year()

@@ -1,3 +1,5 @@
+from builtins import zip
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o

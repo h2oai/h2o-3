@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -26,12 +28,12 @@ def prostateKmeans():
     #Log.info(paste("H2O K-Means with ", i, " clusters:\n", sep = ""))
     #Log.info(paste( "Using these columns: ", colnames(prostate.hex)[-1]) )
     prostate_km_h2o = H2OKMeansEstimator(k=i)
-    prostate_km_h2o.train(x=range(1,prostate_h2o.ncol), training_frame=prostate_h2o)
+    prostate_km_h2o.train(x=list(range(1,prostate_h2o.ncol)), training_frame=prostate_h2o)
     prostate_km_h2o.show()
 
     prostate_km_sci = KMeans(n_clusters=i, init='k-means++', n_init=1)
     prostate_km_sci.fit(prostate_sci)
-    print prostate_km_sci.cluster_centers_
+    print(prostate_km_sci.cluster_centers_)
 
 
 

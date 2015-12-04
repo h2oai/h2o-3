@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -25,11 +27,11 @@ def sdev():
 
   sd_np = np.std(iris_np, axis=0, ddof=1)
   sd_h2o = iris_h2o.sd()
-  print sd_h2o
+  print(sd_h2o)
   for i in range(4):
     assert abs(sd_np[i] - sd_h2o[i]) < 1e-10, "expected standard deviations to be the same"
 
-  print iris_h2o[0:2].sd()
+  print(iris_h2o[0:2].sd())
 
 
 

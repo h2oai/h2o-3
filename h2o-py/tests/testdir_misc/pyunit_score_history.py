@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -16,7 +17,7 @@ def score_history_test():
                        y=air_train["fDayOfWeek"].asfactor(),
                        distribution="multinomial")
     score_history = gbm_mult.score_history()
-    print score_history
+    print(score_history)
 
 
 

@@ -1,3 +1,6 @@
+from builtins import str
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -10,7 +13,7 @@ def mycomp(l,r):
     for i in range(len(l)):
         l_i = [num for num in l[i] if isinstance(num, (int,float))]
         r_i = [num for num in r[i] if isinstance(num, (int,float))]
-        zz = zip(l_i,r_i)
+        zz = list(zip(l_i,r_i))
         z = [abs(li-ri)<1e-8 for li,ri in zz]
         assert all(z), str(i) + ":" +  str(z)
 

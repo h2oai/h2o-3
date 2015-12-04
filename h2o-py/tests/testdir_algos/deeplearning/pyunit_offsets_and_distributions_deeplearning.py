@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
@@ -28,22 +29,22 @@ def offsets_and_distributions():
 
   # gamma
   dl = H2ODeepLearningEstimator(distribution="gamma")
-  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # gaussian
   dl = H2ODeepLearningEstimator(distribution="gaussian")
-  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # poisson
   dl = H2ODeepLearningEstimator(distribution="poisson")
-  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # tweedie
   dl = H2ODeepLearningEstimator(distribution="tweedie")
-  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
 if __name__ == "__main__":

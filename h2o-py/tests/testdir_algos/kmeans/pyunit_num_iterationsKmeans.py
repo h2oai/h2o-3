@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -14,7 +15,7 @@ def km_num_iterations():
 
 
   prostate_km_h2o = H2OKMeansEstimator(k=3, max_iterations=4)
-  prostate_km_h2o.train(training_frame=prostate_h2o, x=range(1,prostate_h2o.ncol))
+  prostate_km_h2o.train(training_frame=prostate_h2o, x=list(range(1,prostate_h2o.ncol)))
   num_iterations = prostate_km_h2o.num_iterations()
   assert num_iterations <= 4, "Expected 4 iterations, but got {0}".format(num_iterations)
 
