@@ -12,6 +12,7 @@ from .connection import H2OConnection
 from .frame      import H2OFrame
 from .job        import H2OJob
 from .model.model_future import H2OModelFuture
+from .estimators import H2OEstimator
 
 
 def supervised_model_build(x=None,y=None,vx=None,vy=None,algo="",offsets=None,weights=None,fold_column=None,kwargs=None):
@@ -90,4 +91,7 @@ def _model_build(x,y,vx,vy,algo,offsets,weights,fold_column,kwargs):
 
 def _resolve_model(future_model, **kwargs):
   future_model.poll()
-  return h2o.get_model(future_model.job.dest_key)
+  m = H2OEstimator()
+  model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
+  m._resolve_model(future_model.job.dest_key,model_json)
+  return m
