@@ -9,8 +9,6 @@ import imp
 import os
 import tempfile
 from datetime import datetime
-from future.standard_library import install_aliases
-install_aliases()
 from future.backports.urllib.request import urlopen
 from future.backports.urllib.request import quote
 import sys
@@ -874,7 +872,7 @@ class H2OFrame(object):
       use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame instance's
       data.
     """
-    url = 'http://' + H2OConnection.ip() + ':' + str(H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + quote(self.frame_id) + "&hex_string=false"
+    url = "http://{}:{}/3/DownloadDataset?frame_id={}+&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(self.frame_id))
     response = urlopen(url)
     if can_use_pandas() and use_pandas:
       import pandas
