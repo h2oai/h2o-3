@@ -595,7 +595,7 @@ public final class AutoBuffer {
     long ns = System.nanoTime();
     while( _bb.position() < sz ) { // Read until we got enuf
       try {
-        int res = _is == null ? _chan.read(_bb) : _is.read(_bb.array(),0,_bb.remaining()); // Read more
+        int res = _is == null ? _chan.read(_bb) : _is.read(_bb.array(),_bb.position(),_bb.remaining()); // Read more
         // Readers are supposed to be strongly typed and read the exact expected bytes.
         // However, if a TCP connection fails mid-read we'll get a short-read.
         // This is indistinguishable from a mis-alignment between the writer and reader!
@@ -732,11 +732,18 @@ public final class AutoBuffer {
     if( _is!=null ) id = _typeMap[id];
     return (T)TypeMap.newFreezable(id).read(this);
   }
+  public <T extends Freezable> T get(Class<T> tc) {
+    int id = getInt();
+    if( id == TypeMap.NULL ) return null;
+    if( _is!=null ) id = _typeMap[id];
+    assert tc.isInstance(TypeMap.theFreezable(id));
+    return (T)TypeMap.newFreezable(id).read(this);
+  }
 
   // Write Key's target IFF the Key is not null; target can be null.
   public AutoBuffer putKey(Key k) {
     if( k==null ) return this;    // Key is null ==> write nothing
-    Keyed kd = (Keyed)DKV.getGet(k);
+    Keyed kd = DKV.getGet(k);
     put(kd);
     return kd == null ? this : kd.writeAll_impl(this);
   }
@@ -850,11 +857,6 @@ public final class AutoBuffer {
     return this;
   }
 
-  public <T extends Freezable> T get(Class<T> tc) {
-    T t = get();
-    assert t==null || tc.isInstance(t);
-    return t;
-  }
   public <T extends Freezable> T[] getA(Class<T> tc) {
     //_arys++;
     long xy = getZA();
@@ -863,7 +865,7 @@ public final class AutoBuffer {
     int y=(int)xy;               // Middle non-zeros
     int z = y==0 ? 0 : getInt(); // Trailing nulls
     T[] ts = (T[]) Array.newInstance(tc, x+y+z);
-    for( int i = x; i < x+y; ++i ) ts[i] = get();
+    for( int i = x; i < x+y; ++i ) ts[i] = get(tc);
     return ts;
   }
   public <T extends Freezable> T[][] getAA(Class<T> tc) {
