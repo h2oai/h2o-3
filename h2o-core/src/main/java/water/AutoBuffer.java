@@ -394,7 +394,7 @@ public final class AutoBuffer {
   public final int close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
     if( isClosed() ) return 0;            // Already closed
-    assert _h2o != null || _chan != null; // Byte-array backed should not be closed
+    assert _h2o != null || _chan != null || _os != null || _is != null; // Byte-array backed should not be closed
 
     try {
       if( _chan == null ) {     // No channel?
@@ -852,7 +852,7 @@ public final class AutoBuffer {
 
   public <T extends Freezable> T get(Class<T> tc) {
     T t = get();
-    assert tc.isInstance(t);
+    assert t==null || tc.isInstance(t);
     return t;
   }
   public <T extends Freezable> T[] getA(Class<T> tc) {

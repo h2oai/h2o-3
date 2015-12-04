@@ -37,11 +37,13 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   }
 
   // ---
-  /** Read/Write this Keyed object, and all subparts. */
+  /** Write this Keyed object, and all nested Keys. */
   public AutoBuffer writeAll(AutoBuffer ab) { return writeAll_impl(ab.put(this)); }
   // Override this to write out subparts
   protected AutoBuffer writeAll_impl(AutoBuffer ab) { return ab; }
 
+  /** Read a Keyed object, and all nested Keys.  Nested Keys are injected into the K/V store
+   *  overwriting what was there before.  */
   public static Keyed readAll(AutoBuffer ab) { 
     Futures fs = new Futures();
     Keyed k = ab.getKey(fs);
