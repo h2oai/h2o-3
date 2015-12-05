@@ -1,14 +1,11 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def pubdev_1829():
+def pubdev_1829(ip,port):
 
-    train =  h2o.import_frame(path=pyunit_utils.locate("smalldata/jira/gbm_checkpoint_train.csv"))
-
-    valid =  h2o.import_frame(path=pyunit_utils.locate("smalldata/jira/gbm_checkpoint_valid.csv"))
-
+    train =  h2o.import_frame(path=h2o.locate("smalldata/jira/gbm_checkpoint_train.csv"))
+    valid =  h2o.import_frame(path=h2o.locate("smalldata/jira/gbm_checkpoint_valid.csv"))
 
     predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
@@ -59,6 +56,4 @@ def pubdev_1829():
     assert model2.logloss(valid=True)==model4.logloss(valid=True), "Expected Model 2 Log Loss: {0} to be the same as Model 4 Log Loss: {1}".format(model2.logloss(valid=True), model4.logloss(valid=True))
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(pubdev_182)
-else:
-	pubdev_182()
+    h2o.run_test(sys.argv, pubdev_1829)

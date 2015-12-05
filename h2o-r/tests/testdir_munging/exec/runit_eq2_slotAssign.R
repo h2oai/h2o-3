@@ -1,11 +1,18 @@
+##
+# Test: [<-
+# Description: Select a dataset, select columns, change values in the column, re-assign col
+# Variations: Single col, multi-col, factor col
+# Author: Spencer
+##
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 #setupRandomSeed(1689636624)
 
-test.column.assignment <- function() {
+test.column.assignment <- function(conn) {
   set.seed(1841604082)
-  hex <- as.h2o( iris)
+  hex <- as.h2o(conn, iris)
 
   colsToSelect <- 1 #sample(ncol(hex), 1)
 
@@ -30,7 +37,7 @@ test.column.assignment <- function() {
   replacement <- rnorm(numToReplace)
   Log.info("Replacing rows for column selected")
 
-  replacement <- as.h2o( replacement)
+  replacement <- as.h2o(conn, replacement)
 
   print("Wuz replacement one? ")
   print("")
@@ -56,6 +63,7 @@ test.column.assignment <- function() {
 
   #expect_false(hexReplaced, equals(hexOriginal))
 
+  testEnd()
 
 }
 

@@ -1,9 +1,15 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+######################################################################
+# Test for PUB-826
+# Check the nfold CM to see if there's clumping of the responses
+######################################################################
 
-test.pub.826 <- function() {
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+options(echo=TRUE)
+source('../h2o-runit.R')
+
+test.pub.826 <- function(conn) {
   Log.info('Importing the airlines data from smalldata.')
-  flights <- h2o.importFile( normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')), 'air')
+  flights <- h2o.importFile(conn, normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')), 'air')
 
   Log.info('Print head of dataset')
   Log.info(head(flights))
@@ -21,6 +27,7 @@ test.pub.826 <- function() {
   m <- h2o.randomForest(x = c(FlightDate, ScheduledTimes, FlightInfo), y = Delayed, training_frame = flights, nfold = 3)
 
   show(m)
+  testEnd()
 }
 
 doTest("PUB-826: nfold cross validation doesn't work correctly", test.pub.826)

@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.gbm.mult.accessors <- function() {
-  iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris_wheader.csv"))
+test.gbm.mult.accessors <- function(conn) {
+  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
@@ -48,6 +48,7 @@ test.gbm.mult.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(iris.gbm))
 
+  testEnd()
 }
 
 doTest("Testing model accessors for GBM", test.gbm.mult.accessors)

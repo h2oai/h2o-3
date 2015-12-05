@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-check.deeplearning_autoencoder <- function() {
+check.deeplearning_autoencoder <- function(conn) {
      Log.info("Deep Learning Autoencoder MNIST)")
 
-     train_hex = h2o.uploadFile( locate("bigdata/laptop/mnist/train.csv.gz"))
-     test_hex = h2o.uploadFile( locate("bigdata/laptop/mnist/test.csv.gz"))
+     train_hex = h2o.uploadFile(conn, locate("bigdata/laptop/mnist/train.csv.gz"))
+     test_hex = h2o.uploadFile(conn, locate("bigdata/laptop/mnist/test.csv.gz"))
 
      predictors = c(1:784)
      resp = 785
@@ -60,8 +60,9 @@ check.deeplearning_autoencoder <- function() {
      cm <- h2o.confusionMatrix(drf_model, test_features)
      print(cm)
 
-     expect_equal(cm$Error[11], 0.0810, tolerance = 0.001)
+     expect_equal(cm$Error[11], 0.0814, tolerance = 0.001)
 
+     testEnd()
 }
 
 doTest("Deep Learning AutoEncoder MNIST", check.deeplearning_autoencoder)

@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub_697_exec_bad_key_name <- function() {
+test.pub_697_exec_bad_key_name <- function(H2Oserver) {
 
 prostatePath = locate("smalldata/prostate/prostate.csv")
-prostate.hex = h2o.importFile( path = prostatePath, destination_frame = "prostate.hex")
+prostate.hex = h2o.importFile(H2Oserver, path = prostatePath, destination_frame = "prostate.hex")
 
 prostate.local = as.data.frame(prostate.hex)
 
@@ -18,6 +18,7 @@ expect_equal(1, dim(remote)[2])
 
 expect_error(t(pub697$AGE) %*% prostate.hex$CAPSULE)
 
+testEnd()
 
 }
 

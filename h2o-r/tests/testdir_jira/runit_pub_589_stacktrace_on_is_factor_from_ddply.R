@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub_589_stacktrace_on_is_factor_from_ddply <- function() {
+test.pub_589_stacktrace_on_is_factor_from_ddply <- function(localH2O) {
 
-covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 
 # covtype.local = as.data.frame(covtype.hex)
 
@@ -26,6 +26,7 @@ h2o.ddply(covtype.hex, c(2), ncol)
 h2o.ddply(covtype.hex, c(2), length)
 h2o.ddply(covtype.hex, c(2), function(x) { is.factor(x[,1]) })
 
+testEnd()
 
 }
 

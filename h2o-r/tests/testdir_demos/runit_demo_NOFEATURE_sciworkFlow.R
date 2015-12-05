@@ -1,10 +1,14 @@
+#Split data into test/train.
+#Do Grid search over lambda and Score all the models on a test set. Choose the best model by AUC on the test set.
+#Do grid search on gbm and predict on test set. Print the AUCs and model params "
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
 
-test <- function() {
+test <- function(conn) {
 print("Reading in prostate dataset")
-pros.hex <- h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")), destination_frame="pros.hex")
+pros.hex <- h2o.importFile(conn,normalizePath(locate("smalldata/logreg/prostate.csv")), destination_frame="pros.hex")
 print ("Run summary")
 summary(pros.hex)
 print("Summary of a column")
@@ -97,6 +101,7 @@ pred <- predict ( model, pros.test )
 perf <- h2o.performance ( pred$'1', pros.test$CAPSULE, measure="F1" )
 print(perf)
 
+testEnd()
 }
 
 doTest("Split data into test/train, do Grid search over lambda and Score all the models on a test set and choose the best model by AUC on the test set. Do grid search on gbm and predict on test set, print the AUCs and model params ", test)

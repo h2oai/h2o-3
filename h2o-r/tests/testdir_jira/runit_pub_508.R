@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub_508 <- function() {
+test.pub_508 <- function(localH2O) {
 
-hex <- h2o.importFile(normalizePath(locate("smalldata/jira/pub_508.csv")), "p508")
+hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/jira/pub_508.csv")), "p508")
 
 rdat <- read.csv(normalizePath(locate("smalldata/jira/pub_508.csv")))
 
@@ -24,6 +24,7 @@ print(sum_R)
 
 expect_equal(sum_h2o, sum_R)
 
+testEnd()
 
 }
 

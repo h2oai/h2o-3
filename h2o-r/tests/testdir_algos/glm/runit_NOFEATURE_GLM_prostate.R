@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.GLM.prostate <- function() {
+test.GLM.prostate <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
-  prostate.hex = h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), "prostate.hex")
+  prostate.hex = h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), "prostate.hex")
   prostate.sum = summary(prostate.hex)
   print(prostate.sum)
   
@@ -25,6 +25,7 @@ test.GLM.prostate <- function() {
     checkGLMModel(prostate.glm.h2o, prostate.glm)
   }
   
+  testEnd()
 }
 
 doTest("GLM Test: Prostate", test.GLM.prostate)

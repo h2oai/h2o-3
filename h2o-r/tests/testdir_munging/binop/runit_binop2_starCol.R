@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 toDouble <- function(r) ifelse(is.integer(r), as.numeric(r), r)
 
-test.slice.star <- function() {
-  hex <- as.h2o( iris)
+test.slice.star <- function(conn) {
+  hex <- as.h2o(conn, iris)
 
   Log.info("Try adding scalar to a numeric column: 5 * hex[,col]")
 
@@ -40,6 +40,7 @@ test.slice.star <- function() {
  
   Log.info("as.data.frame(fiveStarSliced) * as.data.frame(fiveStarSliced)")
 
+  testEnd()
 }
 
 doTest("BINOP2 EXEC2 TEST: *", test.slice.star)

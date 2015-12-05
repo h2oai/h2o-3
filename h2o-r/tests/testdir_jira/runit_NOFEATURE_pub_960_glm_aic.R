@@ -1,11 +1,18 @@
+##
+# Testing AIC value for GLM families gamma and tweedie
+# Test for JIRA PUB-907 
+# 'AIC Calculation for GLM Gamma & Tweedie'
+##
+
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
 
-test <- function() {
+test <- function(conn) {
   
   print("Read prostate data into R.")
-  prostate.data <-  h2o.importFile( locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
+  prostate.data <-  h2o.importFile(conn, locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
   
   print("Set variables for h2o.")
   myY = "DPROS"
@@ -23,6 +30,7 @@ test <- function() {
                                      use_all_factor_levels=TRUE, nfolds=0)
   print(model.h2o.tweedie)      #AIC is NaN
     
+  testEnd()
 }
 
 doTest("Testing AIC value for GLM families gamma and tweedie", test)

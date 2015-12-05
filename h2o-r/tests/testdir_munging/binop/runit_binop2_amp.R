@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.binop2.ampersand <- function() {
+test.binop2.ampersand <- function(conn) {
 
-  hex <- as.h2o( iris)
+  hex <- as.h2o(conn, iris)
 
   print(hex & 5)
   print(5 & hex)
@@ -16,6 +16,7 @@ test.binop2.ampersand <- function() {
   #print(hex[,1] & c(5,10,20))
   #print(c(5,10,20) & hex[,1])
   
+  testEnd()
 }
 
 doTest("Binop2 EQ2 Test: & and &&", test.binop2.ampersand)

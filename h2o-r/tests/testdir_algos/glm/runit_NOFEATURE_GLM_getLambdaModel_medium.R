@@ -1,10 +1,14 @@
+#Build glm model with lambda search on.
+#Randomly choose a lambda and get the model specific to that lambda
+#Change the 1st parameter of the getLambdaModel method and make sure you get the same model for the same lambda
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 
-test.GLM.getLambdaModel <- function() {
+test.GLM.getLambdaModel <- function(conn) {
 print("Read data")
-pros.hex = h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")), key="pros.hex")
+pros.hex = h2o.importFile(conn,normalizePath(locate("smalldata/logreg/prostate.csv")), key="pros.hex")
 
 myX = c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
 myY = "CAPSULE"
@@ -31,6 +35,7 @@ for(i in 1:10){
 	expect_equal(m1,m2)
 }
 
+testEnd()
 }
 
 doTest("GLM get Model for each Lambda Test: Prostate", test.GLM.getLambdaModel)

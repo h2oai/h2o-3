@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 randomParams <- function(distribution, train, test, x, y) {
   parms <- list()
@@ -63,9 +63,9 @@ randomParams <- function(distribution, train, test, x, y) {
   h2o.rm(hh@model_id)
 }
 
-test.GBM.rand_attk_forloop <- function() {
+test.GBM.rand_attk_forloop <- function(conn) {
   Log.info("Import and data munging...")
-  pros.hex <- h2o.uploadFile( locate("smalldata/prostate/prostate.csv.zip"))
+  pros.hex <- h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   # This as.factor is bugged
   # pros.hex[,4] <- as.factor(pros.hex[,4])
@@ -76,12 +76,12 @@ test.GBM.rand_attk_forloop <- function() {
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
 
-  iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
 
-  cars.hex <- h2o.uploadFile( locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(conn, locate("smalldata/junit/cars.csv"))
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
@@ -96,6 +96,7 @@ test.GBM.rand_attk_forloop <- function() {
   for(i in 1:10)
     randomParams("gaussian", cars.train, cars.test, 4:7, 3)
 
+  testEnd()
 }
 
 doTest("Checking GBM in Random Attack For Loops", test.GBM.rand_attk_forloop)

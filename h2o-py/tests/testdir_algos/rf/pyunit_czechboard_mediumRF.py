@@ -1,16 +1,14 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def czechboardRF():
+def czechboardRF(ip,port):
 
     
     
 
     # Training set has checkerboard pattern
-    board = h2o.import_frame(path=pyunit_utils.locate("smalldata/gbm_test/czechboard_300x300.csv"))
-
+    board = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/czechboard_300x300.csv"))
     board["C3"] = board["C3"].asfactor()
     board.summary()
 
@@ -19,6 +17,4 @@ def czechboardRF():
     model.show()
   
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(czechboardRF)
-else:
-	czechboardRF()
+  h2o.run_test(sys.argv, czechboardRF)

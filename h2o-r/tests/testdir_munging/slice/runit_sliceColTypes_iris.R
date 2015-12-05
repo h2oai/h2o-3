@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.slice.colTypes <- function() {
+test.slice.colTypes <- function(conn) {
   Log.info("Importing iris.csv data...")
-  iris.hex = h2o.importFile( locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
+  iris.hex = h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
   Log.info("Check that summary works...")
   print(summary(iris.hex))
   summary_ <- summary(iris.hex) #keep the summary around
@@ -29,6 +29,7 @@ test.slice.colTypes <- function() {
   expect_that(col4_type, equals("double"))
   expect_that(col5_type, equals("integer"))
 
+  testEnd()
 }
 
 doTest("Slice Tests: Check Col Types", test.slice.colTypes)

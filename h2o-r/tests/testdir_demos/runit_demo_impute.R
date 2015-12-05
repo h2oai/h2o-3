@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
 # a useful function to make a quick copy of a data frame in H2O
 cp <- function(this) this[1:nrow(this), 1:ncol(this)]
@@ -7,7 +7,8 @@ cp <- function(this) this[1:nrow(this), 1:ncol(this)]
 # a useful function to count number of NAs in a column
 numNAs <- function(col) sum(is.na(col))
 
-prostate.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate_missing.csv"), "prostate.hex")
+conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
+prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_missing.csv"), "prostate.hex")
 dim(prostate.hex)
 
 print("Summary of the data in iris_missing.csv")
@@ -56,3 +57,4 @@ h2o.impute(hex, c("VOL"), method = "median")
 hex <- cp(prostate.hex)
 h2o.impute(hex, "VOL", method = "median")
 
+testEnd()

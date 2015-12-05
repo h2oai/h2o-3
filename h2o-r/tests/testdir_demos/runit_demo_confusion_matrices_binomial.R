@@ -1,5 +1,9 @@
+#----------------------------------------------------------------------
+# Purpose:  Demostrate confusionMatrix usages
+#----------------------------------------------------------------------
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
 options(echo=TRUE)
 
@@ -12,9 +16,10 @@ if (! exists("myIP")) {
   myPort = 54321
 }
 
+conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 #uploading data file to h2o
-air <- h2o.importFile( path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+air <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
 #Constructing validation and train sets by sampling (20/80)
 #creating a column as tall as airlines(nrow(air))
@@ -77,7 +82,7 @@ cms[[3]]
 cms[[4]]
 
 # Test dataset
-air.test <- h2o.importFile( path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+air.test <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
 # Test performance
 perf.gbm <- h2o.performance(air.gbm, air.test)

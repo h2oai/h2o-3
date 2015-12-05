@@ -1,9 +1,13 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+#
+# apply
+#
 
-applytest <- function(){
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
+
+applytest <- function(conn){
   Log.info('uploading apply testing dataset')
-  df.h <- h2o.importFile( locate('smalldata/jira/v-3.csv'), "v3.hex")
+  df.h <- h2o.importFile(conn, locate('smalldata/jira/v-3.csv'), "v3.hex")
 
   Log.info('printing from h2o')
   Log.info( head(df.h) )
@@ -26,6 +30,7 @@ applytest <- function(){
 #  expect_that(all( df.3[,1] == c(2,4,6) ))
 #  expect_that(all( df.3[,2] == c(3,5,7) ))
 
+  testEnd()
 }
 
 doTest('apply', applytest)

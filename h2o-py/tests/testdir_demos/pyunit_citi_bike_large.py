@@ -1,19 +1,17 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
-from tests import pydemo_utils
 
-def demo_citibike():
+def demo_citibike(ip,port):
     # Connect to a pre-existing cluster
-
-
+    h2o.init(ip,port)
 
     # execute ipython notebook
-    pydemo_utils.ipy_notebook_exec(pyunit_utils.locate("h2o-py/demos/citi_bike_large.ipynb"),save_and_norun=None)
-
+    h2o.ipy_notebook_exec(h2o.locate("h2o-py/demos/citi_bike_large.ipynb"),save_and_norun=False)
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(demo_citibike)
-else:
-	demo_citibike()
+    h2o.run_test(sys.argv, demo_citibike)
+
+
+
+

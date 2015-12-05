@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../h2o-runit.R")
 
-check.merge_comparison <- function() {
+check.merge_comparison <- function(conn) {
   Log.info("Verify accuracy of merge")
 
   left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
@@ -55,6 +55,7 @@ check.merge_comparison <- function() {
   row.names(dflt.sorted) <- 1:6
   expect_equal(full.sorted, full.r)
 
+  testEnd()
 }
 
 doTest("Verifying h2o.merge With R's Impelementation", check.merge_comparison)

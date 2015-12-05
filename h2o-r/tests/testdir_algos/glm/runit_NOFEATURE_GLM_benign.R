@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-glm2Benign <- function() { 
-  # bhexFV <- h2o.importFile( "./smalldata/logreg/benign.csv", destination_frame="benignFV.hex")
-  bhexFV <- h2o.uploadFile( locate("smalldata/logreg/benign.csv"), destination_frame="benignFV.hex")
+glm2Benign <- function(conn) { 
+  # bhexFV <- h2o.importFile(conn, "./smalldata/logreg/benign.csv", destination_frame="benignFV.hex")
+  bhexFV <- h2o.uploadFile(conn, locate("smalldata/logreg/benign.csv"), destination_frame="benignFV.hex")
   maxX <- 11
   Y <- 4
   X   <- 3:maxX
@@ -26,6 +26,7 @@ glm2Benign <- function() {
   #Check coeffs here
   #tryCatch(expect_that(mFV@model$x, equals(colnames(bhexFV)[X])), error = function(e) Log.warn("Not getting colnames back, just indices"))
    expect_that(preds, equals(colnames(bhexFV)[X]))
+  testEnd()
 }
 
 doTest("GLM: Benign Data", glm2Benign)

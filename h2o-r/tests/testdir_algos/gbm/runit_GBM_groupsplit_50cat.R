@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.GBM.groupsplit <- function() {
+test.GBM.groupsplit <- function(conn) {
   # Training set has only 45 categories cat1 through cat45
   Log.info("Importing 50_cattest_train.csv data...\n")
-  train.hex <- h2o.uploadFile( locate("smalldata/gbm_test/50_cattest_train.csv"), destination_frame = "train.hex")
+  train.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/50_cattest_train.csv"), destination_frame = "train.hex")
   train.hex$y <- as.factor(train.hex$y)
   Log.info("Summary of 50_cattest_train.csv from H2O:\n")
   print(summary(train.hex))
@@ -16,7 +16,7 @@ test.GBM.groupsplit <- function() {
 
   # Test dataset has all 50 categories cat1 through cat50
   Log.info("Importing 50_cattest_test.csv data...\n")
-  test.hex <- h2o.uploadFile( locate("smalldata/gbm_test/50_cattest_test.csv"), destination_frame="test.hex")
+  test.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/50_cattest_test.csv"), destination_frame="test.hex")
   Log.info("Summary of 50_cattest_test.csv from H2O:\n")
   print(summary(test.hex))
 
@@ -31,6 +31,7 @@ test.GBM.groupsplit <- function() {
   test.perf <- h2o.performance(drfmodel.h2o, test.hex)
   test.cm <- h2o.confusionMatrix(test.perf)
   test.auc <- h2o.auc(test.perf)
+  testEnd()
 }
 
 doTest("GBM Test: Classification with 50 categorical level predictor", test.GBM.groupsplit)

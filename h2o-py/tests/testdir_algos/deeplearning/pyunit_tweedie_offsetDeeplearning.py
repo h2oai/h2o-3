@@ -1,12 +1,10 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def tweedie_offset():
+def tweedie_offset(ip,port):
 
-    insurance = h2o.import_frame(pyunit_utils.locate("smalldata/glm_test/insurance.csv"))
-
+    insurance = h2o.import_frame(h2o.locate("smalldata/glm_test/insurance.csv"))
     insurance["offset"] = insurance["Holders"].log()
     insurance["Group"] = insurance["Group"].asfactor()
     insurance["Age"] = insurance["Age"].asfactor()
@@ -22,7 +20,7 @@ def tweedie_offset():
     assert abs(0.556 - mean_residual_deviance) < 1e-3, "Expected mean residual deviance to be 0.556, but got " \
                                                          "{0}".format(mean_residual_deviance)
     predictions = dl.predict(insurance)
-    assert abs(47.61-predictions[0].mean()[0]) < 1e-2, "Expected mean of predictions to be 47.61, but got " \
+    assert abs(47.61-predictions[0].mean()) < 1e-2, "Expected mean of predictions to be 47.61, but got " \
                                                           "{0}".format(predictions[0].mean())
     assert abs(1.94-predictions[0].min()) < 1e-1, "Expected min of predictions to be 1.94, but got " \
                                                           "{0}".format(predictions[0].min())
@@ -39,13 +37,11 @@ def tweedie_offset():
     assert abs(0.261-mean_residual_deviance) < 1e-2, "Expected mean residual deviance to be 0.261, but got " \
                                                          "{0}".format(mean_residual_deviance)
     predictions = dl.predict(insurance)
-    assert abs(49.53-predictions[0].mean()[0]) < 1e-1, "Expected mean of predictions to be 49.53, but got " \
+    assert abs(49.53-predictions[0].mean()) < 1e-1, "Expected mean of predictions to be 49.53, but got " \
                                                           "{0}".format(predictions[0].mean())
     assert abs(1.074-predictions[0].min()) < 1e-1, "Expected min of predictions to be 1.074, but got " \
                                                           "{0}".format(predictions[0].min())
     assert abs(397.3-predictions[0].max()) < 40, "Expected max of predictions to be 397.3, but got " \
                                                           "{0}".format(predictions[0].max())
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(tweedie_offset)
-else:
-	tweedie_offset()
+    h2o.run_test(sys.argv, tweedie_offset)

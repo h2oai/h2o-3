@@ -1,41 +1,39 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def binop_amp():
+def binop_amp(ip,port):
+    
+    
 
-
-
-    iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader_65_rows.csv"))
-
-    rows, cols = iris.dim
+    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
+    rows, cols = iris.dim()
 
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
     amp_res = 5 & iris
-    amp_rows, amp_cols = amp_res.dim
+    amp_rows, amp_cols = amp_res.dim()
     assert amp_rows == rows and amp_cols == cols, "dimension mismatch"
 
     # LHS: scaler, RHS: H2OVec
     amp_res = 1 & iris[1]
-    amp_rows = amp_res.nrow
+    amp_rows = amp_res.nrow()
     assert amp_rows == rows, "dimension mismatch"
-    new_rows = iris[amp_res].nrow
+    new_rows = iris[amp_res].nrow()
     assert new_rows == rows, "wrong number of rows returned"
 
     ###################################################################
 
     # LHS: scaler, RHS: H2OFrame
-    # res = 1.2 + iris[2]
-    # res2 = res[11,:] & iris
-    # res2.show()
-    #
-    # # LHS: scaler, RHS: H2OVec
-    # res = 1.2 + iris[2]
-    # res2 = res[43,:] & iris[1]
-    # res2.show()
+    res = 1.2 + iris[2]
+    res2 = res[11,:] & iris
+    res2.show()
+
+    # LHS: scaler, RHS: H2OVec
+    res = 1.2 + iris[2]
+    res2 = res[43,:] & iris[1]
+    res2.show()
 
     ###################################################################
 
@@ -67,11 +65,11 @@ def binop_amp():
 
     # LHS: H2OFrame, RHS: H2OFrame
     res = iris & iris
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] & iris[1:3]
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:
@@ -90,21 +88,20 @@ def binop_amp():
     #    pass
 
     # LHS: H2OFrame, RHS: scaler
-    # res = 1.2 + iris[2]
-    # res2 = iris & res[55,:]
-    # res2.show()
+    res = 1.2 + iris[2]
+    res2 = iris & res[55,:]
+    res2.show()
 
     # LHS: H2OFrame, RHS: scaler
     res = iris & 0
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for c in range(cols-1):
         for r in range(rows):
             assert res[r,c] == 0.0,  "expected False"
 
-            ###################################################################
+    ###################################################################
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(binop_amp)
-else:
-	binop_amp()
+  h2o.run_test(sys.argv, binop_amp)
+

@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.binop2.pipe <- function() {
- hex <- as.h2o( iris)
+test.binop2.pipe <- function(conn) {
+ hex <- as.h2o(conn, iris)
 
   Log.info("Selecting a column")
   #col <- sample(colnames[colTypes != "enum"], 1)
@@ -27,6 +27,7 @@ test.binop2.pipe <- function() {
   print(head(newHex))
   print(head(as.data.frame(sliced) | 5))
   
+  testEnd()
 }
 
 doTest("Binop2 EQ2 Test: |", test.binop2.pipe)

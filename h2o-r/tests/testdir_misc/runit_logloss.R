@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.logloss <- function() {
+test.logloss <- function(H2Oserver) {
   Log.info("Testing binomial logloss")
 
-  train = h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame="train")
-  test = h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame="test")
+  train = h2o.uploadFile(H2Oserver, locate("smalldata/logreg/prostate.csv"), destination_frame="train")
+  test = h2o.uploadFile(H2Oserver, locate("smalldata/logreg/prostate.csv"), destination_frame="test")
 
   ## Compute LogLoss explicitly from predictions on the test set
   LogLoss <- function(act, pred) {
@@ -32,7 +32,7 @@ test.logloss <- function() {
   ll2 <- h2o.performance(model, test)@metrics$logloss
 
 
-  test3 = h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame="test3")
+  test3 = h2o.uploadFile(H2Oserver, locate("smalldata/logreg/prostate.csv"), destination_frame="test3")
   actual <- as.numeric(test3[,response])
   pred <- predict(model,test3)
 
@@ -61,7 +61,7 @@ test.logloss <- function() {
   ll2 <- h2o.performance(model, test)@metrics$logloss
 
 
-  test3 = h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame="test3")
+  test3 = h2o.uploadFile(H2Oserver, locate("smalldata/logreg/prostate.csv"), destination_frame="test3")
   actual <- as.numeric(test3[,response])
   pred <- predict(model,test3)
 
@@ -73,6 +73,7 @@ test.logloss <- function() {
   expect_true(abs(ll1-ll2)<1e-6)
   expect_true(abs(ll1-ll3)<1e-6)
 
+  testEnd()
 }
 
 doTest("Test logloss computation", test.logloss)

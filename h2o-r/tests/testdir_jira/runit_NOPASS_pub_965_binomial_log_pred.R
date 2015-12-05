@@ -1,11 +1,17 @@
+##
+# NOPASS TEST: The following bug is associated with JIRA PUB-965
+# 'Determine 'correct' behavior for link functions'
+# Testing GLM on prostate dataset with BINOMIAL family and log link
+##
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
 
-test.linkFunctions <- function() {
+test.linkFunctions <- function(conn) {
 
 	print("Read in prostate data.")
-	prostate.data = h2o.importFile( locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
+	prostate.data = h2o.importFile(conn, locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
 
 	print("Run test/train split at 20/80.")
 	prostate.data$split <- ifelse(h2o.runif(prostate.data)>0.8, yes=1, no=0)
@@ -29,6 +35,7 @@ test.linkFunctions <- function() {
 	print(outside.domain)
 	stopifnot(dim(outside.domain)[1] == 0) # There should be no predictions with strength less than 0 or greater than 1
 
+testEnd()
 }
 
 doTest("Testing GLM on prostate dataset with BINOMIAL family and log link", test.linkFunctions)

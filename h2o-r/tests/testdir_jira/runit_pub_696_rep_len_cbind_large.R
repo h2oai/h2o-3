@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub.696 <- function() {
+test.pub.696 <- function(conn) {
 
   a <- h2o.rep_len(0,1000000)
   b <- h2o.runif(a, -1)
@@ -14,6 +14,7 @@ test.pub.696 <- function() {
   a2 <- h2o.rep_len(0,1000000000)
   b2 <- h2o.runif(a, -1)
 
+  testEnd()
 }
 
 doTest("cbind of something created by rep_len", test.pub.696 )

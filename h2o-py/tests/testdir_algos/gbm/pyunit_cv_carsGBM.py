@@ -1,14 +1,12 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import random
 
-def cv_carsGBM():
+def cv_carsGBM(ip,port):
 
     # read in the dataset and construct training set (and validation set)
-    cars =  h2o.import_frame(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
-
+    cars =  h2o.import_frame(path=h2o.locate("smalldata/junit/cars_20mpg.csv"))
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial
@@ -38,7 +36,7 @@ def cv_carsGBM():
                    fold_assignment="Modulo")
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Modulo")
-    pyunit_utils.check_models(gbm1, gbm2, True)
+    h2o.check_models(gbm1, gbm2, True)
 
     # 2. check that cv metrics are different over repeated "Random" runs
     nfolds = random.randint(3,10)
@@ -47,15 +45,15 @@ def cv_carsGBM():
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=nfolds, distribution=distribution, ntrees=5,
                    fold_assignment="Random")
     try:
-        pyunit_utils.check_models(gbm1, gbm2, True)
+        h2o.check_models(gbm1, gbm2, True)
         assert False, "Expected models to be different over repeated Random runs"
     except AssertionError:
         assert True
 
     # 3. folds_column
     num_folds = random.randint(2,5)
-    fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1) for f in range(cars.nrow)]])
-    fold_assignments.set_names(["fold_assignments"])
+    fold_assignments = h2o.H2OFrame(python_obj=[[random.randint(0,num_folds-1)] for f in range(cars.nrow())])
+    fold_assignments.setNames(["fold_assignments"])
     cars = cars.cbind(fold_assignments)
     gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], training_frame=cars, distribution=distribution, ntrees=5,
                   fold_column="fold_assignments", keep_cross_validation_predictions=True)
@@ -94,14 +92,14 @@ def cv_carsGBM():
 
     ## boundary cases
     # 1. nfolds = number of observations (leave-one-out cross-validation)
-    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow, distribution=distribution, ntrees=5,
+    gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow(), distribution=distribution, ntrees=5,
                   fold_assignment="Modulo")
 
     # 2. nfolds = 0
     gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=0, distribution=distribution, ntrees=5)
     # check that this is equivalent to no nfolds
     gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], distribution=distribution, ntrees=5)
-    pyunit_utils.check_models(gbm1, gbm2)
+    h2o.check_models(gbm1, gbm2)
 
     # 3. cross-validation and regular validation attempted
     gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), validation_y=cars[response_col], ntrees=5,
@@ -119,7 +117,7 @@ def cv_carsGBM():
 
     # 2. more folds than observations
     try:
-        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow+1, distribution=distribution, ntrees=5,
+        gbm = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow()+1, distribution=distribution, ntrees=5,
                       fold_assignment="Modulo")
         assert False, "Expected model-build to fail when nfolds > nobs"
     except EnvironmentError:
@@ -142,6 +140,4 @@ def cv_carsGBM():
         assert True
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(cv_carsGBM)
-else:
-	cv_carsGBM()
+    h2o.run_test(sys.argv, cv_carsGBM)

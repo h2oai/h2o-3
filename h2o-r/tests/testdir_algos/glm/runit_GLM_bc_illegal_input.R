@@ -1,13 +1,17 @@
+###############################################################
+###### Catch illegal input for GLM w/ Beta Constraints  #######
+###############################################################
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test <- function() {
+test <- function(conn) {
   ## Import data
   if (!file.exists("/mnt/0xcustomer-datasets/c27/data.csv")) {
     Log.info("h2o-only data")
+    testEnd()
   } else {
-    h2oData <- h2o.importFile( "/mnt/0xcustomer-datasets/c27/data.csv")
-    betaConstraints <- h2o.importFile( "/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+    h2oData <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c27/data.csv")
+    betaConstraints <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
     betaConstraints <- betaConstraints[1:(nrow(betaConstraints)-1),] # remove intercept
     bc <- as.data.frame(betaConstraints)
 
@@ -42,6 +46,7 @@ test <- function() {
     names(c) <- gsub("lower_bounds", replacement = "lowerbounds", x = names(bc))
     checkException(run_glm(c), "Did not detect beta constraint column name typo.", silent = T)
 
+    testEnd()
   }
 }
 

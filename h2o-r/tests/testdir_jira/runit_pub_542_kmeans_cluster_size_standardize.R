@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub_542_kmeans_mismatched_size <- function() {
+test.pub_542_kmeans_mismatched_size <- function(H2Oserver) {
   Log.info("Importing iris_wheader.csv data...\n")
   iris.dat <- read.csv(locate("smalldata/iris/iris_wheader.csv"), header = TRUE)
-  iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
   iris.sum <- summary(iris.hex)
   print(iris.sum)
   
@@ -30,6 +30,7 @@ test.pub_542_kmeans_mismatched_size <- function() {
   pred_km.std.r <- apply(iris.sub.std, 1, closest, getCentersStd(km))
   expect_equal(as.numeric(pred_km.df[,1]+1), as.numeric(pred_km.std.r))
   
+  testEnd()
 }
 
 doTest("PUBDEV-542: K-means cluster sizes differ from labels generated during prediction", test.pub_542_kmeans_mismatched_size)

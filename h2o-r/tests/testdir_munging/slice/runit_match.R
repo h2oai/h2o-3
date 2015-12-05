@@ -1,9 +1,12 @@
+##
+##
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.match <- function() {
+test.match <- function(conn) {
 
-  hex <- as.h2o( iris)
+  hex <- as.h2o(conn, iris)
 
 
   Log.info("Printing the head of the iris data frame.")
@@ -25,6 +28,7 @@ test.match <- function() {
   Log.info("print the dim of the subsetted frame")
   print(dim(hh))
     
+  testEnd()
 }
 
 doTest("test match", test.match)

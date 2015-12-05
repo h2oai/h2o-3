@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pcastand.golden <- function() {
+test.pcastand.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing arrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile( locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
+  arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   
   Log.info("Compare with PCA when center = TRUE, scale. = TRUE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = TRUE)
@@ -13,7 +13,7 @@ test.pcastand.golden <- function() {
   checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   
   pcimpR <- summary(fitR)$importance
-  pcimpH2O <- fitH2O@model$importance
+  pcimpH2O <- fitH2O@model$pc_importance
   Log.info("R Importance of Components:"); print(pcimpR)
   Log.info("H2O Importance of Components:"); print(pcimpH2O)
   Log.info("Compare Importance between R and H2O\n")
@@ -23,6 +23,7 @@ test.pcastand.golden <- function() {
   dimnames(pcimpH2O) <- dimnames(pcimpR)
   expect_equal(pcimpH2O, pcimpR, tolerance = 1e-5)
   
+  testEnd()
 }
 
 doTest("PCA Golden Test: USArrests with Standardization", test.pcastand.golden)

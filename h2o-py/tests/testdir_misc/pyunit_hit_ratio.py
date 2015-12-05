@@ -1,18 +1,14 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def hit_ratio_test():
+def hit_ratio_test(ip,port):
     
     
 
-    air_train = h2o.import_frame(path=pyunit_utils.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
-
-    air_valid = h2o.import_frame(path=pyunit_utils.locate("smalldata/airlines/AirlinesTest.csv.zip"))
-
-    air_test = h2o.import_frame(path=pyunit_utils.locate("smalldata/airlines/AirlinesTest.csv.zip"))
-
+    air_train = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_valid = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
+    air_test = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
     gbm_mult = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth","fMonth"]],
                        y=air_train["fDayOfWeek"].asfactor(),
@@ -32,6 +28,4 @@ def hit_ratio_test():
     test_hit_ratio_table.show()
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(hit_ratio_test)
-else:
-	hit_ratio_test()
+    h2o.run_test(sys.argv, hit_ratio_test)

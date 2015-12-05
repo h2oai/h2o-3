@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.glm2Ridge.golden <- function() {
+test.glm2Ridge.golden <- function(H2Oserver) {
 	
 #RT's solver:
 ridgeLinear<-
@@ -34,7 +34,7 @@ hmR[,13]<- hmR[,7]-mean(hmR[,7])
 x<- as.matrix(hmR[,8:12])
 y<- as.matrix(hmR[,13])
 L=10/nrow(hmR)
-hmH2O<- as.h2o( hmR)
+hmH2O<- as.h2o(H2Oserver, hmR)
 fitRglmnet<-glmnet(x=x, y=y, family="gaussian", alpha=0, lambda=L, nlambda=1, standardize=F)
 RT1<- ridgeLinear(x, y, L)
 
@@ -75,6 +75,7 @@ expect_equal(fitH2O@model$training_metrics@metrics$null_deviance, fitRglmnet$nul
 expect_equal(H2Oratio, fitRglmnet$dev.ratio, tolerance = 0.01)
 
 
+   testEnd()
 }
 
 doTest("GLM2 SimpleRidge", test.glm2Ridge.golden)

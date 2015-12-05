@@ -1,4 +1,3 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
@@ -10,7 +9,7 @@ import scipy.stats
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
 
-def bernoulli_synthetic_data_mediumGBM():
+def bernoulli_synthetic_data_mediumGBM(ip,port):
     
     
 
@@ -53,10 +52,11 @@ def bernoulli_synthetic_data_mediumGBM():
     auc_sci = roc_auc_score(y_test, gbm_sci.predict_proba(X_test)[:,1])
 
     # Compare this result to H2O
-    train_h2o = H2OFrame(zip(*np.column_stack((y_train, X_train)).tolist()))
-    test_h2o = H2OFrame(zip(*np.column_stack((y_test, X_test)).tolist()))
+    train_h2o = H2OFrame(np.column_stack((y_train, X_train)).tolist())
+    test_h2o = H2OFrame(np.column_stack((y_test, X_test)).tolist())
 
-    gbm_h2o = h2o.gbm(x=train_h2o[1:], y=train_h2o["C1"].asfactor(), distribution=distribution, ntrees=ntrees, min_rows=min_rows, max_depth=max_depth, learn_rate=learn_rate, nbins=nbins)
+    gbm_h2o = h2o.gbm(x=train_h2o[1:], y=train_h2o["C1"].asfactor(), distribution=distribution, ntrees=ntrees,
+                      min_rows=min_rows, max_depth=max_depth, learn_rate=learn_rate, nbins=nbins)
     gbm_perf = gbm_h2o.model_performance(test_h2o)
     auc_h2o = gbm_perf.auc()
 
@@ -65,6 +65,4 @@ def bernoulli_synthetic_data_mediumGBM():
                                "scickit auc: {1}".format(auc_h2o, auc_sci)
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(bernoulli_synthetic_data_mediumGBM)
-else:
-	bernoulli_synthetic_data_mediumGBM()
+    h2o.run_test(sys.argv, bernoulli_synthetic_data_mediumGBM)

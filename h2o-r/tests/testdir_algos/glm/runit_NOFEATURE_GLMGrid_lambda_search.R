@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.GLMGrid.lambda.search <- function() {
+test.GLMGrid.lambda.search <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
-  prostate.hex = h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
+  prostate.hex = h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
   prostate.sum = summary(prostate.hex)
   print(prostate.sum)
   
@@ -44,6 +44,7 @@ test.GLMGrid.lambda.search <- function() {
 
   expect_equal(params.bestlambda$lambda_best, params.best$lambda_best)
   expect_true(length(params.best$lambda_all) <= 20)
+  testEnd()
 }
 
 doTest("GLM Grid Lambda Search Test: Prostate", test.GLMGrid.lambda.search)

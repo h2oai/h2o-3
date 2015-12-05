@@ -1,8 +1,15 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+##
+# Test out the var() functionality
+# If H2O dataset x, get back square data frame with dimension ncol(x)
+# If NAs in the frame, they are skipped in calculation unless na.rm = F
+# If any categorical columns, throw an error
+##
 
-test.var <- function() {
-  hex <- as.h2o( iris)  
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
+
+test.var <- function(conn) {
+  hex <- as.h2o(conn, iris)  
 
   Log.info("Slice out iris[,1] and get the variance: ")
   Log.info(paste("R:", var(iris[,1]), "\tH2O:", var(hex[,1])))
@@ -25,6 +32,7 @@ test.var <- function() {
 
   expect_equivalent(h2o_vec, r_vec)
 
+  testEnd()
 }
 
 doTest("Test out the var() functionality", test.var)

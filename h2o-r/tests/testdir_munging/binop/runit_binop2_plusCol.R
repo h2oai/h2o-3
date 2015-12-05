@@ -1,9 +1,10 @@
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 
-colPlus.numeric <- function() {
-  hex <- as.h2o( iris)
+colPlus.numeric <- function(conn) {
+  hex <- as.h2o(conn, iris)
   col <- 1
   Log.info(paste("Using column: ", col))
  
@@ -41,6 +42,7 @@ colPlus.numeric <- function() {
   print(head(hexPlusHex))
   expect_that(as.data.frame(hexPlusHex), equals(2*as.data.frame(fivePlusSliced)))
 
+  testEnd()
 }
 
 doTest("Column Addition With Scaler", colPlus.numeric)

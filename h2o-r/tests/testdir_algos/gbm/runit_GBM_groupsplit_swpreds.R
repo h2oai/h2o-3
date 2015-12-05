@@ -1,13 +1,13 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.GBM.SWpreds <- function() {
+test.GBM.SWpreds <- function(conn) {
   # Training set has two predictor columns
   # X1: 10 categorical levels, 100 observations per level; X2: Unif(0,1) noise
   # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)
   
   Log.info("Importing swpreds_1000x3.csv data...\n")
-  swpreds.hex <- h2o.uploadFile( locate("smalldata/gbm_test/swpreds_1000x3.csv"), destination_frame = "swpreds.hex")
+  swpreds.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/swpreds_1000x3.csv"), destination_frame = "swpreds.hex")
   swpreds.hex[,3] <- as.factor(swpreds.hex[,3])
   Log.info("Summary of swpreds_1000x3.csv from H2O:\n")
   print(summary(swpreds.hex))
@@ -47,6 +47,7 @@ test.GBM.SWpreds <- function() {
   #expect_true(h2o.auc(drfmodel.grpsplit2.perf) >= h2o.auc(drfmodel.nogrp2.perf) - tol)
   #expect_true(h2o.accuracy(drfmodel.grpsplit2.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp2.perf, 0.5) + tol)
   
+  testEnd()
 }
 
 doTest("GBM Test: Classification with Strong/Weak Predictors", test.GBM.SWpreds)

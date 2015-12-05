@@ -1,8 +1,14 @@
+#----------------------------------------------------------------------
+# Purpose:  Create random data and run 20 iterations of PCA on it.
+# Compared to timings for R's pca on same data (#R#)
+#----------------------------------------------------------------------
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 options(echo=TRUE)
 
 heading("BEGIN TEST")
+conn <- h2o.init(ip=myIP, port=myPort)
 
 # Data frame size
 
@@ -30,14 +36,14 @@ for(i in 1:length(rows)){ # changing number of rows
     ncols <- cols[j]
     col_grid[j] <- ncols
     names <- c(names, nrows * ncols) # set the name to be the problem size
-    sst <- system.time(myframe <- h2o.createFrame(rows = nrows, cols = ncols,
+    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrows, cols = ncols,
                                                  seed = 12345, randomize = T, value = 0, real_range = 100,
                                                  categorical_fraction = 0.0, factors = 10,
                                                  integer_fraction = 0.4, integer_range = 100,
                                                  missing_fraction = 0, response_factors = 1, has_response = TRUE) )
 
     create_frm_time[i,j] = as.numeric(sst[3])
-    mem <- h2o.ls()
+    mem <- h2o.ls(conn)
     frm_size[i,j] <- as.numeric(mem[1,1])
     head(myframe)
     #str(myframe)
@@ -62,7 +68,7 @@ for(i in 1:length(rows)){ # changing number of rows
 }
 myframe <- NULL
 gc()
-h2o.rm("myframe")
+h2o.rm(conn,"myframe")
 #col_grid
 #row_grid
 #create_frm_time

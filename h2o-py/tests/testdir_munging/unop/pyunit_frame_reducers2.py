@@ -1,18 +1,17 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import numpy as np
 import random
 
-def expr_reducers():
-
-
+def expr_reducers(ip,port):
+    
+    
 
     data = [[random.uniform(-10000,10000) for r in range(10)] for c in range(10)]
-    h2o_data_1 = h2o.H2OFrame(zip(*data))
+    h2o_data_1 = h2o.H2OFrame(python_obj=data)
     np_data = np.array(data)
-    row, col = h2o_data_1.dim
+    row, col = h2o_data_1.dim()
     h2o_data = h2o_data_1 + 2
     np_data = np_data + 2
 
@@ -43,10 +42,8 @@ def expr_reducers():
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sum values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    pyunit_utils.np_comparison_check(h2o_data.var(), np.cov(np_data, rowvar=0, ddof=1), 10), \
-    "expected equal var values between h2o and numpy"
+    h2o.np_comparison_check(h2o_data.var(), np.cov(np_data, rowvar=0, ddof=1), 10), \
+        "expected equal var values between h2o and numpy"
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(expr_reducers)
-else:
-	expr_reducers()
+    h2o.run_test(sys.argv, expr_reducers)

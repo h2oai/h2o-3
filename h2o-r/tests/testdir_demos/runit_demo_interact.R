@@ -1,19 +1,21 @@
+#----------------------------------------------------------------------
+# Purpose:  Create the x-prod interaction terms between two categorical vectors
+#----------------------------------------------------------------------
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 options(echo=TRUE)
 
 
-
-library(h2o)
-h2o.init()
 
 # Interaction Method Code
 interact.helper <- function(r_level, l_level, l_vec, r_vec) {
    v1 <- l_vec == l_level;
    v2 <- r_vec == r_level;
    vec <- v1 & v2
-   #key <- vec@frame_id
-   h2o.assign(vec, paste('l', l_level, '_', 'r', r_level, sep = ""))
+   key <- vec@frame_id
+   ret <- h2o.assign(vec, paste('l', l_level, '_', 'r', r_level, sep = ""))
+   ret
 }
 
 inner <- function(l_level, r_levels, l_vec, r_vec) { lapply(r_levels, interact.helper, l_level, l_vec, r_vec) }
@@ -47,9 +49,11 @@ interact <- function(fr, l_vec, r_vec) {
 
 
 # Begin Demo #
+
+h <- h2o.init(ip=myIP, port=myPort)
 #uploading data file to h2o
-filePath <- h2o:::.h2o.locate("smalldata/logreg/prostate.csv")
-hex <- h2o.uploadFile(filePath, "prostate")[1:10,]
+filePath <- locate("smalldata/logreg/prostate.csv")
+hex <- h2o.uploadFile(h, filePath, "prostate")[1:10,]
 
 hex$RACE <- as.factor(hex$RACE)
 hex$GLEASON <- as.factor(hex$GLEASON)
@@ -67,8 +71,7 @@ augmented_data_set <- h2o.assign(h2o.cbind(hex, interaction.matrix), "augmented"
 
 h2o.rm(interaction.matrix)
 
-keys <- as.vector(h2o.ls())
-sapply(keys[grep("^l", keys)], function(x) h2o.rm(x))
+h2o.rm( as.character(h2o.ls()[ grep("^l", h2o.ls()[,1]), 1]) ) 
 
 print(augmented_data_set)
 

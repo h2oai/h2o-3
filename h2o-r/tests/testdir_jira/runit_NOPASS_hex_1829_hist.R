@@ -1,12 +1,18 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+######################################################################
+# Test for HEX-1829
+# histograms in R
+######################################################################
 
-test.hex_1829 <- function(){
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+options(echo=TRUE)
+source('../h2o-runit.R')
+
+test.hex_1829 <- function(conn){
 
   heading("BEGIN TEST")
   Log.info("Import small prostate dataset")
   path <- locate("smalldata/logreg/prostate.csv")
-  hex <- h2o.importFile( path, destination_frame="p.hex")
+  hex <- h2o.importFile(conn, path, destination_frame="p.hex")
 
   Log.info("Create small numeric vectors")
   age <- hex$AGE
@@ -32,6 +38,7 @@ test.hex_1829 <- function(){
   run_check_hist(age, age.R, "AGE")
   run_check_hist(vol, vol.R, "VOL")
   
+  testEnd()
 }
 
 doTest("HEX-1829 Test: Create histograms in R from H2OFrame objects", test.hex_1829)

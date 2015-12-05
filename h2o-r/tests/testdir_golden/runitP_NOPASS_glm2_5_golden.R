@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.glm2ProstateAUC.golden <- function() {
+test.glm2ProstateAUC.golden <- function(H2Oserver) {
 	
     #Import data:
     Log.info("Importing Benign data...")
-    prostateH2O<- h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame="cuseH2O")
+    prostateH2O<- h2o.uploadFile(H2Oserver, locate("smalldata/logreg/prostate.csv"), destination_frame="cuseH2O")
     prostateR<- read.csv(locate("smalldata/logreg/prostate.csv"), header=T)
     
  Log.info("Run matching models in R and H2O")
@@ -33,6 +33,7 @@ test.glm2ProstateAUC.golden <- function() {
     expect_equal(fitH2O@model$training_metrics@metrics$AIC, fitR$aic, tolerance = 0.01)
     expect_equal(aucR, aucH, tolerance=0.05)
     
+    testEnd()
 }
 
 doTest("GLM Test: GLM2 - ProstateAUC", test.glm2ProstateAUC.golden)

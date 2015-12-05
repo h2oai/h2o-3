@@ -1,13 +1,11 @@
-from tests import pyunit_utils
 import sys, shutil
 sys.path.insert(1, "../../../")
 import h2o
 import random
 
-def cars_checkpoint():
+def cars_checkpoint(ip,port):
 
-    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
-
+    cars = h2o.upload_file(h2o.locate("smalldata/junit/cars_20mpg.csv"))
     s = cars.runif()
     train = cars[s > .2]
     valid = cars[s <= .2]
@@ -149,6 +147,4 @@ def cars_checkpoint():
         #assert model3.r2(valid=True)!=model4.r2(valid=True), "Expected Model 3 R2: {0} to be different from Model 4 R2: {1}".format(model3.r2(valid=True), model4.r2(valid=True))
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(cars_checkpoint)
-else:
-	cars_checkpoint()
+    h2o.run_test(sys.argv, cars_checkpoint)

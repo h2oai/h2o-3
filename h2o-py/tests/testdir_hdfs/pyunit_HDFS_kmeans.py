@@ -2,27 +2,26 @@
 # Purpose:  This tests k-means on a large dataset.
 #----------------------------------------------------------------------
 
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def hdfs_kmeans():
-
+def hdfs_kmeans(ip, port):
+    
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
-    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
+    running_inside_h2o = h2o.is_running_internal_to_h2o()
 
-    if hadoop_namenode_is_accessible:
-        hdfs_name_node = pyunit_utils.hadoop_namenode()
+    if running_inside_h2o:
+        hdfs_name_node = h2o.get_h2o_internal_hdfs_name_node()
         hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
         hdfs_covtype_file = "/datasets/runit/covtype.data"
 
         print "Import iris_wheader.csv from HDFS"
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_iris_file)
-        iris_h2o = h2o.import_file(url)
-        n = iris_h2o.nrow
+        iris_h2o = h2o.import_frame(url)
+        n = iris_h2o.nrow()
         print "rows: {0}".format(n)
         assert n == 150, "Wrong number of rows. Got {0}. Should have got {1}".format(n, 150)
 
@@ -32,8 +31,8 @@ def hdfs_kmeans():
 
         print "Importing covtype.data from HDFS"
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_covtype_file)
-        covtype_h2o = h2o.import_file(url)
-        n = covtype_h2o.nrow
+        covtype_h2o = h2o.import_frame(url)
+        n = covtype_h2o.nrow()
         print "rows: {0}".format(n)
         assert n == 581012, "Wrong number of rows. Got {0}. Should have got {1}".format(n, 581012)
 
@@ -42,11 +41,7 @@ def hdfs_kmeans():
         print covtype_km
 
     else:
-        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
-
-
+        print "Not running on H2O internal network.  No access to HDFS."
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(hdfs_kmeans)
-else:
-	hdfs_kmeans()
+    h2o.run_test(sys.argv, hdfs_kmeans)

@@ -1,16 +1,14 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import random
 
-def covtype_getModel():
+def covtype_getModel(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
 
     #Log.info("Importing covtype.20k.data...\n")
-    covtype = h2o.import_frame(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
-
+    covtype = h2o.import_frame(path=h2o.locate("smalldata/covtype/covtype.20k.data"))
 
     Y = 54
     X = [x for x in range(0,54) if x not in [20,28]]
@@ -41,6 +39,5 @@ def covtype_getModel():
     covtype_mod3.show()
   
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(covtype_getModel)
-else:
-	covtype_getModel()
+  h2o.run_test(sys.argv, covtype_getModel)
+

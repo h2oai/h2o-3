@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.nbayes.golden <- function() {
+test.nbayes.golden <- function(H2Oserver) {
   Log.info("Importing iris_wheader.csv data...") 
   irisR <- read.csv(locate("smalldata/iris/iris_wheader.csv"), header = TRUE)
-  irisH2O <- h2o.uploadFile( locate("smalldata/iris/iris_wheader.csv"), destination_frame = "irisH2O")
+  irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris_wheader.csv"), destination_frame = "irisH2O")
   
   smoothing <- rnorm(1, mean = 1e-6, sd = 5)^2
   Log.info(paste("Compare with Naive Bayes when x = 1:4, y = 5, laplace =", smoothing))
@@ -19,6 +19,7 @@ test.nbayes.golden <- function() {
   checkNaiveBayesPrediction(predH2O, classR, type = "class", tolerance = 1e-4)
   checkNaiveBayesPrediction(predH2O, postR, type = "raw", tolerance = 1e-4)
   
+  testEnd()
 }
 
 doTest("Naive Bayes Golden Test: Iris with Laplace Smoothing", test.nbayes.golden)

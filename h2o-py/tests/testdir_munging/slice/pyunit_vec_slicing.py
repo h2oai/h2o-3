@@ -1,14 +1,12 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def vec_slicing():
+def vec_slicing(ip,port):
     
     
 
-    iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-
+    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     iris.show()
 
     ###################################################################
@@ -23,6 +21,4 @@ def vec_slicing():
     assert abs(res[0,0] - 3.0) < 1e-10 and abs(res[1,0] - 3.0) < 1e-10 and abs(res[5,0] - 3.5) < 1e-10, "incorrect values"
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(vec_slicing)
-else:
-	vec_slicing()
+    h2o.run_test(sys.argv, vec_slicing)

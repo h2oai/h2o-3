@@ -1,15 +1,12 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def cluster_status_test():
+def cluster_status_test(ip,port):
     
     
 
     h2o.cluster_status()
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(cluster_status_test)
-else:
-	cluster_status_test()
+    h2o.run_test(sys.argv, cluster_status_test)

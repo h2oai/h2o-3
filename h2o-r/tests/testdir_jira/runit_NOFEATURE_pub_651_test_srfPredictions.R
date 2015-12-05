@@ -1,9 +1,13 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+# Run speedRf. Get Mean Squared error from the model.
+# Predict on the same dataset and calculate Mean Squared error in R by pulling in the predictions
 
-test.pub.651 <- function() {
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+options(echo=TRUE)
+source('../h2o-runit.R')
+
+test.pub.651 <- function(conn) {
   print("Parsing the adult income dataset")
-  adlt_income<-h2o.importFile( normalizePath(locate("smalldata/jira/adult.gz")),destination_frame="adlt_income")
+  adlt_income<-h2o.importFile(conn, normalizePath(locate("smalldata/jira/adult.gz")),destination_frame="adlt_income")
   myX = 1:14
   myY = 15
 
@@ -34,6 +38,7 @@ test.pub.651 <- function() {
   print(paste("mean squared error as calculated from prediction file probabilities:  ", mse_calculatedfrom_predFile, sep = ' '))
   print("Expect the above two to be equal")
   expect_true( abs(mse_from_model - mse_calculatedfrom_predFile) < 1e-5 )
+  testEnd()
 }
 
 doTest("PUB-651: Test Predictions on SRF", test.pub.651)

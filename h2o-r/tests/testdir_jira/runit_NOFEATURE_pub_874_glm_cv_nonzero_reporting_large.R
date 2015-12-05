@@ -1,11 +1,18 @@
+##
+# NOPASS TEST: The following bug is associated with JIRA PUB-874
+# 'Discrepancy Reporting GLM Cross Validation Models in R'
+# Testing R's glm model with cross validation on for Binomial and Gaussian distribution
+##
+
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
 
-test <- function() {
+test <- function(conn) {
   
 	print("Reading in Mushroom data for binomial glm.")
-	mushroom.train <-  h2o.importFile( locate("smalldata/glm_test/Mushroom.gz"), destination_frame="mushroom.train")
+	mushroom.train <-  h2o.importFile(conn, locate("smalldata/glm_test/Mushroom.gz"), destination_frame="mushroom.train")
 	mushroom.train$label <- ifelse(mushroom.train$"C1"=="e",1,0)
 	myX <- c(2:23)
 	myY <- "label"
@@ -15,7 +22,7 @@ test <- function() {
 	print(h2o.glm.CV)  #Confirm reported values accurate and match browser
 
 	print("Reading in Abalone data for gaussian glm.")
-	abalone.train <-  h2o.importFile( locate("smalldata/glm_test/Abalone.gz"), destination_frame="abalone.train")
+	abalone.train <-  h2o.importFile(conn, locate("smalldata/glm_test/Abalone.gz"), destination_frame="abalone.train")
 	myX <- c(1:8)
 	myY <- "C9"
 	print("Creating model with CV")
@@ -23,6 +30,7 @@ test <- function() {
 						  alpha=1, lambda_search=T, nfolds=3, use_all_factor_levels=TRUE)
 	print(h2o.glm.CV)  #Confirm reported values accurate and match browser
   
+  testEnd()
 }
 
 doTest("Testing R's glm model with cross validation on for Binomial and Gaussian distribution", test)

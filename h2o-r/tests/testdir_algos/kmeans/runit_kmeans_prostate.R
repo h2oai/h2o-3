@@ -1,12 +1,12 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 # Test k-means clustering on prostate.csv
-test.km.prostate <- function() {
+test.km.prostate <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
   # prostate.hex = h2o.importURL(conn, "https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/prostate.csv", "prostate.hex")
-  # prostate.hex = h2o.importFile( normalizePath("../../../smalldata/logreg/prostate.csv"))
-  prostate.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate.csv"))
+  # prostate.hex = h2o.importFile(conn, normalizePath("../../../smalldata/logreg/prostate.csv"))
+  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"))
   prostate.sum <- summary(prostate.hex)
   print(prostate.sum)
   
@@ -22,6 +22,7 @@ test.km.prostate <- function() {
     prostate.km <- kmeans(prostate.data[,3], centers = i)
   }
 
+  testEnd()
 }
 
 doTest("KMeans Test: Prostate Data", test.km.prostate)

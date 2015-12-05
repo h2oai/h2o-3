@@ -1,15 +1,20 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+###############################################################
+####### Test for Beta Contraints with Priors for GLM  #########
+###############################################################
 
-test.Priors.BetaConstraints <- function() {
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
+
+test.Priors.BetaConstraints <- function(conn) {
 
   Log.info("Import modelStack data into H2O...")
   pathToFile <- "/mnt/0xcustomer-datasets/c27/data.csv"
   pathToConstraints <- "/mnt/0xcustomer-datasets/c27/constraints_indices.csv"
   if (!file.exists(pathToFile) || !file.exists(pathToConstraints)) {
+    testEnd()
   } else {
-    modelStack <- h2o.importFile( pathToFile)
-    betaConstraints.hex <- h2o.importFile( pathToConstraints)
+    modelStack <- h2o.importFile(conn, pathToFile)
+    betaConstraints.hex <- h2o.importFile(conn, pathToConstraints)
     beta_nointercept.hex <- betaConstraints.hex[1:(nrow(betaConstraints.hex)-1),]
 
     ## Set Parameters (default standardization = T)
@@ -117,6 +122,7 @@ test.Priors.BetaConstraints <- function() {
     Log.info("Check gradient of beta constraints without priors or beta given...")
     all(as.numeric(gradient2$beta_given)[-23] < threshold)
     print(as.numeric(gradient1$beta_given)[-23])
+    testEnd()
   }
 }
 

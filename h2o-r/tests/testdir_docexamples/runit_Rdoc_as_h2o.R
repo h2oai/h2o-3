@@ -1,20 +1,21 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.rdocash2o.golden <- function() {
+test.rdocash2o.golden <- function(H2Oserver) {
 	
 #Example from as.factor R example
 
 data(iris)
 summary(iris)
 iris.r <- iris
-iris.h2o <- as.h2o( iris.r, destination_frame="iris.h2o")
+iris.h2o <- as.h2o(H2Oserver, iris.r, destination_frame="iris.h2o")
 class<- class(iris.h2o)
 
 Log.info("Print class of iris.h2o")
 Log.info(paste("iris.h2o  :" ,class))
 
 
+testEnd()
 }
 
 doTest("R Doc as h2o", test.rdocash2o.golden)

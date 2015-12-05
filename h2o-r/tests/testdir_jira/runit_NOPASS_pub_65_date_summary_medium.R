@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub.65 <- function() {
+test.pub.65 <- function(conn) {
   fPath <- tryCatch({
     locate("bigdata/laptop/jira/pub_65.csv")
   }, warning= function(w) {
@@ -9,6 +9,7 @@ test.pub.65 <- function() {
   }, error= function(e) {
     print("File bigdata/laptop/jira/pub_65.csv could not be found.Please run ./gradlew syncBigdataLaptop (or gradlew.bat syncBigdataLaptop for Windows) to retrieve the file.")
   }, finally = {
+    testEnd()
   })
   fzPath <- locate("bigdata/laptop/jira/pub_65.csv.zip")
   
@@ -19,12 +20,12 @@ test.pub.65 <- function() {
   print(hexR.sum)
   
   Log.info("Import data to H2O with key = 'p65' and print summary")
-  hex <- h2o.importFile( normalizePath(fzPath), "p65")
+  hex <- h2o.importFile(conn, normalizePath(fzPath), "p65")
   hex.sum <- summary(hex)
   print(hex.sum)
   
   Log.info("Import data to H2O with key = 'p65_dupe' and print summary")
-  hex2 <- h2o.importFile( normalizePath(fzPath), "p65_dupe")
+  hex2 <- h2o.importFile(conn, normalizePath(fzPath), "p65_dupe")
   hex2.sum <- summary(hex2)
   print(hex2.sum)
   
@@ -33,6 +34,7 @@ test.pub.65 <- function() {
   
   Log.info("Check that H2O summaries match R")
   checkSummary(hex.sum, hexR.sum)
+  testEnd()
 }
 
 doTest("PUBDEV-65: H2O gives inconsistent summaries of Date cols", test.pub.65)

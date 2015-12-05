@@ -1,15 +1,13 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
 
-def expr_show():
+def expr_show(ip,port):
     
     
 
-    iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-
+    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     print "iris:"
     iris.show()
 
@@ -27,6 +25,4 @@ def expr_show():
     res3.show()
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(expr_show)
-else:
-	expr_show()
+    h2o.run_test(sys.argv, expr_show)

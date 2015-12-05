@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.GLM.covtype <- function() {
+test.GLM.covtype <- function(conn) {
   Log.info("Importing covtype.20k.data...\n")
-  covtype.hex = h2o.uploadFile( locate("smalldata/covtype/covtype.20k.data"))
+  covtype.hex = h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
 
   myY = 55
   myX = setdiff(1:54, c(21,29))   # Cols 21 and 29 are constant, so must be explicitly ignored
@@ -38,6 +38,7 @@ test.GLM.covtype <- function() {
   Log.info(cat("GLM (L1) on", covtype.hex@frame_id, "took", as.numeric(end-start), "seconds\n"))
   print(covtype.h2o3)
 
+  testEnd()
 }
 
 doTest("Test GLM on covtype(20k) dataset", test.GLM.covtype)

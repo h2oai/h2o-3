@@ -1,10 +1,15 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+#----------------------------------------------------------------------
+# Purpose:  This test exercises slices and quantiles from R.
+#----------------------------------------------------------------------
 
 options(error=traceback, warn=1)
 # setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_misc")
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 options(echo=TRUE)
+TEST_ROOT_DIR <- ".."
+source(sprintf("%s/%s", TEST_ROOT_DIR, "h2o-runit.R"))
+
+
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
@@ -33,7 +38,7 @@ combine_ratio = 0.2
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-#conn <- new("H2OConnection", ip=myIP, port=myPort)
+conn <- new("H2OConnection", ip=myIP, port=myPort)
 
 
 #----------------------------------------------------------------------
@@ -78,7 +83,7 @@ df.gen <- function() {
 
 set.seed(556677)
 df = df.gen()
-df = as.h2o( df, key = "orig.hex")
+df = as.h2o(conn, df, key = "orig.hex")
 
 
 #----------------------------------------------------------------------
@@ -140,13 +145,13 @@ slices = slices.gen()
 
 heading("Doing each slice and calculating the quantile...")
 
-h2o.removeLastValues <- function() {
-    df <- h2o.ls()
+h2o.removeLastValues <- function(conn) {
+    df <- h2o.ls(conn)
     keys_to_remove <- grep("^Last\\.value\\.", perl=TRUE, x=df$Key, value=TRUE)
     # TODO: Why are there duplicates?  Probably a bug.
     unique_keys_to_remove = unique(keys_to_remove)
     if (length(unique_keys_to_remove) > 0) {
-        h2o.rm(unique_keys_to_remove)
+        h2o.rm(conn, unique_keys_to_remove)
     }
 }
 
@@ -194,7 +199,7 @@ for (i in 1:nrow(slices)) {
     cat("Removing last values...\n")
     slice.df = 0
     gc()
-    h2o.removeLastValues()
+    h2o.removeLastValues(conn)
 }
 
 print(slices)

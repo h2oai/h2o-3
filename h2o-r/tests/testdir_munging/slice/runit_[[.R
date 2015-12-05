@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.columndereference <- function() {
+test.columndereference <- function(conn) {
   Log.info('test column dereference')
 
-  hdf <- h2o.importFile( locate('smalldata/jira/pub-180.csv'))
-  otherhdf <- h2o.importFile( locate('smalldata/jira/v-11.csv'))
+  hdf <- h2o.importFile(conn, locate('smalldata/jira/pub-180.csv'))
+  otherhdf <- h2o.importFile(conn, locate('smalldata/jira/v-11.csv'))
 
   column <- 'colgroup2'
 
@@ -21,6 +21,7 @@ test.columndereference <- function() {
   ldf <- as.data.frame( hdf[[ column ]] )[,1]
   expect_that(ldf, equals(c(2,4,6,11,3,4,6,11,2,4,6,11)) )
 
+  testEnd()
 }
 
 doTest("test column dereference and assignment", test.columndereference)

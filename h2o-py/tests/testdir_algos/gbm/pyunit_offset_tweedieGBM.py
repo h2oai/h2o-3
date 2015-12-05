@@ -1,14 +1,12 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def offset_tweedie():
+def offset_tweedie(ip,port):
     # Connect to a pre-existing cluster
     
 
-    insurance = h2o.import_frame(pyunit_utils.locate("smalldata/glm_test/insurance.csv"))
-
+    insurance = h2o.import_frame(h2o.locate("smalldata/glm_test/insurance.csv"))
 
     insurance["offset"] = insurance["Holders"].log()
 
@@ -24,14 +22,12 @@ def offset_tweedie():
     #	pr = exp(pr+log(Insurance$Holders))
     assert abs(-1.869702 - gbm._model_json['output']['init_f']) < 1e-5, "expected init_f to be {0}, but got {1}".\
         format(-1.869702, gbm._model_json['output']['init_f'])
-    assert abs(49.21591 - predictions.mean()[0]) < 1e-4, "expected prediction mean to be {0}, but got {1}". \
-        format(49.21591, predictions.mean()[0])
+    assert abs(49.21591 - predictions.mean()) < 1e-4, "expected prediction mean to be {0}, but got {1}". \
+        format(49.21591, predictions.mean())
     assert abs(1.0258 - predictions.min()) < 1e-4, "expected prediction min to be {0}, but got {1}". \
         format(1.0258, predictions.min())
     assert abs(392.4651 - predictions.max()) < 1e-2, "expected prediction max to be {0}, but got {1}". \
         format(392.4651, predictions.max())
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(offset_tweedie)
-else:
-	offset_tweedie()
+    h2o.run_test(sys.argv, offset_tweedie)

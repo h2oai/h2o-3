@@ -1,11 +1,19 @@
+##
+# Testing glm performance (reasonable coefficients) on unbalanced synthetic dataset with perfect separation.
+# Separation recognized by R glm with following warning: 
+#       1: glm.fit: algorithm did not converge 
+#       2: glm.fit: fitted probabilities numerically 0 or 1 occurred 
+##
+
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 
-test <- function() {
+test <- function(conn) {
 
     print("Read in synthetic unbalanced dataset")
-        data.u.hex <- h2o.uploadFile( locate("smalldata/synthetic_perfect_separation/unbalanced.csv"), destination_frame="data.u.hex")
+        data.u.hex <- h2o.uploadFile(conn, locate("smalldata/synthetic_perfect_separation/unbalanced.csv"), destination_frame="data.u.hex")
 
     print("Fit model on dataset.")
         model.unbalanced <- h2o.glm(x=c("x1", "x2"), y="y", data.u.hex, family="binomial", alpha=0, nfolds=0, lambda=1e-8)
@@ -16,6 +24,7 @@ test <- function() {
         suppressWarnings((coef$"Intercept"<-NULL))
         stopifnot(coef < 50)
 
+    testEnd()
 }
 
 doTest("Testing glm performance on unbalanced synthetic dataset with perfect separation.", test)

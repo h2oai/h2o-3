@@ -1,12 +1,10 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def weights_and_distributions():
+def weights_and_distributions(ip,port):
 
-    htable  = h2o.upload_file(pyunit_utils.locate("smalldata/gbm_test/moppe.csv"))
-
+    htable  = h2o.upload_file(h2o.locate("smalldata/gbm_test/moppe.csv"))
     htable["premiekl"] = htable["premiekl"].asfactor()
     htable["moptva"] = htable["moptva"].asfactor()
     htable["zon"] = htable["zon"]
@@ -28,6 +26,4 @@ def weights_and_distributions():
     predictions = dl.predict(htable)
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(weights_and_distributions)
-else:
-	weights_and_distributions()
+    h2o.run_test(sys.argv, weights_and_distributions)

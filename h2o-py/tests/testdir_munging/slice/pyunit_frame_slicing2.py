@@ -1,14 +1,12 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def expr_slicing():
+def expr_slicing(ip,port):
     
     
 
-    iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-
+    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
     iris.show()
 
     ###################################################################
@@ -39,6 +37,4 @@ def expr_slicing():
            abs(res6[3,3] - 0.4) < 1e-10, "incorrect values"
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(expr_slicing)
-else:
-	expr_slicing()
+    h2o.run_test(sys.argv, expr_slicing)

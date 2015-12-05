@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.summary.numeric <- function() {
+test.summary.numeric <- function(conn) {
   Log.info("Importing USArrests.csv data...\n")
-  # arrests.hex <- h2o.importFile( locate("smalldata/pca_test/USArrests.csv", schema = "local"), "arrests.hex")
-  arrests.hex <- as.h2o( USArrests, destination_frame = "arrests.hex")
+  # arrests.hex <- h2o.importFile(conn, locate("smalldata/pca_test/USArrests.csv", schema = "local"), "arrests.hex")
+  arrests.hex <- as.h2o(conn, USArrests, destination_frame = "arrests.hex")
 
   Log.info("Check that summary works...")
   summary(arrests.hex)
@@ -25,6 +25,7 @@ test.summary.numeric <- function() {
   print(summary(tail(arrests.hex)))
   checkSummary(summary(tail(arrests.hex)), summary_2)
 
+  testEnd()
 }
 
 doTest("Summary Tests", test.summary.numeric)

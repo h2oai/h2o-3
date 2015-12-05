@@ -1,28 +1,26 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def binop_lt():
+def binop_lt(ip,port):
+    
+    
 
-
-
-    iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-
-    rows, cols = iris.dim
+    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    rows, cols = iris.dim()
     iris.show()
 
     #frame/scaler
     res = iris < 5
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    new_rows = iris[res[0]].nrow
+    new_rows = iris[res[0]].nrow()
     assert new_rows == 22, "wrong number of rows returned"
 
     res = 5 > iris
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    new_rows = iris[res[0]].nrow
+    new_rows = iris[res[0]].nrow()
     assert new_rows == 22, "wrong number of rows returned"
 
     #frame/vec
@@ -42,18 +40,18 @@ def binop_lt():
 
     #vec/vec
     res = iris[0] < iris[1]
-    res_rows = res.nrow
+    res_rows = res.nrow()
     assert res_rows == rows, "dimension mismatch"
-    new_rows = iris[res].nrow
+    new_rows = iris[res].nrow()
     assert new_rows == 0, "wrong number of rows returned"
 
     # frame/frame
     res = iris < iris
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] < iris[1:3]
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:
@@ -63,8 +61,5 @@ def binop_lt():
     #except EnvironmentError:
     #    pass
 
-
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(binop_lt)
-else:
-	binop_lt()
+    h2o.run_test(sys.argv, binop_lt)

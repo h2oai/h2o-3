@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.GBM.bernoulli <- function() {
+test.GBM.bernoulli <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
-  prostate.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex")
+  prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex")
   Log.info("Converting CAPSULE and RACE columns to factors...\n")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
   prostate.hex$RACE <- as.factor(prostate.hex$RACE)
@@ -53,6 +53,7 @@ test.GBM.bernoulli <- function() {
   print(prostate.h2o@model$init_f)
   expect_equal(prostate.h2o@model$init_f, f0, tolerance=1e-4) ## check the intercept term
 
+  testEnd()
 }
 
 doTest("GBM Test: prostate.csv with Bernoulli distribution", test.GBM.bernoulli)

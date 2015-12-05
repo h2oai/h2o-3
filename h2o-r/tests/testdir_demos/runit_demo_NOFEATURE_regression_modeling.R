@@ -1,5 +1,12 @@
+#----------------------------------------------------------------------
+# Purpose:  Split Boston Housing dataset into train and test sets.
+#           Build Regression models and predict on a test Set.
+#           Print Mean Squared errors on test set
+# Dataset location: http://archive.ics.uci.edu/ml/datasets/Housing
+#----------------------------------------------------------------------
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 test <- function(h) {
 	#If you want to run the below code in R terminal, add the next two commented lines that inports h2o library into R and starts H2O cloud
 	#Then modify file path on line 16 to specify full path to the data file, like- "/Users/.../.." 
@@ -87,6 +94,7 @@ test <- function(h) {
                depth, "  MSE_on_Test_set=", round(MSE,2), sep=''))
 	}	  
 
+testEnd()
 }
 
 doTest("Regression modeling, Split data into test/train, do grid search on gbm and rf and predict on test set, print the mse's and model params ", test)

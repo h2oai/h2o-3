@@ -1,26 +1,24 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def binop_div():
+def binop_div(ip,port):
+    
+    
 
-
-
-    iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-
-    rows, cols = iris.dim
+    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+    rows, cols = iris.dim()
     iris.show()
 
     #frame/scaler
     res = iris / 5
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([res[c].sum() for c in range(cols-1)], [175.3, 91.62, 112.76, 35.96]):
-        assert abs(x - y) < 1e-7,  "unexpected column sums."
+      assert abs(x - y) < 1e-7,  "unexpected column sums."
 
     res = 5 / iris
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     #frame/vec
@@ -54,11 +52,11 @@ def binop_div():
 
     # frame/frame
     res = iris / iris
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 
     res = iris[0:2] / iris[1:3]
-    res_rows, res_cols = res.dim
+    res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == 2, "dimension mismatch"
 
     #try:
@@ -69,6 +67,5 @@ def binop_div():
     #  pass
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(binop_div)
-else:
-	binop_div()
+    h2o.run_test(sys.argv, binop_div)
+

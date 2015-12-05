@@ -1,9 +1,16 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+##
+# Test out the var() functionality
+# If H2O dataset x, get back square data frame with dimension ncol(x)
+# If NAs in the frame, they are skipped in calculation unless na.rm = F
+# If any categorical columns, throw an error
+##
 
-test.sdev <- function() {
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
+
+test.sdev <- function(conn) {
   Log.info("Uploading iris/iris_wheader.csv")
-  iris.hex <- h2o.importFile( locate("smalldata/iris/iris_wheader.csv"), "iris_wheader.hex")
+  iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris_wheader.hex")
   iris.dat <- read.csv(locate("smalldata/iris/iris_wheader.csv"))
   
   Log.info("Standard deviation of each column: ")
@@ -16,6 +23,7 @@ test.sdev <- function() {
 
   expect_error(sd(iris.hex[,1:2]))   # Error if more than one column
   
+  testEnd()
 }
 
 doTest("Test out the sd() functionality", test.sdev)

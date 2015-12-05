@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 get.eval.result <- function(conn, expr) {
   res <-  .h2o.__exec2(conn, expr)
@@ -13,13 +13,14 @@ get.eval.result <- function(conn, expr) {
 #        library(h2o)
 #        library(testthat)
 #        h2o.startLogging()
+#        conn <- h2o.init()
 
-test.round_prec <- function() {
+test.round_prec <- function(conn) {
     a <- c(5.5, 2.5, 1.6, 1.1, 1.0, -1.0, -1.1, -1.6, -2.5, -5.5)
     b <- pi * 100^(-1:3)
     
-    A <- as.h2o( a, "A")
-    B <- as.h2o( b, "B")
+    A <- as.h2o(conn, a, "A")
+    B <- as.h2o(conn, b, "B")
     
     s1_t <- trunc(a); s1_r <- round(a); s1_s <- signif(a)
     s2_t <- trunc(b); s2_r <- round(b,3); s2_s <- signif(b,3)
@@ -49,6 +50,7 @@ test.round_prec <- function() {
     Log.info("Check signif(B, 3) matches R")
     S2_s <- as.data.frame(signif(B, 3))
     expect_true(all(S2_s == s2_s))
+    testEnd()
 }
 
 doTest("Test trunc, round and signif", test.round_prec)

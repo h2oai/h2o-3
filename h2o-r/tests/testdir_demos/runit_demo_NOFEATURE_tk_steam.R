@@ -1,5 +1,16 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+#----------------------------------------------------------------------
+# Tom's demonstration example.
+#
+# Purpose:  Fast local data prepapration for multi-model scoring option
+#           from H2O Web UI menu (aka steam).
+#----------------------------------------------------------------------
+
+# Source setup code to define myIP and myPort and helper functions.
+# If you are having trouble running this, just set the condition to FALSE
+# and hardcode myIP and myPort.
+if (TRUE) {
+  # Set working directory so that the source() below works.
+  setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
   
   if (FALSE) {
     setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_demos")
@@ -18,8 +29,9 @@ source("../../scripts/h2o-r-test-setup.R")
   filePath <- "https://raw.github.com/0xdata/h2o/master/smalldata/airlines/allyears2k_headers.zip"
 }
 
+conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
-df <- h2o.importFile( filePath, "df")
+df <- h2o.importFile(conn, filePath, "df")
 
 s <- h2o.runif(df)
 air.train <- df[s <= 0.8,]

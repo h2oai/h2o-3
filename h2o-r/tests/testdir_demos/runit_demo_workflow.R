@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-demo_workflow <- function() {
+demo_workflow <- function(conn) {
     Log.info("Import small iris data...")
-    hex <- as.h2o( iris, destination_frame = "iris")
+    hex <- as.h2o(conn, iris, destination_frame = "iris")
     k <- 3
     setSeed <- 148008988978
     
@@ -51,6 +51,7 @@ demo_workflow <- function() {
     }
     confusion_matrix(pred1.R)
     # confusion_matrix(pred2.R)
+    testEnd()
 }
 
 doTest("Build KMeans model for iris, score and build confusion matrix.", demo_workflow)

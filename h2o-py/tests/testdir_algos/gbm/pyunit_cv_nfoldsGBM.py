@@ -1,14 +1,12 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def cv_nfoldsGBM():
+def cv_nfoldsGBM(ip,port):
   
   
 
-  prostate = h2o.import_frame(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-
+  prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
   prostate[1] = prostate[1].asfactor()
   prostate.summary()
 
@@ -23,6 +21,4 @@ def cv_nfoldsGBM():
     assert False, "expected an error"
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(cv_nfoldsGBM)
-else:
-	cv_nfoldsGBM()
+  h2o.run_test(sys.argv, cv_nfoldsGBM)

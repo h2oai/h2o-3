@@ -1,11 +1,18 @@
+##
+# Comparison of H2O to R with varying link functions for the GAMMA family on prostate dataset
+# Link functions: inverse (canonical link)
+#				  log
+#				  identity
+##
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 
-test.linkFunctions <- function() {
+test.linkFunctions <- function(conn) {
 
 	print("Read in prostate data.")
-	h2o.data = h2o.uploadFile( locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")    
+	h2o.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")    
 	R.data = as.data.frame(as.matrix(h2o.data))
 	
 	print("Testing for family: GAMMA")
@@ -57,6 +64,7 @@ test.linkFunctions <- function() {
 		checkTrue(difference <= 0.01, "h2o's model's residualDeviance/nullDeviance is more than 0.01 lower than R's model's")
 	}
 
+testEnd()
 }
 
 doTest("Comparison of H2O to R with varying link functions for the GAMMA family", test.linkFunctions)

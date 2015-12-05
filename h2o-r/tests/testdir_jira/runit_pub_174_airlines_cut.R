@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub_174_cut <- function() {
+test.pub_174_cut <- function(conn) {
   Log.info('Uploading allyears2k_header.csv to H2O...')
-  air.hex <- h2o.importFile( normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
+  air.hex <- h2o.importFile(conn, normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
   
   Log.info("Cut ArrDelay column with user-specified breaks")
   air.cut <- cut(air.hex$ArrDelay, breaks = c(-1000, -20, 0, 5, 15, 60, 120, 160, 1500))
@@ -16,6 +16,7 @@ test.pub_174_cut <- function() {
   print(air.table)
   # expect_true(all(air.table == c(1326, 18211, 5797, 302, 8048, 256, 7245, 1598)))
   
+  testEnd()
 }
 
 doTest("PUB-174 h2o.cut on airlines data with NAs", test.pub_174_cut)

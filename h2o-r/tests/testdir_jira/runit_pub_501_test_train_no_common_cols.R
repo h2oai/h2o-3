@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub.501 <- function() {
+test.pub.501 <- function(conn) {
   Log.info("Importing ecology_model.csv and covtype.20k.data...")
-  tr <- h2o.importFile( normalizePath(locate("smalldata/gbm_test/ecology_model.csv")), destination_frame = "tr")
-  train <- h2o.importFile( normalizePath(locate("smalldata/covtype/covtype.20k.data")), destination_frame = "train")
+  tr <- h2o.importFile(conn, normalizePath(locate("smalldata/gbm_test/ecology_model.csv")), destination_frame = "tr")
+  train <- h2o.importFile(conn, normalizePath(locate("smalldata/covtype/covtype.20k.data")), destination_frame = "train")
   expect_false(any(colnames(train) %in% colnames(tr)))
   
   myX <- setdiff(colnames(tr), c("Angaus", "Site"))
@@ -14,6 +14,7 @@ test.pub.501 <- function() {
   
   Log.info("Predict on covtype.20k.data using GBM model")
   expect_error(predict(object = tru.gbms, newdata = train))
+  testEnd()
 }
 
 doTest("Test PUBDEV-501: No error when predicting on test data with all different cols from train", test.pub.501)

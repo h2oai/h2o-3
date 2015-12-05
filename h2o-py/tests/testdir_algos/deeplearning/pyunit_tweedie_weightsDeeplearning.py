@@ -1,20 +1,18 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def tweedie_weights():
+def tweedie_weights(ip,port):
 
-    data = h2o.import_frame(pyunit_utils.locate("smalldata/glm_test/cancar_logIn.csv"))
-
-    data["C1M3"] = ((data["Class"] == 1) & (data["Merit"] == 3)).asfactor()
-    data["C3M3"] = ((data["Class"] == 3) & (data["Merit"] == 3)).asfactor()
-    data["C4M3"] = ((data["Class"] == 4) & (data["Merit"] == 3)).asfactor()
-    data["C1M2"] = ((data["Class"] == 1) & (data["Merit"] == 2)).asfactor()
+    data = h2o.import_frame(h2o.locate("smalldata/glm_test/cancar_logIn.csv"))
+    data["C1M3"] = (data["Class"] == 1 and data["Merit"] == 3).asfactor()
+    data["C3M3"] = (data["Class"] == 3 and data["Merit"] == 3).asfactor()
+    data["C4M3"] = (data["Class"] == 4 and data["Merit"] == 3).asfactor()
+    data["C1M2"] = (data["Class"] == 1 and data["Merit"] == 2).asfactor()
     data["Merit"] = data["Merit"].asfactor()
     data["Class"] = data["Class"].asfactor()
     loss = data["Cost"] / data["Insured"]
-    loss.set_name(0,"Loss")
+    loss.setName(0,"Loss")
     cancar = loss.cbind(data)
 
     # Without weights
@@ -33,6 +31,4 @@ def tweedie_weights():
                           score_validation_samples = 0,weights_column = "Insured",training_frame = cancar)
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(tweedie_weights)
-else:
-	tweedie_weights()
+    h2o.run_test(sys.argv, tweedie_weights)

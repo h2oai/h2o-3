@@ -1,11 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.glm2Poissonregression.golden <- function() {
+test.glm2Poissonregression.golden <- function(H2Oserver) {
 	
 #Import data: 
 Log.info("Importing CUSE data...") 
-cuseH2O<- h2o.uploadFile( locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
+cuseH2O<- h2o.uploadFile(H2Oserver, locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
 cuseR<- read.csv(locate("smalldata/logreg/cuseexpanded.csv"), header=T)
 
 Log.info("Test H2O Poisson not regularized")
@@ -28,6 +28,7 @@ expect_equal(fitH2O@model$training_metrics@metrics$residual_degrees_of_freedom, 
 expect_equal(fitH2O@model$training_metrics@metrics$null_degrees_of_freedom, fitR$df.null, tolerance = 0.01)
 expect_equal(fitH2O@model$training_metrics@metrics$AIC, fitR$aic, tolerance = 0.01)
 
+testEnd()
 }
 
 doTest("GLM Test: Poisson Non Regularized", test.glm2Poissonregression.golden)

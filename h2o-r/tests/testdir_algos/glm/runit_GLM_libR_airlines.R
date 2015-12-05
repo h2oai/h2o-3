@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 Log.info("Loading LiblineaR and ROCR packages\n")
 if(!"LiblineaR" %in% rownames(installed.packages())) install.packages("LiblineaR")
@@ -7,7 +7,7 @@ if(!"ROCR" %in% rownames(installed.packages())) install.packages("ROCR")
 require(LiblineaR)
 require(ROCR)
 
-test.LiblineaR.airlines <- function() {
+test.LiblineaR.airlines <- function(conn) {
   L1logistic <- function(train,trainLabels,test,testLabels,trainhex,testhex) {
     Log.info("Using these parameters for LiblineaR: \n")
     Log.info("   type =    0: Logistic Regression L1-Regularized\n")
@@ -85,8 +85,8 @@ test.LiblineaR.airlines <- function() {
   #airlinesTest  <- locate("smalldata/airlines/AirlinesTest.csv.zip")
   #aTrain        <- na.omit(read.zip(zipfile = airlinesTrain, exdir = exdir))
   #aTest         <- na.omit(read.zip(zipfile = airlinesTest,  exdir = exdir))
-  #trainhex      <- h2o.uploadFile( paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
-  #testhex       <- h2o.uploadFile( paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
+  #trainhex      <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
+  #testhex       <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
   #remove_exdir(exdir)
   #
   #print(trainhex)
@@ -107,6 +107,7 @@ test.LiblineaR.airlines <- function() {
   #models  <- L1logistic(xTrain,yTrain,xTest,yTest,trainhex,testhex)
   #compareCoefs(models[[1]], models[[2]], conn)
   
+  testEnd()
 }
 
 doTest("LiblineaR Test: Airlines", test.LiblineaR.airlines)

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.pub_208 <- function() {
+test.pub_208 <- function(localH2O) {
 
 rdat <- read.csv(normalizePath(locate("smalldata/jira/pub_208.csv")))
 
@@ -16,7 +16,7 @@ str(rdat)
 
 factor_columns <- which(unlist(lapply(rdat, is.factor)))
 
-hex <- as.h2o( rdat)
+hex <- as.h2o(localH2O, rdat)
 
 str(hex)
 
@@ -24,6 +24,7 @@ expect_true(is.factor(hex$col1))
 expect_true(is.factor(hex$col2))
 expect_true(is.factor(hex$col5))
 
+testEnd()
 
 }
 

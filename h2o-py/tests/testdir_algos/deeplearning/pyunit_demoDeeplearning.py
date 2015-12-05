@@ -1,24 +1,21 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1,"../../../")
 import h2o
 
 
-def deepLearningDemo():
+def deepLearningDemo(ip, port):
 
   
 
   # Training data
-  train_data = h2o.import_frame(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
-
+  train_data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
   train_data = train_data.drop('Site')
   train_data['Angaus'] = train_data['Angaus'].asfactor()
   print train_data.describe()
   train_data.head()
 
   # Testing data
-  test_data = h2o.import_frame(path=pyunit_utils.locate("smalldata/gbm_test/ecology_eval.csv"))
-
+  test_data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_eval.csv"))
   test_data['Angaus'] = test_data['Angaus'].asfactor()
   print test_data.describe()
   test_data.head()
@@ -47,6 +44,4 @@ def deepLearningDemo():
   dl.show()
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(deepLearningDemo)
-else:
-	deepLearningDemo()
+  h2o.run_test(sys.argv, deepLearningDemo)

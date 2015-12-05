@@ -1,34 +1,34 @@
+#----------------------------------------------------------------------
+# Purpose:  This test exercises the GBM model downloaded as java code
+#           for the iris data set.
+#
+# Notes:    Assumes unix environment.
+#           curl, javac, java must be installed.
+#           java must be at least 1.6.
+#----------------------------------------------------------------------
+
+options(echo=FALSE)
+TEST_ROOT_DIR <- ".."
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source("../h2o-runit.R")
+
 
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-test.gbm.javapredict.smtrees <- function() {
+
 n.trees <- 3
 interaction.depth <- 1
 n.minobsinnode <- 2
 shrinkage <- 1
 distribution <- "gaussian"
 train <- locate("smalldata/gbm_test/smtrees.csv")
-training_frame <- h2o.importFile(train)
 test <- locate("smalldata/gbm_test/smtrees.csv")
-test_frame <- h2o.importFile(test)
 x = c("girth","height")
 y = "vol"
 
-params <- list()
-params$ntrees <- n.trees
-params$max_depth <- interaction.depth
-params$min_rows <- n.minobsinnode
-params$x <- x
-params$y <- y
-params$training_frame <- training_frame
 
-doJavapredictTest("gbm",test,test_frame,params)
-
-}
 #----------------------------------------------------------------------
 # Run the test
 #----------------------------------------------------------------------
-doTest("GBM test", test.gbm.javapredict.smtrees)
+source('../Utils/shared_javapredict_GBM.R')

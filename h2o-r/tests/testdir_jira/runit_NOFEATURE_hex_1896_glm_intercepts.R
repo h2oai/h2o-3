@@ -1,10 +1,15 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+## This test is to check the no-intercept argument for GLM
+## The test will import the prostate data set,
+## runs glm with and without intecept and create predictions from both models,
+## compare the two h2o glm models with a glmnet model ran without offset.
 
-test.GLM.zero_intercept <- function() {
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../h2o-runit.R')
+
+test.GLM.zero_intercept <- function(conn) {
   Log.info("Importing prostate.csv data...\n")
   # Fix this next line!!
-  prostate.hex = h2o.importFile( normalizePath(locate('smalldata/logreg/prostate.csv')))
+  prostate.hex = h2o.importFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')))
   ## Rebalance should happen internally now
   # prostate.rebalanced = h2o.rebalance(data = prostate.hex, chunks = 16, key = "prostate.rebalanced")
   ## Import data into R
@@ -68,6 +73,7 @@ test.GLM.zero_intercept <- function() {
   check_coeff(prostate.glm.h2o1@model$coefficients, glmnet_coeff(prostate.glmnet1))
   check_coeff(prostate.glm.h2o2@model$coefficients, glmnet_coeff(prostate.glmnet2))
 
+  testEnd()
 }
 
 doTest("GLM Test: Intercepts", test.GLM.zero_intercept)

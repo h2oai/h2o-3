@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 #import multimodal data set; parse as FV
-test.summary2.numeric <- function() {
+test.summary2.numeric <- function(conn) {
   Log.info("Importing wonkysummary.csv data...")
-  wonkysummary.hex <- h2o.importFile( locate("smalldata/jira/wonkysummary.csv"), "wonky.hex")
+  wonkysummary.hex <- h2o.importFile(conn, locate("smalldata/jira/wonkysummary.csv"), "wonky.hex")
 
 #check that summary2 gives expected output
   Log.info("Check that summary gives output...")
@@ -27,6 +27,7 @@ test.summary2.numeric <- function() {
   print(summary_)
 
   checkSummary(H2Osum, wonky.Rsum) 
+  testEnd()
 }
 
 doTest("Summary Tests", test.summary2.numeric)

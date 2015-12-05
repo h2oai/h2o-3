@@ -1,7 +1,16 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+##
+# Test: Saving and Loading GLM Model (HEX-1775)
+# Description: Build GLM model, save model in R, copy model and load in R
+##
 
-test.hex_1775 <- function() {
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+# setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_jira")
+#setwd("/Users/Amy/Documents/h2o/R/tests/testdir_jira")
+
+source('../h2o-runit.R')
+conn = h2o.init()
+
+test.hex_1775 <- function(conn) {
   temp_dir = tempdir()
   temp_subdir1 = paste(temp_dir, "tmp", sep = .Platform$file.sep)
   temp_subdir2 = paste(temp_dir, "tmp2", sep = .Platform$file.sep)
@@ -9,8 +18,8 @@ test.hex_1775 <- function() {
   
   # Test saving and loading of GLM model
   Log.info("Importing prostate.csv...")
-  prostate.hex = h2o.uploadFile( normalizePath(locate('smalldata/logreg/prostate.csv')))
-  iris.hex = h2o.uploadFile( normalizePath(locate('smalldata/iris/iris.csv')))
+  prostate.hex = h2o.uploadFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')))
+  iris.hex = h2o.uploadFile(conn, normalizePath(locate('smalldata/iris/iris.csv')))
   
   # Build GLM, RandomForest, GBM, Naive Bayes, and Deep Learning models
   Log.info("Build GLM model")
@@ -65,8 +74,8 @@ test.hex_1775 <- function() {
   }
 
   # Check to make sure predictions made on loaded model is the same as glm.pred
-  prostate.hex = h2o.importFile( normalizePath(locate('smalldata/logreg/prostate.csv')))
-  iris.hex = h2o.importFile( normalizePath(locate('smalldata/iris/iris.csv')))
+  prostate.hex = h2o.importFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')))
+  iris.hex = h2o.importFile(conn, normalizePath(locate('smalldata/iris/iris.csv')))
   
   Log.info(paste("Model saved in", temp_subdir2))
   
@@ -106,6 +115,7 @@ test.hex_1775 <- function() {
   expect_equal(nrow(speedrf.pred), 150)
   expect_equal(speedrf.pred, speedrf.pred2)
 
+  testEnd()
 }
 
 doTest("HEX-1775 Test: Save and Load GLM Model", test.hex_1775)

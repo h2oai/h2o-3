@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.nbayes.prostate <- function() {
+test.nbayes.prostate <- function(H2Oserver) {
   Log.info("Importing prostate.csv data...") 
-  prostate.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame= "prostate.hex")
+  prostate.hex <- h2o.uploadFile(H2Oserver, locate("smalldata/logreg/prostate.csv"), destination_frame= "prostate.hex")
   
   Log.info("Converting CAPSULE, RACE, DCAPS, and DPROS to categorical")
   prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
@@ -18,6 +18,7 @@ test.nbayes.prostate <- function() {
   Log.info("Predict on training data")
   prostate.pred <- predict(prostate.nb, prostate.hex)
   print(head(prostate.pred))
+  testEnd()
 }
 
 doTest("Naive Bayes Test: Prostate without Laplace Smoothing", test.nbayes.prostate)

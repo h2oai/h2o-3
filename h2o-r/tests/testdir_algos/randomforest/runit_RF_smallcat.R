@@ -1,14 +1,14 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 library(randomForest)
 
-test.DRF.smallcat <- function() {
+test.DRF.smallcat <- function(conn) {
   # Training set has 26 categories from A to Z
   # Categories A, C, E, G, ... are perfect predictors of y = 1
   # Categories B, D, F, H, ... are perfect predictors of y = 0
 
   Log.info("Importing alphabet_cattest.csv data...\n")
-  alphabet.hex <- h2o.uploadFile(
+  alphabet.hex <- h2o.uploadFile(conn,
     locate("smalldata/gbm_test/alphabet_cattest.csv"), destination_frame = "alphabet.hex")
   alphabet.hex$y <- as.factor(alphabet.hex$y)
   Log.info("Summary of alphabet_cattest.csv from H2O:\n")
@@ -50,6 +50,7 @@ test.DRF.smallcat <- function() {
   # pred <- ifelse(drfmodel.r.pred == "0", 0, 1)
   # R.auc = gbm.roc.area(actual, pred)
   # Log.info(paste("R AUC:", R.auc, "\tH2O (Group Split) AUC:", drfmodel.grpsplit@model$AUC))
+  testEnd()
 }
 
 doTest("DRF Test: Classification with 26 categorical level predictor", test.DRF.smallcat)

@@ -1,9 +1,13 @@
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+##
+# Testing glm picks correct link when unspecified: default canonical link for family
+##
 
-test <- function() {
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
+
+test <- function(conn) {
     print("Reading in original prostate data.")
-        prostate.data = h2o.uploadFile( locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data", header=TRUE)
+        prostate.data = h2o.uploadFile(conn, locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data", header=TRUE)
 
     print("Compare models with link unspecified and canonical link specified.")
     	print("GAUSSIAN: ") 
@@ -26,6 +30,7 @@ test <- function() {
 		model.gamma.specified <- h2o.glm(x=c(4:9), y=3, training_frame=prostate.data, family="gamma", link="inverse")
 		stopifnot(model.gamma.unspecified@model$coefficients_table[1,]==model.gamma.specified@model$coefficients_table[1,])
 
+    testEnd()
 }
 
 doTest("Testing glm picks correct link when unspecified: default canonical link for family", test)

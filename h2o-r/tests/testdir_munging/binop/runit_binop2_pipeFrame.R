@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
-test.pipe.frame <- function() {
-  hex <- as.h2o( iris)
+test.pipe.frame <- function(conn) {
+  hex <- as.h2o(conn, iris)
   
   Log.info("Expectation with frames: 5 | FRAME; FRAME | 5; FRAME | FRAME")
   Log.info("Get back a frame filled with booleans, and NAs for enums")
@@ -26,6 +26,7 @@ test.pipe.frame <- function() {
   hexPipeHex <- hex | hex
   print(hexPipeHex)
   
+  testEnd()
 }
 
 doTest("BINOP2 TEST: Exec 2 test on '|'", test.pipe.frame)

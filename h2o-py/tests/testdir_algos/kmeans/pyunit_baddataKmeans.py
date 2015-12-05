@@ -1,60 +1,64 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 import random
 import string
 
-def baddataKmeans():
+def baddataKmeans(ip,port):
 
   # Connect to a pre-existing cluster
-  # connect to localhost:54321
+    # connect to localhost:54321
 
   rows = 100
   cols = 10
-  rawdata = [[random.random() for c in range(rows)] for r in range(cols)]
+  rawdata = [[random.random() for c in range(cols)] for r in range(rows)]
 
   # Row elements that are None will be replaced with mean of column
   #Log.info("Training data with 1 row of all Nones: replace with column mean")
   data = rawdata[:]
-  for col in data:
-    col[24] = None
+  for cidx, cval in enumerate(data[24]):
+    data[24][cidx] = None
   frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 10, "expected center to be 10 dimensional"
+  assert len(centers) == 5, "expected 5 centers"
+  for c in range(len(centers)):
+    assert len(centers[c]) == 10, "expected center to be 10 dimensional"
 
   # Columns with constant value will be automatically dropped
   #Log.info("Training data with 1 col of all 5's: drop automatically")
   data = rawdata[:]
-  data[4] = [5]*rows
+  for idx, val in enumerate(data):
+    data[idx][4] = 5
   frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 9, "expected center to be 9 "
+  assert len(centers) == 5, "expected 5 centers"
+  for c in range(len(centers)):
+    assert len(centers[c]) == 9, "expected center to be 9 "
   # TODO: expect_warning(km_model = h2o.kmeans(x=frame, k=5))
 
   # Log.info("Training data with 1 col of all None's, 1 col of all zeroes: drop automatically")
   data = rawdata[:]
-  data[4] = [None] * rows
-  data[7] = [0] * rows
+  for idx, val in enumerate(data):
+    data[idx][4] = None
+    data[idx][7] = 0
   frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 8, "expected center to be 8 "
+  assert len(centers) == 5, "expected 5 centers"
+  for c in range(len(centers)):
+    assert len(centers[c]) == 8, "expected center to be 9 "
   # TODO: expect_warning(km_model = h2o.kmeans(x=frame, k=5))
 
   # Log.info("Training data with all None's")
-  data = [[None for c in range(rows)] for r in range(cols)]
+  data = [[None for c in range(cols)] for r in range(rows)]
   frame = h2o.H2OFrame(data)
 
   try:
@@ -64,24 +68,23 @@ def baddataKmeans():
     assert True
 
   # Log.info("Training data with a categorical column(s)")
-  data = [[random.choice(string.ascii_uppercase) for c in range(rows)] for r in range(cols)]
+  data = [[random.choice(string.ascii_uppercase) for c in range(cols)] for r in range(rows)]
   frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 10, "expected center to be 10 "+str(len(centers))
+  assert len(centers) == 5, "expected 5 centers"
+  for c in range(len(centers)):
+    assert len(centers[c]) == 10, "expected center to be 10 "+str(len(centers[c]))
 
   # Log.info("Importing iris.csv data...\n")
-  iris = h2o.import_frame(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
-
+  iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))
 
   km_model = h2o.kmeans(x=iris, k=5)
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 5, "expected center to be 5 "+str(len(centers))
+  assert len(centers) == 5, "expected 5 centers"
+  for c in range(len(centers)):
+    assert len(centers[c]) == 5, "expected center to be 5 "+str(len(centers[c]))
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(baddataKmeans)
-else:
-	baddataKmeans()
+   h2o.run_test(sys.argv, baddataKmeans)

@@ -1,8 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.sep <- function() {
+test.sep <- function(conn) {
   h2o.importFile(locate("smalldata/logreg/prostate.csv"), sep=",")
+  testEnd()
 }
 
 doTest("Test the separator gets mapped properly", test.sep)

@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
 glm.objectiveFun.test<-
-function() {
+function(conn) {
 	
     filepath = locate("smalldata/glm_test/marketing_naRemoved.csv")
     
@@ -10,7 +10,7 @@ function() {
     str(rr)
     dim(rr)
     
-    mfrmr=h2o.uploadFile(filepath,destination_frame = "mfrmr")
+    mfrmr=h2o.uploadFile(conn,filepath,destination_frame = "mfrmr")
     str(mfrmr)
     myX = 2:13
     myY = 1 
@@ -57,6 +57,7 @@ function() {
 	print(paste("Objective function for model from R:  ",objective_R, sep = ""))
 	print(paste("Objective function for model from H2O:  ",objective, sep = ""))
 	expect_true(objective < objective_R + 1e-5*gg$nulldev)
+    testEnd()
 }
 doTest("Comapares objective function results from H2O-glm and glmnet: marketing data with no NAs Smalldata", glm.objectiveFun.test)
 

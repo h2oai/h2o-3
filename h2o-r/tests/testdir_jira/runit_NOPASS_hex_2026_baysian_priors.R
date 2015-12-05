@@ -1,9 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test <- function(){
+test <- function(conn){
   if (!file.exists("/mnt/0xcustomer-datasets/c27/data.csv")) {
     Log.info("h2o-only data")
+    testEnd()
   } else {
     ## Helper functions
     # Function to standardize data
@@ -29,8 +30,8 @@ test <- function(){
     }
 
     ## Import data
-    h2oData <- h2o.importFile( "/mnt/0xcustomer-datasets/c27/data.csv")
-    betaConstraints <- h2o.importFile( "/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+    h2oData <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c27/data.csv")
+    betaConstraints <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
     betaConstraints <- betaConstraints[1:(nrow(betaConstraints)-1),] # remove intercept
     betaConstraints <- as.data.frame(betaConstraints)
 
@@ -87,6 +88,7 @@ test <- function(){
     Log.info("Check gradient of beta constraints without priors or beta given...")
     print(gradient2)
     if(!all(gradient2 < 1E-4)) stop(paste0("Gradient from model output > ", 1E-4))
+    testEnd()
   }
 }
 

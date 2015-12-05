@@ -1,10 +1,17 @@
+##
+# Testing logging timeing for copy
+# Test for JIRA PUB-907 
+# 'Logging time in copy operator'
+##
+
+
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
 
-test <- function() {
+test <- function(conn) {
     print("Reading in arcene dataset")
-        dataset = h2o.importFile( locate("smalldata/arcene/arcene_train.data"), destination_frame="dataset", header=FALSE)
+        dataset = h2o.importFile(conn, locate("smalldata/arcene/arcene_train.data"), destination_frame="dataset", header=FALSE)
 
     print("Time copying of entire datatset")
         startTime = proc.time()
@@ -17,6 +24,7 @@ test <- function() {
     print("Assert runtime less than 180 seconds")
         stopifnot(elapsedTime < 180)  # should finish in less than three minutes.
 
+  testEnd()
 }
 
 doTest("Test logging time for copy", test)

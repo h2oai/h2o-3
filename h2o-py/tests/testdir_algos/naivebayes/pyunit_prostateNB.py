@@ -1,14 +1,12 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 
-def nb_prostate():
+def nb_prostate(ip, port):
     
 
     print "Importing prostate.csv data..."
-    prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-
+    prostate = h2o.upload_file(h2o.locate("smalldata/logreg/prostate.csv"))
 
     print "Converting CAPSULE, RACE, DCAPS, and DPROS to categorical"
     prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
@@ -25,6 +23,4 @@ def nb_prostate():
     prostate_pred.head()
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(nb_prostate)
-else:
-	nb_prostate()
+    h2o.run_test(sys.argv, nb_prostate)

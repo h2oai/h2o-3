@@ -1,11 +1,12 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source('../h2o-runit.R')
 
-test.rdocclusterinfo.golden <- function() {
+test.rdocclusterinfo.golden <- function(H2Oserver) {
 	
 
-h2o.clusterInfo()
+h2o.clusterInfo(H2Oserver)
 
+testEnd()
 }
 
 doTest("R Doc Cluster Info", test.rdocclusterinfo.golden)

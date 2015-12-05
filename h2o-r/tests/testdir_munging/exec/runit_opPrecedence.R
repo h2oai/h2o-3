@@ -1,18 +1,18 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source('../../h2o-runit.R')
 
 get.eval.result <- function(conn, expr) {
     res =  .h2o.__exec2(conn, expr)
     return(new("H2OFrame", h2o=conn, key=res$dest_key))
 }
 
-test.op.precedence <- function() {
+test.op.precedence <- function(conn) {
     a = sample(10)
     b = sample(10)
     c = sample(10)
-    A = as.h2o( a, "A")
-    B = as.h2o( b, "B")
-    C = as.h2o( c, "C")
+    A = as.h2o(conn, a, "A")
+    B = as.h2o(conn, b, "B")
+    C = as.h2o(conn, c, "C")
     s1 = a + b * c
     s2 = a - b - c
     s3 = a ^ 2 ^ 3
@@ -48,6 +48,7 @@ test.op.precedence <- function() {
     S6 <- as.data.frame(A | B & C)
     expect_that(all(S6 == s6), equals(T))
 
+    testEnd()
 }
 
 doTest("Test operator precedence.", test.op.precedence)

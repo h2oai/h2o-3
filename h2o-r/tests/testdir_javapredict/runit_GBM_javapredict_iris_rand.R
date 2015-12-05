@@ -1,11 +1,22 @@
+#----------------------------------------------------------------------
+# Purpose:  This test exercises the GBM model downloaded as java code
+#           for the iris data set while randomly setting the parameters.
+#
+# Notes:    Assumes unix environment.
+#           curl, javac, java must be installed.
+#           java must be at least 1.6.
+#----------------------------------------------------------------------
+
+options(echo=FALSE)
+TEST_ROOT_DIR <- ".."
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source("../h2o-runit.R")
 
 
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-test.gbm.javapredict.iris.rand <- function() {
+
 heading("Choose random parameters")
 
 n.trees <- sample(1000, 1)
@@ -21,11 +32,9 @@ shrinkage <- sample(c(0.001, 0.002, 0.01, 0.02, 0.1, 0.2), 1)
 print(paste("shrinkage", shrinkage))
 
 train <- locate("smalldata/iris/iris_train.csv")
-training_frame = h2o.importFile(train)
 print(paste("train", train))
 
 test <- locate("smalldata/iris/iris_test.csv")
-test_frame <- h2o.importFile(test)
 print(paste("test", test))
 
 x = c("sepal_len","sepal_wid","petal_len","petal_wid");
@@ -35,21 +44,8 @@ print(x)
 y = "species"
 print(paste("y", y))
 
-params <- list()
-params$ntrees <- n.trees
-params$max_depth <- interaction.depth
-params$min_rows <- n.minobsinnode
-params$learn_rate <- shrinkage
-params$x <- x
-params$y <- y
-params$training_frame <- training_frame
-
-doJavapredictTest("gbm",test,test_frame,params)
-}
-
 
 #----------------------------------------------------------------------
 # Run the test
 #----------------------------------------------------------------------
-#source('../Utils/shared_javapredict_GBM.R')
-doTest("GBM test",test.gbm.javapredict.iris.rand)
+source('../Utils/shared_javapredict_GBM.R')

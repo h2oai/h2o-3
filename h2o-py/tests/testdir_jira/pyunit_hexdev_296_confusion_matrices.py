@@ -1,15 +1,14 @@
-from tests import pyunit_utils
 import sys
 sys.path.insert(1, "../../")
 import h2o
 
-def confusion_matrices_check():
-
+def confusion_matrices_check(ip, port):
+    
 
     local_data = [[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[0, 'b'],
                   [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b']]
-    h2o_data = h2o.H2OFrame(zip(*local_data))
-    h2o_data.set_names(['response', 'predictor'])
+    h2o_data = h2o.H2OFrame(python_obj=local_data)
+    h2o_data.setNames(['response', 'predictor'])
     h2o_data.show()
 
     gbm = h2o.gbm(x=h2o_data[1:], y=h2o_data["response"].asfactor(), ntrees=1, distribution="bernoulli")
@@ -24,6 +23,4 @@ def confusion_matrices_check():
                                         "{3}. Should sum to 20.".format(tps, fps, tns, fns)
 
 if __name__ == "__main__":
-	pyunit_utils.standalone_test(confusion_matrices_check)
-else:
-	confusion_matrices_check()
+    h2o.run_test(sys.argv, confusion_matrices_check)
