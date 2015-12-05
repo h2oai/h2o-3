@@ -1,5 +1,7 @@
 package water;
 
+import water.util.Log;
+
 /**
  * H2O starter which manages start and registration of application extensions.
  */
@@ -22,6 +24,10 @@ public class H2OStarter {
     if (finalizeRestRegistration) {
       H2O.finalizeRegistration();
     }
+
+    Log.info("");
+    Log.info("Open H2O Flow in your web browser: " + H2O.getJetty().getScheme() + "://", H2O.getIpPortString() + "/");
+    Log.info("");
   }
 
   public static void start(String[] args, String relativeResourcePath) {
