@@ -15,6 +15,8 @@ The data is divided into groups by quantile thresholds of the response probabili
 
 For each group, the lift is calculated as the proportion of observations that are events (targets) in the group to the overall proportion of events (targets). 
 
+For binning, H2O computes exact ventiles (weighted cases are in development). `h2o.quantile(x, probs=seq(0,1,0.05))` is used for cut points, similar to R's `quantile()` method. 
+
 The Gains/Lift table also reports for each group the threshold probability value, cumulative data fractions, response rates (proportion of observations that are events in a group), cumulative response rate, event capture rate, cumulative capture rate, gain (difference in percentages between the overall proportion of events and the observed proportion of observations that are events in the group), and cumulative gain. 
 
 During the Gains/Lift calculations, all rows containing missing values (NAs) in either the label (response) or the prediction probability are ignored. 
@@ -22,8 +24,8 @@ During the Gains/Lift calculations, all rows containing missing values (NAs) in 
 
 ##Requirements:
 
-The training frame column must contain actual binary class labels.
-The prediction column used as the response must contain probabilities.
+- The training frame column must contain actual binary class labels.
+- The prediction column used as the response must contain probabilities.
 
 ##Creating a Gains/Lift table
 
