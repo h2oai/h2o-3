@@ -24,18 +24,37 @@ During the Gains/Lift calculations, all rows containing missing values (NAs) in 
 
 ##Requirements:
 
-- The training frame column must contain actual binary class labels.
+- The training frame dataset must contain actual binary class labels.
 - The prediction column used as the response must contain probabilities.
+- For GLM, the visualization displays only when using `nfolds` (for example, `nfolds=2`).
+- The model type cannot be K-means or PCA.
 
 ##Creating a Gains/Lift table
 
-0. Specify the original dataset in the `training_frame` entry field.
-0. From the drop-down vactual list, select the column specified in the original dataset.
-0. Enter the .hex key of the prediction in the predict entry field.
-0. From the drop-down vpredict list, select the column specified in the prediction.
-0. Enter the number of rows to include in the table in the groups field. The default is 10.
+0. Import a binary classification dataset. 
+0. Select the model type (DL, DRF, GBM, GLM, or Naive Bayes)
+0. Select the imported dataset from the drop-down *training_frame* list. 
+0. Select a binomial column from the drop-down *response_column* list. 
+0. Click the **Build Model** button, then click the **View** button after the model is complete. 
+0. Scroll down to view the Gains/Lift chart (as shown in the example screenshot below). 
 
-The quantiles, response rate, lift, and cumulative lift display in the Gains/Lift table.
+  ![Gains/Lift chart](images/GainsLift.png)
+
+A table that lists the following values is also provided: 
+
+  - lower threshold
+  - cumulative data fraction
+  - response rate
+  - cumulative response rate
+  - capture rate
+  - cumulative capture rate
+  - lift
+  - cumulative lift
+  - gain 
+  - cumulative gain
+
+  ![Gains/Lift table](images/GainsLifttable.png)
+
 
 The quantiles column defines the group for the row. The response rate column lists the likelihood of response, the lift column lists the lift rate, and the cumulative lift column provides the percentage of increase in response based on the lift.
 
