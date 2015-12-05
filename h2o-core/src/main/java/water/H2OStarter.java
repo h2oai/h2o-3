@@ -25,9 +25,11 @@ public class H2OStarter {
       H2O.finalizeRegistration();
     }
 
-    Log.info("");
-    Log.info("Open H2O Flow in your web browser: " + H2O.getJetty().getScheme() + "://", H2O.getIpPortString() + "/");
-    Log.info("");
+    if (! H2O.ARGS.disable_web) {
+      Log.info("");
+      Log.info("Open H2O Flow in your web browser: " + H2O.getJetty().getScheme() + "://", H2O.getIpPortString() + "/");
+      Log.info("");
+    }
   }
 
   public static void start(String[] args, String relativeResourcePath) {
