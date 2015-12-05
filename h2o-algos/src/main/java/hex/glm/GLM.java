@@ -765,6 +765,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     GLMGradientInfo _ginfo;      // ginfo and penalty of glm + L2 pen.transient double [] _activeBeta;
     double          _objVal;     // full objective value including L1 pen
     int             _iter;
+    boolean         _firstIter = true;
     int             _workPerIteration;
     int             _workPerLambda;
     int             _worked;     // total number of worked units
@@ -952,6 +953,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //        }
         if (_tInfos[0]._iter < _parms._max_iterations && _lambdaId < _parms._lambda.length && _tInfos[0]._stopCnt < 3 ) {
           getCompleter().addToPendingCount(1);
+          _tInfos[0]._firstIter = true;
           new GLMSingleLambdaTsk(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()), _tInfos[0]).fork();
         }
       }
@@ -1656,8 +1658,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _model._output.pickBestModel();
             if(_model._output.bestSubmodel().lambda_value ==  _parms._lambda[_lambdaId]) {
               _model._output._training_metrics = gt1._val.makeModelMetrics(_model, _parms.train(), null, null);
+
               if(_parms._family == Family.binomial)
                 _model._output._threshold = ((ModelMetricsBinomial)_model._output._training_metrics)._auc.defaultThreshold();
+            } else {
+              System.out.println("haha");
             }
             _model.generateSummary(_parms._train,_taskInfo._iter);
             _model._output._scoring_history = _sc.to2dTable();
@@ -1721,6 +1726,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
           if(_c == 0)_oldObj = _taskInfo._objVal;
           _taskInfo._beta = _taskInfo._beta_multinomial[_c];
+          _taskInfo._firstIter = true;
           GLMSingleLambdaTsk.this.addToPendingCount(1);
           solve(false);
         }
@@ -1937,7 +1943,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           :objVal(glmt._likelihood, glmt._beta);
         if (_countIteration) ++_taskInfo._iter;
         double lastObjVal = _taskInfo._objVal;
-        double relImprovement = _taskInfo._iter > 1?(lastObjVal - objVal)/lastObjVal:1;
+        double relImprovement = (lastObjVal - objVal)/lastObjVal;
+        if(_taskInfo._firstIter) {
+          relImprovement = 1;
+          _taskInfo._firstIter = false;
+        }
         double logl = glmt._likelihood;               // negated condition to work with NaNs
         if (_doLinesearch && (glmt.hasNaNsOrInf() || !((objVal) < (lastObjVal)))) {
           // needed line search, have to discard the last step and go again with line search
