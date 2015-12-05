@@ -8,6 +8,10 @@ import itertools
 
 
 class H2OGridSearch(object):
+  # for use with sort_by():
+  ASC=True
+  DESC=False
+
   def __init__(self, model, hyper_params, grid_id=None):
     """
     Grid Search of a Hyper-Parameter Space for a Model
@@ -581,7 +585,7 @@ class H2OGridSearch(object):
     c_values.insert(1,[self.get_hyperparams(model_id, display=False) for model_id in c_values[0]])
     if not increasing:
       for col in c_values: col.reverse()
-    metric = metric[:-2]
+    if metric[-2] == '(': metric = metric[:-2]
     return h2o.H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']', metric],
                               table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=zip(*c_values))
 
@@ -623,7 +627,7 @@ class H2OGridSearch(object):
     return model_class
 
   @staticmethod
-  def get_grid(model, hyper_params, grid_id):
+  def get_grid(model, hyper_params, grid_id, **kwargs):
     """
     Retrieve an H2OGridSearch instance already trained given its original model, hyper_params, and grid_id. 
     
@@ -641,7 +645,9 @@ class H2OGridSearch(object):
       A new H2OGridSearch instance that is a replica of the H2OGridSearch instance with the specified grid_id.
 
     """
-    kwargs = {'_rest_version':99}
+    if kwargs is None:
+      kwargs = {}
+    kwargs['_rest_version'] = 99
     grid_json = H2OConnection.get_json("Grids/"+grid_id, **kwargs)
     grid = H2OGridSearch(model, hyper_params, grid_id)
     grid.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]

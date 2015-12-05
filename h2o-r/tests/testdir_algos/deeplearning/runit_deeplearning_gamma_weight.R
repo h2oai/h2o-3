@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 ####### This tests weights in deeplearning for gamma by comparing results with expected behaviour  ######
 
 

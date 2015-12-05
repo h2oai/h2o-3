@@ -116,9 +116,10 @@ abstract public class MemoryManager {
     d = Math.max(d,MEM_MAX>>3); // Keep at least 1/8th heap
     if( Cleaner.DESIRED != -1 ) // Set to -1 only for OOM/Cleaner testing.  Never negative normally
       Cleaner.DESIRED = d;      // Desired caching level
+    final long cacheUsageNow = Cleaner.Histo.cached();
 
     String m="";
-    if( cacheUsageGC > Cleaner.DESIRED ) {
+    if( cacheUsageNow > Cleaner.DESIRED ) {
       m = (CAN_ALLOC?"Swapping!  ":"blocked:   ");
       if( oom ) setMemLow(); // Stop allocations; trigger emergency clean
       Cleaner.kick_store_cleaner();
@@ -187,7 +188,7 @@ abstract public class MemoryManager {
       // Memory used after this FullGC
       Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
       Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
-      Cleaner.KV_USED_AT_LAST_GC = HeartBeatThread.myHisto.cached();
+      Cleaner.KV_USED_AT_LAST_GC = Cleaner.Histo.cached();
       MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
       Log.debug("GC CALLBACK: "+Cleaner.TIME_AT_LAST_GC+", USED:"+PrettyPrint.bytes(Cleaner.HEAP_USED_AT_LAST_GC)+", CRIT: "+MEM_LOW_CRITICAL);
       set_goals("GC CALLBACK",MEM_LOW_CRITICAL);

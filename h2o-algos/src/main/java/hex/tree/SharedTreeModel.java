@@ -3,31 +3,14 @@ package hex.tree;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-import hex.Distribution;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsBinomial;
-import hex.ModelMetricsMultinomial;
-import hex.ModelMetricsRegression;
-import hex.ScoreKeeper;
-import hex.VarImp;
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Key;
+import hex.*;
+import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.PojoUtils;
-import water.util.RandomUtils;
-import water.util.SB;
-import water.util.SBPrintStream;
-import water.util.TwoDimTable;
+import water.util.*;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
@@ -98,8 +81,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return new Distribution(_parms._distribution, _parms._tweedie_power).deviance(w, y, f);
   }
 
-  final public VarImp varImp() { return _output._varimp; }
-
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
@@ -134,13 +115,12 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public ScoreKeeper _scored_train[/*ntrees+1*/];
     public ScoreKeeper _scored_valid[/*ntrees+1*/];
     public ScoreKeeper[] scoreKeepers() {
-      List<ScoreKeeper> sk = new ArrayList<>();
+      ArrayList<ScoreKeeper> skl = new ArrayList<>();
       ScoreKeeper[] ska = _validation_metrics != null ? _scored_valid : _scored_train;
-      for (int i=0;i<ska.length;++i) {
-        if (!ska[i].isEmpty())
-          sk.add(ska[i]);
-      }
-      return sk.toArray(new ScoreKeeper[0]);
+      for( ScoreKeeper sk : ska )
+        if (!sk.isEmpty())
+          skl.add(sk);
+      return skl.toArray(new ScoreKeeper[skl.size()]);
     }
     /** Training time */
     public long _training_time_ms[/*ntrees+1*/] = new long[]{System.currentTimeMillis()};
@@ -220,6 +200,21 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return super.remove_impl(fs);
   }
 
+  /** Write out K/V pairs */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    for( Key<CompressedTree> ks[] : _output._treeKeys )
+      for( Key<CompressedTree> k : ks )
+        ab.putKey(k);
+    return super.writeAll_impl(ab);
+  }
+
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    for( Key<CompressedTree> ks[] : _output._treeKeys )
+      for( Key<CompressedTree> k : ks )
+        ab.getKey(k,fs);
+    return super.readAll_impl(ab,fs);
+  }
+
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected boolean toJavaCheckTooBig() {
     // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
@@ -285,20 +280,5 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
   protected <T extends JCodeSB> T toJavaForestName(final T sb, String mname, int t ) {
     return (T) sb.p(mname).p("_Forest_").p(t);
-  }
-
-  @Override
-  public List<Key> getPublishedKeys() {
-    assert _output._ntrees == _output._treeKeys.length :
-            "Tree model is inconsistent: number of trees do not match number of tree keys!";
-    List<Key> superP = super.getPublishedKeys();
-    List<Key> p = new ArrayList<Key>(_output._ntrees * _output.nclasses());
-    for (int i = 0; i < _output._treeKeys.length; i++) {
-      for (int j = 0; j < _output._treeKeys[i].length; j++) {
-        p.add(_output._treeKeys[i][j]);
-      }
-    }
-    p.addAll(superP);
-    return p;
   }
 }

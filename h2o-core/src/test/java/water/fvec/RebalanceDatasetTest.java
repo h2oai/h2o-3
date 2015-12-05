@@ -18,6 +18,7 @@ public class RebalanceDatasetTest extends TestUtil {
       int i = trials[k];
       Frame fr = null, rebalanced = null;
       try {
+        Scope.enter();
         NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/logreg/prostate.csv"));
         fr = ParseDataset.parse(Key.make(), nfs._key);
         RebalanceDataSet rb = new RebalanceDataSet(fr, rebalancedKey, i);
@@ -37,6 +38,7 @@ public class RebalanceDatasetTest extends TestUtil {
       finally {
         if (fr != null) fr.delete();
         if (rebalanced != null) rebalanced.delete();
+        Scope.exit();
       }
     }
   }

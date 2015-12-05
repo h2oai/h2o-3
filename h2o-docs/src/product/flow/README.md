@@ -776,7 +776,7 @@ Can be modified | | |
 
 ###Interpreting Model Results
 
-**Scoring history**: [GBM](#GBM), [DL](#DL) Represents the error rate of the model as it is built. Typically, the error rate will be higher at the beginning (the left side of the graph) then decrease as the model building completes and accuracy improves. 
+**Scoring history**: [GBM](#GBM), [DL](#DL) Represents the error rate of the model as it is built. Typically, the error rate will be higher at the beginning (the left side of the graph) then decrease as the model building completes and accuracy improves. Can include mean squared error (MSE) and deviance. 
 
   ![Scoring History example](images/Flow_ScoringHistory.png)
 
@@ -788,7 +788,7 @@ Can be modified | | |
 
   ![Confusion Matrix example](images/Flow_ConfusionMatrix.png)
 
-**ROC Curve**: [DL](#DL), [GLM](#GLM) Graph representing the ratio of true positives to false positives. To view a specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list: 
+**ROC Curve**: [DL](#DL), [GLM](#GLM), [DRF](#DRF) Graph representing the ratio of true positives to false positives. To view a specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list: 
 
 - Max f1
 - Max f2
@@ -801,6 +801,16 @@ Can be modified | | |
 The lower-left side of the graph represents less tolerance for false positives while the upper-right represents more tolerance for false positives. Ideally, a highly accurate ROC resembles the following example. 
 
  ![ROC Curve example](images/Flow_ROC.png)
+
+**Hit Ratio**: [GBM](#GBM), [DRF](#DRF), [NaiveBayes](#NB), [DL](#DL), [GLM](#GLM) (Multinomial Classification only) Table representing the number of times that the prediction was correct out of the total number of predictions. 
+
+ ![Hit Ratio Table](images/HitRatioTable.png)
+
+
+**Standardized Coefficient Magnitudes** [GLM](#GLM)  Bar chart representing the relationship of a specific feature to the response variable. Coefficients can be positive (orange) or negative (blue). A positive coefficient indicates a positive relationship  between the feature and the response, where an increase in the feature corresponds with an increase in the response, while a negative coefficient represents a negative relationship between the feature and the response where an increase in the feature corresponds with a decrease in the response (or vice versa). 
+
+  ![Standardized Coefficient Magnitudes](images/SCM.png)
+
 
 To learn how to make predictions, continue to the next section. 
 

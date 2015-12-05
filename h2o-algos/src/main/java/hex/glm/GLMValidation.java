@@ -205,10 +205,10 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
     else return "explained dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,5);
   }
 
-  @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) {
+  @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
     GLMModel gm = (GLMModel)m;
     computeAIC();
-    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null);
+    ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null, null);
     if (_parms._family == Family.binomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       GainsLift gl = null;

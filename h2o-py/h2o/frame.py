@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, urllib2, sys, urllib,imp,copy, tabulate
+import collections, csv, itertools, os, re, tempfile, urllib2, sys, urllib,imp, traceback
 import h2o
 from expr import ExprNode
 from astfun import _bytecode_decompile_lambda
@@ -319,11 +319,12 @@ class H2OFrame(object):
 
     Returns
     -------
-      A list of column indices
+      A list of column indices that have a fewer count of NAs.
+      If all columns are filtered, None is returned.
     """
     return ExprNode("filterNACols", self, frac)._eager_scalar()
 
-  def type(self,name):
+  def type(self, name):
     """
     Returns
     -------
@@ -346,7 +347,10 @@ class H2OFrame(object):
 
   def __repr__(self):
     if sys.gettrace() is None:
-      self.show()
+      # PUBDEV-2278: using <method>? from IPython caused everything to dump
+      stk = traceback.extract_stack()
+      if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
+        self.show()
     return ""
 
   def show(self, use_pandas=False):
@@ -1165,7 +1169,7 @@ class H2OFrame(object):
     col._ex._cache.names = [old_cache.names[i]]
     return col
 
-  def quantile(self, prob=None, combine_method="interpolate"):
+  def quantile(self, prob=None, combine_method="interpolate", weights_column=None):
     """Compute quantiles.
 
     Parameters
@@ -1175,6 +1179,8 @@ class H2OFrame(object):
     combine_method : str, default="interpolate"
       For even samples, how to combine quantiles.
       Should be one of ["interpolate", "average", "low", "hi"]
+    weights_column : str, default=None
+      Name of column with optional observation weights in this H2OFrame
 
     Returns
     -------
@@ -1182,7 +1188,8 @@ class H2OFrame(object):
     """
     if len(self) == 0: return self
     if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
-    return H2OFrame._expr(expr=ExprNode("quantile",self,prob,combine_method))
+    if not weights_column: weights_column="_"
+    return H2OFrame._expr(expr=ExprNode("quantile",self,prob,combine_method,weights_column))
 
   def cbind(self,data):
     """Append data to this H2OFrame column-wise.

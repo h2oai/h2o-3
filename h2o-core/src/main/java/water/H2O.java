@@ -219,7 +219,7 @@ final public class H2O {
     public boolean cleaner = false;
 
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public int nthreads=Runtime.getRuntime().availableProcessors();
+    public char nthreads= (char)Runtime.getRuntime().availableProcessors();
 
     /** -log_dir=/path/to/dir; directory to save logs in */
     public String log_dir;
@@ -302,54 +302,31 @@ final public class H2O {
   }
 
   public static class OptString {
-    String _s;
+    final String _s;
     String _lastMatchedFor;
-
     public OptString(String s) {
       _s = s;
     }
-
     public boolean matches(String s) {
-      boolean result = false;
-
       _lastMatchedFor = s;
-
-      String candidate;
-      candidate = "-" + s;
-      if (_s.equals(candidate)) {
-        result = true;
-      }
-
-      candidate = "--" + s;
-      if (_s.equals(candidate)) {
-        result = true;
-      }
-
-      return result;
+      if (_s.equals("-"  + s)) return true;
+      if (_s.equals("--" + s)) return true;
+      return false;
     }
 
     public int incrementAndCheck(int i, String[] args) {
       i = i + 1;
-      if (i >= args.length) {
-        parseFailed(_lastMatchedFor + " not specified");
-      }
+      if (i >= args.length) parseFailed(_lastMatchedFor + " not specified");
       return i;
     }
 
     public int parseInt(String a) {
-      int result = 0;
-
-      try {
-        result = Integer.parseInt(a);
-      }
-      catch (Exception e) {
-        parseFailed("Argument " + _lastMatchedFor + " must be an integer (was given '" + a + "')" );
-      }
-
-      return result;
+      try { return Integer.parseInt(a); }
+      catch (Exception e) { }
+      parseFailed("Argument " + _lastMatchedFor + " must be an integer (was given '" + a + "')" );
+      return 0;
     }
-
-    public String toString() { return _s; }
+    @Override public String toString() { return _s; }
   }
 
 
@@ -421,7 +398,7 @@ final public class H2O {
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.nthreads = s.parseInt(args[i]);
+        ARGS.nthreads = (char)s.parseInt(args[i]);
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
@@ -1306,8 +1283,15 @@ final public class H2O {
     // Start the UDPReceiverThread, to listen for requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     // Started first, so we can start parsing UDP packets
-    if(H2O.ARGS.useUDP)
+    if(H2O.ARGS.useUDP) {
       new UDPReceiverThread().start();
+      // Start a UDP timeout worker thread. This guy only handles requests for
+      // which we have not received a timely response and probably need to
+      // arrange for a re-send to cover a dropped UDP packet.
+      new UDPTimeOutThread().start();
+      // Same same for a dropped ACK needing an ACKACK back.
+      new H2ONode.AckAckTimeOutThread().start();
+    }
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
@@ -1319,12 +1303,6 @@ final public class H2O {
     // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
     // an initial histogram state.
     Cleaner.THE_CLEANER.start();
-
-    // Start a UDP timeout worker thread. This guy only handles requests for
-    // which we have not received a timely response and probably need to
-    // arrange for a re-send to cover a dropped UDP packet.
-    new UDPTimeOutThread().start();
-    new H2ONode.AckAckTimeOutThread().start();
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
@@ -1420,12 +1398,21 @@ final public class H2O {
   }
   public H2ONode[] members() { return _memary; }
 
-  // Cluster memory
-  public long memsz() {
+  // Cluster free memory
+  public long free_mem() {
     long memsz = 0;
     for( H2ONode h2o : CLOUD._memary )
-      memsz += h2o.get_max_mem();
+      memsz += h2o._heartbeat.get_free_mem();
     return memsz;
+  }
+
+  // Quick health check; no reason given for bad health
+  public boolean healthy() {
+    long now = System.currentTimeMillis();
+    for( H2ONode h2o : H2O.CLOUD.members() )
+      if( now - h2o._last_heard_from >= HeartBeatThread.TIMEOUT )
+        return false;
+    return true;
   }
 
   public static void waitForCloudSize(int x, long ms) {
@@ -1515,11 +1502,6 @@ final public class H2O {
       if( old==null ) Scope.track(key); // New Key - start tracking
     }
     return old; // Return success
-  }
-  public static String foo( Value v ) {
-    if( v==null ) return null;
-    if( v.isNull() ) return "Null";
-    return Integer.toString(((water.fvec.Vec.ESPC)(v.get()))._espcs.length);
   }
 
   // Get the value from the store

@@ -1,31 +1,15 @@
 package water.api;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import hex.Model;
-import water.DKV;
-import water.Futures;
-import water.Iced;
-import water.Key;
-import water.KeySnapshot;
-import water.Value;
+import water.*;
 import water.api.FramesHandler.Frames;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.exceptions.H2OKeyWrongTypeArgumentException;
-import water.exceptions.H2OKeysNotFoundArgumentException;
+import water.exceptions.*;
 import water.fvec.Frame;
-import water.serial.ObjectTreeBinarySerializer;
+import water.persist.Persist;
 import water.util.FileUtils;
 import water.util.JCodeGen;
 
@@ -57,18 +41,12 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
      * Fetch all the Frames so we can see if they are compatible with our Model(s).
      */
     protected Map<Frame, Set<String>> fetchFrameCols() {
-      Frame[] all_frames = null;
-      Map<Frame, Set<String>> all_frames_cols = null;
-
-      if (this.find_compatible_frames) {
-        // caches for this request
-        all_frames = Frames.fetchAll();
-        all_frames_cols = new HashMap<Frame, Set<String>>();
-
-        for (Frame f : all_frames) {
-          all_frames_cols.put(f, new HashSet<String>(Arrays.asList(f._names)));
-        }
-      }
+      if (!find_compatible_frames) return null;
+      // caches for this request
+      Frame[] all_frames = Frames.fetchAll();
+      Map<Frame, Set<String>> all_frames_cols = new HashMap<>();
+      for (Frame f : all_frames)
+        all_frames_cols.put(f, new HashSet<>(Arrays.asList(f._names)));
       return all_frames_cols;
     }
 
@@ -204,28 +182,26 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   }
 
   public ModelsV3 importModel(int version, ModelImportV3 mimport) {
-    ModelsV3 s = (ModelsV3) Schema.newInstance(ModelsV3.class);
-
+    ModelsV3 s = Schema.newInstance(ModelsV3.class);
     try {
-      List<Key> importedKeys = new ObjectTreeBinarySerializer().load(FileUtils.getURI(mimport.dir));
-      Model model = (Model) importedKeys.get(0).get();
-      s.models = new ModelSchema[1];
-      s.models[0] = (ModelSchema) Schema.schema(version, model).fillFromImpl(model);
-    } catch (IOException e) {
+      URI targetUri = FileUtils.getURI(mimport.dir);
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      InputStream is = p.open(targetUri.toString());
+      Model model = (Model)Keyed.readAll(new AutoBuffer(is));
+      s.models = new ModelSchema[]{(ModelSchema) Schema.schema(version, model).fillFromImpl(model)};
+    } catch (FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", e);
     }
-
     return s;
   }
 
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
-    List<Key> keysToExport = new LinkedList<>();
-    keysToExport.add(model._key);
-    keysToExport.addAll(model.getPublishedKeys());
     try {
-      URI targetUri = FileUtils.getURI(mexport.dir);
-      new ObjectTreeBinarySerializer(mexport.force).save(keysToExport, targetUri);
+      URI targetUri = FileUtils.getURI(mexport.dir); // Really file, not dir
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      OutputStream os = p.create(targetUri.toString(),mexport.force);
+      model.writeAll(new AutoBuffer(os,true)).close();
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {

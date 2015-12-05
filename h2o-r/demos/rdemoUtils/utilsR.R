@@ -5,7 +5,7 @@
 #'
 removeH2OInit<-
 function(testName) {
-    hackedDemo <- paste(results.dir(), paste0(testName,".code"), sep=.Platform$file.sep)
+    hackedDemo <- paste(RESULTS.DIR, paste0(testName,".code"), sep=.Platform$file.sep)
     lines <- readLines(testName, warn=FALSE)
     remove_lines <- which(sapply(lines, function(l) grepl("^h2o.init",l)))
     if (length(remove_lines) > 0) lines <- lines[-remove_lines]

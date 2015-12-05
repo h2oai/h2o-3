@@ -1,25 +1,16 @@
 package water;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import water.RPC.RPCCall;
-import water.UDP.udp;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.Log;
@@ -34,7 +25,7 @@ import water.util.UnsafeUtils;
  * @version 1.0
  */
 
-public class H2ONode extends Iced<H2ONode> implements Comparable {
+public final class H2ONode extends Iced<H2ONode> implements Comparable {
   short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
   public long _last_heard_from; // Time in msec since we last heard from this Node
@@ -48,7 +39,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     H2Okey(InetAddress inet, int port) {
       super(inet,port);
       byte[] b = inet.getAddress();
-      _ipv4 = ((b[0]&0xFF)<<0)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
+      _ipv4 = (b[0]&0xFF)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
     }
     public int htm_port() { return getPort()-1; }
     public int udp_port() { return getPort()  ; }
@@ -122,6 +113,8 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         IDX = Arrays.copyOf(IDX,IDX.length<<1);
       IDX[idx] = h2o;
     }
+    h2o._sendThread = h2o.new UDP_TCP_SendThread(); // Launch the UDP send thread
+    h2o._sendThread.start();
     return h2o;
   }
   public static H2ONode intern( InetAddress ip, int port ) { return intern(new H2Okey(ip,port)); }
@@ -130,16 +123,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     byte[] b = new byte[4];
     UnsafeUtils.set4(b, 0, UnsafeUtils.get4(bs, off));
     int port = UnsafeUtils.get2(bs,off+4)&0xFFFF;
-    try { return intern(InetAddress.getByAddress(b),port); } 
-    catch( UnknownHostException e ) { throw Log.throwErr(e); }
-  }
-
-  static H2ONode intern( int ip, int port ) {
-    byte[] b = new byte[4];
-    b[0] = (byte)(ip>> 0);
-    b[1] = (byte)(ip>> 8);
-    b[2] = (byte)(ip>>16);
-    b[3] = (byte)(ip>>24);
     try { return intern(InetAddress.getByAddress(b),port); } 
     catch( UnknownHostException e ) { throw Log.throwErr(e); }
   }
@@ -210,10 +193,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // index of this node in the current cloud... can change at the next cloud.
   public int index() { return H2O.CLOUD.nidx(this); }
 
-  // max memory for this node.
-  // no need to ask the (possibly not yet populated) heartbeat if we want to know the local max memory.
-  public long get_max_mem() { return this == H2O.SELF ? Runtime.getRuntime().maxMemory() : _heartbeat.get_max_mem(); }
-
   // ---------------
   // A queue of available TCP sockets
   // re-usable TCP socket opened to this node, or null.
@@ -222,169 +201,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   private int _socksAvail=_socks.length;
   // Count of concurrent TCP requests both incoming and outgoing
   static final AtomicInteger TCPS = new AtomicInteger(0);
-
-  private SocketChannel _rawChannel;
-
-  /**
-   * Wrapper around raw bytes representing a small message and its priority.
-   *
-   */
-  public static class H2OSmallMessage implements Comparable<H2OSmallMessage> {
-    private int _priority;
-    final private byte [] _data;
-
-    public H2OSmallMessage(byte[] data, int priority) {
-      _data = data;
-      _priority = priority;
-    }
-    @Override
-    public int compareTo(H2OSmallMessage o) {
-      return o._priority - _priority;
-    }
-
-    public void increasePriority() {++_priority;}
-
-    /**
-     * Make new H2OSmall message from this byte buffer.
-     * Extracts bytes between position and limit, adds 2B size in the beginning and 1B EOM marker at the end.*
-     *
-     * Currently size must be <= max small message size (Autobuffer.BBP_SML.size()).
-     *
-     * @param bb
-     * @param priority
-     * @return
-     */
-    public static H2OSmallMessage make(ByteBuffer bb, int priority) {
-      int sz = bb.limit();
-      assert sz == (0xFFFF & sz);
-      assert sz <= AutoBuffer.BBP_SML.size();
-      byte [] ary = MemoryManager.malloc1(sz+2+1);
-      ary[ary.length-1] = (byte)0xef; // eom marker
-      ary[0] = (byte)(sz & 0xFF);
-      ary[1] = (byte)((sz & 0xFF00) >> 8);
-      if(bb.hasArray())
-        System.arraycopy(bb.array(),0,ary,2,sz);
-      else  for(int i = 0; i < sz; ++i)
-          ary[i+2] = bb.get(i);
-      assert 0 < ary[2] && ary[2] < udp.UDPS.length; // valid ctrl byte
-      assert udp.UDPS[ary[2]]._udp != null:"missing udp " + ary[2];
-      assert (0xFF & ary[ary.length-1]) == 0xef;
-      assert (((0xFF & ary[0]) | ((0xFF & ary[1]) << 8)) + 3) == ary.length;
-      return new H2OSmallMessage(ary,priority);
-    }
-  }
-
-
-  private final PriorityBlockingQueue<H2OSmallMessage> _msgQ = new PriorityBlockingQueue<>();
-
-  /**
-   * Private thread serving (actually ships the bytes over) small msg Q.
-   * Buffers the small messages together and sends the bytes over via TCP channel.
-   */
-  private class UDP_TCP_SendThread extends Thread {
-    private final ByteBuffer _bb;
-
-    public UDP_TCP_SendThread(){
-      super("UDP-TCP-SEND-" + H2ONode.this);
-      _bb = AutoBuffer.BBP_BIG.make();
-    }
-
-    void sendBuffer(){
-      int sleep = 0;
-      _bb.flip();
-      int sz = _bb.limit();
-      int retries = 0;
-      while (true) {
-        _bb.position(0);
-        _bb.limit(sz);
-        try {
-          if (_rawChannel == null || !_rawChannel.isOpen() || !_rawChannel.isConnected()) { // open the channel
-            // Must make a fresh socket
-            SocketChannel sock = SocketChannel.open();
-            sock.socket().setReuseAddress(true);
-            sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
-            InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort());
-            boolean res = false;
-            try{
-              res = sock.connect(isa);
-            } catch(IOException ioe) {
-              if(!Paxos._cloudLocked && retries++ < 300) { // cloud not yet up => other node is most likely starting
-                try {Thread.sleep(100);} catch (InterruptedException e) {}
-                continue;
-              } else throw ioe;
-            }
-            boolean blocking = true;
-            sock.configureBlocking(blocking);
-            assert res && !sock.isConnectionPending() && (blocking == sock.isBlocking()) && sock.isConnected() && sock.isOpen();
-            _rawChannel = sock;
-            _rawChannel.socket().setTcpNoDelay(true);
-            ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            bb.put((byte) 1);
-            bb.putChar((char) H2O.H2O_PORT);
-            bb.put((byte) 0xef);
-            bb.flip();
-            while (bb.hasRemaining())
-              _rawChannel.write(bb);
-          }
-          while (_bb.hasRemaining())
-            _rawChannel.write(_bb);
-          _bb.position(0);
-          _bb.limit(_bb.capacity());
-          return;
-        } catch(IOException ioe) {
-          if(!H2O.getShutdownRequested())
-            Log.err(ioe);
-          if(_rawChannel != null)
-            try {_rawChannel.close();} catch (Throwable t) {}
-          _rawChannel = null;
-          if(!H2O.getShutdownRequested())
-            Log.warn("Got IO error when sending raw bytes, sleeping for " + sleep + " ms and retrying");
-          sleep = Math.min(5000,(sleep + 1) << 1);
-          try {Thread.sleep(sleep);} catch (InterruptedException e) {}
-        }
-      }
-    }
-
-    @Override public void run(){
-      try {
-        while (true) {
-          try {
-            H2OSmallMessage m = _msgQ.take();
-            while (m != null) {
-              if (m._data.length > _bb.capacity())
-                H2O.fail("Small message larger than the buffer");
-              if (_bb.remaining() < m._data.length)
-                sendBuffer();
-              _bb.put(m._data);
-              m = _msgQ.poll();
-            }
-            sendBuffer();
-          } catch (InterruptedException e) {
-          }
-        }
-      } catch(Throwable t) {
-        Log.err(t);
-        throw H2O.fail();
-      }
-    }
-  }
-
-  private UDP_TCP_SendThread _sendThread = null;
-
-  /**
-   * Send small message to this node.
-   * Passes the message on to a private msg q, prioritized by the message priority.
-   * MSG queue is served by sender thread, message are continuously extracted, buffered toghether and sent over TCP channel.
-   * @param msg
-   */
-  public void sendMessage(H2OSmallMessage msg) {
-    _msgQ.put(msg);
-    if(_sendThread == null) synchronized(this) {
-      if(_sendThread == null)
-        (_sendThread = new UDP_TCP_SendThread()).start();
-    }
-  }
-
 
   SocketChannel getTCPSocket() throws IOException {
     // Under lock, claim an existing open socket if possible
@@ -404,7 +220,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     // Must make a fresh socket
     SocketChannel sock2 = SocketChannel.open();
     sock2.socket().setReuseAddress(true);
-    sock2.socket().setSendBufferSize(AutoBuffer.BBP_BIG.size());
+    sock2.socket().setSendBufferSize(AutoBuffer.BBP_BIG._size);
     boolean res = sock2.connect( _key );
     assert res && !sock2.isConnectionPending() && sock2.isBlocking() && sock2.isConnected() && sock2.isOpen();
     ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
@@ -424,6 +240,126 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     assert TCPS.get() > 0;
     if( sock == null ) TCPS.decrementAndGet();
     notify();
+  }
+
+  // ---------------
+  // Send UDP via batched TCP.  Note: has to happen out-of-band with the
+  // standard AutoBuffer writing, which can hit the case of needing a TypeId
+  // mapping mid-serialization.  Thus this path uses another TCP channel that
+  // is specifically not any of the above channels.  This channel is limited to
+  // messages which are presented in their entirety (not streamed) thus never
+  // need another (nested) TCP channel.
+  private UDP_TCP_SendThread _sendThread = null; // set notnull if properly interned, and done before first sendMessage
+  public void sendMessage( ByteBuffer bb, byte msg_priority ) { _sendThread.sendMessage(bb,msg_priority); }
+
+  // Private thread serving (actually ships the bytes over) small msg Q.
+  // Buffers the small messages together and sends the bytes over via TCP channel.
+  class UDP_TCP_SendThread extends Thread {
+
+    private SocketChannel _chan;  // Lazily made on demand; closed & reopened on error
+    private final ByteBuffer _bb; // Reusable output large buffer
+  
+    public UDP_TCP_SendThread(){
+      super("UDP-TCP-SEND-" + H2ONode.this);
+      _bb = AutoBuffer.BBP_BIG.make();
+    }
+  
+    /** Send small message to this node.  Passes the message on to a private msg
+     *  q, prioritized by the message priority.  MSG queue is served by sender
+     *  thread, message are continuously extracted, buffered together and sent
+     *  over TCP channel.
+     *  @param bb Message to send
+     *  @param msg_priority priority (e.g. NACK and ACKACK beat most other priorities
+     */
+    public void sendMessage(ByteBuffer bb, byte msg_priority) {
+      assert bb.position()==0 && bb.limit() > 0;
+      // Secret back-channel priority: the position field (capped at bb.limit);
+      // this is to avoid making Yet Another Object per send.
+  
+      // Priority can exceed position.  "interesting" priorities are everything
+      // above H2O.MIN_HI_PRIORITY and things just above 0; priorities in the
+      // middl'n range from 10 to MIN_HI are really rare.  Need to compress
+      // priorities a little for this hack to work.
+      if( msg_priority >= H2O.MIN_HI_PRIORITY ) msg_priority = (byte)((msg_priority-H2O.MIN_HI_PRIORITY)+10);
+      else if( msg_priority >= 10 ) msg_priority = 10;
+      if( msg_priority > bb.limit() ) msg_priority = (byte)bb.limit();
+      bb.position(msg_priority);
+  
+      _msgQ.put(bb); 
+    }
+  
+    private final PriorityBlockingQueue<ByteBuffer> _msgQ
+      = new PriorityBlockingQueue<>(11,new Comparator<ByteBuffer>() {
+          // Secret back-channel priority: the position field (capped at bb.limit)
+          @Override public int compare( ByteBuffer bb1, ByteBuffer bb2 ) { return bb1.position() - bb2.position(); }
+        });
+  
+    @Override public void run(){
+      try {
+        while (true) {            // Forever loop
+          try {
+            ByteBuffer bb = _msgQ.take(); // take never returns null but blocks instead
+            while( bb != null ) {         // while have an BB to process
+              assert !bb.isDirect() : "Direct BBs already got recycled";
+              assert bb.limit()+1+2 <= _bb.capacity() : "Small message larger than the output buffer";
+              if( _bb.remaining() < bb.limit()+1+2 )
+                sendBuffer();     // Send full batch; reset _bb so taken bb fits
+              _bb.putChar((char)bb.limit());
+              bb.position(0);     // Position was carrying priority; just write whole BB
+              _bb.put(bb);        // Jam this BB into the existing batch BB, all in one go (it all fits)
+              _bb.put((byte)0xef);// Sentinel byte
+              bb = _msgQ.poll();  // Go get more, same batch
+            }
+            sendBuffer();         // Send final trailing BBs
+          } catch (InterruptedException e) { /*ignore*/ }
+        } 
+      } catch(Throwable t) { throw Log.throwErr(t); }
+    }
+  
+    void sendBuffer(){
+      int retries = 0;
+      _bb.flip();                 // limit set to old position; position set to 0
+      while( _bb.hasRemaining() ) {
+        try {
+          SocketChannel chan = _chan == null ? (_chan=openChan()) : _chan;
+          chan.write(_bb);
+  
+        } catch(IOException ioe) {
+          _bb.rewind();           // Position to zero; limit unchanged; retry the operation
+          // Log if not shutting down, and not middle-of-cloud-formation where
+          // other node is still booting up (expected common failure)
+          if( !H2O.getShutdownRequested() && (Paxos._cloudLocked || retries++ > 20) )
+            Log.err("Got IO error when sending batch UDP bytes",ioe);
+          if( _chan != null )
+            try { _chan.close(); } catch (Throwable t) {/*ignored*/}
+          _chan = null;
+          retries++;
+          final int sleep = Math.min(5000,retries << 1);
+          try {Thread.sleep(sleep);} catch (InterruptedException e) {/*ignored*/}
+        }
+      }
+  
+      _bb.clear();            // Position set to 0; limit to capacity
+    }
+  
+    // Open channel on first write attempt
+    private SocketChannel openChan() throws IOException {
+      // Must make a fresh socket
+      SocketChannel sock = SocketChannel.open();
+      sock.socket().setReuseAddress(true);
+      sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG._size);
+      InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort());
+      boolean res = sock.connect(isa); // Can toss IOEx, esp if other node is still booting up
+      assert res;
+      sock.configureBlocking(true);
+      assert !sock.isConnectionPending() && sock.isBlocking() && sock.isConnected() && sock.isOpen();
+      sock.socket().setTcpNoDelay(true);
+      ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+      bb.put((byte) 1).putChar((char) H2O.H2O_PORT).put((byte) 0xef).flip();
+      while (bb.hasRemaining())   // Write out magic startup sequence
+        sock.write(bb);
+      return sock;
+    }
   }
 
   // ---------------
@@ -556,7 +492,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     @Override public void run() {
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
       while( true ) {
-        RPC.RPCCall r;
         long currenTime = System.currentTimeMillis();
         for(H2ONode h2o:H2O.CLOUD._memary) {
           if(h2o != H2O.SELF) {
@@ -588,7 +523,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         }
         long timeElapsed = System.currentTimeMillis()-currenTime;
         if(timeElapsed < 1000)
-          try {Thread.sleep(1000-timeElapsed);} catch (InterruptedException e) {}
+          try {Thread.sleep(1000-timeElapsed);} catch (InterruptedException e) {/*comment to stop ideaj warning*/}
       }
     }
   }

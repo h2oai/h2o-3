@@ -78,7 +78,7 @@ class ExprNode:
     res = h2o.rapids(exec_str)
     if 'scalar' in res:
       if isinstance(res['scalar'], list): self._cache._data = [float(x) for x in res['scalar']]
-      else:                               self._cache._data = float(res['scalar'])
+      else:                               self._cache._data = None if res['scalar'] is None else float(res['scalar'])
     if 'string' in res:  self._cache._data = res['string']
     if 'funstr' in res:  raise NotImplementedError
     if 'key'    in res:

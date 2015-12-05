@@ -79,7 +79,7 @@ The output is a matrix of the cluster assignments and the coordinates of the clu
 
 - **How does the algorithm handle missing values during training?**
    
-  Missing values are automatically imputed by the column mean.
+  Missing values are automatically imputed by the column mean.  K-means also handles missing values by assuming that missing feature distance contributions are equal to the average of all other distance term contributions.
 
 - **How does the algorithm handle missing values during testing?**
    
@@ -576,6 +576,11 @@ By default, the following output displays:
 - **What if there are a large number of categorical factor levels?**
 
   Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
+
+- **How is variable importance calculated for DRF?**
+
+Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result. 
+
 
 ###DRF Algorithm 
 
@@ -1420,7 +1425,7 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **How does the algorithm handle missing values during training?**
 
-  User-specifiable treatment of missing values via `missing_values_handling`. Specify either the skip or mean-impute option.
+Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default. 
 
 - **How does the algorithm handle missing values during testing?**
 

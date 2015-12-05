@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 test.pubdev.2390 <- function() {
 
     fr <- h2o.importFile(locate("smalldata/iris/multiple_iris_files"),

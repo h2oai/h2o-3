@@ -39,9 +39,11 @@
 #'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number
 #'                         of variables then \code{lambda_min_ratio} = 0.01.
 #' @param beta_constraints A data.frame or H2OParsedData object with the columns ["names",
-#'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
+#'        "lower_bounds", "upper_bounds", "beta_given", "rho"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower_bounds" and "upper_bounds" are the lower
-#'        and upper bounds of beta, and "beta_given" is some supplied starting values for beta.
+#'        and upper bounds of beta, "beta_given" is some supplied starting values for beta, and "rho" is the
+#'        proximal penalty constant that is used with "beta_given". If "rho" is not specified when "beta_given"
+#'        is then we will take the default rho value of zero.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.

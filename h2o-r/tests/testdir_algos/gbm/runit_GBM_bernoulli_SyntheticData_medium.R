@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 #   This test is to check bernoulli gbm implementation, 
 #   It creates a synthetic dataset, runs gbm grid in H2O and R and compares aucs
 

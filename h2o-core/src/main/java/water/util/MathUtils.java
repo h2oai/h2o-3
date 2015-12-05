@@ -1,7 +1,5 @@
 package water.util;
 
-import java.util.Arrays;
-
 import edu.emory.mathcs.jtransforms.dct.DoubleDCT_1D;
 import edu.emory.mathcs.jtransforms.dct.DoubleDCT_2D;
 import edu.emory.mathcs.jtransforms.dct.DoubleDCT_3D;
@@ -12,6 +10,8 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+
+import java.util.Arrays;
 
 public class MathUtils {
 
@@ -136,6 +136,7 @@ public class MathUtils {
    * @return true if a and b are essentially equal, false otherwise.
    */
   public static boolean equalsWithinOneSmallUlp(float a, float b) {
+    if (Double.isNaN(a) && Double.isNaN(b)) return true;
     float ulp_a = Math.ulp(a);
     float ulp_b = Math.ulp(b);
     float small_ulp = Math.min(ulp_a, ulp_b);
@@ -144,6 +145,7 @@ public class MathUtils {
   }
 
   public static boolean equalsWithinOneSmallUlp(double a, double b) {
+    if (Double.isNaN(a) && Double.isNaN(b)) return true;
     double ulp_a = Math.ulp(a);
     double ulp_b = Math.ulp(b);
     double small_ulp = Math.min(ulp_a, ulp_b);

@@ -46,6 +46,21 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   }
   public GainsLift gainsLift() { return _gainsLift; }
 
+  // expose simple metrics criteria for sorting
+  public double auc() { return auc_obj()._auc; }
+  public double err() { return cm().err(); }
+  public double errCount() { return cm().errCount(); }
+  public double accuracy() {  return cm().accuracy(); }
+  public double specificity() { return cm().specificity(); }
+  public double recall() { return cm().recall(); }
+  public double precision() { return cm().precision(); }
+  public double mcc() { return cm().mcc(); }
+  public double max_per_class_error() { return cm().max_per_class_error(); }
+  public double F1() { return cm().F1(); }
+  public double F2() { return cm().F2(); }
+  public double F0point5() { return cm().F0point5(); }
+
+
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
     protected double _logloss;
     protected AUC2.AUCBuilder _auc;
@@ -85,7 +100,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       _auc.reduce(mb._auc);
     }
 
-    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) {
+    /**
+     * Create a ModelMetrics for a given model and frame
+     * @param m Model
+     * @param f Frame
+     * @param frameWithWeights Frame that contains extra columns such as weights
+     * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
+     * @return
+     */
+    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame frameWithWeights, Frame preds) {
+      if (frameWithWeights ==null) frameWithWeights = f;
       double mse = Double.NaN;
       double logloss = Double.NaN;
       double sigma = Double.NaN;
@@ -97,7 +121,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         GainsLift gl = null;
         if (preds!=null) {
           Vec resp = f.vec(m._parms._response_column);
-          Vec weight = f.vec(m._parms._weights_column);
+          Vec weight = frameWithWeights.vec(m._parms._weights_column);
           if (resp != null) {
             gl = new GainsLift(preds.lastVec(), resp, weight);
             gl.exec();

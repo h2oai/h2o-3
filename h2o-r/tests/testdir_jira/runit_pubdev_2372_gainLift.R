@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 # This tests lift-gain chart implementation by sanity checking and comparing results with calculations done in R
 # dataset - http://mlr.cs.umass.edu/ml/datasets/Bank+Marketing
 
