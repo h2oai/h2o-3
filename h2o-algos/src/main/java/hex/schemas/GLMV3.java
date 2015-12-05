@@ -39,6 +39,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "nlambdas",
             "standardize",
             "compute_p_values",
+            "remove_colinear_columns",
             "intercept",
             "non_negative",
             "max_iterations",
@@ -165,10 +166,11 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public int max_hit_ratio_k;
 
     @API(help="request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
-    public boolean compute_p_values;
+    public boolean compute_p_values; // _remove_colinear_columns
+
+    @API(help="in case of linearly dependent columns remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
+    public boolean remove_colinear_columns; // _remove_colinear_columns
 
     /////////////////////
-
-
   }
 }

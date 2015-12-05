@@ -942,7 +942,7 @@ public abstract class GLMTask  {
   public static class GLMIterationTask extends FrameTask2<GLMIterationTask> {
     final GLMParameters _params;
     final double [][]_beta_multinomial;
-    final double []_beta;
+    double []_beta;
     final int _c;
     protected Gram  _gram; // wx%*%x
     double [] _xy; // wx^t%*%z,

@@ -17,7 +17,6 @@ import hex.gram.Gram.NonSPDMatrixException;
 import hex.optimization.ADMM;
 import hex.optimization.ADMM.ProximalSolver;
 import hex.optimization.L_BFGS.*;
-import hex.optimization.OptimizationUtils.BacktrackingLS;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
 import hex.optimization.OptimizationUtils.MoreThuente;
@@ -1936,68 +1935,116 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double objVal = _parms._family == Family.multinomial
           ?objVal(glmt._likelihood, glmt._beta_multinomial)
           :objVal(glmt._likelihood, glmt._beta);
-        double oldObj = _taskInfo._objVal;
-        if (!isRunning(GLM.this._key)) throw new JobCancelledException();
-        assert glmt._nobs == _taskInfo._nobs:"got wrong number of observations, expected " + _taskInfo._nobs + ", but got " + glmt._nobs;
-        assert _taskInfo._activeCols == null || glmt._beta == null || glmt._beta.length == (_taskInfo._activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _taskInfo._activeCols.length);
-        assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
-        double reg = _parms._obj_reg;
-        // sum of weights of this weighted least square problem,  includes both user weights and weights generated during fitting
-        double wsum = glmt._gram.get(_activeData.fullN(),_activeData.fullN());
-        GramSolver gslvr = null;
-        if(!_parms._compute_p_values) { // no need for this if has no regularization
-          glmt._gram.mul(reg);
-          ArrayUtils.mult(glmt._xy, reg);
-        }
         if (_countIteration) ++_taskInfo._iter;
-        long callbackStart = System.currentTimeMillis();
         double lastObjVal = _taskInfo._objVal;
+        double relImprovement = _taskInfo._iter > 1?(lastObjVal - objVal)/lastObjVal:1;
         double logl = glmt._likelihood;               // negated condition to work with NaNs
-        if (_doLinesearch && (glmt.hasNaNsOrInf() || !((objVal) <= (lastObjVal)))) {
+        if (_doLinesearch && (glmt.hasNaNsOrInf() || !((objVal) < (lastObjVal)))) {
           // needed line search, have to discard the last step and go again with line search
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get ginfo here?
           --_taskInfo._iter;
           _taskInfo._lineSearch = true;
-          if(_parms._family == Family.multinomial) {
-            double [] direction = ArrayUtils.subtract(glmt._beta_multinomial[_c], _taskInfo._beta_multinomial[_c]);
-            new GLMTask.GLMMultinomialLineSearchTask(new MultinomialLineSearchIteration(getCompleter(), _taskInfo._beta_multinomial, direction, glmt._likelihood, MINLINE_SEARCH_STEP, true), _activeData, _taskInfo._beta_multinomial, direction,_c, 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS).asyncExec(_activeData._adaptedFrame);
-          }else
-            new GLMLineSearchTask(_activeData, _parms, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter(),glmt._likelihood)).asyncExec(_activeData._adaptedFrame);
+          if (_parms._family == Family.multinomial) {
+            double[] direction = ArrayUtils.subtract(glmt._beta_multinomial[_c], _taskInfo._beta_multinomial[_c]);
+            new GLMTask.GLMMultinomialLineSearchTask(new MultinomialLineSearchIteration(getCompleter(), _taskInfo._beta_multinomial, direction, glmt._likelihood, MINLINE_SEARCH_STEP, true), _activeData, _taskInfo._beta_multinomial, direction, _c, 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS).asyncExec(_activeData._adaptedFrame);
+          } else
+            new GLMLineSearchTask(_activeData, _parms, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), 1, LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter(), glmt._likelihood)).asyncExec(_activeData._adaptedFrame);
           return;
         } else {
           _sc.addIterationScore(_taskInfo._iter - 1, logl, objVal);
           if (lastObjVal > objVal) {
-            if(_parms._family == Family.multinomial)
-              System.arraycopy(glmt._beta_multinomial[_c],0,_taskInfo._beta_multinomial[_c],0,glmt._beta_multinomial[_c].length);
+            if (_parms._family == Family.multinomial)
+              System.arraycopy(glmt._beta_multinomial[_c], 0, _taskInfo._beta_multinomial[_c], 0, glmt._beta_multinomial[_c].length);
             else
               _taskInfo._beta = glmt._beta;
             _taskInfo._objVal = objVal;
             _taskInfo._ginfo = null;
           }
         }
-        final double[] newBeta = MemoryManager.malloc8d(glmt._xy.length);
-        double l2pen = _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]);
-        double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
-        double defaultRho = _bc._betaLB != null || _bc._betaUB != null ? _taskInfo._lambdaMax * 1e-2 : 0;
-        long tx = System.currentTimeMillis();
-        // l1pen or upper/lower bounds require ADMM solver
-        if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null || _bc._betaGiven != null) {
-          // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
-          gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
-          new ADMM.L1Solver(1e-4, 10000).solve(gslvr, newBeta, l1pen, _parms._intercept, _bc._betaLB, _bc._betaUB);
+        if (!isRunning(GLM.this._key)) throw new JobCancelledException();
+        assert glmt._nobs == _taskInfo._nobs:"got wrong number of observations, expected " + _taskInfo._nobs + ", but got " + glmt._nobs;
+        assert _taskInfo._activeCols == null || glmt._beta == null || glmt._beta.length == (_taskInfo._activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _taskInfo._activeCols.length);
+        assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
+        double reg = _parms._obj_reg;
+        long callbackStart = System.currentTimeMillis();
+        final double [] newBeta;
+        final Cholesky chol;
+        if(_parms._remove_colinear_columns || _parms._compute_p_values) {
+          if(_taskInfo._iter == 1) { // did not check for co-linear cols yet
+            ArrayList<Integer> ignored_cols = new ArrayList<>();
+            chol = glmt._gram.qrCholesky(ignored_cols);
+            if(!ignored_cols.isEmpty()) { // got some redundant cols
+              int [] colinear_cols = new int[ignored_cols.size()];
+              for(int i = 0; i < colinear_cols.length; ++i)
+                colinear_cols[i] = ignored_cols.get(i);
+              String [] colinear_col_names = ArrayUtils.select(_activeData.coefNames(),colinear_cols);
+              if(!_parms._remove_colinear_columns)
+                throw new IllegalArgumentException("Got colinear columns, can not compute p-values unless some of the co-lienar columns are removed, please re-run with remove co-linear_columns flag on or remove the co-linear columns manually. Found following dependent columns " + colinear_col_names);
+              // need to drop the cols from everywhere
+              _model.addWarning("Removed co-linear columns " + colinear_col_names);
+              Log.warn("Removed co-linear columns " + Arrays.toString(colinear_col_names));
+              int [] activeCols = ArrayUtils.removeSorted(_activeData.activeCols(),colinear_cols);
+              _activeData = _activeData.filterExpandedColumns(activeCols);
+              if(_taskInfo._ginfo != null)
+                _taskInfo._ginfo = new GLMGradientInfo(_taskInfo._ginfo._likelihood, _taskInfo._ginfo._objVal, contractVec(_taskInfo._ginfo._gradient, activeCols));
+              if(_parms._family == Family.multinomial) {
+                for(int i = 0; i < _taskInfo._beta_multinomial.length; ++i)
+                  _taskInfo._beta_multinomial[i] = contractVec(_taskInfo._beta_multinomial[i], activeCols);
+              } else _taskInfo._beta = contractVec(_taskInfo._beta, activeCols);
+              glmt._beta = contractVec(glmt._beta, activeCols);
+              newBeta = contractVec(glmt._xy,activeCols);
+            } else
+              newBeta = glmt._xy.clone();
+          } else {
+            newBeta = glmt._xy.clone();
+            chol = glmt._gram.cholesky(null);
+          }
+
+
+          chol.solve(newBeta);
         } else {
-          glmt._gram.addDiag(l2pen);
-          (gslvr = new GramSolver(glmt._gram,glmt._xy,_taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept)).solve(newBeta);
+          chol = null;
+          GramSolver gslvr = null;
+          glmt._gram.mul(reg);
+          ArrayUtils.mult(glmt._xy, reg);
+          newBeta = MemoryManager.malloc8d(glmt._xy.length);
+          double l2pen = _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]);
+          double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
+          double defaultRho = _bc._betaLB != null || _bc._betaUB != null ? _taskInfo._lambdaMax * 1e-2 : 0;
+          // l1pen or upper/lower bounds require ADMM solver
+          if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null || _bc._betaGiven != null) {
+            // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
+            gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
+            new ADMM.L1Solver(1e-4, 10000).solve(gslvr, newBeta, l1pen, _parms._intercept, _bc._betaLB, _bc._betaUB);
+          } else {
+            glmt._gram.addDiag(l2pen);
+            new GramSolver(glmt._gram, glmt._xy, _taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept).solve(newBeta);
+          }
         }
-        LogInfo("iteration computed in " + (callbackStart - _iterationStartTime) + " + " + (System.currentTimeMillis() - tx) + " ms");
+        LogInfo("iteration computed in " + (callbackStart - _iterationStartTime) + " + " + (System.currentTimeMillis() - callbackStart) + " ms");
         _taskInfo._worked += _taskInfo._workPerIteration;
         update(_taskInfo._workPerIteration, "lambdaId = " + _lambdaId + ", iteration = " + _taskInfo._iter + ", objective value = " + MathUtils.roundToNDigits(objVal,4));
         if (ArrayUtils.hasNaNsOrInfs(newBeta)) {
           throw new RuntimeException(LogInfo("got NaNs and/or Infs in beta"));
         } else {
           final double bdiff = beta_diff(glmt._beta, newBeta);
-          if ((_parms._family == Family.gaussian && _parms._link == Link.identity) || bdiff < _parms._beta_epsilon || _taskInfo._iter >= _parms._max_iterations) { // Gaussian is non-iterative and ginfo is ADMMSolver's ginfo => just validate and move on to the next lambda_value
+          if ((_parms._family == Family.gaussian && _parms._link == Link.identity) || relImprovement < _parms._objective_epsilon || bdiff < _parms._beta_epsilon || _taskInfo._iter >= _parms._max_iterations) { // Gaussian is non-iterative and ginfo is ADMMSolver's ginfo => just validate and move on to the next lambda_value
+            if(_parms._compute_p_values) { // compute p-values
+              double se = 1;
+              boolean seEst = false;
+              if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
+                seEst = true;
+                ComputeSETsk ct = new ComputeSETsk(null, _activeData, GLM.this.jobKey(), newBeta, _parms).doAll(_activeData._adaptedFrame);
+                se = ct._sumsqe / (_taskInfo._nobs - 1 - _activeData.fullN());
+              }
+              double [] zvalues = new double[_activeData.fullN()+1];
+              double [] gInvDiag = chol.getInvDiag();
+              for(int i = 0; i < zvalues.length; ++i)
+                zvalues[i] = newBeta[i]/Math.sqrt(gInvDiag[i]*se);
+              _model.setZValues(expandVec(zvalues,_activeData._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
+              _model.update(GLM.this.jobKey());
+            }
             int diff = (int) Math.log10(bdiff);
             int nzs = 0;
             for (int i = 0; i < newBeta.length; ++i)
@@ -2010,28 +2057,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             else
               _taskInfo._beta = glmt._beta;
             // compute KKTs
-            if(_parms._compute_p_values) { // compute p-values
-              gslvr._gram.solve(gslvr._xy.clone());
-              if(gslvr._addedL2)
-                throw new IllegalArgumentException("Can not compute p-values due to colinear columns");
-              double se = 1;
-              boolean seEst = false;
-              if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
-                seEst = true;
-                ComputeSETsk ct = new ComputeSETsk(null, _activeData, GLM.this.jobKey(), _taskInfo._beta, _parms).doAll(_activeData._adaptedFrame);
-                se = ct._sumsqe / (_taskInfo._nobs - 1 - _activeData.fullN());
-              }
-              double [] v = new double[_activeData.fullN()+1];
-              double [] zvalues = new double[_activeData.fullN()+1];
-              for(int i = 0; i < v.length; ++i) {
-                Arrays.fill(v,0);
-                v[i] = 1;
-                gslvr._chol.solve(v); // compute ith column of the inv(Gram)
-                zvalues[i] = _taskInfo._beta[i]/Math.sqrt(v[i]*se);
-              }
-              _model.setZValues(zvalues,se, seEst);
-              _model.update(GLM.this.jobKey());
-            }
             checkKKTsAndComplete(true,(H2OCountedCompleter)getCompleter());
             return;
           } else { // not done yet, launch next iteration
@@ -2577,11 +2602,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //      }
 //    }
   }
-
   private static final double[] expandVec(double[] beta, final int[] activeCols, int fullN) {
+    return expandVec(beta, activeCols, fullN, 0);
+  }
+  private static final double[] expandVec(double[] beta, final int[] activeCols, int fullN, double filler) {
     assert beta != null;
     if (activeCols == null) return beta;
     double[] res = MemoryManager.malloc8d(fullN);
+    Arrays.fill(res,filler);
     int i = 0;
     for (int c : activeCols)
       res[c] = beta[i++];
