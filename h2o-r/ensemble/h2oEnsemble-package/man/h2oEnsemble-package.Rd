@@ -12,8 +12,8 @@ H2O Ensemble implements the Super Learner ensemble (stacking) algorithm using th
 \tabular{ll}{
 Package: \tab h2oEnsemble\cr
 Type: \tab Package\cr
-Version: \tab 0.1.3.9000\cr
-Date: \tab 2015-11-15\cr
+Version: \tab 0.1.4\cr
+Date: \tab 2015-12-05\cr
 License: \tab Apache License (== 2.0)\cr
 }
 }
