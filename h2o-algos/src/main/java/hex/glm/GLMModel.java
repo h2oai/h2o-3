@@ -116,6 +116,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1;
+    public boolean _stdOverride; // standardization override by beta constraints
 
     public void validate(GLM glm) {
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)

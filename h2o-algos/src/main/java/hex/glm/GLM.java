@@ -293,6 +293,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         // mean override (for data standardization)
         if ((v = beta_constraints.vec("mean")) != null) {
+          _parms._stdOverride = true;
           for(int i = 0; i < v.length(); ++i) {
             if(!v.isNA(i) && map[i] != -1) {
               int idx = map == null ? i : map[i];
@@ -306,6 +307,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         // standard deviation override (for data standardization)
         if ((v = beta_constraints.vec("std_dev")) != null) {
+          _parms._stdOverride = true;
           for (int i = 0; i < v.length(); ++i) {
             if (!v.isNA(i) && map[i] != -1) {
               int idx = map == null ? i : map[i];
@@ -595,26 +597,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     protected void compute2() {
       // get filtered dataset's mean and number of observations
-      new YMUTask(_dinfo, nclasses(), _parms._weights_column != null, new H2OCallback<YMUTask>(this) {
+      new YMUTask(_dinfo, nclasses(), !_parms._stdOverride, new H2OCallback<YMUTask>(this) {
         @Override
         public void callback(final YMUTask ymut) {
           _yMu = _parms._intercept ? ymut._yMu : new double[nclasses()];
-          _wsum = ymut._wsum;
+          _wsum = ymut._basicStats == null?ymut._nobs:ymut._basicStats.wsum();
           if(_parms._obj_reg == -1)
             _parms._obj_reg = 1.0/_wsum;
           _ymuLink = (_parms._intercept && _parms._family != Family.multinomial) ? _parms.link(_yMu[0]):0;
           _yMin = ymut._yMin;
           _yMax = ymut._yMax;
           _nobs = ymut._nobs;
-          if(ymut._comupteWeightedSigma) { // got weights, need to recompute standardization
-            double [] sigmas = MemoryManager.malloc8d(_dinfo._nums);
-            double [] mean = MemoryManager.malloc8d(_dinfo._nums);
-            for(int i = 0; i < _dinfo._nums; ++i) {
-              sigmas[i] = MathUtils.weightedSigma(ymut._nobs, ymut._wsum, ymut._xsum[i], ymut._xxsum[i]);
-              mean[i] = ymut._xsum[i]/ymut._wsum;
-            }
-            _dinfo.updateWeightedSigmaAndMean(sigmas, mean);
-          }
+          if(ymut._comupteWeightedSigma)  // got weights, need to recompute standardization
+            _dinfo.updateWeightedSigmaAndMean(ymut._basicStats.sigma(), ymut._basicStats.mean());
           if(_dinfo._offset && _parms._intercept) {
             InitTsk.this.addToPendingCount(1);
             DataInfo dinfo = _dinfo.filterExpandedColumns(new int[]{});

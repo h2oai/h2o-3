@@ -346,9 +346,9 @@ public class DataInfo extends Keyed {
         _normMul[i] = sigmas[i] != 0?1.0/sigmas[i]:1;
     }
     if(_predictor_transform.isMeanAdjusted()) {
-      if(sigmas.length != _normMul.length)
+      if(mean.length != _normSub.length)
         throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
-      for(int i = 0; i < sigmas.length; ++i)
+      for(int i = 0; i < mean.length; ++i)
         _normSub[i] = mean[i];
     }
   }

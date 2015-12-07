@@ -14,6 +14,7 @@ import water.H2O.H2OCountedCompleter;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.MathUtils.BasicStats;
 
 import java.util.Arrays;
 
@@ -33,7 +34,6 @@ public abstract class GLMTask  {
 
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
    long _nobs;
-   double _wsum;
 
    final int _responseId;
 
@@ -44,8 +44,9 @@ public abstract class GLMTask  {
 
    final boolean _comupteWeightedSigma;
 
-   double [] _xsum; // weighted sum of x
-   double [] _xxsum; // weighted sum of x^2
+//   double [] _mean; // weighted sum of x
+//   double [] _m2;   // weighted sum of x^2
+   BasicStats _basicStats;
    double [] _yMu;
    final int _nClasses;
 
@@ -82,21 +83,20 @@ public abstract class GLMTask  {
        }
      }
      Chunk response = chunks[_responseId];
+     double [] nums = null;
      if(_comupteWeightedSigma) {
-       _xsum = MemoryManager.malloc8d(_nums);
-       _xxsum = MemoryManager.malloc8d(_nums);
+       _basicStats = new BasicStats(_nums);
+       nums = MemoryManager.malloc8d(_nums);
      }
+
      for(int r = 0; r < response._len; ++r) {
        double w = weight.atd(r);
        if(!good[r] || w == 0) continue;
        if(_comupteWeightedSigma) {
-         for(int i = 0; i < _nums; ++i) {
-           double d = chunks[i+_numOff].atd(r);
-           _xsum[i]  += w*d;
-           _xxsum[i] += w*d*d;
-         }
+         for(int i = 0; i < _nums; ++i)
+           nums[i] = chunks[i+_numOff].atd(r);
+         _basicStats.add(nums,w);
        }
-       _wsum += w;
        double d = w*response.atd(r);
        assert !Double.isNaN(d);
        if(_nClasses > 2)
@@ -122,14 +122,16 @@ public abstract class GLMTask  {
      }
    }
    @Override public void postGlobal() {
-     ArrayUtils.mult(_yMu,1.0/_wsum);
+     if(_comupteWeightedSigma)
+       ArrayUtils.mult(_yMu,1.0/_basicStats.wsum());
+     else
+       ArrayUtils.mult(_yMu,1.0/_nobs);
      Futures fs = new Futures();
 //     _fVec.postWrite(fs); // we just overwrote the vec
      fs.blockForPending();
    }
    @Override public void reduce(YMUTask ymt) {
      if(_nobs > 0 && ymt._nobs > 0) {
-       _wsum += ymt._wsum;
        ArrayUtils.add(_yMu,ymt._yMu);
        _nobs += ymt._nobs;
        if(_yMin > ymt._yMin)
@@ -137,17 +139,14 @@ public abstract class GLMTask  {
        if(_yMax < ymt._yMax)
          _yMax = ymt._yMax;
        if(_comupteWeightedSigma) {
-         ArrayUtils.add(_xsum, ymt._xsum);
-         ArrayUtils.add(_xxsum, ymt._xxsum);
+         _basicStats.reduce(ymt._basicStats);
        }
      } else if (_nobs == 0) {
-       _wsum = ymt._wsum;
        _yMu = ymt._yMu;
        _nobs = ymt._nobs;
        _yMin = ymt._yMin;
        _yMax = ymt._yMax;
-       _xsum = ymt._xsum;
-       _xxsum = ymt._xxsum;
+       _basicStats = ymt._basicStats;
      }
    }
  }
