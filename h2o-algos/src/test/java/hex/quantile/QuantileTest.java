@@ -8,6 +8,7 @@ import water.Job;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -79,6 +80,339 @@ public class QuantileTest extends TestUtil {
     }
   }
 
+  @Test public void testDirectMatch() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1}, {1}, {1}, {2}};
+      fr = ArrayUtils.frame(d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._probs = new double[]{0.5};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 1);
+
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolate1() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1}, {1}, {2}, {2}};
+      fr = ArrayUtils.frame(d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._probs = new double[]{0.5};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 1.5);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolate2() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1}, {1}, {3}, {2}};
+      fr = ArrayUtils.frame(d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._probs = new double[]{0.5};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 1.5);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateLow() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1}, {2}, {3}};
+      fr = ArrayUtils.frame(d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._probs = new double[]{0.49};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 1.98);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHigh() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1}, {2}, {3}};
+      fr = ArrayUtils.frame(d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._probs = new double[]{0.51};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 2.02);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHighWeighted() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1, 0}, {2, 1}, {3, 1}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0.51};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 2.51);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHighWeighted2() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1, 2}, {2, 1}, {3, 1}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0.43};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 1.29);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHighWeighted3() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1, 3}, {2, 2}, {3, 5}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0.31};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 1.79);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHighWeighted4() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1, 1.005}, {2, 1}, {3, 1}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0.71};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue("Got: " + kmm._output._quantiles[0][0], Math.abs(kmm._output._quantiles[0][0] - 2.42355)<1e-10);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHighWeighted5() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1, 5}, {2, 4}, {3, 3}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0.43};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 1.73);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHighWeighted6() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1, 2}, {2, 2}, {3, 2}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0.33};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][0] == 1.65);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHighWeighted7() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1, 1}, {2, 1}, {3, 1}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0,0.25,0.5,0.75,1};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(Arrays.equals(kmm._output._quantiles[0], new double[]{1,1.5,2,2.5,3}));
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateHighWeighted8() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1, 2}, {2, 2}, {3, 2}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0,0.25,0.5,0.75,1};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(Arrays.equals(kmm._output._quantiles[0], new double[]{1,1.25,2,2.75,3}));
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateWideRangeWeighted() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1e-100, 1}, {1e-10, 4}, {1e-4, 2}, {1e-2, 4}, {1e-1, 5}, {1, 3}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      //parms._probs = new double[]{0,0.25,0.5,0.75,1};
+      parms._probs = new double[]{0.25,0.5,0.75,1};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      //double[] exp = new double[]{1e-100,5e-5,1e-2,1e-1,1};
+      double[] exp = new double[]{5e-5,1e-2,1e-1,1};
+      double[] act = kmm._output._quantiles[0];
+      for (int i=0;i<exp.length; ++i)
+        Assert.assertTrue("Got " + act[i] + " but expected " + exp[i], Math.abs(act[i] - exp[i])/exp[i] < 1e-5);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateWideRange() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1e-100}, {1e-10}, {1e-4}, {1e-2}, {1e-1}, {1}};
+      fr = ArrayUtils.frame(new String[]{"x"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._probs = new double[]{0,0.25,0.5,0.75,1};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      double[] exp = new double[]{1e-100,2.5e-5,5.05e-3,7.75e-2,1};
+      double[] act = kmm._output._quantiles[0];
+      for (int i=0;i<exp.length; ++i)
+        Assert.assertTrue("Got " + act[i] + " but expected " + exp[i], Math.abs(act[i] - exp[i])/exp[i] < 1e-5);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateWideRangeWeighted2() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1e-100, 10}, {1e-10, 4}, {1e-4, 2}, {1e-2, 4}, {1e-1, 5}, {1, 3}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0,0.25,0.5,0.75,1};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      double[] exp = new double[]{1e-100,1e-100,5.000005e-5,1e-1,1};
+      double[] act = kmm._output._quantiles[0];
+      for (int i=0;i<exp.length; ++i)
+        Assert.assertTrue("Got " + act[i] + " but expected " + exp[i], Math.abs(act[i] - exp[i]) / exp[i] < 1e-5);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+  @Test public void testInterpolateLargeWeights() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{0, 10}, {1, 10}};
+      fr = ArrayUtils.frame(new String[]{"x","weights"}, d);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._probs = new double[]{0.475,0.48,0.49};
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      double[] exp = new double[]{0.025,0.12,0.31};
+      double[] act = kmm._output._quantiles[0];
+      for (int i=0;i<exp.length; ++i)
+        Assert.assertTrue("Got " + act[i] + " but expected " + exp[i], Math.abs(act[i] - exp[i]) / exp[i] < 1e-5);
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+
   @Test public void testShuffled() {
     QuantileModel kmm1;
     QuantileModel kmm2;
@@ -112,9 +446,12 @@ public class QuantileTest extends TestUtil {
           job2.remove();
         }
 
-        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
-        if( kmm1 != null ) kmm1.delete();
-        if( kmm2 != null ) kmm2.delete();
+        try {
+          Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        } finally {
+          if (kmm1 != null) kmm1.delete();
+          if (kmm2 != null) kmm2.delete();
+        }
       }
 
     } finally {
@@ -158,9 +495,12 @@ public class QuantileTest extends TestUtil {
           job2.remove();
         }
 
-        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
-        if( kmm1 != null ) kmm1.delete();
-        if( kmm2 != null ) kmm2.delete();
+        try {
+          Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        } finally {
+          if (kmm1 != null) kmm1.delete();
+          if (kmm2 != null) kmm2.delete();
+        }
       }
 
     } finally {
@@ -204,9 +544,16 @@ public class QuantileTest extends TestUtil {
           job2.remove();
         }
 
-        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
-        if( kmm1 != null ) kmm1.delete();
-        if( kmm2 != null ) kmm2.delete();
+        try {
+          for (int i=0;i<kmm1._output._quantiles.length; ++i) {
+            Log.info(Arrays.toString(kmm1._output._quantiles[i]));
+            Log.info(Arrays.toString(kmm2._output._quantiles[i]));
+          }
+          Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        } finally {
+          if (kmm1 != null) kmm1.delete();
+          if (kmm2 != null) kmm2.delete();
+        }
       }
 
     } finally {
@@ -215,7 +562,7 @@ public class QuantileTest extends TestUtil {
     }
   }
 
-  @Ignore @Test public void testWeights2() {
+  @Test public void testWeights2() {
     QuantileModel kmm1;
     QuantileModel kmm2;
     Frame fr1 = null;
@@ -250,9 +597,13 @@ public class QuantileTest extends TestUtil {
           job2.remove();
         }
 
-        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
-        if( kmm1 != null ) kmm1.delete();
-        if( kmm2 != null ) kmm2.delete();
+        try {
+          assert(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+          Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        } finally {
+          if (kmm1 != null) kmm1.delete();
+          if (kmm2 != null) kmm2.delete();
+        }
       }
 
     } finally {
@@ -261,7 +612,7 @@ public class QuantileTest extends TestUtil {
     }
   }
 
-  @Ignore @Test public void testWeights3() {
+  @Test public void testWeights3() {
     QuantileModel kmm1;
     QuantileModel kmm2;
     Frame fr1 = null;
@@ -296,9 +647,12 @@ public class QuantileTest extends TestUtil {
           job2.remove();
         }
 
-        Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
-        if( kmm1 != null ) kmm1.delete();
-        if( kmm2 != null ) kmm2.delete();
+        try {
+          Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
+        } finally {
+          if (kmm1 != null) kmm1.delete();
+          if (kmm2 != null) kmm2.delete();
+        }
       }
 
     } finally {
