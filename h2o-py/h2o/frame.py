@@ -13,7 +13,7 @@ import tempfile
 from datetime import datetime
 import sys
 import traceback
-from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts
+from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, quote
 from .display import H2ODisplay
 from .connection import H2OConnection
 from .job import H2OJob
@@ -405,6 +405,7 @@ class H2OFrame(object):
     # Force a fetch of 10 rows; the chunk & distribution summaries are not
     # cached, so must be pulled.  While we're at it, go ahead and fill in
     # the default caches if they are not already filled in
+
     res = H2OConnection.get_json("Frames/"+quote(self.frame_id)+"?row_count="+str(10))["frames"][0]
     self._ex._cache._fill_data(res)
     print("Rows:{:,}".format(self.nrow), "Cols:{:,}".format(self.ncol))
@@ -458,7 +459,7 @@ class H2OFrame(object):
   def __add__ (self, i): return H2OFrame._expr(expr=ExprNode("+",   self,i), cache=self._ex._cache)
   def __sub__ (self, i): return H2OFrame._expr(expr=ExprNode("-",   self,i), cache=self._ex._cache)
   def __mul__ (self, i): return H2OFrame._expr(expr=ExprNode("*",   self,i), cache=self._ex._cache)
-  def __div__ (self, i): return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
+  def __truediv__ (self, i): return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __floordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",self,i), cache=self._ex._cache)
   def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("mod", self,i), cache=self._ex._cache)
   def __or__  (self, i): return H2OFrame._expr(expr=ExprNode("|",   self,i), cache=self._ex._cache)
@@ -853,8 +854,8 @@ class H2OFrame(object):
       print("$ {} {}: ".format(cn[i], ' '*(width-max(0,len(cn[i])))), end=' ')
       if isfactor[i]:
         nl = numlevels[i]
-        print("Factor w/ {} level(s) {},..: ".format(nl, '"' + '","'.join(zip(*lvls)[i]) + '"'), end=' ')
-        print(" ".join(it[0] for it in h2o.as_list(self[:10,i].match(list(zip(*lvls)[i])), False)[1:]), end=' ')
+        print("Factor w/ {} level(s) {},..: ".format(nl, '"' + '","'.join(list(zip(*lvls))[i]) + '"'), end=' ')
+        print(" ".join(it[0] for it in h2o.as_list(self[:10,i].match(list(list(zip(*lvls))[i])), False)[1:]), end=' ')
         print("...")
       else:
         print("num {} ...".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:])))
@@ -1656,11 +1657,11 @@ class H2OFrame(object):
 
       lower = float(frame[0,"breaks"])
       clist = h2o.as_list(frame["counts"], use_pandas=False)
-      clist = zip(*clist)
+      clist = list(zip(*clist))
       clist.pop(0)
       clist.pop(0)
       mlist = h2o.as_list(frame["mids"], use_pandas=False)
-      mlist = zip(*mlist)
+      mlist = list(zip(*mlist))
       mlist.pop(0)
       mlist.pop(0)
       counts = [float(c[0]) for c in clist]

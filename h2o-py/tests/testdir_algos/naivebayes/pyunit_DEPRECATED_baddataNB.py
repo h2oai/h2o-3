@@ -47,7 +47,7 @@ def nb_baddata():
     print("Training data with 1 col of all 5's: drop automatically")
     rawdata = [[random.gauss(0,1) for r in range(100)] for c in range(10)]
     rawdata[4] = 100 * [5]
-    rawdata[0] = [random.choice(string.letters) for _ in range(100)]
+    rawdata[0] = [random.choice(string.ascii_letters) for _ in range(100)]
     train_h2o = h2o.H2OFrame(rawdata)
     model = h2o.naive_bayes(x=train_h2o[1:10], y=train_h2o[0])
     assert len(model._model_json['output']['pcond']) == 8, "Expected 8 predictors, but got {0}" \

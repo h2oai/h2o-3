@@ -61,9 +61,9 @@ def weights_check():
         mul1_mse = gbm1_multinomial.mse()
         mul2_mse = gbm2_multinomial.mse()
 
-        # print("MSE (regresson)   no weights vs. weights: {0}, {1}".format(reg1_mse, reg2_mse))
-        # print("AUC (binomial)    no weights vs. weights: {0}, {1}".format(bin1_auc, bin2_auc))
-        # print("MSE (multinomial) no weights vs. weights: {0}, {1}".format(mul1_mse, mul2_mse))
+        print("MSE (regresson)   no weights vs. weights: {0}, {1}".format(reg1_mse, reg2_mse))
+        print("AUC (binomial)    no weights vs. weights: {0}, {1}".format(bin1_auc, bin2_auc))
+        print("MSE (multinomial) no weights vs. weights: {0}, {1}".format(mul1_mse, mul2_mse))
 
         assert abs(reg1_mse - reg2_mse) < 1e-6 * reg1_mse, "Expected mse's to be the same, but got {0}, and {1}".format(reg1_mse, reg2_mse)
         assert abs(bin1_auc - bin2_auc) < 3e-4 * bin1_auc, "Expected auc's to be the same, but got {0}, and {1}".format(bin1_auc, bin2_auc)
@@ -81,8 +81,8 @@ def weights_check():
     h2o_uniform_weights.set_names(["weights"])
     h2o_data_uniform_weights = h2o_cars_data.cbind(h2o_uniform_weights)
 
-    # print("Checking that using uniform weights is equivalent to no weights:")
-    # print()
+    print("Checking that using uniform weights is equivalent to no weights:")
+    print()
     check_same(h2o_cars_data, h2o_data_uniform_weights, weight)
 
     # zero weights same as removed observations
@@ -94,8 +94,8 @@ def weights_check():
     h2o_data_zero_weights = h2o_cars_data.cbind(h2o_zero_weights)
     h2o_data_zeros_removed = h2o_cars_data[h2o_zero_weights["weights"] == 1]
 
-    # print("Checking that using some zero weights is equivalent to removing those observations:")
-    # print()
+    print("Checking that using some zero weights is equivalent to removing those observations:")
+    print()
     check_same(h2o_data_zeros_removed, h2o_data_zero_weights, 1)
 
     # doubled weights same as doubled observations
@@ -122,8 +122,8 @@ def weights_check():
     h2o_data_doubled_weights["economy_20mpg"] = h2o_data_doubled_weights["economy_20mpg"].asfactor()
     h2o_data_doubled_weights["cylinders"] = h2o_data_doubled_weights["cylinders"].asfactor()
 
-    # print("Checking that doubling some weights is equivalent to doubling those observations:")
-    # print()
+    print("Checking that doubling some weights is equivalent to doubling those observations:")
+    print()
     check_same(h2o_data_doubled, h2o_data_doubled_weights, 1)
 
     # TODO: random weights

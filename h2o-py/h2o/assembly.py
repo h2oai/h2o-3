@@ -16,7 +16,7 @@ class H2OAssembly:
   """
 
   # static properties pointing to H2OFrame methods
-  divide = H2OFrame.__div__
+  divide = H2OFrame.__truediv__
   plus   = H2OFrame.__add__
   multiply= H2OFrame.__mul__
   minus = H2OFrame.__sub__
@@ -47,7 +47,7 @@ class H2OAssembly:
 
   @property
   def names(self):
-    return zip(*self.steps)[0][:-1]
+    return list(zip(*self.steps))[0][:-1]
 
   def to_pojo(self, pojo_name="", path="", get_jar=True):
     if pojo_name=="": pojo_name = unicode("AssemblyPOJO_" + str(uuid.uuid4()))

@@ -48,7 +48,7 @@ def nb_baddata():
   print("Training data with 1 col of all 5's: drop automatically")
   rawdata = [[random.gauss(0,1) for r in range(100)] for c in range(10)]
   rawdata[4] = 100 * [5]
-  rawdata[0] = [random.choice(string.letters) for _ in range(100)]
+  rawdata[0] = [random.choice(string.ascii_letters) for _ in range(100)]
   train_h2o = h2o.H2OFrame(rawdata)
   model = H2ONaiveBayesEstimator()
   model.train(x=list(range(10)), y=0, training_frame=train_h2o)

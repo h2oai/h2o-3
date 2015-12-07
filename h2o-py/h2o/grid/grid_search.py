@@ -143,8 +143,10 @@ class H2OGridSearch(object):
     algo_params = locals()
     parms = self._parms.copy()
     parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
-    parms["hyper_parameters"] = self.hyper_params #unique to grid search
-    parms.update({k:v for k,v in list(self.model._parms.items()) if v}) #unique to grid search
+    parms["hyper_parameters"] = self.hyper_params  # unique to grid search
+    parms.update({k:v for k,v in list(self.model._parms.items()) if v})  # unique to grid search
+    if '__class__' in parms:  # FIXME: hackt for PY3
+      del parms['__class__']
     y = algo_params["y"]
     tframe = algo_params["training_frame"]
     if tframe is None: raise ValueError("Missing training_frame")

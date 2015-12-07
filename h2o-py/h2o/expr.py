@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import math, collections, tabulate, gc, sys, copy
-from six import iteritems, PY3
+from six import iteritems, PY3, itervalues
 from past.builtins import long, basestring
 from future.backports.urllib.request import quote
 from .connection import H2OConnection
@@ -253,9 +253,9 @@ class H2OCache(object):
     d = collections.OrderedDict()
     # If also printing the rollup stats, build a full row-header
     if rollups:
-      col = next(self._data.itervalues()) # Get a sample column
+      col = next(itervalues(self._data)) # Get a sample column
       lrows = len(col['data'])  # Cached rows being displayed
-      d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+map(str,range(lrows))
+      d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+list(map(str,range(lrows)))
     # For all columns...
     for k,v in iteritems(self._data):
       x = v['data']          # Data to display

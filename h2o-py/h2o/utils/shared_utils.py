@@ -7,6 +7,7 @@ from builtins import str
 from builtins import zip
 from builtins import range
 from past.builtins import basestring
+from six import PY3
 
 import imp
 import itertools
@@ -25,6 +26,14 @@ def can_use_pandas():
     return True
   except ImportError:
     return False
+
+def quote(stuff_to_quote):
+  if PY3:
+    from urllib.request import quote
+    return quote(stuff_to_quote)
+  else:
+    from urllib2 import quote
+    return quote(stuff_to_quote)
 
 
 def _gen_header(cols):
