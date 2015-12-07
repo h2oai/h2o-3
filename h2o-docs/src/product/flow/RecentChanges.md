@@ -2,6 +2,99 @@
 
 ##H2O
 
+###Tibshirani (3.6.0.9) - 11/23/15  
+
+####New Features 
+
+These changes represent features that have been added since the previous release:
+
+
+#####R
+
+- [PUBDEV-2079](https://0xdata.atlassian.net/browse/PUBDEV-2079): R now retrieves column types for a H2O Frame more efficiently
+
+#####Python
+
+- [PUBDEV-2294](https://0xdata.atlassian.net/browse/PUBDEV-2294): Added Python equivalent for `h2o.num_iterations`
+- [PUBDEV-2233](https://0xdata.atlassian.net/browse/PUBDEV-2233): Added `sub` and `gsub` to Python client
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/dbef536dc48fa56eb21d65339f1f1857724012f1): Added weighted quantiles to Python API
+
+
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/315201eb41a8439a1a77fb632b0e32a8181a2785): Change in behavior in GLM beta constraints - when ignoring constant/bad columns, remove them from `beta_constraints` as well
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/8035f7388560801e4af69c92c81a436a96f02957): Added `ignore_const_cols` to all algos
+
+
+#####Python 
+
+- [PUBDEV-2409](https://0xdata.atlassian.net/browse/PUBDEV-2409): H2O now checks for `H2O_DISABLE_STRICT_VERSION_CHECK` env variable in Python [GitHub commit](https://github.com/h2oai/h2o-3/commit/238a1c80e091c681da8b4b52eca308281244a7b9)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/953b892560242146af0ffc124f32e7a9ddb89b04): H2O now allows l/r values to be null or an empty string
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/7e368a4df9c39b30ca4f4eac77e2c739ef38bbf6): H2O now accomodates `LOAD_FAST` and `LOAD_GLOBAL` in `bytecode_to_ast`
+
+#####R
+
+- [PUBDEV-1378](https://0xdata.atlassian.net/browse/PUBDEV-1378): In R, `h2o.getTimezone()` previously returned a list of one, now it just returns the string
+
+
+#####System
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e1c9272bc21d4fcf3ab55f4fe646656a061ce542): Added more tweaks to help various low-memory configurations
+
+
+
+####Bug Fixes
+
+The following changes resolve incorrect software behavior: 
+
+
+#####API
+
+- [PUBDEV-2042](https://0xdata.atlassian.net/browse/PUBDEV-2042): `h2o.grid` failed when REST API version was not default
+- [PUBDEV-2401](https://0xdata.atlassian.net/browse/PUBDEV-2401): `/Jobs` failed if you built a Model and then overwrote it in the DKV with any other type [GitHub commit](https://github.com/h2oai/h2o-3/commit/453db68b4d31130bdaa2b6a31cf80a88447baabf)
+
+
+
+#####Algorithms
+
+- [PUBDEV-2396](https://0xdata.atlassian.net/browse/PUBDEV-2396):  GLRM validation frames must have the same number of rows as the training frame
+
+
+#####Python
+
+- [PUBDEV-2262](https://0xdata.atlassian.net/browse/PUBDEV-2262): H2OFrame indexing was no longer Pythonic on Bleeding Edge 10/23
+- [PUBDEV-2278](https://0xdata.atlassian.net/browse/PUBDEV-2278): Trying to get help in python client displayed the frame
+- [PUBDEV-2371](https://0xdata.atlassian.net/browse/PUBDEV-2371): Fixed ASTEQ `str_op` bug [GitHub commit](https://github.com/h2oai/h2o-3/commit/4fc88caa8d86679c4ed584d6a2c32ec931f03cdd)
+
+
+
+
+
+#####R
+
+- [PUBDEV-1749](https://0xdata.atlassian.net/browse/PUBDEV-1749): `h2o.apply` did not correctly handle functions
+- [PUBDEV-2335](https://0xdata.atlassian.net/browse/PUBDEV-2335): R: as.numeric for a string column only converted strings to ints rather than reals
+- [PUBDEV-2319](https://0xdata.atlassian.net/browse/PUBDEV-2319): R: `sd` was not working inside `group_by`
+- [PUBDEV-2397](https://0xdata.atlassian.net/browse/PUBDEV-2397): R: Ignore Constant Columns was not an argument in Algos in R like it is in Flow
+- [PUBDEV-2134](https://0xdata.atlassian.net/browse/PUBDEV-2134): When a dataset was sliced, the int mapping of enums was returned 
+- [PUBDEV-2408](https://0xdata.atlassian.net/browse/PUBDEV-2408): Improved handling when H2O has already been shutdown in R [GitHub commit](https://github.com/h2oai/h2o-3/commit/00d1505681135960722bc74def2a951ba01682ba)
+
+#####System
+
+- [PUBDEV-2403](https://0xdata.atlassian.net/browse/PUBDEV-2403): Parser read file of empty strings as 0 rows  [GitHub commit](https://github.com/h2oai/h2o-3/commit/eee101ba16e11bcbc10e35ddd1f96bfb749156d3)
+- [PUBDEV-2404](https://0xdata.atlassian.net/browse/PUBDEV-2404): Empty strings in python objects were parsed as missing  [GitHub commit](https://github.com/h2oai/h2o-3/commit/fb4817a6847192a9dc3f359b0f3ec2d63268aaef)
+- [PUBDEV-2375](https://0xdata.atlassian.net/browse/PUBDEV-2375): Save Model (Deeplearning): the filename for the model metrics file is too long for windows to handle
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/76aaf1ce863ea3cdfc5531dc0b551a26ff3ddf48): Fixed streaming load bug for large files
+
+
+---
+
 ###Tibshirani (3.6.0.7) - 11/23/15  
 
 

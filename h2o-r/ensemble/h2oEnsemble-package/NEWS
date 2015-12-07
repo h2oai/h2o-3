@@ -1,6 +1,6 @@
 # News for the h2oEnsemble package. #
 
-h2oEnsemble 0.1.4 (In progress)
+h2oEnsemble 0.1.5 (In progress)
 -----------------
 * TO DO: Add support for multi-class classification.
 * TO DO: Add utility function, `h2o.ensemble_group` which takes as input a list of "H2OModel" objects and returns an object of class, "h2o.ensemble".  
@@ -9,6 +9,11 @@ h2oEnsemble 0.1.4 (In progress)
 * TO DO: Update the `runtime` list to include times for `cv` and `baselearning`.  These were dropped in version 0.0.5.
 * TO DO: Add ability to generate predicted values using the `validation_frame` argument; currently this arg is ignored and doesn't do anything, and predictions must be made with the `predict.h2o.ensemble` function.  This should also include setting a new output object to store metrics.
 * TO DO: Add a utility function, `h2o.ensemble_metrics` to extract default performance metrics for binomial and gaussian family (AUC and MSE).  Also need functions to compute AUC and MSE from predicted y and true y (need use Java AUC and MSE functions).
+
+
+h2oEnsemble 0.1.4 (2015-12-05)
+-----------------
+* Added the ability to specify subsets of predictors for custom learners by passing an `x` to the wrapper functions.
 
 
 h2oEnsemble 0.1.3 (2015-11-06)
