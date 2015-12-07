@@ -109,7 +109,7 @@ public class GLMBasicTestRegression extends TestUtil {
         System.out.println("mse1 = " + model1._output._training_metrics.mse() + ", mse2 = " + model2._output._training_metrics.mse());
         System.out.println( model1._output._training_metrics);
         System.out.println( model2._output._training_metrics);
-        assertEquals(model2._output._training_metrics.mse(), model1._output._training_metrics.mse(),1e-6);
+        assertEquals(model2._output._training_metrics.mse(), model1._output._training_metrics.mse(),1e-4);
       } finally {
         if(job1 != null)job1.remove();
         if(model1 != null) model1.delete();
