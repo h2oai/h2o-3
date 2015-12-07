@@ -56,6 +56,19 @@ jar {
   }
 }
 
+// Run a single small JVM under heavy memory load, and confirm spilling works
+task testOOM(type: Exec) {
+    dependsOn jar, testJar
+    commandLine 'java', '-ea', '-Xmx1500m', '-Xms1500m', '-XX:+PrintGC', '-Dai.h2o.cleaner', '-cp', 'build/libs/h2o-core.jar'+File.pathSeparator+'build/libs/h2o-core-test.jar'+File.pathSeparator+'../lib/*', 'water.OOMTest'
+    // This is first action for Exec task
+    doFirst {
+      FileOutputStream fos = new FileOutputStream(new File(project.projectDir, "sandbox/water.OOMTest.out"))
+
+      standardOutput = fos;
+      errorOutput = fos;
+    }
+}
+
 // The default 'test' behavior is broken in that it does not grok clusters.
 // For H2O, all tests need to be run on a cluster, where each JVM is
 // "free-running" - it's stdout/stderr are NOT hooked by another process.  If
@@ -66,7 +79,7 @@ jar {
 // complete cluster of free-running JVMs and redirect all output (at the OS
 // level) to files - then scrape the files later for test results.
 test {
-  dependsOn smalldataCheck, cpLibs, testMultiNode, testJar
+  dependsOn smalldataCheck, cpLibs, testMultiNode, testJar, testOOM
 
   // Defeat task 'test' by running no tests.
   exclude '**'
