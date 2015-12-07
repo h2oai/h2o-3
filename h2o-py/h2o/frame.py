@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tempfile, urllib2, sys, urllib,imp, traceback
+import collections, csv, itertools, os, re, tempfile, urllib2, sys, urllib, imp, traceback, uuid
 import h2o
 from expr import ExprNode
 from astfun import _bytecode_decompile_lambda
@@ -2060,9 +2060,7 @@ class H2OFrame(object):
 # private static methods
 _id_ctr = 0
 def _py_tmp_key():
-  global _id_ctr
-  _id_ctr=_id_ctr+1
-  return "py_" + str(_id_ctr)
+  return "py_" + str(uuid.uuid4()).replace('-','')
 def _gen_header(cols): return ["C" + str(c) for c in range(1, cols + 1, 1)]
 def _check_lists_of_lists(python_obj):
   # all items in the list must be a list too
