@@ -18,7 +18,7 @@ def javapredict_2x100000():
     x = range(1,train.ncol)
     y = 0
 
-    pyunit_utils.javapredict("glm", "numeric", train, test, x, y, **params)
+    pyunit_utils.javapredict(algo="glm", equality="numeric", train=train, test=test, x=x, y=y, compile_only=True, **params)
 
 
 
