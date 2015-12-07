@@ -482,19 +482,19 @@ def removeFrameShallow(key):
   rapids("(removeframe '"+key+"')")
   return None
 
-def rapids(expr, id=None):
-  """
-  Fire off a Rapids expression.
+def rapids(expr):
+  """Execute a Rapids expression.
 
-  :param expr: The rapids expression (ascii string).
-  :return: The JSON response of the Rapids execution
+  Parameters
+  ----------
+  expr : str
+    The rapids expression (ascii string).
+
+  Returns
+  -------
+    The JSON response (as a python dictionary) of the Rapids execution
   """
-  if isinstance(expr, list): expr = ExprNode._collapse_sb(expr)
-  expr = "(= !{} {})".format(id,expr) if id is not None else expr
-  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
-  if result['error'] is not None:
-    raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
-  return result
+  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
 
 def ls():
   """
