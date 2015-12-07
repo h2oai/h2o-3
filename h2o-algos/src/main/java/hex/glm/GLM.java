@@ -357,7 +357,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
           }
         }
-        _bc.setBetaStart(betaStart).setLowerBounds(betaLB).setUpperBounds(betaUB).setProximalPenalty(betaGiven, rho);
+        _bc.setBetaStart(betaStart).setLowerBounds(betaLB).setUpperBounds(betaUB).setProximalPenalty(betaGiven, rho).check();
       }
       if(_parms._non_negative) {
         if(_bc._betaLB != null) {
@@ -743,6 +743,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       return res;
     }
+
+    public void check() {
+      if(_betaLB != null && _betaUB != null)
+        for(int i = 0; i < _betaLB.length; ++i)
+          if(!(_betaLB[i] <= _betaUB[i]))
+            throw new IllegalArgumentException("lower bounds myst be <= upper bounds, " + _betaLB[i] + " !<= " + _betaUB[i]);
+    }
   }
 
   /**
@@ -942,10 +949,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         update(_tInfos[0]._workPerLambda, "lambda = " + _lambdaId + ", iteration = " + _tInfos[0]._iter + ", got " + rank + "nonzeros");
         // launch next lambda
         ++_lambdaId;
-//        if (_parms._lambda_search && !_parms._exactLambdas && _lambdaId == _parms._lambda.length && _tInfos[0]._stopCnt == 0) {
-//          _parms._lambda = Arrays.copyOf(_parms._lambda, _parms._lambda.length + 1);
-//          _parms._lambda[_parms._lambda.length - 1] = _parms._lambda[_parms._lambda.length - 2] * .9;
-//        }
         if (_tInfos[0]._iter < _parms._max_iterations && _lambdaId < _parms._lambda.length && _tInfos[0]._stopCnt < 3 ) {
           getCompleter().addToPendingCount(1);
           _tInfos[0]._firstIter = true;

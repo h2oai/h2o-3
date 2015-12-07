@@ -71,7 +71,7 @@ test.pubdev.2372 <- function(conn){
   	ee = length(which(subs=="yes"))
   	nn = length(subs)
   	pp = ee/nn
-  	expect_equal(pp,gain_table$response_rate[j])
+  	expect_equal(pp,gain_table$response_rate[j],tolerance= 1e-3)
   	j = j+1
 	}
 

@@ -1765,21 +1765,6 @@ def _locate(path):
     possible_result = os.path.join(tmp_dir, path)
 
 
-def store_size():
-  """Get the H2O store size (current count of keys).
-  :return: number of keys in H2O cloud
-  """
-  return rapids("(store_size)")["result"]
-
-
-def keys_leaked(num_keys):
-  """Ask H2O if any keys leaked.
-  @param num_keys: The number of keys that should be there.
-  :return: A boolean True/False if keys leaked. If keys leaked, check H2O logs for further detail.
-  """
-  return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
-
-
 def as_list(data, use_pandas=True):
   """Convert an H2O data object into a python-specific object.
 

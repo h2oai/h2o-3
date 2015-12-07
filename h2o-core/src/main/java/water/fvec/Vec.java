@@ -569,9 +569,11 @@ public class Vec extends Keyed<Vec> {
     Vec randVec = makeZero();
     new MRTask() {
       @Override public void map(Chunk c){
-        Random rng = RandomUtils.getRNG(seed * (c.cidx() + 1));
-        for(int i = 0; i < c._len; ++i)
+        Random rng = new RandomUtils.PCGRNG(c._start,1);
+        for(int i = 0; i < c._len; ++i) {
+          rng.setSeed(c._start+i); // Determinstic per-row
           c.set(i, rng.nextFloat());
+        }
       }
     }.doAll(randVec);
     return randVec;
