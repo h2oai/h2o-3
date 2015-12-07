@@ -7,7 +7,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
                nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
                fold_assignment=None, keep_cross_validation_predictions=None,
-               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None, objective_epsilon = None, gradient_epsilon = None, non_negative=False,compute_p_values=False):
+               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None, objective_epsilon = None, gradient_epsilon = None, non_negative=False,compute_p_values=False, remove_colinear_columns = False):
     """
     Build a Generalized Linear Model
     Fit a generalized linear model, specified by a response variable, a set of predictors,
@@ -309,3 +309,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   def compute_p_values(self, value):
     self._parms["compute_p_values"] = value
 
+  @property
+  def remove_colinear_columns(self):
+    return self._parms["remove_colinear_columns"]
+
+  @remove_colinear_columns.setter
+  def remove_colinear_columns(self, value):
+    self._parms["remove_colinear_columns"] = value
