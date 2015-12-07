@@ -415,7 +415,6 @@ For users of Eclipse, generate project files with:
 ###4.7 Setup on CentOS
 
 ```
-#!/bin/bash
 cd /opt
 sudo wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/7u79-b15/jdk-7u79-linux-x64.tar.gz"
 
@@ -450,9 +449,8 @@ export R_LIBS_USER=~/Rlibrary
 # install local R packages
 R -e 'install.packages(c("RCurl","jsonlite","statmod","devtools","roxygen2","testthat"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
 
-
+cd
 git clone https://github.com/h2oai/h2o-3.git
-
 cd h2o-3
 
 # Build H2O
