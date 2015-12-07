@@ -1537,7 +1537,7 @@ public abstract class GLMTask  {
         z = _glmw.z;
         w = _glmw.w;
       }
-      double eta = r.innerProduct(_betaNew) + _sparseOffsetNew;
+      double eta = r.innerProduct(_betaNew) + _sparseOffsetNew + r.offset;
 //      double mu = _parms.linkInv(eta);
       _sumsqe += w*(eta - z)*(eta - z);
       _wsum += Math.sqrt(w);
