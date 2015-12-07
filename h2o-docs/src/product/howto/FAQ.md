@@ -84,9 +84,22 @@ To learn more about performance characteristics when implementing new algorithms
 
 **How do I find the standard errors of the parameter estimates (p-values)?**
 
-P-values are currently not supported. They are on our road map and will be added, depending on the current customer demand/priorities. Generally, adding p-values involves significant engineering effort because p-values for regularized GLM are not straightforward and have been defined only recently (with no standard implementation available that we know of). P-values for a restricted set of GLM problems (no regularization, low number of predictors) are easier to do and may be added sooner, if there is a sufficient demand.
+P-values are currently supported for non-regularized GLM. The following requirements must be met:
 
-For now, we recommend using a non-zero l1 penalty (alpha  > 0) and considering all non-zero coefficients in the model as significant. The recommended use case is running GLM with lambda search enabled and alpha > 0 and picking the best lambda value based on cross-validation or hold-out set validation.
+- The family cannot be multinomial
+- The lambda value must be equal to zero
+- The IRLSM solver must be used
+- Lambda search cannot be used 
+
+To generate p-values, do one of the following:
+
+- check the *compute_p_values* checkbox in the GLM model builder in Flow
+- use `compute_p_values=TRUE` in R or Python while creating the model
+
+The p-values are listed in the coefficients table (as shown in the following example screenshot): 
+
+  ![Coefficients Table with P-values](images/Flow_Pvalues.png) 
+
 
 ---
 

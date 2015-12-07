@@ -2,7 +2,7 @@ context("metalearn")
 
 
 test_that( "h2o.metalearn produces valid results (binomial)", {
-  #testthat::skip_on_cran()
+  testthat::skip_on_cran()
   
   # Import a sample binary outcome train/test set into H2O
   h2o.init(nthreads = -1)
@@ -82,7 +82,7 @@ test_that( "h2o.metalearn produces valid results (binomial)", {
 
 
 test_that( "h2o.metalearn produces valid results (gaussian)", {
-  #testthat::skip_on_cran()
+  testthat::skip_on_cran()
   
   # Import a sample binary outcome train/test set into H2O
   h2o.init(nthreads = -1)
