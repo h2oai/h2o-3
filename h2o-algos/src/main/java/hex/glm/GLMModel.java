@@ -107,14 +107,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _objective_epsilon = 1e-5;
+    public double _objective_epsilon = 1e-6;
     public double _gradient_epsilon = 1e-4;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
+    public boolean _remove_colinear_columns = false;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1;
+    public boolean _stdOverride; // standardization override by beta constraints
 
     public void validate(GLM glm) {
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)

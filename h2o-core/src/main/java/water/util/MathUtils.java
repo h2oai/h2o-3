@@ -4,7 +4,9 @@ import edu.emory.mathcs.jtransforms.dct.DoubleDCT_1D;
 import edu.emory.mathcs.jtransforms.dct.DoubleDCT_2D;
 import edu.emory.mathcs.jtransforms.dct.DoubleDCT_3D;
 import edu.emory.mathcs.utils.ConcurrencyUtils;
+import water.Iced;
 import water.MRTask;
+import water.MemoryManager;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -18,6 +20,60 @@ public class MathUtils {
   public static double weightedSigma(long nobs, double wsum, double xSum, double xxSum) {
     double reg = 1.0/wsum;
     return nobs <= 1? 0 : Math.sqrt(xxSum*reg - (xSum*xSum) * reg * reg);
+  }
+
+  /**
+   * Wrapper around weighted paralell basic stats computation (mean, variance)
+   */
+  public static final class BasicStats extends Iced {
+    private final double [] _mean;
+    private final double [] _m2;
+    double _wsum;
+    long _nobs;
+    public BasicStats(int n) {
+      _mean = MemoryManager.malloc8d(n);
+      _m2 = MemoryManager.malloc8d(n);
+    }
+    public void add(double [] x, double w) {
+      double wsum = _wsum + w;
+      for(int i = 0; i < x.length; ++i) {
+        double delta = x[i] - _mean[i];
+        double R = delta * w / wsum;
+        _mean[i] += R;
+        _m2[i] += _wsum * delta * R;
+      }
+      _wsum = wsum;
+      _nobs++;
+    }
+    public void reduce(BasicStats bs) {
+      double wsum = _wsum + bs._wsum;
+      double reg = 1./wsum;
+      for(int i =0 ; i < _mean.length; ++i) {
+        double delta = bs._mean[i] - _mean[i];
+        _mean[i] = (_wsum * _mean[i] + bs._wsum * bs._mean[i]) * reg;
+        _m2[i] += bs._m2[i] + delta * delta * _wsum * bs._wsum * reg;
+      }
+      _wsum = wsum;
+      _nobs += bs._nobs;
+    }
+    public double [] variance(double [] res) {
+      double reg = 1.0/_wsum * _nobs/(_nobs-1.0);
+      for(int i = 0; i < res.length; ++i)
+        res[i] = reg*_m2[i];
+      return res;
+    }
+    public double [] variance() {return variance(MemoryManager.malloc8d(_mean.length));}
+
+    public double [] sigma(double [] res) {
+      variance(res);
+      for(int i = 0; i < res.length; ++i)
+        res[i] = Math.sqrt(res[i]);
+      return res;
+    }
+    public double [] sigma() {return sigma(MemoryManager.malloc8d(_mean.length));}
+    public double [] mean() {return _mean;}
+    public long nobs(){return _nobs;}
+    public double wsum(){return _wsum;}
   }
 
   /** Fast approximate sqrt

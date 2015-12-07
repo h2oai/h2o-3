@@ -36,6 +36,14 @@ public class DataInfo extends Keyed {
     _weights = false;
   }
 
+  public int[] activeCols() {
+    if(_activeCols != null) return _activeCols;
+    int [] res = new int[fullN()];
+    for(int i = 0; i < res.length; ++i)
+      res[i] = i;
+    return res;
+  }
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -289,16 +297,18 @@ public class DataInfo extends Keyed {
     int [][] catLvls = new int[_cats][];
     int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);
     // first do categoricals...
-    if(_catOffsets != null)
-      while(i < cols.length && cols[i] < _catOffsets[_catOffsets.length-1]){
-        int [] levels = MemoryManager.malloc4(_catOffsets[j+1] - _catOffsets[j]);
+    if(_catOffsets != null) {
+      int coff = _useAllFactorLevels?0:1;
+      while (i < cols.length && cols[i] < _catOffsets[_catOffsets.length - 1]) {
+        int[] levels = MemoryManager.malloc4(_catOffsets[j + 1] - _catOffsets[j]);
         int k = 0;
-        while(i < cols.length && cols[i] < _catOffsets[j+1])
-          levels[k++] = cols[i++]-_catOffsets[j];
-        if(k > 0)
+        while (i < cols.length && cols[i] < _catOffsets[j + 1])
+          levels[k++] = cols[i++] - _catOffsets[j] + coff;
+        if (k > 0)
           catLvls[j] = Arrays.copyOf(levels, k);
         ++j;
       }
+    }
     for(int k =0; k < catLvls.length; ++k)
       if(catLvls[k] == null)ignoredCols[ignoredCnt++] = k;
     if(ignoredCnt > 0){
@@ -336,9 +346,9 @@ public class DataInfo extends Keyed {
         _normMul[i] = sigmas[i] != 0?1.0/sigmas[i]:1;
     }
     if(_predictor_transform.isMeanAdjusted()) {
-      if(sigmas.length != _normMul.length)
+      if(mean.length != _normSub.length)
         throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
-      for(int i = 0; i < sigmas.length; ++i)
+      for(int i = 0; i < mean.length; ++i)
         _normSub[i] = mean[i];
     }
   }
@@ -402,8 +412,12 @@ public class DataInfo extends Keyed {
     String [] res = new String[n];
     final Vec [] vecs = _adaptedFrame.vecs();
     for(int i = 0; i < _cats; ++i) {
-      for (int j = _useAllFactorLevels ? 0 : 1; j < vecs[i].domain().length; ++j)
+      for (int j = _useAllFactorLevels ? 0 : 1; j < vecs[i].domain().length; ++j) {
+        int jj = getCategoricalId(i,j);
+        if(jj < 0)
+          continue;
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
+      }
       if (_catMissing[i] > 0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
     }
     final int nums = n-k;
