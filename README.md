@@ -412,7 +412,7 @@ For users of Eclipse, generate project files with:
 
 
 
-###4.7 Setup on CentOS
+###4.7 Setup on CentOS 7
 
 ```
 cd /opt
