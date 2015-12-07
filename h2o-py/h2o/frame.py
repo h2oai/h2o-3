@@ -459,6 +459,7 @@ class H2OFrame(object):
   def __add__ (self, i): return H2OFrame._expr(expr=ExprNode("+",   self,i), cache=self._ex._cache)
   def __sub__ (self, i): return H2OFrame._expr(expr=ExprNode("-",   self,i), cache=self._ex._cache)
   def __mul__ (self, i): return H2OFrame._expr(expr=ExprNode("*",   self,i), cache=self._ex._cache)
+  def __div__(self, i):  return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __truediv__ (self, i): return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __floordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",self,i), cache=self._ex._cache)
   def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("mod", self,i), cache=self._ex._cache)
