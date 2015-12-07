@@ -1,5 +1,8 @@
 from __future__ import absolute_import
-import math, collections, tabulate, urllib, gc, sys, copy
+import math, collections, tabulate, gc, sys, copy
+from six import iteritems, PY3
+from past.builtins import long, basestring
+from future.backports.urllib.request import quote
 from .connection import H2OConnection
 from .utils.shared_utils import _is_fr, _py_tmp_key
 
@@ -109,14 +112,15 @@ class ExprNode(object):
 
   @staticmethod
   def _arg_to_expr(arg):
-    if   isinstance(arg, ExprNode):           return arg._do_it(False)
+    if arg is not None and PY3 and isinstance(arg, range): arg=list(arg)
+    if arg is None:                           return "[]"  # empty list
+    elif isinstance(arg, ExprNode):           return arg._do_it(False)
     elif isinstance(arg, ASTId):              return str(arg)
     elif isinstance(arg, bool):               return "{}".format("TRUE" if arg else "FALSE")
     elif isinstance(arg, (int, long, float)): return "{}".format("NaN" if math.isnan(arg) else arg)
     elif isinstance(arg, basestring):         return '"'+arg+'"'
     elif isinstance(arg, slice):              return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start))
     elif isinstance(arg, list):               return ("[\"" + "\" \"".join(arg) + "\"]") if all(isinstance(i, basestring) for i in arg) else ("[" + " ".join(["NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg])+"]")
-    elif arg is None:                         return "[]"  # empty list
     raise ValueError("Unexpected arg type: " + str(type(arg))+" "+str(arg.__class__)+" "+arg.__repr__())
 
   def __del__(self):
@@ -155,7 +159,7 @@ class ExprNode(object):
     -------
       The JSON response (as a python dictionary) of the Rapids execution
     """
-    return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
+    return H2OConnection.post_json("Rapids", ast=quote(expr), _rest_version=99)
 
 class ASTId:
   def __init__(self, name=None):
@@ -217,7 +221,7 @@ class H2OCache(object):
     if self._data is not None:
       if rows <= len(self):
         return
-    res = H2OConnection.get_json("Frames/"+urllib.quote(self._id), row_count=rows)["frames"][0]
+    res = H2OConnection.get_json("Frames/"+quote(self._id), row_count=rows)["frames"][0]
     self._l     = rows
     self._nrows = res["rows"]
     self._ncols = res["total_column_count"]
@@ -253,7 +257,7 @@ class H2OCache(object):
       lrows = len(col['data'])  # Cached rows being displayed
       d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+map(str,range(lrows))
     # For all columns...
-    for k,v in self._data.iteritems():
+    for k,v in iteritems(self._data):
       x = v['data']          # Data to display
       domain = v['domain']   # Map to cat strings as needed
       if domain:

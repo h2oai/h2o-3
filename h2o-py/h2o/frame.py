@@ -3,14 +3,14 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import six
+from six import iteritems, itervalues, PY3
 import collections
+from io import StringIO
 import csv
 import imp
 import os
 import tempfile
 from datetime import datetime
-from future.backports.urllib.request import quote
 import sys
 import traceback
 from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts
@@ -20,6 +20,7 @@ from .job import H2OJob
 from .expr import ExprNode
 from .group_by import GroupBy
 import h2o
+from past.builtins import basestring
 from functools import reduce
 
 
@@ -217,7 +218,7 @@ class H2OFrame(object):
 
     # create a temporary file that will be written to
     tmp_handle,tmp_path = tempfile.mkstemp(suffix=".csv")
-    tmp_file = os.fdopen(tmp_handle,'wb')
+    tmp_file = os.fdopen(tmp_handle,'w')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",", quoting=csv.QUOTE_ALL)
     #csv_writer.writeheader()              # write the header
@@ -311,7 +312,7 @@ class H2OFrame(object):
     if setup["column_names"]: p["column_names"] = None
     if setup["na_strings"]: p["na_strings"] = None
 
-    p.update({k: v for k, v in setup.iteritems() if k in p})
+    p.update({k: v for k, v in iteritems(setup) if k in p})
 
     # Extract only 'name' from each src in the array of srcs
     p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
@@ -352,7 +353,7 @@ class H2OFrame(object):
       if self._ex is None: return "This H2OFrame has been removed."
       row_string = ' rows x ' if self.nrow != 1 else ' row x '
       column_string = ' columns]' if self.ncol != 1 else ' column]'
-      return self._frame()._ex._cache._tabulate("simple",False).encode("utf-8", errors="ignore") + '\n\n[' + str(self.nrow) \
+      return self._frame()._ex._cache._tabulate("simple",False) + '\n\n[' + str(self.nrow) \
     + row_string + str(self.ncol) + column_string
     return ""
   def __len__(self):
@@ -753,7 +754,7 @@ class H2OFrame(object):
       True if the column is numeric, otherwise return False
     """
     if self._ex._cache.types_valid():
-      return str(self._ex._cache.types.values()[0]) in ["numeric", "int", "real"]
+      return str(list(itervalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]
     return bool(ExprNode("is.numeric",self)._eager_scalar())
 
   def isstring(self):
@@ -872,10 +873,10 @@ class H2OFrame(object):
       use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame instance's
       data.
     """
-    if six.PY3:
+    if PY3:
       from urllib import request
-      url = "http://{}:{}/3/DownloadDataset?frame_id={}+&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(self.frame_id))
-      response = request.urlopen(url).read()
+      url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), request.quote(self.frame_id))
+      response = StringIO(request.urlopen(url).read().decode())
     else:
       import urllib2, urllib
       url = 'http://' + h2o.H2OConnection.ip() + ':' + str(h2o.H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self.frame_id) + "&hex_string=false"
@@ -1115,7 +1116,7 @@ class H2OFrame(object):
          not src._ex._cache.types_valid():
           self._ex._cache.types = None
       else:
-        self._ex._cache._types[colname] = src._ex._cache.types.values()[0]
+        self._ex._cache._types[colname] = list(itervalues(src._ex._cache.types))[0]
     if isinstance(src, H2OFrame) and src_in_self:
       src._ex=None  # wipe out to keep ref counts correct
     self._frame()  # setitem is eager
@@ -1514,7 +1515,7 @@ class H2OFrame(object):
     """
     fr = H2OFrame._expr(expr=ExprNode("as.factor",self), cache=self._ex._cache)
     if fr._ex._cache.types_valid():
-      fr._ex._cache.types = {fr._ex._cache.types.keys()[0]:"enum"}
+      fr._ex._cache.types = {list(fr._ex._cache.types)[0]:"enum"}
     return fr
 
   def isfactor(self):
@@ -1526,7 +1527,7 @@ class H2OFrame(object):
       False.
     """
     if self._ex._cache.types_valid():
-      return str(self._ex._cache.types.values()[0]) == "enum"
+      return str(list(itervalues(self._ex._cache.types))[0]) == "enum"
     return bool(ExprNode("is.factor", self)._eager_scalar())
 
   def anyfactor(self):

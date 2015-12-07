@@ -6,10 +6,10 @@ from __future__ import print_function
 from __future__ import absolute_import
 import requests
 import math
+import tempfile
 import os
 import re
 import sys
-import string
 import time
 import subprocess
 import atexit
@@ -19,6 +19,7 @@ import site
 from .display import H2ODisplay
 from .h2o_logging import _is_logging, _log_rest
 from .two_dim_table import H2OTwoDimTable
+from six import iteritems, PY3
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
@@ -454,21 +455,21 @@ class H2OConnection(object):
     url = "http://{}:{}/{}/{}".format(self._ip,self._port,_rest_version,url_suffix)
 
     query_string = ""
-    for k,v in kwargs.iteritems():
+    for k,v in iteritems(kwargs):
       if isinstance(v, list):
         x = '['
         for l in v:
           if isinstance(l,list):
             x += '['
-            x += ','.join([str(e).encode("utf-8") for e in l])
+            x += ','.join([str(e) if PY3 else str(e).encode("utf-8") for e in l])
             x += ']'
           else:
-            x += str(l).encode("utf-8")
+            x += str(l) if PY3 else str(l).encode("utf-8")
           x += ','
         x = x[:-1]
         x += ']'
       else:
-        x = str(v).encode("utf-8")
+        x = str(v) if PY3 else str(v).encode("utf-8")
       query_string += k+"="+x+"&"
     query_string = query_string[:-1] # Remove trailing extra &
 
@@ -529,7 +530,7 @@ class H2OConnection(object):
   def _attempt_rest(self, url, method, post_body, file_upload_info, proxies=None):
     proxies = proxies or {}
 
-    headers = {'User-Agent': 'H2O Python client/'+string.replace(sys.version, '\n', '')}
+    headers = {'User-Agent': 'H2O Python client/'+sys.version.replace('\n','')}
     try:
       if method == "GET":
         return requests.get(url, headers=headers, proxies=proxies)

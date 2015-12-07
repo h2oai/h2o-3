@@ -6,6 +6,7 @@ warnings.simplefilter('always', DeprecationWarning)
 import os
 import os.path
 from future.standard_library import install_aliases
+from past.builtins import basestring
 install_aliases()
 from urllib.parse import quote
 from urllib.request import urlopen
@@ -277,8 +278,8 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
                        "names to strings which are to be interpreted as missing values")
 
   #quote column names and column types also when not specified by user
-  if j["column_names"]: j["column_names"] = map(_quoted, j["column_names"])
-  j["column_types"] = map(_quoted, j["column_types"])
+  if j["column_names"]: j["column_names"] = list(map(_quoted, j["column_names"]))
+  j["column_types"] = list(map(_quoted, j["column_types"]))
   return j
 
 
