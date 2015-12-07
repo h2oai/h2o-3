@@ -6,7 +6,7 @@ test.predict.withoutresponse <- function(h) {
 	ss = h2o.splitFrame(data=ir, ratios=.2, seed = 16)
 
 	train = ss[[2]] 
-	expect_equal(nrow(train),118)
+	expect_equal(nrow(train),117)
 	test = ss[[1]] 
 	test = test[,-5] 
 	expect_equal(ncol(test),4) 
