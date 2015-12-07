@@ -116,7 +116,9 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
     public long pojo_mem;
     @API(help="Free heap", direction=API.Direction.OUTPUT)
     public long free_mem;
-    @API(help="Data on Node disk", direction=API.Direction.OUTPUT)
+    @API(help="Maximum memory size for node", direction=API.Direction.OUTPUT)
+    public long max_mem;
+    @API(help="Size of data on node's disk", direction=API.Direction.OUTPUT)
     public long swap_mem;
 
     @API(help="#local keys", direction=API.Direction.OUTPUT)
@@ -165,6 +167,7 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
       pojo_mem = hb.get_pojo_mem();
       free_mem = hb.get_free_mem();
       swap_mem = hb.get_swap_mem();
+      max_mem = pojo_mem + free_mem + mem_value_size;
       num_keys = hb._keys;
 
       // Disk health
