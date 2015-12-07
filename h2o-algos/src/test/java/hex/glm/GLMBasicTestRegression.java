@@ -220,7 +220,7 @@ public class GLMBasicTestRegression extends TestUtil {
       for (Solver s : /*new Solver[]{Solver.IRLSM}*/ GLMParameters.Solver.values()) {
         try {
           parms._solver = s;
-          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", parms);
+          job = new GLM(Key.make("prostate_model_" + s + "_" + x), "glm test simple poisson", parms);
           model = job.trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
@@ -232,6 +232,8 @@ public class GLMBasicTestRegression extends TestUtil {
           assertEquals(res_dof, GLMTest.resDOF(model), 0);
           // test scoring
           scoreTrain = model.score(_earinf);
+
+          model.testJavaScoring(_earinf,scoreTrain,1e-8);
           hex.ModelMetricsRegressionGLM mmTrain = (ModelMetricsRegressionGLM) hex.ModelMetricsRegression.getFromDKV(model, _earinf);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(GLMTest.residualDeviance(model), mmTrain._resDev, 1e-8);
