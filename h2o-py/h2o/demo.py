@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 from . import h2o
-from .h2o import _locate  # private function. used to find files within h2o git project directory.
+from .utils.shared_utils import _locate
 import sys, os
 import site
 

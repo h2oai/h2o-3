@@ -5,7 +5,7 @@ from tests import pyunit_utils
 
 
 
-from h2o import H2OAssembly
+from h2o.assembly import H2OAssembly
 from h2o.transforms.preprocessing import *
 from h2o import H2OFrame
 

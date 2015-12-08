@@ -11,7 +11,7 @@ import random
 import re
 import subprocess
 from subprocess import STDOUT,PIPE
-from h2o import H2OFrame
+from h2o.utils.shared_utils import temp_ctr
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
@@ -457,5 +457,4 @@ def expect_model_param(models, attribute_name, expected_values):
             assert actual_values[i] == expected_values[i], "Expected: {}. Actual: {}"\
                                                             .format(expected_values[i], actual_values[i])
 
-def temp_ctr():  return H2OFrame.temp_ctr()
 def rest_ctr():  return h2o.H2OConnection.rest_ctr()

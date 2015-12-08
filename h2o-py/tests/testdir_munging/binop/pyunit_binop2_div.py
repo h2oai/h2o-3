@@ -19,13 +19,13 @@ def binop_div():
     iris.show()
 
     #frame/scaler
-    res = old_div(iris, 5)
+    res = iris/5
     res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([res[c].sum() for c in range(cols-1)], [175.3, 91.62, 112.76, 35.96]):
       assert abs(x - y) < 1e-7,  "unexpected column sums."
 
-    res = old_div(5, iris)
+    res = 5/iris
     res_rows, res_cols = res.dim
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
 

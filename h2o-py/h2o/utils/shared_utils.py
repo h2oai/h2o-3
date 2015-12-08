@@ -6,9 +6,9 @@ from builtins import map
 from builtins import str
 from builtins import zip
 from builtins import range
+import os
 from past.builtins import basestring
 from six import PY3
-
 import imp
 import itertools
 import re
@@ -19,6 +19,9 @@ def _py_tmp_key():
   global _id_ctr
   _id_ctr=_id_ctr+1
   return "py_" + str(_id_ctr)
+
+def temp_ctr():
+  return _id_ctr
 
 def can_use_pandas():
   try:
@@ -35,6 +38,13 @@ def quote(stuff_to_quote):
     from urllib2 import quote
     return quote(stuff_to_quote)
 
+def urlopen():
+  if PY3:
+    from urllib import request
+    return request.urlopen
+  else:
+    import urllib2
+    return urllib2.urlopen
 
 def _gen_header(cols):
   return ["C" + str(c) for c in range(1, cols + 1, 1)]
@@ -111,3 +121,29 @@ def _quoted(key):
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else '"' + key + '"'
   return key
+
+def _locate(path):
+  """Search for a relative path and turn it into an absolute path.
+  This is handy when hunting for data files to be passed into h2o and used by import file.
+  Note: This function is for unit testing purposes only.
+
+  Parameters
+  ----------
+  path : str
+    Path to search for
+
+  :return: Absolute path if it is found.  None otherwise.
+  """
+
+  tmp_dir = os.path.realpath(os.getcwd())
+  possible_result = os.path.join(tmp_dir, path)
+  while True:
+    if os.path.exists(possible_result):
+      return possible_result
+
+    next_tmp_dir = os.path.dirname(tmp_dir)
+    if next_tmp_dir == tmp_dir:
+      raise ValueError("File not found: " + path)
+
+    tmp_dir = next_tmp_dir
+    possible_result = os.path.join(tmp_dir, path)

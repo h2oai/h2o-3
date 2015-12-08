@@ -34,7 +34,7 @@ def pyunit_apply():
   fr.apply(lambda col: col.tan()).show()
   fr.apply(lambda col: col.tanh()).show()
 
-  fr.apply(lambda col: (col*col - col*5*col).abs() - old_div(55,col) ).show()
+  fr.apply(lambda col: (col*col - col*5*col).abs() - 55/col ).show()
 
 
 

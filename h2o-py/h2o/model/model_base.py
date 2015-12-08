@@ -9,6 +9,7 @@ from builtins import object
 
 import h2o
 import imp, traceback
+from ..utils.shared_utils import can_use_pandas
 
 
 class ModelBase(object):
@@ -235,7 +236,7 @@ class ModelBase(object):
     model = self._model_json["output"]
     if 'scoring_history' in list(model.keys()) and model["scoring_history"] != None:
       s = model["scoring_history"]
-      if h2o.can_use_pandas():
+      if can_use_pandas():
         import pandas
         pandas.options.display.max_rows = 20
         return pandas.DataFrame(s.cell_values,columns=s.col_header)

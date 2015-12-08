@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1,"../../")
-import h2o
+from h2o import demo
 from tests import pyunit_utils
 
 
@@ -8,7 +8,7 @@ from tests import pyunit_utils
 
 def demo_gbm():
 
-    h2o.demo(func="gbm", interactive=False, test=True)
+    demo.demo(func="gbm", interactive=False, test=True)
 
 
 

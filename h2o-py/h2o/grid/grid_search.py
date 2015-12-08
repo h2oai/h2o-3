@@ -52,7 +52,7 @@ class H2OGridSearch(object):
     """
     self._id = grid_id
     self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
-    self.hyper_params = hyper_params
+    self.hyper_params = dict(hyper_params)
     self._grid_json = None
     self.models = None # list of H2O Estimator instances
     self._parms = {} # internal, for object recycle #

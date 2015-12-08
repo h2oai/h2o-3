@@ -8,10 +8,10 @@ import os.path
 from future.standard_library import install_aliases
 from past.builtins import basestring
 install_aliases()
-from urllib.parse import quote
-from urllib.request import urlopen
 import re
-from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key
+from six import PY3
+from io import StringIO
+from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key, quote, urlopen
 from .connection import H2OConnection
 from .expr import ExprNode
 from .job import H2OJob
@@ -516,7 +516,7 @@ def download_pojo(model,path="", get_jar=True):
   if get_jar and path!="":
     url = H2OConnection.make_url("h2o-genmodel.jar")
     filename = path + "/" + "h2o-genmodel.jar"
-    response = urlopen(url)
+    response = urlopen()(url)
     with open(filename, "wb") as f:
       f.write(response.read())
 
@@ -534,12 +534,19 @@ def download_csv(data, filename):
   filename : str
     A string indicating the name that the CSV file should be should be saved to.
   """
-  if not isinstance(data, H2OFrame): raise ValueError
-  url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data.frame_id)
-  with open(filename, 'w') as f: f.write(urlopen(url).read())
+  if not isinstance(data, H2OFrame):
+    raise ValueError
+  url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(data.frame_id))
+  opener = urlopen()
+  if PY3:
+    response = opener(url).read().decode()
+  else:
+    response = opener(url).read()
+  with open(filename, 'w') as f:
+    f.write(response)
 
 
-def download_all_logs(dirname=".",filename=None):
+def download_all_logs(dirname=".", filename=None):
   """Download H2O Log Files to Disk
 
   Parameters
@@ -554,7 +561,8 @@ def download_all_logs(dirname=".",filename=None):
     Path of logs written.
   """
   url = 'http://{}:{}/Logs/download'.format(H2OConnection.ip(),H2OConnection.port())
-  response = urlopen(url)
+  opener = urlopen()
+  response = opener(url)
 
   if not os.path.exists(dirname): os.mkdir(dirname)
   if filename == None:
@@ -563,15 +571,18 @@ def download_all_logs(dirname=".",filename=None):
         filename = h.split("filename=")[1].strip()
         break
   path = os.path.join(dirname,filename)
+  if PY3:
+    response = StringIO(opener(url).read().decode())
+  else:
+    response = opener(url).read()
 
   print("Writing H2O logs to " + path)
-  with open(path, 'w') as f: f.write(urlopen(url).read())
+  with open(path, 'w') as f: f.write(response)
   return path
 
 
 def save_model(model, path="", force=False):
-  """
-  Save an H2O Model Object to Disk.
+  """Save an H2O Model Object to Disk.
 
   Parameters
   ----------
@@ -1736,33 +1747,6 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
 def network_test():
   res = H2OConnection.get_json(url_suffix="NetworkTest")
   res["table"].show()
-
-
-def _locate(path):
-  """Search for a relative path and turn it into an absolute path.
-  This is handy when hunting for data files to be passed into h2o and used by import file.
-  Note: This function is for unit testing purposes only.
-
-  Parameters
-  ----------
-  path : str
-    Path to search for
-
-  :return: Absolute path if it is found.  None otherwise.
-  """
-
-  tmp_dir = os.path.realpath(os.getcwd())
-  possible_result = os.path.join(tmp_dir, path)
-  while True:
-    if os.path.exists(possible_result):
-      return possible_result
-
-    next_tmp_dir = os.path.dirname(tmp_dir)
-    if next_tmp_dir == tmp_dir:
-      raise ValueError("File not found: " + path)
-
-    tmp_dir = next_tmp_dir
-    possible_result = os.path.join(tmp_dir, path)
 
 
 def as_list(data, use_pandas=True):

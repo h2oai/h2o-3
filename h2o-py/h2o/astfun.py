@@ -1,8 +1,10 @@
 from __future__ import print_function
 from __future__ import absolute_import
 from opcode import *
+from six import PY2
 import inspect
 from .expr import ExprNode, ASTId
+from . import h2o
 
 BYTECODE_INSTRS = {
   "BINARY_SUBSCR"      : "cols",  # column slice; could be row slice?
@@ -40,12 +42,15 @@ def _bytecode_decompile_lambda(co):
   i = 0
   ops = []
   while i < n:
-    c = code[i]
-    op = ord(c)
+    op = code[i]
+    if PY2:
+      op = ord(op)
     args = []
     i += 1
     if op >= HAVE_ARGUMENT:
-      oparg = ord(code[i]) + ord(code[i + 1]) * 256
+      oparg = code[i] + code[i+1]*256
+      if PY2:
+        oparg = ord(code[i]) + ord(code[i + 1]) * 256
       i += 2
       if op in hasconst:        args.append(co.co_consts[oparg]) # LOAD_CONST
       elif op in hasname:       args.append(co.co_names[oparg])  # LOAD_CONST
@@ -114,12 +119,18 @@ def _func_bc(nargs,idx,ops,keys):
       unnamed_args.insert(0, arg)
       nargs-=1
   op = ops[idx][1][0]
-  if op not in dir(ExprNode._fr_cls()):
-    raise ValueError("Unimplemented: op not bound in H2OFrame")
+  frcls = h2o.H2OFrame
+  if op not in dir(frcls):
+    raise ValueError("Unimplemented: op <{}> not bound in H2OFrame".format(op))
   if is_attr(ops[idx][0]):
-    argspec = inspect.getargspec(getattr(ExprNode._fr_cls(), op))
-    argnames = argspec.args[1:]
-    argdefs  = argspec.defaults or ()
+    if PY2:
+      argspec = inspect.getargspec(getattr(frcls, op))
+      argnames = argspec.args[1:]
+      argdefs  = argspec.defaults or ()
+    else:
+      argspec = inspect.signature(getattr(frcls,op))
+      argnames = list(argspec.parameters.keys())[1:]
+      argdefs = [i.default for i in list(argspec.parameters.values())[1:]]
     args = unnamed_args + list(argdefs[len(unnamed_args):])
     for a in named_args: args[argnames.index(a)] = named_args[a]
   if op=="ceil": op = "ceiling"

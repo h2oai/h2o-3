@@ -5,8 +5,6 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
 def pyunit_apply_assign():
   
   fr = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))

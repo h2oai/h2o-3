@@ -483,6 +483,7 @@ class H2OFrame(object):
   def __rsub__(self, i): return H2OFrame._expr(expr=ExprNode("-",i,  self), cache=self._ex._cache)
   def __rand__(self, i): return self.__and__(i)
   def __ror__ (self, i): return self.__or__ (i)
+  def __rtruediv__(self, i): return H2OFrame._expr(expr=ExprNode("/",i,  self), cache=self._ex._cache)
   def __rdiv__(self, i): return H2OFrame._expr(expr=ExprNode("/",i,  self), cache=self._ex._cache)
   def __rfloordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",i,self), cache=self._ex._cache)
   def __rmul__(self, i): return self.__mul__(i)
@@ -2073,8 +2074,3 @@ class H2OFrame(object):
       return H2OFrame._expr(expr=ExprNode("apply",self, 1+(axis==0),*res))
     else:
       raise ValueError("unimpl: not a lambda")
-
-  @staticmethod
-  def temp_ctr():
-    global _id_ctr
-    return _id_ctr
