@@ -2,7 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from past.builtins import basestring
 from .expr import ExprNode
-from . import h2o
+import h2o
 
 
 class GroupBy:

@@ -511,7 +511,7 @@ def download_pojo(model,path="", get_jar=True):
   print("Filepath: {}".format(filepath))
   if path == "": print(java.text)
   else:
-    with open(filepath, 'wb') as f:
+    with open(filepath, 'w') as f:
       f.write(java.text)
   if get_jar and path!="":
     url = H2OConnection.make_url("h2o-genmodel.jar")
