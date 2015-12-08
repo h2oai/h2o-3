@@ -1528,7 +1528,7 @@ public abstract class GLMTask  {
 
     @Override
     protected void processRow(Row r) {
-      double z = r.response(0);
+      double z = r.response(0) - r.offset;
       double w = r.weight;
       if(_parms._family != Family.gaussian) {
 //        double etaOld = r.innerProduct(_betaOld) + _sparseOffsetOld;
@@ -1537,7 +1537,7 @@ public abstract class GLMTask  {
         z = _glmw.z;
         w = _glmw.w;
       }
-      double eta = r.innerProduct(_betaNew) + _sparseOffsetNew + r.offset;
+      double eta = r.innerProduct(_betaNew) + _sparseOffsetNew;
 //      double mu = _parms.linkInv(eta);
       _sumsqe += w*(eta - z)*(eta - z);
       _wsum += Math.sqrt(w);

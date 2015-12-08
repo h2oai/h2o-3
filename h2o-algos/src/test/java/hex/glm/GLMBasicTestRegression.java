@@ -119,6 +119,81 @@ public class GLMBasicTestRegression extends TestUtil {
     }
   }
 
+  @Test public void  testOffset() {
+    GLM job1 = null, job2 = null;
+    GLMModel model1 = null, model2 = null;
+    GLMParameters parms = new GLMParameters(Family.gaussian);
+    parms._train = _weighted._key;
+    parms._ignored_columns = new String[]{_weighted.name(0)};
+    parms._response_column = _weighted.name(1);
+    parms._standardize = true;
+    parms._objective_epsilon = 0;
+    parms._gradient_epsilon = 1e-10;
+    parms._max_iterations = 1000;
+    Solver s = Solver.IRLSM;
+    try {
+      parms._lambda = new double[]{0};
+      parms._alpha = new double []{0};
+      parms._train = _weighted._key;
+      parms._solver = s;
+      parms._offset_column = "C20";
+      parms._compute_p_values = true;
+      parms._standardize = false;
+      job1 = new GLM(Key.make("prostate_model"), "glm test", parms);
+      model1 = job1.trainModel().get();
+      HashMap<String, Double> coefs1 = model1.coefficients();
+      System.out.println("coefs1 = " + coefs1);
+      /**
+       * Call:
+       glm(formula = C2 ~ . - C1 - C20, data = data, offset = data$C20)
+
+       Deviance Residuals:
+       Min      1Q  Median      3Q     Max
+       -3.444  -0.821  -0.021   0.878   2.801
+
+       Coefficients:
+       Estimate Std. Error t value Pr(>|t|)
+       (Intercept) -0.026928   0.479281  -0.056   0.9553
+       C3          -0.064657   0.144517  -0.447   0.6558
+       C4          -0.076132   0.163746  -0.465   0.6432
+       C5           0.397962   0.161458   2.465   0.0158 *
+       C6           0.119644   0.173165   0.691   0.4916
+       C7          -0.124615   0.151145  -0.824   0.4121
+       C8           0.142455   0.164912   0.864   0.3902
+       C9           0.087358   0.158266   0.552   0.5825
+       C10         -0.012873   0.155429  -0.083   0.9342
+       C11          0.277392   0.181299   1.530   0.1299
+       C12          0.004988   0.170290   0.029   0.9767
+       C13         -0.091400   0.172910  -0.529   0.5985
+       C14         -0.248876   0.177311  -1.404   0.1643
+       C15          0.053598   0.167305   0.320   0.7495
+       C16          0.156302   0.157823   0.990   0.3249
+       C17          0.296317   0.167453   1.770   0.0806 .
+       C18          0.013306   0.162185   0.082   0.9348
+       C19          0.115939   0.160250   0.723   0.4715
+       weights     -0.005771   0.303477  -0.019   0.9849
+       *
+       */
+
+      double [] expected_coefs = new double[]{-0.064656782,-0.076131880,0.397962147,0.119644094,-0.124614842,0.142455018,0.087357855,-0.012872522,0.277392182,0.004987961,-0.091400128,-0.248875970
+        ,0.053597896,0.156301780,0.296317472,0.013306398,0.115938809,-0.005771429,-0.026928297};
+
+      double [] expected_pvals = new double[]{0.65578062,0.64322317,0.01582348,0.49158786,0.41209217,0.39023637,0.58248959,0.93419972,0.12990598,0.97670462,0.59852911,0.16425679,0.74951951,0.32494727
+        ,0.08056447,0.93481349,0.47146503,0.98487376,0.95533301};
+      double [] actual_coefs = model1.beta();
+      double [] actual_pvals = model1._output.pValues();
+      for(int i = 0; i < expected_coefs.length; ++i) {
+        assertEquals(expected_coefs[i], actual_coefs[i],1e-4);
+        assertEquals(expected_pvals[i], actual_pvals[i],1e-4);
+      }
+    } finally {
+      if (job1 != null) job1.remove();
+      if (model1 != null) model1.delete();
+      if (job2 != null) job2.remove();
+      if (model2 != null) model2.delete();
+    }
+  }
+
   @Test public void testTweedie() {
     GLM job = null;
     GLMModel model = null;

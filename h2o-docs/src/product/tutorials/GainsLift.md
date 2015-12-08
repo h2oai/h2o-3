@@ -53,14 +53,10 @@ A table that lists the following values is also provided:
   - gain 
   - cumulative gain
 
-  ![Gains/Lift table](images/GainsLifttable.png)
+  ![Gains/Lift table](images/GainsLiftTable.png)
 
 
 The quantiles column defines the group for the row. The response rate column lists the likelihood of response, the lift column lists the lift rate, and the cumulative lift column provides the percentage of increase in response based on the lift.
 
 All rows containing NA values in either the label (response) or the prediction probability are ignored. 
 
-
-##References
-
-Blattberg, Robert C., Byung-Do Kim, and Scott A. Neslin. “Database Marketing: Analyzing and Managing Customers.” Springer, 2008.
