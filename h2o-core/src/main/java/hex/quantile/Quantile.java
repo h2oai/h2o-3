@@ -24,6 +24,8 @@ import java.util.Arrays;
 public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileParameters,QuantileModel.QuantileOutput> {
   private int _ncols;
 
+  @Override protected boolean logMe() { return false; }
+
   // Called from Nano thread; start the Quantile Job on a F/J thread
   public Quantile( QuantileModel.QuantileParameters parms ) { super("Quantile",parms); init(false); }
 
@@ -67,7 +69,14 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
     private class SumWeights extends MRTask<SumWeights> {
       double sum;
-      @Override public void map(Chunk c, Chunk w) { for (int i=0;i<c.len();++i) if (!c.isNA(i)) sum+=w.atd(i); }
+      @Override public void map(Chunk c, Chunk w) { for (int i=0;i<c.len();++i)
+        if (!c.isNA(i)) {
+          double wt = w.atd(i);
+//          For now: let the user give small weights, results are probably not very good (same as for wtd.quantile in R)
+//          if (wt > 0 && wt < 1) throw new H2OIllegalArgumentException("Quantiles only accepts weights that are either 0 or >= 1.");
+          sum += wt;
+        }
+      }
       @Override public void reduce(SumWeights mrt) { sum+=mrt.sum; }
     }
 
@@ -109,7 +118,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
             model._output._iterations++; // At least one iter per-prob-per-column
             while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) ) {
-              h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
+              h = _weights == null ? h.refinePass(prob).doAll(vec) : h.refinePass(prob).doAll(vec, _weights); // Full pass at higher resolution
               model._output._iterations++; // also count refinement iterations
             }
 
@@ -119,7 +128,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
           }
           StringBuilder sb = new StringBuilder();
           sb.append("Quantile: iter: ").append(model._output._iterations).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
-          Log.info(sb);
+          Log.debug(sb);
         }
         done();                 // Job done!
       } catch( Throwable t ) {
@@ -183,7 +192,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   // -------------------------------------------------------------------------
 
   private static class Histo extends MRTask<Histo> {
-    private static final int NBINS=1024; // Default bin count
+    private static final int NBINS = 1024; // Default bin count
     private final int _nbins;            // Actual  bin count
     private final double _lb;            // Lower bound of bin[0]
     private final double _step;          // Step-size per-bin
@@ -196,49 +205,66 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     double _mins[/*nbins*/];     // Smallest element in bin
     double _maxs[/*nbins*/];     // Largest  element in bin
 
-    private Histo( double lb, double ub, double start_row, double nrows, boolean isInt  ) {
-      boolean is_int = (isInt && (ub-lb < NBINS));
-      _nbins = is_int ? (int)(ub-lb+1) : NBINS;
+    private Histo(double lb, double ub, double start_row, double nrows, boolean isInt) {
+      boolean is_int = (isInt && (ub - lb < NBINS));
+      _nbins = is_int ? (int) (ub - lb + 1) : NBINS;
       _lb = lb;
-      double ulp = Math.ulp(Math.max(Math.abs(lb),Math.abs(ub)));
-      _step = is_int ? 1 : (ub+ulp-lb)/_nbins;
+      double ulp = Math.ulp(Math.max(Math.abs(lb), Math.abs(ub)));
+      _step = is_int ? 1 : (ub + ulp - lb) / _nbins;
       _start_row = start_row;
       _nrows = nrows;
       _isInt = isInt;
     }
 
-    @Override public void map( Chunk chk, Chunk weight) {
-      double bins[] = _bins = new double[_nbins];
-      double mins[] = _mins = new double[_nbins];
-      double maxs[] = _maxs = new double[_nbins];
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("range : " + _lb + " ... " + (_lb + _nbins * _step));
+      sb.append("\npsum0 : " + _start_row);
+      sb.append("\ncounts: " + Arrays.toString(_bins));
+      sb.append("\nmaxs  : " + Arrays.toString(_maxs));
+      sb.append("\nmins  : " + Arrays.toString(_mins));
+      sb.append("\n");
+      return sb.toString();
+    }
+
+    @Override
+    public void map(Chunk chk, Chunk weight) {
+      _bins = new double[_nbins];
+      _mins = new double[_nbins];
+      _maxs = new double[_nbins];
       Arrays.fill(_mins, Double.MAX_VALUE);
-      Arrays.fill(_maxs,-Double.MAX_VALUE);
+      Arrays.fill(_maxs, -Double.MAX_VALUE);
       double d;
-      for( int row=0; row<chk._len; row++ ) {
+      for (int row = 0; row < chk._len; row++) {
         double w = weight.atd(row);
         if (w == 0) continue;
         if (!Double.isNaN(d = chk.atd(row))) {  // na.rm=true
           double idx = (d - _lb) / _step;
-          if (!(0.0 <= idx && idx < bins.length)) continue;
+          if (!(0.0 <= idx && idx < _bins.length)) continue;
           int i = (int) idx;
-          if (bins[i] == 0) mins[i] = maxs[i] = d; // Capture unique value
+          if (_bins[i] == 0) _mins[i] = _maxs[i] = d; // Capture unique value
           else {
-            if (d < mins[i]) mins[i] = d;
-            if (d > maxs[i]) maxs[i] = d;
+            if (d < _mins[i]) _mins[i] = d;
+            if (d > _maxs[i]) _maxs[i] = d;
           }
-          bins[i]+=w;               // Bump row counts by row weight
+          _bins[i] += w;               // Bump row counts by row weight
         }
       }
     }
-    @Override public void map( Chunk chk ) {
+
+    @Override
+    public void map(Chunk chk) {
       map(chk, new C0DChunk(1, chk.len()));
     }
-    @Override public void reduce( Histo h ) {
-      for( int i=0; i<_nbins; i++ ) { // Keep min/max
-        if( _mins[i] > h._mins[i] ) _mins[i] = h._mins[i];
-        if( _maxs[i] < h._maxs[i] ) _maxs[i] = h._maxs[i];
+
+    @Override
+    public void reduce(Histo h) {
+      for (int i = 0; i < _nbins; i++) { // Keep min/max
+        if (_mins[i] > h._mins[i]) _mins[i] = h._mins[i];
+        if (_maxs[i] < h._maxs[i]) _maxs[i] = h._maxs[i];
       }
-      ArrayUtils.add(_bins,h._bins);
+      ArrayUtils.add(_bins, h._bins);
     }
 
     /** @return Quantile for probability prob, or NaN if another pass is needed. */

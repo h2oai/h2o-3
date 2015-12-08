@@ -315,7 +315,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final Frame[] cvTrain = new Frame[N];
     final Frame[] cvValid = new Frame[N];
     final String[] identifier = new String[N];
-    final String weightName = "weights";
+    final String weightName = "__internal_cv_weights__";
+    if (train().find(weightName) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '" + weightName + "'.");
 
     final Key<M> origDest = dest();
     for (int i=0; i<N; ++i) {
@@ -582,6 +583,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void clearInitState() {
     clearValidationErrors();
   }
+  protected boolean logMe() { return true; }
 
   public boolean isSupervised(){return false;}
 
@@ -796,8 +798,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void init(boolean expensive) {
     // Log parameters
     if (expensive) {
-      Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
-      Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
+      if (logMe()) {
+        Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
+        Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
+      }
     }
     // NOTE: allow re-init:
     clearInitState();
