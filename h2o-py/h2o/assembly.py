@@ -56,7 +56,7 @@ class H2OAssembly:
     if path == "": print(java.text)
     else:
       with open(file_path, 'wb') as f:
-        f.write(java.text)
+        f.write(java.text.encode("utf-8"))
     if get_jar and path!="":
       url = H2OConnection.make_url("h2o-genmodel.jar")
       filename = path + "/" + "h2o-genmodel.jar"
