@@ -583,6 +583,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void clearInitState() {
     clearValidationErrors();
   }
+  protected boolean logMe() { return true; }
 
   public boolean isSupervised(){return false;}
 
@@ -797,8 +798,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void init(boolean expensive) {
     // Log parameters
     if (expensive) {
-      Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
-      Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
+      if (logMe()) {
+        Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
+        Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
+      }
     }
     // NOTE: allow re-init:
     clearInitState();

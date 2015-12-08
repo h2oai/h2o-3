@@ -8,7 +8,6 @@ import water.Job;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
-import water.util.Log;
 
 import java.util.Arrays;
 
@@ -545,10 +544,6 @@ public class QuantileTest extends TestUtil {
         }
 
         try {
-          for (int i=0;i<kmm1._output._quantiles.length; ++i) {
-            Log.info(Arrays.toString(kmm1._output._quantiles[i]));
-            Log.info(Arrays.toString(kmm2._output._quantiles[i]));
-          }
           Assert.assertTrue(Arrays.deepEquals(kmm1._output._quantiles, kmm2._output._quantiles));
         } finally {
           if (kmm1 != null) kmm1.delete();
