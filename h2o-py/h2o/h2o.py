@@ -566,18 +566,17 @@ def download_all_logs(dirname=".", filename=None):
 
   if not os.path.exists(dirname): os.mkdir(dirname)
   if filename == None:
-    for h in response.headers.headers:
+    if PY3: headers = [h[1] for h in response.headers._headers]
+    else:   headers = response.headers.headers
+    for h in headers:
       if 'filename=' in h:
         filename = h.split("filename=")[1].strip()
         break
   path = os.path.join(dirname,filename)
-  if PY3:
-    response = StringIO(opener(url).read().decode())
-  else:
-    response = opener(url).read()
+  response = opener(url).read()
 
   print("Writing H2O logs to " + path)
-  with open(path, 'w') as f: f.write(response)
+  with open(path, 'wb') as f: f.write(response)
   return path
 
 
