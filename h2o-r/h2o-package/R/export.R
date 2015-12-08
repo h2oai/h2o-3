@@ -41,7 +41,8 @@ h2o.exportFile <- function(data, path, force = FALSE) {
   if(!is.logical(force) || length(force) != 1L || is.na(force))
     stop("`force` must be TRUE or FALSE")
 
-  .h2o.__remoteSend(.h2o.__EXPORT_FILES(data,path,force))
+  res <- .h2o.__remoteSend(.h2o.__EXPORT_FILES(data,path,force))
+  .h2o.__waitOnJob(res$job$key$name)
 }
 
 #'
