@@ -79,4 +79,3 @@ if __name__ == "__main__":
   pyunit_utils.standalone_test(date_munge)
 else:
   date_munge()
-
