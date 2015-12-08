@@ -64,12 +64,12 @@ def test_as_data():
   hdf9 = hdf2["ds9"]
   hdf10 = hdf2["ds10"]
 
-  hdf5 = hdf5.as_date("%d/%m/%y %H:%M")
-  hdf6 = hdf6.as_date("%d/%m/%Y %H:%M:%S")
-  hdf7 = hdf7.as_date("%m/%d/%y")
-  hdf8 = hdf8.as_date("%m/%d/%Y")
-  hdf9 = hdf9.as_date("%Y%m%d")
-  hdf10 = hdf10.as_date("%Y_%m_%d")
+  print(hdf5.as_date("%d/%m/%y %H:%M"))
+  print(hdf6.as_date("%d/%m/%Y %H:%M:%S"))
+  print(hdf7.as_date("%m/%d/%y"))
+  print(hdf8.as_date("%m/%d/%Y"))
+  print(hdf9.as_date("%Y%m%d"))
+  print(hdf10.as_date("%Y_%m_%d"))
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(test_as_data)
