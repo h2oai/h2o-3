@@ -46,9 +46,9 @@ test3 <- function() {
   splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2015)
   part2 = splits[[2]]
   value = part2[1,"C1"]
-  stopifnot(value == 7)
+  stopifnot(value == 4)
   value = part2[2,"C2"]
-  stopifnot(value == 13)
+  stopifnot(value == 11)
   value = part2[3,"C3"]
   stopifnot(value == 22)
   
@@ -56,13 +56,13 @@ test3 <- function() {
   splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2016)
   part2 = splits[[2]]
   value = part2[1,"C1"]
-  stopifnot(value == 17)
+  stopifnot(value == 4)
   
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
   splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2016)
   part2 = splits[[2]]
   value = part2[1,"C1"]
-  stopifnot(value == 17)
+  stopifnot(value == 4)
 }
 
 test.pubdev_2020 <- function() {
