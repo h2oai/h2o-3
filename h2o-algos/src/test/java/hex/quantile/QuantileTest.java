@@ -562,7 +562,7 @@ public class QuantileTest extends TestUtil {
     }
   }
 
-  @Test public void testWeights2() {
+  @Ignore @Test public void testWeights2() { //same behavior as wtd.quantile in R -> results with all weights=1 and all weights=2 don't agree (unless normwt=TRUE)
     QuantileModel kmm1;
     QuantileModel kmm2;
     Frame fr1 = null;
@@ -612,7 +612,7 @@ public class QuantileTest extends TestUtil {
     }
   }
 
-  @Test public void testWeights3() {
+  @Ignore @Test public void testWeights3() { //same behavior as wtd.quantile in R -> results with all weights=1 and all weights=epsilon don't agree (unless normwt=TRUE)
     QuantileModel kmm1;
     QuantileModel kmm2;
     Frame fr1 = null;
