@@ -320,6 +320,16 @@ By default, the following output displays:
 
   Typically, GLM picks the best predictors, especially if lasso is used (`alpha = 1`). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors. 
 
+- **When running GLM, is it better to create a cluster that uses many smaller nodes or fewer larger nodes?** 
+
+A rough heuristic would be: 
+
+  nodes ~=M*N^2/(p*1e8)
+
+where M is the number of observations, N is the number of columns (categorical columns count as a single column in this case), and p is the number of CPU cores per node. 
+
+For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula 250^2*1000000/(32*1e8)  = 19.5 ~= 20). 
+
 
 ###GLM Algorithm
 
