@@ -27,13 +27,16 @@ expect_equal(r_q,h_q )
 
 #weighted quantiles
 #library(Hmisc)
+set.seed(1)
+N=1e5
 x = runif(N)
 aa = as.h2o(x)
 wts = sample(1:6, N, TRUE)
-h_wts = as.h2o(wts)
+aa$h_wts = as.h2o(wts)
 #r_q = wtd.quantile(x, wts, probs = seq(0,1,.05))
-#h_q = h2o.quantile(aa,probs = seq(0,1,.05),weight_column = h_wts)
-#expect_equal(r_q,h_q )
+r_q=c(3.895489e-06,4.863379e-02,9.789691e-02,1.470487e-01,1.977443e-01,2.473365e-01,2.975013e-01,3.482667e-01,3.980460e-01,4.483631e-01,4.990024e-01,5.489128e-01,5.986945e-01,6.486255e-01,6.991498e-01,7.500031e-01,8.001472e-01,8.504057e-01,8.996923e-01,9.498159e-01,9.999471e-01)
+h_q = h2o.quantile(aa,probs = seq(0,1,.05),weights_column = "h_wts")
+expect_true(max(abs((r_q-h_q)/r_q)) < 1e-5)
 
 }
 doTest("Test quantile",test.quantile )
