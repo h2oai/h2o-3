@@ -10,6 +10,7 @@ import itertools
 import random
 from h2o.grid.grid_search import H2OGridSearch
 from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
+from collections import OrderedDict
 
 
 def grid_glrm_iris():
@@ -19,7 +20,9 @@ def grid_glrm_iris():
   transform_opts = ["NONE", "DEMEAN", "DESCALE", "STANDARDIZE"]
   k_opts = random.sample(list(range(1,8)),3)
   size_of_hyper_space = len(transform_opts) * len(k_opts)
-  hyper_parameters = {"transform":transform_opts, "k":k_opts}
+  hyper_parameters = OrderedDict()
+  hyper_parameters["k"] = k_opts
+  hyper_parameters["transform"] = transform_opts
   gx = random.uniform(0,1)
   gy = random.uniform(0,1)
   print("H2O GLRM with , gamma_x = " + str(gx) + ", gamma_y = " + str(gy) +\

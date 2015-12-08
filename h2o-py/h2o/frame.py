@@ -876,17 +876,16 @@ class H2OFrame(object):
       use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame instance's
       data.
     """
+    url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(self.frame_id))
     if PY3:
       from urllib import request
-      url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), request.quote(self.frame_id))
       response = StringIO(request.urlopen(url).read().decode())
     else:
-      import urllib2, urllib
-      url = 'http://' + h2o.H2OConnection.ip() + ':' + str(h2o.H2OConnection.port()) + "/3/DownloadDataset?frame_id=" + urllib.quote(self.frame_id) + "&hex_string=false"
+      import urllib2
       response = urllib2.urlopen(url)
     if can_use_pandas() and use_pandas:
       import pandas
-      df = pandas.read_csv(response,low_memory=False)
+      df = pandas.read_csv(response, low_memory=False)
       time_cols = []
       category_cols = []
       if self.types is not None:

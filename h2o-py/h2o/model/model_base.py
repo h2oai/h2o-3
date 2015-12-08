@@ -303,7 +303,7 @@ class ModelBase(object):
     if "variable_importances" in list(model.keys()) and model["variable_importances"]:
       vals = model["variable_importances"].cell_values
       header=model["variable_importances"].col_header
-      if use_pandas and h2o.can_use_pandas():
+      if use_pandas and can_use_pandas():
         import pandas
         return pandas.DataFrame(vals, columns=header)
       else:
@@ -587,7 +587,7 @@ class ModelBase(object):
         scoring_history[dur_colname] = [str(x).split()[0] for x in scoring_history["duration"]]
         timestep = dur_colname
 
-      if h2o.can_use_pandas():
+      if can_use_pandas():
         valid = validation_metric in list(scoring_history)
         ylim = (scoring_history[[training_metric, validation_metric]].min().min(), scoring_history[[training_metric, validation_metric]].max().max()) if valid \
           else (scoring_history[training_metric].min(), scoring_history[training_metric].max())
@@ -596,15 +596,15 @@ class ModelBase(object):
         ylim = (min(min(scoring_history[[training_metric, validation_metric]])), max(max(scoring_history[[training_metric, validation_metric]]))) if valid \
           else (min(scoring_history[training_metric]), max(scoring_history[training_metric]))
 
-      if valid: #Training and validation scoring history
+      if valid:  # Training and validation scoring history
         plt.xlabel(timestep)
         plt.ylabel(metric)
         plt.title("Scoring History")
         plt.ylim(ylim)
-        plt.plot(scoring_history[timestep], scoring_history[training_metric], label = "Training")
-        plt.plot(scoring_history[timestep], scoring_history[validation_metric], color = "orange", label = "Validation")
+        plt.plot(scoring_history[timestep], scoring_history[training_metric], label="Training")
+        plt.plot(scoring_history[timestep], scoring_history[validation_metric], color="orange", label="Validation")
         plt.legend()
-      else:  #Training scoring history only
+      else:  # Training scoring history only
         plt.xlabel(timestep)
         plt.ylabel(training_metric)
         plt.title("Training Scoring History")
@@ -617,8 +617,7 @@ class ModelBase(object):
 
   @staticmethod
   def _check_targets(y_actual, y_predicted):
-    """
-    Check that y_actual and y_predicted have the same length.
+    """Check that y_actual and y_predicted have the same length.
 
     :param y_actual: An H2OFrame
     :param y_predicted: An H2OFrame

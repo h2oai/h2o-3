@@ -12,6 +12,8 @@ def pubdev_2371():
   print(d)
   print(d.types)
   print(d == '')
+  print(d["b"])
+  print((d["b"]==None).sum())
 
   assert (d["b"] == None).sum() == 2
   assert (d["b"] != None).sum() == 2
