@@ -73,6 +73,9 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
     catch( CloneNotSupportedException e ) { throw water.util.Log.throwErr(e); }
   }
 
+  /** Copy over cloned instance 'src' over 'this', field by field. */
+  protected void copyOver( D src ) { icer().copyOver((D)this,src); }
+
   ///////////////////////////////////
   // TODO: make all of these protected!
   ///////////////////////////////////

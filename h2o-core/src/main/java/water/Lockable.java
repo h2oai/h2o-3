@@ -35,7 +35,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   public transient Key _lockers[];
 
   /** Create a Lockable object, if it has a {@link Key}. */
-  public Lockable( Key key ) { super(key); }
+  public Lockable( Key<T> key ) { super(key); }
 
   // -----------
   // Atomic create+overwrite of prior key.
@@ -95,7 +95,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   }
 
   // Obtain the write-lock on _key, which may already exist, using the current 'this'.
-  private class PriorWriteLock extends TAtomic<Lockable> {
+  private final class PriorWriteLock extends TAtomic<Lockable> {
     private final Key _job_key;         // Job doing the locking
     private Lockable _old;              // Return the old thing, for deleting later
     private PriorWriteLock( Key job_key ) { _job_key = job_key; }
