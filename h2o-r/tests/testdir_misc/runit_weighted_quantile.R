@@ -53,7 +53,7 @@ test.wtd.quantile <- function(conn){
   qq = as.numeric(quantile(pp,probs = seq(0,.95,.05)))
   #wq-qq
   expect_true(max(abs((wq-qq)/wq))< 1e-3)
-  expect_equal(hq,qq)
+  expect_true(max(abs((hq-qq)/wq))< 1e-3)
 }
 doTest("Test weighted quantile",test.wtd.quantile )
 
