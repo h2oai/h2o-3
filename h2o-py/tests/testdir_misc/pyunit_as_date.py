@@ -5,8 +5,6 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
 def test_as_data():
   hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
   hdf.head()
@@ -56,15 +54,15 @@ def test_as_data():
   hdf["idx10"] = hdf["ds10"].year() * 12 + hdf["ds10"].month()
 
   # frames
-  hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
-  hdf["ds9"] = hdf["ds9"].asfactor()
+  hdf2 = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
+  hdf2["ds9"] = hdf2["ds9"].asfactor()
 
-  hdf5 = hdf["ds5"]
-  hdf6 = hdf["ds6"]
-  hdf7 = hdf["ds7"]
-  hdf8 = hdf["ds8"]
-  hdf9 = hdf["ds9"]
-  hdf10 = hdf["ds10"]
+  hdf5 = hdf2["ds5"]
+  hdf6 = hdf2["ds6"]
+  hdf7 = hdf2["ds7"]
+  hdf8 = hdf2["ds8"]
+  hdf9 = hdf2["ds9"]
+  hdf10 = hdf2["ds10"]
 
   hdf5 = hdf5.as_date("%d/%m/%y %H:%M")
   hdf6 = hdf6.as_date("%d/%m/%Y %H:%M:%S")
@@ -72,8 +70,6 @@ def test_as_data():
   hdf8 = hdf8.as_date("%m/%d/%Y")
   hdf9 = hdf9.as_date("%Y%m%d")
   hdf10 = hdf10.as_date("%Y_%m_%d")
-
-
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(test_as_data)
