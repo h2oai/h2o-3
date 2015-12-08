@@ -595,8 +595,8 @@ def save_model(model, path="", force=False):
 
   :return: the path of the saved model (string)
   """
-  path=os.path.join(os.getcwd() if path=="" else path,model._id)
-  return H2OConnection.get_json("Models.bin/"+model._id,dir=path,force=force,_rest_version=99)["dir"]
+  path=os.path.join(os.getcwd() if path=="" else path,model.model_id)
+  return H2OConnection.get_json("Models.bin/"+model.model_id,dir=path,force=force,_rest_version=99)["dir"]
 
 
 def load_model(path):

@@ -7,9 +7,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
                nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
                fold_assignment=None, keep_cross_validation_predictions=None,
-               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None, objective_epsilon = None, gradient_epsilon = None, non_negative=False,compute_p_values=False, remove_colinear_columns = False):
-    """
-    Build a Generalized Linear Model
+               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
+               objective_epsilon=None, gradient_epsilon=None, non_negative=False,
+               compute_p_values=False, remove_colinear_columns=False):
+    """Build a Generalized Linear Model
     Fit a generalized linear model, specified by a response variable, a set of predictors,
     and a description of the error distribution.
 
@@ -298,7 +299,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     return self._parms["non_negative"]
 
   @non_negative.setter
-  def gradient_epsilon(self, value):
+  def non_negative(self, value):
     self._parms["non_negative"] = value
 
   @property

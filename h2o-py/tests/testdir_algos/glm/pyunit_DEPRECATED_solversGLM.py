@@ -5,11 +5,7 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
 def glm_solvers():
-
-    training_data = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     predictors = ["displacement","power","weight","acceleration","year"]
 
     for solver in ["AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"]:
@@ -19,13 +15,11 @@ def glm_solvers():
             elif family == 'gaussian': response_col = "economy"
             else:                      response_col = "cylinders"
             print("Family = {0}".format(family))
-
+            training_data = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
             if   family == 'binomial': training_data[response_col] = training_data[response_col].asfactor()
             else:                      training_data[response_col] = training_data[response_col].asnumeric()
-
-            model = h2o.glm(x=training_data[predictors], y=training_data[response_col], family=family, alpha=[0],
-                            Lambda=[1e-5], solver=solver)
-
+            model = h2o.glm(x=training_data[predictors], y=training_data[response_col], family=family, alpha=[0], Lambda=[1e-5], solver=solver)
+            h2o.remove(training_data)
 
 
 
