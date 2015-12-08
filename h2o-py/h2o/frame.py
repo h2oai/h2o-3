@@ -1121,7 +1121,7 @@ class H2OFrame(object):
         self._ex._cache._types[colname] = list(itervalues(src._ex._cache.types))[0]
     if isinstance(src, H2OFrame) and src_in_self:
       src._ex=None  # wipe out to keep ref counts correct
-    self._frame()  # setitem is eager
+    # self._frame()  # setitem is eager
 
   def is_src_in_self(self,src):
     # src._ex._children[0]._children[0] is self._ex

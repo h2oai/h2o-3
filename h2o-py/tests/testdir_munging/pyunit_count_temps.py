@@ -72,8 +72,8 @@ def date_munge():
   rest1 = pyunit_utils.rest_ctr(); nrest = rest1-rest0
   print(("Number of temps used: ",ntmps))
   print(("Number of RESTs used: ",nrest))
-  assert ntmps <= 10
-  assert nrest < 30
+  assert ntmps <= 9
+  assert nrest < 9
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(date_munge)
