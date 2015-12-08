@@ -1796,6 +1796,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 newCols[n + i] = failedCols[i];
               Arrays.sort(newCols);
               _taskInfo._beta = resizeVec(gt1._beta, newCols, _taskInfo._activeCols, _dinfo.fullN() + 1);
+              _taskInfo._ginfo = new GLMGradientInfo(_taskInfo._ginfo._likelihood,_taskInfo._ginfo._objVal,resizeVec(_taskInfo._ginfo._gradient, newCols, _taskInfo._activeCols, _dinfo.fullN()+1));
               _taskInfo._activeCols = newCols;
               LogInfo(fcnt + " variables failed KKT conditions check! Adding them to the model and continuing computation.(grad_eps = " + err + ", activeCols = " + (_taskInfo._activeCols.length > 100 ? "lost" : Arrays.toString(_taskInfo._activeCols)));
               _activeData = _dinfo.filterExpandedColumns(_taskInfo._activeCols);
