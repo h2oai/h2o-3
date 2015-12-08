@@ -511,8 +511,8 @@ def download_pojo(model,path="", get_jar=True):
   print("Filepath: {}".format(filepath))
   if path == "": print(java.text)
   else:
-    with open(filepath, 'w') as f:
-      f.write(java.text)
+    with open(filepath, 'wb') as f:
+      f.write(java.text.encode("utf-8"))
   if get_jar and path!="":
     url = H2OConnection.make_url("h2o-genmodel.jar")
     filename = path + "/" + "h2o-genmodel.jar"
@@ -537,13 +537,8 @@ def download_csv(data, filename):
   if not isinstance(data, H2OFrame):
     raise ValueError
   url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(data.frame_id))
-  opener = urlopen()
-  if PY3:
-    response = opener(url).read().decode()
-  else:
-    response = opener(url).read()
-  with open(filename, 'w') as f:
-    f.write(response)
+  with open(filename, 'wb') as f:
+    f.write(urlopen()(url).read())
 
 
 def download_all_logs(dirname=".", filename=None):
