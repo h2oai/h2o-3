@@ -25,14 +25,12 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   /** Create a Job
    *  @param key  Key of the final result
-   *  @param desc String description
-   *  @param work Amount of work to-do, for updating progress bar
-   */
-  public Job(Key<T> key, String desc, long work) { 
+   *  @param desc String description   */
+  public Job(Key<T> key, String desc) { 
     super(defaultJobKey());     // Passing in a brand new Job key
+    if( key == null ) throw new IllegalArgumentException("Result key cannot be null");
     _result = key;              // Result (destination?) key
     _description = desc; 
-    _work = work;
   }
 
   // Job Keys are pinned to this node (i.e., the node that invoked the
@@ -102,7 +100,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
 
   /** Total expected work. */
-  public final long _work;
+  public long _work;            // Total work to-do
   private long _worked;         // Work accomplished; between 0 and _work
   private String _msg;          // Progress string
 
@@ -157,11 +155,12 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
+   *  @param work Amount of work to-do, for updating progress bar
    *  @return this job in {@code isRunning()} state
    *
    *  @see H2OCountedCompleter
    */
-  public Job<T> start(final H2OCountedCompleter fjtask) {
+  public Job<T> start(final H2OCountedCompleter fjtask, long work) {
     // Job does not exist in any DKV, and so does not have any global
     // visibility (yet).
     assert !new AssertNoKey(_key).doAllNodes()._found;
@@ -181,6 +180,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     // Change state from created to running
     _start_time = System.currentTimeMillis();
     assert !isCreated() && isRunning() && !isStopped();
+    _work = work;
 
     // Save the full state of the job, first time ever making it public
     DKV.put(this);              // Announce in DKV

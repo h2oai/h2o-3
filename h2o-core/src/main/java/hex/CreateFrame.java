@@ -14,8 +14,7 @@ import java.util.Random;
  * If randomize = true, then the frame is filled with Random values.
  */
 public class CreateFrame {
-  public final Key<Frame> _dest;
-  public Job<Frame> _job;
+  public final Job<Frame> _job;
   public long rows = 10000;
   public int cols = 10;
   public long seed = new Random().nextLong();
@@ -33,7 +32,7 @@ public class CreateFrame {
   public boolean positive_response; // only for response_factors=1
   public boolean has_response = false;
 
-  public CreateFrame(Key<Frame> key) { _dest = key; }
+  public CreateFrame(Key<Frame> key) { _job = new Job<>(key,"CreateFrame"); }
   public CreateFrame() { this(Key.<Frame>make()); }
 
   public Job<Frame> execImpl() {
@@ -69,11 +68,8 @@ public class CreateFrame {
       if (value != 0)
         throw new IllegalArgumentException("Cannot set data to a constant value if randomize=true.");
     }
-    if (_dest == null) throw new IllegalArgumentException("Destination frame name cannot be null.");
 
     FrameCreator fc = new FrameCreator(this);
-    // Finally make Job once we've computed work bits
-    _job = new Job<>(_dest,"FrameCreator",fc.nChunks()*5);
-    return _job.start(fc);      // And start FrameCreator
+    return _job.start(fc,fc.nChunks()*5);      // And start FrameCreator
   }
 }
