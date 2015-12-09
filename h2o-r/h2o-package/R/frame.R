@@ -65,7 +65,7 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
     #cat("=== Finalizer on ",attr(x, "id"),"\n")
-    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), method = "POST")
+    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
   }
 }
 
@@ -191,7 +191,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
   exec_str <- .eval.impl(x)
   # Execute the AST on H2O
   #print(paste0("EXPR: ",exec_str))
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, session_id=h2o.getConnection()@mutable$session_id, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   if( !is.null(res$scalar) ) { # Fetch out a scalar answer
     y <- res$scalar
