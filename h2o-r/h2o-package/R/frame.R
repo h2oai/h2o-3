@@ -1190,6 +1190,13 @@ trunc <- function(x, ...) {
   else .newExpr("x",x,y)
 }
 
+#' @rdname H2OFrame
+#' @export
+h2o.which <- function(x) {
+  if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
+  else .newExpr("which",x)
+}
+
 #' Returns the Dimensions of an H2O H2OFrame
 #'
 #' Returns the number of rows and columns for a H2OFrame object.
