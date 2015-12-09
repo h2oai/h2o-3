@@ -2,9 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from collections import namedtuple
 import uuid
-from future.standard_library import install_aliases
-install_aliases()
-from urllib.request import urlopen
+from .utils.shared_utils import urlopen
 from .h2o import H2OConnection, _quoted, get_frame, H2OFrame
 
 
@@ -60,7 +58,7 @@ class H2OAssembly:
     if get_jar and path!="":
       url = H2OConnection.make_url("h2o-genmodel.jar")
       filename = path + "/" + "h2o-genmodel.jar"
-      response = urlopen(url)
+      response = urlopen()(url)
       with open(filename, "wb") as f:
         f.write(response.read())
 
