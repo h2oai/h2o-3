@@ -87,7 +87,7 @@ h2o.rm <- function(ids) {
     if( is.H2OFrame(xi) ) {
       xi_id <- attr(xi, "id")       # String or None
       if( is.null(xi_id) ) return() # Lazy frame, never evaluated, nothing in cluster
-      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",xi_id[[1]],")"), session_id=session_id=h2o.getConnection()@mutable$session_id, method = "POST")
+      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",xi_id[[1]],")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
     } else if( is(xi, "H2OModel") ) {
       .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi@model_id), method = "DELETE")
     } else if( is.character(xi) ) {
