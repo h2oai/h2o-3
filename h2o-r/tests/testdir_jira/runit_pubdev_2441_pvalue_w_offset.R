@@ -13,7 +13,7 @@ test.pvalue.syn <- function(conn){
 	mu=exp(f)
 	y=rpois(N,mu)
 	wts = sample(1:6, N, TRUE)*10
-​
+
 	data =cbind(y,wts,x)
 	data = data.frame(data)
 	hdata = as.h2o(data,destination_frame = "data")
