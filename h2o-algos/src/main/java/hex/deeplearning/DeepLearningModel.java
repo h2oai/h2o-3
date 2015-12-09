@@ -107,12 +107,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   public long validation_rows;
 
-  private DeepLearningScoring[] errors;
-  public DeepLearningScoring[] scoring_history() { return errors; }
+  private DeepLearningScoring[] scoringInfo;
+  public DeepLearningScoring[] scoring_history() { return scoringInfo; }
   public ScoreKeeper[] scoreKeepers() {
     ScoreKeeper[] sk = new ScoreKeeper[scoring_history().length];
     for (int i=0;i<sk.length;++i) {
-      sk[i] = errors[i].validation ? errors[i].scored_valid : errors[i].scored_train;
+      sk[i] = scoringInfo[i].validation ? scoringInfo[i].scored_valid : scoringInfo[i].scored_train;
     }
     return sk;
   }
@@ -124,7 +124,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   public Key model_info_key;
 
   // return the most up-to-date model metrics
-  DeepLearningScoring last_scored() { return errors == null ? null : errors[errors.length-1]; }
+  DeepLearningScoring last_scored() { return scoringInfo == null ? null : scoringInfo[scoringInfo.length-1]; }
 
   /**
    * Get the parameters actually used for model building, not the user-given ones (_parms)
@@ -198,31 +198,31 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   }
 
   public double classification_error() {
-    if (errors == null) return Double.NaN;
+    if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
   }
 
   public double mse() {
-    if (errors == null) return Double.NaN;
+    if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
   }
 
   public double auc() {
-    if (errors == null) return Double.NaN;
+    if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
   }
 
   public double deviance() {
-    if (errors == null) return Double.NaN;
+    if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
   }
 
   public double logloss() {
-    if (errors == null) return Double.NaN;
+    if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
   }
 
-  private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
+  private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] scoringInfo) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -274,7 +274,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
     }
 
-    final int rows = errors.length;
+    final int rows = scoringInfo.length;
     String[] s = new String[0];
     TwoDimTable table = new TwoDimTable(
             "Scoring History", null,
@@ -285,54 +285,54 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             "");
     int row = 0;
     long scoring_time = 0;
-    for (final DeepLearningScoring e : errors) {
-      scoring_time += e.scoring_time;
+    for (final DeepLearningScoring si : scoringInfo) {
+      scoring_time += si.scoring_time;
       int col = 0;
       assert (row < table.getRowDim());
       assert (col < table.getColDim());
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-      table.set(row, col++, fmt.print(e.time_stamp));
-      table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
-      int speed = (int)(e.training_samples / ((e.training_time_ms - scoring_time)/ 1e3));
-//      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + e.training_samples + "/((" + e.training_time_ms + "-" + scoring_time + ")/1e3)";
-      table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
-      table.set(row, col++, e.epoch_counter);
-      table.set(row, col++, e.iterations);
-      table.set(row, col++, e.training_samples);
-      table.set(row, col++, e.scored_train != null ? e.scored_train._mse : Double.NaN);
+      table.set(row, col++, fmt.print(si.time_stamp));
+      table.set(row, col++, PrettyPrint.msecs(si.training_time_ms, true));
+      int speed = (int)(si.training_samples / ((si.training_time_ms - scoring_time)/ 1e3));
+      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + si.training_samples + "/((" + si.training_time_ms + "-" + scoring_time + ")/1e3)";
+      table.set(row, col++, si.training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
+      table.set(row, col++, si.epoch_counter);
+      table.set(row, col++, si.iterations);
+      table.set(row, col++, si.training_samples);
+      table.set(row, col++, si.scored_train != null ? si.scored_train._mse : Double.NaN);
       if (_output.getModelCategory() == ModelCategory.Regression) {
-        table.set(row, col++, e.scored_train != null ? e.scored_train._mean_residual_deviance : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._mean_residual_deviance : Double.NaN);
       }
       if (!_output.autoencoder) {
-        table.set(row, col++, e.scored_train != null ? e.scored_train._r2 : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._r2 : Double.NaN);
       }
       if (_output.isClassifier()) {
-        table.set(row, col++, e.scored_train != null ? e.scored_train._logloss : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._logloss : Double.NaN);
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
-        table.set(row, col++, e.training_AUC != null ? e.training_AUC._auc : Double.NaN);
-        table.set(row, col++, e.scored_train != null ? e.scored_train._lift : Double.NaN);
+        table.set(row, col++, si.training_AUC != null ? si.training_AUC._auc : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._lift : Double.NaN);
       }
       if (_output.isClassifier()) {
-        table.set(row, col++, e.scored_train != null ? e.scored_train._classError : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._classError : Double.NaN);
       }
       if (get_params()._valid != null) {
-        table.set(row, col++, e.scored_valid != null ? e.scored_valid._mse : Double.NaN);
+        table.set(row, col++, si.scored_valid != null ? si.scored_valid._mse : Double.NaN);
         if (_output.getModelCategory() == ModelCategory.Regression) {
-          table.set(row, col++, e.scored_valid != null ? e.scored_valid._mean_residual_deviance : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._mean_residual_deviance : Double.NaN);
         }
         if (!_output.autoencoder) {
-          table.set(row, col++, e.scored_valid != null ? e.scored_valid._r2 : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._r2 : Double.NaN);
         }
         if (_output.isClassifier()) {
-          table.set(row, col++, e.scored_valid != null ? e.scored_valid._logloss : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._logloss : Double.NaN);
         }
         if (_output.getModelCategory() == ModelCategory.Binomial) {
-          table.set(row, col++, e.validation_AUC != null ? e.validation_AUC._auc : Double.NaN);
-          table.set(row, col++, e.scored_valid != null ? e.scored_valid._lift : Double.NaN);
+          table.set(row, col++, si.validation_AUC != null ? si.validation_AUC._auc : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._lift : Double.NaN);
         }
         if (_output.isClassifier()) {
-          table.set(row, col, e.scored_valid != null ? e.scored_valid._classError : Double.NaN);
+          table.set(row, col, si.scored_valid != null ? si.scored_valid._classError : Double.NaN);
         }
       }
       row++;
@@ -403,12 +403,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     iterations = cp.iterations;
 
     // deep clone scoring history
-    errors = cp.errors.clone();
-    for (int i=0; i<errors.length;++i)
-      errors[i] = cp.errors[i].deep_clone();
+    scoringInfo = cp.scoringInfo.clone();
+    for (int i=0; i< scoringInfo.length;++i)
+      scoringInfo[i] = cp.scoringInfo[i].deep_clone();
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output._scoring_history = createScoringHistoryTable(errors);
+    _output._scoring_history = createScoringHistoryTable(scoringInfo);
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output._names = dataInfo._adaptedFrame.names();
     _output._domains = dataInfo._adaptedFrame.domains();
@@ -437,12 +437,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
     if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
-      errors = new DeepLearningScoring[1];
-      errors[0] = new DeepLearningScoring();
-      errors[0].validation = (parms._valid != null);
-      errors[0].time_stamp = System.currentTimeMillis();
+      scoringInfo = new DeepLearningScoring[1];
+      scoringInfo[0] = new DeepLearningScoring();
+      scoringInfo[0].validation = (parms._valid != null);
+      scoringInfo[0].time_stamp = System.currentTimeMillis();
       _output.errors = last_scored();
-      _output._scoring_history = createScoringHistoryTable(errors);
+      _output._scoring_history = createScoringHistoryTable(scoringInfo);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     time_of_start = System.currentTimeMillis();
@@ -611,13 +611,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       err.training_time_ms += err.scoring_time; //training_time_was recorded above based on time of entry into this function, but we need to add the time for scoring to this to get the total time right
       total_scoring_time += err.scoring_time;
       // enlarge the error array by one, push latest score back
-      if (errors == null) {
-        errors = new DeepLearningScoring[]{err};
+      if (scoringInfo == null) {
+        scoringInfo = new DeepLearningScoring[]{err};
       } else {
-        DeepLearningScoring[] err2 = new DeepLearningScoring[errors.length + 1];
-        System.arraycopy(errors, 0, err2, 0, errors.length);
+        DeepLearningScoring[] err2 = new DeepLearningScoring[scoringInfo.length + 1];
+        System.arraycopy(scoringInfo, 0, err2, 0, scoringInfo.length);
         err2[err2.length - 1] = err;
-        errors = err2;
+        scoringInfo = err2;
       }
       _output.errors = last_scored();
       makeWeightsBiases(_key);
@@ -637,7 +637,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (!_parms._quiet_mode)
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
       }
-      _output._scoring_history = createScoringHistoryTable(errors);
+      _output._scoring_history = createScoringHistoryTable(scoringInfo);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
 
