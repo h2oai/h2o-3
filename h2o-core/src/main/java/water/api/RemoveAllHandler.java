@@ -19,7 +19,7 @@ public class RemoveAllHandler extends Handler {
     if( InitIDHandler.SESSIONS != null ) {
       for(String k: InitIDHandler.SESSIONS.keySet() )
         (InitIDHandler.SESSIONS.remove(k)).endQuietly(null);
-      InitIDHandler.SESSIONS = null;
+      InitIDHandler.SESSIONS.clear();
     }
     fs.blockForPending();
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
