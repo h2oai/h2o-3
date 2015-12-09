@@ -167,7 +167,7 @@ public class TCPReceiverThread extends Thread {
         _bb.compact();            // move data down to 0, set position to remaining bytes
         while(_bb.position() < n) {
           int res = _chan.read(_bb); // Slide position forward (up to limit)
-          assert res > 0;         // no eof & progress made
+          if (res <= 0) throw new IOException("Didn't read any data: res=" + res);         // no eof & progress made
           _h2o._last_heard_from = System.currentTimeMillis();
         }
         _bb.flip();             // Limit to amount of data, poisition to 0
