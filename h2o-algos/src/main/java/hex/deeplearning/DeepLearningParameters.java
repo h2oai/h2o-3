@@ -413,7 +413,7 @@ public class DeepLearningParameters extends Model.Parameters {
    * Activation functions
    */
   public enum Activation {
-    Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout, ArcTan, ArcTanWithDropout
+    Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout, ExpRectifier, ExpRectifierWithDropout
   }
 
   /**
@@ -464,13 +464,13 @@ public class DeepLearningParameters extends Model.Parameters {
       }
     }
 
-    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ArcTanWithDropout) {
+    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
       dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
     }
     if (_hidden_dropout_ratios != null) {
       if (_hidden_dropout_ratios.length != _hidden.length) {
         dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
-      } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ArcTanWithDropout) {
+      } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
         if (!_quiet_mode)
           dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
       } else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
@@ -575,7 +575,7 @@ public class DeepLearningParameters extends Model.Parameters {
     if (_score_validation_samples < 0)
       dl.error("_score_validation_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
     if (_autoencoder && _sparsity_beta > 0) {
-      if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout || _activation == Activation.ArcTan || _activation == Activation.ArcTanWithDropout) {
+      if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout || _activation == Activation.ExpRectifier || _activation == Activation.ExpRectifierWithDropout) {
         if (_average_activation >= 1 || _average_activation <= -1)
           dl.error("_average_activation", "Tanh average activation must be in (-1,1).");
       } else if (_activation == Activation.Rectifier || _activation == Activation.RectifierWithDropout) {
@@ -798,7 +798,7 @@ public class DeepLearningParameters extends Model.Parameters {
         if (fromParms._activation == Activation.TanhWithDropout
                 || fromParms._activation == Activation.MaxoutWithDropout
                 || fromParms._activation == Activation.RectifierWithDropout
-                || fromParms._activation == Activation.ArcTanWithDropout
+                || fromParms._activation == Activation.ExpRectifierWithDropout
             ) {
           toParms._hidden_dropout_ratios = new double[fromParms._hidden.length];
           if (!fromParms._quiet_mode)
