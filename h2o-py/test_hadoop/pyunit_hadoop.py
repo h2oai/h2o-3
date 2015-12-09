@@ -12,8 +12,6 @@ def test_hadoop():
     '''
     hdfs_name_node = os.getenv("NAME_NODE")
     h2o_data = h2o.import_file("hdfs://" + hdfs_name_node + "/datasets/100k.csv")
-    print h2o_data.head()
-    h2o_data.summary()
 
     h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=0.5, Lambda=0.01)
     h2o_glm.train(x=range(1, 10), y=0, training_frame=h2o_data) # dont need to train on all features
