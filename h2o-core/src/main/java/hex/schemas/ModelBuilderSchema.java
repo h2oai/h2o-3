@@ -64,8 +64,6 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   /** Factory method to create the model-specific parameters schema. */
   final public P createParametersSchema() {
-    P impl = null;
-
     // special case, because ModelBuilderSchema is the top of the tree and is parameterized differently
     if (ModelBuilderSchema.class == this.getClass()) {
       return (P)new ModelParametersSchema();
@@ -73,12 +71,11 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
     try {
       Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
-      impl = (P)parameters_class.newInstance();
+      return (P)parameters_class.newInstance();
     }
     catch (Exception e) {
       throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
     }
-    return impl;
   }
 
   public S fillFromParms(Properties parms) {

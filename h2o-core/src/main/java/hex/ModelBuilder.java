@@ -26,10 +26,46 @@ import java.util.Map;
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
-abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Job<M> {
+abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
+
+  final Job<M> _job;            // Job controlling this build
+
+  /** Constructor called from an http request; MUST override in subclasses. */
+  public ModelBuilder(P _) {
+    throw H2O.fail("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
+  }
+
+  /** Constructor making a default destination key */
+  public ModelBuilder(String desc, P parms) {
+    this((parms == null || parms._model_id == null) ? Key.<M>make(H2O.calcNextUniqueModelId(desc)) : (Key<M>)parms._model_id, desc, parms);
+  }
+
+  /** Default constructor, given all arguments */
+  public ModelBuilder(Key<M> dest, String desc, P parms) {
+    _job = new Job<>(dest,desc);
+    _parms = parms;
+  }
+
+  /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
+  // TODO: CLEAN THIS UP.  OVERLY COMPLEX; NO NEED; NON-REFLECTION ALTERNATIVE EXISTS
+  public static ModelBuilder createModelBuilder(String algo) {
+    Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
+    if( clz == null ) 
+      throw new H2OIllegalArgumentException("algo", "createModelBuilder", "Algo not known (" + algo + ")");
+    try {
+      Type[] handler_type_parms = ((ParameterizedType)(clz.getGenericSuperclass())).getActualTypeArguments();
+      // [0] is the Model type; [1] is the Model.Parameters type; [2] is the Model.Output type.
+      Class<? extends Model.Parameters> pclz = (Class<? extends Model.Parameters>)handler_type_parms[1];
+      Constructor<ModelBuilder> constructor = (Constructor<ModelBuilder>)clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] });
+      Model.Parameters p = pclz.newInstance();
+      return constructor.newInstance(p);
+    } catch (Exception e) {
+      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
+    }
+  }
 
   /** All the parameters required to build the model. */
-  public P _parms;
+  public P _parms;              // Not final, so CV can set-after-clone
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
@@ -42,8 +78,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
-
-  private Key[] _cvModelBuilderKeys;
 
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
@@ -79,13 +113,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
 
-
-  /**
-   * Register a ModelBuilder, assigning it an algo name.
-   */
+  /** Register a ModelBuilder, assigning it an algo name.  */
   public static void registerModelBuilder(String name, String full_name, Class<? extends ModelBuilder> clz) {
+    if (! (clz.getGenericSuperclass() instanceof ParameterizedType))
+      throw H2O.fail("Class is not parameterized as expected: " + clz);
     _builders.put(name, clz);
-
     Class<? extends Model> model_class = (Class<? extends Model>)ReflectionUtils.findActualClassParameter(clz, 0);
     _model_class_to_algo.put(model_class, name);
     _algo_to_algo_full_name.put(name, full_name);
@@ -141,105 +173,26 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public abstract ModelBuilderSchema schema();
 
-  /** Constructor called from an http request; MUST override in subclasses. */
-  public ModelBuilder(P ignore) {
-    super(Key.<M>make("Failed"), "ModelBuilder constructor needs to be overridden.");
-    throw H2O.fail("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
-  }
-
-  /** Constructor making a default destination key */
-  public ModelBuilder(String desc, P parms) {
-    this((parms == null || parms._model_id == null) ? Key.make(H2O.calcNextUniqueModelId(desc)) : parms._model_id, desc, parms);
-  }
-
-  /** Default constructor, given all arguments */
-  public ModelBuilder(Key dest, String desc, P parms) {
-    super(dest,desc);
-    _parms = parms;
-  }
-
-  /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
-  public static ModelBuilder createModelBuilder(String algo) {
-    ModelBuilder modelBuilder;
-
-    Class<? extends ModelBuilder> clz = null;
-    try {
-      clz = ModelBuilder.getModelBuilder(algo);
-    }
-    catch (Exception ignore) {}
-
-    if (clz == null) {
-      throw new H2OIllegalArgumentException("algo", "createModelBuilder", "Algo not known (" + algo + ")");
-    }
-
-    try {
-      if (! (clz.getGenericSuperclass() instanceof ParameterizedType)) {
-        throw H2O.fail("Class is not parameterized as expected: " + clz);
-      }
-
-      Type[] handler_type_parms = ((ParameterizedType)(clz.getGenericSuperclass())).getActualTypeArguments();
-      // [0] is the Model type; [1] is the Model.Parameters type; [2] is the Model.Output type.
-      Class<? extends Model.Parameters> pclz = (Class<? extends Model.Parameters>)handler_type_parms[1];
-      Constructor<ModelBuilder> constructor = (Constructor<ModelBuilder>)clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] });
-      Model.Parameters p = pclz.newInstance();
-      modelBuilder = constructor.newInstance(p);
-    } catch (java.lang.reflect.InvocationTargetException e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
-    } catch (Exception e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
-    }
-
-    return modelBuilder;
-  }
-
-  /**
-   * Temporary HACK to store the ModelBuilders's state and start/end/run time in the model's output
-   * This won't be necessary once both the ModelBuilder and the Model point to a shared Job(State) object in the DKV.
-   * Currently, there's a slight delay between setting the ModelBuilder/Job's state and setting the model's state.
-   * So there is a race condition when returning a model (e.g., via the REST layer) after the ModelBuilder is DONE, but the model object is not yet updated.
-   */
-  protected void updateModelOutput() {
-    new TAtomic<M>() {
-      @Override
-      public M atomic(M old) {
-        if (old != null) {
-          old._output._status = _state;
-          old._output._start_time = _start_time;
-          old._output._end_time = _end_time;
-          old._output._run_time = _end_time - _start_time;
-        }
-        return old;
-      }
-    }.invoke(dest());
-  }
-
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+
     if( !nFoldCV() )
-      return trainModelImpl(progressUnits(), true);
+      return _job.start(trainModelImpl(), progressUnits());
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-    return start(new H2O.H2OCountedCompleter() {
+    return _job.start(new H2O.H2OCountedCompleter() {
         @Override protected void compute2() {
           computeCrossValidation();
           tryComplete();
         }
-        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-          failed(ex);
-          return true;
-        }
-      }, (nFoldWork()+1/*+1 for all the post-fold work*/) * progressUnits(), true);
+      }, (1/*for all pre-fold work*/+nFoldWork()+1/*for all the post-fold work*/) * progressUnits());
   }
 
-  /**
-   * Model-specific implementation of model training
-   * @param progressUnits Number of progress units (each advances the Job's progress bar by a bit)
-   * @param restartTimer
-   * @return ModelBuilder job
-   */
-  abstract protected Job<M> trainModelImpl(long progressUnits, boolean restartTimer);
+  /** Model-specific implementation of model training
+   * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
+  abstract protected H2O.H2OCountedCompleter trainModelImpl();
   abstract protected long progressUnits();
 
   // Work for each requested fold
@@ -252,39 +205,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private Vec zTmp() { return train().anyVec().makeZero(); }
 
   /**
-   * Whether the Job is done after building the model itself, or whether there's extra work to be done
-   * Override the Job's behavior here
-   * N-fold CV jobs should not mark the job as finished, we do this explicitly in computeCrossValidation
-   *
-   * @return
-   */
-  @Override
-  protected boolean canBeDone() {
-    return !nFoldCV();
-  }
-
-  @Override
-  public void cancel() {
-    super.cancel();
-    // parent job cancels all running CV child jobs
-    if (_cvModelBuilderKeys != null) {
-      for (int i = 0; i < _cvModelBuilderKeys.length; ++i) {
-        ModelBuilder<M, P, O> mb = DKV.getGet(_cvModelBuilderKeys[i]);
-        if (mb != null) {
-          assert (mb._cvModelBuilderKeys == null); //prevent infinite recursion
-          mb.cancel();
-        }
-      }
-    }
-  }
-
-  /**
    * Default naive (serial) implementation of N-fold cross-validation
    * @return Cross-validation Job
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
   public Job<M> computeCrossValidation() {
-    assert(_state == JobState.RUNNING); //main Job is still running
+    assert _job.isRunning();    // main Job is still running
     final Frame origTrainFrame = train();
 
     // Step 1: Assign each row to a fold
@@ -317,7 +243,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final String[] identifier = new String[N];
     final String weightName = "weights";
 
-    final Key<M> origDest = dest();
+    final Key<M> origDest = _job._result;
     for (int i=0; i<N; ++i) {
       // Make weights
       weights[2*i]   = zTmp();
@@ -365,65 +291,58 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._fold_column == null) foldAssignment.remove();
     if (origWeightsName == null) origWeight.remove();
 
-    // adapt main Job's progress bar to build N+1 models
-    ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
-    _deleteProgressKey = false; // keep the same progress bar for all N+1 jobs
-
-    long cs = _parms.checksum();
-    final boolean async = false;
-    _cvModelBuilderKeys = new Key[N];
+    // Build & error-check all the cross-validation Builders before launching any
+    final long old_cs = _parms.checksum();
+    Key<M> cvModelKeys[] = new Key[N];
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for (int i=0; i<N; ++i) {
-      if (isCancelledOrCrashed()) break;
-
       // Shallow clone - not everything is a private copy!!!
-      cvModelBuilders[i] = (ModelBuilder<M, P, O>) this.clone();
-
-      // Fix up some parameters of the clone - UGLY - hopefully nothing is missing
-      _cvModelBuilderKeys[i] = Key.make(_key.toString() + "_cv" + i);
-      cvModelBuilders[i]._key = _cvModelBuilderKeys[i];
-      cvModelBuilders[i]._cvModelBuilderKeys = null; //children cannot have children
-      cvModelBuilders[i]._dest = modelKeys[i]; // the model_id gets updated as well in modifyParmsForCrossValidationSplits (must be consistent)
-      cvModelBuilders[i]._state = JobState.CREATED;
+      cvModelBuilders[i] = (ModelBuilder)this.clone();
       cvModelBuilders[i]._parms = (P) _parms.clone();
+      // Fix up some parameters of the clone - UGLY
+      Key<M> modelKey = Key.make(_job._result.toString() + "_cv" + i);
+      cvModelKeys[i] = modelKey;
+      cvModelBuilders[i]._parms._model_id = (Key<Model>)modelKey;
       cvModelBuilders[i]._parms._weights_column = weightName;
       cvModelBuilders[i]._parms._train = cvTrain[i]._key;
       cvModelBuilders[i]._parms._valid = cvValid[i]._key;
       cvModelBuilders[i]._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-      cvModelBuilders[i].modifyParmsForCrossValidationSplits(i, N, _parms._model_id);
-    }
-    for (int i=0; i<N; ++i) {
+      cvModelBuilders[i].modifyParmsForCrossValidationSplits(i, N, modelKey);
       cvModelBuilders[i].init(false);
       if (cvModelBuilders[i].error_count() > 0) {
-        // TODO: this crushes all prior top-level messages, including info's and warn's
-        _messages = cvModelBuilders[i]._messages; //bail out on first failure -> main job gets the failed N-fold CV job's error message
+        for( ValidationMessage vm : cvModelBuilders[i]._messages )
+          message(vm._log_level, vm._field_name, vm._message);
         updateValidationMessages();
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(cvModelBuilders[i]);
       }
     }
-    for (int i=0; i<N; ++i) {
-      if (isCancelledOrCrashed()) break;
-      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
-      cvModelBuilders[i]._start_time = System.currentTimeMillis();
-      cvModelBuilders[i].trainModelImpl(-1, true); //non-blocking
-      if (!async)
-        cvModelBuilders[i].block();
-    }
-    // check that this Job's original _params haven't changed
-    assert(cs == _parms.checksum());
+    _job.update(1);             // Did all the pre-fold work
 
+    // =================================================================
+    // Now do the folds
+    final boolean async = true; // Set to TRUE for parallel building
+    for( int i=0; i<N; ++i ) {
+      if( _job.cancel_requested() ) break;
+      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
+      cvModelBuilders[i].trainModelImpl(-1); // no progress work here, it's all in top-level builder
+      if( !async ) cvModelBuilders[i]._job.get(); // block
+    }
+    ...CNC... LAUNCH ALL N (unless async)
+
+    // check that this Job's original _params haven't changed
+    assert(old_cs == _parms.checksum());
+
+    // =================================================================
     if (!isCancelledOrCrashed()) {
       Log.info("Building main model.");
 
       //HACK:
       // Can't use changeJobState (it assumes that state transitions are monotonic)
       assert (DKV.get(_key).get() == this);
-      assert(_state == JobState.RUNNING);
+      assert _job.isRunning();
       assert (((Job)DKV.getGet(_key))._state == JobState.RUNNING);
       _state = JobState.CREATED;
       assert (((Job)DKV.getGet(_key))._state == JobState.CREATED);
-      assert(!_deleteProgressKey);
-      _deleteProgressKey = true; //delete progress after the main model is done
 
       modifyParmsForCrossValidationMainModel(N, async ? null : _cvModelBuilderKeys); //tell the main model that it shouldn't stop early either
 
@@ -431,11 +350,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (!async)
         block();
     }
-    else {
-      DKV.remove(dest()); //remove prior main model (must have been built by a prior job)
-    }
 
     // in async case, the CV models can score while the main model is still building
+    ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
     Model[] m = new Model[N];
     for (int i=0; i<N; ++i) {
       Frame adaptFr = null;
@@ -537,10 +454,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param i which model index [0...N-1]
    * @param N Total number of cross-validation folds
    */
-  public void modifyParmsForCrossValidationSplits(int i, int N, Key<Model> model_id) {
+  public void modifyParmsForCrossValidationSplits(int i, int N, Key<M> model_id) {
     _parms._nfolds = 0;
-    if (model_id != null)
-      _parms._model_id = Key.make(model_id.toString());
+    throw H2O.unimpl();
+    //if (model_id != null)
+    //  _parms._model_id = Key.make(model_id.toString());
   }
 
   /**
@@ -552,16 +470,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   }
 
-  boolean _deleteProgressKey = true;
-  @Override
-  protected boolean deleteProgressKey() {
-    return _deleteProgressKey;
-  }
-
-  /**
-   * Whether n-fold cross-validation is done
-   * @return
-   */
+  /** @return Whether n-fold cross-validation is done  */
   public boolean nFoldCV() {
     return _parms._fold_column != null || _parms._nfolds != 0;
   }
