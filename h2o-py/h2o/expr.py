@@ -203,7 +203,7 @@ class H2OCache(object):
     self._data = collections.OrderedDict()
     for c in json["columns"]:
       c.pop('__meta')              # Redundant description ColV3
-      c.pop('domain_cardinality')  # Same as len(c['domain'])
+#      c.pop('domain_cardinality')  # Same as len(c['domain'])
       sdata = c.pop('string_data')
       if sdata: c['data'] = sdata  # Only use data field; may contain either [str] or [real]
       # Data (not string) columns should not have a string in them.  However,

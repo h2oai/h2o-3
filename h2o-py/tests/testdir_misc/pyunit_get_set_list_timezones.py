@@ -13,7 +13,7 @@ def get_set_list_timezones(ip,port):
     timezones = h2o.list_timezones()
     # don't use the first one..it's a header for the table
     print "timezones[0]:", timezones[0]
-    zone = timezones[random.randint(1,timezones.nrow()-1),0].split(" ")[1].split(",")[0]
+    zone = timezones[random.randint(1,timezones.nrow-1),0].split(" ")[1].split(",")[0]
     print "Setting the timezone: {0}".format(zone)
     h2o.set_timezone(zone)
 

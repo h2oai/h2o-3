@@ -23,6 +23,21 @@ import h2o_model_builder
 __PROGRESS_BAR__ = True  # display & update progress bar while polling
 
 
+def lazy_import(path):
+  """Import a single file or collection of files.
+  Parameters
+  ----------
+  path : str
+    A path to a data file (remote or local).
+  """
+  return [_import(p)[0] for p in path] if isinstance(path, (list, tuple)) else _import(path)
+
+
+def _import(path):
+  j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
+  if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
+  return j['destination_frames']
+
 def import_file(path):
   """
   Import a single file or collection of files.
@@ -60,18 +75,187 @@ def import_frame(path=None):
   :param path: A path specifying the location of the data to import.
   :return: A new H2OFrame
   """
-  return H2OFrame(file_path=path)
+  return import_file(path=path)
 
 
-def parse_setup(raw_frames):
+def import_file(path=None, destination_frame="", parse=True, header=(-1,0,1), sep="",
+                col_names=None, col_types=None, na_strings=None):
+  """Have H2O import a dataset into memory. The path to the data must be a valid path for
+  each node in the H2O cluster. If some node in the H2O cluster cannot see the file, then
+  an exception will be thrown by the H2O cluster.
+  Parameters
+  ----------
+    path : str
+      A path specifying the location of the data to import.
+    destination_frame : str, optional
+      The unique hex key assigned to the imported file. If none is given, a key will
+      automatically be generated.
+    parse : bool, optional
+      A logical value indicating whether the file should be parsed after import.
+    header : int, optional
+     -1 means the first line is data, 0 means guess, 1 means first line is header.
+    sep : str, optional
+      The field separator character. Values on each line of the file are separated by this
+      character. If sep = "", the parser will automatically detect the separator.
+    col_names : list, optional
+      A list of column names for the file.
+    col_types : list or dict, optional
+      A list of types or a dictionary of column names to types to specify whether columns
+      should be forced to a certain type upon import parsing. If a list, the types for
+      elements that are None will be guessed. The possible types a column may have are:
+          "unknown" - this will force the column to be parsed as all NA
+          "uuid"    - the values in the column must be true UUID or will be parsed as NA
+          "string"  - force the column to be parsed as a string
+          "numeric" - force the column to be parsed as numeric. H2O will handle the
+                      compression of the numeric data in the optimal manner.
+          "enum"    - force the column to be parsed as a categorical column.
+          "time"    - force the column to be parsed as a time column. H2O will attempt to
+                      parse the following list of date time formats.
+                        date:
+                          "yyyy-MM-dd"
+                          "yyyy MM dd"
+                          "dd-MMM-yy"
+                          "dd MMM yy"
+                        time:
+                          "HH:mm:ss"
+                          "HH:mm:ss:SSS"
+                          "HH:mm:ss:SSSnnnnnn"
+                          "HH.mm.ss"
+                          "HH.mm.ss.SSS"
+                          "HH.mm.ss.SSSnnnnnn"
+                      Times can also contain "AM" or "PM".
+    na_strings : list or dict, optional
+      A list of strings, or a list of lists of strings (one list per column), or a
+      dictionary of column names to strings which are to be interpreted as missing values.
+  Returns
+  -------
+    A new H2OFrame instance.
   """
-  :param raw_frames: A collection of imported file frames
-  :return: A ParseSetup "object"
+  if not parse:
+    return lazy_import(path)
+
+  return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+
+
+def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="", column_names=None, column_types=None, na_strings=None):
+  """
+  During parse setup, the H2O cluster will make several guesses about the attributes of
+  the data. This method allows a user to perform corrective measures by updating the
+  returning dictionary from this method. This dictionary is then fed into `parse_raw` to
+  produce the H2OFrame instance.
+  Parameters
+  ----------
+    raw_frames : H2OFrame
+      A collection of imported file frames
+    destination_frame : str, optional
+      The unique hex key assigned to the imported file. If none is given, a key will
+      automatically be generated.
+    parse : bool, optional
+      A logical value indicating whether the file should be parsed after import.
+    header : int, optional
+     -1 means the first line is data, 0 means guess, 1 means first line is header.
+    sep : str, optional
+      The field separator character. Values on each line of the file are separated by this
+       character. If sep = "", the parser will automatically detect the separator.
+    col_names : list, optional
+      A list of column names for the file.
+    col_types : list or dict, optional
+      A list of types or a dictionary of column names to types to specify whether columns
+      should be forced to a certain type upon import parsing. If a list, the types for
+      elements that are None will be guessed. The possible types a column may have are:
+          "unknown" - this will force the column to be parsed as all NA
+          "uuid"    - the values in the column must be true UUID or will be parsed as NA
+          "string"  - force the column to be parsed as a string
+          "numeric" - force the column to be parsed as numeric. H2O will handle the
+                      compression of the numeric data in the optimal manner.
+          "enum"    - force the column to be parsed as a categorical column.
+          "time"    - force the column to be parsed as a time column. H2O will attempt to
+                      parse the following list of date time formats.
+                        date:
+                          "yyyy-MM-dd"
+                          "yyyy MM dd"
+                          "dd-MMM-yy"
+                          "dd MMM yy"
+                        time:
+                          "HH:mm:ss"
+                          "HH:mm:ss:SSS"
+                          "HH:mm:ss:SSSnnnnnn"
+                          "HH.mm.ss"
+                          "HH.mm.ss.SSS"
+                          "HH.mm.ss.SSSnnnnnn"
+                      Times can also contain "AM" or "PM".
+      A list of strings, or a list of lists of strings (one list per column), or a
+      dictionary of column names to strings which are to be interpreted as missing values.
+  Returns
+  -------
+    A dictionary is returned containing all of the guesses made by the H2O back end.
   """
 
   # The H2O backend only accepts things that are quoted
-  if isinstance(raw_frames, unicode): raw_frames = [raw_frames]
-  j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames])
+  if isinstance(raw_frames, basestring): raw_frames = [raw_frames]
+
+  # temporary dictionary just to pass the following information to the parser: header, separator
+  kwargs = {}
+  # set header
+  if header != (-1,0,1):
+    if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
+    kwargs["check_header"] = header
+
+  # set separator
+  if separator:
+    if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError("separator should be a single character string")
+    kwargs["separator"] = ord(separator)
+
+  j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], **kwargs)
+
+  if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
+  if column_names is not None:
+    if not isinstance(column_names, list): raise ValueError("col_names should be a list")
+    if len(column_names) != len(j["column_types"]): raise ValueError("length of col_names should be equal to the number of columns")
+    j["column_names"] = column_names
+  if column_types is not None:
+    if isinstance(column_types, dict):
+      #overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
+      if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
+        j["column_names"] = _gen_header(j["number_columns"])
+      if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in col_types is not a subset of the column names")
+      idx = 0
+      column_types_list = []
+      for name in j["column_names"]:
+        if name in column_types:
+          column_types_list.append(column_types[name])
+        else:
+          column_types_list.append(j["column_types"][idx])
+        idx += 1
+      column_types = column_types_list
+    elif isinstance(column_types, list):
+      if len(column_types) != len(j["column_types"]): raise ValueError("length of col_types should be equal to the number of columns")
+      column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in range(len(column_types))]
+    else:  # not dictionary or list
+      raise ValueError("col_types should be a list of types or a dictionary of column names to types")
+    j["column_types"] = column_types
+  if na_strings is not None:
+    if isinstance(na_strings, dict):
+      #overwrite dictionary to ordered list of lists of na_strings
+      if not j["column_names"]: raise ValueError("column names should be specified")
+      if not set(na_strings.keys()).issubset(set(j["column_names"])): raise ValueError("names specified in na_strings is not a subset of the column names")
+      j["na_strings"] = [[] for _ in range(len(j["column_names"]))]
+      for name, na in na_strings.items():
+        idx = j["column_names"].index(name)
+        if isinstance(na, basestring): na = [na]
+        for n in na: j["na_strings"][idx].append(_quoted(n))
+    elif _is_list_of_lists(na_strings):
+      if len(na_strings) != len(j["column_types"]): raise ValueError("length of na_strings should be equal to the number of columns")
+      j["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in na_strings]
+    elif isinstance(na_strings, list):
+      j["na_strings"] = [[_quoted(na) for na in na_strings]] * len(j["column_types"])
+    else:  # not a dictionary or list
+      raise ValueError("na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
+                       "names to strings which are to be interpreted as missing values")
+
+  #quote column names and column types also when not specified by user
+  if j["column_names"]: j["column_names"] = map(_quoted, j["column_names"])
+  j["column_types"] = map(_quoted, j["column_types"])
   return j
 
 
@@ -314,7 +498,7 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
   :param cols: number of columns
   :return: None
   """
-  h2o_rows, h2o_cols = h2o_frame.dim()
+  h2o_rows, h2o_cols = h2o_frame.dim
   assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
                                                 "".format(h2o_rows, rows, h2o_cols, cols)
   if isinstance(python_obj, (list, tuple)):
@@ -348,7 +532,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
     assert False, "failed comparison check because unable to import numpy"
 
   import numpy as np
-  rows, cols = h2o_data.dim()
+  rows, cols = h2o_data.dim
   for i in range(num_elements):
     r = random.randint(0,rows-1)
     c = random.randint(0,cols-1)
@@ -369,13 +553,11 @@ def run_test(sys_args, test_to_run):
   log_and_echo("STARTING TEST: "+str(ou()))
   log_and_echo("")
   log_and_echo("------------------------------------------------------------")
-  num_keys = store_size()
   try:
     if len(sys_args) > 3 and sys_args[3] == "--ipynb": ipy_notebook_exec(sys_args[4],save_and_norun=False)
     else: test_to_run(ip, port)
   finally:
     remove_all()
-    if keys_leaked(num_keys): print "Leaked Keys!"
 
 def ou():
   """
@@ -1255,23 +1437,6 @@ def locate(path):
 
       tmp_dir = next_tmp_dir
       possible_result = os.path.join(tmp_dir, path)
-
-
-def store_size():
-  """
-  Get the H2O store size (current count of keys).
-  :return: number of keys in H2O cloud
-  """
-  return rapids("(store_size)")["result"]
-
-
-def keys_leaked(num_keys):
-  """
-  Ask H2O if any keys leaked.
-  @param num_keys: The number of keys that should be there.
-  :return: A boolean True/False if keys leaked. If keys leaked, check H2O logs for further detail.
-  """
-  return rapids("keys_leaked #{})".format(num_keys))["result"]=="TRUE"
 
 
 def as_list(data, use_pandas=True):

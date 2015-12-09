@@ -34,7 +34,7 @@ def frame_math_ops(ip,port):
         r = h2o_round[0,0]
         assert s == r, "Expected these to be equal, but signif: {0}, round: {1}".format(s, r)
     h2o_transposed = h2o_data1[0:5].transpose()
-    r, c = h2o_transposed.dim()
+    r, c = h2o_transposed.dim
     assert r == 5 and c == 10, "Expected 5 rows and 10 columns, but got {0} rows and {1} columns".format(r,c)
     h2o.np_comparison_check(h2o_transposed, np.transpose(np_data1[:,0:5]), 10)
     h2o.np_comparison_check(h2o_data1.cos(), np.cos(np_data1), 10)

@@ -456,7 +456,6 @@ class H2OFrame(object):
   def __eq__  (self, i):
     if i is None: i = float("nan")
     return H2OFrame._expr(expr=ExprNode("==",  self,i), cache=self._ex._cache)
-
   def __ne__  (self, i):
     if i is None: i = float("nan")
     return H2OFrame._expr(expr=ExprNode("!=",  self,i), cache=self._ex._cache)

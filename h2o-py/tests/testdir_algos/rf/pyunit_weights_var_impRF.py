@@ -18,7 +18,7 @@ def weights_vi(ip,port):
 
     dataset1_python = [[r, one, two, three] for r, one, two, three in zip(response, p1, p2, p3)]
     dataset1_h2o = h2o.H2OFrame(python_obj=dataset1_python)
-    dataset1_h2o.setNames(["response", "p1", "p2", "p3"])
+    dataset1_h2o.names = ["response", "p1", "p2", "p3"]
 
     ##### create synthetic dataset2 with 3 predictors: p3 predicts response ~90% of the time, p1 ~70%, p2 ~50%
     response = ['a' for y in range(10000)]

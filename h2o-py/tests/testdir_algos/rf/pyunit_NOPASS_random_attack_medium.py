@@ -40,7 +40,7 @@ def random_attack(ip,port):
     pros[4] = pros[4].asfactor()
     pros[5] = pros[5].asfactor()
     pros[8] = pros[8].asfactor()
-    r = pros[0].runif() # a column of length pros.nrow() with values between 0 and 1
+    r = pros[0].runif() # a column of length pros.nrow with values between 0 and 1
     # ~80/20 train/validation split
     pros_train = pros[r > .2]
     pros_valid = pros[r <= .2]
