@@ -53,9 +53,9 @@ public class DeepLearningGradientCheck extends TestUtil {
               Distribution.Family.multinomial,
       }) {
         for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
-            DeepLearningParameters.Activation.ArcTan,
-                DeepLearningParameters.Activation.Tanh,
-                DeepLearningParameters.Activation.Rectifier,
+            DeepLearningParameters.Activation.ExpRectifier,
+//                DeepLearningParameters.Activation.Tanh,
+//                DeepLearningParameters.Activation.Rectifier,
 //                DeepLearningParameters.Activation.Maxout,
         }) {
           for (String response : new String[]{

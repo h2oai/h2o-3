@@ -146,15 +146,15 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     /**
      * The activation function (non-linearity) to be used the neurons in the hidden layers.
      * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
-     * Rectifier: Chooses the maximum of (0, x) where x is the input value.
+     * Rectifier: Rectifier Linear Unit: Chooses the maximum of (0, x) where x is the input value.
      * Maxout: Choose the maximum coordinate of the input vector.
-     * ArcTan: Arc Tangent function
+     * ExpRectifier: Exponential Rectifier Linear Unit function (http://arxiv.org/pdf/1511.07289v2.pdf)
      * With Dropout: Zero out a random user-given fraction of the
      *      incoming weights to each hidden layer during training, for each
      *      training row. This effectively trains exponentially many models at
      *      once, and can improve generalization.
      */
-    @API(help = "Activation function", values = { "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout", "ArcTan", "ArcTanWithDropout" }, level=API.Level.critical, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Activation function", values = { "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout", "ExpRectifier", "ExpRectifierWithDropout" }, level=API.Level.critical, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.Activation activation;
 
     /**

@@ -142,7 +142,7 @@ public abstract class Neurons {
       _origa = new Storage.DenseVector(units);
     }
     if (training && (this instanceof MaxoutDropout || this instanceof TanhDropout
-            || this instanceof RectifierDropout || this instanceof Input) ) {
+            || this instanceof RectifierDropout || this instanceof ExpRectifierDropout || this instanceof Input) ) {
       _dropout = this instanceof Input ?
               (params._input_dropout_ratio==0 ? null : new Dropout(units, params._input_dropout_ratio)) //input dropout
               : new Dropout(units, params._hidden_dropout_ratios[_index]); //hidden dropout
@@ -750,24 +750,28 @@ public abstract class Neurons {
     }
   }
 
-  public static class ArcTan extends Neurons {
-    public ArcTan(int units) { super(units); }
+  public static class ExpRectifier extends Neurons {
+    public ExpRectifier(int units) { super(units); }
     @Override protected void fprop(long seed, boolean training) {
       gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
       final int rows = _a.size();
-      for( int row = 0; row < rows; row++ )
-        _a.set(row, Math.atan(_a.get(row))*2/Math.PI);
+      for( int row = 0; row < rows; row++ ) {
+        double x = _a.get(row);
+        double val = x >= 0 ? x : Math.exp(x)-1;
+        _a.set(row, val);
+      }
       compute_sparsity();
     }
     // Computing partial derivative g = dE/dnet = dE/dy * dy/dnet, where dE/dy is the backpropagated error
-    // dy/dnet = 1/(1 + a^2) for y(net) = atan(net)
     @Override protected void bprop() {
       assert (_index < _minfo.get_params()._hidden.length);
       float m = _minfo.adaDelta() ? 0 : momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       final int rows = _a.size();
       for (int row = 0; row < rows; row++) {
-        double g = _e.get(row) * 1./(1 + _a.get(row) * _a.get(row)) * 2/Math.PI;
+        double x = _a.get(row);
+        double val = x >= 0 ? 1 : Math.exp(x);
+        double g = _e.get(row) * val;
         bprop(row, g, r, m);
       }
     }
@@ -776,8 +780,8 @@ public abstract class Neurons {
   /**
    * Tanh neurons with dropout
    */
-  public static class ArcTanDropout extends ArcTan {
-    public ArcTanDropout(int units) { super(units); }
+  public static class ExpRectifierDropout extends ExpRectifier {
+    public ExpRectifierDropout(int units) { super(units); }
     @Override protected void fprop(long seed, boolean training) {
       if (training) {
         seed += params._seed + 0xDA7A6000;
