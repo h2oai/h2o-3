@@ -4,8 +4,8 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.export.time <- function() {
-  
-  fr = h2o.importFile("bigdata/laptop/citibike-nyc/2013-07.csv")
+
+  fr = h2o.importFile(locate("bigdata/laptop/citibike-nyc/2013-07.csv"))
   
   t = system.time(h2o.exportFile(fr,paste0(sandbox(),"foo",sep=.Platform$file.sep),force=T))
   
