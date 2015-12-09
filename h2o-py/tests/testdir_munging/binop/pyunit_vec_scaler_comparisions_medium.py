@@ -48,9 +48,9 @@ def vec_scaler_comparisons():
     # ==
     row_sum = 0
     for level in levels[0]:
-       r, c = air[str(level) == air["Origin"]].dim
+       r, c = air[level == air["Origin"]].dim
        row_sum += r
-    assert row_sum == rows, "expected equal number of rows"
+    assert row_sum == rows, "expected equal number of rows: " + str(row_sum) + "!=" + str(rows)
 
     # ==, !=
     jan = air[1 == air["Month"]]
