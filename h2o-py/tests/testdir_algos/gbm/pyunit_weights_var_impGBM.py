@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -62,9 +65,9 @@ def weights_var_imp():
     mul1_vi = gbm1_multinomial.varimp()
     mul2_vi = gbm2_multinomial.varimp()
 
-    print "Varimp (regresson)   no weights vs. weights: {0}, {1}".format(reg1_vi, reg2_vi)
-    print "Varimp (binomial)    no weights vs. weights: {0}, {1}".format(bin1_vi, bin2_vi)
-    print "Varimp (multinomial) no weights vs. weights: {0}, {1}".format(mul1_vi, mul2_vi)
+    print("Varimp (regresson)   no weights vs. weights: {0}, {1}".format(reg1_vi, reg2_vi))
+    print("Varimp (binomial)    no weights vs. weights: {0}, {1}".format(bin1_vi, bin2_vi))
+    print("Varimp (multinomial) no weights vs. weights: {0}, {1}".format(mul1_vi, mul2_vi))
 
     for rvi1, rvi2 in zip(reg1_vi, reg2_vi): assert rvi1 == rvi1, "Expected vi's (regression)  to be the same, but got {0}, and {1}".format(rvi1, rvi2)
     for bvi1, bvi2 in zip(bin1_vi, bin2_vi): assert bvi1 == bvi1, "Expected vi's (binomial)    to be the same, but got {0}, and {1}".format(bvi1, bvi2)
@@ -81,7 +84,7 @@ def weights_var_imp():
   h2o_uniform_weights.set_names(["weights"])
   h2o_data_uniform_weights = h2o_cars_data.cbind(h2o_uniform_weights)
 
-  print "\n\nChecking that using uniform weights is equivalent to no weights:"
+  print("\n\nChecking that using uniform weights is equivalent to no weights:")
   check_same(h2o_cars_data, h2o_data_uniform_weights, weight)
 
   # zero weights same as removed observations
@@ -91,7 +94,7 @@ def weights_var_imp():
   h2o_data_zero_weights = h2o_cars_data.cbind(h2o_zero_weights)
   h2o_data_zeros_removed = h2o_cars_data[h2o_zero_weights["weights"] == 1]
 
-  print "\n\nChecking that using some zero weights is equivalent to removing those observations:"
+  print("\n\nChecking that using some zero weights is equivalent to removing those observations:")
   check_same(h2o_data_zeros_removed, h2o_data_zero_weights, 1)
 
   # doubled weights same as doubled observations
@@ -101,11 +104,11 @@ def weights_var_imp():
   h2o_data_doubled_weights = h2o_cars_data.cbind(h2o_doubled_weights)
 
   doubled_data = h2o.as_list(h2o_cars_data, use_pandas=False)
-  doubled_data = zip(*doubled_data)
+  doubled_data = list(zip(*doubled_data))
   colnames = doubled_data.pop(0)
   for idx, w in enumerate(doubled_weights[0]):
     if w == 2: doubled_data.append(doubled_data[idx])
-  doubled_data = zip(*doubled_data)
+  doubled_data = list(zip(*doubled_data))
   h2o_data_doubled = h2o.H2OFrame(doubled_data)
   h2o_data_doubled.set_names(list(colnames))
 
@@ -114,7 +117,7 @@ def weights_var_imp():
   h2o_data_doubled_weights["economy_20mpg"] = h2o_data_doubled_weights["economy_20mpg"].asfactor()
   h2o_data_doubled_weights["cylinders"] = h2o_data_doubled_weights["cylinders"].asfactor()
 
-  print "\n\nChecking that doubling some weights is equivalent to doubling those observations:"
+  print("\n\nChecking that doubling some weights is equivalent to doubling those observations:")
   check_same(h2o_data_doubled, h2o_data_doubled_weights, 1)
 
 

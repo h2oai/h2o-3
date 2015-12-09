@@ -1,7 +1,10 @@
-import expr
+from __future__ import print_function
+from __future__ import absolute_import
 from opcode import *
-import frame
+from six import PY2
 import inspect
+from .expr import ExprNode, ASTId
+from . import h2o
 
 BYTECODE_INSTRS = {
   "BINARY_SUBSCR"      : "cols",  # column slice; could be row slice?
@@ -33,28 +36,21 @@ def is_load_global(instr):          return "LOAD_GLOBAL" == instr
 def is_return(instr):               return "RETURN_VALUE" == instr
 
 
-class ASTId:
-  def __init__(self, name=None):
-    if name is None:
-      raise ValueError("Attempted to make ASTId with no name.")
-    self.name=name
-
-  def __repr__(self):
-    return self.name
-
-
 def _bytecode_decompile_lambda(co):
   code = co.co_code
   n = len(code)
   i = 0
   ops = []
   while i < n:
-    c = code[i]
-    op = ord(c)
+    op = code[i]
+    if PY2:
+      op = ord(op)
     args = []
     i += 1
     if op >= HAVE_ARGUMENT:
-      oparg = ord(code[i]) + ord(code[i + 1]) * 256
+      oparg = code[i] + code[i+1]*256
+      if PY2:
+        oparg = ord(code[i]) + ord(code[i + 1]) * 256
       i += 2
       if op in hasconst:        args.append(co.co_consts[oparg]) # LOAD_CONST
       elif op in hasname:       args.append(co.co_names[oparg])  # LOAD_CONST
@@ -79,10 +75,10 @@ def _lambda_bytecode_to_ast(co,ops):
   else:
     raise ValueError("unimpl bytecode instr: " + instr)
   if s > 0:
-    print "Dumping disassembled code: "
+    print("Dumping disassembled code: ")
     for i in range(len(ops)):
-      if i == s: print i, " --> " + str(ops[i])
-      else:      print i, str(ops[i]).rjust(5)
+      if i == s: print(i, " --> " + str(ops[i]))
+      else:      print(i, str(ops[i]).rjust(5))
     raise ValueError("Unexpected bytecode disassembly @ " + str(s) )
   result += [body] + [ASTId("}")]
   return result
@@ -103,11 +99,11 @@ def _opcode_read_arg(start_index,ops,keys):
 def _binop_bc(op,idx,ops,keys):
   rite,idx= _opcode_read_arg(idx,ops,keys)
   left,idx= _opcode_read_arg(idx,ops,keys)
-  return [expr.ExprNode(op,left,rite),idx]
+  return [ExprNode(op,left,rite),idx]
 
 def _unop_bc(op,idx,ops,keys):
   arg,idx= _opcode_read_arg(idx,ops,keys)
-  return [expr.ExprNode(op,arg),idx]
+  return [ExprNode(op,arg),idx]
 
 def _func_bc(nargs,idx,ops,keys):
   named_args = {}
@@ -123,12 +119,18 @@ def _func_bc(nargs,idx,ops,keys):
       unnamed_args.insert(0, arg)
       nargs-=1
   op = ops[idx][1][0]
-  if op not in dir(frame.H2OFrame):
-    raise ValueError("Unimplemented: op not bound in H2OFrame")
+  frcls = h2o.H2OFrame
+  if op not in dir(frcls):
+    raise ValueError("Unimplemented: op <{}> not bound in H2OFrame".format(op))
   if is_attr(ops[idx][0]):
-    argspec = inspect.getargspec(getattr(frame.H2OFrame, op))
-    argnames = argspec.args[1:]
-    argdefs  = argspec.defaults or ()
+    if PY2:
+      argspec = inspect.getargspec(getattr(frcls, op))
+      argnames = argspec.args[1:]
+      argdefs  = argspec.defaults or ()
+    else:
+      argspec = inspect.signature(getattr(frcls,op))
+      argnames = list(argspec.parameters.keys())[1:]
+      argdefs = [i.default for i in list(argspec.parameters.values())[1:]]
     args = unnamed_args + list(argdefs[len(unnamed_args):])
     for a in named_args: args[argnames.index(a)] = named_args[a]
   if op=="ceil": op = "ceiling"
@@ -142,7 +144,7 @@ def _func_bc(nargs,idx,ops,keys):
   elif is_load_fast(ops[idx][0]):
     args.insert(0, _load_fast(ops[idx][1][0]))
     idx-=1
-  return [expr.ExprNode(op,*args),idx]
+  return [ExprNode(op,*args),idx]
 
 def _load_fast(x):
   return ASTId(x)

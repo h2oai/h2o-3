@@ -7,7 +7,7 @@ test.rdocasdataframe.golden <- function() {
 
     prosPath <- locate("smalldata/extdata/prostate.csv")
     prostate.hex <- h2o.uploadFile(path = prosPath)
-    as.data.frame.Frame(prostate.hex)
+    as.data.frame.H2OFrame(prostate.hex)
 
     
 }

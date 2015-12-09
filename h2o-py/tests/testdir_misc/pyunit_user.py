@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -12,32 +13,32 @@ def user():
     a = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     a.head()
 
-    print a[0].names  # Column header
-    print a[2,0]           # column 0, row 2 value
-    print a[2,"sepal_len"] # Column 0, row 2 value
+    print(a[0].names)  # Column header
+    print(a[2,0])           # column 0, row 2 value
+    print(a[2,"sepal_len"]) # Column 0, row 2 value
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant
     (a[0] + a[1]).show()  # Add 2 columns; broadcast parallel add
     sum(a).show()
-    print a["sepal_len"].mean()[0]
+    print(a["sepal_len"].mean()[0])
 
-    print
-    print "Rows 50 through 77 in the `sepal_len` column"
+    print()
+    print("Rows 50 through 77 in the `sepal_len` column")
     a[50:78, "sepal_len"].show()  # print out rows 50 thru 77 inclusive
-    print
+    print()
 
     a["sepal_len"].show()
 
-    print a[50:78, ["sepal_len", "sepal_wid"]].show()
+    print(a[50:78, ["sepal_len", "sepal_wid"]].show())
 
     a.show()
 
     colmeans = a.mean()
 
-    print "The column means: "
-    print colmeans
-    print
+    print("The column means: ")
+    print(colmeans)
+    print()
 
-    try:                   print a["Sepal_len"].dim  # Error, mispelt column name
+    try:                   print(a["Sepal_len"].dim)  # Error, mispelt column name
     except Exception: pass  # Expected error
 
     b = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))[0:4]
@@ -51,7 +52,7 @@ def user():
     c = None
     # Internal "ExprNode(c=a+b)" not dead!
 
-    print 1 + (a[0] + b[1]).mean()[0]
+    print(1 + (a[0] + b[1]).mean()[0])
 
     import collections
 
@@ -62,7 +63,7 @@ def user():
     c.head()
 
     c[0].show()
-    print c[1,0]
+    print(c[1,0])
     c[0:2,0].show()
 
     sliced = a[0:51,0]

@@ -1,3 +1,8 @@
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from past.builtins import basestring
 import sys, os
 sys.path.insert(1, "../../")
 import h2o
@@ -6,7 +11,7 @@ import random
 import re
 import subprocess
 from subprocess import STDOUT,PIPE
-from h2o import H2OFrame
+from h2o.utils.shared_utils import temp_ctr
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
@@ -18,7 +23,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.transforms.decomposition import H2OPCA
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
     """
@@ -97,7 +102,7 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
                                      "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
     elif isinstance(python_obj, dict):
         for r in range(rows):
-            for k in python_obj.keys():
+            for k in list(python_obj.keys()):
                 pval = python_obj[k][r] if hasattr(python_obj[k],'__iter__') else python_obj[k]
                 hval = h2o_frame[r,k]
                 assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
@@ -130,7 +135,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
 def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs):
-    print "Creating model in H2O"
+    print("Creating model in H2O")
     if algo == "gbm": model = H2OGradientBoostingEstimator(**kwargs)
     elif algo == "random_forest": model = H2ORandomForestEstimator(**kwargs)
     elif algo == "deeplearning": model = H2ODeepLearningEstimator(**kwargs)
@@ -138,42 +143,42 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
     elif algo == "naive_bayes": model = H2ONaiveBayesEstimator(**kwargs)
     elif algo == "kmeans": model = H2OKMeansEstimator(**kwargs)
     elif algo == "pca": model = H2OPCA(**kwargs)
-    else: raise(ValueError, "algo {0} is not supported".format(algo))
+    else: raise ValueError
     if algo == "kmeans" or algo == "pca": model.train(x=x, training_frame=train)
     else: model.train(x=x, y=y, training_frame=train)
-    print model
+    print(model)
 
     # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
     # TODO: clients should extract Java class name from header.
     regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
     pojoname = regex.sub("_",model._id)
 
-    print "Downloading Java prediction model code from H2O"
+    print("Downloading Java prediction model code from H2O")
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",pojoname))
     os.mkdir(tmpdir)
     h2o.download_pojo(model,path=tmpdir)
     h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
-    print "h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar)
+    print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
     java_file = os.path.join(tmpdir,pojoname+".java")
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
-    print "java code saved in {0}".format(java_file)
+    print("java code saved in {0}".format(java_file))
 
-    print "Compiling Java Pojo"
+    print("Compiling Java Pojo")
     javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
     subprocess.check_call(javac_cmd)
 
     if not compile_only:
-        print "Predicting in H2O"
+        print("Predicting in H2O")
         predictions = model.predict(test)
         predictions.summary()
         predictions.head()
         out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
         h2o.download_csv(predictions, out_h2o_csv)
         assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
-        print "H2O Predictions saved in {0}".format(out_h2o_csv)
+        print("H2O Predictions saved in {0}".format(out_h2o_csv))
 
-        print "Setting up for Java POJO"
+        print("Setting up for Java POJO")
         in_csv = os.path.join(tmpdir,"in.csv")
         h2o.download_csv(test[x], in_csv)
 
@@ -186,9 +191,9 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         f.truncate()
         f.close()
         assert os.path.exists(in_csv), "Expected file {0} to exist, but it does not.".format(in_csv)
-        print "Input CSV to PredictCsv saved in {0}".format(in_csv)
+        print("Input CSV to PredictCsv saved in {0}".format(in_csv))
 
-        print "Running PredictCsv Java Program"
+        print("Running PredictCsv Java Program")
         out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
@@ -196,12 +201,12 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
                     "--input", in_csv, "--output", out_pojo_csv]
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
-        print "Java output: {0}".format(o)
+        print("Java output: {0}".format(o))
         assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
         predictions2 = h2o.upload_file(path=out_pojo_csv)
-        print "Pojo predictions saved in {0}".format(out_pojo_csv)
+        print("Pojo predictions saved in {0}".format(out_pojo_csv))
 
-        print "Comparing predictions between H2O and Java POJO"
+        print("Comparing predictions between H2O and Java POJO")
         # Dimensions
         hr, hc = predictions.dim
         pr, pc = predictions2.dim
@@ -218,7 +223,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
                 pp = predictions2[r,0]
                 assert hp == pp, "Expected predictions to be the same for row {0}, but got {1} and {2}".format(r,hp, pp)
             else:
-                raise(ValueError, "equality type {0} is not supported".format(equality))
+                raise ValueError
 
 
 def javamunge(assembly, pojoname, test, compile_only=False):
@@ -227,52 +232,52 @@ def javamunge(assembly, pojoname, test, compile_only=False):
       assembly is an already fit H2OAssembly;
       The test set should be used to compare the output here and the output of the POJO.
     """
-    print "Downloading munging POJO code from H2O"
+    print("Downloading munging POJO code from H2O")
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results", pojoname))
     os.mkdir(tmpdir)
     assembly.to_pojo(pojoname, path=tmpdir, get_jar=True)
     h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
-    print "h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar)
+    print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
     java_file = os.path.join(tmpdir,pojoname+".java")
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
-    print "java code saved in {0}".format(java_file)
+    print("java code saved in {0}".format(java_file))
 
-    print "Compiling Java Pojo"
+    print("Compiling Java Pojo")
     javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
     subprocess.check_call(javac_cmd)
 
     if not compile_only:
 
-        print "Setting up for Java POJO"
+        print("Setting up for Java POJO")
         in_csv = os.path.join(tmpdir,"in.csv")
         h2o.download_csv(test, in_csv)
         assert os.path.exists(in_csv), "Expected file {0} to exist, but it does not.".format(in_csv)
-        print "Input CSV to mungedCSV saved in {0}".format(in_csv)
+        print("Input CSV to mungedCSV saved in {0}".format(in_csv))
 
-        print "Predicting in H2O"
+        print("Predicting in H2O")
         munged = assembly.fit(test)
         munged.head()
         out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
         h2o.download_csv(munged, out_h2o_csv)
         assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
-        print "Munged frame saved in {0}".format(out_h2o_csv)
+        print("Munged frame saved in {0}".format(out_h2o_csv))
 
-        print "Running PredictCsv Java Program"
+        print("Running PredictCsv Java Program")
         out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
                     "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.MungeCsv", "--header", "--munger", pojoname,
                     "--input", in_csv, "--output", out_pojo_csv]
-        print "JAVA COMMAND: " + " ".join(java_cmd)
+        print("JAVA COMMAND: " + " ".join(java_cmd))
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
-        print "Java output: {0}".format(o)
+        print("Java output: {0}".format(o))
         assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
         munged2 = h2o.upload_file(path=out_pojo_csv)
-        print "Pojo predictions saved in {0}".format(out_pojo_csv)
+        print("Pojo predictions saved in {0}".format(out_pojo_csv))
 
-        print "Comparing predictions between H2O and Java POJO"
+        print("Comparing predictions between H2O and Java POJO")
         # Dimensions
         hr, hc = munged.dim
         pr, pc = munged2.dim
@@ -333,7 +338,7 @@ def locate(path):
 def hadoop_namenode_is_accessible():
     url = "http://{0}:50070".format(hadoop_namenode())
     try:
-        urllib2.urlopen(urllib2.Request(url))
+        urllib.request.urlopen(urllib.request.Request(url))
         internal = True
     except:
         internal = False
@@ -353,7 +358,7 @@ def pyunit_exec(test_name):
     with open (test_name, "r") as t: pyunit = t.read()
     pyunit_c = compile(pyunit, '<string>', 'exec')
     p = {}
-    exec pyunit_c in p
+    exec(pyunit_c, p)
 
 def standalone_test(test):
     h2o.init(strict_version_check=False)
@@ -378,23 +383,23 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
     """
     grid_space = {}
     if algo in ["gbm", "rf"]:
-        if random.randint(0,1): grid_space['ntrees'] = random.sample(range(1,6),random.randint(2,3))
-        if random.randint(0,1): grid_space['max_depth'] = random.sample(range(1,6),random.randint(2,3))
-        if random.randint(0,1): grid_space['min_rows'] = random.sample(range(1,11),random.randint(2,3))
-        if random.randint(0,1): grid_space['nbins'] = random.sample(range(2,21),random.randint(2,3))
-        if random.randint(0,1): grid_space['nbins_cats'] = random.sample(range(2,1025),random.randint(2,3))
+        if random.randint(0,1): grid_space['ntrees'] = random.sample(list(range(1,6)),random.randint(2,3))
+        if random.randint(0,1): grid_space['max_depth'] = random.sample(list(range(1,6)),random.randint(2,3))
+        if random.randint(0,1): grid_space['min_rows'] = random.sample(list(range(1,11)),random.randint(2,3))
+        if random.randint(0,1): grid_space['nbins'] = random.sample(list(range(2,21)),random.randint(2,3))
+        if random.randint(0,1): grid_space['nbins_cats'] = random.sample(list(range(2,1025)),random.randint(2,3))
 
         if algo == "gbm":
             if random.randint(0,1): grid_space['learn_rate'] = [random.random() for r in range(random.randint(2,3))]
             grid_space['distribution'] = random.sample(['bernoulli','multinomial','gaussian','poisson','tweedie','gamma'], 1)
         if algo == "rf":
-            if random.randint(0,1): grid_space['mtries'] = random.sample(range(1,ncols+1),random.randint(2,3))
+            if random.randint(0,1): grid_space['mtries'] = random.sample(list(range(1,ncols+1)),random.randint(2,3))
             if random.randint(0,1): grid_space['sample_rate'] = [random.random() for r in range(random.randint(2,3))]
     elif algo == "km":
-        grid_space['k'] = random.sample(range(1,10),random.randint(2,3))
-        if random.randint(0,1): grid_space['max_iterations'] = random.sample(range(1,1000),random.randint(2,3))
+        grid_space['k'] = random.sample(list(range(1,10)),random.randint(2,3))
+        if random.randint(0,1): grid_space['max_iterations'] = random.sample(list(range(1,1000)),random.randint(2,3))
         if random.randint(0,1): grid_space['standardize'] = [True, False]
-        if random.randint(0,1): grid_space['seed'] = random.sample(range(1,1000),random.randint(2,3))
+        if random.randint(0,1): grid_space['seed'] = random.sample(list(range(1,1000)),random.randint(2,3))
         if random.randint(0,1): grid_space['init'] = random.sample(['Random','PlusPlus','Furthest'],random.randint(2,3))
     elif algo == "glm":
         if random.randint(0,1): grid_space['alpha'] = [random.random() for r in range(random.randint(2,3))]
@@ -412,20 +417,20 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
         return grid_space
     elif algo == "naiveBayes":
         grid_space['laplace'] = 0
-        if random.randint(0,1): grid_space['laplace'] = [round(random.random() + r, 6) for r in random.sample(range(0,11), random.randint(2,3))]
+        if random.randint(0,1): grid_space['laplace'] = [round(random.random() + r, 6) for r in random.sample(list(range(0,11)), random.randint(2,3))]
         if random.randint(0,1): grid_space['min_sdev'] = [round(random.random(),6) for r in range(random.randint(2,3))]
         if random.randint(0,1): grid_space['eps_sdev'] = [round(random.random(),6) for r in range(random.randint(2,3))]
     elif algo == "pca":
-        if random.randint(0,1): grid_space['max_iterations'] = random.sample(range(1,1000),random.randint(2,3))
+        if random.randint(0,1): grid_space['max_iterations'] = random.sample(list(range(1,1000)),random.randint(2,3))
         if random.randint(0,1): grid_space['transform'] = random.sample(["NONE","STANDARDIZE","NORMALIZE","DEMEAN","DESCALE"], random.randint(2,3))
-        grid_space['k'] = random.sample(range(1,min(ncols,nrows)),random.randint(2,3))
+        grid_space['k'] = random.sample(list(range(1,min(ncols,nrows))),random.randint(2,3))
     else:
-        raise(ValueError, "Algo {0} not supported".format(algo))
+        raise ValueError
     return grid_space
 
 # Validate given models' parameters against expected values
 def expect_model_param(models, attribute_name, expected_values):
-    print "param: {0}".format(attribute_name)
+    print("param: {0}".format(attribute_name))
     actual_values = list(set([m.params[attribute_name]['actual'] \
                                   if type(m.params[attribute_name]['actual']) != list
                                   else m.params[attribute_name]['actual'][0] for m in models.models]))
@@ -435,8 +440,8 @@ def expect_model_param(models, attribute_name, expected_values):
     # limit precision. Rounding happens in some models like RF
     actual_values = [x if isinstance(x,basestring) else round(float(x),5) for x in actual_values]
     expected_values = [x if isinstance(x,basestring) else round(float(x),5) for x in expected_values]
-    print "actual values: {0}".format(actual_values)
-    print "expected values: {0}".format(expected_values)
+    print("actual values: {0}".format(actual_values))
+    print("expected values: {0}".format(expected_values))
     actual_values_len = len(actual_values)
     expected_values_len = len(expected_values)
     assert actual_values_len == expected_values_len, "Expected values len: {0}. Actual values len: " \
@@ -452,5 +457,4 @@ def expect_model_param(models, attribute_name, expected_values):
             assert actual_values[i] == expected_values[i], "Expected: {}. Actual: {}"\
                                                             .format(expected_values[i], actual_values[i])
 
-def temp_ctr():  return H2OFrame.temp_ctr()
 def rest_ctr():  return h2o.H2OConnection.rest_ctr()

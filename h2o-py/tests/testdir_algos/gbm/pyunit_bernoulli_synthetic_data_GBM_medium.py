@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -69,7 +70,7 @@ def bernoulli_synthetic_data_gbm_medium():
                                            max_depth=max_depth,
                                            learn_rate=learn_rate,
                                            nbins=nbins)
-    gbm_h2o.train(x=range(1,train_h2o.ncol), y="C1", training_frame=train_h2o)
+    gbm_h2o.train(x=list(range(1,train_h2o.ncol)), y="C1", training_frame=train_h2o)
     gbm_perf = gbm_h2o.model_performance(test_h2o)
     auc_h2o = gbm_perf.auc()
 

@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -12,7 +14,7 @@ def cv_cars_dl():
 
   # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
   # 2:multinomial
-  problem = random.sample(range(3),1)[0]
+  problem = random.sample(list(range(3)),1)[0]
 
   # pick the predictors and the correct response column
   predictors = ["displacement","power","weight","acceleration","year"]
@@ -25,7 +27,7 @@ def cv_cars_dl():
   else              :
     response_col = "economy"
 
-  print "Response column: {0}".format(response_col)
+  print("Response column: {0}".format(response_col))
 
   ## cross-validation
   # 1. basic

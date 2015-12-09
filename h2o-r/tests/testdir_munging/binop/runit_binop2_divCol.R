@@ -39,7 +39,7 @@ test.slice.div <- function() {
   Log.info("5 / sliced: ")
   print(head(fiveDivSliced))
 
-  Log.info("Checking the variation of H2OFrame / H2OFrame")
+  Log.info("Checking the variation of H2OH2OFrame / H2OH2OFrame")
   hexDivHex <- fiveDivSliced / slicedDivFive
 
   Log.info("FiveDivSliced / slicedDivFive: ")

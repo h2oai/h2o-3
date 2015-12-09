@@ -21,7 +21,7 @@ def pubdev_1431():
         h2o.download_csv(predictions,csv)
         os.remove(csv)
     else:
-        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
+        raise EnvironmentError
 
 
 

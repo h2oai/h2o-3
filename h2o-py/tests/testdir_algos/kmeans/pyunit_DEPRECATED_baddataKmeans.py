@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o

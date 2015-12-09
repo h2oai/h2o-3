@@ -12,17 +12,17 @@ h2o.ensemble <- function(x, y, training_frame,
   starttime <- Sys.time()
   runtime <- list()
   
-  # Training_frame may be a key or an H2O Frame object
-  if ((!inherits(training_frame, "Frame") && !inherits(training_frame, "H2OFrame")))
+  # Training_frame may be a key or an H2O H2OFrame object
+  if ((!inherits(training_frame, "H2OFrame") && !inherits(training_frame, "H2OH2OFrame")))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2O Frame or id")
+               stop("argument \"training_frame\" must be a valid H2O H2OFrame or id")
              })
   if (!is.null(validation_frame)) {
     if (is.character(validation_frame))
       tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                error = function(err) {
-                 stop("argument \"validation_frame\" must be a valid H2O Frame or id")
+                 stop("argument \"validation_frame\" must be a valid H2O H2OFrame or id")
                })
   }
   N <- dim(training_frame)[1L]  #Number of observations in training set
@@ -53,7 +53,7 @@ h2o.ensemble <- function(x, y, training_frame,
     if (!is.numeric(training_frame[,y])) {
       stop("When `family` is gaussian, the repsonse column must be numeric.")
     }
-    # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OFrame cols
+    # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OH2OFrame cols
     ylim <- c(min(training_frame[,y]), max(training_frame[,y]))  #Used to enforce bounds  
   } else {
     if (!is.factor(training_frame[,y])) {

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -10,13 +11,13 @@ def deepLearningDemo():
   train_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
   train_data = train_data.drop('Site')
   train_data['Angaus'] = train_data['Angaus'].asfactor()
-  print train_data.describe()
+  print(train_data.describe())
   train_data.head()
 
   # Testing data
   test_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_eval.csv"))
   test_data['Angaus'] = test_data['Angaus'].asfactor()
-  print test_data.describe()
+  print(test_data.describe())
   test_data.head()
 
 

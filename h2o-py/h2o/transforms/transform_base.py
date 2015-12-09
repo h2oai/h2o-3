@@ -1,5 +1,8 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 from ..frame import H2OFrame
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from h2o import expr
 
 class TransformAttributeError(AttributeError):
@@ -35,9 +38,9 @@ class H2OTransformer(object):
     :return: A dict of parameters.
     """
     out = dict()
-    for key,value in self.parms.iteritems():
+    for key,value in self.parms.items():
       if deep and isinstance(value, H2OTransformer):
-        deep_items = value.get_params().items()
+        deep_items = list(value.get_params().items())
         out.update((key + '__' + k, val) for k, val in deep_items)
       out[key] = value
     return out
@@ -54,4 +57,4 @@ class H2OTransformer(object):
     return fr
 
   def to_rest(self, args):
-    return urllib.quote("{}__{}__{}__{}__{}".format(*args))
+    return urllib.parse.quote("{}__{}__{}__{}__{}".format(*args))

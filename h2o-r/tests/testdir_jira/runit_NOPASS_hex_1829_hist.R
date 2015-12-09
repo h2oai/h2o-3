@@ -50,4 +50,4 @@ test.hex_1829 <- function(){
   
 }
 
-doTest("HEX-1829 Test: Create histograms in R from H2OFrame objects", test.hex_1829)
+doTest("HEX-1829 Test: Create histograms in R from H2OH2OFrame objects", test.hex_1829)

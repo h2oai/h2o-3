@@ -1,3 +1,5 @@
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -13,7 +15,7 @@ def quantile():
     
 
     data = [[random.uniform(-10000,10000)] for c in range(1000)]
-    h2o_data = h2o.H2OFrame(zip(*data))
+    h2o_data = h2o.H2OFrame(list(zip(*data)))
     np_data = np.array(data)
 
     h2o_quants = h2o_data.quantile()

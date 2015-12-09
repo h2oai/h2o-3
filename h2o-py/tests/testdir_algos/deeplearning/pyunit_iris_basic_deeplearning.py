@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
@@ -10,7 +11,7 @@ def deeplearning_basic():
 
   iris_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
   hh = H2ODeepLearningEstimator(loss="CrossEntropy")
-  hh.train(x=range(3), y=4, training_frame=iris_hex)
+  hh.train(x=list(range(3)), y=4, training_frame=iris_hex)
   hh.show()
 
 if __name__ == "__main__":

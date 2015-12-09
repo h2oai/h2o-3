@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -20,7 +21,7 @@ def iris_nfolds():
 
 
   try:
-      H2ORandomForestEstimator(ntrees=50, nfolds=5).train(y=4, x=range(4), validation_frame=iris)
+      H2ORandomForestEstimator(ntrees=50, nfolds=5).train(y=4, x=list(range(4)), validation_frame=iris)
       assert True
   except EnvironmentError:
       assert False, "expected an error"

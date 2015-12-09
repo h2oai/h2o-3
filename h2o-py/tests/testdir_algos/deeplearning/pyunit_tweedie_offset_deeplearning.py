@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
@@ -19,7 +20,7 @@ def tweedie_offset():
                                 train_samples_per_iteration=-1,reproducible=True,activation="Tanh",single_node_mode=False,
                                 balance_classes=False,force_load_balance=False,seed=23123,tweedie_power=1.5,
                                 score_training_samples=0,score_validation_samples=0)
-  dl.train(x=range(3),y="Claims", training_frame=insurance)
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance)
   mean_residual_deviance = dl.mean_residual_deviance()
   assert abs(0.556 - mean_residual_deviance) < 1e-3, "Expected mean residual deviance to be 0.556, but got " \
                                                      "{0}".format(mean_residual_deviance)
@@ -32,7 +33,7 @@ def tweedie_offset():
                                                "{0}".format(predictions[0].max())
 
   # with offset
-  dl.train(x=range(3),y="Claims", training_frame=insurance,offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance,offset_column="offset")
   mean_residual_deviance = dl.mean_residual_deviance()
   assert abs(0.261-mean_residual_deviance) < 1e-2, "Expected mean residual deviance to be 0.261, but got " \
                                                    "{0}".format(mean_residual_deviance)

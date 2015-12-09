@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -43,7 +44,7 @@ def scale_pca_rf_pipe():
 
   random_search.fit(iris[1:],iris[0])
 
-  print random_search.best_estimator_
+  print(random_search.best_estimator_)
 
 
 

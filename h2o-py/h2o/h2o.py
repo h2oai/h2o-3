@@ -1,19 +1,23 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import warnings
 
 warnings.simplefilter('always', DeprecationWarning)
 import os
 import os.path
+from future.standard_library import install_aliases
+from past.builtins import basestring
+install_aliases()
 import re
-import urllib
-import urllib2
-import imp
-import tabulate
-from connection import H2OConnection
-from job import H2OJob
-from expr import ExprNode
-from frame import H2OFrame, _py_tmp_key, _is_list_of_lists, _gen_header
-from estimators.estimator_base import H2OEstimator
-from h2o_model_builder import supervised, unsupervised, _resolve_model
+from six import PY3
+from io import StringIO
+from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key, quote, urlopen
+from .connection import H2OConnection
+from .expr import ExprNode
+from .job import H2OJob
+from .frame import H2OFrame
+from .estimators.estimator_base import H2OEstimator
+from .h2o_model_builder import supervised, unsupervised, _resolve_model
 
 
 def lazy_import(path):
@@ -274,8 +278,8 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
                        "names to strings which are to be interpreted as missing values")
 
   #quote column names and column types also when not specified by user
-  if j["column_names"]: j["column_names"] = map(_quoted, j["column_names"])
-  j["column_types"] = map(_quoted, j["column_types"])
+  if j["column_names"]: j["column_names"] = list(map(_quoted, j["column_names"]))
+  j["column_types"] = list(map(_quoted, j["column_types"]))
   return j
 
 
@@ -304,17 +308,6 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   fr = H2OFrame()
   fr._parse_raw(setup)
   return fr
-
-
-def _quoted(key):
-  if key is None: return "\"\""
-  # mimic behavior in R to replace "%" and "&" characters, which break the call to /Parse, with "."
-  # key = key.replace("%", ".")
-  # key = key.replace("&", ".")
-  is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
-  key = key if is_quoted  else '"' + key + '"'
-  return key
-
 
 def assign(data,xid):
   if data.frame_id == xid: ValueError("Desination key must differ input frame")
@@ -456,7 +449,7 @@ def rapids(expr):
   -------
     The JSON response (as a python dictionary) of the Rapids execution
   """
-  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr), _rest_version=99)
+  return ExprNode.rapids(expr)
 
 
 def ls():
@@ -481,7 +474,7 @@ def frame(frame_id, exclude=""):
   -------
     Python dict containing the frame meta-information
   """
-  return H2OConnection.get_json("Frames/" + urllib.quote(frame_id + exclude))
+  return H2OConnection.get_json("Frames/" + quote(frame_id + exclude))
 
 
 def frames():
@@ -515,15 +508,15 @@ def download_pojo(model,path="", get_jar=True):
   pojoname = regex.sub("_",model.model_id)
 
   filepath = path + "/" + pojoname + ".java"
-  print "Filepath: {}".format(filepath)
-  if path == "": print java.text
+  print("Filepath: {}".format(filepath))
+  if path == "": print(java.text)
   else:
     with open(filepath, 'wb') as f:
-      f.write(java.text)
+      f.write(java.text.encode("utf-8"))
   if get_jar and path!="":
     url = H2OConnection.make_url("h2o-genmodel.jar")
     filename = path + "/" + "h2o-genmodel.jar"
-    response = urllib2.urlopen(url)
+    response = urlopen()(url)
     with open(filename, "wb") as f:
       f.write(response.read())
 
@@ -541,12 +534,14 @@ def download_csv(data, filename):
   filename : str
     A string indicating the name that the CSV file should be should be saved to.
   """
-  if not isinstance(data, H2OFrame): raise(ValueError, "`data` argument must be an H2OFrame, but got " + type(data))
-  url = "http://{}:{}/3/DownloadDataset?frame_id={}".format(H2OConnection.ip(),H2OConnection.port(),data.frame_id)
-  with open(filename, 'w') as f: f.write(urllib2.urlopen(url).read())
+  if not isinstance(data, H2OFrame):
+    raise ValueError
+  url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(data.frame_id))
+  with open(filename, 'wb') as f:
+    f.write(urlopen()(url).read())
 
 
-def download_all_logs(dirname=".",filename=None):
+def download_all_logs(dirname=".", filename=None):
   """Download H2O Log Files to Disk
 
   Parameters
@@ -561,24 +556,27 @@ def download_all_logs(dirname=".",filename=None):
     Path of logs written.
   """
   url = 'http://{}:{}/Logs/download'.format(H2OConnection.ip(),H2OConnection.port())
-  response = urllib2.urlopen(url)
+  opener = urlopen()
+  response = opener(url)
 
   if not os.path.exists(dirname): os.mkdir(dirname)
   if filename == None:
-    for h in response.headers.headers:
+    if PY3: headers = [h[1] for h in response.headers._headers]
+    else:   headers = response.headers.headers
+    for h in headers:
       if 'filename=' in h:
         filename = h.split("filename=")[1].strip()
         break
   path = os.path.join(dirname,filename)
+  response = opener(url).read()
 
-  print "Writing H2O logs to " + path
-  with open(path, 'w') as f: f.write(urllib2.urlopen(url).read())
+  print("Writing H2O logs to " + path)
+  with open(path, 'wb') as f: f.write(response)
   return path
 
 
 def save_model(model, path="", force=False):
-  """
-  Save an H2O Model Object to Disk.
+  """Save an H2O Model Object to Disk.
 
   Parameters
   ----------
@@ -592,8 +590,8 @@ def save_model(model, path="", force=False):
 
   :return: the path of the saved model (string)
   """
-  path=os.path.join(os.getcwd() if path=="" else path,model._id)
-  return H2OConnection.get_json("Models.bin/"+model._id,dir=path,force=force,_rest_version=99)["dir"]
+  path=os.path.join(os.getcwd() if path=="" else path,model.model_id)
+  return H2OConnection.get_json("Models.bin/"+model.model_id,dir=path,force=force,_rest_version=99)["dir"]
 
 
 def load_model(path):
@@ -626,13 +624,13 @@ def cluster_status():
   """
   cluster_json = H2OConnection.get_json("Cloud?skip_ticks=true")
 
-  print "Version: {0}".format(cluster_json['version'])
-  print "Cloud name: {0}".format(cluster_json['cloud_name'])
-  print "Cloud size: {0}".format(cluster_json['cloud_size'])
-  if cluster_json['locked']: print "Cloud is locked\n"
-  else: print "Accepting new members\n"
+  print("Version: {0}".format(cluster_json['version']))
+  print("Cloud name: {0}".format(cluster_json['cloud_name']))
+  print("Cloud size: {0}".format(cluster_json['cloud_size']))
+  if cluster_json['locked']: print("Cloud is locked\n")
+  else: print("Accepting new members\n")
   if cluster_json['nodes'] == None or len(cluster_json['nodes']) == 0:
-    print "No nodes found"
+    print("No nodes found")
     return
 
   status = []
@@ -642,8 +640,8 @@ def cluster_status():
                "mem_value_size", "free_mem", "pojo_mem", "swap_mem",
                "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
                "open_fds", "rpcs_active"]: status.append(k+": {0}".format(v))
-    print ', '.join(status)
-    print
+    print(', '.join(status))
+    print()
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
@@ -692,8 +690,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
 
 
 def export_file(frame,path,force=False):
-  """
-  Export a given H2OFrame to a path on the machine this python session is currently
+  """Export a given H2OFrame to a path on the machine this python session is currently
   connected to. To view the current session, call h2o.cluster_info().
 
   Parameters
@@ -706,10 +703,7 @@ def export_file(frame,path,force=False):
   force : bool
     Overwrite any preexisting file with the same path
 
-  :return: None
-
   """
-  #frame._eager()
   H2OJob(H2OConnection.get_json("Frames/"+frame.frame_id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
@@ -1745,33 +1739,6 @@ def network_test():
   res["table"].show()
 
 
-def _locate(path):
-  """Search for a relative path and turn it into an absolute path.
-  This is handy when hunting for data files to be passed into h2o and used by import file.
-  Note: This function is for unit testing purposes only.
-
-  Parameters
-  ----------
-  path : str
-    Path to search for
-
-  :return: Absolute path if it is found.  None otherwise.
-  """
-
-  tmp_dir = os.path.realpath(os.getcwd())
-  possible_result = os.path.join(tmp_dir, path)
-  while True:
-    if os.path.exists(possible_result):
-      return possible_result
-
-    next_tmp_dir = os.path.dirname(tmp_dir)
-    if next_tmp_dir == tmp_dir:
-      raise ValueError("File not found: " + path)
-
-    tmp_dir = next_tmp_dir
-    possible_result = os.path.join(tmp_dir, path)
-
-
 def as_list(data, use_pandas=True):
   """Convert an H2O data object into a python-specific object.
 
@@ -1825,106 +1792,13 @@ def list_timezones():
   return H2OFrame._expr(expr=ExprNode("listTimeZones"))._frame()
 
 
-class H2ODisplay:
-  """
-  Pretty printing for H2O Objects;
-  Handles both IPython and vanilla console display
-  """
-  THOUSANDS = "{:,}"
-  def __init__(self,table=None,header=None,table_header=None,**kwargs):
-    self.table_header=table_header
-    self.header=header
-    self.table=table
-    self.kwargs=kwargs
-    self.do_print=True
-
-    # one-shot display... never return an H2ODisplay object (or try not to)
-    # if holding onto a display object, then may have odd printing behavior
-    # the __repr__ and _repr_html_ methods will try to save you from many prints,
-    # but just be WARNED that your mileage may vary!
-    #
-    # In other words, it's better to just new one of these when you're ready to print out.
-
-    if self.table_header is not None:
-      print
-      print self.table_header + ":"
-      print
-    if H2ODisplay._in_ipy():
-      from IPython.display import display
-      display(self)
-      self.do_print=False
-    else:
-      self.pprint()
-      self.do_print=False
-
-  # for Ipython
-  def _repr_html_(self):
-    if self.do_print:
-      return H2ODisplay._html_table(self.table,self.header)
-
-  def pprint(self):
-    r = self.__repr__()
-    print r
-
-  # for python REPL console
-  def __repr__(self):
-    if self.do_print or not H2ODisplay._in_ipy():
-      if self.header is None: return tabulate.tabulate(self.table,**self.kwargs)
-      else:                   return tabulate.tabulate(self.table,headers=self.header,**self.kwargs)
-    self.do_print=True
-    return ""
-
-  @staticmethod
-  def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html
-    try:
-      __IPYTHON__
-      return True
-    except NameError:
-      return False
-
-  # some html table builder helper things
-  @staticmethod
-  def _html_table(rows, header=None):
-    table= "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
-    table_rows=[]
-    if header is not None:
-      table_rows.append(H2ODisplay._html_row(header, bold=True))
-    for row in rows:
-      table_rows.append(H2ODisplay._html_row(row))
-    return table.format("\n".join(table_rows))
-
-  @staticmethod
-  def _html_row(row, bold=False):
-    res = "<tr>{}</tr>"
-    entry = "<td><b>{}</b></td>"if bold else "<td>{}</td>"
-    #format full floating point numbers to 7 decimal places
-    entries = "\n".join([entry.format(str(r))
-                         if len(str(r)) < 10 or not _is_number(str(r))
-                         else entry.format("{0:.7f}".format(float(str(r)))) for r in row])
-    return res.format(entries)
-
-def _is_number(s):
-  try:
-    float(s)
-    return True
-  except ValueError:
-    return False
-
-def can_use_pandas():
-  try:
-    imp.find_module('pandas')
-    return True
-  except ImportError:
-    return False
-
-
 #  ALL DEPRECATED METHODS BELOW #
 
 # the @h2o_deprecated decorator
 def h2o_deprecated(newfun=None):
   def o(fun):
     def i(*args, **kwargs):
-      print '\n'
+      print('\n')
       if newfun is None: raise DeprecationWarning("{} is deprecated.".format(fun.__name__))
       warnings.warn("{} is deprecated. Use {}.".format(fun.__name__,newfun.__name__), category=DeprecationWarning, stacklevel=2)
       return newfun(*args, **kwargs)

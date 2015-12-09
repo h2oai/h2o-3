@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import str
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -10,7 +13,7 @@ import numpy as np
 def glrm_arrests_miss():
   missing_ratios = np.arange(0.1, 1, 0.1).tolist()
 
-  print "Importing USArrests.csv data and saving for validation..."
+  print("Importing USArrests.csv data and saving for validation...")
   arrests_full = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
   arrests_full.describe()
   totobs = arrests_full.nrow * arrests_full.ncol
@@ -19,12 +22,12 @@ def glrm_arrests_miss():
 
   for i in range(len(missing_ratios)):
     ratio = missing_ratios[i]
-    print "Importing USArrests.csv and inserting {0}% missing entries".format(100*ratio)
+    print("Importing USArrests.csv and inserting {0}% missing entries".format(100*ratio))
     arrests_miss = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
     arrests_miss = arrests_miss.insert_missing_values(fraction=ratio)
     arrests_miss.describe()
 
-    print "H2O GLRM with {0}% missing entries".format(100*ratio)
+    print("H2O GLRM with {0}% missing entries".format(100*ratio))
     arrests_glrm = H2OGeneralizedLowRankEstimator(k=4,
                                                   ignore_const_cols=False,
                                                   loss="Quadratic",
@@ -58,7 +61,7 @@ def glrm_arrests_miss():
     # h2o.remove(arrests_glrm._model_json['output']['loading_key']['name'])
 
   for i in range(len(missing_ratios)):
-    print "Missing ratio: {0}% --> Training error: {1}\tValidation error: {2}".format(missing_ratios[i]*100, train_err[i], valid_err[i])
+    print("Missing ratio: {0}% --> Training error: {1}\tValidation error: {2}".format(missing_ratios[i]*100, train_err[i], valid_err[i]))
 
 
 

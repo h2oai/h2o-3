@@ -11,7 +11,7 @@ check.merge_comparison <- function() {
   right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'),
     citrus = c(F, T, F, T, F, F))
 
-  Log.info("Change datasets into H2O Frames")
+  Log.info("Change datasets into H2O H2OFrames")
   l.hex <- as.h2o(left)
   r.hex <- as.h2o(right)
 

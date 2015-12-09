@@ -1,9 +1,17 @@
 """
 This module implements grid search class. All grid search things inherit from this class.
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 from .. import H2OConnection, H2OJob, H2OFrame, H2OEstimator
+from ..two_dim_table import H2OTwoDimTable
+from ..display import H2ODisplay
 import h2o
-from metrics import *
+from .metrics import *
 import itertools
 
 
@@ -18,12 +26,15 @@ class H2OGridSearch(object):
   
     Parameters
     ----------
-    model : H2O Estimator model
-      The type of model to be explored initalized with optional parameters that will be unchanged across explored models.
+    model : H2OEstimator
+      The type of model to be explored initialized with optional parameters that will be
+      unchanged across explored models.
     hyper_params: dict
-      A dictionary of string parameters (keys) and a list of values to be explored by grid search (values).
+      A dictionary of string parameters (keys) and a list of values to be explored by grid
+      search (values).
     grid_id : str, optional
-      The unique id assigned to the resulting grid object. If none is given, an id will automatically be generated.
+      The unique id assigned to the resulting grid object. If none is given, an id will
+      automatically be generated.
      
     Returns
     -------
@@ -41,7 +52,7 @@ class H2OGridSearch(object):
     """
     self._id = grid_id
     self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
-    self.hyper_params = hyper_params
+    self.hyper_params = dict(hyper_params)
     self._grid_json = None
     self.models = None # list of H2O Estimator instances
     self._parms = {} # internal, for object recycle #
@@ -131,9 +142,11 @@ class H2OGridSearch(object):
     #same api as estimator_base train
     algo_params = locals()
     parms = self._parms.copy()
-    parms.update({k:v for k, v in algo_params.iteritems() if k not in ["self","params", "algo_params", "parms"] })
-    parms["hyper_parameters"] = self.hyper_params #unique to grid search
-    parms.update({k:v for k,v in self.model._parms.items() if v}) #unique to grid search
+    parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
+    parms["hyper_parameters"] = self.hyper_params  # unique to grid search
+    parms.update({k:v for k,v in list(self.model._parms.items()) if v})  # unique to grid search
+    if '__class__' in parms:  # FIXME: hackt for PY3
+      del parms['__class__']
     y = algo_params["y"]
     tframe = algo_params["training_frame"]
     if tframe is None: raise ValueError("Missing training_frame")
@@ -181,7 +194,7 @@ class H2OGridSearch(object):
       return
 
     grid.poll()
-    if '_rest_version' in kwargs.keys(): grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
+    if '_rest_version' in list(kwargs.keys()): grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
     else:                                grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
@@ -308,8 +321,7 @@ class H2OGridSearch(object):
     return {model.model_id:model.catoffsets() for model in self.models}
 
   def model_performance(self, test_data=None, train=False, valid=False):
-    """
-    Generate model metrics for this model on test_data.
+    """Generate model metrics for this model on test_data.
 
     :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
     :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
@@ -319,16 +331,16 @@ class H2OGridSearch(object):
     return {model.model_id:model.model_performance(test_data, train, valid) for model in self.models}
 
   def score_history(self):
-    """
-    Retrieve Model Score History
-    :return: the score history (H2OTwoDimTable)
+    """Retrieve Model Score History
+
+    Returns
+    -------
+      Score history (H2OTwoDimTable)
     """
     return {model.model_id:model.score_history() for model in self.models}
 
   def summary(self, header=True):
-    """
-    Print a detailed summary of the explored models.
-    """
+    """Print a detailed summary of the explored models."""
     table = []
     for model in self.models:
       model_summary = model._model_json["output"]["model_summary"]
@@ -341,26 +353,26 @@ class H2OGridSearch(object):
     #  pandas.options.display.max_rows = 20
     #  print pandas.DataFrame(table,columns=self.col_header)
     #  return
-    print
+    print()
     if header:
-      print 'Grid Summary:'
-    print    
-    h2o.H2ODisplay(table, ['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
+      print('Grid Summary:')
+    print()    
+    H2ODisplay(table, ['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
 
 
   def show(self):
     """Print innards of grid, without regard to type"""
-    hyper_combos = itertools.product(*self.hyper_params.values())
+    hyper_combos = itertools.product(*list(self.hyper_params.values()))
     if not self.models:
       c_values = [[idx+1, list(val)] for idx, val in enumerate(hyper_combos)]
-      print h2o.H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'],
-                               table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values)
+      print(H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']'],
+                               table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values))
     else:
       if self.failed_raw_params:
-        print 'Failed Hyperparameters and Message:'
+        print('Failed Hyperparameters and Message:')
         for i in range(len(self.failed_raw_params)):
-          print [str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i]
-      print self.sort_by('mse')
+          print([str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i])
+      print(self.sort_by('mse'))
 
 
   def varimp(self, use_pandas=False):
@@ -435,9 +447,9 @@ class H2OGridSearch(object):
     :return: None
     """
     for i, model in enumerate(self.models):
-      print 'Model', i
+      print('Model', i)
       model.pprint_coef()
-      print
+      print()
 
   def coef(self):
     """
@@ -581,13 +593,13 @@ class H2OGridSearch(object):
     """
 
     if metric[-1] != ')': metric += '()'
-    c_values = [list(x) for x in zip(*sorted(eval('self.' + metric + '.items()'), key = lambda(k,v): v))]
+    c_values = [list(x) for x in zip(*sorted(eval('self.' + metric + '.items()'), key = lambda k_v: k_v[1]))]
     c_values.insert(1,[self.get_hyperparams(model_id, display=False) for model_id in c_values[0]])
     if not increasing:
       for col in c_values: col.reverse()
     if metric[-2] == '(': metric = metric[:-2]
-    return h2o.H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']', metric],
-                              table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=zip(*c_values))
+    return H2OTwoDimTable(col_header=['Model Id', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']', metric],
+                              table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=list(zip(*c_values)))
 
 
   def get_hyperparams(self, id, display=True):
@@ -610,7 +622,7 @@ class H2OGridSearch(object):
     res = [model.params[h]['actual'][0] if isinstance(model.params[h]['actual'],list)
            else model.params[h]['actual']
            for h in self.hyper_params]
-    if display: print 'Hyperparameters: [' + ', '.join(self.hyper_params.keys())+']'
+    if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']')
     return res
 
 

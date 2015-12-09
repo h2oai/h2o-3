@@ -1,3 +1,7 @@
+from __future__ import division
+from builtins import zip
+from builtins import range
+from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -40,8 +44,8 @@ def convergeKmeans():
   # Log.info("Check cluster centers have converged")
   all_fit2 = h2o.kmeans(x=ozone_h2o, k=ncent, user_points=h2o.H2OFrame(all_fit.centers()),
                         max_iterations=1)
-  avg_change = sum([sum([pow((e1 - e2),2) for e1, e2 in zip(c1,c2)]) for c1, c2 in zip(all_fit.centers(),
-                                                                                       all_fit2.centers())]) / ncent
+  avg_change = old_div(sum([sum([pow((e1 - e2),2) for e1, e2 in zip(c1,c2)]) for c1, c2 in zip(all_fit.centers(),
+                                                                                       all_fit2.centers())]), ncent)
   assert avg_change < 1e-6 or all_fit._model_json['output']['iterations'] == miters
 
 

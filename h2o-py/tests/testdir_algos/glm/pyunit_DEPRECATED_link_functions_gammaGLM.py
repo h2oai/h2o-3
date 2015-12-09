@@ -1,3 +1,6 @@
+from __future__ import division
+from __future__ import print_function
+from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -33,8 +36,8 @@ def link_functions_gamma():
 						 family=sm.families.Gamma(sm.families.links.inverse_power)).fit()
 
 	print("Compare model deviances for link function inverse")
-	h2o_deviance_in = h2o_model_in.residual_deviance() / h2o_model_in.null_deviance()
-	sm_deviance_in = sm_model_in.deviance / sm_model_in.null_deviance
+	h2o_deviance_in = old_div(h2o_model_in.residual_deviance(), h2o_model_in.null_deviance())
+	sm_deviance_in = old_div(sm_model_in.deviance, sm_model_in.null_deviance)
 	assert h2o_deviance_in - sm_deviance_in < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 	print("Create models with canonical link: LOG")
@@ -43,8 +46,8 @@ def link_functions_gamma():
 						  family=sm.families.Gamma(sm.families.links.log)).fit()
 
 	print("Compare model deviances for link function log")
-	h2o_deviance_log = h2o_model_log.residual_deviance() / h2o_model_log.null_deviance()
-	sm_deviance_log = sm_model_log.deviance / sm_model_log.null_deviance
+	h2o_deviance_log = old_div(h2o_model_log.residual_deviance(), h2o_model_log.null_deviance())
+	sm_deviance_log = old_div(sm_model_log.deviance, sm_model_log.null_deviance)
 	assert h2o_deviance_log - sm_deviance_log < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 

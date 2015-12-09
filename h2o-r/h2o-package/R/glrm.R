@@ -4,7 +4,7 @@
 #' Generalized low rank decomposition of a H2O dataset.
 #'
 #'
-#' @param training_frame An H2O Frame object containing the
+#' @param training_frame An H2O H2OFrame object containing the
 #'        variables in the model.
 #' @param cols (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -12,7 +12,7 @@
 #'        between 1 and the number of columns in the training frame, inclusive.
 #' @param model_id (Optional) The unique id assigned to the resulting model.
 #'        If none is given, an id will automatically be generated.
-#' @param validation_frame An H2O Frame object containing the
+#' @param validation_frame An H2O H2OFrame object containing the
 #'        variables in the model.
 #' @param loading_name (Optional) The unique name assigned to the loading matrix X
 #'        in the XY decomposition. Automatically generated if none is provided.
@@ -60,15 +60,15 @@
 #'        standard normal distribution, "PlusPlus": for initialization using the clusters
 #'        from k-means++ initialization, or "SVD": for initialization using the
 #'        first k right singular vectors. Additionally, the user may specify the
-#'        initial Y as a matrix, data.frame, Frame, or list of vectors.
+#'        initial Y as a matrix, data.frame, H2OFrame, or list of vectors.
 #' @param svd_method (Optional) A character string that indicates how SVD should be 
 #'        calculated during initialization. Possible values are "GramSVD": distributed 
 #'        computation of the Gram matrix followed by a local SVD using the JAMA package, 
 #'        "Power": computation of the SVD using the power iteration method, "Randomized": 
 #'        (default) approximate SVD by projecting onto a random subspace (see references).
-#' @param user_x (Optional) A matrix, data.frame, Frame, or list of vectors specifying the 
+#' @param user_x (Optional) A matrix, data.frame, H2OFrame, or list of vectors specifying the
 #'        initial X. Only used when init = "User". The number of columns must equal k.
-#' @param user_y (Optional) A matrix, data.frame, Frame, or list of vectors specifying the 
+#' @param user_y (Optional) A matrix, data.frame, H2OFrame, or list of vectors specifying the
 #'        initial Y. Only used when init = "User". The number of rows must equal k.
 #' @param expand_user_y A logical value indicating whether the categorical columns of user_y
 #'        should be one-hot expanded. Only used when init = "User" and user_y is specified.
@@ -122,11 +122,11 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
   
-  # Training_frame may be a key or an H2O Frame object
-  if (!is.Frame(training_frame))
+  # Training_frame may be a key or an H2O H2OFrame object
+  if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid Frame or key")
+               stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
 
   # Gather user input
@@ -182,8 +182,8 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     parms$seed <- seed
   
   # Check if user_y is an acceptable set of user-specified starting points
-  if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.Frame(user_y) ) {
-    # Convert user-specified starting points to Frame
+  if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.H2OFrame(user_y) ) {
+    # Convert user-specified starting points to H2OFrame
     if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) ) {
       if( !is.data.frame(user_y) && !is.matrix(user_y) ) user_y <- t(as.data.frame(user_y))
       user_y <- as.h2o(user_y)
@@ -203,8 +203,8 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     stop("Argument user_y must either be null or a valid user-defined starting Y matrix.")
   
   # Check if user_x is an acceptable set of user-specified starting points
-  if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) || is.Frame(user_x) ) {
-    # Convert user-specified starting points to Frame
+  if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) || is.H2OFrame(user_x) ) {
+    # Convert user-specified starting points to H2OFrame
     if( is.data.frame(user_x) || is.matrix(user_x) || is.list(user_x) ) {
       if( !is.data.frame(user_x) && !is.matrix(user_x) ) user_x <- t(as.data.frame(user_x))
       user_x <- as.h2o(user_x)
@@ -229,12 +229,12 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
 #' 
 #' @param object An \linkS4class{H2ODimReductionModel} object that represents the
 #'        model to be used for reconstruction.
-#' @param data An H2O Frame object representing the training data for the H2O GLRM model.
+#' @param data An H2O H2OFrame object representing the training data for the H2O GLRM model.
 #'        Used to set the domain of each column in the reconstructed frame.
 #' @param reverse_transform (Optional) A logical value indicating whether to reverse the
 #'        transformation from model-building by re-scaling columns and adding back the 
 #'        offset to each column of the reconstructed frame.
-#' @return Returns an H2O Frame object containing the approximate reconstruction of the
+#' @return Returns an H2O H2OFrame object containing the approximate reconstruction of the
 #'         training data;
 #' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
 #' @examples
@@ -263,11 +263,11 @@ h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
 #'
 #' @param object An \linkS4class{H2ODimReductionModel} object that represents the
 #'        model containing archetypes to be projected.
-#' @param data An H2O Frame object representing the training data for the H2O GLRM model.
+#' @param data An H2O H2OFrame object representing the training data for the H2O GLRM model.
 #' @param reverse_transform (Optional) A logical value indicating whether to reverse the
 #'        transformation from model-building by re-scaling columns and adding back the 
 #'        offset to each column of the projected archetypes.
-#' @return Returns an H2O Frame object containing the projection of the archetypes
+#' @return Returns an H2O H2OFrame object containing the projection of the archetypes
 #'         down into the original feature space, where each row is one archetype.
 #' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
 #' @examples

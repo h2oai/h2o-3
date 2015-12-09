@@ -15,7 +15,7 @@ test.pubdev.2386 <- function(conn){
   try(expr = iris.hex <- h2o.merge(x = iris.hex, y = ci) , silent = T)
   
   # Check to see if iris.hex still exists in the DKV
-  if(!all(dim(iris.hex) == c(150,5))) stop("Frame is no longer there!")
+  if(!all(dim(iris.hex) == c(150,5))) stop("H2OFrame is no longer there!")
   
 }
 doTest("Test for Missing RTMPs PUBDEV-2386", test.pubdev.2386)

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -13,7 +14,7 @@ def ozoneKM():
   train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
 
   # See that the data is ready
-  print train.describe()
+  print(train.describe())
 
   # Run KMeans
   my_km = h2o.kmeans(x=train,

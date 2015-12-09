@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -26,7 +28,7 @@ def baddataKmeans():
 
 
   km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x=range(cols), training_frame=frame)
+  km_model.train(x=list(range(cols)), training_frame=frame)
 
   centers = km_model.centers()
   assert len(centers[0]) == 5, "expected 5 centers"
@@ -39,7 +41,7 @@ def baddataKmeans():
   frame = h2o.H2OFrame(data)
 
   km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x = range(cols), training_frame=frame)
+  km_model.train(x = list(range(cols)), training_frame=frame)
 
   centers = km_model.centers()
   assert len(centers[0]) == 5, "expected 5 centers"
@@ -53,7 +55,7 @@ def baddataKmeans():
   frame = h2o.H2OFrame(data)
 
   km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x=range(cols), training_frame=frame)
+  km_model.train(x=list(range(cols)), training_frame=frame)
 
   centers = km_model.centers()
   assert len(centers[0]) == 5, "expected 5 centers"
@@ -65,7 +67,7 @@ def baddataKmeans():
   frame = h2o.H2OFrame(data)
 
   try:
-    H2OKMeansEstimator(k=5).train(x=range(cols), training_frame=frame)
+    H2OKMeansEstimator(k=5).train(x=list(range(cols)), training_frame=frame)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
@@ -75,7 +77,7 @@ def baddataKmeans():
   frame = h2o.H2OFrame(data)
 
   km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x=range(cols), training_frame=frame)
+  km_model.train(x=list(range(cols)), training_frame=frame)
   centers = km_model.centers()
   assert len(centers[0]) == 5, "expected 5 centers"
   assert len(centers) == 10, "expected center to be 10 "+str(len(centers))
@@ -84,7 +86,7 @@ def baddataKmeans():
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
   km_model = H2OKMeansEstimator(k=5)
-  km_model.train(x=range(iris.ncol), training_frame=iris)
+  km_model.train(x=list(range(iris.ncol)), training_frame=iris)
   centers = km_model.centers()
   assert len(centers[0]) == 5, "expected 5 centers"
   assert len(centers) == 5, "expected center to be 5 "+str(len(centers))

@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -16,7 +17,7 @@ def weights_gamma():
                                     max_depth=1,
                                     min_rows=1,
                                     learn_rate=1)
-  hh.train(x=range(3), y="medskad", training_frame=htable, weights_column="antskad")
+  hh.train(x=list(range(3)), y="medskad", training_frame=htable, weights_column="antskad")
   ph = hh.predict(htable)
 
   assert abs(8.804447-hh._model_json['output']['init_f']) < 1e-6*8.804447

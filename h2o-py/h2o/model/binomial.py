@@ -1,4 +1,6 @@
-from model_base import ModelBase
+from __future__ import absolute_import
+from builtins import zip
+from .model_base import ModelBase
 
 
 class H2OBinomialModel(ModelBase):
@@ -38,9 +40,9 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in tm.iteritems():
+    for k,v in tm.items():
       m[k] = None if v is None else v.metric("f1", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    return list(m.values())[0] if len(m) == 1 else m
 
   def F2(self, thresholds=None, train=False, valid=False, xval=False):
     """Get the F2 for a set of thresholds.
@@ -56,8 +58,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("f2", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("f2", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def F0point5(self, thresholds=None, train=False, valid=False, xval=False):
     """Get the F0.5 for a set of thresholds.
@@ -73,8 +75,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("f0point5", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("f0point5", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def accuracy(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -91,8 +93,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("accuracy", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("accuracy", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def error(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -109,8 +111,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else [[acc[0],1-acc[1]] for acc in v.metric("accuracy", thresholds=thresholds)]
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else [[acc[0],1-acc[1]] for acc in v.metric("accuracy", thresholds=thresholds)]
+    return list(m.values())[0] if len(m) == 1 else m
 
   def precision(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -127,8 +129,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("precision", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("precision", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def tpr(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -145,8 +147,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def tnr(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -163,8 +165,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tnr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("tnr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def fnr(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -181,8 +183,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("fnr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("fnr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def fpr(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -199,8 +201,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("fpr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("fpr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def recall(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -217,8 +219,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def sensitivity(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -236,8 +238,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def fallout(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -254,8 +256,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("fpr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("fpr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def missrate(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -272,8 +274,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("fnr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("fnr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def specificity(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -290,8 +292,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("tnr", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("tnr", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def mcc(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -308,8 +310,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric("absolute_MCC", thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("absolute_MCC", thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def max_per_class_error(self, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -326,8 +328,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else [[mpca[0],1-mpca[1]] for mpca in v.metric("min_per_class_accuracy", thresholds=thresholds)]
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else [[mpca[0],1-mpca[1]] for mpca in v.metric("min_per_class_accuracy", thresholds=thresholds)]
+    return list(m.values())[0] if len(m) == 1 else m
 
   def metric(self, metric, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -343,8 +345,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.metric(metric,thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric(metric,thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
     """
@@ -378,10 +380,10 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()):
+    for k,v in zip(list(tm.keys()),list(tm.values())):
       if v is not None:
         m[k] = (v.fprs, v.tprs)
-    return m.values()[0] if len(m) == 1 else m
+    return list(m.values())[0] if len(m) == 1 else m
 
   def gains_lift(self, train=False, valid=False, xval=False):
     """
@@ -397,8 +399,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.gains_lift()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.gains_lift()
+    return list(m.values())[0] if len(m) == 1 else m
 
 
   def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False, xval=False):
@@ -417,8 +419,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.confusion_matrix(metrics=metrics, thresholds=thresholds)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.confusion_matrix(metrics=metrics, thresholds=thresholds)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def find_threshold_by_max_metric(self,metric,train=False, valid=False, xval=False):
     """
@@ -433,8 +435,8 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.find_threshold_by_max_metric(metric)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.find_threshold_by_max_metric(metric)
+    return list(m.values())[0] if len(m) == 1 else m
 
   def find_idx_by_threshold(self,threshold,train=False, valid=False, xval=False):
     """
@@ -450,5 +452,5 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.find_idx_by_threshold(threshold)
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.find_idx_by_threshold(threshold)
+    return list(m.values())[0] if len(m) == 1 else m

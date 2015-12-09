@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -16,12 +18,12 @@ def imbalanced():
 
 
   imbalanced = H2ORandomForestEstimator(ntrees=10, balance_classes=False, nfolds=3)
-  imbalanced.train(x=range(54), y=54, training_frame=covtype)
+  imbalanced.train(x=list(range(54)), y=54, training_frame=covtype)
   imbalanced_perf = imbalanced.model_performance(covtype)
   imbalanced_perf.show()
 
   balanced = H2ORandomForestEstimator(ntrees=10, balance_classes=True, seed=123, nfolds=3)
-  balanced.train(x=range(54), y=54, training_frame=covtype)
+  balanced.train(x=list(range(54)), y=54, training_frame=covtype)
   balanced_perf = balanced.model_performance(covtype)
   balanced_perf.show()
 

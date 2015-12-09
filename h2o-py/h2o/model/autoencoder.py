@@ -1,7 +1,5 @@
-from model_base import H2OConnection
 import h2o
-from model_base import ModelBase
-
+from .model_base import ModelBase
 
 class H2OAutoEncoderModel(ModelBase):
   """Class for AutoEncoder models."""
@@ -22,5 +20,5 @@ class H2OAutoEncoderModel(ModelBase):
       Return the reconstruction error.
     """
     if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
-    j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, reconstruction_error=True, reconstruction_error_per_feature=per_feature)
+    j = h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, reconstruction_error=True, reconstruction_error_per_feature=per_feature)
     return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])

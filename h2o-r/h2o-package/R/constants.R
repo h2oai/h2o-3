@@ -38,8 +38,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "numeric",   scalar = FALSE, row.names = "double[]",     stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "float",        stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = FALSE, row.names = "float[]",      stringsAsFactors = FALSE),
-                   data.frame(type = "Frame",     scalar = TRUE,  row.names = "Key",          stringsAsFactors = FALSE),
-                   data.frame(type = "Frame",     scalar = TRUE,  row.names = "Key<Frame>",   stringsAsFactors = FALSE),
+                   data.frame(type = "H2OFrame",  scalar = TRUE,  row.names = "Key",          stringsAsFactors = FALSE),
+                   data.frame(type = "H2OFrame",  scalar = TRUE,  row.names = "Key<Frame>",   stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "Key<Key>",     stringsAsFactors = FALSE),
                    data.frame(type = "H2OModel",  scalar = TRUE,  row.names = "Key<Model>",   stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "int",          stringsAsFactors = FALSE),
@@ -74,7 +74,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__COL_SUMMARY <- function(key, col) URLencode(paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/"))
 .h2o.__COL_DOMAIN  <- function(key, col) URLencode(paste(.h2o.__FRAMES, key, "columns", col, "domain", sep = "/"))
 
-#' Frame Manipulation
+#' H2OFrame Manipulation
 .h2o.__CREATE_FRAME   <- "CreateFrame"
 
 .h2o.__GLMMakeModel <- "MakeGLMModel"

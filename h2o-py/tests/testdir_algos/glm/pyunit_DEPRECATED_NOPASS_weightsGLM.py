@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -36,8 +39,8 @@ def weights_check():
     h2o_data_zero_weights = h2o_data.cbind(h2o_zero_weights)
     h2o_data_zeros_removed = h2o_data[h2o_zero_weights["weights"] == 1]
 
-    print "Checking that using some zero weights is equivalent to removing those observations:"
-    print
+    print("Checking that using some zero weights is equivalent to removing those observations:")
+    print()
     check_same(h2o_data_zeros_removed, h2o_data_zero_weights)
 
     # doubled weights same as doubled observations
@@ -51,8 +54,8 @@ def weights_check():
         if w[0] == 2: doubled_data.append(d)
     h2o_data_doubled = h2o.H2OFrame(doubled_data)
 
-    print "Checking that doubling some weights is equivalent to doubling those observations:"
-    print
+    print("Checking that doubling some weights is equivalent to doubling those observations:")
+    print()
     check_same(h2o_data_doubled, h2o_data_doubled_weights)
 
     # TODO: random weights

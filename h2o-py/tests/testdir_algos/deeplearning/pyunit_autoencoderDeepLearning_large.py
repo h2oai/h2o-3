@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -39,7 +40,7 @@ def deeplearning_autoencoder():
                                      reproducible=True,
                                      seed=1234)
 
-  ae_model.train(range(resp), training_frame=train_supervised)
+  ae_model.train(list(range(resp)), training_frame=train_supervised)
 
   # conver train_supervised with autoencoder to lower-dimensional space
   train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp], 0)
@@ -50,7 +51,7 @@ def deeplearning_autoencoder():
 
   # Train DRF on extracted feature space
   drf_model = H2ORandomForestEstimator(ntrees=10, min_rows=10, seed=1234)
-  drf_model.train(x=range(20), y=train_supervised_features.ncol-1, training_frame=train_supervised_features)
+  drf_model.train(x=list(range(20)), y=train_supervised_features.ncol-1, training_frame=train_supervised_features)
 
   # Test the DRF model on the test set (processed through deep features)
   test_features = ae_model.deepfeatures(test_hex[0:resp], 0)

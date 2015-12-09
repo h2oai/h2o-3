@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -61,9 +64,9 @@ def weights_check():
     mul1_mse = gbm1_multinomial.mse()
     mul2_mse = gbm2_multinomial.mse()
 
-    print "MSE (regresson)   no weights vs. weights: {0}, {1}".format(reg1_mse, reg2_mse)
-    print "AUC (binomial)    no weights vs. weights: {0}, {1}".format(bin1_auc, bin2_auc)
-    print "MSE (multinomial) no weights vs. weights: {0}, {1}".format(mul1_mse, mul2_mse)
+    print("MSE (regresson)   no weights vs. weights: {0}, {1}".format(reg1_mse, reg2_mse))
+    print("AUC (binomial)    no weights vs. weights: {0}, {1}".format(bin1_auc, bin2_auc))
+    print("MSE (multinomial) no weights vs. weights: {0}, {1}".format(mul1_mse, mul2_mse))
 
     assert abs(reg1_mse - reg2_mse) < 1e-6 * reg1_mse, "Expected mse's to be the same, but got {0}, and {1}".format(reg1_mse, reg2_mse)
     assert abs(bin1_auc - bin2_auc) < 3e-4 * bin1_auc, "Expected auc's to be the same, but got {0}, and {1}".format(bin1_auc, bin2_auc)
@@ -75,39 +78,39 @@ def weights_check():
 
   # uniform weights same as no weights
   random.seed(2222)
-  weight = random.randint(1,10)
+  weight = 3  # random.randint(1,10)   # PY3 hackt
   uniform_weights = [[weight for r in range(406)]]
   h2o_uniform_weights = h2o.H2OFrame(uniform_weights)
   h2o_uniform_weights.set_names(["weights"])
   h2o_data_uniform_weights = h2o_cars_data.cbind(h2o_uniform_weights)
 
-  print "Checking that using uniform weights is equivalent to no weights:"
-  print
+  print("Checking that using uniform weights is equivalent to no weights:")
+  print()
   check_same(h2o_cars_data, h2o_data_uniform_weights, weight)
 
   # zero weights same as removed observations
-  zero_weights = [[0 if random.randint(0,1) else 1 for r in range(406)]]
+  zero_weights = [[1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0]] # [[0 if random.randint(0,1) else 1 for r in range(406)]]
   h2o_zero_weights = h2o.H2OFrame(zero_weights)
   h2o_zero_weights.set_names(["weights"])
   h2o_data_zero_weights = h2o_cars_data.cbind(h2o_zero_weights)
   h2o_data_zeros_removed = h2o_cars_data[h2o_zero_weights["weights"] == 1]
 
-  print "Checking that using some zero weights is equivalent to removing those observations:"
-  print
+  print("Checking that using some zero weights is equivalent to removing those observations:")
+  print()
   check_same(h2o_data_zeros_removed, h2o_data_zero_weights, 1)
 
   # doubled weights same as doubled observations
-  doubled_weights = [[1 if random.randint(0,1) else 2 for r in range(406)]]
+  doubled_weights = [[1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1, 1, 2, 2, 1, 2, 2, 1, 2, 1, 1, 2, 2, 2, 1, 1, 2, 1, 2, 2, 2, 1, 1, 2, 1, 2, 2, 1, 1, 1, 2, 2, 2, 1, 2, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 1, 2, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 2, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 2, 1, 1, 2, 2, 2, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 1, 2, 2, 2, 1, 1, 2, 1, 2, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1, 2, 1, 2, 1, 1, 2, 1, 1, 1, 2, 1, 2, 2, 2, 2, 1, 2, 1, 1, 1, 2, 1, 2, 2, 2, 2, 1, 1, 1, 2, 1, 1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 1, 2, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 1, 2, 1, 2, 2, 2, 2, 1, 2, 1, 2, 1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 1, 2, 1]] # [[1 if random.randint(0,1) else 2 for r in range(406)]]
   h2o_doubled_weights = h2o.H2OFrame(doubled_weights)
   h2o_doubled_weights.set_names(["weights"])
   h2o_data_doubled_weights = h2o_cars_data.cbind(h2o_doubled_weights)
 
   doubled_data = h2o.as_list(h2o_cars_data, use_pandas=False)
-  doubled_data = zip(*doubled_data)
+  doubled_data = list(zip(*doubled_data))
   colnames = doubled_data.pop(0)
   for idx, w in enumerate(doubled_weights[0]):
     if w == 2: doubled_data.append(doubled_data[idx])
-  doubled_data = zip(*doubled_data)
+  doubled_data = list(zip(*doubled_data))
   h2o_data_doubled = h2o.H2OFrame(doubled_data)
   h2o_data_doubled.set_names(list(colnames))
 
@@ -116,8 +119,8 @@ def weights_check():
   h2o_data_doubled_weights["economy_20mpg"] = h2o_data_doubled_weights["economy_20mpg"].asfactor()
   h2o_data_doubled_weights["cylinders"] = h2o_data_doubled_weights["cylinders"].asfactor()
 
-  print "Checking that doubling some weights is equivalent to doubling those observations:"
-  print
+  print("Checking that doubling some weights is equivalent to doubling those observations:")
+  print()
   check_same(h2o_data_doubled, h2o_data_doubled_weights, 1)
 
   # TODO: random weights

@@ -1,8 +1,13 @@
-import h2o, frame, astfun
-import math, collections, tabulate, urllib, gc, sys, copy
+from __future__ import absolute_import
+import math, collections, tabulate, gc, sys, copy
+from six import iteritems, PY3, itervalues
+from past.builtins import long, basestring
+from future.backports.urllib.request import quote
+from .connection import H2OConnection
+from .utils.shared_utils import _is_fr, _py_tmp_key
 
 
-class ExprNode:
+class ExprNode(object):
   """Composable Expressions: This module contains code for the lazy expression DAG.
 
   Execution Overview
@@ -55,7 +60,7 @@ class ExprNode:
   def __init__(self, op="", *args):
     assert isinstance(op,str), op
     self._op        = op          # Base opcode string
-    self._children  = tuple(a._ex if isinstance(a, frame.H2OFrame) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
+    self._children  = tuple(a._ex if _is_fr(a) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
     self._cache     = H2OCache()  # ncols, nrows, names, types
 
   def _eager_frame(self):  # returns H2OFrame instance
@@ -73,9 +78,9 @@ class ExprNode:
     assert self._cache.is_scalar()
     return self._cache._data
 
-  def _eval_driver(self,top):
+  def _eval_driver(self, top):
     exec_str = self._do_it(top)
-    res = h2o.rapids(exec_str)
+    res = ExprNode.rapids(exec_str)
     if 'scalar' in res:
       if isinstance(res['scalar'], list): self._cache._data = [float(x) for x in res['scalar']]
       else:                               self._cache._data = None if res['scalar'] is None else float(res['scalar'])
@@ -101,25 +106,26 @@ class ExprNode:
     exec_str = "({} {})".format(self._op," ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
     gc_ref_cnt = len(gc.get_referrers(self))
     if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
-      self._cache._id = frame._py_tmp_key()
+      self._cache._id = _py_tmp_key()
       exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
     return exec_str
 
   @staticmethod
   def _arg_to_expr(arg):
-    if   isinstance(arg, ExprNode):               return arg._do_it(False)
-    elif isinstance(arg, astfun.ASTId):           return str(arg)
-    elif isinstance(arg, bool):                   return "{}".format("TRUE" if arg else "FALSE")
-    elif isinstance(arg, (int, long, float)):     return "{}".format("NaN" if math.isnan(arg) else arg)
-    elif isinstance(arg, basestring):             return '"'+arg+'"'
-    elif isinstance(arg, slice):                  return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start))
-    elif isinstance(arg, list):                   return ("[\"" + "\" \"".join(arg) + "\"]") if all(isinstance(i, basestring) for i in arg) else ("[" + " ".join(["NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg])+"]")
-    elif arg is None:                             return "[]"  # empty list
+    if arg is not None and PY3 and isinstance(arg, range): arg=list(arg)
+    if arg is None:                           return "[]"  # empty list
+    elif isinstance(arg, ExprNode):           return arg._do_it(False)
+    elif isinstance(arg, ASTId):              return str(arg)
+    elif isinstance(arg, bool):               return "{}".format("TRUE" if arg else "FALSE")
+    elif isinstance(arg, (int, long, float)): return "{}".format("NaN" if math.isnan(arg) else arg)
+    elif isinstance(arg, basestring):         return '"'+arg+'"'
+    elif isinstance(arg, slice):              return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start))
+    elif isinstance(arg, list):               return ("[\"" + "\" \"".join(arg) + "\"]") if all(isinstance(i, basestring) for i in arg) else ("[" + " ".join(["NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg])+"]")
     raise ValueError("Unexpected arg type: " + str(type(arg))+" "+str(arg.__class__)+" "+arg.__repr__())
 
   def __del__(self):
     if self._cache._id is not None and self._children is not None:
-      h2o.rapids("(rm {})".format(self._cache._id))
+      ExprNode.rapids("(rm {})".format(self._cache._id))
 
   @staticmethod
   def _collapse_sb(sb): return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")
@@ -130,15 +136,39 @@ class ExprNode:
     sb += ['\n', " "*depth, "("+self._op, " "]
     if self._children is not None:
       for child in self._children:
-        if isinstance(child, h2o.H2OFrame) and child._ex._cache._id is None:  child._ex._2_string(depth+2,sb)
-        elif isinstance(child, h2o.H2OFrame):                                 sb+=['\n', ' '*(depth+2), child._ex._cache._id]
-        elif isinstance(child, ExprNode):                                     child._2_string(depth+2,sb)
-        else:                                                                 sb+=['\n', ' '*(depth+2), str(child)]
+        if _is_fr(child) and child._ex._cache._id is None:  child._ex._2_string(depth+2,sb)
+        elif _is_fr(child):                                 sb+=['\n', ' '*(depth+2), child._ex._cache._id]
+        elif isinstance(child, ExprNode):                   child._2_string(depth+2,sb)
+        else:                                               sb+=['\n', ' '*(depth+2), str(child)]
     sb+=['\n',' '*depth+") "] + ['\n'] * (depth==0)  # add a \n if depth == 0
     return sb
 
   def __repr__(self):
     return "Expr(op=%r,id=%r,ast=%r,is_scalar=%r)" % (self._op,self._cache._id,self._children,self._cache.is_scalar())
+
+  @staticmethod
+  def rapids(expr):
+    """Execute a Rapids expression.
+
+    Parameters
+    ----------
+    expr : str
+      The rapids expression (ascii string).
+
+    Returns
+    -------
+      The JSON response (as a python dictionary) of the Rapids execution
+    """
+    return H2OConnection.post_json("Rapids", ast=quote(expr), _rest_version=99)
+
+class ASTId:
+  def __init__(self, name=None):
+    if name is None:
+      raise ValueError("Attempted to make ASTId with no name.")
+    self.name = name
+
+  def __repr__(self):
+    return self.name
 
 class H2OCache(object):
   def __init__(self):
@@ -191,7 +221,7 @@ class H2OCache(object):
     if self._data is not None:
       if rows <= len(self):
         return
-    res = h2o.H2OConnection.get_json("Frames/"+urllib.quote(self._id), row_count=rows)["frames"][0]
+    res = H2OConnection.get_json("Frames/"+quote(self._id), row_count=rows)["frames"][0]
     self._l     = rows
     self._nrows = res["rows"]
     self._ncols = res["total_column_count"]
@@ -223,11 +253,11 @@ class H2OCache(object):
     d = collections.OrderedDict()
     # If also printing the rollup stats, build a full row-header
     if rollups:
-      col = self._data.itervalues().next() # Get a sample column
+      col = next(itervalues(self._data)) # Get a sample column
       lrows = len(col['data'])  # Cached rows being displayed
-      d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+map(str,range(lrows))
+      d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+list(map(str,range(lrows)))
     # For all columns...
-    for k,v in self._data.iteritems():
+    for k,v in iteritems(self._data):
       x = v['data']          # Data to display
       domain = v['domain']   # Map to cat strings as needed
       if domain:

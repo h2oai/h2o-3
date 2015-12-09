@@ -17,8 +17,7 @@ def smallcat_gbm():
   #alphabet.summary()
 
   # Prepare data for scikit use
-  trainData = np.loadtxt(pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1,
-                         converters={0:lambda s: ord(s.split("\"")[1])})
+  trainData = np.loadtxt(pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"), delimiter=',', skiprows=1, converters={0:lambda s: ord(s.decode().split("\"")[1])})
   trainDataResponse = trainData[:,1]
   trainDataFeatures = trainData[:,0]
 

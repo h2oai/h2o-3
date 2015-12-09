@@ -53,7 +53,7 @@ class H2OPCA(H2OEstimator):
     """
     super(H2OPCA, self).__init__()
     self._parms = locals()
-    self._parms = {k: v for k, v in self._parms.iteritems() if k != "self"}
+    self._parms = {k: v for k, v in self._parms.items() if k != "self"}
     self._parms["pca_method"] = "GramSVD" if isinstance(pca_method, tuple) else pca_method
     self._parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
 
@@ -126,7 +126,7 @@ class H2OSVD(H2OEstimator):
     """
     super(H2OSVD, self).__init__()
     self._parms = locals()
-    self._parms = {k: v for k, v in self._parms.iteritems() if k != "self"}
+    self._parms = {k: v for k, v in self._parms.items() if k != "self"}
     self._parms["svd_method"] = "GramSVD" if isinstance(svd_method, tuple) else svd_method
     self._parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
     self._parms["algo"] = "svd"

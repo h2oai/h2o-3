@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -25,8 +26,8 @@ def dim_checks():
   h2o_rows, h2o_cols = h2o_data.dim
   np_rows, np_cols = list(np_data.shape)
 
-  print 'The dimensions of h2o frame is: {0} x {1}'.format(h2o_rows, h2o_cols)
-  print 'The dimensions of numpy array is: {0} x {1}'.format(np_rows, np_cols)
+  print('The dimensions of h2o frame is: {0} x {1}'.format(h2o_rows, h2o_cols))
+  print('The dimensions of numpy array is: {0} x {1}'.format(np_rows, np_cols))
 
   assert [h2o_rows, h2o_cols] == [np_rows, np_cols], "expected equal number of columns and rows"
 
@@ -38,8 +39,8 @@ def dim_checks():
   h2o_rows, h2o_cols = h2o_slice.dim
   np_rows = np_slice.shape[0]
 
-  print 'The dimensions of h2o column slice is: {0} x {1}'.format(h2o_rows, h2o_cols)
-  print 'The dimensions of numpy array column slice is: {0} x 1'.format(np_rows)
+  print('The dimensions of h2o column slice is: {0} x {1}'.format(h2o_rows, h2o_cols))
+  print('The dimensions of numpy array column slice is: {0} x 1'.format(np_rows))
 
   assert [h2o_rows, h2o_cols] == [np_rows, 1], "expected equal number of columns and rows"
 

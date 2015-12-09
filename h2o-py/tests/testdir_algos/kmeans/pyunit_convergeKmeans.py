@@ -1,3 +1,7 @@
+from __future__ import division
+from builtins import zip
+from builtins import range
+from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -24,7 +28,7 @@ def convergeKmeans():
   # expect error for 0 iterations
 
   try:
-    H2OKMeansEstimator(max_iterations=0).train(x = range(ozone_h2o.ncol), training_frame=ozone_h2o)
+    H2OKMeansEstimator(max_iterations=0).train(x = list(range(ozone_h2o.ncol)), training_frame=ozone_h2o)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
@@ -32,20 +36,20 @@ def convergeKmeans():
   centers = start
   for i in range(miters):
     rep_fit = H2OKMeansEstimator(k=ncent, user_points=centers, max_iterations=1)
-    rep_fit.train(x = range(ozone_h2o.ncol), training_frame=ozone_h2o)
+    rep_fit.train(x = list(range(ozone_h2o.ncol)), training_frame=ozone_h2o)
     centers = h2o.H2OFrame(rep_fit.centers())
 
   # Log.info(paste("Run k-means with max_iter=miters"))
   all_fit = H2OKMeansEstimator(k=ncent, user_points=start, max_iterations=miters)
-  all_fit.train(x=range(ozone_h2o.ncol), training_frame=ozone_h2o)
+  all_fit.train(x=list(range(ozone_h2o.ncol)), training_frame=ozone_h2o)
   assert rep_fit.centers() == all_fit.centers(), "expected the centers to be the same"
 
   # Log.info("Check cluster centers have converged")
   all_fit2 = H2OKMeansEstimator(k=ncent, user_points=h2o.H2OFrame(all_fit.centers()),
                         max_iterations=1)
-  all_fit2.train(x=range(ozone_h2o.ncol), training_frame= ozone_h2o)
-  avg_change = sum([sum([pow((e1 - e2),2) for e1, e2 in zip(c1,c2)]) for c1, c2 in zip(all_fit.centers(),
-                                                                                       all_fit2.centers())]) / ncent
+  all_fit2.train(x=list(range(ozone_h2o.ncol)), training_frame= ozone_h2o)
+  avg_change = old_div(sum([sum([pow((e1 - e2),2) for e1, e2 in zip(c1,c2)]) for c1, c2 in zip(all_fit.centers(),
+                                                                                       all_fit2.centers())]), ncent)
   assert avg_change < 1e-6 or all_fit._model_json['output']['iterations'] == miters
 
 

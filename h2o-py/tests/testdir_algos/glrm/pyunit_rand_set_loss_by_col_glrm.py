@@ -1,3 +1,7 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -13,21 +17,21 @@ def glrm_set_loss_by_col_rand():
   NUM_COLS = [1, 5, 6, 7]
   CAT_COLS = [0, 2, 3, 4]
 
-  print "Importing prostate_cat.csv data..."
+  print("Importing prostate_cat.csv data...")
   prostateH2O = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"), na_strings = ["NA"]*8)
   prostateH2O.describe()
 
   # Fully specify every column's loss function (no need for loss_by_col_idx)
-  loss_all = [rd.sample(NUM_LOSS, k=1)[0] if x in NUM_COLS else rd.sample(CAT_LOSS, k=1)[0] for x in xrange(0,8)]
-  print "Run GLRM with loss_by_col = [" + ', '.join(loss_all) + "]"
+  loss_all = [rd.sample(NUM_LOSS, k=1)[0] if x in NUM_COLS else rd.sample(CAT_LOSS, k=1)[0] for x in range(0,8)]
+  print("Run GLRM with loss_by_col = [" + ', '.join(loss_all) + "]")
   glrm_h2o = H2OGeneralizedLowRankEstimator(k=5, loss_by_col=loss_all)
   glrm_h2o.train(x=prostateH2O.names,training_frame=prostateH2O)
 #  glrm_h2o = h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all)
   glrm_h2o.show()
 
   # Randomly set columns and loss functions
-  cat_size = rd.sample(xrange(1,5), 1)
-  num_size = rd.sample(xrange(1,5), 1)
+  cat_size = rd.sample(range(1,5), 1)
+  num_size = rd.sample(range(1,5), 1)
   cat_idx = np.random.choice(CAT_COLS, size=cat_size, replace=False)
   num_idx = np.random.choice(NUM_COLS, size=num_size, replace=False)
   loss_by_col_cat = np.random.choice(CAT_LOSS, size=cat_size, replace=True)
@@ -35,9 +39,9 @@ def glrm_set_loss_by_col_rand():
 
   loss_idx_all = cat_idx.tolist() + num_idx.tolist()
   loss_all = loss_by_col_cat.tolist() + loss_by_col_num.tolist()
-  loss_combined = zip(loss_all, loss_idx_all)   # Permute losses and indices in same way for testing
+  loss_combined = list(zip(loss_all, loss_idx_all))   # Permute losses and indices in same way for testing
   rd.shuffle(loss_combined)
-  loss_all[:], loss_idx_all[:] = zip(*loss_combined)
+  loss_all[:], loss_idx_all[:] = list(zip(*loss_combined))
 
   if(len(loss_all) < prostateH2O.ncol):
     try:
@@ -89,7 +93,7 @@ def glrm_set_loss_by_col_rand():
   except:
     pass
 
-  print "Run GLRM with loss_by_col = [" + ', '.join(loss_all) + "] and loss_by_col_idx = [" + ', '.join([str(a) for a in loss_idx_all]) + "]"
+  print("Run GLRM with loss_by_col = [" + ', '.join(loss_all) + "] and loss_by_col_idx = [" + ', '.join([str(a) for a in loss_idx_all]) + "]")
   glrm_h2o = H2OGeneralizedLowRankEstimator(k=5, loss_by_col=loss_all, loss_by_col_idx=loss_idx_all)
   glrm_h2o.train(x=prostateH2O.names,training_frame=prostateH2O)
 #  glrm_h2o = h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all, loss_by_col_idx=loss_idx_all)

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -22,30 +23,30 @@ def hdfs_kmeans():
         hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
         hdfs_covtype_file = "/datasets/runit/covtype.data"
 
-        print "Import iris_wheader.csv from HDFS"
+        print("Import iris_wheader.csv from HDFS")
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_iris_file)
         iris_h2o = h2o.import_file(url)
         n = iris_h2o.nrow
-        print "rows: {0}".format(n)
+        print("rows: {0}".format(n))
         assert n == 150, "Wrong number of rows. Got {0}. Should have got {1}".format(n, 150)
 
-        print "Running KMeans on iris"
+        print("Running KMeans on iris")
         iris_km = h2o.kmeans(training_frame = iris_h2o, k = 3, x = iris_h2o[0:4], max_iterations = 10)
-        print iris_km
+        print(iris_km)
 
-        print "Importing covtype.data from HDFS"
+        print("Importing covtype.data from HDFS")
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_covtype_file)
         covtype_h2o = h2o.import_file(url)
         n = covtype_h2o.nrow
-        print "rows: {0}".format(n)
+        print("rows: {0}".format(n))
         assert n == 581012, "Wrong number of rows. Got {0}. Should have got {1}".format(n, 581012)
 
-        print "Running KMeans on covtype"
+        print("Running KMeans on covtype")
         covtype_km = h2o.kmeans(training_frame = covtype_h2o, x = covtype_h2o[0:55], k = 8, max_iterations = 10)
-        print covtype_km
+        print(covtype_km)
 
     else:
-        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
+        raise EnvironmentError
 
 
 

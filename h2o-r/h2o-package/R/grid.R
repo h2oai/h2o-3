@@ -107,9 +107,9 @@ h2o.grid <- function(algorithm,
 
 #' Get a grid object from H2O distributed K/V store.
 #'
-#' @param grid_id  ID of existing grid object to fetch.
-#' @param sort_by  (Optional) Model performance metric by which to sort the model_ids list.
-#' @param sort_order (Optional) Sort order, either "asc" or "desc", for use with sort_by.
+#' @param grid_id  ID of existing grid object to fetch
+#' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "auc", "r2"
+#' @param sort_order Specify if sort order should be increasing/decreasing with "asc" and "desc"
 #' @examples
 #' \donttest{
 #' library(h2o)

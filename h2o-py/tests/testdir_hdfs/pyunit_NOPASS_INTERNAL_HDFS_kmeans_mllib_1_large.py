@@ -1,3 +1,8 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -22,7 +27,7 @@ def kmeans_mllib():
         hdfs_name_node = pyunit_utils.hadoop_namenode()
         hdfs_cross_file = "/datasets/runit/BigCross.data"
 
-        print "Import BigCross.data from HDFS"
+        print("Import BigCross.data from HDFS")
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_cross_file)
         cross_h2o = h2o.import_file(url)
         n = cross_h2o.nrow
@@ -31,7 +36,7 @@ def kmeans_mllib():
         ncent = [int(err_mllib[r][0]) for r in range(len(err_mllib))]
 
         for k in ncent:
-            print "Run k-means++ with k = {0} and max_iterations = 10".format(k)
+            print("Run k-means++ with k = {0} and max_iterations = 10".format(k))
             cross_km = h2o.kmeans(training_frame = cross_h2o, x = cross_h2o, k = k, init = "PlusPlus",
                                   max_iterations = 10, standardize = False)
 
@@ -43,19 +48,19 @@ def kmeans_mllib():
             clust_mllib.sort(key=lambda x: x[0])
             clust_h2o.sort(key=lambda x: x[0])
 
-            print "\nMLlib Cluster Centers:\n"
-            print clust_mllib
-            print "\nH2O Cluster Centers:\n"
-            print clust_h2o
+            print("\nMLlib Cluster Centers:\n")
+            print(clust_mllib)
+            print("\nH2O Cluster Centers:\n")
+            print(clust_h2o)
 
             wcsse_mllib = err_mllib[err_mllib[0:4,0].tolist().index(k)][1]
-            wcsse_h2o = cross_km.tot_withinss() / n
-            print "\nMLlib Average Within-Cluster SSE: \n".format(wcsse_mllib)
-            print "H2O Average Within-Cluster SSE: \n".format(wcsse_h2o)
+            wcsse_h2o = old_div(cross_km.tot_withinss(), n)
+            print("\nMLlib Average Within-Cluster SSE: \n".format(wcsse_mllib))
+            print("H2O Average Within-Cluster SSE: \n".format(wcsse_h2o))
             assert wcsse_h2o == wcsse_mllib, "Expected mllib and h2o to get the same wcsse. Mllib got {0}, and H2O " \
                                              "got {1}".format(wcsse_mllib, wcsse_h2o)
     else:
-        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
+        raise EnvironmentError
 
 
 

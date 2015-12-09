@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -16,7 +17,7 @@ def offset_poisson():
 
 
     gbm = H2OGradientBoostingEstimator(ntrees=600,learn_rate=.1,max_depth=1,min_rows=1,distribution="poisson")
-    gbm.train(x=range(3),y="Claims",training_frame=insurance,offset_column="offset")
+    gbm.train(x=list(range(3)),y="Claims",training_frame=insurance,offset_column="offset")
 
     # gbm = h2o.gbm(x=insurance[0:3], y=insurance["Claims"], distribution="poisson", ntrees=600, max_depth=1, min_rows=1,
     #               learn_rate=.1, offset_column="offset", training_frame=insurance)

@@ -1,3 +1,4 @@
+from builtins import zip
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -26,10 +27,10 @@ def expr_as_list():
            abs(float(res[0][25]) - -2.8) < 1e-10, "incorrect values"
 
     # local data
-    frm = h2o.as_list(h2o.H2OFrame(zip(*[[1,2,3]])), use_pandas=False)
+    frm = h2o.as_list(h2o.H2OFrame(list(zip(*[[1,2,3]]))), use_pandas=False)
     assert float(frm[2][1]) == 3, "incorrect values"
 
-    frm = h2o.as_list(h2o.H2OFrame(zip(*[[1,2,3], [4,5,6]])), use_pandas=False)
+    frm = h2o.as_list(h2o.H2OFrame(list(zip(*[[1,2,3], [4,5,6]]))), use_pandas=False)
     assert float(frm[1][2]) == 5, "incorrect values"
 
 

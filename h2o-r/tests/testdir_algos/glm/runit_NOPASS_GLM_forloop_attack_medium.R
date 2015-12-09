@@ -101,7 +101,7 @@ randomParams <- function(family, train, test, x, y) {
           print(weights.train)
         } else if (is.vector(val)) {
           Log.info(paste0(sub("_", " ", parm), ": ",val))
-        } else if (class(val) == "Frame") {
+        } else if (class(val) == "H2OFrame") {
           Log.info(paste0(sub("_", " ", parm), ": "))
         } else if (inherits(val, "data.frame")) {
           Log.info(paste0(sub("_", " ", parm), ": "))

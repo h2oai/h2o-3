@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -8,7 +9,7 @@ def benign():
   training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
 
   Y = 3
-  X = range(3) + range(4,11)
+  X = list(range(3)) + list(range(4,11))
 
 
   model = H2OGeneralizedLinearEstimator(family="binomial", alpha=0, Lambda=1e-5)

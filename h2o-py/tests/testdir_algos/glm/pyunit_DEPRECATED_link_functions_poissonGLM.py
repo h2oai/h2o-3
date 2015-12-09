@@ -1,3 +1,6 @@
+from __future__ import division
+from __future__ import print_function
+from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -34,8 +37,8 @@ def link_functions_poisson():
                           family=sm.families.Poisson(sm.families.links.log)).fit()
 
     print("Compare model deviances for link function log")
-    h2o_deviance_log = h2o_model_log.residual_deviance() / h2o_model_log.null_deviance()
-    sm_deviance_log = sm_model_log.deviance / sm_model_log.null_deviance
+    h2o_deviance_log = old_div(h2o_model_log.residual_deviance(), h2o_model_log.null_deviance())
+    sm_deviance_log = old_div(sm_model_log.deviance, sm_model_log.null_deviance)
     assert h2o_deviance_log - sm_deviance_log < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
     print("Create h2o models with link: IDENTITY")
@@ -46,8 +49,8 @@ def link_functions_poisson():
                          family=sm.families.Poisson(sm.families.links.identity)).fit()
 
     print("Compare model deviances for link function identity")
-    h2o_deviance_id = h2o_model_id.residual_deviance() / h2o_model_id.null_deviance()
-    sm_deviance_id = sm_model_id.deviance / sm_model_id.null_deviance
+    h2o_deviance_id = old_div(h2o_model_id.residual_deviance(), h2o_model_id.null_deviance())
+    sm_deviance_id = old_div(sm_model_id.deviance, sm_model_id.null_deviance)
     assert h2o_deviance_id - sm_deviance_id < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 

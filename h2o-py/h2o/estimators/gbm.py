@@ -86,7 +86,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                score_each_iteration=None, checkpoint=None):
     super(H2OGradientBoostingEstimator, self).__init__()
     self._parms = locals()
-    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+    self._parms = {k:v for k,v in self._parms.items() if k!="self"}
 
   @property
   def distribution(self):

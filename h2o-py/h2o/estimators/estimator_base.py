@@ -97,7 +97,9 @@ class H2OEstimator(ModelBase):
     """
     algo_params = locals()
     parms = self._parms.copy()
-    parms.update({k:v for k, v in algo_params.iteritems() if k not in ["self","params", "algo_params", "parms"] })
+    if '__class__' in parms:  # FIXME: hackt for PY3
+      del parms['__class__']
+    parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
     y = algo_params["y"]
     tframe = algo_params["training_frame"]
     if tframe is None: raise ValueError("Missing training_frame")
@@ -144,7 +146,7 @@ class H2OEstimator(ModelBase):
       return
 
     model.poll()
-    if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
+    if '_rest_version' in list(kwargs.keys()): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
     else:                                model_json = H2OConnection.get_json("Models/"+model.dest_key)["models"][0]
     self._resolve_model(model.dest_key,model_json)
 
@@ -241,9 +243,9 @@ class H2OEstimator(ModelBase):
       A dict of parameters
     """
     out = dict()
-    for key,value in self.parms.iteritems():
+    for key,value in self.parms.items():
       if deep and isinstance(value, H2OEstimator):
-        deep_items = value.get_params().items()
+        deep_items = list(value.get_params().items())
         out.update((key + '__' + k, val) for k, val in deep_items)
       out[key] = value
     return out

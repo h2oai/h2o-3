@@ -119,8 +119,7 @@ def h2o_test_setup(sys_args):
         raise(EnvironmentError, "Unrecognized test type. Must be of type ipynb, pydemo, pyunit, or pybooklet, but got: "
                                 "{0}".format(_TEST_NAME_))
 
-    print "[{0}] {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "Connect to h2o on IP: {0} PORT: {1}"
-                                                                        "".format(_H2O_IP_, _H2O_PORT_))
+    print("[{0}] {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "Connect to h2o on IP: {0} PORT: {1}".format(_H2O_IP_, _H2O_PORT_)))
     h2o.init(ip=_H2O_IP_, port=_H2O_PORT_, strict_version_check=False)
 
     #rest_log = os.path.join(_RESULTS_DIR_, "rest.log")

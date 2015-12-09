@@ -1,3 +1,5 @@
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -13,7 +15,7 @@ def frame_reducers():
 
 
     data = [[random.uniform(-10000,10000) for r in range(10)] for c in range(10)]
-    h2o_data = h2o.H2OFrame(zip(*data))
+    h2o_data = h2o.H2OFrame(list(zip(*data)))
     np_data = np.array(data)
 
     h2o_val = h2o_data.min()

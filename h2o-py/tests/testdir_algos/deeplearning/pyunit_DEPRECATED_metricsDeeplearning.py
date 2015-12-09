@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -27,14 +28,14 @@ def deep_learning_metrics_test():
     test.tail()
 
     # Run DeepLearning
-    print "Train a Deeplearning model: "
+    print("Train a Deeplearning model: ")
     dl = h2o.deeplearning(x           = train[1:],
                           y           = train['CAPSULE'],
                           epochs = 100,
                           hidden = [10, 10, 10],
                           loss   = 'CrossEntropy')
-    print "Binomial Model Metrics: "
-    print
+    print("Binomial Model Metrics: ")
+    print()
     dl.show()
     dl.model_performance(test).show()
 

@@ -4,7 +4,7 @@
 #' Performs k-means clustering on an H2O dataset.
 #'
 #'
-#' @param training_frame An H2O Frame object containing the
+#' @param training_frame An H2O H2OFrame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -25,7 +25,7 @@
 #'        "PlusPlus": for k-means plus initialization, or "Furthest": for
 #'        initialization at the furthest point from each successive center.
 #'        Additionally, the user may specify a the initial centers as a matrix,
-#'        data.frame, Frame, or list of vectors. For matrices,
+#'        data.frame, H2OFrame, or list of vectors. For matrices,
 #'        data.frames, and Frames, each row of the respective structure
 #'        is an initial center. For lists of vectors, each vector is an
 #'        initial center.
@@ -60,11 +60,11 @@ h2o.kmeans <- function(training_frame, x, k,
                        fold_assignment = c("AUTO","Random","Modulo"),
                        keep_cross_validation_predictions = FALSE)
 {
-  # Training_frame may be a key or an H2O Frame object
-  if( !is.Frame(training_frame) )
+  # Training_frame may be a key or an H2O H2OFrame object
+  if( !is.H2OFrame(training_frame) )
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid Frame or key")
+               stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
 
   # Gather user input
@@ -93,9 +93,9 @@ h2o.kmeans <- function(training_frame, x, k,
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
 
   # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.Frame(init) ) {
+  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.H2OFrame(init) ) {
     parms[["init"]] <- "User"
-    # Convert user-specified starting points to Frame
+    # Convert user-specified starting points to H2OFrame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
       init <- as.h2o(init)

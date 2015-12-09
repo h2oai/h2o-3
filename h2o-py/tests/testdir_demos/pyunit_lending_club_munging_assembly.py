@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -13,7 +14,7 @@ def lending_club_munging_assembly():
   small_test = [pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
 
   # lending-club munging assembly
-  print "Import and Parse data"
+  print("Import and Parse data")
 
   types = {"int_rate":"String", "revol_util":"String", "emp_length":"String"}
 

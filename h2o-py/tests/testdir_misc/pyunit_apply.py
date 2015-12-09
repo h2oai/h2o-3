@@ -1,3 +1,6 @@
+from __future__ import division
+from __future__ import print_function
+from past.utils import old_div
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -10,11 +13,11 @@ def pyunit_apply():
   fr = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
   fr.apply(lambda x: x["PSA"], axis=1).show()
-  print
-  print
+  print()
+  print()
   fr.apply(lambda x: x['PSA'] > x['VOL'],axis=1).show()
-  print
-  print fr.mean()
+  print()
+  print(fr.mean())
   fr.apply(lambda x: x.mean()).show()
 
 

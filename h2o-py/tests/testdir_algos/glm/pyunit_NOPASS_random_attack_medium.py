@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -33,7 +36,7 @@ def random_attack():
         if family == "binomial":
             if random.randint(0,1): kwargs['prior'] = random.random()
         if random.randint(0,1): kwargs['lambda_search'] = [True, False][random.randint(0,1)]
-        if 'lambda_search' in kwargs.keys():
+        if 'lambda_search' in list(kwargs.keys()):
             if random.randint(0,1): kwargs['nlambdas'] = random.randint(2,10)
         do_validation = [True, False][random.randint(0,1)]
         # beta constraints
@@ -46,32 +49,32 @@ def random_attack():
                     upper_bound = lower_bound + random.random()
                     bc.append([name, lower_bound, upper_bound])
             if len(bc) > 0:
-                beta_constraints = h2o.H2OFrame(zip(*bc))
+                beta_constraints = h2o.H2OFrame(list(zip(*bc)))
                 beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
                 kwargs['beta_constraints'] = beta_constraints.frame_id
 
         # display the parameters and their corresponding values
-        print "-----------------------"
-        print "x: {0}".format(x)
-        print "y: {0}".format(y)
-        print "validation: {0}".format(do_validation)
-        for k, v in zip(kwargs.keys(), kwargs.values()):
+        print("-----------------------")
+        print("x: {0}".format(x))
+        print("y: {0}".format(y))
+        print("validation: {0}".format(do_validation))
+        for k, v in zip(list(kwargs.keys()), list(kwargs.values())):
             if k == 'beta_constraints':
-                print k + ": "
+                print(k + ": ")
                 beta_constraints.show()
             else:
-                print k + ": {0}".format(v)
+                print(k + ": {0}".format(v))
         if do_validation:
  #         h2o.glm(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
           H2OGeneralizedLinearEstimator(**kwargs).train(x=x,y=y,training_frame=train,validation_frame=valid)
         else:
  #         h2o.glm(x=train[x], y=train[y], **kwargs)
           H2OGeneralizedLinearEstimator(**kwargs).train(x=x,y=y,training_frame=train)
-        print "-----------------------"
+        print("-----------------------")
 
-    print "Import and data munging..."
+    print("Import and data munging...")
     seed = random.randint(1,10000)
-    print "SEED: {0}".format(seed)
+    print("SEED: {0}".format(seed))
     pros = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
     pros[1] = pros[1].asfactor()
     r = pros[0].runif(seed=seed) # a column of length pros.nrow with values between 0 and 1
@@ -84,31 +87,31 @@ def random_attack():
     cars_train = cars[r > .2]
     cars_valid = cars[r <= .2]
 
-    print
-    print "======================================================================"
-    print "============================== Binomial =============================="
-    print "======================================================================"
+    print()
+    print("======================================================================")
+    print("============================== Binomial ==============================")
+    print("======================================================================")
     for i in range(10):
         attack("binomial", pros_train, pros_valid, random.sample([2,3,4,5,6,7,8],random.randint(1,7)), 1)
 
-    print
-    print "======================================================================"
-    print "============================== Gaussian =============================="
-    print "======================================================================"
+    print()
+    print("======================================================================")
+    print("============================== Gaussian ==============================")
+    print("======================================================================")
     for i in range(10):
         attack("gaussian", cars_train, cars_valid, random.sample([2,3,4,5,6,7],random.randint(1,6)), 1)
 
-    print
-    print "======================================================================"
-    print "============================== Poisson  =============================="
-    print "======================================================================"
+    print()
+    print("======================================================================")
+    print("============================== Poisson  ==============================")
+    print("======================================================================")
     for i in range(10):
         attack("poisson", cars_train, cars_valid, random.sample([1,3,4,5,6,7],random.randint(1,6)), 2)
 
-    print
-    print "======================================================================"
-    print "==============================  Gamma   =============================="
-    print "======================================================================"
+    print()
+    print("======================================================================")
+    print("==============================  Gamma   ==============================")
+    print("======================================================================")
     for i in range(10):
         attack("gamma", pros_train, pros_valid, random.sample([1,2,3,5,6,7,8],random.randint(1,7)), 4)
 

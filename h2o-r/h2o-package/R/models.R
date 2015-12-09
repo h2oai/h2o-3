@@ -11,7 +11,7 @@
     if(!is.character(y) && !is.numeric(y))
       stop('`y` must be a column name or index')
 
-  cc <- colnames(chk.Frame(data))
+  cc <- colnames(chk.H2OFrame(data))
 
   if(is.character(x)) {
     if(!all(x %in% cc))
@@ -55,7 +55,7 @@
   if(!is.character(cols) && !is.numeric(cols))
     stop('`cols` must be column names or indices')
 
-  cc <- colnames(chk.Frame(data))
+  cc <- colnames(chk.H2OFrame(data))
   if(length(cols) == 1L && cols == '')
     cols <- cc
   if(is.character(cols)) {
@@ -158,9 +158,9 @@ h2o.getFutureModel <- function(object) {
 
 .h2o.prepareModelParameters <- function(algo, params, is_supervised) {
   if (!is.null(params$training_frame))
-    params$training_frame <- chk.Frame(params$training_frame)
+    params$training_frame <- chk.H2OFrame(params$training_frame)
   if (!is.null(params$validation_frame))
-    params$validation_frame <- chk.Frame(params$validation_frame)
+    params$validation_frame <- chk.H2OFrame(params$validation_frame)
 
   # Check if specified model request is for supervised algo
   isSupervised <- if (!is.null(is_supervised)) is_supervised else .isSupervised(algo, params)
@@ -211,7 +211,7 @@ h2o.getFutureModel <- function(object) {
 
   #---------- Create parameter list to pass ----------#
   param_values <- lapply(params, function(i) {
-    if(is.Frame(i))  h2o.getId(i)
+    if(is.H2OFrame(i))  h2o.getId(i)
     else             i
   })
 
@@ -275,7 +275,7 @@ h2o.getFutureModel <- function(object) {
         paramValue <- .collapse(paramValue)
     }
   }
-  if( is.Frame(paramValue) )
+  if( is.H2OFrame(paramValue) )
     paramValue <- h2o.getId(paramValue)
   paramValue
 }
@@ -322,7 +322,7 @@ h2o.getFutureModel <- function(object) {
                           }
                           # Force evaluation of frames and fetch frame_id as
                           # a side effect
-                          if (is.Frame(hv) )
+                          if (is.H2OFrame(hv) )
                             hv <- h2o.getId(hv)
                           .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
                         }
@@ -351,10 +351,10 @@ h2o.getFutureModel <- function(object) {
 #'
 #' @param object a fitted \linkS4class{H2OModel} object for which prediction is
 #'        desired
-#' @param newdata A Frame object in which to look for
+#' @param newdata A H2OFrame object in which to look for
 #'        variables with which to predict.
 #' @param ... additional arguments to pass on.
-#' @return Returns an H2O Frame object with probabilites and
+#' @return Returns an H2O H2OFrame object with probabilites and
 #'         default predictions.
 #' @seealso \code{link{h2o.deeplearning}}, \code{link{h2o.gbm}},
 #'          \code{link{h2o.glm}}, \code{link{h2o.randomForest}} for model
@@ -422,7 +422,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #'
 #'
 #' @param model An \linkS4class{H2OModel} object
-#' @param data An H2O Frame. The model will make predictions
+#' @param data An H2O H2OFrame. The model will make predictions
 #'        on this dataset, and subsequently score them. The dataset should
 #'        match the dataset that was used to train the model, in terms of
 #'        column names, types, and dimensions. If data is passed in, then train and valid are ignored.
@@ -443,11 +443,11 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
-  if(!is.null(data) && !is.Frame(data) ) stop("`data` must be an H2O Frame object")
+  if(!is.null(data) && !is.H2OFrame(data) ) stop("`data` must be an H2O H2OFrame object")
 
   missingData <- missing(data) || is.null(data)
-  trainingFrame <- model@parameters$training_frame
-  data.id <- if( missingData ) trainingFrame else h2o.getId(data)
+  trainingH2OFrame <- model@parameters$training_frame
+  data.id <- if( missingData ) trainingH2OFrame else h2o.getId(data)
   if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
   else if( missingData &&  valid ) {
     if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
@@ -1642,7 +1642,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #'
 #' @param object Either an \linkS4class{H2OModel} object or an
 #'        \linkS4class{H2OModelMetrics} object.
-#' @param newdata An H2O Frame object that can be scored on.
+#' @param newdata An H2O H2OFrame object that can be scored on.
 #'        Requires a valid response column.
 #' @param valid Retrieve the validation metric.
 #' @param xval Retrieve the cross-validation metric.
@@ -1722,7 +1722,7 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #'
 #' @param object Either an \linkS4class{H2OModel} object or an
 #'        \linkS4class{H2OModelMetrics} object.
-#' @param newdata An H2O Frame object that can be scored on.
+#' @param newdata An H2O H2OFrame object that can be scored on.
 #'        Requires a valid response column.
 #' @param thresholds (Optional) A value or a list of valid values between 0.0 and 1.0.
 #'        This value is only used in the case of
@@ -2066,13 +2066,13 @@ h2o.sdev <- function(object) {
   result
 }
 
-#' Tabulation between Two Columns of a H2O Frame
+#' Tabulation between Two Columns of a H2O H2OFrame
 #'
 #' Simple Co-Occurrence based tabulation of X vs Y, where X and Y are two Vecs in a given dataset.
 #' Uses histogram of given resolution in X and Y.
 #' Handles numerical/categorical data and missing values. Supports observation weights.
 #'
-#' @param data An H2O Frame object.
+#' @param data An H2O H2OFrame object.
 #' @param x predictor column
 #' @param y response column
 #' @param weights_column (optional) observation weights column

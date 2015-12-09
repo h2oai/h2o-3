@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
@@ -21,12 +23,12 @@ def missing():
     data[21] = data[21].asfactor()  #PressureChange
     data[23] = data[23].asfactor()  #RainTomorrow
 
-    print "For missing {0}%".format(missing_ratios[i]*100)
+    print("For missing {0}%".format(missing_ratios[i]*100))
 
     # add missing values to the data section of the file (leave the response alone)
     if missing_ratios[i] > 0:
       resp = data[23]
-      pred = data[:,range(23)+range(24,data.ncol)]
+      pred = data[:,list(range(23))+list(range(24,data.ncol))]
       data_missing = pred.insert_missing_values(fraction=missing_ratios[i])
       data_fin = data_missing.cbind(resp)
     else:
@@ -41,11 +43,11 @@ def missing():
     hh = H2ODeepLearningEstimator(epochs=5, reproducible=True, seed=12345,
                                   activation='RectifierWithDropout', l1=1e-5,
                                   input_dropout_ratio=0.2)
-    hh.train(x=range(2,22),y=23, training_frame=train, validation_frame=test)
+    hh.train(x=list(range(2,22)),y=23, training_frame=train, validation_frame=test)
     errors[i] = hh.error()[0][1]
 
   for i in range(len(missing_ratios)):
-    print "missing ratio: {0}% --> classification error: {1}".format(missing_ratios[i]*100, errors[i])
+    print("missing ratio: {0}% --> classification error: {1}".format(missing_ratios[i]*100, errors[i]))
 
   assert sum(errors) < 2.2, "Sum of classification errors is too large!"
 
