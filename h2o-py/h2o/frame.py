@@ -783,6 +783,7 @@ class H2OFrame(object):
     ----------
       items : any element or a list of elements
         An item or a list of items to compare the H2OFrame against.
+        
     Returns
     -------
       An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
@@ -1177,7 +1178,7 @@ class H2OFrame(object):
 
     Returns
     -------
-      The column dropped from the frame; the frame is side-effected to lose the column
+      The column dropped from the frame; the frame is side-effected to lose the column.
     """
     if isinstance(i, basestring): i=self.names.index(i)
     col = H2OFrame._expr(expr=ExprNode("cols",self,i))
@@ -1186,6 +1187,7 @@ class H2OFrame(object):
     self._ex._cache.ncols -= 1
     self._ex._cache.names = old_cache.names[:i] + old_cache.names[i+1:]
     self._ex._cache.types = {name:old_cache.types[name] for name in self._ex._cache.names}
+    self._ex._cache._data = None
     col._ex._cache.ncols = 1
     col._ex._cache.names = [old_cache.names[i]]
     return col

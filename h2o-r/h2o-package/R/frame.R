@@ -2053,11 +2053,7 @@ as.numeric <- function(x) {
 #' @param cols The columns to remove.
 #' @export
 h2o.removeVecs <- function(data, cols) {
-  chk.H2OFrame(data)
-  if( missing(cols) ) stop("`cols` must be specified")
-  del.cols <- cols
-  if( base::is.character(cols) ) del.cols <- sort(match(cols,colnames(data)))
-  .newExpr("cols",data,.row.col.selector(-del.cols,envir=parent.frame()))
+  .Deprecated("data[-c(cols)]")
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
