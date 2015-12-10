@@ -65,7 +65,9 @@ class H2OGridSearch(object):
   @property
   def grid_id(self):
     """
-    :return: Retrieve this grid identifier
+    Returns
+    -------
+      A key that identifies this grid search object in H2O.
     """
     return self._id
 
@@ -229,49 +231,71 @@ class H2OGridSearch(object):
     return ""
 
   def predict(self, test_data):
-    """
-    Predict on a dataset.
+    """Predict on a dataset.
 
-    :param test_data: Data to be predicted on.
-    :return: A new H2OFrame filled with predictions.
+    Parameters
+    ----------
+    test_data : H2OFrame
+      Data to be predicted on.
+
+    Returns
+    -------
+      H2OFrame filled with predictions.
     """
     return {model.model_id:model.predict(test_data) for model in self.models}
 
   def is_cross_validated(self):
     """
-    :return:  True if the model was cross-validated.
+    Returns
+    -------
+      True if the model was cross-validated.
     """
     return {model.model_id:model.is_cross_validated() for model in self.models}
 
   def xval_keys(self):
     """
-    :return: The model keys for the cross-validated model.
+    Returns
+    -------
+      The model keys for the cross-validated model.
     """
-    return {model.model_id:model.xval_keys() for model in self.models}
+    return {model.model_id: model.xval_keys() for model in self.models}
 
   def get_xval_models(self,key=None):
-    """
-    Return a Model object.
+    """Return a Model object.
 
-    :param key: If None, return all cross-validated models; otherwise return the model that key points to.
-    :return: A model or list of models.
+    Parameters
+    ----------
+      key : str
+        If None, return all cross-validated models; otherwise return the model that key
+        points.
+
+    Returns
+    -------
+      A model or list of models.
     """
-    return {model.model_id:model.get_xval_models(key) for model in self.models}
+    return {model.model_id: model.get_xval_models(key) for model in self.models}
 
   def xvals(self):
     """
-    Return a list of the cross-validated models.
-
-    :return: A list of models
+    Returns
+    -------
+      A list of cross-validated models.
     """
     return {model.model_id:model.xvals for model in self.models}
 
   def deepfeatures(self, test_data, layer):
-    """
-    Return hidden layer details
+    """Obtain a hidden layer's details on a dataset.
 
-    :param test_data: Data to create a feature space on
-    :param layer: 0 index hidden layer
+    Parameters
+    ----------
+    test_data: H2OFrame
+      Data to create a feature space on
+    layer: int
+      index of the hidden layer
+
+    Returns
+    -------
+      A dictionary of hidden layer details for each model.
     """
     return {model.model_id:model.deepfeatures(test_data, layer) for model in self.models}
 
