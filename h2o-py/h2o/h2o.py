@@ -15,6 +15,7 @@ from .connection import H2OConnection
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
+from .estimators.estimator_base import H2OEstimator
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
@@ -350,7 +351,7 @@ def get_model(model_id):
 
   Returns
   -------
-    H2OEstimator
+    Subclass of H2OEstimator
   """
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
   algo = model_json["algo"]
