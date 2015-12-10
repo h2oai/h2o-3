@@ -63,8 +63,7 @@ public class DeepLearningMissingTest extends TestUtil {
             frtmp.remove(frtmp.numCols() - 1); //exclude the response
             DKV.put(frtmp._key, frtmp); //need to put the frame (to be modified) into DKV for MissingInserter to pick up
             FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
-            j.execImpl();
-            j.get(); //MissingInserter is non-blocking, must block here explicitly
+            j.execImpl().get(); //MissingInserter is non-blocking, must block here explicitly
             DKV.remove(frtmp._key); //Delete the frame header (not the data)
           }
 
@@ -95,15 +94,8 @@ public class DeepLearningMissingTest extends TestUtil {
           DKV.put(test);
 
           DeepLearning dl = new DeepLearning(p);
-          try {
-            Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");
-            mymodel = dl.trainModel().get();
-          } catch (Throwable t) {
-            t.printStackTrace();
-            throw new RuntimeException(t);
-          } finally {
-            dl.remove();
-          }
+          Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");
+          mymodel = dl.trainModel().get();
 
           // Extract the scoring on validation set from the model
           double err = mymodel.loss();

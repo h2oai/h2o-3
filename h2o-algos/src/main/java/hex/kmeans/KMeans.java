@@ -49,15 +49,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
               + ") - try reducing the number of columns and/or the number of categorical factors.";
       error("_train", msg);
-      cancel(msg);
     }
   }
 
-  /** Start the KMeans training Job on an F/J thread.
-   * @param work
-   * @param restartTimer*/
-  @Override protected Job<KMeansModel> trainModelImpl(long work, boolean restartTimer) {
-    return start(new KMeansDriver(), work, restartTimer);
+  /** Start the KMeans training Job on an F/J thread. */
+  @Override protected H2OCountedCompleter<KMeansDriver> trainModelImpl() {
+    return new KMeansDriver();
   }
 
   @Override
@@ -139,13 +136,13 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             centers = ArrayUtils.append(centers, sampler._sampled);
 
             // Fill in sample centers into the model
-            if (!isRunning()) return null; // Stopped/cancelled
+            if (_job.stop_requested()) return null; // Stopped/cancelled
             model._output._centers_raw = destandardize(centers, _isCats, means, mults);
             model._output._tot_withinss = sqr._sqr / _train.numRows();
 
             model._output._iterations++;     // One iteration done
 
-            model.update(_key); // Make early version of model visible, but don't update progress using update(1)
+            model.update(_job); // Make early version of model visible, but don't update progress using update(1)
           }
           // Recluster down to k cluster centers
           centers = recluster(centers, rand, _parms._k, _parms._init, _isCats);
@@ -232,7 +229,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     // Stopping criteria
     boolean isDone( KMeansModel model, double[][] newCenters, double[][] oldCenters ) {
-      if( !isRunning() ) return true; // Stopped/cancelled
+      if( _job.stop_requested() ) return true; // Stopped/cancelled
       // Stopped for running out iterations
       if( model._output._iterations >= _parms._max_iterations) return true;
 
@@ -259,12 +256,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         init(true);
         // Do lock even before checking the errors, since this block is finalized by unlock
         // (not the best solution, but the code is more readable)
-        _parms.read_lock_frames(KMeans.this); // Fetch & read-lock input frames
+        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         // Something goes wrong
         if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
         // The model to be built
-        model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
-        model.delete_and_lock(_key);
+        model = new KMeansModel(_job._result, _parms, new KMeansModel.KMeansOutput(KMeans.this));
+        model.delete_and_lock(_job);
 
         //
         final Vec vecs[] = _train.vecs();
@@ -298,8 +295,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           oldCenters = centers;
           centers = computeStatsFillModel(task, model, vecs, means, mults, impute_cat);
 
-          model.update(_key); // Update model in K/V store
-          update(1);          // One unit of work
+          model.update(_job); // Update model in K/V store
+          _job.update(1);     // One unit of work
           if (model._parms._score_each_iteration)
             Log.info(model._output._model_summary);
         }
@@ -312,23 +309,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         if (_valid != null) {
           model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
-          model.update(_key); // Update model in K/V store
+          model.update(_job); // Update model in K/V store
         }
-        done();                 // Job done!
 
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
       } finally {
-        updateModelOutput();
-        if( model != null ) model.unlock(_key);
-        _parms.read_unlock_frames(KMeans.this);
+        if( model != null ) model.unlock(_job);
+        _parms.read_unlock_frames(_job);
       }
       tryComplete();
     }
@@ -390,7 +376,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         assert(col < table.getColDim());
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         table.set(row, col++, fmt.print(output._training_time_ms[i]));
-        table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[i]-_start_time, true));
+        table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[i]-_job.start_time(), true));
         table.set(row, col++, i);
         table.set(row, col++, output._avg_centroids_chg[i]);
         table.set(row, col++, output._history_withinss[i]);

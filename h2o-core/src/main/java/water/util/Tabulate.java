@@ -18,7 +18,8 @@ import water.fvec.Vec;
  * _countData[xbin][ybin] contains the sum of observation weights (or 1) for co-occurrences in bins xbin/ybin
  * _responseData[xbin][2] contains the mean value of Y and the sum of observation weights for a given bin for X
  */
-public class Tabulate extends Job<Tabulate> {
+public class Tabulate extends Keyed<Tabulate> {
+  public final Job<Tabulate> _job;
   public Frame _dataset;
   public Key[] _vecs = new Key[2];
   public String _predictor;
@@ -55,7 +56,7 @@ public class Tabulate extends Job<Tabulate> {
   final private Stats[] _stats = new Stats[2];
 
   public Tabulate() {
-    super(Key.<Tabulate>make(), "Tabulate job");
+    _job = new Job(Key.<Tabulate>make(), "Tabulate job");
   }
 
   private int bins(int v) {
@@ -111,10 +112,8 @@ public class Tabulate extends Job<Tabulate> {
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_predictor};
       in._max_factors = _nbins_predictor -1;
-      in._dest = Key.make();
       in.execImpl();
-      x = ((Frame)DKV.getGet(in._dest)).anyVec();
-      in.remove();
+      x = in._job._result.get().anyVec();
     } else if (x.isInt() && (x.max() - x.min() + 1) <= _nbins_predictor) {
       x = x.toCategoricalVec();
     }
@@ -125,10 +124,8 @@ public class Tabulate extends Job<Tabulate> {
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_response};
       in._max_factors = _nbins_response -1;
-      in._dest = Key.make();
       in.execImpl();
-      y = ((Frame)DKV.getGet(in._dest)).anyVec();
-      in.remove();
+      y = in._job._result.get().anyVec();
     } else if (y.isInt() && (y.max() - y.min() + 1) <= _nbins_response) {
       y = y.toCategoricalVec();
     }

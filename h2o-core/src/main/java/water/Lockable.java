@@ -32,7 +32,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
    *  <li>Transient, because this data is only valid on the master node.</li>
    *  </ul>
    */
-  public transient Key _lockers[];
+  public transient Key<Job> _lockers[];
 
   /** Create a Lockable object, if it has a {@link Key}. */
   public Lockable( Key<T> key ) { super(key); }
@@ -54,7 +54,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Write-lock {@code this._key} by {@code job_key}.  
    *  Throws IAE if the Key is already locked.
    *  @return the old POJO mapped to this Key, generally for deletion. */
-  public Lockable write_lock( Key job_key ) {
+  public Lockable write_lock( Key<Job> job_key ) {
     Log.debug("write-lock "+_key+" by job "+job_key);
     return ((PriorWriteLock)new PriorWriteLock(job_key).invoke(_key))._old;
   }
@@ -62,7 +62,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Write-lock {@code this._key} by {@code job_key}, and delete any prior mapping.  
    *  Throws IAE if the Key is already locked.
    *  @return self, locked by job_key */
-  public T delete_and_lock( Key job_key ) {
+  public T delete_and_lock( Job job ) { return delete_and_lock(job._key); }
+  public T delete_and_lock( Key<Job> job_key ) {
     Lockable old =  write_lock(job_key);
     if( old != null ) {
       Log.debug("lock-then-clear "+_key+" by job "+job_key);
@@ -86,7 +87,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Write-lock 'this' and delete. 
    *  Throws IAE if the _key is already locked.  
    */
-  public Futures delete( Key job_key, Futures fs ) {
+  public Futures delete( Key<Job> job_key, Futures fs ) {
     if( _key != null ) {
       Log.debug("lock-then-delete "+_key+" by job "+job_key);
       new PriorWriteLock(job_key).invoke(_key);
@@ -96,9 +97,9 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // Obtain the write-lock on _key, which may already exist, using the current 'this'.
   private final class PriorWriteLock extends TAtomic<Lockable> {
-    private final Key _job_key;         // Job doing the locking
+    private final Key<Job> _job_key; // Job doing the locking
     private Lockable _old;              // Return the old thing, for deleting later
-    private PriorWriteLock( Key job_key ) { _job_key = job_key; }
+    private PriorWriteLock( Key<Job> job_key ) { _job_key = job_key; }
     @Override public Lockable atomic(Lockable old) {
       _old = old;
       if( old != null ) {       // Prior Lockable exists?
@@ -116,13 +117,14 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // -----------
   /** Atomically get a read-lock on Key k, preventing future deletes or updates */
-  public static void read_lock( Key k, Key job_key ) {
+  public static void read_lock( Key k, Job job ) { read_lock(k,job._key); }
+  public static void read_lock( Key k, Key<Job> job_key ) {
     Value val = DKV.get(k);
     if( val.isLockable() )
       ((Lockable)val.get()).read_lock(job_key); // Lockable being locked
   }
   /** Atomically get a read-lock on this, preventing future deletes or updates */
-  public void read_lock( Key job_key ) { 
+  public void read_lock( Key<Job> job_key ) { 
     if( _key != null ) {
       Log.debug("shared-read-lock "+_key+" by job "+job_key);
       new ReadLock(job_key).invoke(_key); 
@@ -131,8 +133,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // Obtain read-lock
   static private class ReadLock extends TAtomic<Lockable> {
-    final Key _job_key;         // Job doing the unlocking
-    ReadLock( Key job_key ) { _job_key = job_key; }
+    final Key<Job> _job_key;    // Job doing the unlocking
+    ReadLock( Key<Job> job_key ) { _job_key = job_key; }
     @Override public Lockable atomic(Lockable old) {
       if( old == null ) throw new IllegalArgumentException("Nothing to lock!");
       if( old.is_wlocked() )
@@ -145,7 +147,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   // -----------
   /** Atomically set a new version of self, without changing the locking.  Typically used
    *  to upgrade a write-locked Model to a newer version with more training iterations. */
-  public T update( Key job_key ) { 
+  public T update( Job job ) { return update(job._key); }
+  public T update( Key<Job> job_key ) { 
     Log.debug("update write-locked "+_key+" by job "+job_key);
     new Update(job_key).invoke(_key); 
     return (T)this;             // Flow-coding
@@ -153,8 +156,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // Freshen 'this' and leave locked
   private class Update extends TAtomic<Lockable> {
-    final Key _job_key;         // Job doing the unlocking
-    Update( Key job_key ) { _job_key = job_key; }
+    final Key<Job> _job_key;    // Job doing the unlocking
+    Update( Key<Job> job_key ) { _job_key = job_key; }
     @Override public Lockable atomic(Lockable old) {
       assert old != null : "Cannot update - Lockable is null!";
       assert old.is_wlocked() : "Cannot update - Lockable is not write-locked!";
@@ -165,8 +168,9 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // -----------
   /** Atomically set a new version of self and unlock. */
-  public void unlock( Key job_key ) { unlock(job_key,true); }
-  public void unlock( Key job_key, boolean exact ) {
+  public void unlock( Job job ) { unlock(job._key,true); }
+  public void unlock( Key<Job> job_key ) { unlock(job_key,true); }
+  public void unlock( Key<Job> job_key, boolean exact ) {
     if( _key != null ) {
       Log.debug("unlock "+_key+" by job "+job_key);
       new Unlock(job_key,exact).invoke(_key);
@@ -175,13 +179,13 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // Freshen 'this' and unlock
   private class Unlock extends TAtomic<Lockable> {
-    final Key _job_key;         // Job doing the unlocking
+    final Key<Job> _job_key;    // Job doing the unlocking
     // Most uses want exact semantics: assert if not locked when unlocking.
     // Crash-cleanup code sometimes has a hard time knowing if the crash was
     // before locking or after, so allow a looser version which quietly unlocks
     // in all situations.
     final boolean _exact;       // Complain if not locked when unlocking
-    Unlock( Key job_key, boolean exact ) { _job_key = job_key; _exact = exact;}
+    Unlock( Key<Job> job_key, boolean exact ) { _job_key = job_key; _exact = exact;}
     @Override public Lockable atomic(Lockable old) {
       assert !_exact || old != null : "Trying to unlock null!";
       assert !_exact || old.is_locked(_job_key) : "Can't unlock: Not locked!";
@@ -193,7 +197,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // -----------
   // Accessors for locking state.  Minimal self-checking; primitive results
-  private boolean is_locked(Key job_key) { 
+  private boolean is_locked(Key<Job> job_key) { 
     if( _lockers==null ) return false;
     for( int i=(_lockers.length==1?0:1); i<_lockers.length; i++ ) {
       Key k = _lockers[i];
@@ -202,20 +206,20 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     return false;
   }
   private boolean is_wlocked() { return _lockers!=null && _lockers.length==1; }
-  private boolean is_wlocked(Key job_key) { return is_wlocked() && (_lockers[0] == job_key || (_lockers[0] != null && _lockers[0].equals(job_key))); }
+  private boolean is_wlocked(Key<Job> job_key) { return is_wlocked() && (_lockers[0] == job_key || (_lockers[0] != null && _lockers[0].equals(job_key))); }
   private boolean is_unlocked() { return _lockers== null; }
-  private void set_write_lock( Key job_key ) { 
+  private void set_write_lock( Key<Job> job_key ) { 
     _lockers=new Key[]{job_key}; 
     assert is_locked(job_key);
   }
-  private void set_read_lock(Key job_key) {
+  private void set_read_lock(Key<Job> job_key) {
     assert !is_locked(job_key); // no double locking
     assert !is_wlocked();       // not write locked
     _lockers = _lockers == null ? new Key[2] : Arrays.copyOf(_lockers,_lockers.length+1);
     _lockers[_lockers.length-1] = job_key;
     assert is_locked(job_key);
   }
-  private void set_unlocked(Key lks[], Key job_key) {
+  private void set_unlocked(Key lks[], Key<Job> job_key) {
     if( lks.length==1 ) {       // Is write-locked?
       assert job_key==lks[0] || job_key.equals(lks[0]);
       _lockers = null;           // Then unlocked
@@ -242,7 +246,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   }
 
   private class UnlockSafe extends TAtomic<Lockable> {
-    final Key _job_key;         // potential job doing the unlocking
+    final Key<Job> _job_key;    // potential job doing the unlocking
     UnlockSafe( Key job_key ) { _job_key = job_key; }
     @Override public Lockable atomic(Lockable old) {
       if (old.is_locked(_job_key))

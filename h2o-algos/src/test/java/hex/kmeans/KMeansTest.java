@@ -31,15 +31,9 @@ public class KMeansTest extends TestUtil {
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
     parms._seed = seed;
-    KMeans job = null;
-    KMeansModel kmm = null;
-    try {
-      job = new KMeans(parms);
-      kmm = job.trainModel().get();
-      checkConsistency(kmm);
-    } finally {
-      if (job != null) job.remove();
-    }
+    KMeans job = new KMeans(parms);
+    KMeansModel kmm = job.trainModel().get();
+    checkConsistency(kmm);
     for( int i=0; i<parms._k; i++ )
       Assert.assertTrue( "Seed: "+seed, kmm._output._size[i] != 0 );
     return kmm;
@@ -411,9 +405,7 @@ public class KMeansTest extends TestUtil {
             if (missing) {
               // insert 10% missing values - check the math
               FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(fr._key, 1234, 0.1f);
-              mi.execImpl();
-              fr = mi.get();
-              mi.remove();
+              fr = mi.execImpl().get();
             }
             train = new Frame(Key.make("train"), fr.names(), fr.vecs());
             DKV.put(train);
@@ -537,7 +529,6 @@ public class KMeansTest extends TestUtil {
                 _ref_size[i]
         );
       }
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();

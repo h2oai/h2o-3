@@ -109,10 +109,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
 
     //overwrite a fraction with N/A
     FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(_createFrame._job._result, _createFrame.seed, _createFrame.missing_fraction);
-    mi.execImpl();
-    mi.get();
-    mi.remove();
-
+    mi.execImpl().get();
     tryComplete();
   }
 
@@ -144,7 +141,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
 
     @Override public void map (Chunk[]cs){
       Job<Frame> job = _createFrame._job;
-      if (job.cancel_requested()) return;
+      if (job.stop_requested()) return;
       if (!_createFrame.randomize) return;
       final Random rng = RandomUtils.getRNG(new Random().nextLong());
 

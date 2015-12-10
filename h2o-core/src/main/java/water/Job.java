@@ -42,39 +42,43 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   private long _start_time;     // Job started, or 0 if not running
   private long   _end_time;     // Job end time, or 0 if not ended
 
-  // Simple state accessors
-  public long start_time()   { return _start_time; }
-  public boolean isCreated() { return _start_time == 0; }
-  public boolean isRunning() { return _start_time != 0 && _end_time == 0; }
-  public boolean isStopped() { return   _end_time != 0; }
+  // Simple internal state accessors
+  private boolean created() { return _start_time == 0; }
+  private boolean running() { return _start_time != 0 && _end_time == 0; }
+  private boolean stopped() { return   _end_time != 0; }
+
+  // Simple state accessors; public ones do a DKV update check
+  public long start_time()   { update_from_remote(); assert !created(); return _start_time; }
+  public boolean isRunning() { update_from_remote(); return running(); }
+  public boolean isStopped() { update_from_remote(); return stopped(); }
   // Slightly more involved state accessors
-  public boolean isCanceling(){return _cancel_requested && isRunning(); }
-  public boolean isCanceled(){ return _cancel_requested && isStopped(); }
-  public boolean isCrashing(){ return hasEx() && isRunning(); }
-  public boolean isCrashed (){ return hasEx() && isStopped(); }
+  public boolean isStopping(){ return isRunning() && _stop_requested; }
+  public boolean wasStopped(){ return isStopped() && _stop_requested; }
+  public boolean isCrashing(){ return isRunning() && _ex != null; }
+  public boolean isCrashed (){ return isStopped() && _ex != null; }
 
 
   /** Current runtime; zero if not started. */
   public long msec() {
-    if( isCreated() ) return 0; // Created, not running
-    if( isRunning() ) return System.currentTimeMillis() - _start_time;
+    update_from_remote();
+    if( created() ) return 0;   // Created, not running
+    if( running() ) return System.currentTimeMillis() - _start_time;
     return _end_time - _start_time; // Stopped
   }
 
-  /** Jobs may be requested to Cancel.  Each individual job will respond to
-   *  this on a best-effort basis, and make some time to cancel.  Cancellation
-   *  really means "the Job stops", but is not an indication of any kind of
-   *  error or fail.  Perhaps the user simply got bored.  Because it takes time
-   *  to stop, a Job may be both in state RUNNING and cancel_requested, and may
-   *  later switch to STOPPED and cancel_requested.  Also, an exception may be
-   *  posted. */
-  private volatile boolean _cancel_requested; // monotonic change from false to true
-  public boolean cancel_requested() { return _cancel_requested; }
-  public void cancel() { 
-    if( !_cancel_requested )    // fast path cutout
+  /** Jobs may be requested to Stop.  Each individual job will respond to this
+   *  on a best-effort basis, and make some time to stop.  Stop really means
+   *  "the Job stops", but is not an indication of any kind of error or fail.
+   *  Perhaps the user simply got bored.  Because it takes time to stop, a Job
+   *  may be both in state isRunning and stop_requested, and may later switch
+   *  to isStopped and stop_requested.  Also, an exception may be posted. */
+  private volatile boolean _stop_requested; // monotonic change from false to true
+  public boolean stop_requested() { update_from_remote(); return _stop_requested; }
+  public void stop() { 
+    if( !_stop_requested )      // fast path cutout
       new JAtomic() {
-        @Override boolean abort(Job job) { return job._cancel_requested; }
-        @Override void update(Job job) { job._cancel_requested = true; }
+        @Override boolean abort(Job job) { return job._stop_requested; }
+        @Override void update(Job job) { job._stop_requested = true; }
       };
   }
 
@@ -84,16 +88,15 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
    *  posted. */
   private Throwable _ex;
   public Throwable ex() { return _ex; }
-  public boolean hasEx() { return _ex != null; }
+  public boolean hasEx() { update_from_remote(); return _ex != null; }
   /** Set an exception into this Job, marking it as failing and setting the
-   *  _cancel_requested flag.  Only the first exception (of possibly many) is
-   *  kept. */
+   *  _stop_requested flag.  Only the first exception (of possibly many) is kept. */
   public void setEx(Throwable ex, Class thrower_clz) {
     if( _ex == null ) {
       final DException dex = new DException(ex, thrower_clz);
       new JAtomic() {
         @Override boolean abort(Job job) { return job._ex != null; } // One-shot update; keep first exception
-        @Override void update(Job job) { job._ex = dex.toEx(); job._cancel_requested = true; }
+        @Override void update(Job job) { job._ex = dex.toEx(); job._stop_requested = true; }
       };
     }
   }
@@ -164,7 +167,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     // Job does not exist in any DKV, and so does not have any global
     // visibility (yet).
     assert !new AssertNoKey(_key).doAllNodes()._found;
-    assert isCreated() && !isRunning() && !isStopped();
+    assert created() && !running() && !stopped();
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
     // Make a wrapper class that only *starts* when the fjtask completes -
@@ -175,17 +178,26 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     // runs the onCompletion or onExceptionCompletion code.
     _barrier = new Barrier();
     fjtask.setCompleter(_barrier);
-    _fjtask = fjtask;
 
-    // Change state from created to running
+
+    // These next steps must happen in-order:
+    // 4 - cannot submitTask without being on job-list, lest all cores get
+    // slammed but no user-visible record of why, so 4 after 3
+    // 3 - cannot be on job-list without job in DKV, lest user (briefly) see it
+    // on list but cannot click the link & find job, so 3 after 2
+    // 2 - cannot be findable in DKV without job also being in running state
+    // lest the finder be confused about the job state, so 2 after 1
+    // 1 - set state to running
+
+    // 1 - Change state from created to running
     _start_time = System.currentTimeMillis();
-    assert !isCreated() && isRunning() && !isStopped();
+    assert !created() && running() && !stopped();
     _work = work;
 
-    // Save the full state of the job, first time ever making it public
+    // 2 - Save the full state of the job, first time ever making it public
     DKV.put(this);              // Announce in DKV
 
-    // Update job list
+    // 3 - Update job list
     final Key jobkey = _key;
     new TAtomic<JobList>() {
       @Override public JobList atomic(JobList old) {
@@ -196,11 +208,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         return old;
       }
     }.invoke(LIST);
-    // Fire off the FJTASK
+    // 4 - Fire off the FJTASK
     H2O.submitTask(fjtask);
     return this;
   }
-  transient private H2OCountedCompleter _fjtask; // Top-level task to do
   transient private Barrier _barrier;            // Top-level task to block on
 
   // Handy for assertion
@@ -226,25 +237,23 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         }
       };
       update_from_remote();
-      _fjtask = null;           // Free for GC
       _barrier = null;          // Free for GC
     }
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       final DException dex = new DException(ex,caller.getClass());
       new JAtomic() {
         @Override boolean abort(Job job) { return job._ex != null && job._end_time!=0; } // Already stopped & exception'd
-        @Override void update(Job old) {
-          if( old._ex == null ) old._ex = dex.toEx(); // Keep first exception ever
-          old._cancel_requested = true; // Since exception set, also set cancel
-          if( old._end_time == 0 )      // Keep first end-time
-            old._end_time = System.currentTimeMillis();
+        @Override void update(Job job) {
+          if( job._ex == null ) job._ex = dex.toEx(); // Keep first exception ever
+          job._stop_requested = true; // Since exception set, also set stop
+          if( job._end_time == 0 )    // Keep first end-time
+            job._end_time = System.currentTimeMillis();
         }
       };
       if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
-        System.err.println("barrier onExCompletion for "+_fjtask);
+        System.err.println("barrier onExCompletion for "+caller.getClass());
         ex.printStackTrace();
       }
-      _fjtask = null;           // Free for GC
       _barrier = null;          // Free for GC
       return true;
     }
