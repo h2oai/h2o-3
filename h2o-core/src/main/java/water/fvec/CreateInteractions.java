@@ -14,7 +14,7 @@ import java.util.*;
  */
 public class CreateInteractions extends H2O.H2OCountedCompleter {
 
-  public CreateInteractions(Interaction ci, Key job) { super(null); _job = job; _ci = ci; }
+  public CreateInteractions(Interaction ci) { _job = ci._job._key; _ci = ci; }
 
   final private Interaction _ci;
 
@@ -22,7 +22,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
   static final private String _other = "other"; // name for lost factor levels
 
   private Frame _target;
-  final private Key _job;
+  final private Key<Job> _job;
 
   private Map<Long, Long> _sortedMap = null;
 
@@ -131,7 +131,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
 
   @Override
   public void compute2() {
-    DKV.remove(_ci.dest());
+    DKV.remove(_ci._job._result);
 
     Frame source_frame = DKV.getGet(_ci._source_frame);
 
@@ -188,10 +188,10 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
 //        Log.info("Removing column " + _out._names[idx]);
           _out.remove(idx).remove();
         }
-        _ci.update(1);
+        _ci._job.update(1);
       }
       if (_target == null) {
-        _target = new Frame(_ci.dest(), _out.names(), _out.vecs());
+        _target = new Frame(_ci._job._result, _out.names(), _out.vecs());
         _target.delete_and_lock(_job);
       } else {
         _target.add(_out);
@@ -204,7 +204,6 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
   public void onCompletion(CountedCompleter caller) {
     _target.update(_job);
     _target.unlock(_job);
-    ((Job)DKV.getGet(_job)).done();
   }
 
   // Create interaction domain

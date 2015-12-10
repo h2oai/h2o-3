@@ -7,7 +7,7 @@ import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
-import water.Job;
+import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -37,11 +37,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
   @Override public DRFV3 schema() { return new DRFV3(); }
 
-  /** Start the DRF training Job on an F/J thread.
-   * @param work
-   * @param restartTimer*/
-  @Override protected Job<hex.tree.drf.DRFModel> trainModelImpl(long work, boolean restartTimer) {
-    return start(new DRFDriver(), work, restartTimer);
+  /** Start the DRF training Job on an F/J thread. */
+  @Override protected H2O.H2OCountedCompleter<Driver> trainModelImpl() {
+    return new DRFDriver();
   }
 
 
@@ -190,7 +188,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Adds a layer to the trees each pass.
       int depth=0;
       for( ; depth<_parms._max_depth; depth++ ) {
-        if( !isRunning() ) return;
+        if( _job.stop_requested() ) return;
         hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _mtry < _model._output.nfeatures(), _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;

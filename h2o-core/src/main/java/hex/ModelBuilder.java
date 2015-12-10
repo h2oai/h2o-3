@@ -1,7 +1,6 @@
 package hex;
 
 import hex.schemas.ModelBuilderSchema;
-import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.NewChunk;
 import water.rapids.ASTKFold;
@@ -28,7 +27,7 @@ import java.util.Map;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
-  final Job<M> _job;            // Job controlling this build
+  protected final Job<M> _job;  // Job controlling this build
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public ModelBuilder(P _) {
@@ -45,6 +44,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _job = new Job<>(dest,desc);
     _parms = parms;
   }
+
+  /** Block till completion, and return the built model from the DKV */
+  public final M get() { return _job.get(); }
 
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
   // TODO: CLEAN THIS UP.  OVERLY COMPLEX; NO NEED; NON-REFLECTION ALTERNATIVE EXISTS
@@ -211,230 +213,222 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public Job<M> computeCrossValidation() {
     assert _job.isRunning();    // main Job is still running
-    final Frame origTrainFrame = train();
-
-    // Step 1: Assign each row to a fold
-    // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
     final Integer N = nFoldWork();
-    final Vec foldAssignment;
-    if (_parms._fold_column != null) {
-      foldAssignment = origTrainFrame.vec(_parms._fold_column);
-    } else {
-      final long seed = _parms.nFoldSeed();
-      Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
-      switch( _parms._fold_assignment ) {
-      case AUTO:
-      case Random:     foldAssignment = ASTKFold.          kfoldColumn(    zTmp(),N,seed); break;
-      case Modulo:     foldAssignment = ASTKFold.    moduloKfoldColumn(    zTmp(),N     ); break;
-      case Stratified: foldAssignment = ASTKFold.stratifiedKFoldColumn(response(),N,seed); break;
-      default:         throw H2O.unimpl();
-      }
+    try {
+      Scope.enter();
+
+      // Step 1: Assign each row to a fold
+      final Vec foldAssignment = cv_AssignFold(N);
+
+      // Step 2: Make 2*N binary weight vectors
+      final Vec[] weights = cv_makeWeights(N,foldAssignment);
+      _job.update(1);           // Did the major pre-fold work
+
+      // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
+      ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);
+
+      // Step 4: Run all the CV models and launch the main model
+      H2O.H2OCountedCompleter mainMB = cv_runCVBuilds(N, cvModelBuilders);
+
+      // Step 5: Score the CV models
+      ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
+      
+      // wait for completion of the main model
+      mainMB.join();
+
+      // Step 6: Combine cross-validation scores; compute main model x-val
+      // scores; compute gains/lifts
+      cv_mainModelScores(N, mbs, cvModelBuilders);
+
+    } finally {
+      Scope.exit();
     }
+    throw H2O.unimpl();
+  }
 
-    final Key[] modelKeys = new Key[N];
-    final Key[] predictionKeys = new Key[N];
+  // Step 1: Assign each row to a fold
+  // TODO: Implement better splitting algo (with Strata if response is
+  // categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
+  public Vec cv_AssignFold(int N) {
+    if (_parms._fold_column != null) return train().vec(_parms._fold_column);
+    final long seed = _parms.nFoldSeed();
+    Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
+    switch( _parms._fold_assignment ) {
+    case AUTO:
+    case Random:     return ASTKFold.          kfoldColumn(    zTmp(),N,seed);
+    case Modulo:     return ASTKFold.    moduloKfoldColumn(    zTmp(),N     );
+    case Stratified: return ASTKFold.stratifiedKFoldColumn(response(),N,seed);
+    default:         throw H2O.unimpl();
+    }
+  }
 
-    // Step 2: Make 2*N binary weight vectors and store the CV train/validation frames
-    final String origWeightsName = _parms._weights_column;
-    final Vec[] weights = new Vec[2*N];
-    final Vec origWeight  = origWeightsName != null ? origTrainFrame.vec(origWeightsName) : origTrainFrame.anyVec().makeCon(1.0);
-    final Frame[] cvTrain = new Frame[N];
-    final Frame[] cvValid = new Frame[N];
-    final String[] identifier = new String[N];
-    final String weightName = "weights";
-
-    final Key<M> origDest = _job._result;
-    for (int i=0; i<N; ++i) {
-      // Make weights
-      weights[2*i]   = zTmp();
-      weights[2*i+1] = zTmp();
-
-      // Now update the weights in place
-      final int whichFold = i;
-      new MRTask() {
-        @Override
-        public void map(Chunk chks[]) {
-          Chunk fold = chks[0];
-          Chunk orig = chks[1];
-          Chunk train = chks[2];
-          Chunk valid = chks[3];
-          for (int i=0; i< orig._len; ++i) {
-            int foldAssignment = (int)fold.at8(i) % N;
+  // Step 2: Make 2*N binary weight vectors
+  public Vec[] cv_makeWeights( final int N, Vec foldAssignment ) {
+    String origWeightsName = _parms._weights_column;
+    Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
+    Frame folds_and_weights = new Frame(new Vec[]{foldAssignment, origWeight});
+    Vec[] weights = new MRTask() {
+        @Override public void map(Chunk chks[], NewChunk nchks[]) {
+          Chunk fold = chks[0], orig = chks[1];
+          for( int row=0; row< orig._len; row++ ) {
+            int foldAssignment = (int)fold.at8(row) % N;
+            double w = orig.atd(row);
             assert(foldAssignment >= 0 && foldAssignment <N);
-            boolean holdout = foldAssignment == whichFold;
-            double w = orig.atd(i);
-            train.set(i, holdout ? 0 : w);
-            valid.set(i, holdout ? w : 0);
+            for( int f = 0; f < N; f++ ) {
+              boolean holdout = foldAssignment == f;
+              nchks[2*f+0].addNum(holdout ? 0 : w);
+              nchks[2*f+1].addNum(holdout ? w : 0);
+            }
           }
         }
-      }.doAll(new Vec[]{foldAssignment, origWeight, weights[2*i], weights[2*i+1]});
-      if (weights[2*i].isConst() || weights[2*i+1].isConst()) {
-        String msg = "Not enough data to create " + N + " random cross-validation splits. Either reduce nfolds, specify a larger dataset (or specify another random number seed, if applicable).";
-        throw new H2OIllegalArgumentException(msg);
-      }
+      }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
+    if( _parms._fold_column == null ) foldAssignment.remove();
+    if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
 
-      identifier[i] = origDest.toString() + "_cv_" + (i+1);
-      modelKeys[i] = Key.make(identifier[i]);
+    for( Vec weight : weights )
+      if( weight.isConst() )
+        throw new H2OIllegalArgumentException("Not enough data to create " + N + " random cross-validation splits. Either reduce nfolds, specify a larger dataset (or specify another random number seed, if applicable).");
+    return weights;
+  }
 
-      // Training/Validation share the same data, but will have exclusive weights
-      cvTrain[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_train"), origTrainFrame.names(), origTrainFrame.vecs());
-      if (origWeightsName!=null) cvTrain[i].remove(origWeightsName);
-      cvTrain[i].add(weightName, weights[2*i]);
-      DKV.put(cvTrain[i]);
-      cvValid[i] = new Frame(Key.make(identifier[i]+"_"+_parms._train.toString()+"_valid"), origTrainFrame.names(), origTrainFrame.vecs());
-      if (origWeightsName!=null) cvValid[i].remove(origWeightsName);
-      cvValid[i].add(weightName, weights[2*i+1]);
-      DKV.put(cvValid[i]);
-    }
-
-    // clean up memory (mostly small helper vectors and Frame headers)
-    if (_parms._fold_column == null) foldAssignment.remove();
-    if (origWeightsName == null) origWeight.remove();
-
-    // Build & error-check all the cross-validation Builders before launching any
+  // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
+  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
     final long old_cs = _parms.checksum();
-    Key<M> cvModelKeys[] = new Key[N];
+    final String origDest = _job._result.toString();
+
+    Frame cv_fr = new Frame(train().names(),train().vecs());
+    if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
+
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
-    for (int i=0; i<N; ++i) {
+    for( int i=0; i<N; i++ ) {
+      String identifier = origDest + "_cv_" + i;
+      // Training/Validation share the same data, but will have exclusive weights
+      Frame cvTrain = new Frame(Key.make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
+      cvTrain.add("weights", weights[2*i]);
+      DKV.put(cvTrain);
+      Frame cvValid = new Frame(Key.make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
+      cvValid.add("weights", weights[2*i+1]);
+      DKV.put(cvValid);
+
       // Shallow clone - not everything is a private copy!!!
-      cvModelBuilders[i] = (ModelBuilder)this.clone();
-      cvModelBuilders[i]._parms = (P) _parms.clone();
-      // Fix up some parameters of the clone - UGLY
-      Key<M> modelKey = Key.make(_job._result.toString() + "_cv" + i);
-      cvModelKeys[i] = modelKey;
-      cvModelBuilders[i]._parms._model_id = (Key<Model>)modelKey;
-      cvModelBuilders[i]._parms._weights_column = weightName;
-      cvModelBuilders[i]._parms._train = cvTrain[i]._key;
-      cvModelBuilders[i]._parms._valid = cvValid[i]._key;
-      cvModelBuilders[i]._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-      cvModelBuilders[i].modifyParmsForCrossValidationSplits(i, N, modelKey);
-      cvModelBuilders[i].init(false);
-      if (cvModelBuilders[i].error_count() > 0) {
-        for( ValidationMessage vm : cvModelBuilders[i]._messages )
+      ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
+      cv_mb._parms = (P) _parms.clone();
+      // Fix up some parameters of the clone
+      cv_mb._parms._model_id = Key.make(identifier); // Each submodel gets its own key
+      cv_mb._parms._weights_column = "weights"; // All submodels have a weight column, which the main model does not
+      cv_mb._parms._train = cvTrain._key;       // All submodels have a weight column, which the main model does not
+      cv_mb._parms._valid = cvValid._key;
+      cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+      cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
+      cv_mb.init(false);        // Arg check submodels
+      // Error-check all the cross-validation Builders before launching any
+      if( cv_mb.error_count() > 0 ) { // Gather all submodel error messages
+        for( ValidationMessage vm : cv_mb._messages )
           message(vm._log_level, vm._field_name, vm._message);
-        updateValidationMessages();
-        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(cvModelBuilders[i]);
       }
+      cvModelBuilders[i] = cv_mb;
     }
-    _job.update(1);             // Did all the pre-fold work
 
-    // =================================================================
-    // Now do the folds
-    final boolean async = true; // Set to TRUE for parallel building
-    for( int i=0; i<N; ++i ) {
-      if( _job.cancel_requested() ) break;
-      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
-      cvModelBuilders[i].trainModelImpl(-1); // no progress work here, it's all in top-level builder
-      if( !async ) cvModelBuilders[i]._job.get(); // block
-    }
-    ...CNC... LAUNCH ALL N (unless async)
-
+    if( error_count() > 0 )     // Error in any submodel
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     // check that this Job's original _params haven't changed
-    assert(old_cs == _parms.checksum());
+    assert old_cs == _parms.checksum();
+    return cvModelBuilders;
+  }
 
-    // =================================================================
-    if (!isCancelledOrCrashed()) {
-      Log.info("Building main model.");
-
-      //HACK:
-      // Can't use changeJobState (it assumes that state transitions are monotonic)
-      assert (DKV.get(_key).get() == this);
-      assert _job.isRunning();
-      assert (((Job)DKV.getGet(_key))._state == JobState.RUNNING);
-      _state = JobState.CREATED;
-      assert (((Job)DKV.getGet(_key))._state == JobState.CREATED);
-
-      modifyParmsForCrossValidationMainModel(N, async ? null : _cvModelBuilderKeys); //tell the main model that it shouldn't stop early either
-
-      trainModelImpl(-1, false); //non-blocking
-      if (!async)
-        block();
+  // Step 4: Run all the CV models and launch the main model
+  public H2O.H2OCountedCompleter cv_runCVBuilds( int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
+    final boolean async = true; // Set to TRUE for parallel building
+    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
+    for( int i=0; i<N; ++i ) {
+      if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
+      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
+      submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
+      if( !async ) submodel_tasks[i].join();
     }
+    if( async )                 // Block for the parallel builds to complete
+      for( int i=0; i<N; ++i )  // (block, even if cancelled)
+        submodel_tasks[i].join();
+    // Now do the main model
+    if( _job.stop_requested() ) return null;
+    assert _job.isRunning();
+    Log.info("Building main model.");
+    modifyParmsForCrossValidationMainModel(cvModelBuilders); //tell the main model that it shouldn't stop early either
+    H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking
+    if( !async ) mainMB.join();
+    return mainMB;
+  }
 
-    // in async case, the CV models can score while the main model is still building
-    ModelMetrics.MetricBuilder[] mb = new ModelMetrics.MetricBuilder[N];
-    Model[] m = new Model[N];
+  // Step 5: Score the CV models
+  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
+    if( _job.stop_requested() ) return null;
+    ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
+    Futures fs = new Futures();
     for (int i=0; i<N; ++i) {
-      Frame adaptFr = null;
-      try {
-        adaptFr = new Frame(cvValid[i]);
-        // score CV models
-        if (!isCancelledOrCrashed()) { //don't waste time scoring if the CV run is cancelled
-          // Since canBeDone() is false for the CV model, we need to explicitly set the job state to DONE here:
-          cvModelBuilders[i].block();
-
-          // mark the job as done
-          cvModelBuilders[i].done(true);               // mark the model as completed via force flag (otherwise it wouldn't mark it since canBeDone is false)
-          cvModelBuilders[i].updateModelOutput();      // mirror the Job state in the model
-          m[i] = DKV.getGet(cvModelBuilders[i].dest());   // now the model is ready for consumption
-          m[i].adaptTestForTrain(adaptFr, true, !isSupervised());
-          mb[i] = m[i].scoreMetrics(adaptFr);
-
-          if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {
-            String predName = "prediction_" + modelKeys[i].toString();
-            predictionKeys[i] = Key.make(predName);
-            m[i].predictScoreImpl(cvValid[i], adaptFr, predName);
-          }
-        }
-      } finally {
-        // free resources as early as possible
-        if (adaptFr != null) {
-          Model.cleanup_adapt(adaptFr, cvValid[i]);
-          DKV.remove(adaptFr._key);
-        }
-        if (cvTrain[i] != null) DKV.remove(cvTrain[i]._key);
-        if (cvValid[i] != null) DKV.remove(cvValid[i]._key);
-        if (weights[2 * i] != null) weights[2 * i].remove();
-        if (weights[2 * i + 1] != null) weights[2 * i + 1].remove();
-        if (cvModelBuilders[i] != null) cvModelBuilders[i].remove();
+      if( _job.stop_requested() ) return null; //don't waste time scoring if the CV run is stopped
+      Frame cvTrain = cvModelBuilders[i].train();
+      Frame cvValid = cvModelBuilders[i].valid();
+      Frame adaptFr = new Frame(cvValid);
+      M cvModel = cvModelBuilders[i].get();
+      cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
+      mbs[i] = cvModel.scoreMetrics(adaptFr);
+      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {
+        String predName = "prediction_" + cvModelBuilders[i]._parms._model_id.toString();
+        cvModel.predictScoreImpl(cvValid, adaptFr, predName);
       }
+      // free resources as early as possible
+      if (adaptFr != null) {
+        Model.cleanup_adapt(adaptFr, cvValid);
+        DKV.remove(adaptFr._key,fs);
+      }
+      DKV.remove(cvTrain._key,fs);
+      DKV.remove(cvValid._key,fs);
+      weights[2*i  ].remove(fs);
+      weights[2*i+1].remove(fs);
     }
+    fs.blockForPending();
+    return mbs;
+  }
 
-    // wait for completion of the main model
-    if (!isCancelledOrCrashed()) {
-      block();
-      Model mainModel = DKV.getGet(dest()); // get the fully trained model, but it's not yet done (still needs cv metrics)
+  // Step 6: Combine cross-validation scores; compute main model x-val scores; compute gains/lifts
+  public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder mbs[], ModelBuilder<M, P, O> cvModelBuilders[]) {
+    if( _job.stop_requested() ) return;
+    assert _job.isRunning();
 
-      // Check that both the job and the model are not yet marked as done (canBeDone() looks at whether N-fold CV is done)
-      assert (_state == JobState.RUNNING);
+    M mainModel = _job._result.get();
 
-      // Compute and put the cross-validation metrics into the main model
-      Log.info("Computing " + N + "-fold cross-validation metrics.");
-      mainModel._output._cross_validation_models = new Key[N];
-      mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? new Key[N] : null;
-      for (int i = 0; i < N; ++i) {
-        if (i > 0) mb[0].reduce(mb[i]);
-        mainModel._output._cross_validation_models[i] = modelKeys[i];
-        if (_parms._keep_cross_validation_predictions)
-          mainModel._output._cross_validation_predictions[i] = predictionKeys[i];
-      }
-      Frame preds = null;
-      //stitch together holdout predictions into one Vec, to compute the Gains/Lift table
-      if (nclasses() == 2) {
-        Vec[] p1s = new Vec[N];
-        for (int i=0;i<N;++i) {
-          p1s[i] = ((Frame)DKV.getGet(predictionKeys[i])).lastVec();
-        }
-        Frame p1combined = new HoldoutPredictionCombiner().doAll(1,Vec.T_NUM,new Frame(p1s)).outputFrame(new String[]{"p1"},null);
-        Vec p1 = p1combined.anyVec();
-        preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
-        if (!_parms._keep_cross_validation_predictions) {
-          for (Key k : predictionKeys) ((Frame)DKV.getGet(k)).remove();
-        }
-      }
-      mainModel._output._cross_validation_metrics = mb[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
-      if (preds!=null) preds.remove();
-      mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
-      Log.info(mainModel._output._cross_validation_metrics.toString());
-
-      // Now, the main model is complete (has cv metrics)
-      DKV.put(mainModel);
-
-      assert (!isDone());
-      done(true); //now, we can mark the job as done
-      updateModelOutput(); //update the state of the model (tiny race condition here: someone might fetch the model without the updated state/time)
+    // Compute and put the cross-validation metrics into the main model
+    Log.info("Computing " + N + "-fold cross-validation metrics.");
+    mainModel._output._cross_validation_models = new Key[N];
+    Key<Frame>[] predKeys = new Key[N];
+    mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;
+    
+    for (int i = 0; i < N; ++i) {
+      if (i > 0) mbs[0].reduce(mbs[i]);
+      Key<Model> cvModelKey = cvModelBuilders[i]._parms._model_id;
+      mainModel._output._cross_validation_models[i] = cvModelKey;
+      predKeys[i] = Key.make("prediction_" + cvModelKey.toString());
     }
-    return this;
+    Frame preds = null;
+    //stitch together holdout predictions into one Vec, to compute the Gains/Lift table
+    if (nclasses() == 2) {
+      Vec[] p1s = new Vec[N];
+      for (int i=0;i<N;++i) {
+        p1s[i] = ((Frame)DKV.getGet(predKeys[i])).lastVec();
+      }
+      Frame p1combined = new HoldoutPredictionCombiner().doAll(1,Vec.T_NUM,new Frame(p1s)).outputFrame(new String[]{"p1"},null);
+      Vec p1 = p1combined.anyVec();
+      preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
+      if (!_parms._keep_cross_validation_predictions)
+        for (Key<Frame> k : predKeys) ((Frame)DKV.getGet(k)).remove();
+    }
+    mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
+    if (preds!=null) preds.remove();
+    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
+    Log.info(mainModel._output._cross_validation_metrics.toString());
+
+    // Now, the main model is complete (has cv metrics)
+    DKV.put(mainModel);
   }
 
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
@@ -448,27 +442,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       nc[0].setDoubles(vals);
     }
   }
-  /**
-   * Override with model-specific checks / modifications to _parms for N-fold cross-validation splits.
-   * For example, the models might need to be told to not do early stopping.
-   * @param i which model index [0...N-1]
-   * @param N Total number of cross-validation folds
-   */
-  public void modifyParmsForCrossValidationSplits(int i, int N, Key<M> model_id) {
-    _parms._nfolds = 0;
-    throw H2O.unimpl();
-    //if (model_id != null)
-    //  _parms._model_id = Key.make(model_id.toString());
-  }
 
-  /**
-   * Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
-   * For example, the model might need to be told to not do early stopping.
-   * @param N Total number of cross-validation folds
+  /** Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
+   *  For example, the model might need to be told to not do early stopping.
    */
-  public void modifyParmsForCrossValidationMainModel(int N, Key<Model>[] cvModelKeys) {
-
-  }
+  public void modifyParmsForCrossValidationMainModel(ModelBuilder<M, P, O>[] cvModelBuilders) { }
 
   /** @return Whether n-fold cross-validation is done  */
   public boolean nFoldCV() {
@@ -651,13 +629,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _messages[_messages.length - 1] = new ValidationMessage(log_level, field_name, message);
   }
 
-  // Atomically update just the error messages
-  public void updateValidationMessages() {
-    new TAtomic<ModelBuilder>() {
-      @Override public ModelBuilder atomic(ModelBuilder old) { if( old != null ) old._messages = _messages; return old; }
-    }.invoke(_key);
-  }
-
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
     StringBuilder sb = new StringBuilder();
@@ -700,7 +671,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  endpoint with no training_frame, so each subclass's {@code init()} method
    *  has to work correctly with the training_frame missing.
    *<p>
-   *  @see #updateValidationMessages()
    */
   public void init(boolean expensive) {
     // Log parameters

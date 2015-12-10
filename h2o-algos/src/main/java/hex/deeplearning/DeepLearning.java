@@ -140,38 +140,18 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     }
   }
 
-  @Override
-  public void modifyParmsForCrossValidationSplits(int i, int N, Key<Model> model_id) {
-    super.modifyParmsForCrossValidationSplits(i, N, model_id);
-    if (_parms._overwrite_with_best_model) {
-      if (!_parms._quiet_mode)
-        warn("_overwrite_with_best_model",
-                "Disabling overwrite_with_best_model for cross-validation split " + (i+1) + "/" + N + ": No early stopping.");
-      _parms._overwrite_with_best_model = false;
-    }
-  }
-
-  @Override
-  public void modifyParmsForCrossValidationMainModel(int N, Key<Model>[] cvModelBuilderKeys) {
-    super.modifyParmsForCrossValidationMainModel(N, cvModelBuilderKeys);
-    if (_parms._overwrite_with_best_model) {
-      if (!_parms._quiet_mode)
-        warn("_overwrite_with_best_model", "Disabling overwrite_with_best_model for cross-validation main model: No early stopping.");
-      _parms._overwrite_with_best_model = false;
-    }
-    if (cvModelBuilderKeys !=null) {
-      if (_parms._stopping_rounds > 0) {
-        double[] epochs = new double[cvModelBuilderKeys.length];
-        for (int i=0;i<epochs.length;++i) {
-          epochs[i] = ((DeepLearningModel)DKV.getGet((((DeepLearning)DKV.getGet(cvModelBuilderKeys[i])).dest()))).last_scored().epoch_counter;
-        }
-        _parms._epochs = ArrayUtils.sum(epochs)/epochs.length;
-        if (!_parms._quiet_mode)
-          warn("_epochs", "Setting optimal _epochs to " + _parms._epochs + " for cross-validation main model based on early stopping of cross-validation models.");
-        _parms._stopping_rounds = 0;
-        if (!_parms._quiet_mode)
-          warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
-      }
+  @Override public void modifyParmsForCrossValidationMainModel(ModelBuilder[] cvModelBuilders) {
+    assert !_parms._overwrite_with_best_model : "Should already have disabled overwrite_with_best_model during cross-val";
+    if( _parms._stopping_rounds == 0 ) return; // No exciting changes to stopping conditions
+    // Extract stopping conditions from each CV model, and compute the best stopping answer
+    _parms._stopping_rounds = 0;
+    double sum = 0;
+    for( int i=0;i<epochs.length;++i )
+      sum += ((DeepLearningModel)DKV.getGet(cvModelBuilders[i]._parms._model_id)).last_scored().epoch_counter;
+    _parms._epochs = sum/epochs.length;
+    if( !_parms._quiet_mode ) {
+      warn("_epochs", "Setting optimal _epochs to " + _parms._epochs + " for cross-validation main model based on early stopping of cross-validation models.");
+      warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
     }
   }
 
