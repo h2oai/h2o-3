@@ -1,19 +1,12 @@
 package water.util;
 
-import jsr166y.CountedCompleter;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Random;
 
-import water.DKV;
-import water.H2O;
-import water.Job;
-import water.Key;
-import water.MRTask;
-import water.MemoryManager;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
@@ -160,7 +153,7 @@ public class FrameUtils {
   /**
    * Helper to insert missing values into a Frame
    */
-  public static class MissingInserter {
+  public static class MissingInserter extends Iced {
     final Job<Frame> _job;
     final Key _dataset;
     final double _fraction;

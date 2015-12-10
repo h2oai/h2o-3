@@ -219,7 +219,7 @@ public class KMeansTest extends TestUtil {
   @Test
   public void testCentroids(){
     Frame fr = ArrayUtils.frame(ard(d(1,0,0),d(0,1,0),d(0,0,1)));
-    Frame fr2=null;
+    Frame fr2;
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -351,7 +351,7 @@ public class KMeansTest extends TestUtil {
         sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
         // Invoke the job
         sf.exec().get();
-        Key[] ksplits = sf.destination_frames;
+        Key<Frame>[] ksplits = sf.destination_frames;
         tr = DKV.get(ksplits[0]).get();
         te = DKV.get(ksplits[1]).get();
 

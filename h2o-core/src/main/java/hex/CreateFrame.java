@@ -1,6 +1,7 @@
 package hex;
 
 import water.H2O;
+import water.Iced;
 import water.Job;
 import water.Key;
 import water.fvec.Frame;
@@ -13,7 +14,7 @@ import java.util.Random;
  * Create a Frame from scratch
  * If randomize = true, then the frame is filled with Random values.
  */
-public class CreateFrame {
+public class CreateFrame extends Iced {
   public final Job<Frame> _job;
   public long rows = 10000;
   public int cols = 10;

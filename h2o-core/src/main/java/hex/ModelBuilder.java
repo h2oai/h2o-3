@@ -48,6 +48,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Block till completion, and return the built model from the DKV */
   public final M get() { return _job.get(); }
 
+  public final Key<M> dest() { return _job._result; }
+
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
   // TODO: CLEAN THIS UP.  OVERLY COMPLEX; NO NEED; NON-REFLECTION ALTERNATIVE EXISTS
   public static ModelBuilder createModelBuilder(String algo) {

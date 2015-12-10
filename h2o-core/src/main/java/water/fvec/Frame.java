@@ -126,7 +126,7 @@ public class Frame extends Lockable<Frame> {
    *  The resulting Frame does not share with the original, so the set of Vecs
    *  can be freely hacked without disturbing the original Frame. */
   public Frame( Frame fr ) {
-    super( Key.make() );
+    super( Key.<Frame>make() );
     _names= fr._names.clone();
     _keys = fr._keys .clone();
     _vecs = fr.vecs().clone();
@@ -814,7 +814,7 @@ public class Frame extends Lockable<Frame> {
   // Make an initial Frame & lock it for writing.  Build Vec Keys.
   void preparePartialFrame( String[] names ) {
     // Nuke any prior frame (including freeing storage) & lock this one
-    if( _keys != null ) delete_and_lock(null);
+    if( _keys != null ) delete_and_lock();
     else write_lock(null);
     _names = names;
     _keys = new Vec.VectorGroup().addVecs(names.length);
@@ -874,7 +874,7 @@ public class Frame extends Lockable<Frame> {
       DKV.put(_keys[i],vec,fs);
     }
     fs.blockForPending();
-    unlock(null);
+    unlock();
   }
 
   // --------------------------------------------------------------------------
