@@ -18,6 +18,10 @@ def grid_quasar_pca():
     print("Constructing the grid of PCA models...")
     quasar_pca_grid = H2OGridSearch(H2OPCA, hyper_params=grid_space)
     quasar_pca_grid.train(x=list(range(1,23)), training_frame=quasar)
+
+    for model in quasar_pca_grid:
+      assert isinstance(model, H2OPCA)
+
     print("Performing various checks of the constructed grid...")
 
     print("Check cardinality of grid, that is, the correct number of models have been created...")
@@ -40,6 +44,9 @@ def grid_quasar_pca():
     actual_size2 = len(quasar_pca_grid2)
     assert actual_size == actual_size2, "Expected duplicates to be ignored. Without dups grid size: {0}. With dups " \
                                         "size: {1}".format(actual_size, actual_size2)
+
+    for model in quasar_pca_grid2:
+      assert isinstance(model, H2OPCA)
 
     print("Check that the hyper_params that were passed to grid, were used to construct the models...")
     for name in list(grid_space.keys()):

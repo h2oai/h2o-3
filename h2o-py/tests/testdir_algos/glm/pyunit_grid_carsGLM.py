@@ -54,6 +54,9 @@ def grid_cars_GLM():
     else:
         cars_glm_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
 
+    for model in cars_glm_grid:
+      assert isinstance(model, H2OGeneralizedLinearEstimator)
+
     print("Performing various checks of the constructed grid...")
 
     print("Check cardinality of grid, that is, the correct number of models have been created...")

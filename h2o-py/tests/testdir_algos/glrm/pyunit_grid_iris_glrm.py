@@ -30,6 +30,8 @@ def grid_glrm_iris():
 
   gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(loss="Quadratic", gamma_x=gx, gamma_y=gy), hyper_params=hyper_parameters)
   gs.train(x=list(range(4)), y=4, training_frame=irisH2O)
+  for model in gs:
+    assert isinstance(model, H2OGeneralizedLowRankEstimator)
   print(gs.sort_by("mse"))
   #print gs.hit_ratio_table()
 

@@ -30,6 +30,9 @@ def iris_gbm_grid():
   print(gs.sort_by("mse"))
   #print gs.hit_ratio_table()
 
+  for model in gs:
+    assert isinstance(model, H2OGradientBoostingEstimator)
+
   assert len(gs) == size_of_hyper_space
   total_grid_space = list(map(list, itertools.product(*list(hyper_parameters.values()))))
   print( str(total_grid_space) )
@@ -47,6 +50,8 @@ def iris_gbm_grid():
     assert locally_sorted.cell_values[i][0] == remotely_sorted_desc.model_ids[i], "Expected back-end sort by r2 to be the same as locally-sorted: " + str(i)
 
   remotely_sorted_asc = H2OGridSearch.get_grid(H2OGradientBoostingEstimator(distribution='multinomial'), hyper_parameters, gs.grid_id, sort_by='r2', sort_order='asc')
+  for model in remotely_sorted_asc:
+    assert isinstance(model, H2OGradientBoostingEstimator)
 
   assert len(locally_sorted.cell_values) == len(remotely_sorted_asc.model_ids), "Expected locally sorted and remotely sorted grids to have the same number of models"
   length = len(remotely_sorted_asc.model_ids)

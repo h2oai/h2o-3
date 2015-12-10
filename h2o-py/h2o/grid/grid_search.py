@@ -7,7 +7,8 @@ from builtins import zip
 from builtins import str
 from builtins import range
 from builtins import object
-from .. import H2OConnection, H2OJob, H2OFrame, H2OEstimator
+from .. import H2OConnection, H2OJob, H2OFrame
+from ..estimators import H2OEstimator
 from ..two_dim_table import H2OTwoDimTable
 from ..display import H2ODisplay
 import h2o
@@ -204,14 +205,14 @@ class H2OGridSearch(object):
     self._resolve_grid(grid.dest_key, grid_json, first_model_json)
 
   def _resolve_grid(self, grid_id, grid_json, first_model_json):
-      model_class = H2OGridSearch._metrics_class(first_model_json)
-      m = model_class()
-      m._id = grid_id
-      m._grid_json = grid_json
-      # m._metrics_class = metrics_class
-      m._parms = self._parms
-      H2OEstimator.mixin(self,model_class)
-      self.__dict__.update(m.__dict__.copy())
+    model_class = H2OGridSearch._metrics_class(first_model_json)
+    m = model_class()
+    m._id = grid_id
+    m._grid_json = grid_json
+    # m._metrics_class = metrics_class
+    m._parms = self._parms
+    H2OEstimator.mixin(self,model_class)
+    self.__dict__.update(m.__dict__.copy())
 
   def __getitem__(self, item):
     return self.models[item]
@@ -673,4 +674,3 @@ class H2OGridSearch(object):
     H2OEstimator.mixin(grid,model_class)
     grid.__dict__.update(m.__dict__.copy())
     return grid
-    

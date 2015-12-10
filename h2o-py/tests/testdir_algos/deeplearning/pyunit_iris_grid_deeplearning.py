@@ -27,6 +27,9 @@ def iris_dl_grid():
   gs.train(x=list(range(4)), y=4, training_frame=train)
   print(gs.sort_by("mse"))
 
+  for model in gs:
+    assert isinstance(model, H2ODeepLearningEstimator)
+
   assert len(gs) == size_of_hyper_space
   total_grid_space = list(map(list, itertools.product(*list(hyper_parameters.values()))))
   for model in gs.models:
