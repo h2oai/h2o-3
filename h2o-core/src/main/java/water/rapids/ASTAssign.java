@@ -144,7 +144,7 @@ class ASTRectangleAssign extends ASTPrim {
         //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
         if( !(max<start || min>end) ) {   // not situation 1 or 2 above
           int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
-          for(int i=startOffset;i<cs[0]._len;++i)
+          for(int i=(int)(startOffset-start);i<cs[0]._len;++i)
             if( rows.has(start+i) )
               for( Chunk chk : cs )
                 chk.set(i,src);
