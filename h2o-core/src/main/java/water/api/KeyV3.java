@@ -7,7 +7,6 @@ import water.rapids.Assembly;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.KeyedVoid;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
@@ -64,38 +63,17 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   }
 
   public static KeyV3 make(Class<? extends KeyV3> clz, Key key) {
-    KeyV3 result = null;
     try {
       Constructor c = clz.getConstructor(Key.class);
-      result = (KeyV3)c.newInstance(key);
-    }
-    catch (Exception e) {
+      return (KeyV3)c.newInstance(key);
+    } catch (Exception e) {
       throw new H2OIllegalArgumentException("Caught exception trying to instantiate KeyV1 for class: " + clz.toString() + ": " + e + "; cause: " + e.getCause() + " " + Arrays.toString(e.getCause().getStackTrace()));
     }
-    return result;
   }
 
   /** TODO: figure out the right KeyV1 class from the Key, so the type is set properly. */
   public static KeyV3 make(Key key) {
     return make(KeyV3.class, key);
-  }
-
-  /** Factory method which returns the correct KeyV1 for the given Keyed class (e.g., for Frame.class). */
-  public static KeyV3 forKeyedClass(Class<? extends Keyed> keyed_class, Key key) {
-    if (Job.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(JobKeyV3.class, key);
-    else if (Frame.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(FrameKeyV3.class, key);
-    else if (Model.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(ModelKeyV3.class, key);
-    else if (Vec.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(VecKeyV3.class, key);
-    else if (Grid.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(GridKeyV3.class, key);
-    else if (KeyedVoid.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(KeyedVoidV3.class, key);
-    else
-      return KeyV3.make(KeyV3.class, key);
   }
 
   public static class JobKeyV3 extends KeyV3<Iced, JobKeyV3, Job> {
@@ -112,37 +90,12 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
 
   public static class ModelKeyV3 extends KeyV3<Iced, ModelKeyV3, Model> {
     public ModelKeyV3() {}
-    public ModelKeyV3(Key<? extends Model> key) {
-      super(key);
-    }
-  }
-
-  public static class VecKeyV3 extends KeyV3<Iced, VecKeyV3, Vec> {
-    public VecKeyV3() {
-    }
-
-    public VecKeyV3(Key<Vec> key) {
-      super(key);
-    }
+    public ModelKeyV3(Key<? extends Model> key) { super(key); }
   }
 
   public static class GridKeyV3 extends KeyV3<Iced, GridKeyV3, Grid> {
-    public GridKeyV3() {
-    }
-
-    public GridKeyV3(Key<Grid> key) {
-      super(key);
-    }
-  }
-
-  public static class KeyedVoidV3 extends KeyV3<Iced, KeyedVoidV3, KeyedVoid> {
-
-    public KeyedVoidV3() {
-    }
-
-    public KeyedVoidV3(Key<KeyedVoid> key) {
-      super(key);
-    }
+    public GridKeyV3() { }
+    public GridKeyV3(Key<Grid> key) { super(key); }
   }
 
   public static class AssemblyKeyV3 extends KeyV3<Iced, AssemblyKeyV3, Assembly> {
@@ -150,8 +103,7 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public AssemblyKeyV3(Key<Assembly> key) { super(key); }
   }
 
-  @Override
-  public S fillFromImpl(Iced i) {
+  @Override public S fillFromImpl(Iced i) {
     if (! (i instanceof Key))
       throw new H2OIllegalArgumentException("fillFromImpl", "key", i);
 

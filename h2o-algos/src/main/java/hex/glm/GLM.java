@@ -20,8 +20,6 @@ import hex.optimization.L_BFGS.*;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
 import hex.optimization.OptimizationUtils.MoreThuente;
-import hex.schemas.GLMV3;
-import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -73,14 +71,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
   }
 
-  public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
-  public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); init(false); }
-
+  public GLM(GLMModel.GLMParameters parms                   ) { super(parms    ); init(false); }
+  public GLM(GLMModel.GLMParameters parms, Key<GLMModel> key) { super(parms,key); init(false); }
+  public GLM(boolean startup_once) { super(new GLMParameters(),startup_once); }
 
 
   static class TooManyPredictorsException extends RuntimeException {}
 
-  private BetaConstraint _bc = new BetaConstraint();
+  private BetaConstraint _bc;
   DataInfo _dinfo;
 
   transient GLMTaskInfo [] _tInfos;
@@ -171,9 +169,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   @Override public void init(boolean expensive) {
-    _sc = new ScoringHistory();
-    _t0 = System.currentTimeMillis();
     super.init(expensive);
+    _t0 = System.currentTimeMillis(); 
+    _sc = new ScoringHistory();
+    _bc = new BetaConstraint();
 
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
@@ -198,8 +197,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // always need weights for row filtering (e.g. NAs), make new one or copy the existing ones so that we can modify them
       Vec wc = _weights == null?_dinfo._adaptedFrame.anyVec().makeCon(1):_weights.makeCopy();
       Vec wr = _dinfo.setWeights(_generatedWeights = "__glm_gen_weights",wc);
-      System.out.println("made vec " + wc._key + ", replaced vec " + (wr == null?"null":wr._key));
-      _garbage.add(wc);
       DKV.put(_dinfo._key, _dinfo);
       // handle BetaConstraints if I got them
       double[] betaStart = null;
@@ -402,7 +399,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } else
         objStart = objVal(itsk.getBetaStartLikelihood(),itsk.getBetaStart(),lmax);
       // todo - fix ymu to be a vec for multinomial?
-      _tInfos[0] = new GLMTaskInfo(_job._result, 0, itsk._nobs, itsk._wsum, _parms._prior > 0?new double[]{_parms._prior}:itsk._yMu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(itsk.getBetaStartLikelihood(),objStart, itsk.getStartGradient()),objStart);
+      _tInfos[0] = new GLMTaskInfo(_result, 0, itsk._nobs, itsk._wsum, _parms._prior > 0?new double[]{_parms._prior}:itsk._yMu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GLMGradientInfo(itsk.getBetaStartLikelihood(),objStart, itsk.getStartGradient()),objStart);
       _tInfos[0]._nullGradNorm = ArrayUtils.linfnorm(itsk.getNullGradient(), false);
       _tInfos[0]._nullDevTrain = itsk.getNullDeviance();
       _tInfos[0]._numClasses = nclasses();
@@ -437,9 +434,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         } else
           _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
       }
-      _model = _parms._family == Family.multinomial
-        ?new GLMModel(_job._key, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol())
-        :new GLMModel(_job._key, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol());
+      _model = new GLMModel(_result, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol());
       String [] warns = _model.adaptTestForTrain(_valid, true, true);
       for(String s:warns) warn("_validation_frame",s);
 
@@ -594,7 +589,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override
-    protected void compute2() {
+    public void compute2() {
       // get filtered dataset's mean and number of observations
       new YMUTask(_dinfo, nclasses(), !_parms._stdOverride, new H2OCallback<YMUTask>(this) {
         @Override
@@ -669,21 +664,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
   }
-  @Override
-  public ModelBuilderSchema schema() {
-    return new GLMV3();
-  }
 
 
   private static final long WORK_TOTAL = 1000000;
-  @Override protected H2OCountedCompleter<GLMDriver> trainModelImpl() {
-    return new GLMDriver(null);
-  }
+  @Override protected GLMDriver trainModelImpl() { return new GLMDriver(null); }
 
-  @Override
-  public long progressUnits() {
-    return WORK_TOTAL;
-  }
+  @Override public long progressUnits() { return WORK_TOTAL; }
 
   static double GLM_GRAD_EPS = 1e-4; // done (converged) if subgrad < this value.
 
@@ -848,32 +834,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private final double lmax(double [] grad) {
     return Math.max(ArrayUtils.maxValue(grad),-ArrayUtils.minValue(grad))/Math.max(1e-3,_parms._alpha[0]);
   }
-  transient ArrayList<Vec> _garbage = new ArrayList<>();
+
   /**
    * Contains implementation of the glm algo.
    * It's a DTask so it can be computed on other nodes (to distributed single node part of the computation).
    */
-  public final class GLMDriver extends DTask<GLMDriver> {
+  public final class GLMDriver extends Driver {
     transient AtomicBoolean _gotException = new AtomicBoolean();
     final byte _priority = nextThrPriority();
     @Override protected byte priority() { return _priority; }
 
     Key[] _adapt_keys;          // List of Vec keys generated during dataset adaptation
 
-    public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
-
+    public GLMDriver(H2OCountedCompleter cmp){ super(cmp); }
 
     private void doCleanup(){
-      try {
-        for(Vec v:_garbage) {
-          System.out.println("removing " + v._key);
-          v.remove();
-        }
-        _parms.read_unlock_frames(_job);
-      }
-      catch (Throwable t) {
-        // nada
-      }
       _parms.read_unlock_frames(_job);
       if( _adapt_keys != null ) // Extra vector keys made during dataset adaptation
         for( Key k : _adapt_keys ) Keyed.remove(k);
@@ -908,13 +883,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       try {
         if( !(ex instanceof IllegalArgumentException) ) // e.g. Illegal beta constraints file, got duplicate constraint for predictor
           doCleanup();
-        new RemoveCall(null, _job._result).invokeTask();
+        new water.DTask.RemoveCall(null, _job._result).invokeTask();
       } catch(Throwable t) {Log.err(t);} // Log and ignore exceptions from the cleanup
       return true;                       // Rethrow the original exception in the final Job.Barrier code
     }
 
     @Override
-    protected void compute2() {
+    public void compute2() {
       Scope.enter();
       init(true);
       _adapt_keys = Scope.pop();
@@ -957,7 +932,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //    H2O.submitTask(new H2OCountedCompleter(cmp) {
 //      @Override
 //      protected void compute2() {
-//        new UpdateGLMModelTsk(this,sm).fork(_job._result);
+//        new UpdateGLMModelTsk(this,sm).fork(_result);
 //      }
 //    });
 //  }
@@ -1649,8 +1624,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
               if(_parms._family == Family.binomial)
                 _model._output._threshold = ((ModelMetricsBinomial)_model._output._training_metrics)._auc.defaultThreshold();
-            } else {
-              System.out.println("haha");
             }
             _model.generateSummary(_parms._train,_taskInfo._iter);
             _model._output._scoring_history = _sc.to2dTable();
@@ -1867,7 +1840,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }).setValidate(_parms._intercept ? _taskInfo._ymu[0] : _parms._family == Family.binomial ? 0.5 : 0, score).asyncExec(_dinfo._adaptedFrame);
     }
     @Override
-    protected void compute2() { // part of the outer loop to compute sol for lambda_k+1. keep active cols using strong rules and calls solve.
+    public void compute2() { // part of the outer loop to compute sol for lambda_k+1. keep active cols using strong rules and calls solve.
       if(_job.stop_requested()) throw new GLMCancelledException();
       _start_time = System.currentTimeMillis();
       double previousLambda = _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1];

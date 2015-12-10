@@ -44,7 +44,8 @@ public class ClientTest extends TestUtil {
 
     Frame fr = RPC.call(H2O.CLOUD.leader(),new DTask() {
         Frame _fr;              // Output frame
-        @Override protected void compute2() { 
+        @Override
+        public void compute2() {
           _fr = parse_test_file(Key.make("covtype.hex"),"../../datasets/UCI/UCI-large/covtype/covtype.data");
           tryComplete();
         } 

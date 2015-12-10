@@ -174,7 +174,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
     # Walk across all the entities and generate a class with methods for all its endpoints:
     for entity in endpoints_by_entity:
         pojo = []
-        signatures = {}
+        #signatures = {}
 
         pojo.append("package water.bindings.proxies.retrofit;")
         pojo.append("")
@@ -224,11 +224,11 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     first_parm = False
 
             # check for conflicts:
-            signature = '{method}({parms});'.format(method = method, parms = parms)
-            if signature in signatures:
-                print 'ERROR: found a duplicate method signature in entity ' + entity + ': ' + signature
-            else:
-                signatures[signature] = True
+            #signature = '{method}({parms});'.format(method = method, parms = parms)
+            #if signature in signatures:
+            #    print 'ERROR: found a duplicate method signature in entity ' + entity + ': ' + signature
+            #else:
+            #    signatures[signature] = True
 
             if not first: pojo.append('')
             if http_method == 'POST':
@@ -328,63 +328,63 @@ for num in range(len(endpoints)):
     meta = a_node.endpoint_by_number(num)['routes'][0]
     endpoints_meta.append(meta)
 
-# Generate source code for a class for each entity (e.g., ModelBuilders):
-retrofitProxies = generate_retrofit_proxies(endpoints_meta, all_schemas_map)
-
-# TODO: makedirs only once!
-
-# Write them out:
-for entity, proxy in retrofitProxies.iteritems():
-    save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + entity + '.java'
-    save_dir = os.path.dirname(save_full)
-
-    # create dirs without race:
-    try:
-        os.makedirs(save_dir)
-    except OSError as exception:
-        if exception.errno != errno.EEXIST:
-            raise
-
-    with open(save_full, 'w') as the_file:
-        for line in proxy:
-            the_file.write("%s\n" % line)
-
-
-#####################################################
-# Write out an example program that uses the proxies.
-#####################################################
-retrofit_example = '''
-package water.bindings.proxies.retrofit;
-
-import retrofit.*;
-import retrofit.http.*;
-import water.bindings.pojos.*;
-
-public class Example {
-
-    public static void main (String[] args) {
-        RestAdapter restAdapter = new RestAdapter.Builder()
-            .setEndpoint("http://localhost:54321")
-            .build();
-
-        Frames framesService = restAdapter.create(Frames.class);
-        Models modelsService = restAdapter.create(Models.class);
-
-        FramesV3 all_frames = framesService.list();
-        ModelsV3 all_models = modelsService.list();
-    }
-}
-'''
-
-save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + 'Example' + '.java'
-save_dir = os.path.dirname(save_full)
-
-# create dirs without race:
-try:
-    os.makedirs(save_dir)
-except OSError as exception:
-    if exception.errno != errno.EEXIST:
-        raise
-
-with open(save_full, 'w') as the_file:
-    the_file.write("%s\n" % retrofit_example)
+## Generate source code for a class for each entity (e.g., ModelBuilders):
+#retrofitProxies = generate_retrofit_proxies(endpoints_meta, all_schemas_map)
+#
+## TODO: makedirs only once!
+#
+## Write them out:
+#for entity, proxy in retrofitProxies.iteritems():
+#    save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + entity + '.java'
+#    save_dir = os.path.dirname(save_full)
+#
+#    # create dirs without race:
+#    try:
+#        os.makedirs(save_dir)
+#    except OSError as exception:
+#        if exception.errno != errno.EEXIST:
+#            raise
+#
+#    with open(save_full, 'w') as the_file:
+#        for line in proxy:
+#            the_file.write("%s\n" % line)
+#
+#
+######################################################
+## Write out an example program that uses the proxies.
+######################################################
+#retrofit_example = '''
+#package water.bindings.proxies.retrofit;
+#
+#import retrofit.*;
+#import retrofit.http.*;
+#import water.bindings.pojos.*;
+#
+#public class Example {
+#
+#    public static void main (String[] args) {
+#        RestAdapter restAdapter = new RestAdapter.Builder()
+#            .setEndpoint("http://localhost:54321")
+#            .build();
+#
+#        Frames framesService = restAdapter.create(Frames.class);
+#        Models modelsService = restAdapter.create(Models.class);
+#
+#        FramesV3 all_frames = framesService.list();
+#        ModelsV3 all_models = modelsService.list();
+#    }
+#}
+#'''
+#
+#save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + 'Example' + '.java'
+#save_dir = os.path.dirname(save_full)
+#
+## create dirs without race:
+#try:
+#    os.makedirs(save_dir)
+#except OSError as exception:
+#    if exception.errno != errno.EEXIST:
+#        raise
+#
+#with open(save_full, 'w') as the_file:
+#    the_file.write("%s\n" % retrofit_example)

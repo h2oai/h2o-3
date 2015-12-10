@@ -11,7 +11,7 @@ import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.FrameUtils;
 import water.util.Log;
-
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import static org.junit.Assert.assertTrue;
 
 public class DeepLearningReproducibilityTest extends TestUtil {
@@ -52,7 +52,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
           p._train = train._key;
           p._valid = test._key;
-          p._model_id = Key.make();
           p._response_column = train.names()[train.names().length-1];
           int ci = train.names().length-1;
           Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec())._key);
@@ -72,14 +71,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           p._quiet_mode = true;
           p._reproducible = repro;
           DeepLearning dl = new DeepLearning(p);
-          try {
-            mymodel = dl.trainModel().get();
-          } catch (Throwable t) {
-            t.printStackTrace();
-            throw new RuntimeException(t);
-          } finally {
-            dl.remove();
-          }
+          mymodel = dl.trainModel().get();
 
           // Extract the scoring on validation set from the model
           preds[repeat] = mymodel.score(test);
@@ -93,9 +85,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           checksums[repeat] = mymodel.model_info().checksum_impl(); //check that the model state is consistent
           repeatErrs.put(repeat, mymodel.loss());
 
-        } catch (Throwable t) {
-          t.printStackTrace();
-          throw new RuntimeException(t);
         } finally {
           // cleanup
           if (mymodel != null) {

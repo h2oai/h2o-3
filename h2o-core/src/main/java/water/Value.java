@@ -1,7 +1,6 @@
 package water;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import jsr166y.ForkJoinPool;
@@ -527,6 +526,17 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     return fs;
   }
 
+  void blockTillNoReaders( ) {
+    assert _key.home(); // Only the HOME node for a key tracks replicas
+    // Write-Lock against further GETs
+    while( true ) {      // Repeat, in case racing GETs are bumping the counter
+      int old = _rwlock.get();
+      if( old <= 0) return; // No readers, or this Value already replaced with a later value
+      // Active readers: need to block until the GETs (of this very Value!) all complete
+      try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
+    }
+  }
+
   /** Initialize the _replicas field for a PUT.  On the Home node (for remote
    *  PUTs), it is initialized to the one replica we know about, and not
    *  read-locked.  Used on a new Value about to be PUT on the Home node. */
@@ -577,10 +587,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     Value val = H2O.STORE.get(key);
     if( val == null ) return null; // A true null
     if( !val.isNull() ) return val; // Not a special Null
-    if( val._rwlock.get()>0 ) return val; // Not yet invalidates all completed
     // One-shot throwaway attempt at upgrading the special Null to a true null
-    H2O.putIfMatch(key,null,val);
-    return null;
+    if( val._rwlock.get()==0 ) H2O.putIfMatch(key,null,val);
+    return null;                // Special null, but missing from callers point of view
   }
 
 
@@ -589,8 +598,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   @Override public boolean isReleasable() {
     int r = _rwlock.get();
     if( _key.home() ) {         // Called from lock_and_invalidate
-      // Home-key blocking: wait for active-GET count to fall to zero
-      return r == 0;
+      // Home-key blocking: wait for active-GET count to fall to zero, or blocking on deleted object
+      return r <= 0;
     } else {                    // Called from start_put
       // Remote-key blocking: wait for active-PUT lock to hit -1
       assert r == 2 || r == -1; // Either waiting (2) or done (-1) but not started(1)

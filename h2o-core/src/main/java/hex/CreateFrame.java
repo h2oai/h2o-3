@@ -33,7 +33,7 @@ public class CreateFrame extends Iced {
   public boolean positive_response; // only for response_factors=1
   public boolean has_response = false;
 
-  public CreateFrame(Key<Frame> key) { _job = new Job<>(key,"CreateFrame"); }
+  public CreateFrame(Key<Frame> key) { _job = new Job<>(key,Frame.class.getName(),"CreateFrame"); }
   public CreateFrame() { this(Key.<Frame>make()); }
 
   public Job<Frame> execImpl() {

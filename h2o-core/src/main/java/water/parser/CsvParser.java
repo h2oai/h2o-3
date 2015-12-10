@@ -1,7 +1,6 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
-import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.fvec.FileVec;
 import water.Key;
@@ -625,7 +624,7 @@ MAIN_LOOP:
 
     String[] lines = getFirstLines(bits);
     if(lines.length==0 )
-      throw new H2OParseSetupException("No data!");
+      throw new H2OParseException("No data!");
 
     // Guess the separator, columns, & header
     String[] labels;
@@ -699,11 +698,11 @@ MAIN_LOOP:
       // See if compatible headers
       if( columnNames != null && labels != null ) {
         if( labels.length != columnNames.length )
-          throw new H2OParseSetupException("Already have "+columnNames.length+" column labels, but found "+labels.length+" in this file");
+          throw new H2OParseException("Already have "+columnNames.length+" column labels, but found "+labels.length+" in this file");
         else {
           for( int i = 0; i < labels.length; ++i )
             if( !labels[i].equalsIgnoreCase(columnNames[i]) ) {
-              throw new H2OParseSetupException("Column "+(i+1)+" label '"+labels[i]+"' does not match '"+columnNames[i]+"'");
+              throw new H2OParseException("Column "+(i+1)+" label '"+labels[i]+"' does not match '"+columnNames[i]+"'");
             }
           labels = columnNames; // Keep prior case & count in any case
         }

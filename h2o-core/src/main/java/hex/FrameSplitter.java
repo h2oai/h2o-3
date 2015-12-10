@@ -41,8 +41,6 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
 
   /** Output frames for each output split part */
   private Frame[] splits;
-  /** Temporary variable holding exceptions of workers */
-  private Throwable[] workersExceptions;
 
   public FrameSplitter(Frame dataset, double[] ratios, Key<Frame>[] destKeys, Key<Job> jobKey) {
     this(null, dataset, ratios,destKeys,jobKey);
@@ -76,56 +74,34 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
       split.delete_and_lock(jobKey);
       splits[s] = split;
     }
-    setPendingCount(1);
-    H2O.submitTask(new H2OCountedCompleter(FrameSplitter.this) {
-      @Override public void compute2() {
-        setPendingCount(nsplits);
-        for (int s=0; s<nsplits; s++) {
-          new FrameSplitTask(new H2OCountedCompleter(this) { // Completer for this task
-            @Override public void compute2() { }
-            @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-              synchronized( FrameSplitter.this) { // synchronized on this since can be accessed from different workers
-                workersExceptions = workersExceptions!=null ? Arrays.copyOf(workersExceptions, workersExceptions.length+1) : new Throwable[1];
-                workersExceptions[workersExceptions.length-1] = ex;
-              }
-              tryComplete(); // we handle the exception so wait perform normal completion
-              return false;
-            }
-          }, datasetVecs, ratios, s).asyncExec(splits[s]);
-        }
-        tryComplete(); // complete the computation of nsplits-tasks
-      }
-    });
+    setPendingCount(nsplits);
+    for (int s=0; s<nsplits; s++)
+      new FrameSplitTask(this,datasetVecs, ratios, s).asyncExec(splits[s]);
     tryComplete(); // complete the computation of thrown tasks
   }
 
   /** Blocking call to obtain a result of computation. */
   public Frame[] getResult() {
     join();
-    if (workersExceptions!=null) throw new RuntimeException(workersExceptions[0]);
     return splits;
   }
 
-  public Throwable[] getErrors() {
-    return workersExceptions;
-  }
-
   @Override public void onCompletion(CountedCompleter caller) {
-    boolean exceptional = workersExceptions!=null;
     dataset.unlock(jobKey);
-    if (splits!=null) {
-      for (Frame s : splits) {
-        if (s!=null) {
-          if (!exceptional) {
-            s.update(jobKey);
-            s.unlock(jobKey);
-          } else { // Have to unlock and delete here
-            s.unlock(jobKey);
-            s.delete(jobKey, new Futures()).blockForPending(); // delete all splits
-          }
-        }
-      }
-    }
+    if (splits!=null)
+      for (Frame s : splits)
+        if (s!=null)
+          s.update(jobKey).unlock(jobKey);
+  }
+  @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+    dataset.unlock(jobKey);
+    Futures fs = new Futures();
+    if (splits!=null)
+      for (Frame s : splits)
+        if (s!=null)
+          s.unlock(jobKey).delete(jobKey,fs);
+    fs.blockForPending();
+    return true;
   }
 
   // Make vector templates for all output frame vectors

@@ -2,7 +2,7 @@ package hex.schemas;
 
 import hex.Distribution;
 import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningParameters;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 

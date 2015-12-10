@@ -2,7 +2,6 @@ package water.parser;
 
 import water.Futures;
 import water.Iced;
-import water.exceptions.H2OParseException;
 import water.fvec.AppendableVec;
 import water.fvec.NewChunk;
 import water.fvec.Vec;

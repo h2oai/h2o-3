@@ -16,8 +16,8 @@ public class DCTTransformer extends Transformer<Frame> {
   /** Whether to do inverse DCT */
   final boolean _inverse = false;
 
-  public DCTTransformer(Key<Frame> dest, String desc) {
-    super(dest, desc);
+  public DCTTransformer(Key<Frame> dest) {
+    super(dest, Frame.class.getName(), "DCTTransformer job");
   }
 
   @Override protected Job<Frame> execImpl() {
@@ -31,7 +31,8 @@ public class DCTTransformer extends Transformer<Frame> {
 
     return _job.start(
             new H2O.H2OCountedCompleter() {
-              @Override protected void compute2() {
+              @Override
+              public void compute2() {
                 Frame fft;
                 if (_dimensions[1] == 1 && _dimensions[2] == 1) {
                   fft = MathUtils.DCT.transform1D(_dataset, _dimensions[0], _inverse);

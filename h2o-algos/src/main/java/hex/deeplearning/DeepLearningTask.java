@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.FrameTask;
 import water.DKV;
@@ -61,7 +62,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           _localmodel = _sharedmodel.deep_clone();
         } else {
           //Make sure that the local model has the right global (shared) parameters after checkpoint restart!
-          _localmodel.set_params(_sharedmodel.get_params());
+          _localmodel.set_params(_sharedmodel.get_params(), _sharedmodel._model_id);
           _localmodel.set_processed_global(_sharedmodel.get_processed_global());
         }
       }

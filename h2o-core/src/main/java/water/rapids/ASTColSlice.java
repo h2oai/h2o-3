@@ -367,7 +367,8 @@ class ASTRBind extends ASTPrim {
     private Vec[] _vecs;        // Output
     ParallelRbinds( Frame[] frs, long[] espc, Vec[] vecs, int[][][] cmaps) { _frs = frs; _espc = espc; _vecs = vecs; _cmaps=cmaps;_ctr = new AtomicInteger(MAXP-1); }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       final int ncols = _frs[1].numCols();
       addToPendingCount(ncols-1);
       for (int i=0; i < Math.min(MAXP, ncols); ++i) forkVecTask(i);
@@ -399,7 +400,8 @@ class ASTRBind extends ASTPrim {
     int[][] _cmaps;             // categorical mapping array
 
     RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc, int[][] cmaps) { super(cc); _vecs = vecs; _v = v; _espc = espc; _cmaps=cmaps; }
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       addToPendingCount(_vecs.length-1-1);
       int offset=0;
       for( int i=1; i<_vecs.length; i++ ) {

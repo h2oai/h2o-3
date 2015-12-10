@@ -1,10 +1,6 @@
 package water;
 
 import java.util.Arrays;
-import water.UDPRebooted.ShutdownTsk;
-import water.api.CloudV3;
-import water.api.H2OErrorV3;
-import water.api.TypeaheadV3;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
@@ -12,7 +8,7 @@ import water.util.Log;
  *  Only public to expose a few constants to subpackages.  No exposed user
  *  calls. */
 public class TypeMap {
-  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP, KEY;
+  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                               // 1 -
@@ -32,38 +28,42 @@ public class TypeMap {
     water.fvec.Vec.ESPC.class.getName(), // Used in TestUtil
 
     // Status pages looked at without locking the cloud
+    water.api.Schema.class.getName(),
+    water.api.Schema.Meta.class.getName(),
     water.api.RequestSchema.class.getName(),
-    CloudV3.class.getName(),
-    CloudV3.NodeV3.class.getName(),
-    water.H2OError.class.getName(),
-    H2OErrorV3.class.getName(),
+    water.api.CloudV3.class.getName(),
+    water.api.CloudV3.NodeV3.class.getName(),
+    water.api.AboutHandler.AboutV3.class.getName(),
+    water.api.AboutHandler.AboutEntryV3.class.getName(),
+    water.UDPRebooted.ShutdownTsk.class.getName(),
+
+    // Mistyped hack URLs
+    water.api.H2OErrorV3.class.getName(),
+
+    // Ask for ModelBuilders list
+    water.api.RouteBase.class.getName(),
+    water.api.ModelBuildersV3.class.getName(),  // So Flow can ask about possible Model Builders without locking
+    water.api.ModelBuildersBase.class.getName(),
+    water.util.IcedSortedHashMap.class.getName(), // Seems wildly not-needed
+    hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
+
+    // Checking for Flow clips
+    water.api.NodePersistentStorageV3.class.getName(),
+    water.api.NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
+
+    // Beginning to hunt for files
     water.util.IcedHashMap.class.getName(),
-    water.util.IcedSortedHashMap.class.getName(),
     water.util.IcedHashMapBase.class.getName(),
     water.util.IcedHashMap.IcedHashMapStringString.class.getName(),
     water.util.IcedHashMap.IcedHashMapStringObject.class.getName(),
-    hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
-    water.api.Schema.class.getName(),
-    water.api.Schema.Meta.class.getName(),
-    TypeaheadV3.class.getName(),    // Allow typeahead without locking
-    water.Key.class.getName(),
-    water.api.AboutHandler.AboutV3.class.getName(),
-    water.api.AboutHandler.AboutEntryV3.class.getName(),
-    water.api.NodePersistentStorageV3.class.getName(),
-    water.api.NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
-    water.api.MetadataV3.class.getName(),
-    water.api.MetadataBase.class.getName(),
-    water.api.RouteV3.class.getName(),
-    water.api.RouteBase.class.getName(),
-    water.api.ModelBuildersV3.class.getName(),
-    water.api.ModelBuildersBase.class.getName(),
-    ShutdownTsk.class.getName(),
+    water.api.TypeaheadV3.class.getName(),    // Allow typeahead without locking
+
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
   // ID -> Class name mapping
   static String[] CLAZZES;
-  // ID -> pre-allocated Golden Instance of IcedImpl
+  // ID -> pre-allocated Golden Instance of Icer
   static private Icer[] GOLD;
   // Unique IDs
   static private int IDS;
@@ -84,8 +84,7 @@ public class TypeMap {
     FRAME        = (short)onIce("water.fvec.Frame");    // Used in water.Value
     VECGROUP     = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
     ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
-    KEY          = (short)onIce("water.Key");           // Used in water.api
-    // Fill in some pre-cooked delegates so seralization has a base-case
+    // Fill in some pre-cooked delegates so serialization has a base-case
     GOLD[ICED ] = Icer.ICER;
   }
 
@@ -97,15 +96,15 @@ public class TypeMap {
   // (1) Type ID - 2 byte shortcut for an Iced type
   // (2) String clazz name - the class name for an Iced type
   // (3) Iced POJO - an instance of Iced, the distributable workhorse object
-  // (4) IcedImpl POJO - an instance of IcedImpl, the serializing delegate for Iced
+  // (4) Icer POJO - an instance of Icer, the serializing delegate for Iced
   //
   // Some sample code paths:
   // <clinit>: convert string -> ID (then set static globals)
   // new code: fetch remote string->ID mapping
   // new code: leader sets  string->ID mapping
   // printing: id -> string
-  // deserial: id -> string -> IcedImpl -> Iced (slow path)
-  // deserial: id           -> IcedImpl -> Iced (fath path)
+  // deserial: id -> string -> Icer -> Iced (slow path)
+  // deserial: id           -> Icer -> Iced (fath path)
   // lookup  : id -> string (on leader)
   //
 
@@ -135,10 +134,9 @@ public class TypeMap {
   // Reverse: convert an ID to a className possibly fetching it from leader.
   public static String className(int id) {
     if( id == PRIM_B ) return "[B";
-    Icer f = goForGold(id);
-    if( f != null ) return f.className();
-    if( id < CLAZZES.length ) { // Might be installed as a className mapping no Icer (yet)
-      String s = CLAZZES[id];
+    String clazs[] = CLAZZES;   // Read once, in case resizing
+    if( id < clazs.length ) { // Might be installed as a className mapping no Icer (yet)
+      String s = clazs[id];   // Racily read the CLAZZES array
       if( s != null ) return s; // Has the className already
     }
     assert H2O.CLOUD.leader() != H2O.SELF : "Leader has no mapping for id "+id; // Leaders always have the latest mapping already
@@ -172,7 +170,7 @@ public class TypeMap {
   // including during deserialization when a Node will be presented with a
   // fresh new ID with no idea what it stands for.  Does NOT resize the GOLD
   // array, since the id->className mapping has already happened.
-  static Icer getIcer( int id, Iced ice ) { return getIcer(id,ice.getClass()); }
+  static Icer getIcer( int id, Iced ice )      { return getIcer(id,ice.getClass()); }
   static Icer getIcer( int id, Freezable ice ) { return getIcer(id,ice.getClass()); }
   static Icer getIcer( int id, Class ice_clz ) {
     Icer f = goForGold(id);
@@ -188,9 +186,9 @@ public class TypeMap {
       try { f = Weaver.genDelegate(id,ice_clz); }
       catch( Exception e ) {
         Log.err("Weaver generally only throws if classfiles are not found, e.g. IDE setups running test code from a remote node that is not in the classpath on this node.");
-        Log.throwErr(e);
+        throw Log.throwErr(e);
       }
-      // Now install until the TypeMap class lock, so the GOLD array is not
+      // Now install under the TypeMap class lock, so the GOLD array is not
       // resized out from under the installation.
       synchronized( TypeMap.class ) {
         return GOLD[id]=f;
@@ -210,11 +208,21 @@ public class TypeMap {
     assert iced != null : "No instance of id "+id+", class="+CLAZZES[id];
     return (Freezable) iced.clone();
   }
-  // The single golden instance of an Iced, used for cloning and instanceof tests
-  static Freezable theFreezable(int id) {
+  /** Create a new freezable object based on its className.
+   *
+   * @param className class name
+   * @return new instance of Freezable object
+   */
+  public static Freezable newFreezable(String className) {
+    return (Freezable)theFreezable(onIce(className)).clone();
+  }
+  /** The single golden instance of an Iced, used for cloning and instanceof
+   *  tests, do-not-modify since it's The Golden Instance and shared. */
+  public static Freezable theFreezable(int id) {
     try {
       Icer f = goForGold(id);
       return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
-    } catch( ClassNotFoundException e ) { throw Log.throwErr(e); }
+    } catch( ClassNotFoundException e ) {
+      throw Log.throwErr(e); }
   }
 }

@@ -5,6 +5,12 @@ import water.Key;
 import water.fvec.Frame;
 
 class CreateFrameV3 extends RequestSchema<CreateFrame, CreateFrameV3> {
+  @API(help="Job Key")
+  public KeyV3.JobKeyV3 key;
+
+  @API(help="destination key", direction=API.Direction.INOUT)
+  public KeyV3.FrameKeyV3 dest;
+
   @API(help = "Number of rows", json=true)
   public long rows;
 

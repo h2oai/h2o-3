@@ -16,20 +16,20 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   public DataInfo dinfo() { return _dinfo; }
   final Key _dinfoKey;
   final int [] _activeCols;
-  final protected Key _jobKey;
+  final protected Key<Job> _jobKey;
 
   protected float _useFraction = 1.0f;
   private final long _seed;
   protected boolean _shuffle = false;
   private final int _iteration;
 
-  public FrameTask(Key jobKey, DataInfo dinfo) {
+  public FrameTask(Key<Job> jobKey, DataInfo dinfo) {
     this(jobKey, dinfo, 0xDECAFBEE, -1, false);
   }
-  public FrameTask(Key jobKey, DataInfo dinfo, long seed, int iteration, boolean sparse) {
+  public FrameTask(Key<Job> jobKey, DataInfo dinfo, long seed, int iteration, boolean sparse) {
     this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration, sparse);
   }
-  private FrameTask(Key jobKey, Key dinfoKey, int [] activeCols,long seed, int iteration, boolean sparse) {
+  private FrameTask(Key<Job> jobKey, Key dinfoKey, int [] activeCols,long seed, int iteration, boolean sparse) {
     super(null);
     _jobKey = jobKey;
     _dinfoKey = dinfoKey;
@@ -73,9 +73,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected void applyMiniBatchUpdate(int n){}
 
   /**
-   * Return the mini-batch size
    * Note: If this is overridden, then applyMiniBatch must be overridden as well to perform the model/weight mini-batch update
-   * @return
+   * @return Return the mini-batch size
    */
   protected int getMiniBatchSize(){ return 1; }
 
@@ -95,7 +94,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * and adapts response according to the CaseMode/CaseValue if set.
    */
   @Override public final void map(Chunk [] chunks, NewChunk [] outputs) {
-    if (_jobKey != null && !Job.isRunning(_jobKey)) return;
+    if( _jobKey.get().stop_requested() ) return;
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
     boolean doWork = chunkInit();
@@ -191,9 +190,9 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
           long seed = offset + rep * nrows + r;
           miniBatchCounter++;
           if (outputs != null && outputs.length > 0)
-            processRow(seed++, row, outputs);
+            processRow(seed, row, outputs);
           else
-            processRow(seed++, row);
+            processRow(seed, row);
         }
         num_processed_rows++;
         if (miniBatchCounter > 0 && miniBatchCounter % miniBatchSize == 0) {

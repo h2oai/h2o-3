@@ -23,10 +23,10 @@ import water.util.ReflectionUtils;
 import water.util.annotations.IgnoreJRERequirement;
 
 public class Handler extends H2OCountedCompleter {
-  protected Handler( ) { super(); }
-  protected Handler( Handler completer ) { super(completer); }
+  public Handler( ) { }
+  public Handler( Handler completer ) { super(completer); }
 
-  private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
+  protected long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
   public static Class<? extends Schema> getHandlerMethodInputSchema(Method method) {
      return (Class<? extends Schema>)ReflectionUtils.findMethodParameterClass(method, 1);
@@ -37,12 +37,9 @@ public class Handler extends H2OCountedCompleter {
   }
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  final Schema handle(int version, Route route, Properties parms) throws Exception {
+  Schema handle(int version, Route route, Properties parms) throws Exception {
     Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);
     Schema schema = Schema.newInstance(handler_schema_class);
-
-    if (null == schema)
-      throw H2O.fail("Failed to instantiate Schema of class: " + handler_schema_class + " for route: " + route);
 
     // If the schema has a real backing class fill from it to get the default field values:
     Class<? extends Iced> iced_class = schema.getImplClass();
@@ -61,6 +58,7 @@ public class Handler extends H2OCountedCompleter {
     _t_start = System.currentTimeMillis();
     Schema result = null;
     try {
+      route._handler_method.setAccessible(true);
       result = (Schema)route._handler_method.invoke(this, version, schema);
     }
     // Exception throws out of the invoked method turn into InvocationTargetException
@@ -77,7 +75,8 @@ public class Handler extends H2OCountedCompleter {
     return result;
   }
 
-  @Override final protected void compute2() {
+  @Override
+  public final void compute2() {
     throw H2O.fail();
   }
 

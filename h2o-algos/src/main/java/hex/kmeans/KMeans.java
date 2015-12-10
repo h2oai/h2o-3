@@ -1,12 +1,9 @@
 package hex.kmeans;
 
 import hex.*;
-import hex.schemas.KMeansV3;
-import hex.schemas.ModelBuilderSchema;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
-import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -24,24 +21,21 @@ import java.util.Random;
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
 public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-  @Override public ModelCategory[] can_build() {
-    return new ModelCategory[]{ ModelCategory.Clustering };
-  }
-
-  public enum Initialization {
-    Random, PlusPlus, Furthest, User
-  }
-
   // Convergence tolerance
   final private double TOLERANCE = 1e-6;
 
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
+  public enum Initialization { Random, PlusPlus, Furthest, User }
+  /** Start the KMeans training Job on an F/J thread. */
+  @Override protected KMeansDriver trainModelImpl() { return new KMeansDriver();  }
+  @Override public long progressUnits() { return _parms._max_iterations; }
+
   // Called from an http request
-  public KMeans(Key dest, String desc, KMeansModel.KMeansParameters parms) { super(dest, desc, parms); init(false); }
-  public KMeans( KMeansModel.KMeansParameters parms ) { super("K-means",parms); init(false); }
+  public KMeans( KMeansModel.KMeansParameters parms         ) { super(parms    ); init(false); }
+  public KMeans( KMeansModel.KMeansParameters parms, Job job) { super(parms,job); init(false); }
+  public KMeans(boolean startup_once) { super(new KMeansModel.KMeansParameters(),startup_once); }
 
-  public ModelBuilderSchema schema() { return new KMeansV3(); }
-
-  protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint() {
     long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);
     long max_mem = H2O.SELF._heartbeat.get_free_mem();
     if (mem_usage > max_mem) {
@@ -50,16 +44,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               + ") - try reducing the number of columns and/or the number of categorical factors.";
       error("_train", msg);
     }
-  }
-
-  /** Start the KMeans training Job on an F/J thread. */
-  @Override protected H2OCountedCompleter<KMeansDriver> trainModelImpl() {
-    return new KMeansDriver();
-  }
-
-  @Override
-  public long progressUnits() {
-    return _parms._max_iterations;
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -84,8 +68,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   }
 
   // ----------------------
-  private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
-    private KMeansDriver() { super(true); } // bump priority of drivers
+  private final class KMeansDriver extends Driver {
     private String[][] _isCats;  // Categorical columns
 
     // Initialize cluster centers
@@ -249,7 +232,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
 
     // Main worker thread
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
 
       KMeansModel model = null;
       try {
@@ -260,7 +244,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // Something goes wrong
         if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
         // The model to be built
-        model = new KMeansModel(_job._result, _parms, new KMeansModel.KMeansOutput(KMeans.this));
+        model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
         model.delete_and_lock(_job);
 
         //

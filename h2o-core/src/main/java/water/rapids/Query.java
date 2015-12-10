@@ -1,20 +1,9 @@
 package water.rapids;
 
-import water.Futures;
 import water.H2O;
 import water.MRTask;
-import water.MemoryManager;
-import water.fvec.C8Chunk;
 import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.ArrayUtils;
 import water.util.AtomicUtils;
-
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 // Now find groups ...
@@ -41,7 +30,8 @@ class assignG extends H2O.H2OCountedCompleter<assignG> {
     _firstGroupNum = firstGroupNum;
     _o = o;
   }
-  @Override protected void compute2() {
+  @Override
+  public void compute2() {
     int oi = 0, batch=0;
     long _ob[] = _o[batch];
     long gOutBatch[] = _gOut[batch];

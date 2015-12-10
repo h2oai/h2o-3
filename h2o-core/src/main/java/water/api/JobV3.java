@@ -2,10 +2,8 @@ package water.api;
 
 import water.*;
 import water.api.KeyV3.JobKeyV3;
-import water.exceptions.H2OFailException;
 import water.util.Log;
 import water.util.PojoUtils;
-import water.util.ReflectionUtils;
 
 /** Schema for a single Job. */
 public class JobV3 extends RequestSchema<Job, JobV3> {
@@ -44,19 +42,11 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
 
   // Version&Schema-specific filling into the impl
   @SuppressWarnings("unchecked")
-  @Override public Job createImpl( ) {
-    try {
-      Key k = key == null?Key.make():key.key();
-      return this.getImplClass().getConstructor(new Class[]{Key.class,String.class}).newInstance(k,description);
-    }catch (Exception e) {
-      String msg = "Exception instantiating implementation object of class: " + this.getImplClass().toString() + " for schema class: " + this.getClass();
-      Log.err(msg + ": " + e);
-      throw H2O.fail(msg, e);
-    }
-  }
+  @Override public Job createImpl( ) { throw H2O.fail(); } // Cannot make a new Job directly via REST
 
   // Version&Schema-specific filling from the impl
-  @Override public JobV3 fillFromImpl(Job job) {
+  @Override public JobV3 fillFromImpl( Job job ) {
+    if( job == null ) return this;
     // Handle fields in subclasses:
     PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make consistent and remove
@@ -74,22 +64,13 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
     else
       if( job.stop_requested() ) status = "CANCELLED";
       else status = "DONE";
-    if( job.hasEx() ) status = "FAILED";
-
+    Throwable ex = job.ex();
+    if( ex != null ) status = "FAILED";
+    exception = ex == null ? null : ex.toString();
     msec = job.msec();
-    Key dest_key = job._result;
-    Class<? extends Keyed> dest_class = ReflectionUtils.findActualClassParameter(job.getClass(), 0); // What type do we expect for this Job?
-    try {
-      dest = KeyV3.forKeyedClass(dest_class, dest_key);
-    }
-    catch (H2OFailException e) {
-      throw e;
-    }
-    catch (Exception e) {
-      dest = null;
-      Log.warn("JobV3.fillFromImpl(): dest key for job: " + this + " is not the expected type: " + dest_class.getCanonicalName() + ": " + dest_key + ".  Returning null for the dest field.");
-    }
-    exception = job.ex().toString();
+
+    Keyed dest_type = (Keyed)TypeMap.theFreezable(job._typeid);
+    dest = job._result == null ? null : KeyV3.make(dest_type.makeSchema(),job._result);
     return this;
   }
 

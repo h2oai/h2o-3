@@ -1,6 +1,7 @@
 package water;
 
 import java.util.*;
+import water.fvec.Vec;
 
 /** A "scope" for tracking Key lifetimes; an experimental API.
  *
@@ -60,7 +61,16 @@ public class Scope {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     if( scope == null ) return; // Not tracking this thread
     if( scope._keys.size() == 0 ) return; // Tracked in the past, but no scope now
-    if (!scope._keys.peek().contains(k))
-      scope._keys.peek().add(k);            // Track key
+    HashSet<Key> keys = scope._keys.peek();
+    if( !keys.contains(k) ) keys.add(k); // Track key
   }
+
+  static public void untrack( Key<Vec>[] keys ) {
+    Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
+    if( scope == null ) return;           // Not tracking this thread
+    if( scope._keys.size() == 0 ) return; // Tracked in the past, but no scope now
+    HashSet<Key> xkeys = scope._keys.peek();
+    for( Key<Vec> key : keys ) xkeys.remove(key); // Untrack key
+  }
+
 }

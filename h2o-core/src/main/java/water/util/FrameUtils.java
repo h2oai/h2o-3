@@ -154,13 +154,12 @@ public class FrameUtils {
    * Helper to insert missing values into a Frame
    */
   public static class MissingInserter extends Iced {
-    final Job<Frame> _job;
+    Job<Frame> _job;
     final Key _dataset;
     final double _fraction;
     final long _seed;
 
     public MissingInserter(Key<Frame> frame, long seed, double frac){
-      _job = new Job(frame, "MissingValueInserter");
       _dataset = frame; _seed = seed; _fraction = frac;
     }
 
@@ -170,7 +169,8 @@ public class FrameUtils {
     class MissingInserterDriver extends H2O.H2OCountedCompleter {
       final Frame _frame;
       MissingInserterDriver(Frame frame) {_frame = frame; }
-      @Override protected void compute2() {
+      @Override
+      public void compute2() {
         new MRTask() {
           @Override public void map (Chunk[]cs){
             final Random rng = RandomUtils.getRNG(0);
@@ -188,6 +188,7 @@ public class FrameUtils {
     }
 
     public Job<Frame> execImpl() {
+      _job = new Job(_dataset, Frame.class.getName(), "MissingValueInserter");
       if (DKV.get(_dataset) == null)
         throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");

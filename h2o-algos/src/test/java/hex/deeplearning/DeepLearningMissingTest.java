@@ -2,7 +2,7 @@ package hex.deeplearning;
 
 import hex.FrameSplitter;
 import water.TestUtil;
-
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,7 +80,6 @@ public class DeepLearningMissingTest extends TestUtil {
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
           p._epochs = 3;
-          p._model_id = Key.make();
           p._reproducible = true;
           p._seed = seed;
           p._elastic_averaging = false;

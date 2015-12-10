@@ -56,7 +56,7 @@ public class Tabulate extends Keyed<Tabulate> {
   final private Stats[] _stats = new Stats[2];
 
   public Tabulate() {
-    _job = new Job(Key.<Tabulate>make(), "Tabulate job");
+    _job = new Job(Key.<Tabulate>make(), Tabulate.class.getName(), "Tabulate job");
   }
 
   private int bins(int v) {
@@ -112,7 +112,7 @@ public class Tabulate extends Keyed<Tabulate> {
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_predictor};
       in._max_factors = _nbins_predictor -1;
-      in.execImpl();
+      in.execImpl(null);
       x = in._job._result.get().anyVec();
     } else if (x.isInt() && (x.max() - x.min() + 1) <= _nbins_predictor) {
       x = x.toCategoricalVec();
@@ -124,7 +124,7 @@ public class Tabulate extends Keyed<Tabulate> {
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_response};
       in._max_factors = _nbins_response -1;
-      in.execImpl();
+      in.execImpl(null);
       y = in._job._result.get().anyVec();
     } else if (y.isInt() && (y.max() - y.min() + 1) <= _nbins_response) {
       y = y.toCategoricalVec();

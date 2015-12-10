@@ -11,8 +11,6 @@ import water.util.*;
 
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -140,7 +138,7 @@ import java.util.regex.Pattern;
  * @see water.api.API
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
-  private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
+  private transient Class<I> _impl_class;
   private static final int HIGHEST_SUPPORTED_VERSION = 3;
   private static final int EXPERIMENTAL_VERSION = 99;
 
@@ -215,12 +213,10 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   @API(help="Metadata on this schema instance, to make it self-describing.", direction=API.Direction.OUTPUT)
-  private Meta __meta = null;
+  private Meta __meta;
 
   /** Get the metadata for this schema instance which makes it self-describing when serialized to JSON. */
-  protected Meta get__meta() {
-    return __meta;
-  }
+  protected Meta get__meta() { return __meta; }
 
   // Registry which maps a simple schema name to its class.  NOTE: the simple names form a single namespace.
   // E.g., "DeepLearningParametersV2" -> hex.schemas.DeepLearningV2.DeepLearningParametersV2
@@ -239,16 +235,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   // 17 and 3 will get added to the Map.
   private static Map<Pair<String, Integer>, Class<? extends Schema>> iced_to_schema = new HashMap<>();
 
-  /**
-   * Default constructor; triggers lazy schema registration.
-   * @throws water.exceptions.H2OFailException if there is a name collision or there is more than one schema which maps to the same Iced class
-   */
+  /** Default constructor; triggers lazy schema registration.
+   *  @throws water.exceptions.H2OFailException if there is a name collision or
+   *  there is more than one schema which maps to the same Iced class */
   public Schema() {
     String name = this.getClass().getSimpleName();
     int version = extractVersion(name);
-    String type = _impl_class.getSimpleName();
-
-    __meta = new Meta(version, name, type);
+    String type = getImplClass().getSimpleName();
+    init_meta();
 
     if (null == schema_to_iced.get(name)) {
       Log.debug("Registering schema: " + name + " schema_version: " + version + " with Iced class: " + _impl_class.toString());
@@ -269,47 +263,40 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     }
   }
 
-  private static Pattern _version_pattern = null;
-  /** Extract the version number from the schema class name.  Returns -1 if there's no version number at the end of the classname. */
+  protected void init_meta() {
+    if( __meta != null ) return;
+    String name = this.getClass().getSimpleName();
+    int version = extractVersion(name);
+    String type = getImplClass().getSimpleName();
+    __meta = new Meta(version, name, type);
+  }
+
+  /** Extract the version number from the schema class name.  Returns -1 if
+   *  there's no version number at the end of the classname. */
   private static int extractVersion(String clz_name) {
-    if (null == _version_pattern) // can't just use a static initializer
-      _version_pattern = Pattern.compile(".*V(\\d+)");
-    Matcher m =  _version_pattern.matcher(clz_name);
-    if (! m.matches()) return -1;
-    return Integer.valueOf(m.group(1));
+    int idx = clz_name.lastIndexOf('V');
+    if( idx == -1 ) return -1;
+    try { return Integer.valueOf(clz_name.substring(idx+1)); }
+    catch( NumberFormatException _ ) { return -1; }
   }
 
-  /**
-   * Get the version number of this schema, for example 3 or 99. Note that 99 is the "experimental" version, meaning that
-   * there are no stability guarantees between H2O versions.
-   */
-  public int getSchemaVersion() {
-    return __meta.schema_version;
-  }
+  /** Get the version number of this schema, for example 3 or 99. Note that 99
+   *  is the "experimental" version, meaning that there are no stability
+   *  guarantees between H2O versions.  */
+  public int getSchemaVersion() { return __meta.schema_version; }
 
+  private volatile static int LATEST_VERSION = -1;
+  /** Get the highest schema version number that we've encountered during schema registration.  */
+  public static int getLatestVersion() { return LATEST_VERSION; }
 
-  private static int latest_version = -1;
-  /**
-   * Get the highest schema version number that we've encountered during schema registration.
-   */
-  public final static int getLatestVersion() {
-    return latest_version;
-  }
+  /** Get the highest schema version that we support.  This bounds the search
+   *  for a schema if we haven't yet registered all schemas and don't yet know
+   *  the latest_version.  */
+  public static int getHighestSupportedVersion() { return HIGHEST_SUPPORTED_VERSION; }
 
-  /**
-   * Get the highest schema version that we support.  This bounds the search for a schema if we haven't yet
-   * registered all schemas and don't yet know the latest_version.
-   */
-  public final static int getHighestSupportedVersion() {
-    return HIGHEST_SUPPORTED_VERSION;
-   }
-
-  /**
-   * Get the experimental schema version, which indicates that a schema is not guaranteed stable between H2O releases.
-   */
-  public final static int getExperimentalVersion() {
-    return EXPERIMENTAL_VERSION;
-  }
+  /** Get the experimental schema version, which indicates that a schema is not
+   *  guaranteed stable between H2O releases.  */
+  public static int getExperimentalVersion() { return EXPERIMENTAL_VERSION; }
 
   /**
    * Register the given schema class.
@@ -353,9 +340,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         if (version > HIGHEST_SUPPORTED_VERSION)
           throw H2O.fail("Found a schema with a version greater than the highest supported version of: " + getHighestSupportedVersion() + ": " + clz);
 
-        if (version > latest_version) {
+        if (version > LATEST_VERSION) {
           synchronized (Schema.class) {
-            if (version > latest_version) latest_version = version;
+            if (version > LATEST_VERSION) LATEST_VERSION = version;
           }
         }
       }
@@ -410,22 +397,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * <p>
    * TODO: We could handle the common case of children with the same field names here
    * by finding all of our fields that are themselves Schemas.
-   * @throws H2OIllegalArgumentException if Class.newInstance fails
    */
   public I createImpl() {
-    try {
-      return this.getImplClass().newInstance();
-    }
-    catch (Exception e) {
-      String msg = "Exception instantiating implementation object of class: " + this.getImplClass().toString() + " for schema class: " + this.getClass();
-      Log.err(msg + ": " + e);
-      H2OIllegalArgumentException heae = new H2OIllegalArgumentException(msg);
-      heae.initCause(e);
-      throw heae;
-    }
+    try { return getImplClass().newInstance(); }
+    catch (Exception e) { throw H2O.fail("Exception making a newInstance",e); }
   }
 
-  /** Fill an impl object and any children from this schema and its children. If a schema doesn't need to adapt any fields if does not need to override this method. */
+  /** Fill an impl object and any children from this schema and its children.
+   *  If a schema doesn't need to adapt any fields if does not need to override
+   *  this method. */
   public I fillImpl(I impl) {
     PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT); // TODO: make field names in the impl classes consistent and remove
     PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
@@ -444,7 +424,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return (S)this;
   }
 
-  /** Return the class of the implementation type parameter I for the given Schema class. Used by the metadata facilities and the reflection-base field-copying magic in PojoUtils. */
+  /** Return the class of the implementation type parameter I for the
+   *  given Schema class. Used by the metadata facilities and the
+   *  reflection-base field-copying magic in PojoUtils. */
   public static Class<? extends Iced> getImplClass(Class<? extends Schema> clz) {
     Class<? extends Iced> impl_class = (Class<? extends Iced>)ReflectionUtils.findActualClassParameter(clz, 0);
     if (null == impl_class)
@@ -452,15 +434,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return impl_class;
   }
 
-  /** Return the class of the implementation type parameter I for this Schema.  Used by generic code which deals with arbitrary schemas and their backing impl classes. */
+  /** Return the class of the implementation type parameter I for this Schema.
+   *  Used by generic code which deals with arbitrary schemas and their backing
+   *  impl classes.  Never returns null. */
   public Class<I> getImplClass() {
-    if (null == _impl_class)
-      _impl_class = (Class<I>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
-
-    if (null == _impl_class)
-      Log.warn("Failed to find an impl class for Schema: " + this.getClass());
-
-    return _impl_class;
+    return _impl_class != null ? _impl_class : (_impl_class = (Class<I>) ReflectionUtils.findActualClassParameter(this.getClass(), 0));
   }
 
   /**
@@ -547,8 +525,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       } catch( IllegalAccessException iae ) {
         // Come here if field is final or private
         throw H2O.fail("Broken internal schema; field cannot be private nor final: " + key);
-      } catch( Exception e) {
-        throw new H2OIllegalArgumentException(key, this.getClass().getSimpleName() + ".fillFromParms", parms.getProperty(key));
       }
     }
     // Here every thing in 'parms' was set into some field - so we have already
@@ -850,9 +826,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   private static boolean schemas_registered = false;
-  /**
-   * Find all schemas using reflection and register them.
-   */
+  /** Find all schemas using reflection and register them.  */
   synchronized static public void registerAllSchemasIfNecessary() {
     if (schemas_registered) return;
     // if (!Paxos._cloudLocked) return; // TODO: It's never getting locked. . . :-(
@@ -912,7 +886,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then FrameV2 will
    * be returned.  This compatibility lookup is cached.
    */
-  private static Class<? extends Schema> schemaClass(int version, String type) {
+  public static Class<? extends Schema> schemaClass(int version, String type) {
     if (version < 1) return null;
 
     Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));
@@ -942,16 +916,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return schema(version, impl_class.getSimpleName());
   }
 
-  // FIXME: can be parameterized by type: public static <T extends Schema> T newInstance(Class<T> clz)
+  /** Returns a new Schema instance.  Does not throw, nor returns null.
+   *  @return New instance of Schema Class 'clz'.   */
   public static <T extends Schema> T newInstance(Class<T> clz) {
-    T s = null;
-    try {
-      s = clz.newInstance();
-    }
-    catch (Exception e) {
-      throw new H2OIllegalArgumentException("Failed to instantiate schema of class: " + clz.getCanonicalName() + ", cause: " + e);
-    }
-    return s;
+    try { return clz.newInstance(); }
+    catch (Exception e) { throw H2O.fail("Failed to instantiate schema of class: " + clz.getCanonicalName(),e); }
   }
 
   /**
@@ -974,14 +943,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return Schema.newInstance(clz);
   }
 
-  /**
-   * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
-   * @throws H2ONotFoundArgumentException if an appropriate schema is not found
-   */
+  /** For a given schema_name (e.g., "FrameV2") return an appropriate new
+   *  schema object (e.g., a water.api.Framev2).
+   *  @throws H2ONotFoundArgumentException if an appropriate schema is not found */
   protected static Schema newInstance(String schema_name) {
     Class<? extends Schema> clz = schemas.get(schema_name);
-    if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name,
-                                                            "Failed to find schema for schema_name: " + schema_name);
+    if (null == clz)
+      throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name, 
+					     "Failed to find schema for schema_name: " + schema_name);
     return Schema.newInstance(clz);
   }
 
@@ -989,23 +958,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * Generate Markdown documentation for this Schema possibly including only the input or output fields.
    * @throws H2ONotFoundArgumentException if reflection on a field fails
    */
-  public StringBuffer markdown(StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
-    return markdown(new SchemaMetadata(this), appendToMe, include_input_fields, include_output_fields);
-  }
-
-  /**
-   * Append Markdown documentation for another Schema, given we already have the metadata constructed.
-   * @throws H2ONotFoundArgumentException if reflection on a field fails
-   */
-  public StringBuffer markdown(SchemaMetadata meta, StringBuffer appendToMe) {
-    return markdown(meta, appendToMe, true, true);
+  public StringBuffer markdown(boolean include_input_fields, boolean include_output_fields) {
+    return markdown(new SchemaMetadata(this), include_input_fields, include_output_fields);
   }
 
   /**
    * Generate Markdown documentation for this Schema, given we already have the metadata constructed.
    * @throws H2ONotFoundArgumentException if reflection on a field fails
    */
-  public StringBuffer markdown(SchemaMetadata meta , StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
+  public StringBuffer markdown(SchemaMetadata meta, boolean include_input_fields, boolean include_output_fields) {
     MarkdownBuilder builder = new MarkdownBuilder();
 
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
@@ -1082,11 +1043,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                                             "Caught exception using reflection on schema: " + this + ": " + e,
                                             values);
     }
-
-    if (null != appendToMe)
-      appendToMe.append(builder.stringBuffer());
-
     return builder.stringBuffer();
-  } // markdown()
-
+  }
 }

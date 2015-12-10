@@ -7,7 +7,6 @@ import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
-import water.exceptions.H2OParseException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
@@ -129,7 +128,7 @@ public final class ParseDataset {
 
   // Setup a private background parse job
   private ParseDataset(Key<Frame> dest) {
-    _job = new Job(dest,"Parse");
+    _job = new Job(dest,Frame.class.getName(), "Parse");
   }
 
   // -------------------------------
@@ -164,7 +163,7 @@ public final class ParseDataset {
     }
 
     private void parseCleanup() {
-      assert _pds._job.isStopped();
+      assert !_pds._job.isStopped(); // Job still running till job.onExCompletion returns
       Futures fs = new Futures();
       // Find & remove all partially-built output vecs & chunks.
       // Since this is racily called, perhaps multiple times, read _mfpt only exactly once.
@@ -768,8 +767,9 @@ public final class ParseDataset {
         Log.trace("Finished a map stage of a file parse with start index "+chunkStartIdx+".");
       } catch( IOException ioe ) {
         throw new RuntimeException(ioe);
-      } catch (H2OParseException pe) {
-        throw new H2OParseException(key,pe);
+      } catch (H2OParseException pe0) {
+        // Rebuild identical exception and stack trace, but add key to msg
+        throw pe0.resetMsg(pe0.getMessage()+" for "+key);
       }
     }
 
@@ -1009,5 +1009,17 @@ public final class ParseDataset {
       Log.info(s,printColumnToStdout);
     }
     Log.info(FrameUtils.chunkSummary(fr).toString());
+  }
+}
+
+class H2OParseException extends RuntimeException {
+  H2OParseException( String msg ) { super(msg); }
+  H2OParseException( String msg, Throwable cause ) { super(msg,cause); }
+
+  // Same identical exception, same stack trace, just a new 'msg'
+  H2OParseException resetMsg(String msg) {
+    H2OParseException pe1 = new H2OParseException(msg,getCause());
+    pe1.setStackTrace(getStackTrace());
+    return pe1;
   }
 }

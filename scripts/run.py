@@ -224,10 +224,7 @@ class H2OCloudNode:
             main_class = "water.H2OClientApp"
         else:
             main_class = "water.H2OApp"
-        if "JAVA_HOME" in os.environ and not sys.platform == "win32":
-            java = os.environ["JAVA_HOME"] + "/bin/java"
-        else:
-            java = "java"
+        java = os.environ["JAVA_HOME"] + "/bin/java"
         cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
@@ -1210,7 +1207,7 @@ class TestRunner:
         for all clouds, check if connection to h2o exists, and that h2o is healthy.
         """
         time.sleep(3)
-	print("Checking cloud health...")
+        print("Checking cloud health...")
         for c in self.clouds:
             self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
             print("Node {} healthy.").format(c)

@@ -26,7 +26,6 @@ final class Route extends Iced {
   public Method  _doc_method;
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
   public String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
-  /* package */ HandlerFactory _handler_factory;
   public Handler _handler;
 
   public Route() { }
@@ -38,10 +37,8 @@ final class Route extends Iced {
                Class<? extends Handler> handler_class,
                Method handler_method,
                Method doc_method,
-               String[] path_params,
-               HandlerFactory handler_factory) {
+               String[] path_params) {
     assert http_method != null && url_pattern != null && handler_class != null && handler_method != null && path_params != null;
-    assert handler_factory != null : "handler_factory should be not null, caller has to pass it!";
     _http_method = http_method;
     _url_pattern_raw = url_pattern_raw;
     _url_pattern = url_pattern;
@@ -50,55 +47,24 @@ final class Route extends Iced {
     _handler_method = handler_method;
     _doc_method = doc_method;
     _path_params = path_params;
-    _handler_factory = handler_factory;
-    try {
-      _handler = _handler_factory.create(_handler_class);
-    } catch (Exception e) {
-      throw H2O.fail("Could not create handler", e);
-    }
+    try { _handler = handler_class.newInstance(); }
+    catch( IllegalAccessException | InstantiationException ie ) { H2O.fail("failed to register handler "+handler_class.getSimpleName()+"."+handler_method.getName(),ie); }
   }
 
   /**
    * Generate Markdown documentation for this Route.
    */
-  public StringBuffer markdown(StringBuffer appendToMe) {
+  public StringBuffer markdown(Schema sinput, Schema soutput) {
     MarkdownBuilder builder = new MarkdownBuilder();
-
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
     builder.heading1(_http_method, _url_pattern_raw.replace("(?<", "{").replace(">.*)", "}"));
     builder.hline();
     builder.paragraph(_summary);
-
     // parameters and output tables
-    try {
-      builder.heading1("Input schema: ");
-      {
-        Class<? extends Schema> clz = Handler.getHandlerMethodInputSchema(_handler_method);
-        Schema s = Schema.newInstance(clz);
-        builder.append(s.markdown(null, true, false));
-      }
-
-      builder.heading1("Output schema: ");
-      {
-        Class<? extends Schema> clz = Handler.getHandlerMethodOutputSchema(_handler_method);
-
-          Schema s = Schema.newInstance(clz);
-
-          if (null == s)
-            throw H2O.fail("Call to Schema.newInstance(clz) failed for class: " + clz);
-
-          builder.append(s.markdown(null, false, true));
-      }
-
-      // TODO: render examples and other stuff, if it's passed in
-    }
-    catch (Exception e) {
-      throw H2O.fail("Caught exception using reflection on handler method: " + _handler_method + ": " + e);
-    }
-
-    if (null != appendToMe)
-      appendToMe.append(builder.stringBuffer());
-
+    builder.heading1("Input schema: ");
+    builder.append(sinput .markdown(true ,false));
+    builder.heading1("Output schema: ");
+    builder.append(soutput.markdown(false, true));
     return builder.stringBuffer();
   }
 

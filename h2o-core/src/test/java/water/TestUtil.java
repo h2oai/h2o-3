@@ -38,6 +38,7 @@ public class TestUtil extends Iced {
   public static void stall_till_cloudsize(int x) {
     if( !_stall_called_before ) {
       H2O.main(new String[]{});
+      H2O.registerRestApis(System.getProperty("user.dir"));
       _stall_called_before = true;
     }
     H2O.waitForCloudSize(x, 30000);

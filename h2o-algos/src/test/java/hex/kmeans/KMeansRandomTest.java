@@ -52,7 +52,7 @@ public class KMeansRandomTest extends TestUtil {
 
                 KMeans job = new KMeans(parms);
                 KMeansModel m = job.trainModel().get();
-                Assert.assertTrue("Progress not 100%, but " + job.progress() *100, job.progress() == 1.0);
+                Assert.assertTrue("Progress not 100%, but " + job._job.progress() *100, job._job.progress() == 1.0);
 
                 Frame score = null;
                 try {
@@ -73,13 +73,9 @@ public class KMeansRandomTest extends TestUtil {
 
                   Log.info("Parameters combination " + count + ": PASS");
                   testcount++;
-                } catch (Throwable t) {
-                  t.printStackTrace();
-                  throw new RuntimeException(t);
                 } finally {
                   m.delete();
                   if (score!=null) score.delete();
-                  job.remove();
                 }
               }
             }

@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.Distribution;
 import hex.FrameTask;
@@ -89,7 +90,6 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._rate = 1e-4;
                 parms._momentum_start = 0.9;
                 parms._momentum_stable = 0.99;
-                parms._model_id = Key.make();
                 DeepLearningModelInfo.gradientCheck = null;
 
                 // Build a first model; all remaining models should be equal
@@ -235,13 +235,12 @@ public class DeepLearningGradientCheck extends TestUtil {
 //                    assert(Math.abs(meanLoss-resdev)/Math.abs(resdev) < 1e-5);
 //                  }
                 } catch(RuntimeException ex) {
-                  dl = DKV.getGet(parms._model_id);
+                  dl = DKV.getGet(job.dest());
                   if (dl != null)
                     Assert.assertTrue(dl.model_info().isUnstable());
                   else
-                    Assert.assertTrue(job.isCancelledOrCrashed());
+                    Assert.assertTrue(job.isStopped());
                 } finally {
-                  job.remove();
                   if (dl != null) dl.delete();
                 }
               }

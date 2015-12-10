@@ -49,12 +49,7 @@ public class DRFBasic extends TestNGUtil {
         int nb = n_bins.equals("") ? 20 : Integer.parseInt(n_bins);
         int mt = m_tries.equals("") ? -1 : Integer.parseInt(m_tries);
         float sr = sample_rate.equals("") ? 0.632f : Float.parseFloat(sample_rate);
-        boolean bc = balance_classes.equals("x");
-
-        DRF job = null;
         DRFModel drf = null;
-        Frame score = null;
-
         try {
             Scope.enter();
 
@@ -81,11 +76,9 @@ public class DRFBasic extends TestNGUtil {
                 parms._min_rows = mr;
 
                 // Build a first model; all remaining models should be equal
-                job = new DRF(parms);
-                drf = job.trainModel().get();
+                drf = new DRF(parms).trainModel().get();
                 System.out.println("Test set MSE: " + drf._output._training_metrics._MSE);
 
-                job.remove();
                 drf.delete();
             }
         } finally{

@@ -13,7 +13,7 @@ import water.Keyed;
 abstract public class Transformer<T extends Keyed> extends Iced {
   public final Job<T> _job;
 
-  public Transformer(Key<T> dest, String desc) { _job = new Job(dest, desc); }
+  public Transformer(Key<T> dest, String clz_of_T, String desc) { _job = new Job(dest, clz_of_T, desc); }
 
   /** Execution endpoint for transformations. */
   public final Job<T> exec() { return execImpl(); }

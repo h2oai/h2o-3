@@ -16,7 +16,11 @@ public class ModelAdaptTest extends TestUtil {
     AModel( Key key, Parameters p, Output o ) { super(key,p,o); }
     @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) { throw H2O.unimpl(); }
     @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.unimpl(); }
-    static class AParms extends Model.Parameters { }
+    static class AParms extends Model.Parameters {
+      public String algoName() { return "A"; }
+      public String fullName() { return "A"; }
+      public String javaName() { return AModel.class.getName(); }
+    }
     static class AOutput extends Model.Output { }
   }
 

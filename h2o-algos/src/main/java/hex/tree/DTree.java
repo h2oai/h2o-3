@@ -437,7 +437,7 @@ public class DTree extends Iced {
       final int _col;
       DTree.Split _s;
       @Override
-      protected void compute2() {
+      public void compute2() {
         _s = _hs[_col].scoreMSE(_col, _tree._min_rows);
         tryComplete();
       }

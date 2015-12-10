@@ -220,6 +220,9 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   public static class Word2VecParameters extends Model.Parameters {
+    public String algoName() { return "Word2Vec"; }
+    public String fullName() { return "Word2Vec"; }
+    public String javaName() { return Word2VecModel.class.getName(); }
     static final int MAX_VEC_SIZE = 10000;
 
     public Word2Vec.WordModel _wordModel = Word2Vec.WordModel.SkipGram;

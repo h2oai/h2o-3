@@ -1,6 +1,5 @@
 package hex;
 
-import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.fvec.NewChunk;
 import water.rapids.ASTKFold;
@@ -9,64 +8,102 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.FrameUtils;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
-import water.util.ReflectionUtils;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
-  protected final Job<M> _job;  // Job controlling this build
+  public Job _job;     // Job controlling this build
+  /** Block till completion, and return the built model from the DKV.  Note the
+   *  funny assert: the Job does NOT have to be controlling this model build,
+   *  but might, e.g. be controlling a Grid search for which this is just one
+   *  of many results.  Calling 'get' means that we are blocking on the Job
+   *  which is controlling ONLY this ModelBuilder, and when the Job completes
+   *  we can return built Model. */
+  public final M get() { assert _job._result == _result; return (M)_job.get(); }
+  public final boolean isStopped() { return _job.isStopped(); }
 
-  /** Constructor called from an http request; MUST override in subclasses. */
-  public ModelBuilder(P _) {
-    throw H2O.fail("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
+  // Key of the model being built; note that this is DIFFERENT from
+  // _job._result if the Job is being shared by many sub-models
+  // e.g. cross-validation.
+  protected Key<M> _result;  // Built Model key
+  public final Key<M> dest() { return _result; }
+
+  /** Default model-builder key */
+  public static Key<? extends Model> defaultKey(String algoName) {
+    return Key.make(H2O.calcNextUniqueModelId(algoName));
   }
 
-  /** Constructor making a default destination key */
-  public ModelBuilder(String desc, P parms) {
-    this((parms == null || parms._model_id == null) ? Key.<M>make(H2O.calcNextUniqueModelId(desc)) : (Key<M>)parms._model_id, desc, parms);
-  }
-
-  /** Default constructor, given all arguments */
-  public ModelBuilder(Key<M> dest, String desc, P parms) {
-    _job = new Job<>(dest,desc);
+  /** Default easy constructor: Unique new job and unique new result key */
+  protected ModelBuilder(P parms) {
+    String algoName = parms.algoName();
+    _job = new Job<>(_result = (Key<M>)defaultKey(algoName), parms.javaName(), algoName);
     _parms = parms;
   }
 
-  /** Block till completion, and return the built model from the DKV */
-  public final M get() { return _job.get(); }
-
-  public final Key<M> dest() { return _job._result; }
-
-  /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
-  // TODO: CLEAN THIS UP.  OVERLY COMPLEX; NO NEED; NON-REFLECTION ALTERNATIVE EXISTS
-  public static ModelBuilder createModelBuilder(String algo) {
-    Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
-    if( clz == null ) 
-      throw new H2OIllegalArgumentException("algo", "createModelBuilder", "Algo not known (" + algo + ")");
-    try {
-      Type[] handler_type_parms = ((ParameterizedType)(clz.getGenericSuperclass())).getActualTypeArguments();
-      // [0] is the Model type; [1] is the Model.Parameters type; [2] is the Model.Output type.
-      Class<? extends Model.Parameters> pclz = (Class<? extends Model.Parameters>)handler_type_parms[1];
-      Constructor<ModelBuilder> constructor = (Constructor<ModelBuilder>)clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] });
-      Model.Parameters p = pclz.newInstance();
-      return constructor.newInstance(p);
-    } catch (Exception e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
-    }
+  /** Unique new job and named result key */
+  protected ModelBuilder(P parms, Key<M> key) {
+    _job = new Job<>(_result = key, parms.javaName(), parms.algoName());
+    _parms = parms;
   }
+
+  /** Shared pre-existing Job and unique new result key */
+  protected ModelBuilder(P parms, Job job) {
+    _job = job;
+    _result = (Key<M>)defaultKey(parms.algoName());
+    _parms = parms;
+  }
+
+  /** List of known ModelBuilders with all default args; endlessly cloned by
+   *  the GUI for new private instances, then the GUI overrides some of the
+   *  defaults with user args. */
+  private static String[] ALGOBASES = new String[0];
+  public static String[] algos() { return ALGOBASES; }
+  private static ModelBuilder[] BUILDERS = new ModelBuilder[0];
+
+  /** One-time start-up only ModelBuilder, endlessly cloned by the GUI for the
+   *  default settings. */
+  protected ModelBuilder(P parms, boolean startup_once) {
+    assert startup_once;
+    _job = null;
+    _result = null;
+    _parms = parms;
+    init(false); // Default cheap init
+    String base = getClass().getSimpleName().toLowerCase();
+    if( ArrayUtils.find(ALGOBASES,base) != -1 )
+      throw H2O.fail("Only called once at startup per ModelBuilder, and "+base+" has already been called");
+    ALGOBASES = Arrays.copyOf(ALGOBASES,ALGOBASES.length+1);
+    BUILDERS  = Arrays.copyOf(BUILDERS ,BUILDERS .length+1);
+    ALGOBASES[ALGOBASES.length-1] = base;
+    BUILDERS [BUILDERS .length-1] = this;
+  }
+
+  /** gbm -> GBM, deeplearning -> DeepLearning */
+  public static String algoName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.algoName(); }
+  /** gbm -> hex.tree.gbm.GBM, deeplearning -> hex.deeplearning.DeepLearning */
+  public static String javaName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.javaName(); }
+  /** gbm -> GBMParameters */
+  public static String paramName(String urlName) { return algoName(urlName)+"Parameters"; }
+
+
+  /** Factory method to create a ModelBuilder instance for given the algo name.
+   *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
+  public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
+    int idx = ArrayUtils.find(ALGOBASES,algo.toLowerCase());
+    assert idx != -1 : "Unregistered algorithm "+algo;
+    B mb = (B)BUILDERS[idx].clone();
+    mb._job = job;
+    mb._result = result;
+    mb._parms = BUILDERS[idx]._parms.clone();
+    return mb;
+  }
+
 
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone
@@ -80,7 +117,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
-  public final Frame valid() { return _valid; }
+  protected final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
   // TODO: tighten up the type
@@ -99,84 +136,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Train response vector. */
   public Vec response(){return _response;}
   /** Validation response vector. */
-  public Vec vresponse(){return _vresponse;}
+  public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
-  /**
-   * Compute the (weighted) mean of the response (subtracting possible offset terms)
-   * @return mean
-   */
-  protected double responseMean() {
-    if (hasWeightCol() || hasOffsetCol()) {
-      return new FrameUtils.WeightedMean().doAll(
-              _response,
-              hasWeightCol() ? _weights : _response.makeCon(1),
-              hasOffsetCol() ? _offset : _response.makeCon(0)
-      ).weightedMean();
-    }
-    return _response.mean();
+  abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
+    protected Driver() { super(true); } // bump priority of model drivers
+    protected Driver(H2O.H2OCountedCompleter completer){ super(completer,true); }
   }
-
-
-  /** Register a ModelBuilder, assigning it an algo name.  */
-  public static void registerModelBuilder(String name, String full_name, Class<? extends ModelBuilder> clz) {
-    if (! (clz.getGenericSuperclass() instanceof ParameterizedType))
-      throw H2O.fail("Class is not parameterized as expected: " + clz);
-    _builders.put(name, clz);
-    Class<? extends Model> model_class = (Class<? extends Model>)ReflectionUtils.findActualClassParameter(clz, 0);
-    _model_class_to_algo.put(model_class, name);
-    _algo_to_algo_full_name.put(name, full_name);
-    _algo_to_model_class.put(name, model_class);
-  }
-
-  /** Get a Map of all algo names to their ModelBuilder classes. */
-  public static Map<String, Class<? extends ModelBuilder>>getModelBuilders() { return _builders; }
-
-  /** Get the ModelBuilder class for the given algo name. */
-  public static Class<? extends ModelBuilder> getModelBuilder(String name) {
-    return _builders.get(name);
-  }
-
-  /** Get the Model class for the given algo name. */
-  public static Class<? extends Model> getModelClass(String name) {
-    return _algo_to_model_class.get(name);
-  }
-
-  /** Get the algo name for the given Model. */
-  public static String getAlgo(Model model) {
-    return _model_class_to_algo.get(model.getClass());
-  }
-
-  /** Get the algo full name for the given algo. */
-  public static String getAlgoFullName(String algo) {
-    return _algo_to_algo_full_name.get(algo);
-  }
-
-  public String getAlgo() {
-    return getAlgo(this.getClass());
-  }
-
-  public static String getAlgo(Class<? extends ModelBuilder> clz) {
-    // Check for unknown algo names, but if none are registered keep going; we're probably in JUnit.
-    if (_builders.isEmpty())
-      return "Unknown algo (should only happen under JUnit)";
-
-    if (! _builders.containsValue(clz))
-      throw new H2OIllegalArgumentException("Failed to find ModelBuilder class in registry: " + clz, "Failed to find ModelBuilder class in registry: " + clz);
-
-    for (Map.Entry<String, Class<? extends ModelBuilder>> entry : _builders.entrySet())
-      if (entry.getValue().equals(clz))
-        return entry.getKey();
-    // Note: unreachable:
-    throw new H2OIllegalArgumentException("Failed to find ModelBuilder class in registry: " + clz, "Failed to find ModelBuilder class in registry: " + clz);
-  }
-
-  /**
-   * Externally visible default schema
-   * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
-   * This puts a reverse edge into the dependency graph.
-   */
-  public abstract ModelBuilderSchema schema();
-
+  
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
     if (error_count() > 0)
@@ -187,16 +153,27 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
     return _job.start(new H2O.H2OCountedCompleter() {
-        @Override protected void compute2() {
+        @Override
+        public void compute2() {
           computeCrossValidation();
           tryComplete();
         }
       }, (1/*for all pre-fold work*/+nFoldWork()+1/*for all the post-fold work*/) * progressUnits());
   }
 
+  /** Train a model as part of a larger Job; the Job already exists and has started. */
+  final public M trainModelNested() {
+    if (error_count() > 0)
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+
+    if( !nFoldCV() ) trainModelImpl().compute2();
+    else computeCrossValidation();
+    return _result.get();
+  }
+
   /** Model-specific implementation of model training
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
-  abstract protected H2O.H2OCountedCompleter trainModelImpl();
+  abstract protected Driver trainModelImpl();
   abstract protected long progressUnits();
 
   // Work for each requested fold
@@ -213,9 +190,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return Cross-validation Job
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
-  public Job<M> computeCrossValidation() {
+  public void computeCrossValidation() {
     assert _job.isRunning();    // main Job is still running
     final Integer N = nFoldWork();
+    init(false);
     try {
       Scope.enter();
 
@@ -245,7 +223,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     } finally {
       Scope.exit();
     }
-    throw H2O.unimpl();
   }
 
   // Step 1: Assign each row to a fold
@@ -306,7 +283,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for( int i=0; i<N; i++ ) {
-      String identifier = origDest + "_cv_" + i;
+      String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
       Frame cvTrain = new Frame(Key.make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
       cvTrain.add(weightName, weights[2*i]);
@@ -317,9 +294,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
+      cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
-      cv_mb._parms._model_id = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
       cv_mb._parms._train = cvTrain._key;       // All submodels have a weight column, which the main model does not
       cv_mb._parms._valid = cvValid._key;
@@ -327,10 +304,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
       cv_mb.init(false);        // Arg check submodels
       // Error-check all the cross-validation Builders before launching any
-      if( cv_mb.error_count() > 0 ) { // Gather all submodel error messages
+      if( cv_mb.error_count() > 0 ) // Gather all submodel error messages
         for( ValidationMessage vm : cv_mb._messages )
           message(vm._log_level, vm._field_name, vm._message);
-      }
       cvModelBuilders[i] = cv_mb;
     }
 
@@ -371,14 +347,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Futures fs = new Futures();
     for (int i=0; i<N; ++i) {
       if( _job.stop_requested() ) return null; //don't waste time scoring if the CV run is stopped
-      Frame cvTrain = cvModelBuilders[i].train();
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      M cvModel = cvModelBuilders[i].get();
+      M cvModel = cvModelBuilders[i].dest().get();
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
       mbs[i] = cvModel.scoreMetrics(adaptFr);
       if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {
-        String predName = "prediction_" + cvModelBuilders[i]._parms._model_id.toString();
+        String predName = "prediction_" + cvModelBuilders[i]._result.toString();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName);
       }
       // free resources as early as possible
@@ -386,8 +361,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Model.cleanup_adapt(adaptFr, cvValid);
         DKV.remove(adaptFr._key,fs);
       }
-      DKV.remove(cvTrain._key,fs);
-      DKV.remove(cvValid._key,fs);
+      DKV.remove(cvModelBuilders[i]._parms._train,fs);
+      DKV.remove(cvModelBuilders[i]._parms._valid,fs);
       weights[2*i  ].remove(fs);
       weights[2*i+1].remove(fs);
     }
@@ -400,7 +375,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _job.stop_requested() ) return;
     assert _job.isRunning();
 
-    M mainModel = _job._result.get();
+    M mainModel = _result.get();
 
     // Compute and put the cross-validation metrics into the main model
     Log.info("Computing " + N + "-fold cross-validation metrics.");
@@ -410,7 +385,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     
     for (int i = 0; i < N; ++i) {
       if (i > 0) mbs[0].reduce(mbs[i]);
-      Key<Model> cvModelKey = cvModelBuilders[i]._parms._model_id;
+      Key<M> cvModelKey = cvModelBuilders[i]._result;
       mainModel._output._cross_validation_models[i] = cvModelKey;
       predKeys[i] = Key.make("prediction_" + cvModelKey.toString());
     }
@@ -424,8 +399,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Frame p1combined = new HoldoutPredictionCombiner().doAll(1,Vec.T_NUM,new Frame(p1s)).outputFrame(new String[]{"p1"},null);
       Vec p1 = p1combined.anyVec();
       preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
-      if (!_parms._keep_cross_validation_predictions)
-        for (Key<Frame> k : predKeys) ((Frame)DKV.getGet(k)).remove();
+      // Keep or toss predictions
+      for (Key<Frame> k : predKeys) {
+        Frame fr = DKV.getGet(k);
+        if( _parms._keep_cross_validation_predictions ) Scope.untrack(fr.keys());
+        else fr.remove();
+      }
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
     if (preds!=null) preds.remove();
@@ -680,11 +659,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public void init(boolean expensive) {
     // Log parameters
-    if (expensive) {
-      if (logMe()) {
-        Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
-        Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
-      }
+    if( expensive && logMe() ) {
+      Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
+      Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
     }
     // NOTE: allow re-init:
     clearInitState();
@@ -731,9 +708,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._tweedie_power <= 1 || _parms._tweedie_power >= 2) {
       error("_tweedie_power", "Tweedie power must be between 1 and 2 (exclusive).");
     }
-    if (expensive) {
-      checkDistributions();
-    }
 
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
@@ -752,6 +726,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if(isSupervised()) {
       if(_response != null) {
+        if (expensive) checkDistributions();
         _nclass = _response.isCategorical() ? _response.cardinality() : 1;
         if (_response.isConst())
           error("_response","Response cannot be constant.");

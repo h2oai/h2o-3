@@ -21,16 +21,10 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-
-		public String[] fields() {
-				Class<? extends ModelParametersSchema> this_clz = this.getClass();
-				try {
-				    return (String[]) this_clz.getField("fields").get(this_clz);
-				}
-				catch (Exception e) {
-						throw H2O.fail("Caught exception from accessing the schema field list for: " + this);
-				}
-		}
+  public String[] fields() {
+    try { return (String[]) getClass().getField("fields").get(getClass()); }
+    catch (Exception e) { throw H2O.fail("Caught exception from accessing the schema field list", e);  }
+  }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
@@ -131,7 +125,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   public P fillImpl(P impl) {
     super.fillImpl(impl);
 
-    impl._train = (null == this.training_frame ? null : Key.<Frame>make(this.training_frame.name));
+    impl._train = (null == this.  training_frame ? null : Key.<Frame>make(this.  training_frame.name));
     impl._valid = (null == this.validation_frame ? null : Key.<Frame>make(this.validation_frame.name));
 
     return impl;

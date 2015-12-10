@@ -29,7 +29,7 @@ public class Word2VecTest extends TestUtil {
   }
 
   private void printResults(HashMap<String, Float> hm) {
-    TreeMap<Float, String> reversedMap = new TreeMap<Float, String>();
+    TreeMap<Float, String> reversedMap = new TreeMap<>();
     for (Map.Entry entry : hm.entrySet())
       reversedMap.put((Float) entry.getValue(), (String) entry.getKey());
 
@@ -39,7 +39,6 @@ public class Word2VecTest extends TestUtil {
 
   @Ignore
   @Test public void testW2V_CBOW_HSM() {
-    Word2Vec job = null;
     Word2VecModel w2vm = null;
     Frame fr = null;
     try {
@@ -55,22 +54,18 @@ public class Word2VecTest extends TestUtil {
       parms._sentSampleRate = 0.01f;
       parms._initLearningRate = 0.05f;
       parms._epochs = 25;
-      job = new Word2Vec(parms);
-      job.trainModel();
-      w2vm = job.get();
+      w2vm = new Word2Vec(parms).trainModel().get();
       HashMap hm = w2vm.findSynonyms("dog",10);
       printResults(hm);
       Assert.assertTrue(hm.containsKey("dogs"));
     } finally {
       if( fr  != null ) fr .remove();
-      if( job != null) job.remove();
       if( w2vm != null) w2vm.delete();
     }
   }
 
   @Ignore
   @Test public void testW2V_CBOW_NS() {
-    Word2Vec job = null;
     Word2VecModel w2vm = null;
     Frame fr = null;
     try {
@@ -87,22 +82,18 @@ public class Word2VecTest extends TestUtil {
       parms._sentSampleRate = 0.01f;
       parms._initLearningRate = 0.05f;
       parms._epochs = 15;
-      job = new Word2Vec(parms);
-      job.train();
-      w2vm = job.get();
+      w2vm = new Word2Vec(parms).trainModel().get();
       HashMap hm = w2vm.findSynonyms("dog",10);
       printResults(hm);
       Assert.assertTrue(hm.containsKey("dogs"));
     } finally {
       if( fr  != null ) fr .remove();
-      if( job != null) job.remove();
       if( w2vm != null) w2vm.delete();
     }
   }
 
   @Ignore
   @Test public void testW2V_SG_HSM() {
-    Word2Vec job = null;
     Word2VecModel w2vm = null;
     Frame fr = null;
     try {
@@ -118,22 +109,18 @@ public class Word2VecTest extends TestUtil {
       parms._sentSampleRate = 0.001f;
       parms._initLearningRate = 0.05f;
       parms._epochs = 10;
-      job = new Word2Vec(parms);
-      job.train();
-      w2vm = job.get();
+      w2vm = new Word2Vec(parms).trainModel().get();
       HashMap hm = w2vm.findSynonyms("dog",10);
       printResults(hm);
       Assert.assertTrue(hm.containsKey("dogs"));
     } finally {
       if( fr  != null ) fr .remove();
-      if( job != null) job.remove();
       if( w2vm != null) w2vm.delete();
     }
   }
 
   @Ignore
   @Test public void testW2V_SG_NS() {
-    Word2Vec job = null;
     Word2VecModel w2vm = null;
     Frame fr = null;
     try {
@@ -150,15 +137,12 @@ public class Word2VecTest extends TestUtil {
       parms._sentSampleRate = 0.001f;
       parms._initLearningRate = 0.025f;
       parms._epochs = 15;
-      job = new Word2Vec(parms);
-      job.train();
-      w2vm = job.get();
+      w2vm = new Word2Vec(parms).trainModel().get();
       HashMap hm = w2vm.findSynonyms("dog",10);
       printResults(hm);
       Assert.assertTrue(hm.containsKey("dogs"));
     } finally {
       if( fr  != null ) fr .remove();
-      if( job != null) job.remove();
       if( w2vm != null) w2vm.delete();
     }
   }

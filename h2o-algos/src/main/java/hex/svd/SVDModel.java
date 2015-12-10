@@ -14,6 +14,9 @@ import water.util.SBPrintStream;
 
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {
+    public String algoName() { return "SVD"; }
+    public String fullName() { return "Singular Value Decomposition"; }
+    public String javaName() { return SVDModel.class.getName(); }
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public Method _svd_method = Method.GramSVD;   // Method for computing SVD
     public int _nv = 1;    // Number of right singular vectors to calculate

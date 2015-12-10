@@ -67,17 +67,15 @@ public class GBMCheckpointTest extends TestUtil {
     GBMModel modelFinal = null;
     try {
       GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
-      gbmParams._model_id = Key.make("Initial model");
       gbmParams._train = f._key;
       gbmParams._response_column = f.name(responseIdx);
       gbmParams._ntrees = ntreesInPriorModel;
       gbmParams._seed = 42;
       gbmParams._max_depth = 10;
       gbmParams._score_each_iteration = true;
-      model = new GBM(gbmParams).trainModel().get();
+      model = new GBM(gbmParams, Key.<GBMModel>make("Initial model") ).trainModel().get();
 
       GBMModel.GBMParameters gbmFromCheckpointParams = new GBMModel.GBMParameters();
-      gbmFromCheckpointParams._model_id = Key.make("Model from checkpoint");
       gbmFromCheckpointParams._train = f._key;
       gbmFromCheckpointParams._response_column = f.name(responseIdx);
       gbmFromCheckpointParams._ntrees = ntreesInPriorModel + ntreesInNewModel;
@@ -85,18 +83,17 @@ public class GBMCheckpointTest extends TestUtil {
       gbmFromCheckpointParams._checkpoint = model._key;
       gbmFromCheckpointParams._score_each_iteration = true;
       gbmFromCheckpointParams._max_depth = 10;
-      modelFromCheckpoint = new GBM(gbmFromCheckpointParams).trainModel().get();
+      modelFromCheckpoint = new GBM(gbmFromCheckpointParams,Key.<GBMModel>make("Model from checkpoint")).trainModel().get();
 
       // Compute a separated model containing the same numnber of trees as a model built from checkpoint
       GBMModel.GBMParameters gbmFinalParams = new GBMModel.GBMParameters();
-      gbmFinalParams._model_id = Key.make("Validation model");
       gbmFinalParams._train = f._key;
       gbmFinalParams._response_column = f.name(responseIdx);
       gbmFinalParams._ntrees = ntreesInPriorModel + ntreesInNewModel;
       gbmFinalParams._seed = 42;
       gbmFinalParams._score_each_iteration = true;
       gbmFinalParams._max_depth = 10;
-      modelFinal = new GBM(gbmFinalParams).trainModel().get();
+      modelFinal = new GBM(gbmFinalParams,Key.<GBMModel>make("Validation model")).trainModel().get();
 
       CompressedTree[][] treesFromCheckpoint = getTrees(modelFromCheckpoint);
       CompressedTree[][] treesFromFinalModel = getTrees(modelFinal);
@@ -147,7 +144,6 @@ public class GBMCheckpointTest extends TestUtil {
 
     try {
       GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
-      gbmParams._model_id = Key.make("Initial model");
       gbmParams._train = tr._key;
       gbmParams._valid = val._key;
       gbmParams._response_column = "economy_20mpg";
@@ -156,10 +152,9 @@ public class GBMCheckpointTest extends TestUtil {
       gbmParams._min_rows = 10;
       gbmParams._score_each_iteration = true;
       gbmParams._seed = 42;
-      model = new GBM(gbmParams).trainModel().get();
+      model = new GBM(gbmParams,Key.<GBMModel>make("Initial model")).trainModel().get();
 
       GBMModel.GBMParameters gbmFromCheckpointParams = new GBMModel.GBMParameters();
-      gbmFromCheckpointParams._model_id = Key.make("Model from checkpoint");
       gbmFromCheckpointParams._train = tr._key;
       gbmFromCheckpointParams._valid = val._key;
       gbmFromCheckpointParams._response_column = "economy_20mpg";
@@ -169,11 +164,10 @@ public class GBMCheckpointTest extends TestUtil {
       gbmFromCheckpointParams._max_depth = 5;
       gbmFromCheckpointParams._min_rows = 10;
       gbmFromCheckpointParams._seed = 42;
-      modelFromCheckpoint = new GBM(gbmFromCheckpointParams).trainModel().get();
+      modelFromCheckpoint = new GBM(gbmFromCheckpointParams,Key.<GBMModel>make("Model from checkpoint")).trainModel().get();
 
       // Compute a separated model containing the same number of trees as a model built from checkpoint
       GBMModel.GBMParameters gbmFinalParams = new GBMModel.GBMParameters();
-      gbmFinalParams._model_id = Key.make("Validation model");
       gbmFinalParams._train = tr._key;
       gbmFinalParams._valid = val._key;
       gbmFinalParams._response_column = "economy_20mpg";
@@ -182,7 +176,7 @@ public class GBMCheckpointTest extends TestUtil {
       gbmFinalParams._max_depth = 5;
       gbmFinalParams._min_rows = 10;
       gbmFinalParams._seed = 42;
-      modelFinal = new GBM(gbmFinalParams).trainModel().get();
+      modelFinal = new GBM(gbmFinalParams,Key.<GBMModel>make("Validation model")).trainModel().get();
 
       CompressedTree[][] treesFromCheckpoint = getTrees(modelFromCheckpoint);
       CompressedTree[][] treesFromFinalModel = getTrees(modelFinal);

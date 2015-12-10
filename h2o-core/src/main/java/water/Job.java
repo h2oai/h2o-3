@@ -19,17 +19,20 @@ import water.H2O.H2OCountedCompleter;
 public final class Job<T extends Keyed> extends Keyed<Job> {
   /** Result Key */
   public final Key<T> _result;
+  public final int _typeid;
 
   /** User description */
   public final String _description;
 
   /** Create a Job
    *  @param key  Key of the final result
+   *  @param clz_of_T String class of the Keyed result
    *  @param desc String description   */
-  public Job(Key<T> key, String desc) { 
+  public Job(Key<T> key, String clz_of_T, String desc) {
     super(defaultJobKey());     // Passing in a brand new Job key
-    if( key == null ) throw new IllegalArgumentException("Result key cannot be null");
+    assert key==null || clz_of_T!=null;
     _result = key;              // Result (destination?) key
+    _typeid = clz_of_T==null ? 0 : TypeMap.onIce(clz_of_T);
     _description = desc; 
   }
 
@@ -49,11 +52,12 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   // Simple state accessors; public ones do a DKV update check
   public long start_time()   { update_from_remote(); assert !created(); return _start_time; }
-  public boolean isRunning() { update_from_remote(); return running(); }
-  public boolean isStopped() { update_from_remote(); return stopped(); }
+  public long   end_time()   { update_from_remote(); assert  stopped(); return   _end_time; }
+  public boolean isRunning() { update_from_remote(); return  running(); }
+  public boolean isStopped() { update_from_remote(); return  stopped(); }
   // Slightly more involved state accessors
   public boolean isStopping(){ return isRunning() && _stop_requested; }
-  public boolean wasStopped(){ return isStopped() && _stop_requested; }
+  public boolean isDone()    { return isStopped() && _ex == null; }
   public boolean isCrashing(){ return isRunning() && _ex != null; }
   public boolean isCrashed (){ return isStopped() && _ex != null; }
 
@@ -170,15 +174,29 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     assert created() && !running() && !stopped();
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
-    // Make a wrapper class that only *starts* when the fjtask completes -
-    // especially it only starts even when fjt completes exceptionally... thus
-    // the fjtask onExceptionalCompletion code runs completely before this
-    // empty task starts - providing a simple barrier.  Threads blocking on the
-    // job will block on the "barrier" task, which will block until the fjtask
-    // runs the onCompletion or onExceptionCompletion code.
-    _barrier = new Barrier();
-    fjtask.setCompleter(_barrier);
 
+    // F/J rules: upon receiving an exception (the task's compute/compute2
+    // throws an exception caugt by F/J), the task is marked as "completing
+    // exceptionally" - it is marked "completed" before the onExComplete logic
+    // runs.  It is then notified, and wait'ers wake up - before the
+    // onExComplete runs; onExComplete runs on in another thread, so wait'ers
+    // are racing with the onExComplete.  
+
+    // We want wait'ers to *wait* until the task's onExComplete runs, AND Job's
+    // onExComplete runs (marking the Job as stopped, with an error).  So we
+    // add a few wrappers:
+
+    // Make a wrapper class that only *starts* when the task completes -
+    // especially it only starts even when task completes exceptionally... thus
+    // the task onExceptionalCompletion code runs completely before Barrer1
+    // starts - providing a simple barrier.  The Barrier1 onExComplete runs in
+    // parallel with wait'ers on Barrier1.  When Barrier1 onExComplete itself
+    // completes, Barrier2 is notified.
+
+    // Barrier2 is an empty class, and vacuously runs in parallel with wait'ers
+    // of Barrier2 - all callers of Job.get().
+    _barrier = new Barrier2(); 
+    fjtask.setCompleter(new Barrier1(_barrier));
 
     // These next steps must happen in-order:
     // 4 - cannot submitTask without being on job-list, lest all cores get
@@ -212,7 +230,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     H2O.submitTask(fjtask);
     return this;
   }
-  transient private Barrier _barrier;            // Top-level task to block on
+  transient private Barrier2 _barrier; // Top-level task to block on
 
   // Handy for assertion
   private static class AssertNoKey extends MRTask<AssertNoKey> {
@@ -226,14 +244,16 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   // A simple barrier.  Threads blocking on the job will block on this
   // "barrier" task, which will block until the fjtask runs the onCompletion or
   // onExceptionCompletion code.
-  private class Barrier extends H2OCountedCompleter<Barrier> {
-    @Override public void compute2() { }
+  private class Barrier1 extends CountedCompleter {
+    Barrier1(CountedCompleter cc) { super(cc,0); }
+    @Override public void compute() { }
     @Override public void onCompletion(CountedCompleter caller) {
       new JAtomic(){
         @Override boolean abort(Job job) { return false; }
         @Override public void update(Job old) {
           assert old._end_time==0 : "onComp should be called once at most, and never if onExComp is called";
           old._end_time = System.currentTimeMillis();
+          if( old._worked < old._work ) old._worked = old._work;
         }
       };
       update_from_remote();
@@ -258,14 +278,18 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       return true;
     }
   }
+  private class Barrier2 extends CountedCompleter {
+    @Override public void compute() { }
+  }
 
   /** Blocks until the Job completes  */
   public T get() {
-    Barrier bar = _barrier;
+    Barrier2 bar = _barrier;
     if( bar != null )           // Barrier may be null if task already completed
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
-    return _result.get();
+    // Maybe null return, if the started fjtask does not actually produce a result at this Key
+    return _result==null ? null : _result.get(); 
   }
 
   // --------------
@@ -288,8 +312,26 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   // Update the *this* object from a remote object.
   private void update_from_remote( ) {
-    Job remote_job = DKV.getGet(_key); // Watch for changes in the DKV
-    if( this==remote_job ) return; // Trivial!
-    synchronized(this) { copyOver(remote_job); }
+    Job remote = DKV.getGet(_key); // Watch for changes in the DKV
+    if( this==remote ) return; // Trivial!
+    boolean differ = false;
+    if( _stop_requested != remote._stop_requested ) differ = true;
+    if(_start_time!= remote._start_time) differ = true;
+    if(_end_time  != remote._end_time  ) differ = true;
+    if(_ex        != remote._ex        ) differ = true;
+    if(_work      != remote._work      ) differ = true;
+    if(_worked    != remote._worked    ) differ = true;
+    if(_msg       != remote._msg       ) differ = true;
+    if( differ ) 
+      synchronized(this) { 
+        _stop_requested = remote._stop_requested;
+        _start_time= remote._start_time;
+        _end_time  = remote._end_time  ;
+        _ex        = remote._ex        ;
+        _work      = remote._work      ;
+        _worked    = remote._worked    ;
+        _msg       = remote._msg       ;
+      }
   }
+  @Override public Class<water.api.KeyV3.JobKeyV3> makeSchema() { return water.api.KeyV3.JobKeyV3.class; }
 }
