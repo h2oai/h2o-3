@@ -11,7 +11,7 @@ from tests import pyunit_utils
 
 def cumsumminprodmax():
     # TODO PUBDEV-1748
-    foo = h2o.H2OFrame(list(zip(*[[x,y] for x,y in zip(list(range(10)),list(range(9,-1,-1)))])))
+    foo = h2o.H2OFrame([[x,y] for x,y in zip(list(range(10)),list(range(9,-1,-1)))])
     foo.show()
 
     cumsum1 = foo[0].cumsum()

@@ -31,7 +31,7 @@ df2
 df2.types
 
 import numpy as np
-df = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
+df = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
 df.head()
 df.tail(5)
 
@@ -76,7 +76,7 @@ df4["A"].mean()  # check if this behaviour or the one above is a bug
 
 df4["A"].mean(na_rm=True)
 
-df5 = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
+df5 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
 df5.apply(lambda x: x.mean(na_rm=True))
 
 df5.apply(lambda row: sum(row), axis=1)
@@ -90,15 +90,15 @@ df7.countmatches('l')
 df7.sub('l','x')  #TODO in place, not quite right it seems
 df7.strsplit('(l)+')
 
-df8 = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
-df9 = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
+df8 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+df9 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
 df8.rbind(df9)
 df8.cbind(df9)
 
 df10 = h2o.H2OFrame.from_python( { 'A': ['Hello', 'World', 'Welcome', 'To', 'H2O', 'World'],
                                    'n': [0,1,2,3,4,5]} )
-df11 = h2o.H2OFrame.from_python(np.random.randint(0, 10, size=100).tolist(), column_names=['n'])
-df11.merge(df10)
+df11 = h2o.H2OFrame.from_python([[x] for x in np.random.randint(0, 10, size=100).tolist()], column_names=['n'])
+df11.merge(df10) #TODO appears to be broken
 
 # in grouping section of doc now
 df12 = h2o.H2OFrame({'A' : ['foo', 'bar', 'foo', 'bar',

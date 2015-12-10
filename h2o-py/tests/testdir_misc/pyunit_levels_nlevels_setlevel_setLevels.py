@@ -39,14 +39,14 @@ def levels_nlevels_setlevel_setLevels_test():
 
     iris[4] = iris[4].set_level(level='Iris-versicolor')
     levels = iris[4].levels()[0]
-    nlevels = iris.nlevels()[0]
+    nlevels = iris.nlevels()[4]
     assert {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'} == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'Iris-versicolor'
 
-    levels = iris[1].levels()[0]
-    nlevels = iris[1].nlevels()[0]
+    levels = iris[1].levels()
+    nlevels = iris[1].nlevels()
     assert levels == [], "Expected levels to be [], but got {0}".format(levels)
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 
@@ -60,7 +60,7 @@ def levels_nlevels_setlevel_setLevels_test():
 
     # frame (w/ index)
     levels = iris[4].levels()[0]
-    nlevels = iris.nlevels()[0]
+    nlevels = iris.nlevels()[4]
     assert set(['a', 'b', 'c']) == set(levels), \
         "Expected levels to be {0}, but got {1}".format(set(['a', 'b', 'c']),levels)
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
@@ -88,8 +88,8 @@ def levels_nlevels_setlevel_setLevels_test():
     assert nlevels == 3, "Expected nlevels to be 3, but got {0}".format(nlevels)
     assert iris[0,4] == 'b'
 
-    levels = iris[1].levels()[0]
-    nlevels = iris[1].nlevels()[0]
+    levels = iris[1].levels()
+    nlevels = iris[1].nlevels()
     assert levels == [], "Expected levels to be [], but got {0}".format(levels)
     assert nlevels == 0, "Expected nlevels to be 0, but got {0}".format(nlevels)
 

@@ -23,7 +23,7 @@ def iris_h2o_vs_sciKmeans():
   [5.6,2.5,3.9,1.1],
   [6.5,3.0,5.2,2.0]]
 
-  start = h2o.H2OFrame(list(zip(*s)))
+  start = h2o.H2OFrame(s)
 
   h2o_km = h2o.kmeans(x=iris_h2o[0:4], k=3, user_points=start, standardize=False)
 
@@ -38,7 +38,6 @@ def iris_h2o_vs_sciKmeans():
   # Log.info("Cluster centers from scikit:")
   print("Cluster centers from scikit:")
   sci_centers = sci_km.cluster_centers_.tolist()
-  sci_centers = list(zip(*sci_centers))
 
   print(sci_centers)
 

@@ -151,9 +151,8 @@ class H2OConnection(object):
   def _connect(self, size, max_retries=5, print_dots=False):
     """
     Does not actually "connect", instead simply tests that the cluster can be reached,
-    is of a certain size, and is taking basic status commands.df = h2o.H2OFrame(((1, 2, 3),
-                   ('a', 'b', 'c'),
-                   (0.1, 0.2, 0.3)))
+    is of a certain size, and is taking basic status commands.
+    
     :param size: The number of H2O instances in the cloud.
     :return: The JSON response from a "stable" cluster.
     """
@@ -342,7 +341,7 @@ class H2OConnection(object):
       __H2OCONN__= None
       raise ValueError("The H2O instance running at {0}:{1} has already been shutdown.".format(ip, port))
     if not isinstance(prompt, bool): raise ValueError("`prompt` must be TRUE or FALSE")
-    if prompt: response = raw_input("Are you sure you want to shutdown the H2O instance running at {0}:{1} "
+    if prompt: response = input("Are you sure you want to shutdown the H2O instance running at {0}:{1} "
                                     "(Y/N)? ".format(conn.ip(), conn.port()))
     else: response = "Y"
     if response == "Y" or response == "y": 

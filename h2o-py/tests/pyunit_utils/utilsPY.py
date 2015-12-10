@@ -96,7 +96,7 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
     if isinstance(python_obj, (list, tuple)):
         for c in range(cols):
             for r in range(rows):
-                pval = python_obj[c][r] if cols > 1 else python_obj[r]
+                pval = python_obj[r][c] if rows > 1 else python_obj[c]
                 hval = h2o_frame[r,c]
                 assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
                                      "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)

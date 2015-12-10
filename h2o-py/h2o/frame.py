@@ -237,7 +237,7 @@ class H2OFrame(object):
     Parameters
     ----------
       python_obj : tuple, list, dict, collections.OrderedDict
-        If a nested list/tuple, then each nested collection is a column.
+        If a nested list/tuple, then each nested collection is a row.
       destination_frame : str, optional
         The unique hex key assigned to the imported file. If none is given, a key will
         automatically be generated.
@@ -581,11 +581,13 @@ class H2OFrame(object):
 
     Returns
     -------
-      A dictionary of column_name:column_levels pairs.
+      A list of lists, one list per column, of levels. 
     """
-    # TODO
     lol = H2OFrame._expr(expr=ExprNode("levels", self)).as_data_frame(False)
-    for l in lol: l.pop(0)  # Remove column headers
+    lol.pop(0)  # Remove column headers
+    lol = list(zip(*lol))
+    lol = [[ll for ll in l if ll!=''] for l in lol]
+    
     return lol
 
   def nlevels(self):
@@ -593,10 +595,10 @@ class H2OFrame(object):
 
     Returns
     -------
-      A dictionary of column_name:number_levels pairs.
+      A list of the number of levels per column. 
     """
     levels = self.levels()
-    return [len(l) for l in levels]
+    return [len(l) for l in levels] if levels else 0
 
   def set_level(self, level):
     """A method to set all column values to one of the levels.
@@ -845,23 +847,22 @@ class H2OFrame(object):
   def structure(self):
     """Similar to R's str method: Compactly Display the Structure of this H2OFrame."""
     df = self.as_data_frame(use_pandas=False)
+    cn = df.pop(0)
     nr = self.nrow
     nc = self.ncol
-    cn = df.pop(0)
     width = max([len(c) for c in cn])
     isfactor = [c.isfactor() for c in self]
-    numlevels  = [self.nlevels(i) for i in range(nc)]
+    numlevels  = self.nlevels()
     lvls = self.levels()
     print("self._newExpr '{}': \t {} obs. of {} variables(s)".format(self.frame_id,nr,nc))
     for i in range(nc):
       print("$ {} {}: ".format(cn[i], ' '*(width-max(0,len(cn[i])))), end=' ')
       if isfactor[i]:
         nl = numlevels[i]
-        print("Factor w/ {} level(s) {},..: ".format(nl, '"' + '","'.join(list(zip(*lvls))[i]) + '"'), end=' ')
-        print(" ".join(it[0] for it in h2o.as_list(self[:10,i].match(list(list(zip(*lvls))[i])), False)[1:]), end=' ')
-        print("...")
+        print("Factor w/ {} level(s) {}: ".format(nl, '"' + '","'.join(lvls[i]) + '"'), end=' ')
+        print(" ".join(list(map(lambda x: str(lvls[i].index(x)), list(zip(*df))[i]))))
       else:
-        print("num {} ...".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:])))
+        print("num {}".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:])))
 
   def as_data_frame(self, use_pandas=False):
     """Obtain the dataset as a python-local object.
@@ -888,12 +889,12 @@ class H2OFrame(object):
       import pandas
       df = pandas.read_csv(response, low_memory=False)
       time_cols = []
-      category_cols = []
+      # category_cols = []
       if self.types is not None:
         for col_name in self.names:
           xtype = self.type(col_name)
           if xtype.lower() == 'time': time_cols.append(col_name)
-          elif xtype.lower() == 'enum': category_cols.append(col_name)
+          # elif xtype.lower() == 'enum': category_cols.append(col_name)
         #change Time to pandas datetime
         if time_cols:
           #hacky way to get the utc offset
@@ -904,13 +905,12 @@ class H2OFrame(object):
           except pandas.tslib.OutOfBoundsDatetime:
             pass
         #change Enum to pandas category
-        for cat_col in category_cols: #for loop is required
-          df[cat_col] = df[cat_col].astype('category')
+        # for cat_col in category_cols: #for loop is required
+        #   df[cat_col] = df[cat_col].astype('category')
       return df
     else:
       cr = csv.reader(response)
-      t_col_list = [[''] if row == [] else row for row in cr]
-      return [list(x) for x in zip(*t_col_list)]
+      return [[''] if row == [] else row for row in cr]
 
   def flatten(self):
     return ExprNode("flatten",self)._eager_scalar()
@@ -1642,8 +1642,8 @@ class H2OFrame(object):
     """
     frame = H2OFrame._expr(expr=ExprNode("hist", self, breaks))._frame()
     total = frame["counts"].sum(True)
-    densities = [(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"])) for i in range(1,frame["counts"].nrow)]
-    densities.insert(0,0)
+    densities = [[(frame[i,"counts"]/total)*(1/(frame[i,"breaks"]-frame[i-1,"breaks"]))] for i in range(1,frame["counts"].nrow)]
+    densities.insert(0,[0])
     densities_frame = H2OFrame(densities)
     densities_frame.set_names(["density"])
     frame = frame.cbind(densities_frame)
@@ -1660,11 +1660,9 @@ class H2OFrame(object):
 
       lower = float(frame[0,"breaks"])
       clist = h2o.as_list(frame["counts"], use_pandas=False)
-      clist = list(zip(*clist))
       clist.pop(0)
       clist.pop(0)
       mlist = h2o.as_list(frame["mids"], use_pandas=False)
-      mlist = list(zip(*mlist))
       mlist.pop(0)
       mlist.pop(0)
       counts = [float(c[0]) for c in clist]

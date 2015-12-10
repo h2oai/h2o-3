@@ -15,7 +15,7 @@ def wide_dataset_large():
   trainDataFeatures = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_train.data"), delimiter=' ')
   xtrain = np.transpose(trainDataFeatures).tolist()
   ytrain = trainDataResponse.tolist()
-  trainData = h2o.H2OFrame([ytrain]+xtrain)
+  trainData = h2o.H2OFrame(list(zip(*[ytrain]+xtrain)))
 
   trainData[0] = trainData[0].asfactor()
 
@@ -29,7 +29,7 @@ def wide_dataset_large():
   validDataFeatures = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_valid.data"), delimiter=' ')
   xvalid = np.transpose(validDataFeatures).tolist()
   yvalid = validDataResponse.tolist()
-  validData = h2o.H2OFrame([yvalid]+xvalid)
+  validData = h2o.H2OFrame(list(zip(*[yvalid]+xvalid)))
   prediction = model.predict(validData)
 
   print("Check performance of predictions.")

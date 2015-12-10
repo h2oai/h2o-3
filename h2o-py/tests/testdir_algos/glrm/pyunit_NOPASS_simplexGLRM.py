@@ -25,10 +25,10 @@ def glrm_simplex():
     X = [ind_list(k) for x in range(m)]
     X = np.array(X)
     train = np.dot(X,Y)
-    train_h2o = h2o.H2OFrame(train.tolist())
+    train_h2o = h2o.H2OFrame(list(zip(*train.tolist())))
     
     print("Run GLRM with quadratic mixtures (simplex) regularization on X")
-    initial_y = np.random.rand(k,n)
+    initial_y = np.random.rand(n,k)
     initial_y_h2o = h2o.H2OFrame(initial_y.tolist())
     glrm_h2o = H2OGeneralizedLowRankEstimator(k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="Simplex", regularization_y="None", gamma_x=1, gamma_y=0)
     glrm_h2o.train(x=train_h2o.names,training_frame=train_h2o)
