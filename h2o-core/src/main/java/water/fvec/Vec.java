@@ -1135,7 +1135,7 @@ public class Vec extends Keyed<Vec> {
    *  
    *  Vectors in the group will have the same keys except for the prefix which
    *  specifies index of the vector inside the group.  The only information the
-   *  group object carries is it's own key and the number of vectors it
+   *  group object carries is its own key and the number of vectors it
    *  contains (deleted vectors still count).
    *  
    *  Because vectors (and chunks) share the same key-pattern with the group,

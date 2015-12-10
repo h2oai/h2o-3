@@ -19,12 +19,14 @@ import water.util.Pair;
 import water.util.Triple;
 import water.util.VecUtils;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
 public class DRFTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
@@ -471,7 +473,130 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  @Ignore
+  @Test public void testAutoRebalance() {
+    
+    //First pass to warm up
+    boolean warmUp = true;
+    if (warmUp) {
+      int[] warmUpChunks = {1, 2, 3, 4, 5};
+      for (int chunk : warmUpChunks) {
+        Frame tfr = null;
 
+        Scope.enter();
+        try {
+          // Load data, hack frames
+          tfr = parse_test_file("/Users/ludirehak/Downloads/train.csv.zip");
+
+          DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+          parms._train = tfr._key;
+          parms._response_column = "Sales";
+          parms._nbins = 1000;
+          parms._ntrees = 10;
+          parms._max_depth = 20;
+          parms._mtries = -1;
+          parms._min_rows = 10;
+          parms._seed = 1234;
+//          parms._rebalance_me = true;
+//          parms._nchunks = 22;
+
+          // Build a first model; all remaining models should be equal
+          DRF job = new DRF(parms);
+          DRFModel drf = job.trainModel().get();
+          job.remove();
+          drf.delete();
+
+        } finally {
+          if (tfr != null) tfr.remove();
+        }
+        Scope.exit();
+      }
+    }
+    
+    
+    int[] max_depths = {2,5,10,15,20};
+    int[] chunks = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
+    boolean[] rebalanceMes = {true};
+    int[] ntrees = {10};
+    
+    int totalLength = chunks.length*max_depths.length*rebalanceMes.length*ntrees.length;
+    double[] executionTimes = new double[totalLength];
+    int[] outputchunks = new int[totalLength];
+    int[] outputdepths = new int[totalLength];
+    boolean[] outputrebalanceme = new boolean[totalLength];
+    int[] outputntrees = new int[totalLength];
+    double[] R2 = new double[totalLength];
+    int c = 0;
+    for (int max_depth : max_depths) {
+      for (int ntree: ntrees) {
+        for (boolean rebalanceMe: rebalanceMes) {
+          for (int chunk : chunks) {
+            long startTime = System.currentTimeMillis();
+            Scope.enter();
+            // Load data, hack frames
+            Frame tfr = parse_test_file("/Users/ludirehak/Downloads/train.csv.zip");
+
+            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+            parms._train = tfr._key;
+            parms._response_column = "Sales";
+            parms._nbins = 1000;
+            parms._mtries = -1;
+            parms._min_rows = 10;
+            parms._seed = 1234;
+            
+            parms._ntrees = ntree;
+            parms._max_depth = max_depth;
+//            parms._rebalance_me = rebalanceMe;
+//            parms._nchunks = chunk;
+            
+            // Build a first model
+            DRF job = new DRF(parms);
+            DRFModel drf = job.trainModel().get();
+            assertEquals(drf._output._ntrees, parms._ntrees);
+            ModelMetricsRegression mm = (ModelMetricsRegression) drf._output._training_metrics;
+            R2[c] = (double) Math.round(mm.r2() * 10000d) / 10000d;
+            int actualChunk = job.train().anyVec().nChunks();
+            job.remove();
+            drf.delete();
+
+            tfr.remove();
+
+            Scope.exit();
+            executionTimes[c] = (System.currentTimeMillis() - startTime) / 1000d;
+            if (!rebalanceMe) assert actualChunk == 22;
+            outputchunks[c] = actualChunk;
+            outputdepths[c] = max_depth;
+            outputrebalanceme[c] = rebalanceMe;
+            outputntrees[c] = drf._output._ntrees;
+            Log.info("Iteration " + (c + 1) + " out of " + executionTimes.length);
+            Log.info(" DEPTH: " + outputdepths[c] + " NTREES: "+ outputntrees[c] + " CHUNKS: " + outputchunks[c] + " EXECUTION TIME: " + executionTimes[c] + " R2: " + R2[c] + " Rebalanced: " + rebalanceMe + " WarmedUp: " + warmUp);
+            c++;
+          }
+        }
+      }
+    }
+    String fileName = "/Users/ludirehak/Desktop/DRFTestRebalance3.txt";
+    //R code for plotting: plot(chunks,execution_time,t='n',main='Execution Time of DRF on Rebalanced Data');
+    // for (i in 1:length(unique(max_depth))) {s = which(max_depth ==unique(max_depth)[i]); 
+    // points(chunks[s],execution_time[s],col=i)};
+    // legend('topright', legend= c('max_depth',unique(max_depth)),col = 0:length(unique(max_depth)),pch=1);
+    try {
+      FileWriter fileWriter = new FileWriter(fileName);
+      BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+      bufferedWriter.write("max_depth,ntrees,nbins,min_rows,chunks,execution_time,r2,rebalanceMe,warmUp");
+      bufferedWriter.newLine();
+      for (int i = 0; i < executionTimes.length; i++) {
+        bufferedWriter.write(outputdepths[i] +"," + outputntrees[i] + "," + 1000 + ","+ 10 + "," + outputchunks[i] + "," + executionTimes[i] +"," +R2[i] +","+(outputrebalanceme[i]? 1:0)+","+(warmUp?1:0));
+        bufferedWriter.newLine();
+      }
+      bufferedWriter.close();
+    } catch (Exception e) {
+      Log.info("Fail");
+    }
+
+  }
+  
   // PUBDEV-2476 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
   @Test public void testChunks() {
     Frame tfr;
