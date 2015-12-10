@@ -8,10 +8,10 @@ from tests import pyunit_utils
 
 def pubdev_1443():
     col = 10000* [0, 0, 1, 1, 2, 3, 0]
-    fr = h2o.H2OFrame([col])
+    fr = h2o.H2OFrame(list(zip(*[col])))
     fr.set_names(['rank'])
 
-    mapping = h2o.H2OFrame([[0,1,2,3],[6,7,8,9]])
+    mapping = h2o.H2OFrame(list(zip(*[[0,1,2,3],[6,7,8,9]])))
     mapping.set_names(['rank', 'outcome'])
 
     merged = fr.merge(mapping,all_x=True,all_y=False)

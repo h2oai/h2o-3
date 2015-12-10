@@ -10,7 +10,6 @@ from tests import pyunit_utils
 import numpy as np
 import random
 import math
-import scipy.special
 
 def frame_math_ops():
 
@@ -22,7 +21,7 @@ def frame_math_ops():
     abs_data = [[random.uniform(-100000,0) for r in range(10)] for c in range(10)]
     signif_data = [[0.0000123456, 1], [2, 3]]
 
-    h2o_data1 = h2o.H2OFrame(list(zip(*sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)))
+    h2o_data1 = h2o.H2OFrame(sin_cos_tan_atan_sinh_cosh_tanh_asinh_data)
     h2o_data2 = h2o.H2OFrame(asin_acos_atanh_data)
     h2o_data3 = h2o.H2OFrame(acosh_data)
     h2o_data4 = h2o.H2OFrame(abs_data)

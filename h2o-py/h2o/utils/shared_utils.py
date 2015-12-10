@@ -50,31 +50,35 @@ def _gen_header(cols):
   return ["C" + str(c) for c in range(1, cols + 1, 1)]
 
 def _check_lists_of_lists(python_obj):
-  # all items in the list must be a list too
-  lol_all = all(isinstance(l, (tuple, list)) for l in python_obj)
-  # All items in the list must be a list!
-  if not lol_all:
-    raise ValueError("`python_obj` is a mixture of nested lists and other types.")
-
-  # in fact, we must have a list of flat lists!
+  #check we have a lists of flat lists
+  #returns longest length of sublist
+  most_cols = 0
   for l in python_obj:
-    if any(isinstance(ll, (tuple, list)) for ll in l):
-      raise ValueError("`python_obj` is not a list of flat lists!")
+    # All items in the list must be a list!
+    if not isinstance(l, (tuple,list)):
+      raise ValueError("`python_obj` is a mixture of nested lists and other types.")
+    most_cols = max(most_cols, len(l))
+    for ll in l:
+      # in fact, we must have a list of flat lists!
+      if isinstance(ll, (tuple,list)):
+        raise ValueError("`python_obj` is not a list of flat lists!")
+  return most_cols
+  
 
 def _handle_python_lists(python_obj):
-  cols = len(python_obj)  # cols will be len(python_obj) if not a list of lists
-  lol = _is_list_of_lists(python_obj)  # do we have a list of lists: [[...], ..., [...]] ?
-  if lol:
-    _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
-  else:
-    cols = 1
+  #convert all inputs to lol
+  if _is_list_of_lists(python_obj):  # do we have a list of lists: [[...], ..., [...]] ?
+    ncols = _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
+  elif isinstance(python_obj, (list,tuple)): #single list
+    ncols = len(python_obj)
     python_obj = [python_obj]
-
+  else: #scalar
+    python_obj = [[python_obj]]
+    ncols = 1
   # create the header
-  header = _gen_header(cols)
+  header = _gen_header(ncols)
   # shape up the data for csv.DictWriter
-  rows = list(map(list, itertools.zip_longest(*python_obj)))
-  data_to_write = [dict(list(zip(header,row))) for row in rows]
+  data_to_write = [dict(list(zip(header,row))) for row in python_obj]
   return header, data_to_write
 
 def _is_list(l):

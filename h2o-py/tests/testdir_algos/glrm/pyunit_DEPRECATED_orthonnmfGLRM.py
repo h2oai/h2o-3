@@ -19,11 +19,11 @@ def glrm_orthonnmf():
     Y = np.random.rand(k,n)
     X = np.random.rand(m, k)
     train = np.dot(X,Y)
-    train_h2o = h2o.H2OFrame(list(zip(*train.tolist())))
+    train_h2o = h2o.H2OFrame(train.tolist())
 
     print("Run GLRM with orthogonal non-negative regularization on X, non-negative regularization on Y")
     initial_y = np.random.rand(k,n)
-    initial_y_h2o = h2o.H2OFrame(list(zip(*initial_y.tolist())))
+    initial_y_h2o = h2o.H2OFrame(initial_y.tolist())
     glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="OneSparse", regularization_y="NonNegative", gamma_x=1, gamma_y=1)
     glrm_h2o.show()
 
@@ -57,7 +57,7 @@ def glrm_orthonnmf():
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
 
     print("Run GLRM with orthogonal non-negative regularization on both X and Y")
-    initial_y = np.random.rand(n,k)
+    initial_y = np.random.rand(k,n)
     initial_y_h2o = h2o.H2OFrame(initial_y.tolist())
     glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="OneSparse", regularization_y="OneSparse", gamma_x=1, gamma_y=1)
     glrm_h2o.show()

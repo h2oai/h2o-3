@@ -194,7 +194,6 @@ class H2OClusteringModel(ModelBase):
     o = self._model_json["output"]
     cvals = o["centers"].cell_values
     centers = [list(cval[1:]) for cval in cvals]
-    centers = [list(x) for x in zip(*centers)]
     return centers
 
   def centers_std(self):
