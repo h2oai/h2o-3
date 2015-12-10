@@ -8,6 +8,9 @@ test <- function() {
   hex[,"weights"] <- 0
   indexes <- sample(nrow(hex), sampleSize)
   hex[indexes, "weights"] <- 1
+
+  print(sum(hex[,"weights"]))
+  print(sampleSize)
   expect_true(sum(hex[,"weights"]) == sampleSize)
 }
 
