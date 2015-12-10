@@ -17,9 +17,9 @@ def test_hadoop():
     h2o_glm.train(x=range(1, 10), y=0, training_frame=train) # dont need to train on all features
 
     hdfs_model_path = os.getenv("MODEL_PATH")
-    h2o.save_model(h2o_glm, "hdfs://" + hdfs_model_path)
+    new_model_path = h2o.save_model(h2o_glm, "hdfs://" + hdfs_name_node + "/" + hdfs_model_path)
 
-    new_model = h2o.load_model("hdfs://" + hdfs_model_path)
+    new_model = h2o.load_model(new_model_path)
 
 
 
