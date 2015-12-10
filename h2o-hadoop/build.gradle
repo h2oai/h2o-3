@@ -1,0 +1,11 @@
+// 
+// Setup idea module
+// 
+idea {
+    module {
+        inheritOutputDirs = false
+        outputDir = file('build/main')
+        testOutputDir = file('build/test')
+    }
+}
+
