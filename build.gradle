@@ -6,7 +6,7 @@
 // The top-level jar file that gets produced is empty and not usable
 // for anything.  Use the jar file produced by the h2o-assembly subproject.
 //
-apply from: 'gradle/java.gradle'
+apply plugin: 'base'
 
 // For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
 if (project.hasProperty("doRelease")) {
@@ -301,5 +301,16 @@ apply from: "gradle/profiles.gradle"
 if (project.hasProperty("jacocoCoverage")) {
     apply from: "$rootDir/gradle/jacoco.gradle"
     build.finalizedBy jacocoAgentLink
+}
+
+// 
+// Setup idea module
+// 
+idea {
+    module {
+        inheritOutputDirs = false
+        outputDir = file('build/main')
+        testOutputDir = file('build/test')
+    }
 }
 
