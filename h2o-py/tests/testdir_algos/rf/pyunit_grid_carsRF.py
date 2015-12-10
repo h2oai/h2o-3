@@ -52,6 +52,9 @@ def grid_cars_RF():
     else:
         cars_rf_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
 
+    for model in cars_rf_grid:
+      assert isinstance(model, H2ORandomForestEstimator)
+
     print("Performing various checks of the constructed grid...")
 
     print("Check cardinality of grid, that is, the correct number of models have been created...")
@@ -79,6 +82,9 @@ def grid_cars_RF():
     actual_size2 = len(cars_rf_grid2)
     assert actual_size == actual_size2, "Expected duplicates to be ignored. Without dups grid size: {0}. With dups " \
                                         "size: {1}".format(actual_size, actual_size2)
+
+    for model in cars_rf_grid2:
+      assert isinstance(model, H2ORandomForestEstimator)
 
     print(grid_space)
     print("Check that the hyper_params that were passed to grid, were used to construct the models...")

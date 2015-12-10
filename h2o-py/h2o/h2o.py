@@ -10,13 +10,21 @@ from past.builtins import basestring
 install_aliases()
 import re
 from six import PY3
-from io import StringIO
 from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key, quote, urlopen
 from .connection import H2OConnection
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
-from .estimators.estimator_base import H2OEstimator
+from .estimators.deeplearning import H2OAutoEncoderEstimator
+from .estimators.deeplearning import H2ODeepLearningEstimator
+from .estimators.gbm import H2OGradientBoostingEstimator
+from .estimators.glm import H2OGeneralizedLinearEstimator
+from .estimators.glrm import H2OGeneralizedLowRankEstimator
+from .estimators.kmeans import H2OKMeansEstimator
+from .estimators.naive_bayes import H2ONaiveBayesEstimator
+from .estimators.random_forest import H2ORandomForestEstimator
+from .transforms.decomposition import H2OPCA
+from .transforms.decomposition import H2OSVD
 from .h2o_model_builder import supervised, unsupervised, _resolve_model
 
 
@@ -344,9 +352,21 @@ def get_model(model_id):
   -------
     H2OEstimator
   """
-  m = H2OEstimator()
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
-  m._resolve_model(model_id,model_json)
+  algo = model_json["algo"]
+  if   algo == "svd":          m = H2OSVD()
+  elif algo == "pca":          m = H2OPCA()
+  elif algo == "drf":          m = H2ORandomForestEstimator()
+  elif algo == "naivebayes":   m = H2ONaiveBayesEstimator()
+  elif algo == "kmeans":       m = H2OKMeansEstimator()
+  elif algo == "glrm":         m = H2OGeneralizedLowRankEstimator()
+  elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
+  elif algo == "gbm":          m = H2OGradientBoostingEstimator()
+  elif algo == "deeplearning" and model_json["output"]["model_category"]=="AutoEncoder": m = H2OAutoEncoderEstimator()
+  elif algo == "deeplearning":  m = H2ODeepLearningEstimator()
+  else:
+    raise ValueError("Unknown algo type: " + algo)
+  m._resolve_model(model_id, model_json)
   return m
 
 
