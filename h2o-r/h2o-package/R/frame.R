@@ -1190,7 +1190,18 @@ trunc <- function(x, ...) {
   else .newExpr("x",x,y)
 }
 
-#' @rdname H2OFrame
+#' Which indices are TRUE?
+#'
+#' Give the ‘TRUE’ indices of a logical object, allowing for array indices.
+#'
+#' @param x An H2O H2OFrame object.
+#' @seealso \code{\link[base]{which}} for the base R method.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' which(iris.hex[,1]==4.4)
+#' }
 #' @export
 h2o.which <- function(x) {
   if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
