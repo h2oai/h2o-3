@@ -10,8 +10,7 @@ class RapidsHandler extends Handler {
   public RapidsSchema exec(int version, RapidsSchema rapids) {
     if( rapids == null ) return null;
     if( rapids.ast == null || rapids.ast.equals("") ) return rapids;
-    if( rapids.session_id == null || rapids.session_id.equals("") )
-      throw new IllegalArgumentException("Missing session_id");
+    if( rapids.session_id == null || rapids.session_id.equals("") ) return rapids;
     
     Session ses = InitIDHandler.SESSIONS.get(rapids.session_id);
     if( ses == null )
