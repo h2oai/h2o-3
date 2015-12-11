@@ -4,6 +4,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -247,7 +248,7 @@ public class DataInfo extends Keyed {
   }
 
   // private constructor called by filterExpandedColumns
-  private DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
+  private DataInfo(Key selfKey, Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
     super(selfKey);
     _offset = offset;
     _weights = weight;
@@ -275,12 +276,12 @@ public class DataInfo extends Keyed {
     _useAllFactorLevels = true;
     _catModes = new int[_cats];
     _numMeans = new double[_nums];
+    _normMul = normMul;
+    _normSub = normSub;
     for(int i = 0; i < _cats; i++)
       _catModes[i] = imputeCat(_adaptedFrame.vec(i));
     for(int i = 0; i < _nums; i++)
       _numMeans[i] = _adaptedFrame.vec(_cats+i).mean();
-    setPredictorTransform(predictor_transform);
-    setResponseTransform(response_transform);
   }
 
   public static int imputeCat(Vec v) {
@@ -332,7 +333,23 @@ public class DataInfo extends Keyed {
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
     if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
     assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
-    DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
+    double [] normSub = null;
+    double [] normMul = null;
+    int id = Arrays.binarySearch(cols,numStart());
+    if(id < 0) id = -id-1;
+    int nnums = cols.length - id;
+    int off = numStart();
+    if(_normSub != null) {
+      normSub = new double[nnums];
+      for(int k = id; k < cols.length; ++k)
+        normSub[k-id] = _normSub[cols[k]-off];
+    }
+    if(_normMul != null) {
+      normMul = new double[nnums];
+      for(int k = id; k < cols.length; ++k)
+        normMul[k-id] = _normMul[cols[k]-off];
+    }
+    DataInfo dinfo = new DataInfo(_key,f, _normMul, _normSub, catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
     // do not put activeData into K/V - active data is recreated on each node based on active columns
     dinfo._activeCols = cols;
     return dinfo;
