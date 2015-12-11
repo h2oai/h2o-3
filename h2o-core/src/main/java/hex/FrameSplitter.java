@@ -76,7 +76,7 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
     }
     setPendingCount(nsplits);
     for (int s=0; s<nsplits; s++)
-      new FrameSplitTask(datasetVecs, ratios, s).asyncExec(splits[s]);
+      new FrameSplitTask(this,datasetVecs, ratios, s).asyncExec(splits[s]);
     tryComplete(); // complete the computation of thrown tasks
   }
 
@@ -157,7 +157,8 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
     transient int _pcidx; // Start chunk index for this partition
     transient int _psrow; // Start row in chunk for this partition
 
-    public FrameSplitTask(Vec[] srcVecs, double[] ratios, int partIdx) {
+    public FrameSplitTask(H2OCountedCompleter completer, Vec[] srcVecs, double[] ratios, int partIdx) {
+      super(completer);
       _srcVecs = srcVecs;
       _ratios  = ratios;
       _partIdx = partIdx;

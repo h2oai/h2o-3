@@ -28,7 +28,6 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
    *  @param desc String description   */
   public Job(Key<T> key, String desc) { 
     super(defaultJobKey());     // Passing in a brand new Job key
-    if( key == null ) throw new IllegalArgumentException("Result key cannot be null");
     _result = key;              // Result (destination?) key
     _description = desc; 
   }
@@ -290,8 +289,25 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   // Update the *this* object from a remote object.
   private void update_from_remote( ) {
-    Job remote_job = DKV.getGet(_key); // Watch for changes in the DKV
-    if( this==remote_job ) return; // Trivial!
-    synchronized(this) { copyOver(remote_job); }
+    Job remote = DKV.getGet(_key); // Watch for changes in the DKV
+    if( this==remote ) return; // Trivial!
+    boolean differ = false;
+    if( _stop_requested != remote._stop_requested ) differ = true;
+    if(_start_time!= remote._start_time) differ = true;
+    if(_end_time  != remote._end_time  ) differ = true;
+    if(_ex        != remote._ex        ) differ = true;
+    if(_work      != remote._work      ) differ = true;
+    if(_worked    != remote._worked    ) differ = true;
+    if(_msg       != remote._msg       ) differ = true;
+    if( differ ) 
+      synchronized(this) { 
+        _stop_requested = remote._stop_requested;
+        _start_time= remote._start_time;
+        _end_time  = remote._end_time  ;
+        _ex        = remote._ex        ;
+        _work      = remote._work      ;
+        _worked    = remote._worked    ;
+        _msg       = remote._msg       ;
+      }
   }
 }
