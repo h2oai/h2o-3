@@ -1200,7 +1200,7 @@ trunc <- function(x, ...) {
 #' \donttest{
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' which(iris.hex[,1]==4.4)
+#' h2o.which(iris.hex[,1]==4.4)
 #' }
 #' @export
 h2o.which <- function(x) {
