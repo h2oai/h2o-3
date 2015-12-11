@@ -294,7 +294,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       table.set(row, col++, fmt.print(si.time_stamp));
       table.set(row, col++, PrettyPrint.msecs(si.training_time_ms, true));
       int speed = (int)(si.training_samples / ((si.training_time_ms - scoring_time)/ 1e3));
-      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + si.training_samples + "/((" + si.training_time_ms + "-" + scoring_time + ")/1e3)";
+//      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + si.training_samples + "/((" + si.training_time_ms + "-" + scoring_time + ")/1e3)";
       table.set(row, col++, si.training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
       table.set(row, col++, si.epoch_counter);
       table.set(row, col++, si.iterations);
