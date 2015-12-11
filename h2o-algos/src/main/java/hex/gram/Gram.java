@@ -1034,22 +1034,38 @@ public final class Gram extends Iced<Gram> {
     mul(x,res);
     return res;
   }
+  private double [][] XX = null;
 
   public void mul(double [] x, double [] res){
     Arrays.fill(res,0);
-    for(int i = 0; i < _diagN; ++i)
-      res[i] = x[i] * _diag[i];
-    for(int ii = 0; ii < _xx.length; ++ii){
-      final int n = _xx[ii].length-1;
-      final int i = _diagN + ii;
-      for(int j = 0; j < n; ++j) {
-        double e = _xx[ii][j];  // we store only lower diagonal, so we have two updates:
-        res[i] += x[j]*e;       // standard matrix mul, row * vec, except short (only up to diag)
-        res[j] += x[i]*e;       // symmetric matrix => each non-diag element adds to 2 places
-      }
-      res[i] += _xx[ii][n]*x[n]; // diagonal element
+    if(XX == null) XX = getXX(false);
+    for(int i = 0; i < XX.length; ++i){
+      double d  = 0;
+      double [] xi = XX[i];
+      for(int j = 0; j < XX.length; ++j)
+        d += xi[j]*x[j];
+      res[i] = d;
     }
   }
+//  public void mul(double [] x, double [] res){
+//    Arrays.fill(res,0);
+//    for(int i = 0; i < _diagN; ++i)
+//      res[i] = x[i] * _diag[i];
+//    for(int ii = 0; ii < _xx.length; ++ii){
+//      final int n = _xx[ii].length-1;
+//      double [] xi = _xx[ii];
+//      int i = ii + _diagN;
+//      double d = res[i];
+//      for(int j = 0; j < n; ++j) {
+//        double e = xi[j];
+//        d += x[j] * e;  // standard matrix mul, row * vec, except short (only up to diag)
+//        x[i] += x[i]*e;
+//      }
+//      d += _xx[ii][n]*x[n]; // diagonal element
+//      res[i] = d;
+//    }
+//  }
+
   /**
    * Task to compute gram matrix normalized by the number of observations (not counting rows with NAs).
    * in R's notation g = t(X)%*%X/nobs, nobs = number of rows of X with no NA.

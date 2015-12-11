@@ -349,7 +349,7 @@ public class DataInfo extends Keyed {
       for(int k = id; k < cols.length; ++k)
         normMul[k-id] = _normMul[cols[k]-off];
     }
-    DataInfo dinfo = new DataInfo(_key,f, _normMul, _normSub, catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
+    DataInfo dinfo = new DataInfo(_key,f, normMul, normSub, catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
     // do not put activeData into K/V - active data is recreated on each node based on active columns
     dinfo._activeCols = cols;
     return dinfo;
