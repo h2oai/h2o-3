@@ -32,14 +32,16 @@ test.pubdev.2372 <- function(conn){
 	expect_equal(1,min(gain_table$cumulative_lift))
 	expect_equal(0,min(gain_table$cumulative_gain))
 	expect_equal(gain_table$response_rate/min(gain_table$cumulative_response_rate),gain_table$lift)
+
+	probs = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.85,0.9,0.95,0.96,0.97,0.98,0.99)
 	
-	h2o_quantile = as.numeric(h2o.quantile(pred[,3],probs = seq(0,.95,.05)))
+	h2o_quantile = as.numeric(h2o.quantile(pred[,3],probs = probs))
 	gain_prob = sort(gain_table$lower_threshold)
 #  print(h2o_quantile)
 #  print(gain_prob)
 	expect_equal(h2o_quantile,gain_prob,tolerance= 1e-8)
 
-	R_quantile = as.numeric(quantile(pred_prob[,1],probs = seq(0,.95,.05)))
+	R_quantile = as.numeric(quantile(pred_prob[,1],probs = probs))
 #  print(R_quantile)
 #  print(h2o_quantile)
 	expect_equal(R_quantile,h2o_quantile,tolerance= 1e-8)
@@ -61,9 +63,8 @@ test.pubdev.2372 <- function(conn){
 	pred_prob = pred_prob[idx$ix,1]
 
 	j = 1
-	for(i in 20:1){
-
-  	if(i==20){
+	for(i in length(probs):1){
+  	if(i==length(probs)){
     	subs = lab[which(pred_prob >=R_quantile[i])]
   	}else{
     	subs = lab[which(pred_prob< R_quantile[(i+1)] & pred_prob >=R_quantile[i])]
