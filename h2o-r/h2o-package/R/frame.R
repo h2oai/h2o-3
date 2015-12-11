@@ -1192,7 +1192,7 @@ trunc <- function(x, ...) {
 
 #' Which indices are TRUE?
 #'
-#' Give the ‘TRUE’ indices of a logical object, allowing for array indices.
+#' Give the TRUE indices of a logical object, allowing for array indices.
 #'
 #' @param x An H2O H2OFrame object.
 #' @seealso \code{\link[base]{which}} for the base R method.
