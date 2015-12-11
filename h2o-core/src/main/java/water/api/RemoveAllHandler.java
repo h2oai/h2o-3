@@ -6,8 +6,6 @@ import water.Job;
 import water.MRTask;
 import water.util.Log;
 
-import java.util.Set;
-
 // Best-effort cluster brain-wipe and reset.
 // Useful between unrelated tests.
 public class RemoveAllHandler extends Handler {
@@ -19,9 +17,8 @@ public class RemoveAllHandler extends Handler {
     for( Job j : Job.jobs() ) { j.cancel(); j.remove(fs); }
     // Wipe out any and all session info
     if( InitIDHandler.SESSIONS != null ) {
-      Set<String> keys = InitIDHandler.SESSIONS.keySet();
-      for(String k: keys )
-        (InitIDHandler.SESSIONS.remove(k)).endQuietly(null);
+      for(String k: InitIDHandler.SESSIONS.keySet() )
+        (InitIDHandler.SESSIONS.get(k)).endQuietly(null);
       InitIDHandler.SESSIONS.clear();
     }
     fs.blockForPending();
