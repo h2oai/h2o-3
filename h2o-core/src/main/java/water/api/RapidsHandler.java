@@ -1,7 +1,6 @@
 package water.api;
 
 import water.H2O;
-import water.Key;
 import water.rapids.Exec;
 import water.rapids.Session;
 import water.rapids.Val;
@@ -9,12 +8,10 @@ import water.util.Log;
 
 class RapidsHandler extends Handler {
   public RapidsSchema exec(int version, RapidsSchema rapids) {
-    boolean _end=false;
     if( rapids == null ) return null;
     if( rapids.ast == null || rapids.ast.equals("") ) return rapids;
     if( rapids.session_id == null || rapids.session_id.equals("") ) {
-      _end=true;
-      rapids.session_id = "_ses" + Key.make().toString().substring(0,5);
+      rapids.session_id = "_specialSess";
     }
     
     Session ses = InitIDHandler.SESSIONS.get(rapids.session_id);
@@ -32,15 +29,6 @@ class RapidsHandler extends Handler {
     } catch( Throwable e ) {
       Log.err(e);
       throw e;
-    }
-
-    if( _end ) {
-      try {
-        InitIDHandler.SESSIONS.get(rapids.session_id).end(null);
-        InitIDHandler.SESSIONS.remove(rapids.session_id);
-      } catch (Throwable ex) {
-        throw InitIDHandler.SESSIONS.get(rapids.session_id).endQuietly(ex);
-      }
     }
 
     switch( val.type() ) {
