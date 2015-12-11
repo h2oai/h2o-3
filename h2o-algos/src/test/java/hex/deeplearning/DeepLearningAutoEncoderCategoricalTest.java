@@ -45,15 +45,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     p._reproducible = true;
 
     DeepLearning dl = new DeepLearning(p);
-    DeepLearningModel mymodel = null;
-    try {
-      mymodel = dl.trainModel().get();
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
-    } finally {
-      dl.remove();
-    }
+    DeepLearningModel mymodel = dl.trainModel().get();
 
     // Verification of results
     StringBuilder sb = new StringBuilder();

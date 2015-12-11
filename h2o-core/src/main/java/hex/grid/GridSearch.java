@@ -63,9 +63,8 @@ import java.util.Map;
  * @see hex.grid.HyperSpaceWalker
  * @see #startGridSearch(Key, ModelFactory, HyperSpaceWalker)
  */
-// FIXME: this class should be driver which is passed to job as H2OCountedCompleter. Will be
-// FIXME: refactored as part of Job refactoring.
-public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
+public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSearch> {
+  public final Job<Grid> _job;
 
   /**
    * Produces a new model builder for given parameters.
@@ -78,11 +77,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
   private final transient HyperSpaceWalker<MP> _hyperSpaceWalker;
 
 
-  private GridSearch(Key gkey,
+  private GridSearch(Key<Grid> gkey,
                      ModelFactory<MP> modelFactory,
                      HyperSpaceWalker<MP> hyperSpaceWalker) {
-    super(gkey, modelFactory.getModelName() + " Grid Search");
-    assert modelFactory != null : "Grid search needs to know how to build a new model!";
+    _job = new Job<>(gkey, modelFactory.getModelName() + " Grid Search");
     assert hyperSpaceWalker != null : "Grid search needs to know to how walk around hyper space!";
     //_paramsBuilderFactory = paramsBuilderFactory;
     _modelFactory = modelFactory;
@@ -92,49 +90,42 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     // Leave it to launch time, and just mark the corresponding model builder job as failed.
   }
 
-  GridSearch start() {
+  Job<Grid> start() {
     final int gridSize = _hyperSpaceWalker.getHyperSpaceSize();
     Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
     // this function the grid object is in DKV and accessible.
-    Grid<MP> grid = null;
-    Keyed keyed = DKV.getGet(dest());
-
-    if (grid != null) {
-      if (! (keyed instanceof Grid)) {
-        throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + dest() + "; it is a: " + keyed.getClass());
-      }
-
-      grid = (Grid<MP>)keyed;
+    Grid<MP> grid;
+    Keyed keyed = DKV.getGet(_job._result);
+    if (keyed != null) {
+      if (! (keyed instanceof Grid))
+        throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + _job._result + "; it is a: " + keyed.getClass());
+      grid = (Grid)keyed;
       Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
       if (!specTrainFrame._key.equals(oldTrainFrame._key) ||
-          specTrainFrame.checksum() != oldTrainFrame.checksum()) {
-        throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models"
-                                              + " to a grid with different training input");
-      }
-      grid.write_lock(jobKey());
+          specTrainFrame.checksum() != oldTrainFrame.checksum())
+        throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
+      grid.write_lock(_job);
     } else {
       grid =
-          new Grid<>(dest(),
+          new Grid<>(_job._result,
                      _hyperSpaceWalker.getParams(),
                      _hyperSpaceWalker.getHyperParamNames(),
                      _modelFactory.getModelName(),
                      _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
-      grid.delete_and_lock(jobKey());
+      grid.delete_and_lock(_job);
     }
-    // Java trick
+    // Final for closure
     final Grid<MP> gridToExpose = grid;
     // Install this as job functions
-    start(new H2O.H2OCountedCompleter() {
-      @Override
-      public void compute2() {
+    return _job.start(new H2O.H2OCountedCompleter() {
+      @Override public void compute2() {
         gridSearch(gridToExpose);
         tryComplete();
       }
-    }, gridSize, true);
-    return this;
+    }, gridSize);
   }
 
   /**
@@ -154,7 +145,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    *
    * It updates passed grid object in distributed store.
    *
-   * @param grid grid object to save results
+   * @param grid grid object to save results; grid already locked
    */
   private void gridSearch(Grid<MP> grid) {
     Model model = null;
@@ -168,13 +159,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
       // Number of traversed model parameters
       int counter = 0;
       while (it.hasNext(model)) {
-        // Handle end-user cancel request
-        if (!isRunning()) {
-          // FIXME: propagate cancellation event to sub jobs, block till they are cancelled
-          cancel();
-          return;
-        }
-        MP params = null;
+        if(_job.stop_requested() ) return;  // Handle end-user cancel request
+        MP params;
         try {
           // Get parameters for next model
           params = it.nextModelParameters(model);
@@ -193,29 +179,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
           grid.appendFailedModelParameters(rawParams, e);
         } finally {
           // Update progress by 1 increment
-          this.update(1L);
+          _job.update(1);
           // Always update grid in DKV after model building attempt
-          grid.update(jobKey());
+          grid.update(_job);
         }
       }
-      // Grid search is done
-      done();
-    } catch(Throwable e) {
-      // Something wrong happened during hyper-space walking
-      // So cancel this job
-      // FIXME: should I delete grid here? it failed but user can be interested in partial result
-      Job thisJob = DKV.getGet(jobKey());
-      if (thisJob._state == JobState.CANCELLED) {
-        Log.info("Job " + jobKey() + " cancelled by user.");
-      } else {
-        // Mark job as failed
-        failed(e);
-        // And propagate unknown exception up
-        throw e;
-      }
     } finally {
-      // Unlock grid object
-      grid.unlock(jobKey());
+      grid.unlock(_job);
     }
   }
 
@@ -252,7 +222,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
-    Model m = (Model) (startBuildModel(params, grid).get());
+    Model m = startBuildModel(params, grid).get();
     grid.putModel(checksum, m._key);
     return m;
   }
@@ -307,7 +277,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
    */
-  public static <MP extends Model.Parameters> GridSearch startGridSearch(
+  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Grid> destKey,
       final MP params,
       final Map<String, Object[]> hyperParams,
@@ -338,15 +308,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
    */
-  public static <MP extends Model.Parameters> GridSearch startGridSearch(final Key<Grid> destKey,
+  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(final Key<Grid> destKey,
                                                                          final MP params,
                                                                          final Map<String, Object[]> hyperParams,
                                                                          final ModelFactory<MP> modelFactory) {
-    return startGridSearch(destKey, params, hyperParams, modelFactory,
-                           new SimpleParametersBuilderFactory<MP>());
+    return startGridSearch(destKey, params, hyperParams, modelFactory, new SimpleParametersBuilderFactory<MP>());
   }
 
-  public static <MP extends Model.Parameters> GridSearch startGridSearch(final MP params,
+  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(final MP params,
                                                                          final Map<String, Object[]> hyperParams,
                                                                          final ModelFactory<MP> modelFactory) {
     return startGridSearch(null, params, hyperParams, modelFactory);
@@ -364,15 +333,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Job<Grid> {
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
    */
-  public static <MP extends Model.Parameters> GridSearch startGridSearch(
+  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Grid> destKey,
       final ModelFactory<MP> modelFactory,
       final HyperSpaceWalker<MP> hyperSpaceWalker) {
     // Compute key for destination object representing grid
-    Key<Grid>
-        gridKey =
-        destKey != null ? destKey : gridKeyName(modelFactory.getModelName(),
-                                                hyperSpaceWalker.getParams().train());
+    Key<Grid> gridKey = destKey != null ? destKey
+            : gridKeyName(modelFactory.getModelName(), hyperSpaceWalker.getParams().train());
 
     // Start the search
     return new GridSearch(gridKey, modelFactory, hyperSpaceWalker).start();

@@ -3,8 +3,6 @@ package water.api;
 import water.*;
 import water.util.Log;
 
-import java.util.Set;
-
 // Best-effort cluster brain-wipe and reset.
 // Useful between unrelated tests.
 public class RemoveAllHandler extends Handler {
@@ -13,7 +11,7 @@ public class RemoveAllHandler extends Handler {
     Log.info("Removing all objects");
     Futures fs = new Futures();
     // Cancel and remove leftover running jobs
-    for( Job j : Job.jobs() ) { j.cancel(); j.remove(fs); }
+    for( Job j : Job.jobs() ) { j.stop_requested(); j.remove(fs); }
     // Wipe out any and all session info
     if( InitIDHandler.SESSION != null ) {
       InitIDHandler.SESSION.endQuietly(null);

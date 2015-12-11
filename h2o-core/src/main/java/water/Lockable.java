@@ -54,6 +54,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Write-lock {@code this._key} by {@code job_key}.  
    *  Throws IAE if the Key is already locked.
    *  @return the old POJO mapped to this Key, generally for deletion. */
+  public Lockable write_lock() { return write_lock((Key<Job>)null); }
+  public Lockable write_lock( Job job ) { return write_lock(job._key); }
   public Lockable write_lock( Key<Job> job_key ) {
     Log.debug("write-lock "+_key+" by job "+job_key);
     return ((PriorWriteLock)new PriorWriteLock(job_key).invoke(_key))._old;
@@ -170,14 +172,15 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // -----------
   /** Atomically set a new version of self and unlock. */
-  public void unlock( ) { unlock(null,true); }
-  public void unlock( Job job ) { unlock(job._key,true); }
-  public void unlock( Key<Job> job_key ) { unlock(job_key,true); }
-  public void unlock( Key<Job> job_key, boolean exact ) {
+  public T unlock( ) { return unlock(null,true); }
+  public T unlock( Job job ) { return unlock(job._key,true); }
+  public T unlock( Key<Job> job_key ) { return unlock(job_key,true); }
+  public T unlock( Key<Job> job_key, boolean exact ) {
     if( _key != null ) {
       Log.debug("unlock "+_key+" by job "+job_key);
       new Unlock(job_key,exact).invoke(_key);
     }
+    return (T)this;
   }
 
   // Freshen 'this' and unlock

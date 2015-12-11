@@ -815,7 +815,7 @@ public class Frame extends Lockable<Frame> {
   void preparePartialFrame( String[] names ) {
     // Nuke any prior frame (including freeing storage) & lock this one
     if( _keys != null ) delete_and_lock();
-    else write_lock(null);
+    else write_lock();
     _names = names;
     _keys = new Vec.VectorGroup().addVecs(names.length);
     // No Vectors tho!!! These will be added *after* the import

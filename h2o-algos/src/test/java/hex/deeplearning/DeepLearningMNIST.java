@@ -98,26 +98,14 @@ public class DeepLearningMNIST extends TestUtil {
         p._score_training_samples = 10000; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)
 
         DeepLearning dl = new DeepLearning(p);
-        DeepLearningModel model = null;
-        try {
-          model = dl.trainModel().get();
-        } catch (Throwable t) {
-          t.printStackTrace();
-          throw new RuntimeException(t);
-        } finally {
-          dl.remove();
-          vframe.remove();
-          frame.remove();
-          if (model != null) {
-            model.delete();
-          }
-        }
+        DeepLearningModel model = dl.trainModel().get();
+        vframe.remove();
+        frame.remove();
+        if (model != null)
+          model.delete();
       } else {
         Log.info("Please run ./gradlew syncBigDataLaptop in the top-level directory of h2o-3.");
       }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
     } finally {
       Scope.exit();
     }

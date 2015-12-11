@@ -36,7 +36,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Constructor making a default destination key */
   public ModelBuilder(String desc, P parms) {
-    this((parms == null || parms._model_id == null) ? Key.<M>make(H2O.calcNextUniqueModelId(desc)) : (Key<M>)parms._model_id, desc, parms);
+    this((Key<M>)((parms == null || parms._model_id == null) ? Key.make(H2O.calcNextUniqueModelId(desc)) : parms._model_id), desc, parms);
   }
 
   /** Default constructor, given all arguments */
@@ -44,11 +44,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _job = new Job<>(dest,desc);
     _parms = parms;
   }
+  /** Shared Job constructor */
+  public ModelBuilder(Job job, P parms) {
+    _job = job;
+    _parms = parms;
+  }
 
   /** Block till completion, and return the built model from the DKV */
   public final M get() { return _job.get(); }
 
   public final Key<M> dest() { return _job._result; }
+  public final boolean isStopped() { return _job.isStopped(); }
 
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
   // TODO: CLEAN THIS UP.  OVERLY COMPLEX; NO NEED; NON-REFLECTION ALTERNATIVE EXISTS

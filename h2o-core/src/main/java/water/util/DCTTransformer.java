@@ -16,8 +16,8 @@ public class DCTTransformer extends Transformer<Frame> {
   /** Whether to do inverse DCT */
   final boolean _inverse = false;
 
-  public DCTTransformer(Key<Frame> dest, String desc) {
-    super(dest, desc);
+  public DCTTransformer(Key<Frame> dest) {
+    super(dest, "DCTTransformer job");
   }
 
   @Override protected Job<Frame> execImpl() {

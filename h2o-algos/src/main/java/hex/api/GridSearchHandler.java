@@ -59,8 +59,7 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
     ModelFactory<MP> modelFactory = getModelFactory();
-    GridSearch
-        gsJob = GridSearch.startGridSearch(destKey,
+    Job<Grid> gsJob = GridSearch.startGridSearch(destKey,
                                            params,
                                            hyperParams,
                                            modelFactory,
@@ -69,7 +68,7 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
     // Fill schema with job parameters
     // FIXME: right now we have to remove grid parameters which we sent back
     gridSearchSchema.hyper_parameters = null;
-    gridSearchSchema.total_models = gsJob.getModelCount();
+    gridSearchSchema.total_models = gsJob.get().getModelCount();
     gridSearchSchema.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(gsJob);
 
     return gridSearchSchema;

@@ -173,8 +173,8 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public Bogus( BogusModel.BogusParameters parms ) { super("Bogus",parms); init(false); }
   public ModelBuilderSchema schema() { return null; }
-  @Override protected Bogus trainModelImpl(long work, boolean restartTimer) {
-    return (Bogus)start(new BogusDriver(), work, restartTimer);
+  @Override protected H2OCountedCompleter<BogusDriver> trainModelImpl() {
+    return new BogusDriver();
   }
   @Override public long progressUnits() { return 0; }
   @Override public void init(boolean expensive) { super.init(expensive); }
@@ -183,14 +183,11 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
     protected BogusDriver() { super(true); } // bump priority of drivers
     @Override protected void compute2() {
       _driver_priority = _priority; // Get H2OCountedCompleter priority
-
       synchronized(Bogus.this) {
         if( _state == 0 ) _state = 1;
         Bogus.this.notify();
         while( _state==1 ) try { Bogus.this.wait(); } catch( InterruptedException _ ) { }
       }
-
-      done();                 // Job done!
       tryComplete();
     }
   }

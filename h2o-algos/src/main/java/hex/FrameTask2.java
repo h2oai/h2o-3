@@ -1,13 +1,11 @@
 package hex;
 
 import hex.DataInfo.Row;
-import water.DKV;
 import water.H2O.H2OCountedCompleter;
 import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
-import water.fvec.*;
 import water.util.FrameUtils;
 
 /**
@@ -21,10 +19,10 @@ import water.util.FrameUtils;
  */
 public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   protected boolean _sparse;
-  final Key     _jobKey;
+  final Key<Job> _jobKey;
   protected final DataInfo _dinfo;
 
-  public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey){
+  public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key<Job> jobKey){
     super(cmp);
     _dinfo = dinfo;
     _jobKey = jobKey;
@@ -49,10 +47,8 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   public boolean handlesSparseData(){return false;}
   abstract protected void processRow(Row r);
 
-  @Override
-  public void map(Chunk[] chks) {
-    if(_jobKey != null && (DKV.get(_jobKey) == null || !Job.isRunning(_jobKey)))
-      throw new Job.JobCancelledException();
+  @Override public void map(Chunk[] chks) {
+    if( _jobKey.get().stop_requested() ) return;
     chunkInit();
     // compute
     if(_sparse) {

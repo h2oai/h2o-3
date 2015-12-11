@@ -345,13 +345,10 @@ public class KMeansTest extends TestUtil {
       try {
         fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
-        SplitFrame sf = new SplitFrame();
-        sf.dataset = fr;
-        sf.ratios = new double[] { 0.5, 0.5 };
-        sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+        SplitFrame sf = new SplitFrame(fr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
         // Invoke the job
         sf.exec().get();
-        Key<Frame>[] ksplits = sf.destination_frames;
+        Key<Frame>[] ksplits = sf._destination_frames;
         tr = DKV.get(ksplits[0]).get();
         te = DKV.get(ksplits[1]).get();
 

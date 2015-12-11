@@ -1,6 +1,7 @@
 package hex;
 
 import water.DKV;
+import water.Iced;
 import water.Job;
 import water.Key;
 import water.fvec.CreateInteractions;
@@ -13,7 +14,7 @@ import java.util.Arrays;
 /**
  * Create new factors that represent interactions of the given factors
  */
-public class Interaction {
+public class Interaction extends Iced {
   public final Job<Frame> _job;
   public Key<Frame> _source_frame;
   public String[] _factor_columns;

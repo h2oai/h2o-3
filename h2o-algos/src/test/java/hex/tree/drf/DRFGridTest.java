@@ -16,6 +16,7 @@ import hex.Model;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import water.DKV;
+import water.Job;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -65,7 +66,7 @@ public class DRFGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "cylinders";
       // Get the Grid for this modeling class and frame
-      GridSearch gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
       grid = (Grid<DRFModel.DRFParameters>) gs.get();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,
@@ -144,8 +145,8 @@ public class DRFGridTest extends TestUtil {
       params._response_column = "economy";
 
       // Get the Grid for this modeling class and frame
-      GridSearch gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
-      grid = (Grid) gs.get();
+      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
+      grid = gs.get();
 
       // Check that duplicate model have not been constructed
       Model[] models = grid.getModels();
@@ -237,8 +238,8 @@ public class DRFGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "economy (mpg)";
       // Get the Grid for this modeling class and frame
-      GridSearch gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
-      grid = (Grid) gs.get();
+      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
+      grid = gs.get();
 
       System.out.println("Test seed: " + seed);
       System.out.println("ntrees search space: " + Arrays.toString(ntreesSpace));
@@ -274,16 +275,7 @@ public class DRFGridTest extends TestUtil {
       params._ntrees = ntreeVal;
       params._max_depth = maxDepthVal;
       params._mtries = mtriesVal;
-      DRF job = null;
-      try {
-        job = new DRF(params);
-        drfRebuilt = job.trainModel().get();
-      } finally {
-        if (job != null) {
-          job.remove();
-        }
-      }
-      assertTrue(job._state == water.Job.JobState.DONE);
+      drfRebuilt = new DRF(params).trainModel().get();
 
       // Make sure the MSE metrics match
       //double fromGridMSE = drfFromGrid._output._scored_train[drfFromGrid._output._ntrees]._mse;

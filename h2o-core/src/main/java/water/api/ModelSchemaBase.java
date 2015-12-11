@@ -16,12 +16,8 @@ import water.api.KeyV3.FrameKeyV3;
  * </ul>
  *
  */
-public class ModelSchemaBase<M extends Iced, S extends Schema<M, S>>
-    extends Schema<M, S> {
-
-  public ModelSchemaBase() {
-
-  }
+public class ModelSchemaBase<M extends Iced, S extends Schema<M, S>> extends Schema<M, S> {
+  public ModelSchemaBase() { }
 
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
@@ -44,13 +40,12 @@ public class ModelSchemaBase<M extends Iced, S extends Schema<M, S>>
   public long timestamp;
 
   public ModelSchemaBase(Model m) {
-
     super();
     this.model_id = new ModelKeyV3(m._key);
     this.algo = ModelBuilder.getAlgo(m);
     this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
     this.data_frame = new FrameKeyV3(m._parms._train);
     this.response_column_name = m._parms._response_column;
-    this.timestamp = m._output._end_time;
+    this.timestamp = m._output._job.end_time();
   }
 }

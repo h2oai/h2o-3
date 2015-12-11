@@ -469,11 +469,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
    * @param ftrain potentially downsampled training data for scoring
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job
-   * @param progressKey key of the progress
    * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration, boolean finalScoring) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key<Job> job_key, int iteration, boolean finalScoring) {
     final long now = System.currentTimeMillis();
     final double time_since_last_iter = now - _timeLastIterationEnter;
     total_run_time +=  time_since_last_iter;
@@ -515,11 +514,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if( !keep_running ||
         (sinceLastScore > get_params()._score_interval *1000 //don't score too often
             &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
-      if (progressKey != null) {
-        new Job.ProgressUpdate("Scoring on " + ftrain.numRows() + " training samples" +
-            (ftest != null ? (", " + ftest.numRows() + " validation samples") : "")
-        ).fork(progressKey);
-      }
+      job_key.get().update(0,"Scoring on " + ftrain.numRows() + " training samples" + (ftest != null ? (", " + ftest.numRows() + " validation samples") : "") );
       final boolean printme = !get_params()._quiet_mode;
       _timeLastScoreStart = System.currentTimeMillis();
       model_info().computeStats(); //might not be necessary, but is done to be certain that numbers are good
@@ -676,16 +671,16 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       update(job_key);
       return false;
     }
-    progressUpdate(progressKey, job_key, keep_running);
+    progressUpdate(job_key, keep_running);
     update(job_key);
     return keep_running;
   }
 
-  private void progressUpdate(Key progressKey, Key job_key, boolean keep_running) {
+  private void progressUpdate(Key<Job> job_key, boolean keep_running) {
     long now = System.currentTimeMillis();
+    Job job = job_key.get();
     long timeSinceEntering = now - _timeLastIterationEnter;
-    Job.Progress prog = DKV.getGet(progressKey);
-    double progress = prog == null ? 0 : prog.progress();
+    double progress = job.progress();
     int speed = (int)(model_info().get_processed_total() * 1000. / ((total_run_time + timeSinceEntering) - total_scoring_time));
 //    assert(speed >= 0);
     String msg =
@@ -693,8 +688,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             + ". Epochs: " + String.format("%g", epoch_counter)
             + ". Speed: " + String.format("%,d", speed) + " samples/sec."
             + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (total_run_time * (1. - progress) / progress), true));
-    ((Job) DKV.getGet(job_key)).update(actual_train_samples_per_iteration); //mark the amount of work done for the progress bar
-    if (progressKey != null) new Job.ProgressUpdate(msg).fork(progressKey); //update the message for the progress bar
+    job.update(actual_train_samples_per_iteration,msg); //mark the amount of work done for the progress bar
     long sinceLastPrint = now -_timeLastPrintStart;
     if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
       _timeLastPrintStart = now;

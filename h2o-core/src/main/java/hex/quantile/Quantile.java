@@ -4,14 +4,11 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.QuantileV3;
-import water.DKV;
 import water.H2O.H2OCountedCompleter;
-import water.Job;
 import water.MRTask;
 import water.Scope;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -31,8 +28,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   public ModelBuilderSchema schema() { return new QuantileV3(); }
 
-  @Override public Quantile trainModelImpl(long work, boolean restartTimer) {
-    return (Quantile)start(new QuantileDriver(), work, restartTimer);
+  @Override public H2OCountedCompleter<QuantileDriver> trainModelImpl() {
+    return new QuantileDriver();
   }
 
   @Override
@@ -84,21 +81,21 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       QuantileModel model = null;
       try {
         Scope.enter();
-        _parms.read_lock_frames(Quantile.this); // Fetch & read-lock source frame
+        _parms.read_lock_frames(_job); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
         model = new QuantileModel(dest(), _parms, new QuantileModel.QuantileOutput(Quantile.this));
         model._output._parameters = _parms;
         model._output._quantiles = new double[_ncols][_parms._probs.length];
-        model.delete_and_lock(_key);
+        model.delete_and_lock(_job);
 
 
         // ---
         // Run the main Quantile Loop
         Vec vecs[] = train().vecs();
         for( int n=0; n<_ncols; n++ ) {
-          if( !isRunning() ) return; // Stopped/cancelled
+          if( _job.stop_requested() ) return; // Stopped/cancelled
           Vec vec = vecs[n];
           if (vec.isBad()) {
             model._output._quantiles[n] = new double[_parms._probs.length];
@@ -123,75 +120,24 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
             }
 
             // Update the model
-            model.update(_key); // Update model in K/V store
-            update(1);          // One unit of work
+            model.update(_job); // Update model in K/V store
+            _job.update(1);     // One unit of work
           }
           StringBuilder sb = new StringBuilder();
           sb.append("Quantile: iter: ").append(model._output._iterations).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
           Log.debug(sb);
         }
-        done();                 // Job done!
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
       } finally {
-        updateModelOutput();
-        if( model != null ) model.unlock(_key);
-        _parms.read_unlock_frames(Quantile.this);
+        if( model != null ) model.unlock(_job);
+        _parms.read_unlock_frames(_job);
         Scope.exit(model == null ? null : model._key);
       }
       tryComplete();
     }
   }
 
-  // FIXME: This is sloppy, but want to run Quantile without Job... Basically, H2O architecture is not good for this so have to hack it!
-  public static class QTask extends H2OCountedCompleter<QTask> {
-    final double _probs[];
-    final Frame _train;
-    final QuantileModel.CombineMethod _combine_method;
-
-    public double[][] _quantiles;
-    public QTask(H2OCountedCompleter cc, double[] probs, Frame train, QuantileModel.CombineMethod combine_method) {
-      super(cc); _train=train; _probs=probs; _combine_method=combine_method;
-    }
-    @Override public void compute2() {
-      // Run the main Quantile Loop
-      _quantiles = new double[_train.numCols()][_probs.length];
-      Vec vecs[] = _train.vecs();
-      for( int n=0; n<vecs.length; n++ ) {
-        Vec vec = vecs[n];
-        if (vec.isBad()) {
-          _quantiles[n] = new double[_probs.length];
-          Arrays.fill(_quantiles[n], Double.NaN);
-          continue;
-        }
-
-        // Compute top-level histogram
-        Histo h1 = new Histo(vec.min(),vec.max(),0,vec.length(),vec.isInt()).doAll(vec);
-
-        // For each probability, see if we have it exactly - or else run
-        // passes until we do.
-        for( int p = 0; p < _probs.length; p++ ) {
-          double prob = _probs[p];
-          Histo h = h1;  // Start from the first global histogram
-
-          while( Double.isNaN(_quantiles[n][p] = h.findQuantile(prob,_combine_method)) )
-            h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
-        }
-      }
-      tryComplete();
-    }
-  }
-
   // -------------------------------------------------------------------------
-
-  private static class Histo extends MRTask<Histo> {
+  private final static class Histo extends MRTask<Histo> {
     private static final int NBINS = 1024; // Default bin count
     private final int _nbins;            // Actual  bin count
     private final double _lb;            // Lower bound of bin[0]

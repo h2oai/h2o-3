@@ -20,25 +20,11 @@ import java.util.regex.PatternSyntaxException;
  *  Grep model builder... building a trivial GrepModel
  */
 public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepModel.GrepOutput> {
-
-  // Called from Nano thread; start the Grep Job on a F/J thread
   public Grep( GrepModel.GrepParameters parms ) { super("Grep",parms); init(false); }
-
   public ModelBuilderSchema schema() { return new GrepV3(); }
-
-  @Override protected Grep trainModelImpl(long work, boolean restartTimer) {
-    return (Grep)start(new GrepDriver(), work, restartTimer);
-  }
-
-  @Override
-  public long progressUnits() {
-    return _parms.train().numRows();
-  }
-
-  @Override public ModelCategory[] can_build() {
-    return new ModelCategory[]{ModelCategory.Unknown};
-  }
-
+  @Override protected GrepDriver trainModelImpl() { return new GrepDriver(); }
+  @Override public long progressUnits() { return _parms.train().numRows(); }
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -72,12 +58,12 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
       GrepModel model = null;
       try {
         Scope.enter();
-        _parms.read_lock_frames(Grep.this); // Fetch & read-lock source frame
+        _parms.read_lock_frames(_job); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
         model = new GrepModel(dest(), _parms, new GrepModel.GrepOutput(Grep.this));
-        model.delete_and_lock(_key);
+        model.delete_and_lock(_job);
 
         // ---
         // Run the main Grep Loop
@@ -92,20 +78,9 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
         sb.append(Arrays.toString(model._output._matches)).append("\n");
         sb.append(Arrays.toString(model._output._offsets)).append("\n");
         Log.info(sb);
-        done();                 // Job done!
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
       } finally {
-        updateModelOutput();
-        if( model != null ) model.unlock(_key);
-        _parms.read_unlock_frames(Grep.this);
+        if( model != null ) model.unlock(_job);
+        _parms.read_unlock_frames(_job);
         Scope.exit(model == null ? null : model._key);
       }
       tryComplete();
@@ -146,7 +121,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
       Matcher m = p.matcher(bs);
       while( m.find() && m.start() < bs._bs0.length )
         add(bs.str(m.start(),m.end()),chk.start()+m.start());
-      update(chk._len);         // Whole chunk of work, done all at once
+      _job.update(chk._len);         // Whole chunk of work, done all at once
     }
     @Override public void reduce( GrepGrep gg1 ) {
       GrepGrep gg0 = this;

@@ -49,8 +49,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   // Simple state accessors; public ones do a DKV update check
   public long start_time()   { update_from_remote(); assert !created(); return _start_time; }
-  public boolean isRunning() { update_from_remote(); return running(); }
-  public boolean isStopped() { update_from_remote(); return stopped(); }
+  public long   end_time()   { update_from_remote(); assert  stopped(); return   _end_time; }
+  public boolean isRunning() { update_from_remote(); return  running(); }
+  public boolean isStopped() { update_from_remote(); return  stopped(); }
   // Slightly more involved state accessors
   public boolean isStopping(){ return isRunning() && _stop_requested; }
   public boolean wasStopped(){ return isStopped() && _stop_requested; }
@@ -265,7 +266,8 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( bar != null )           // Barrier may be null if task already completed
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
-    return _result.get();
+    // Maybe null return, if the started fjtask does not actually produce a result at this Key
+    return _result==null ? null : _result.get(); 
   }
 
   // --------------

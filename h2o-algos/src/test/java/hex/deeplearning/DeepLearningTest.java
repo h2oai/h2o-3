@@ -459,16 +459,11 @@ public class DeepLearningTest extends TestUtil {
       dl._elastic_averaging = false;
 
       // Invoke DL and block till the end
-      DeepLearning job = null;
-      try {
-        job = new DeepLearning(dl);
-        // Get the model
-        model = job.trainModel().get();
-        Log.info(model._output);
-      } finally {
-        if (job != null) job.remove();
-      }
-      assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+      DeepLearning job = new DeepLearning(dl);
+      // Get the model
+      model = job.trainModel().get();
+      Log.info(model._output);
+      assertTrue(job.isStopped()); //HEX-1817
 
       hex.ModelMetrics mm;
       if (fnametest != null) {
@@ -555,14 +550,9 @@ public class DeepLearningTest extends TestUtil {
         }
 
         // Invoke DL and block till the end
-        DeepLearning job = null;
-        try {
-          job = new DeepLearning(dl);
-          // Get the model
-          models[i] = job.trainModel().get();
-        } finally {
-          if (job != null) job.remove();
-        }
+        DeepLearning job = new DeepLearning(dl);
+        // Get the model
+        models[i] = job.trainModel().get();
         frTrain.remove();
       }
       for (int i = 0; i < N; ++i) {
@@ -627,14 +617,9 @@ public class DeepLearningTest extends TestUtil {
         dl._elastic_averaging_regularization = 1e-4;
 
         // Invoke DL and block till the end
-        DeepLearning job = null;
-        try {
-          job = new DeepLearning(dl);
-          // Get the model
-          models[i] = job.trainModel().get();
-        } finally {
-          if (job != null) job.remove();
-        }
+        DeepLearning job = new DeepLearning(dl);
+        // Get the model
+        models[i] = job.trainModel().get();
       }
       for (int i = 0; i < N; ++i) {
         if (models[i] != null)
@@ -675,8 +660,7 @@ public class DeepLearningTest extends TestUtil {
       parms._classification_stop = -1;
 
       // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
+      DeepLearningModel dl = new DeepLearning(parms).trainModel().get();
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
@@ -686,7 +670,6 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.31481334186707816, mse, 1e-8);
 
       assertTrue(dl.testJavaScoring(tfr, fr2 = dl.score(tfr), 1e-5));
-      job.remove();
       dl.delete();
     } finally {
       if (tfr != null) tfr.remove();
@@ -717,8 +700,7 @@ public class DeepLearningTest extends TestUtil {
       parms._epochs = 1;
 
       // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
+      DeepLearningModel dl = new DeepLearning(parms).trainModel().get();
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
@@ -728,7 +710,6 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.31599425403539766, mse, 1e-8); //Note: better results than non-shuffled
 
 //      assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr, 1e-5)); //PUBDEV-1900
-      job.remove();
       dl.delete();
     } finally {
       if (tfr != null) tfr.remove();
@@ -758,8 +739,7 @@ public class DeepLearningTest extends TestUtil {
       parms._classification_stop = -1;
 
       // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
+      DeepLearningModel dl = new DeepLearning(parms).trainModel().get();
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
@@ -769,7 +749,6 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.3164307133994674, mse, 1e-8);
 
       assertTrue(dl.testJavaScoring(tfr, fr2 = dl.score(tfr), 1e-5));
-      job.remove();
       dl.delete();
     } finally {
       if (tfr != null) tfr.remove();
@@ -800,8 +779,7 @@ public class DeepLearningTest extends TestUtil {
       parms._epochs = 10;
 
       // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      DeepLearningModel dl = job.trainModel().get();
+      DeepLearningModel dl = new DeepLearning(parms).trainModel().get();
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
@@ -811,7 +789,6 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.32223485418125575, mse, 1e-8);
 
 //      Assert.assertTrue(dl.testJavaScoring(tfr,fr2=dl.score(tfr),1e-5)); //PUBDEV-1900
-      job.remove();
       dl.delete();
     } finally {
       if (tfr != null) tfr.remove();
@@ -917,12 +894,10 @@ public class DeepLearningTest extends TestUtil {
       dl._hidden = new int[]{10, 10};
 
       // Invoke DL and block till the end
-      DeepLearning job = null;
-      try {
-        job = new DeepLearning(dl);
-        // Get the model
-        model = job.trainModel().get();
-        Log.info(model._output);
+      DeepLearning job = new DeepLearning(dl);
+      // Get the model
+      model = job.trainModel().get();
+      Log.info(model._output);
 
 //        Log.info("Holdout CSV");
 //        model.score(third1kCSV).delete();
@@ -931,7 +906,7 @@ public class DeepLearningTest extends TestUtil {
 //        model.score(third1kSVM).delete();
 //
 //        Log.info("POJO SVM Train Check");
-        Frame pred;
+      Frame pred;
 //        assertTrue(model.testJavaScoring(first1kSVM, pred = model.score(first1kSVM), 1e-5));
 //        pred.remove();
 //
@@ -945,10 +920,10 @@ public class DeepLearningTest extends TestUtil {
 //        assertTrue(model.testJavaScoring(third1kSVM,  pred = model.score(third1kSVM), 1e-5));
 //        pred.remove();
 
-        Log.info("POJO CSV Train Check");
-        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
-        assertTrue(model.testJavaScoring(first1kCSV,  pred = model.score(first1kCSV), 1e-5));
-        pred.remove();
+      Log.info("POJO CSV Train Check");
+      DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+      assertTrue(model.testJavaScoring(first1kCSV,  pred = model.score(first1kCSV), 1e-5));
+      pred.remove();
 
 //        Log.info("POJO CSV Validation Check");
 //        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
@@ -969,10 +944,7 @@ public class DeepLearningTest extends TestUtil {
 //        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
 //        assertTrue(model.testJavaScoring(third1kSVM, pred = model.score(third1kCSV), 1e-5));
 //        pred.remove();
-      } finally {
-        if (job != null) job.remove();
-      }
-      assertTrue(job._state == Job.JobState.DONE); //HEX-1817
+      assertTrue(job.isStopped()); //HEX-1817
     } finally {
       if (first1kSVM != null) first1kSVM.remove();
       if (second1kSVM != null) second1kSVM.remove();
@@ -1028,7 +1000,6 @@ public class DeepLearningTest extends TestUtil {
 
         assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr), 1e-5));
 
-        job.remove();
       } finally {
         if (tfr != null) tfr.remove();
         if (dl != null) dl.delete();
@@ -1081,7 +1052,6 @@ public class DeepLearningTest extends TestUtil {
 
         assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr), 1e-5));
 
-        job.remove();
       } finally {
         if (tfr != null) tfr.remove();
         if (dl != null) dl.delete();
@@ -1117,15 +1087,13 @@ public class DeepLearningTest extends TestUtil {
       parms._activation = DeepLearningParameters.Activation.Tanh;
 
       // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      dl = job.trainModel().get();
+      dl = new DeepLearning(parms).trainModel().get();
 
       ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
       Assert.assertEquals(0.0712931422088762, mm._MSE, 1e-2);
 
       assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr), 1e-5));
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (dl != null) dl.delete();
@@ -1175,12 +1143,10 @@ public class DeepLearningTest extends TestUtil {
         } catch( RuntimeException de ) {
           // catch anything - might be a NPE during cleanup
 //          assertTrue(de.getMessage().contains("Trying to predict with an unstable model."));
-        } finally {
-          job.remove();
         }
         dl = DKV.getGet(parms._model_id);
         assertTrue(dl.model_info().isUnstable());
-        assertTrue(dl._output._status == Job.JobState.FAILED);
+        assertTrue(dl._output._job.isCrashed());
       } finally {
         if (tfr != null) tfr.delete();
         if (dl != null) dl.delete();
@@ -1216,13 +1182,7 @@ public class DeepLearningTest extends TestUtil {
       parms._model_id = Key.make();
 
       // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      try {
-        dl = job.trainModel().get();
-      } finally {
-        job.remove();
-      }
-      dl = DKV.getGet(parms._model_id);
+      dl = new DeepLearning(parms).trainModel().get();
       assertTrue(dl.stopped_early);
       assertTrue(dl.epoch_counter < 100);
     } finally {
@@ -1252,13 +1212,7 @@ public class DeepLearningTest extends TestUtil {
       parms._model_id = Key.make();
 
       // Build a first model; all remaining models should be equal
-      DeepLearning job = new DeepLearning(parms);
-      try {
-        dl = job.trainModel().get();
-      } finally {
-        job.remove();
-      }
-      dl = DKV.getGet(parms._model_id);
+      dl = new DeepLearning(parms).trainModel().get();
       Assert.assertTrue(dl.varImp()._varimp != null);
       Log.info(dl.model_info().toStringAll());//for code coverage only
       Assert.assertTrue(ArrayUtils.minValue(dl.varImp()._varimp) > 0.5); //all features matter
@@ -1287,24 +1241,16 @@ public class DeepLearningTest extends TestUtil {
       parms._variable_importances = true;
       parms._model_id = Key.make();
 
-      DeepLearning job = new DeepLearning(parms);
-      try {
-        dl = job.trainModel().get();
-      } finally {
-        job.remove();
-      }
+      dl = new DeepLearning(parms).trainModel().get();
 
       DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
       parms2._epochs = 10;
       parms2._checkpoint = parms._model_id;
       parms2._model_id = Key.make();
-      DeepLearning job2 = new DeepLearning(parms2);
       try {
-        dl2 = job2.trainModel().get();
+        dl2 = new DeepLearning(parms2).trainModel().get();
         Assert.fail("Should toss exception instead of reaching here");
       } catch (H2OIllegalArgumentException ex) {
-      } finally {
-        job2.remove();
       }
 
     } finally {
@@ -1332,24 +1278,16 @@ public class DeepLearningTest extends TestUtil {
       parms._variable_importances = true;
       parms._model_id = Key.make();
 
-      DeepLearning job = new DeepLearning(parms);
-      try {
-        dl = job.trainModel().get();
-      } finally {
-        job.remove();
-      }
+      dl = new DeepLearning(parms).trainModel().get();
 
       DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
       parms2._epochs = 9;
       parms2._checkpoint = parms._model_id;
       parms2._model_id = Key.make();
-      DeepLearning job2 = new DeepLearning(parms2);
       try {
-        dl2 = job2.trainModel().get();
+        dl2 = new DeepLearning(parms2).trainModel().get();
         Assert.fail("Should toss exception instead of reaching here");
       } catch (H2OIllegalArgumentException ex) {
-      } finally {
-        job2.remove();
       }
 
     } finally {
@@ -1384,12 +1322,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.logloss; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.03;
 
-      DeepLearning job = new DeepLearning(parms);
-      try {
-        dl = job.trainModel().get();
-      } finally {
-        job.remove();
-      }
+      dl = new DeepLearning(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
@@ -1424,12 +1357,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.misclassification; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.0;
 
-      DeepLearning job = new DeepLearning(parms);
-      try {
-        dl = job.trainModel().get();
-      } finally {
-        job.remove();
-      }
+      dl = new DeepLearning(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
@@ -1464,12 +1392,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.deviance; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.0;
 
-      DeepLearning job = new DeepLearning(parms);
-      try {
-        dl = job.trainModel().get();
-      } finally {
-        job.remove();
-      }
+      dl = new DeepLearning(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
@@ -1512,12 +1435,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.0;
 
-      DeepLearning job = new DeepLearning(parms);
-      try {
-        dl = job.trainModel().get();
-      } finally {
-        job.remove();
-      }
+      dl = new DeepLearning(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 

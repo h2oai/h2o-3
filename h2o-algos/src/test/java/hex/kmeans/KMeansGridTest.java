@@ -17,6 +17,7 @@ import hex.Model;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import water.DKV;
+import water.Job;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -65,7 +66,7 @@ public class KMeansGridTest extends TestUtil {
       KMeansModel.KMeansParameters params = new KMeansModel.KMeansParameters();
       params._train = fr._key;
       // Fire off a grid search and get result
-      GridSearch gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
       grid = (Grid<KMeansModel.KMeansParameters>) gs.get();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,
@@ -136,8 +137,8 @@ public class KMeansGridTest extends TestUtil {
       KMeansModel.KMeansParameters params = new KMeansModel.KMeansParameters();
       params._train = fr._key;
       // Get the Grid for this modeling class and frame
-      GridSearch gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
-      grid = (Grid) gs.get();
+      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
+      grid = gs.get();
 
       // Check that duplicate model have not been constructed
       Model[] models = grid.getModels();
@@ -184,8 +185,8 @@ public class KMeansGridTest extends TestUtil {
       params._train = fr._key;
       params._user_points = init._key;
       // Get the Grid for this modeling class and frame
-      GridSearch gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
-      grid = (Grid) gs.get();
+      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
+      grid = gs.get();
 
       // Check that duplicate model have not been constructed
       Integer numModels = grid.getModels().length;
@@ -287,8 +288,8 @@ public class KMeansGridTest extends TestUtil {
         params._user_points = init._key;
       }
       // Get the Grid for this modeling class and frame
-      GridSearch gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
-      grid = (Grid) gs.get();
+      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
+      grid = gs.get();
 
       // Check that cardinality of grid
       Model[] ms = grid.getModels();
@@ -318,16 +319,7 @@ public class KMeansGridTest extends TestUtil {
       params._init = initVal;
       params._seed = seedVal;
       params._standardize = standardizeVal == 1;
-      KMeans job = null;
-      try {
-        job = new KMeans(params);
-        kmRebuilt = job.trainModel().get();
-      } finally {
-        if (job != null) {
-          job.remove();
-        }
-      }
-      assertTrue(job._state == water.Job.JobState.DONE);
+      kmRebuilt = new KMeans(params).trainModel().get();
 
       // Make sure the betweenss metrics match
       //double fromGridBetweenss = kmFromGrid._output._betweenss;

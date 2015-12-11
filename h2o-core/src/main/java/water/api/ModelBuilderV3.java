@@ -2,7 +2,6 @@ package water.api;
 
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import water.Job;
 
 /**
  * Job which includes the standard validation error fields, to allow us to capture

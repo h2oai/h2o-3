@@ -17,37 +17,15 @@ import java.util.Arrays;
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
-  @Override
-  public ModelCategory[] can_build() {
-    return new ModelCategory[] {
-      ModelCategory.Unknown,
-    };
-  }
-
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
-
+  @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.Unknown, }; }
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super("CoxPHLearning",parms); init(false); }
 
   public ModelBuilderSchema schema() {
-    H2O.unimpl();
-    return null;
-  //  return new CoxPHV2();
+    throw H2O.unimpl();
   }
-
-  /** Start the Cox PH training Job on an F/J thread.
-   * @param work
-   * @param restartTimer*/
-  @Override protected Job<CoxPHModel> trainModelImpl(long work, boolean restartTimer) {
-    CoxPHDriver cd = new CoxPHDriver();
-    cd.setModelBuilderTrain(_train);
-    CoxPH cph = (CoxPH) start(cd, work, restartTimer);
-    return cph;
-  }
-
-  @Override
-  public long progressUnits() {
-    return _parms.iter_max;
-  }
+  @Override protected CoxPHDriver trainModelImpl() { return new CoxPHDriver(); }
+  @Override public long progressUnits() { return _parms.iter_max; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -84,10 +62,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
   public class CoxPHDriver extends H2O.H2OCountedCompleter<CoxPHDriver> {
     private Frame _modelBuilderTrain = null;
-
-    public void setModelBuilderTrain(Frame v) {
-      _modelBuilderTrain = v;
-    }
 
     private void applyScoringFrameSideEffects() {
       final int offset_ncol = _parms.offset_columns == null ? 0 : _parms.offset_columns.length;
@@ -421,17 +395,17 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
 
     @Override protected void compute2() {
-      CoxPHModel model = null;
+      CoxPHModel model ;
       try {
         Scope.enter();
-        _parms.read_lock_frames(CoxPH.this);
+        _parms.read_lock_frames(_job);
         init(true);
 
         applyScoringFrameSideEffects();
 
         // The model to be built
-        model = new CoxPHModel(dest(), _parms, new CoxPHModel.CoxPHOutput(CoxPH.this));
-        model.delete_and_lock(_key);
+        model = new CoxPHModel(_job._result, _parms, new CoxPHModel.CoxPHOutput(CoxPH.this));
+        model.delete_and_lock(_job);
 
         applyTrainingFrameSideEffects();
 
@@ -456,7 +430,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (int i = 0; i <= model._parms.iter_max; ++i) {
           model._output.iter = i;
 
-          final CoxPHTask coxMR = new CoxPHTask(self(), dinfo, newCoef, model._output.min_time, n_time, n_offsets,
+          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output.min_time, n_time, n_offsets,
                   has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
 
           final double newLoglik = calcLoglik(model, coxMR);
@@ -493,48 +467,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             newCoef[j] = oldCoef[j] - step[j];
         }
 
-        model.update(_key);
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
+        model.update(_job);
       } finally {
-        updateModelOutput();
-        _parms.read_unlock_frames(CoxPH.this);
+        _parms.read_unlock_frames(_job);
         Scope.exit();
-        done();                 // Job done!
       }
       tryComplete();
     }
 
-    Key self() { return _key; }
-
-//  /**
-//   * Report the relative progress of building a Deep Learning model (measured by how many epochs are done)
-//   * @return floating point number between 0 and 1
-//   */
-//  @Override public float progress(){
-//    if(UKV.get(dest()) == null)return 0;
-//    DeepLearningModel m = UKV.get(dest());
-//    if (m != null && m.model_info()!=null ) {
-//      final float p = (float) Math.min(1, (m.epoch_counter / m.model_info().get_params().epochs));
-//      return cv_progress(p);
-//    }
-//    return 0;
-//  }
-
-
-
   }
-
-
-
-
 
 
   private static double[][] malloc2DArray(final int d1, final int d2) {
@@ -561,7 +502,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private final boolean  _has_weights_column;
 
     protected long         n;
-    protected long         n_missing;
     protected double       sumWeights;
     protected double[]     sumWeightedCatX;
     protected double[]     sumWeightedNumX;
@@ -578,7 +518,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     protected double[][]   rcumsumXRisk;
     protected double[][][] rcumsumXXRisk;
 
-    CoxPHTask(Key jobKey, DataInfo dinfo, final double[] beta, final long min_time, final int n_time,
+    CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final long min_time, final int n_time,
               final int n_offsets, final boolean has_start_column, final boolean has_weights_column) {
       super(jobKey, dinfo);
       _beta               = beta;
