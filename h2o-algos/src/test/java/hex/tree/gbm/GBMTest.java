@@ -24,7 +24,7 @@ public class GBMTest extends TestUtil {
   static final String ignored_aircols[] = new String[] { "DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsDepDelayed"};
 
   @Test public void testGBMRegressionGaussian() {
-    GBMModel gbm = null;
+    GBMModel gbm;
     Frame fr = null, fr2 = null;
     try {
       fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
@@ -43,15 +43,9 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1.0f;
       parms._score_each_iteration=true;
 
-      GBM job = null;
-      try {
-        job = new GBM(parms);
-        gbm = job.trainModel().get();
-      } finally {
-        if (job != null) job.remove();
-      }
-      Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
-      //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+      Assert.assertTrue(job.isStopped()); //HEX-1817
 
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
@@ -63,7 +57,6 @@ public class GBMTest extends TestUtil {
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
-      if( gbm != null ) gbm.delete();
     }
   }
 
@@ -180,13 +173,8 @@ public class GBMTest extends TestUtil {
         parms._valid = vfr._key;
       }
 
-      GBM job = null;
-      try {
-        job = new GBM(parms);
-        gbm = job.trainModel().get();
-      } finally {
-        if( job != null ) job.remove();
-      }
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
 
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
@@ -194,8 +182,7 @@ public class GBMTest extends TestUtil {
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(fr,fr2,1e-15));
 
-      Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
-      //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817
+      Assert.assertTrue(job.isStopped()); //HEX-1817
       return gbm._output;
 
     } finally {
@@ -228,13 +215,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = .2f;
       parms._distribution = Distribution.Family.multinomial;
 
-      GBM job = null;
-      try {
-        job = new GBM(parms);
-        gbm = job.trainModel().get();
-      } finally {
-        if( job != null ) job.remove();
-      }
+      gbm = new GBM(parms).trainModel().get();
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.valid());
       double auc = mm._auc._auc;
@@ -265,9 +246,7 @@ public class GBMTest extends TestUtil {
       parms._response_column = "Angaus"; // Train on the outcome
       parms._distribution = Distribution.Family.multinomial;
 
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
-      job.remove();
+      gbm = new GBM(parms).trainModel().get();
 
       pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
       pred.remove("Angaus").remove();    // No response column during scoring
@@ -287,7 +266,6 @@ public class GBMTest extends TestUtil {
 
   // Adapt a trained model to a test dataset with different categoricals
   @Test public void testModelAdaptMultinomial() {
-    GBM job = null;
     GBMModel gbm = null;
     GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     try {
@@ -301,8 +279,7 @@ public class GBMTest extends TestUtil {
       parms._min_rows = 1;
       parms._distribution = Distribution.Family.multinomial;
 
-      job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       Frame res = gbm.score(v);
 
@@ -328,7 +305,6 @@ public class GBMTest extends TestUtil {
       parms._train.remove();
       parms._valid.remove();
       if( gbm != null ) gbm.delete();
-      if( job != null ) job.remove();
       Scope.exit();
     }
   }
@@ -368,12 +344,11 @@ public class GBMTest extends TestUtil {
 
       Log.info("Getting model");
       GBMModel model = gbm.get();
-      Assert.assertTrue(gbm._state == Job.JobState.DONE); //HEX-1817
+      Assert.assertTrue(gbm.isStopped()); //HEX-1817
       if( model != null ) model.delete();
 
     } finally {
       if( fr  != null ) fr .remove();
-      if( gbm != null ) gbm.remove();             // Remove GBM Job
       Scope.exit();
     }
   }
@@ -451,7 +426,6 @@ public class GBMTest extends TestUtil {
       // Build a first model; all remaining models should be equal
       GBM job1 = new GBM(parms);
       GBMModel gbm1 = job1.trainModel().get();
-      job1.remove();
       // Validation MSE should be equal
       ScoreKeeper[] firstScored = gbm1._output._scored_valid;
 
@@ -459,7 +433,6 @@ public class GBMTest extends TestUtil {
       for( int i=0; i<10; i++ ) {
         GBM job2 = new GBM(parms);
         GBMModel gbm2 = job2.trainModel().get();
-        job2.remove();
         ScoreKeeper[] secondScored = gbm2._output._scored_valid;
         // Check that MSE's from both models are equal
         int j;
@@ -512,14 +485,12 @@ public class GBMTest extends TestUtil {
       parms._max_depth = 4;
       parms._distribution = Distribution.Family.multinomial;
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      GBMModel gbm = job.trainModel().get();
+      GBMModel gbm = new GBM(parms).trainModel().get();
 
       Frame pred = gbm.score(vfr);
       double sq_err = new MathUtils.SquareError().doAll(vfr.lastVec(),pred.vecs()[0])._sum;
       double mse = sq_err/pred.numRows();
       assertEquals(3.0199, mse, 1e-15); //same results
-      job.remove();
       gbm.delete();
     } finally {
       if (tfr  != null) tfr.remove();
@@ -562,12 +533,10 @@ public class GBMTest extends TestUtil {
         parms._distribution = Distribution.Family.gaussian;
 
         // Build a first model; all remaining models should be equal
-        GBM job = new GBM(parms);
-        GBMModel gbm = job.trainModel().get();
+        GBMModel gbm = new GBM(parms).trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);
 
         mses[i] = gbm._output._scored_train[gbm._output._scored_train.length-1]._mse;
-        job.remove();
         gbm.delete();
       }
     } finally{
@@ -620,12 +589,10 @@ public class GBMTest extends TestUtil {
         parms._seed = 0;
 
         // Build a first model; all remaining models should be equal
-        GBM job = new GBM(parms);
-        GBMModel gbm = job.trainModel().get();
+        GBMModel gbm = new GBM(parms).trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);
 
         mses[i] = gbm._output._scored_train[gbm._output._scored_train.length-1]._mse;
-        job.remove();
         gbm.delete();
       }
     } finally {
@@ -679,12 +646,10 @@ public class GBMTest extends TestUtil {
         parms._build_tree_one_node = true;
 
         // Build a first model; all remaining models should be equal
-        GBM job = new GBM(parms);
-        GBMModel gbm = job.trainModel().get();
+        GBMModel gbm = new GBM(parms).trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);
 
         mses[i] = gbm._output._scored_train[gbm._output._scored_train.length-1]._mse;
-        job.remove();
         gbm.delete();
       }
     } finally {
@@ -716,8 +681,7 @@ public class GBMTest extends TestUtil {
         parms._distribution = Distribution.Family.bernoulli;
 
         // Build a first model; all remaining models should be equal
-        GBM job = new GBM(parms);
-        GBMModel gbm = job.trainModel().get();
+        GBMModel gbm = new GBM(parms).trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);
 
         hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.train());
@@ -725,7 +689,6 @@ public class GBMTest extends TestUtil {
         Assert.assertTrue(1 == auc);
 
         mses[i] = gbm._output._scored_train[gbm._output._scored_train.length-1]._mse;
-        job.remove();
         gbm.delete();
       }
     } finally{
@@ -761,9 +724,7 @@ public class GBMTest extends TestUtil {
       parms._min_rows = 10;
       parms._learn_rate = 0.01f;
       parms._distribution = Distribution.Family.multinomial;
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
-      job.remove();
+      gbm = new GBM(parms).trainModel().get();
 
       // Report AUC from training
       hex.ModelMetricsBinomial tmm = hex.ModelMetricsBinomial.getFromDKV(gbm,tfr);
@@ -826,8 +787,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1e-3f;
 
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
@@ -842,8 +802,6 @@ public class GBMTest extends TestUtil {
       assertEquals(_R2, mm2.r2(), 1e-6);
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
       pred.remove();
-
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -872,8 +830,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1e-3f;
 
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
@@ -889,7 +846,6 @@ public class GBMTest extends TestUtil {
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
       pred.remove();
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -918,8 +874,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1e-3f;
 
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
@@ -935,7 +890,6 @@ public class GBMTest extends TestUtil {
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
       pred.remove();
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -964,8 +918,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1e-3f;
 
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
@@ -981,7 +934,6 @@ public class GBMTest extends TestUtil {
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
       pred.remove();
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -1009,8 +961,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1e-3f;
 
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
@@ -1026,7 +977,6 @@ public class GBMTest extends TestUtil {
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
       pred.remove();
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -1055,8 +1005,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1e-3f;
 
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
@@ -1072,7 +1021,6 @@ public class GBMTest extends TestUtil {
       assertEquals(_LogLoss, mm2.logloss(), 1e-6);
       pred.remove();
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -1102,8 +1050,7 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1e-3f;
 
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
       assertEquals(0.6296296296296297, mm.auc_obj()._auc, 1e-8);
@@ -1111,7 +1058,6 @@ public class GBMTest extends TestUtil {
       assertEquals(-0.145600900849372169, mm.r2(), 1e-6);
       assertEquals(0.7674117059335286, mm.logloss(), 1e-6);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -1144,12 +1090,10 @@ public class GBMTest extends TestUtil {
       parms._seed = 12345;
       parms._learn_rate = 1e-3f;
 
-      GBM job1 = new GBM(parms);
-      gbm1 = job1.trainModel().get();
+      gbm1 = new GBM(parms).trainModel().get();
 
-      GBM job2 = new GBM(parms);
       //parms._nfolds = (int) tfr.numRows() + 1; //This is now an error
-      gbm2 = job2.trainModel().get();
+      gbm2 = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._cross_validation_metrics;
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)gbm2._output._cross_validation_metrics;
@@ -1160,8 +1104,6 @@ public class GBMTest extends TestUtil {
 
       //TODO: add check: the correct number of individual models were built. PUBDEV-1690
 
-      job1.remove();
-      job2.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (gbm1 != null) {
@@ -1197,28 +1139,22 @@ public class GBMTest extends TestUtil {
       parms._learn_rate = 1e-3f;
 
       parms._nfolds = 0;
-      GBM job1 = new GBM(parms);
-      gbm1 = job1.trainModel().get();
+      gbm1 = new GBM(parms).trainModel().get();
 
       parms._nfolds = 1;
-      GBM job2 = new GBM(parms);
       try {
         Log.info("Trying nfolds==1.");
-        gbm2 = job2.trainModel().get();
+        gbm2 = new GBM(parms).trainModel().get();
         Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
       } catch(H2OModelBuilderIllegalArgumentException e) {}
 
       parms._nfolds = -99;
-      GBM job3 = new GBM(parms);
       try {
         Log.info("Trying nfolds==-99.");
-        gbm3 = job3.trainModel().get();
+        gbm3 = new GBM(parms).trainModel().get();
         Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
       } catch(H2OModelBuilderIllegalArgumentException e) {}
 
-      job1.remove();
-      job2.remove();
-      job3.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (gbm1 != null) gbm1.delete();
@@ -1249,16 +1185,13 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 3;
       parms._learn_rate = 1e-3f;
 
-      GBM job = new GBM(parms);
-
       try {
         Log.info("Trying N-fold cross-validation AND Validation dataset provided.");
-        gbm = job.trainModel().get();
+        gbm = new GBM(parms).trainModel().get();
       } catch(H2OModelBuilderIllegalArgumentException e) {
         Assert.fail("Should not toss H2OModelBuilderIllegalArgumentException.");
       }
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -1296,11 +1229,9 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 3;
       parms._learn_rate = 1e-3f;
 
-      GBM job1 = new GBM(parms);
-      gbm1 = job1.trainModel().get();
+      gbm1 = new GBM(parms).trainModel().get();
 
-      GBM job2 = new GBM(parms);
-      gbm2 = job2.trainModel().get();
+      gbm2 = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)gbm1._output._cross_validation_metrics;
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)gbm2._output._cross_validation_metrics;
@@ -1309,8 +1240,6 @@ public class GBMTest extends TestUtil {
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
 
-      job1.remove();
-      job2.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
@@ -1353,8 +1282,7 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 5;
 
       // Build a first model; all remaining models should be equal
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
       assertEquals(0.7264331810371721, mm.auc_obj()._auc, 1e-4); // 1 node
@@ -1362,7 +1290,6 @@ public class GBMTest extends TestUtil {
       assertEquals(0.09039195554728074, mm.r2(), 1e-4);
       assertEquals(0.6461880794975307, mm.logloss(), 1e-4);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -1410,8 +1337,7 @@ public class GBMTest extends TestUtil {
         parms._learn_rate = 1e-3f;
 
         // Build a first model; all remaining models should be equal
-        GBM job = new GBM(parms);
-        gbm = job.trainModel().get();
+        gbm = new GBM(parms).trainModel().get();
 
         res = gbm.score(vfr);
         Assert.assertTrue(gbm.testJavaScoring(vfr,res,1e-15));
@@ -1419,7 +1345,6 @@ public class GBMTest extends TestUtil {
 
         ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
 
-        job.remove();
       } finally {
         if (tfr != null) tfr.remove();
         if (vfr != null) vfr.remove();
@@ -1455,13 +1380,11 @@ public class GBMTest extends TestUtil {
           parms._sample_rate = sample_rate;
 
           // Build a first model; all remaining models should be equal
-          GBM job = new GBM(parms);
-          gbm = job.trainModel().get();
+          gbm = new GBM(parms).trainModel().get();
 
           ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
           hm.put(mm.mse(), new Pair<>(sample_rate, col_sample_rate));
 
-          job.remove();
         } finally {
           if (tfr != null) tfr.remove();
           if (vfr != null) vfr.remove();
@@ -1494,13 +1417,10 @@ public class GBMTest extends TestUtil {
     Key[] ksplits = new Key[0];
     try{
       tfr=parse_test_file("./smalldata/gbm_test/ecology_model.csv");
-      SplitFrame sf = new SplitFrame();
-      sf.dataset = tfr;
-      sf.ratios = new double[] { 0.5, 0.5 };
-      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+      SplitFrame sf = new SplitFrame(tfr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
       // Invoke the job
       sf.exec().get();
-      ksplits = sf.destination_frames;
+      ksplits = sf._destination_frames;
 
       GBMModel gbm = null;
       float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
@@ -1523,8 +1443,7 @@ public class GBMTest extends TestUtil {
             parms._sample_rate = sample_rate;
 
             // Build a first model; all remaining models should be equal
-            GBM job = new GBM(parms);
-            gbm = job.trainModel().get();
+            gbm = new GBM(parms).trainModel().get();
 
             // too slow, but passes (now)
 //            // Build a POJO, validate same results
@@ -1535,7 +1454,6 @@ public class GBMTest extends TestUtil {
             ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._validation_metrics;
             hm.put(mm.mse(), new Pair<>(sample_rate, col_sample_rate));
 
-            job.remove();
           } finally {
             if (gbm != null) gbm.delete();
             Scope.exit();

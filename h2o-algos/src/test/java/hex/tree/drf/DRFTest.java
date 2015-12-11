@@ -411,16 +411,11 @@ public class DRFTest extends TestUtil {
       drf._model_id = Key.make("DRF_model_4_" + hexnametrain);
 
       // Invoke DRF and block till the end
-      DRF job = null;
-      try {
-        job = new DRF(drf);
-        // Get the model
-        model = job.trainModel().get();
-        Log.info(model._output);
-      } finally {
-        if (job != null) job.remove();
-      }
-      Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
+      DRF job = new DRF(drf);
+      // Get the model
+      model = job.trainModel().get();
+      Log.info(model._output);
+      Assert.assertTrue(job.isStopped()); //HEX-1817
 
       hex.ModelMetrics mm;
       if (fnametest != null) {
@@ -499,12 +494,10 @@ public class DRFTest extends TestUtil {
         parms._seed = 1234;
 
         // Build a first model; all remaining models should be equal
-        DRF job = new DRF(parms);
-        DRFModel drf = job.trainModel().get();
+        DRFModel drf = new DRF(parms).trainModel().get();
         assertEquals(drf._output._ntrees, parms._ntrees);
 
         mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
-        job.remove();
         drf.delete();
       }
     } finally{
@@ -563,12 +556,10 @@ public class DRFTest extends TestUtil {
         parms._seed = (1L<<32)|2;
 
         // Build a first model; all remaining models should be equal
-        DRF job = new DRF(parms);
-        DRFModel drf = job.trainModel().get();
+        DRFModel drf = new DRF(parms).trainModel().get();
         assertEquals(drf._output._ntrees, parms._ntrees);
 
         mses[i] = drf._output._training_metrics.mse();
-        job.remove();
         drf.delete();
       }
     } finally{
@@ -618,8 +609,7 @@ public class DRFTest extends TestUtil {
       parms._seed = 12;
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      DRFModel drf = job.trainModel().get();
+      DRFModel drf = new DRF(parms).trainModel().get();
       Log.info("Training set AUC:   " + drf._output._training_metrics.auc_obj()._auc);
       Log.info("Validation set AUC: " + drf._output._validation_metrics.auc_obj()._auc);
 
@@ -627,7 +617,6 @@ public class DRFTest extends TestUtil {
       assertEquals(drf._output._training_metrics.auc_obj()._auc, 0.6498819479528417, 1e-8);
       assertEquals(drf._output._validation_metrics.auc_obj()._auc, 0.6479974533672835, 1e-8);
 
-      job.remove();
       drf.delete();
     } finally{
       if (tfr != null) tfr.remove();
@@ -660,8 +649,7 @@ public class DRFTest extends TestUtil {
       parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      drf = job.trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
@@ -670,7 +658,6 @@ public class DRFTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -699,8 +686,7 @@ public class DRFTest extends TestUtil {
       parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      drf = job.trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
@@ -709,7 +695,6 @@ public class DRFTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -738,8 +723,7 @@ public class DRFTest extends TestUtil {
       parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      drf = job.trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
@@ -748,7 +732,6 @@ public class DRFTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -777,8 +760,7 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 3;
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      drf = job.trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
       // OOB
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
@@ -787,7 +769,6 @@ public class DRFTest extends TestUtil {
       assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -815,8 +796,7 @@ public class DRFTest extends TestUtil {
       parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      drf = job.trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
       // OOB
       // Shuffling changes the row sampling -> results differ
@@ -826,7 +806,6 @@ public class DRFTest extends TestUtil {
       assertEquals(0.6089843749999999, mm.r2(), 1e-6);
       assertEquals(0.24567709133200652, mm.logloss(), 1e-6);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -854,8 +833,7 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 3;
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      drf = job.trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
       // OOB
       // Reduced number of rows changes the row sampling -> results differ
@@ -877,7 +855,6 @@ public class DRFTest extends TestUtil {
       assertEquals(0.02252583933934247, mm2.logloss(), 1e-8);
 
       pred.remove();
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -914,8 +891,7 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 5;
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      drf = job.trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._cross_validation_metrics;
       assertEquals(0.7276154565296726, mm.auc_obj()._auc, 1e-8); // 1 node
@@ -923,7 +899,6 @@ public class DRFTest extends TestUtil {
       assertEquals(0.14939930970822446, mm.r2(), 1e-6);
       assertEquals(0.6121968624307211, mm.logloss(), 1e-6);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -963,10 +938,8 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 5;
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      drf = job.trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -998,12 +971,10 @@ public class DRFTest extends TestUtil {
       parms._max_depth = 5;
       parms._ntrees = 5;
 
-      DRF job1 = new DRF(parms);
-      drf1 = job1.trainModel().get();
+      drf1 = new DRF(parms).trainModel().get();
 
 //            parms._nfolds = (int) tfr.numRows() + 1; //this is now an error
-      DRF job2 = new DRF(parms);
-      drf2 = job2.trainModel().get();
+      drf2 = new DRF(parms).trainModel().get();
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._cross_validation_metrics;
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
@@ -1014,8 +985,6 @@ public class DRFTest extends TestUtil {
 
       //TODO: add check: the correct number of individual models were built. PUBDEV-1690
 
-      job1.remove();
-      job2.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (drf1 != null) {
@@ -1058,28 +1027,22 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 5;
 
       parms._nfolds = 0;
-      DRF job1 = new DRF(parms);
-      drf1 = job1.trainModel().get();
+      drf1 = new DRF(parms).trainModel().get();
 
       parms._nfolds = 1;
-      DRF job2 = new DRF(parms);
       try {
         Log.info("Trying nfolds==1.");
-        drf2 = job2.trainModel().get();
+        drf2 = new DRF(parms).trainModel().get();
         Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
       } catch(H2OModelBuilderIllegalArgumentException e) {}
 
       parms._nfolds = -99;
-      DRF job3 = new DRF(parms);
       try {
         Log.info("Trying nfolds==-99.");
-        drf3 = job3.trainModel().get();
+        drf3 = new DRF(parms).trainModel().get();
         Assert.fail("Should toss H2OModelBuilderIllegalArgumentException instead of reaching here");
       } catch(H2OModelBuilderIllegalArgumentException e) {}
 
-      job1.remove();
-      job2.remove();
-      job3.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (drf1 != null) drf1.delete();
@@ -1109,16 +1072,13 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 3;
       parms._seed = 11233;
 
-      DRF job = new DRF(parms);
-
       try {
         Log.info("Trying N-fold cross-validation AND Validation dataset provided.");
-        drf = job.trainModel().get();
+        drf = new DRF(parms).trainModel().get();
       } catch(H2OModelBuilderIllegalArgumentException e) {
         Assert.fail("Should not toss H2OModelBuilderIllegalArgumentException.");
       }
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
@@ -1155,11 +1115,9 @@ public class DRFTest extends TestUtil {
       parms._ntrees = 3;
       parms._seed = 77777;
 
-      DRF job1 = new DRF(parms);
-      drf1 = job1.trainModel().get();
+      drf1 = new DRF(parms).trainModel().get();
 
-      DRF job2 = new DRF(parms);
-      drf2 = job2.trainModel().get();
+      drf2 = new DRF(parms).trainModel().get();
 
       ModelMetricsBinomial mm1 = (ModelMetricsBinomial)drf1._output._cross_validation_metrics;
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
@@ -1168,8 +1126,6 @@ public class DRFTest extends TestUtil {
       assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
 
-      job1.remove();
-      job2.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
@@ -1210,13 +1166,11 @@ public class DRFTest extends TestUtil {
         parms._nfolds = 3;
         parms._mtries = i;
 
-        DRF job1 = new DRF(parms);
-        drf1 = job1.trainModel().get();
+        drf1 = new DRF(parms).trainModel().get();
 
         ModelMetricsBinomial mm1 = (ModelMetricsBinomial) drf1._output._cross_validation_metrics;
         Assert.assertTrue(mm1._auc != null);
 
-        job1.remove();
       } finally {
         if (tfr != null) tfr.remove();
         if (old != null) old.remove();
@@ -1255,13 +1209,11 @@ public class DRFTest extends TestUtil {
       parms._sample_rate = 0.5f;
 
       // Build a first model; all remaining models should be equal
-      DRF job = new DRF(parms);
-      gbm = job.trainModel().get();
+      gbm = new DRF(parms).trainModel().get();
 
       ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
       assertEquals(0.12765426703095312, mm.mse(), 1e-4);
 
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();

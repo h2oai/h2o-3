@@ -48,30 +48,20 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       DKV.put(frame);
 
       long start = System.currentTimeMillis();
-      Thread.sleep(1000); //to avoid rounding issues with printed time stamp (1 second resolution)
+      try { Thread.sleep(1000); } catch( InterruptedException _ ) { } //to avoid rounding issues with printed time stamp (1 second resolution)
 
-      DeepLearning dl = new DeepLearning(p);
-      DeepLearningModel model = null;
-      try {
-        model = dl.trainModel().get();
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        dl.remove();
-      }
+      DeepLearningModel model = new DeepLearning(p).trainModel().get();
       long sleepTime = 3; //seconds
-      Thread.sleep(sleepTime*1000);
+      try { Thread.sleep(sleepTime*1000); } catch( InterruptedException _ ) { }
 
       // checkpoint restart after sleep
       DeepLearningParameters p2 = (DeepLearningParameters)p.clone();
       p2._checkpoint = p2._model_id;
       p2._model_id = Key.make("second_model");
       p2._epochs *= 2;
-      DeepLearning dl2 = new DeepLearning(p2);
       DeepLearningModel model2 = null;
       try {
-        model2 = dl2.trainModel().get();
+        model2 = new DeepLearning(p2).trainModel().get();
         long end = System.currentTimeMillis();
         TwoDimTable table = model2._output._scoring_history;
         double priorDurationDouble=0;
@@ -131,24 +121,13 @@ public class DeepLearningCheckpointReporting extends TestUtil {
           //skip runtimes > 1 minute (too hard to parse into seconds here...).
         }
 
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
       } finally {
-        dl2.remove();
-        if (model != null) {
-          model.delete();
-        }
-        if (model2 != null) {
-          model2.delete();
-        }
+        if (model != null) model.delete();
+        if (model2 != null) model2.delete();
       }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
     } finally {
-      Scope.exit();
       if (frame!=null) frame.remove();
+      Scope.exit();
     }
   }
 }

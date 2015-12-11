@@ -27,7 +27,7 @@ import java.util.Map;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
-  protected final Job<M> _job;  // Job controlling this build
+  public final Job<M> _job;     // Job controlling this build
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public ModelBuilder(P _) {

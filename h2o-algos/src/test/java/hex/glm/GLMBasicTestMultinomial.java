@@ -50,7 +50,6 @@ public class GLMBasicTestMultinomial extends TestUtil {
   @Test
   public void testCovtypeBasic(){
     GLMParameters params = new GLMParameters(Family.multinomial);
-    GLM job = null;
     GLMModel model = null;
     Frame preds = null;
     try {
@@ -71,8 +70,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
         for (int i = 0; i < alpha.length; ++i) {
           params._alpha[0] = alpha[i];
           params._lambda[0] = lambda[i];
-          job = new GLM(Key.make("covtype_multinomial_model_" + s.toString()), "glm test", params);
-          model = job.trainModel().get();
+          model = new GLM(Key.make("covtype_multinomial_model_" + s.toString()), "glm test", params).trainModel().get();
           System.out.println(model._output._training_metrics);
           System.out.println(model._output._validation_metrics);
           assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
@@ -84,14 +82,11 @@ public class GLMBasicTestMultinomial extends TestUtil {
           model.testJavaScoring(_covtype, preds, 1e-5);
           model.delete();
           model = null;
-          job.remove();
-          job = null;
           preds.delete();
           preds = null;
         }
       }
     } finally{
-      if(job != null) job.remove();
       if(model != null)model.delete();
       if(preds != null)preds.delete();
     }

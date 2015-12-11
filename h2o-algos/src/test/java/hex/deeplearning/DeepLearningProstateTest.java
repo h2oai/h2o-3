@@ -225,10 +225,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                             } catch(Throwable t) {
                                               model1 = DKV.getGet(p._model_id);
                                               if (model1 != null)
-                                                Assert.assertTrue(model1._output._status == Job.JobState.FAILED);
+                                                Assert.assertTrue(model1._output._job.isCrashed());
                                               throw t;
-                                            } finally {
-                                              dl.remove();
                                             }
                                             Log.info("Trained for " + model1.epoch_counter + " epochs.");
                                             assert( ((p._train_samples_per_iteration <= 0 || p._train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
@@ -299,14 +297,12 @@ public class DeepLearningProstateTest extends TestUtil {
                                             } catch(Throwable t) {
                                               model2 = DKV.getGet(p2._model_id);
                                               if (model2 != null)
-                                                Assert.assertTrue(model2._output._status == Job.JobState.FAILED);
+                                                Assert.assertTrue(model2._output._job.isCrashed());
                                               throw t;
-                                            } finally {
-                                              dl.remove();
                                             }
                                           }
-                                          Assert.assertTrue(model1._output._status == Job.JobState.DONE);
-                                          Assert.assertTrue(model2._output._status == Job.JobState.DONE);
+                                          Assert.assertTrue(model1._output._job.isDone());
+                                          Assert.assertTrue(model2._output._job.isDone());
 
                                           assert(model1._parms != p2);
                                           assert(model1.model_info().get_params() != model2.model_info().get_params());

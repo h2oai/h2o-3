@@ -119,7 +119,6 @@ public class GLMBasic extends TestNGUtil {
         } finally {
             if (model != null) model.delete();
             if (score != null) score.delete();
-            if (job != null) job.remove();
             Scope.exit();
         }
     }

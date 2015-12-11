@@ -239,9 +239,8 @@ public class DeepLearningGradientCheck extends TestUtil {
                   if (dl != null)
                     Assert.assertTrue(dl.model_info().isUnstable());
                   else
-                    Assert.assertTrue(job.isCancelledOrCrashed());
+                    Assert.assertTrue(job.isStopped());
                 } finally {
-                  job.remove();
                   if (dl != null) dl.delete();
                 }
               }

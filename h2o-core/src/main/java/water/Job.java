@@ -54,7 +54,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   public boolean isStopped() { update_from_remote(); return  stopped(); }
   // Slightly more involved state accessors
   public boolean isStopping(){ return isRunning() && _stop_requested; }
-  public boolean wasStopped(){ return isStopped() && _stop_requested; }
+  public boolean isDone()    { return isStopped() && _ex == null; }
   public boolean isCrashing(){ return isRunning() && _ex != null; }
   public boolean isCrashed (){ return isStopped() && _ex != null; }
 

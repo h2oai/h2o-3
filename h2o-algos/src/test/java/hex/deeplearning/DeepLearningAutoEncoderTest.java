@@ -57,15 +57,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._force_load_balance = true;
         p._elastic_averaging = false;
         DeepLearning dl = new DeepLearning(p);
-        DeepLearningModel mymodel = null;
-        try {
-          mymodel = dl.trainModel().get();
-        } catch (Throwable t) {
-          t.printStackTrace();
-          throw new RuntimeException(t);
-        } finally {
-          dl.remove();
-        }
+        DeepLearningModel mymodel = dl.trainModel().get();
 
         Frame l2_frame_train=null, l2_frame_test=null;
 

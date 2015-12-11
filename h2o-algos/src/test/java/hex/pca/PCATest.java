@@ -10,7 +10,6 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.rapids.Exec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
@@ -52,15 +51,7 @@ public class PCATest extends TestUtil {
           parms._max_iterations = 1000;
           parms._pca_method = PCAParameters.Method.Power;
 
-          PCA job = new PCA(parms);
-          try {
-            model = job.trainModel().get();
-          } catch (Throwable t) {
-            t.printStackTrace();
-            throw new RuntimeException(t);
-          } finally {
-            job.remove();
-          }
+          model = new PCA(parms).trainModel().get();
 
           if (std == DataInfo.TransformType.DEMEAN) {
             TestUtil.checkStddev(stddev, model._output._std_deviation, TOLERANCE);
@@ -69,9 +60,6 @@ public class PCATest extends TestUtil {
             TestUtil.checkStddev(stddev_std, model._output._std_deviation, TOLERANCE);
             TestUtil.checkEigvec(eigvec_std, model._output._eigenvectors, TOLERANCE);
           }
-        } catch (Throwable t) {
-          t.printStackTrace();
-          throw new RuntimeException(t);
         } finally {
           if( model != null ) model.delete();
         }
@@ -89,7 +77,6 @@ public class PCATest extends TestUtil {
                             ard(-0.30842767, -0.93845891, 0.15496743, 0.01234261),
                             ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
 
-    PCA job = null;
     PCAModel model = null;
     Frame train = null, score = null, scoreR = null;
     try {
@@ -100,27 +87,16 @@ public class PCATest extends TestUtil {
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAParameters.Method.GramSVD;
 
-      try {
-        job = new PCA(parms);
-        model = job.trainModel().get();
-        TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
-        boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
+      model = new PCA(parms).trainModel().get();
+      TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
+      boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
+      
+      score = model.score(train);
+      scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+      TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
 
-        score = model.score(train);
-        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
-        TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
-
-        // Build a POJO, validate same results
-        Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        if (job != null) job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      // Build a POJO, validate same results
+      Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
@@ -140,7 +116,6 @@ public class PCATest extends TestUtil {
                             ard(-0.51177078,  0.65945159, -0.005079934,  0.04881900, -0.52128288,  0.17038367,  0.006223427),
                             ard(-0.16742875,  0.32166036,  0.145893901,  0.47102115,  0.72052968,  0.32523458,  0.020389463));
 
-    PCA job = null;
     PCAModel model = null;
     Frame train = null, score = null, scoreR = null;
     try {
@@ -152,27 +127,16 @@ public class PCATest extends TestUtil {
       parms._use_all_factor_levels = true;
       parms._pca_method = PCAParameters.Method.Power;
 
-      try {
-        job = new PCA(parms);
-        model = job.trainModel().get();
-        TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
-        boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
+      model = new PCA(parms).trainModel().get();
+      TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
+      boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
 
-        score = model.score(train);
-        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/iris_PCAscore.csv");
-        TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+      score = model.score(train);
+      scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/iris_PCAscore.csv");
+      TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
 
-        // Build a POJO, validate same results
-        Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        if (job != null) job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      // Build a POJO, validate same results
+      Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
@@ -182,21 +146,17 @@ public class PCATest extends TestUtil {
   }
 
   @Test public void testIrisSplitScoring() throws InterruptedException, ExecutionException {
-    PCA job = null;
     PCAModel model = null;
     Frame fr = null, fr2= null;
     Frame tr = null, te= null;
 
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      SplitFrame sf = new SplitFrame();
-      sf.dataset = fr;
-      sf.ratios = new double[] { 0.5, 0.5 };
-      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+      SplitFrame sf = new SplitFrame(fr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
 
       // Invoke the job
       sf.exec().get();
-      Key[] ksplits = sf.destination_frames;
+      Key[] ksplits = sf._destination_frames;
       tr = DKV.get(ksplits[0]).get();
       te = DKV.get(ksplits[1]).get();
 
@@ -207,19 +167,11 @@ public class PCATest extends TestUtil {
       parms._max_iterations = 1000;
       parms._pca_method = PCAParameters.Method.GramSVD;
 
-      try {
-        job = new PCA(parms);
-        model = job.trainModel().get();
-      } finally {
-        if (job != null) job.remove();
-      }
+      model = new PCA(parms).trainModel().get();
 
       // Done building model; produce a score column with cluster choices
       fr2 = model.score(te);
       Assert.assertTrue(model.testJavaScoring(te, fr2, 1e-5));
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
     } finally {
       if( fr  != null ) fr.delete();
       if( fr2 != null ) fr2.delete();
@@ -241,8 +193,7 @@ public class PCATest extends TestUtil {
         Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
         DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
         FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
-        j.execImpl();
-        j.get(); // MissingInserter is non-blocking, must block here explicitly
+        j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly
         DKV.remove(frtmp._key); // Delete the frame header (not the data)
       }
 
@@ -255,17 +206,8 @@ public class PCATest extends TestUtil {
       parms._seed = seed;
 
       PCAModel pca = null;
-      PCA job = null;
-      try {
-        job = new PCA(parms);
-        pca = job.trainModel().get();
-      } finally {
-        if (job != null) job.remove();
-        if (pca != null) pca.remove();
-      }
-    } catch(Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      pca = new PCA(parms).trainModel().get();
+      if (pca != null) pca.remove();
     } finally {
       if (train != null) train.delete();
     }

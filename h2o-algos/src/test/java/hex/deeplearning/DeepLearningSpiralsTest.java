@@ -66,15 +66,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._reproducible = true;
           p._rho = 0.99;
           p._epsilon = 5e-3;
-          DeepLearning dl = new DeepLearning(p);
-          try {
-            dl.trainModel().get();
-          } catch (Throwable t) {
-            t.printStackTrace();
-            throw new RuntimeException(t);
-          } finally {
-            dl.remove();
-          }
+          new DeepLearning(p).trainModel().get();
         }
 
         // score and check result
