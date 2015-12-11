@@ -82,6 +82,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   static class TooManyPredictorsException extends RuntimeException {}
 
   private BetaConstraint _bc = new BetaConstraint();
+  private BetaConstraint _activeBC = null;
   DataInfo _dinfo;
 
   transient GLMTaskInfo [] _tInfos;
@@ -319,14 +320,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         if (_dinfo._normMul != null) {
-          double normG = 0, normS = 0;
+          double normG = 0, normS = 0, normLB = 0, normUB = 0;
           for (int i = numoff; i < _dinfo.fullN(); ++i) {
             double s = _dinfo._normSub[i - numoff];
             double d = 1.0 / _dinfo._normMul[i - numoff];
-            if (betaUB != null && !Double.isInfinite(betaUB[i]))
+            if (betaUB != null && !Double.isInfinite(betaUB[i])) {
+              normUB *= s;
               betaUB[i] *= d;
-            if (betaLB != null && !Double.isInfinite(betaUB[i]))
+            }
+            if (betaLB != null && !Double.isInfinite(betaUB[i])) {
+              normLB *= s;
               betaLB[i] *= d;
+            }
+
             if (betaGiven != null) {
               normG += betaGiven[i] * s;
               betaGiven[i] *= d;
@@ -342,6 +348,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               betaGiven[n] += normG;
             if (betaStart != null)
               betaStart[n] += normS;
+            if(betaLB != null)
+              betaLB[n] += normLB;
+            if(betaUB != null)
+              betaUB[n] += normUB;
           }
         }
         if(betaStart == null && betaGiven != null)
@@ -749,6 +759,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if(!(_betaLB[i] <= _betaUB[i]))
             throw new IllegalArgumentException("lower bounds myst be <= upper bounds, " + _betaLB[i] + " !<= " + _betaUB[i]);
     }
+
+    public BetaConstraint filterExpandedColumns(int[] activeCols) {
+      BetaConstraint res = new BetaConstraint();
+      if(_betaLB != null)
+        res._betaLB = ArrayUtils.select(_betaLB,activeCols);
+      if(_betaUB != null)
+        res._betaUB = ArrayUtils.select(_betaUB,activeCols);
+      if(_betaGiven != null)
+        res._betaGiven = ArrayUtils.select(_betaGiven,activeCols);
+      if(_rho != null)
+        res._rho = ArrayUtils.select(_rho,activeCols);
+      if(_betaStart != null)
+        res._betaStart = ArrayUtils.select(_betaStart,activeCols);
+      return res;
+    }
   }
 
   /**
@@ -1065,12 +1090,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         int C = _parms._family == Family.multinomial?_nclass:1;
         int P = _dinfo.fullN()+1;
         for (int i = 0; i < _dinfo.fullN(); ++i) {
-          for(int c = 0; c < C; ++c)
-            if ((j < oldActiveCols.length && i == oldActiveCols[j]) || grad[i + c*P] > rhs || grad[i + c*P] < -rhs) {
+          for(int c = 0; c < C; ++c) {
+            if((_bc._betaLB != null && _bc._betaLB[i] > 0)
+                || (_bc._betaUB != null && _bc._betaUB[i] < 0)
+                || (j < oldActiveCols.length && i == oldActiveCols[j])
+                || (grad[i + c * P] > rhs || grad[i + c * P] < -rhs)) {
               cols[selected++] = i;
               if (j < oldActiveCols.length && i == oldActiveCols[j]) ++j;
               break;
             }
+          }
         }
       }
       if (_parms._alpha[0] == 0 || selected == _dinfo.fullN()) {
@@ -1197,7 +1226,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double ADMM_gradEps = 1e-3;
             ProximalGradientSolver innerSolver = new ProximalGradientSolver(solver, beta, rho, _parms._objective_epsilon*1e-1, _parms._gradient_epsilon,pm);
             if (_bc != null) {
-              new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol).solve(innerSolver, beta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+              new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol).solve(innerSolver, beta, l1pen, _activeData._intercept, _activeBC._betaLB, _activeBC._betaUB);
             } else
               new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol).solve(innerSolver, beta, l1pen, _activeData._intercept);
             if (_parms._family == Family.multinomial) {
@@ -1902,6 +1931,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         int[] activeCols = activeCols(_parms._lambda[_lambdaId], _lambdaId == 0 ? _taskInfo._lambdaMax : _parms._lambda[_lambdaId - 1], _taskInfo._ginfo._gradient);
         _taskInfo._activeCols = activeCols;
         _activeData = _dinfo.filterExpandedColumns(activeCols);
+        if(activeCols != null && _bc != null) {
+          _activeBC = _bc.filterExpandedColumns(ArrayUtils.append(activeCols,_dinfo.fullN()));
+        } else _activeBC = _bc;
         assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();
         _taskInfo._ginfo = new GLMGradientInfo(_taskInfo._ginfo._likelihood, _taskInfo._ginfo._objVal, contractVec(_taskInfo._ginfo._gradient, activeCols));
         if(_parms._family == Family.multinomial) {
@@ -2020,8 +2052,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // l1pen or upper/lower bounds require ADMM solver
           if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null || _bc._betaGiven != null) {
             // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
-            gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
-            new ADMM.L1Solver(1e-4, 10000).solve(gslvr, newBeta, l1pen, _parms._intercept, _bc._betaLB, _bc._betaUB);
+            gslvr = new GramSolver(glmt._gram, glmt._xy, _parms._intercept, l2pen, l1pen /*, rho*/, _activeBC._betaGiven, _activeBC._rho, defaultRho, _activeBC._betaLB, _activeBC._betaUB);
+            new ADMM.L1Solver(1e-4, 10000).solve(gslvr, newBeta, l1pen, _parms._intercept, _activeBC._betaLB, _activeBC._betaUB);
           } else {
             glmt._gram.addDiag(l2pen);
             new GramSolver(glmt._gram, glmt._xy, _taskInfo._lambdaMax, _parms._beta_epsilon, _parms._intercept).solve(newBeta);

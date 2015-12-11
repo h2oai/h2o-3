@@ -997,6 +997,14 @@ public class ArrayUtils {
     return res;
   }
 
+  public static double[] select(double[] ary, int[] idxs) {
+    double [] res = MemoryManager.malloc8d(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+
+
   /**
    * Sort an integer array of indices based on values
    * Updates indices in place, keeps values the same
