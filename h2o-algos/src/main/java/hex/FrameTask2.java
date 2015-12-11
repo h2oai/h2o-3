@@ -48,7 +48,7 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   abstract protected void processRow(Row r);
 
   @Override public void map(Chunk[] chks) {
-    if( _jobKey.get().stop_requested() ) return;
+    if( _jobKey != null && _jobKey.get().stop_requested() ) return;
     chunkInit();
     // compute
     if(_sparse) {
