@@ -351,7 +351,7 @@ public final class ParseSetup extends Iced {
 
       _gblSetup = mergeSetups(_gblSetup, other._gblSetup);
       _totalParseSize += other._totalParseSize;
-      _maxLineLength = Math.max(_maxLineLength, other._totalParseSize);
+      _maxLineLength = Math.max(_maxLineLength, other._maxLineLength);
     }
 
     @Override public void postGlobal() {
