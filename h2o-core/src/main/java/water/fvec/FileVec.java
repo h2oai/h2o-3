@@ -162,8 +162,8 @@ public abstract class FileVec extends ByteVec {
     }
     else {
       // New Heuristic
-      final int minNumberRows = 10; // at least 10 rows (lines) per chunk (core)
-      final int perNodeChunkCountLimit = 1<<21; // no create more than 2M Chunk POJOs per node
+      final int minNumberRows = 10; // need at least 10 rows (lines) per chunk (core)
+      final int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
       final int minParseChunkSize = 1<<13; // don't read fewer than this many bytes
       final int maxParseChunkSize = 1<<30; // don't read more than this many bytes
 
@@ -191,6 +191,7 @@ public abstract class FileVec extends ByteVec {
       // round down to closest power of 2
       if (chunkSize > DFLT_CHUNK_SIZE) {
         int val = 1 << MathUtils.log2(chunkSize);
+        if (val/numCols > Value.MAX/5) return Value.MAX/5; //don't want to have too large Chunk POJOs
         if (val > minNumberRows*maxLineLength) return val;
       }
 
