@@ -9,8 +9,8 @@ test.export.time <- function() {
   
   t = system.time(h2o.exportFile(fr,paste0(sandbox(),"foo",sep=.Platform$file.sep),force=T))
   
-  print(paste("Time to export is ",t[3]))
-  expect_true(t[3]>3)
+  print(paste("Time to export is",t[3],"seconds"))
+  expect_true(t[3]>2)
   
 }
 
