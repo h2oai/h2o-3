@@ -187,7 +187,7 @@ public abstract class FileVec extends ByteVec {
       long POJOLimit = (long)numCols*(long)Value.MAX >> 4;
 
       // if we can read at least minNumberRows and we don't create too large Chunk POJOs, we're done
-      if (chunkSize > minNumberRows*maxLineLength && chunkSize < POJOLimit) return (int)chunkSize;
+      if (chunkSize > minNumberRows*maxLineLength && chunkSize < POJOLimit && (int)chunkSize == chunkSize) return (int)chunkSize;
 
       // might be more than default, if the max line length needs it, but no more than the 1GB limit
       // also, don't ever create too large chunks
