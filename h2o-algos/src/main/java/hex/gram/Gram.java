@@ -298,20 +298,23 @@ public final class Gram extends Iced<Gram> {
     // drop the ignored cols
     if(dropped_cols.isEmpty()) return new Cholesky(R,new double[0], true);
     double [][] Rnew = new double[R.length-dropped_cols.size()][];
+    for(int i = 0; i < Rnew.length; ++i)
+      Rnew[i] = new double[i+1];
     int j = 0;
     for(int i = 0; i < R.length; ++i) {
       if(Z[i][i] == 0) continue;
       int k = 0;
-      for(;k < dropped_cols.size(); ++k)
-        if(dropped_cols.get(k) > i) break;
-      double [] newRow = Rnew[j++] = new double[i+1-k];
-      k = 0;
       for(int l = 0; l <= i; ++l) {
         if(k < dropped_cols.size() && l == dropped_cols.get(k)) {
-          ++k; continue;
+          ++k;
+          continue;
         }
-        newRow[l-k] = R[i][l];
+        Rnew[i][l-k] = R[i][l];
       }
+    }
+    if((dropped_cols.get(dropped_cols.size()-1)) == ZdiagInv.length-1){
+      dropped_cols.remove(dropped_cols.size()-1);
+      dropped_cols.add(0,0); // first and last columns are switched so that the intercept is the first drugin the QR decomp
     }
     return new Cholesky(Rnew,new double[0], true);
   }

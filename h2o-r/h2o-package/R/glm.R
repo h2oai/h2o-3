@@ -188,7 +188,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(gradient_epsilon) )          parms$gradient_epsilon       <- gradient_epsilon
   if( !missing(non_negative) )              parms$non_negative           <- non_negative
   if( !missing(compute_p_values) )          parms$compute_p_values       <- compute_p_values
-  if( !missing(remove_colinear_columns) )   remove_colinear_columns      <- remove_colinear_columns
+  if( !missing(remove_colinear_columns) )   parms$remove_colinear_columns<- remove_colinear_columns
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.

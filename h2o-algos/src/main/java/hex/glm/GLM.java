@@ -2037,8 +2037,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             newBeta = glmt._xy.clone();
             chol = glmt._gram.cholesky(null);
           }
-
-
           chol.solve(newBeta);
         } else {
           chol = null;
