@@ -124,7 +124,7 @@ public abstract class FileVec extends ByteVec {
    * <p>
    * default - chunks are {@value #DFLT_CHUNK_SIZE}
    * <p>
-   * large data - if the data would create more than 4M keys per
+   * large data - if the data would create more than 2M keys per
    * node, then chunk sizes larger than DFLT_CHUNK_SIZE are issued.
    * <p>
    * Too many keys can create enough overhead to blow out memory in
@@ -164,39 +164,39 @@ public abstract class FileVec extends ByteVec {
       // New Heuristic
       final int minNumberRows = 10; // need at least 10 rows (lines) per chunk (core)
       final int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
-      final int minParseChunkSize = 1<<13; // don't read fewer than this many bytes
       final int maxParseChunkSize = 1<<30; // don't read more than this many bytes
 
-      // Super small data check - less than 4K/thread
-      if (chunkSize <= minParseChunkSize && DFLT_CHUNK_SIZE > minNumberRows*maxLineLength) {
-        return DFLT_CHUNK_SIZE;
-      }
-      // Small data check
-      chunkSize = 1L << MathUtils.log2(chunkSize); //closest power of 2
-      if (chunkSize < DFLT_CHUNK_SIZE
-          && (localParseSize/chunkSize)*numCols < perNodeChunkCountLimit //not too many locally created chunks
-          && chunkSize > minNumberRows*maxLineLength) //large enough chunk size to get at least minLines lines
-        return (int)chunkSize;
+      // Super small data check - file size is smaller than 64kB
+      if (totalSize <= 1<<16)
+        return Math.max(DFLT_CHUNK_SIZE, (int)(minNumberRows*maxLineLength));
 
-      // Big data checks
+      chunkSize = 1L << MathUtils.log2(chunkSize); //round down to closest power of 2
+
+      // Small data check
+      if (chunkSize < DFLT_CHUNK_SIZE && (localParseSize/chunkSize)*numCols < perNodeChunkCountLimit) //not too many locally created chunks
+        return Math.max((int)chunkSize, (int)(minNumberRows*maxLineLength));
+
+      // Not too many chunks
       int chunkCount = cores * 4 * numCols;
       if (chunkCount > perNodeChunkCountLimit) {
         double ratio = 1 << Math.max(2,MathUtils.log2((int)(double)chunkCount / perNodeChunkCountLimit)); //this times too many chunks globally on the cluster
         chunkSize *= ratio; //need to bite off larger chunks
       }
 
-      // Don't ever read more than 1GB
-      if (chunkSize > maxParseChunkSize) return maxParseChunkSize; //largest chunkSize allowed, no point in checking whether it's enough for 2*maxLineLength.
+      chunkSize=Math.min(maxParseChunkSize, chunkSize); // Don't ever read more than 1GB
+      long POJOLimit = (long)numCols*(long)Value.MAX >> 4;
 
-      // round down to closest power of 2
-      if (chunkSize > DFLT_CHUNK_SIZE) {
-        int val = 1 << MathUtils.log2(chunkSize);
-        if (val/numCols > Value.MAX/5) return Value.MAX/5; //don't want to have too large Chunk POJOs
-        if (val > minNumberRows*maxLineLength) return val;
-      }
+      // if we can read at least minNumberRows and we don't create too large Chunk POJOs, we're done
+      if (chunkSize > minNumberRows*maxLineLength && chunkSize < POJOLimit) return (int)chunkSize;
 
       // might be more than default, if the max line length needs it, but no more than the 1GB limit
-      return Math.max(DFLT_CHUNK_SIZE, Math.min(maxParseChunkSize, (int)(minNumberRows*maxLineLength)));
+      // also, don't ever create too large chunks
+      return (int)Math.min(
+          (numCols*(long)Value.MAX/10), //conservative max of Chunk POJO size
+          Math.max(
+              DFLT_CHUNK_SIZE,  //default chunk size is a good lower limit for big data
+              Math.min(maxParseChunkSize, minNumberRows*maxLineLength)) //don't read more than 1GB, but enough to read the minimum number of rows
+      );
     }
   }
 }
