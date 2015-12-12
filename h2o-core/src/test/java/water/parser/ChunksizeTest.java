@@ -42,7 +42,7 @@ public class ChunksizeTest extends TestUtil {
       for (int cloudSize : new int[]{1,2,4,8,16,32,64,128,256,512,1024}) {
         for (int cores : new int[]{2,4,8,16,32,64}) { //per node
           for (int numCols : new int[]{1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768}) {
-            for (long maxLineLength : new long[]{100,100,1000,10000,1000000}) {
+            for (long maxLineLength : new long[]{10,100,1000,10000,1000000}) {
               for (double totalSize : new double[]{1e4,1e5,1e6,1e7,1e8,1e9,1e10,1e11,1e12}) {
 
                 int numRows = (int)(totalSize/maxLineLength);
@@ -86,7 +86,7 @@ public class ChunksizeTest extends TestUtil {
                   fail = true;
                 }
 
-                if (bytesPerChunkPOJO >= Value.MAX) {
+                if (bytesPerChunkPOJO >= Value.MAX/10) {
                   msg += "LARGE ";
                   FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1);
                   toolarge[oldheuristic]++;
