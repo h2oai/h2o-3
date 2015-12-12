@@ -612,13 +612,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
 
       _timeLastScoreEnd = System.currentTimeMillis();
-      Log.info("_timeLastScoreEnd: " + _timeLastScoreEnd);
       err.scoring_time = _timeLastScoreEnd - _timeLastScoreStart;
-      Log.info("scoring_time:: " + err.scoring_time);
       err.training_time_ms += err.scoring_time; //training_time_was recorded above based on time of entry into this function, but we need to add the time for scoring to this to get the total time right
-      Log.info("now training_time_ms: " + err.training_time_ms);
       total_scoring_time += err.scoring_time;
-      Log.info("now total_scoring_time: " + total_scoring_time);
       // enlarge the error array by one, push latest score back
       if (scoringInfo == null) {
         scoringInfo = new DeepLearningScoring[]{err};
@@ -693,7 +689,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private void progressUpdate(Key progressKey, Key job_key, boolean keep_running) {
     long now = System.currentTimeMillis();
     long timeSinceEntering = now - _timeLastIterationEnter;
-    Log.info("_timeLastIterationEnter: " + _timeLastIterationEnter);
     Job.Progress prog = DKV.getGet(progressKey);
     double progress = prog == null ? 0 : prog.progress();
     int speed = (int)(model_info().get_processed_total() * 1000. / ((total_run_time + timeSinceEntering) - total_scoring_time));
