@@ -154,7 +154,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      *      training row. This effectively trains exponentially many models at
      *      once, and can improve generalization.
      */
-    @API(help = "Activation function", values = { "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout", "ExpRectifier", "ExpRectifierWithDropout" }, level=API.Level.critical, direction=API.Direction.INOUT, gridable = true)
+    //@API(help = "Activation function", values = { "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout", "ExpRectifier", "ExpRectifierWithDropout" }, level=API.Level.critical, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Activation function", values = { "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout" }, level=API.Level.critical, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.Activation activation;
 
     /**

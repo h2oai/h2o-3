@@ -91,20 +91,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
 
   private volatile DeepLearningModelInfo model_info;
 
+  // timing
+  public long total_checkpointed_run_time_ms; //time spent in previous models
   public long total_run_time;
   public long total_scoring_time;
   private long time_of_start;
 
+  // auto-tuning
   public long actual_train_samples_per_iteration;
   public long tspiGuess;
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
+  // helpers for diagnostics
   public double epoch_counter;
   public int iterations;
   public boolean stopped_early;
-
   public long training_rows;
-
   public long validation_rows;
 
   private DeepLearningScoring[] scoringInfo;
@@ -294,7 +296,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       table.set(row, col++, fmt.print(si.time_stamp));
       table.set(row, col++, PrettyPrint.msecs(si.training_time_ms, true));
       int speed = (int)(si.training_samples / ((si.training_time_ms - scoring_time)/ 1e3));
-//      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + si.training_samples + "/((" + si.training_time_ms + "-" + scoring_time + ")/1e3)";
+      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + si.training_samples + "/((" + si.training_time_ms + "-" + scoring_time + ")/1e3)";
       table.set(row, col++, si.training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
       table.set(row, col++, si.epoch_counter);
       table.set(row, col++, si.iterations);
@@ -395,7 +397,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     actual_best_model_key = cp.actual_best_model_key;
     time_of_start = cp.time_of_start;
     total_run_time = cp.total_run_time;
-    Log.info("setting total_run_time to cp.total_run_time: " + total_run_time);
+    total_checkpointed_run_time_ms = cp.total_run_time;
     total_scoring_time = cp.total_scoring_time;
     training_rows = cp.training_rows; //copy the value to display the right number on the model page before training has started
     validation_rows = cp.validation_rows; //copy the value to display the right number on the model page before training has started
@@ -477,9 +479,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey, int iteration, boolean finalScoring) {
     final long now = System.currentTimeMillis();
     final double time_since_last_iter = now - _timeLastIterationEnter;
-    Log.info("doScoring. previous: _timeLasIterationEnter: " + _timeLastIterationEnter);
-    Log.info("adding to total_run_time: " + total_run_time + "+= " + time_since_last_iter + " => " + (total_run_time+time_since_last_iter));
-    total_run_time +=  time_since_last_iter;
+    long start_time_current_model = ((Job)DKV.getGet(job_key))._start_time;
+    total_run_time =  total_checkpointed_run_time_ms + (now - start_time_current_model);
     _timeLastIterationEnter = now;
     epoch_counter = (double)model_info().get_processed_total()/training_rows;
 
@@ -525,11 +526,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
       final boolean printme = !get_params()._quiet_mode;
       _timeLastScoreStart = System.currentTimeMillis();
-      Log.info("doScoring. _timeLastScoreStart: " + _timeLastScoreStart);
       model_info().computeStats(); //might not be necessary, but is done to be certain that numbers are good
       DeepLearningScoring err = new DeepLearningScoring();
       err.time_stamp = _timeLastScoreStart;
-      Log.info("setting err.training_time_ms to " + total_run_time);
       err.training_time_ms = total_run_time;
       err.epoch_counter = epoch_counter;
       err.iterations = iterations;
@@ -567,8 +566,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         _output._training_metrics = mtrain;
         err.scored_train = new ScoreKeeper(mtrain);
         hex.ModelMetrics mtest;
-
-        hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
+        hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)mtrain;
         if (mm1 instanceof ModelMetricsBinomial) {
           ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
           err.training_AUC = mm._auc;
@@ -612,13 +610,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
 
       _timeLastScoreEnd = System.currentTimeMillis();
-      Log.info("_timeLastScoreEnd: " + _timeLastScoreEnd);
       err.scoring_time = _timeLastScoreEnd - _timeLastScoreStart;
-      Log.info("scoring_time:: " + err.scoring_time);
       err.training_time_ms += err.scoring_time; //training_time_was recorded above based on time of entry into this function, but we need to add the time for scoring to this to get the total time right
-      Log.info("now training_time_ms: " + err.training_time_ms);
       total_scoring_time += err.scoring_time;
-      Log.info("now total_scoring_time: " + total_scoring_time);
       // enlarge the error array by one, push latest score back
       if (scoringInfo == null) {
         scoringInfo = new DeepLearningScoring[]{err};
@@ -693,12 +687,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   private void progressUpdate(Key progressKey, Key job_key, boolean keep_running) {
     long now = System.currentTimeMillis();
     long timeSinceEntering = now - _timeLastIterationEnter;
-    Log.info("_timeLastIterationEnter: " + _timeLastIterationEnter);
     Job.Progress prog = DKV.getGet(progressKey);
     double progress = prog == null ? 0 : prog.progress();
     int speed = (int)(model_info().get_processed_total() * 1000. / ((total_run_time + timeSinceEntering) - total_scoring_time));
-    Log.info("computing speed from total_run_time: " + total_run_time + ", timeSinceEntering: " + timeSinceEntering + " and total_scoring_time: " + total_scoring_time);
-//    assert(speed >= 0);
+//    Log.info("computing speed from total_run_time: " + total_run_time + ", timeSinceEntering: " + timeSinceEntering + " and total_scoring_time: " + total_scoring_time);
+    assert(speed >= 0);
     String msg =
             "Iterations: " + String.format("%,d", iterations)
             + ". Epochs: " + String.format("%g", epoch_counter)
