@@ -165,6 +165,7 @@ public abstract class FileVec extends ByteVec {
       final int minNumberRows = 10; // need at least 10 rows (lines) per chunk (core)
       final int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
       final int maxParseChunkSize = 1<<30; // don't read more than this many bytes
+      final long maxParseChunkSizePOJOLimit = (long)numCols*(long)Value.MAX/2; //conservative upper limit on Chunk POJO size (maxParseChunkSize might be too much for a single column, for example)
 
       // Super small data check - file size is smaller than 64kB
       if (totalSize <= 1<<16)
@@ -184,15 +185,14 @@ public abstract class FileVec extends ByteVec {
       }
 
       chunkSize=Math.min(maxParseChunkSize, chunkSize); // Don't ever read more than 1GB
-      long POJOLimit = (long)numCols*(long)Value.MAX >> 4;
 
       // if we can read at least minNumberRows and we don't create too large Chunk POJOs, we're done
-      if (chunkSize > minNumberRows*maxLineLength && chunkSize < POJOLimit && (int)chunkSize == chunkSize) return (int)chunkSize;
+      if (chunkSize > minNumberRows*maxLineLength && chunkSize < maxParseChunkSizePOJOLimit && (int)chunkSize == chunkSize) return (int)chunkSize;
 
       // might be more than default, if the max line length needs it, but no more than the 1GB limit
       // also, don't ever create too large chunks
       return (int)Math.min(
-          (numCols*(long)Value.MAX/10), //conservative max of Chunk POJO size
+          maxParseChunkSizePOJOLimit,
           Math.max(
               DFLT_CHUNK_SIZE,  //default chunk size is a good lower limit for big data
               Math.min(maxParseChunkSize, minNumberRows*maxLineLength)) //don't read more than 1GB, but enough to read the minimum number of rows
