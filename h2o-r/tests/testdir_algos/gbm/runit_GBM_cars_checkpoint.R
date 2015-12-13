@@ -69,8 +69,8 @@ test.checkpointing <- function() {
 
 expect_mm_regression_equal <- function(a, b, msg) {
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_equal(a@metrics$MSE, b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2)
+  expect_true(abs(a@metrics$MSE-b@metrics$MSE) < 1e-6*a@metrics$MSE)
+  expect_true(abs(a@metrics$r2-b@metrics$r2) < 1e-6*a@metrics$r2)
 }
 
 expect_mm_binomial_equal <- function(a, b, msg) {
@@ -78,11 +78,11 @@ expect_mm_binomial_equal <- function(a, b, msg) {
   cmB <- b@metrics$cm$table
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_equal(a@metrics$MSE, b@metrics$MSE, tolerance=1e-6, scale=b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2, tolerance=1e-6, scale=b@metrics$r2)
-  expect_equal(a@metrics$giniCoef, b@metrics$giniCoef, tolerance=1e-6)
-  expect_equal(a@metrics$logloss, b@metrics$logloss, tolerance=1e-6, scale=b@metrics$logloss)
-  expect_equal(a@metrics$auc, b@metrics$auc, tolerance=1e-6)
+  expect_true(abs(a@metrics$MSE-b@metrics$MSE) < 1e-6*a@metrics$MSE)
+  expect_true(abs(a@metrics$r2-b@metrics$r2) < 1e-6*a@metrics$r2)
+  expect_true(abs(a@metrics$giniCoef-b@metrics$giniCoef) < 1e-6*a@metrics$giniCoef)
+  expect_true(abs(a@metrics$logloss-b@metrics$logloss) < 1e-6*a@metrics$logloss)
+  expect_true(abs(a@metrics$auc-b@metrics$auc) < 1e-6*a@metrics$auc)
 }
 
 expect_mm_multinomial_equal <- function(a, b, msg) {
@@ -90,10 +90,10 @@ expect_mm_multinomial_equal <- function(a, b, msg) {
   cmB <- b@metrics$cm$table
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_equal(a@metrics$MSE, b@metrics$MSE, tolerance=1e-6, scale=b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2, tolerance=1e-6, scale=b@metrics$r2)
-  expect_equal(a@metrics$hit_ratio_table$hit_ratio, b@metrics$hit_ratio_table$hit_ratio, tolerance=1e-6)
-  expect_equal(a@metrics$logloss, b@metrics$logloss, tolerance=1e-6, scale=b@metrics$logloss)
+  expect_true(abs(a@metrics$MSE-b@metrics$MSE) < 1e-6*a@metrics$MSE)
+  expect_true(abs(a@metrics$r2-b@metrics$r2) < 1e-6*a@metrics$r2)
+  expect_true(abs(a@metrics$logloss-b@metrics$logloss) < 1e-6*a@metrics$logloss)
+  expect_equal(a@metrics$hit_ratio_table$hit_ratio,b@metrics$hit_ratio_table$hit_ratio) ##not sure how to quickly add relative tolerance
 }
 
 doTest("Test GBM checkpointing", test.checkpointing)
