@@ -180,6 +180,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     public double training_samples;
     public long time_stamp;
     public long training_time_ms;
+    public long scoring_time_ms;
     boolean validation;
     public long score_training_samples;
     public long score_validation_samples;
@@ -189,7 +190,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     ScoreKeeper scored_valid = new ScoreKeeper();
     public AUC2 training_AUC;
     public AUC2 validation_AUC;
-    public long scoring_time;
 
     DeepLearningScoring deep_clone() {
       AutoBuffer ab = new AutoBuffer();
@@ -286,9 +286,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
             colFormat.toArray(s),
             "");
     int row = 0;
-    long scoring_time = 0;
-    for (final DeepLearningScoring si : scoringInfo) {
-      scoring_time += si.scoring_time;
+    long scoring_time=0;
+    for (DeepLearningScoring si : scoringInfo) {
+      scoring_time += si.scoring_time_ms;
       int col = 0;
       assert (row < table.getRowDim());
       assert (col < table.getColDim());
@@ -492,23 +492,23 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && iteration > 1) {
       Log.info("Auto-tuning train_samples_per_iteration.");
       if (time_for_communication_us > 1e4) {
-        Log.info("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
-        Log.info("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_since_last_iter, true));
+        Log.debug("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
+        Log.debug("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_since_last_iter, true));
         final double comm_to_work_ratio = (time_for_communication_us * 1e-3) / time_since_last_iter;
-        Log.info("  Ratio of network communication to computation: " + String.format("%.5f", comm_to_work_ratio));
-        Log.info("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
-        Log.info("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        Log.debug("  Ratio of network communication to computation: " + String.format("%.5f", comm_to_work_ratio));
+        Log.debug("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
+        Log.debug("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
         double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
         correction = Math.max(0.5,Math.min(2, correction)); //it's ok to train up to 2x more training rows per iteration, but not fewer than half.
         if (Math.abs(correction) < 0.8 || Math.abs(correction) > 1.2) { //don't correct unless it's significant (avoid slow drift)
           actual_train_samples_per_iteration /= correction;
           actual_train_samples_per_iteration = Math.max(1, actual_train_samples_per_iteration);
-          Log.info("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
+          Log.debug("New value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
         } else {
-          Log.info("Keeping value of train_samples_per_iteration the same (would deviate too little from previous value): " + actual_train_samples_per_iteration);
+          Log.debug("Keeping value of train_samples_per_iteration the same (would deviate too little from previous value): " + actual_train_samples_per_iteration);
         }
       } else {
-        Log.info("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        Log.debug("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
       }
     }
 
@@ -526,11 +526,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
       final boolean printme = !get_params()._quiet_mode;
       _timeLastScoreStart = System.currentTimeMillis();
-      Log.info("doScoring. _timeLastScoreStart: " + _timeLastScoreStart);
       model_info().computeStats(); //might not be necessary, but is done to be certain that numbers are good
       DeepLearningScoring err = new DeepLearningScoring();
       err.time_stamp = _timeLastScoreStart;
-      Log.info("setting err.training_time_ms to " + total_run_time);
       err.training_time_ms = total_run_time;
       err.epoch_counter = epoch_counter;
       err.iterations = iterations;
@@ -612,9 +610,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
 
       _timeLastScoreEnd = System.currentTimeMillis();
-      err.scoring_time = _timeLastScoreEnd - _timeLastScoreStart;
-      err.training_time_ms += err.scoring_time; //training_time_was recorded above based on time of entry into this function, but we need to add the time for scoring to this to get the total time right
-      total_scoring_time += err.scoring_time;
+      err.scoring_time_ms = _timeLastScoreEnd - _timeLastScoreStart;
+      err.training_time_ms += err.scoring_time_ms; //increase training time to be able to compute speed properly
+      total_scoring_time += err.scoring_time_ms;
       // enlarge the error array by one, push latest score back
       if (scoringInfo == null) {
         scoringInfo = new DeepLearningScoring[]{err};
@@ -672,7 +670,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
           Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
           stopped_early = true;
         }
-        if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
+        if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time_ms, true));
       }
     }
     if (stopped_early) {

@@ -17,7 +17,7 @@ import water.util.TwoDimTable;
 import java.io.File;
 
 public class DeepLearningCheckpointReporting extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() {
     Scope.enter();
