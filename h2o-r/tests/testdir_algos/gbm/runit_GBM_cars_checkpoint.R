@@ -60,6 +60,8 @@ test.checkpointing <- function() {
 
   a <- model2@model$validation_metrics
   b <- model3@model$validation_metrics
+  print(a)
+  print(b)
   if ( problem == 0 ) {       expect_mm_regression_equal(a, b)
   } else if ( problem == 1) { expect_mm_binomial_equal(a, b)
   } else {                    expect_mm_multinomial_equal(a, b) }
