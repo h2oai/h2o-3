@@ -86,7 +86,7 @@ public class ChunksizeTest extends TestUtil {
                   fail = true;
                 }
 
-                if (bytesPerChunkPOJO >= Value.MAX/2) {
+                if (bytesPerChunkPOJO >= Value.MAX/10) {
                   msg += "LARGE ";
                   FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1);
                   toolarge[oldheuristic]++;

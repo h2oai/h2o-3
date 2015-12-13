@@ -166,7 +166,7 @@ public abstract class FileVec extends ByteVec {
       final int minNumberRows = 10; // need at least 10 rows (lines) per chunk (core)
       final int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
       final int maxParseChunkSize = 1<<30; // don't read more than this many bytes
-      final long maxParseChunkSizePOJOLimit = (long)numCols*(long)Value.MAX/2; //conservative upper limit on Chunk POJO size (maxParseChunkSize might be too much for a single column, for example)
+      final long maxParseChunkSizePOJOLimit = (long)numCols*(long)Value.MAX/10; //conservative upper limit on Chunk POJO size (maxParseChunkSize might be too much for a single column, for example)
       Log.info("ParseSetup heuristic: cloudSize: "
           + cloudsize + ", cores: " + cores + ", numCols: " + numCols + ", maxLineLength: " + maxLineLength
           + ", totalSize: " + totalSize + ", chunkSize: " + chunkSize
