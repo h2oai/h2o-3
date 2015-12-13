@@ -78,11 +78,11 @@ expect_mm_binomial_equal <- function(a, b, msg) {
   cmB <- b@metrics$cm$table
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_equal(a@metrics$MSE, b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2)
-  expect_equal(a@metrics$giniCoef, b@metrics$giniCoef)
-  expect_equal(a@metrics$logloss, b@metrics$logloss)
-  expect_equal(a@metrics$auc, b@metrics$auc)
+  expect_equal(a@metrics$MSE, b@metrics$MSE, tolerance=1e-6, scale=b@metrics$MSE)
+  expect_equal(a@metrics$r2, b@metrics$r2, tolerance=1e-6, scale=b@metrics$r2)
+  expect_equal(a@metrics$giniCoef, b@metrics$giniCoef, tolerance=1e-6)
+  expect_equal(a@metrics$logloss, b@metrics$logloss, tolerance=1e-6, scale=b@metrics$logloss)
+  expect_equal(a@metrics$auc, b@metrics$auc, tolerance=1e-6)
 }
 
 expect_mm_multinomial_equal <- function(a, b, msg) {
@@ -90,10 +90,10 @@ expect_mm_multinomial_equal <- function(a, b, msg) {
   cmB <- b@metrics$cm$table
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_equal(a@metrics$MSE, b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2)
-  expect_equal(a@metrics$hit_ratio_table$hit_ratio, b@metrics$hit_ratio_table$hit_ratio)
-  expect_equal(a@metrics$logloss, b@metrics$logloss)
+  expect_equal(a@metrics$MSE, b@metrics$MSE, tolerance=1e-6, scale=b@metrics$MSE)
+  expect_equal(a@metrics$r2, b@metrics$r2, tolerance=1e-6, scale=b@metrics$r2)
+  expect_equal(a@metrics$hit_ratio_table$hit_ratio, b@metrics$hit_ratio_table$hit_ratio, tolerance=1e-6)
+  expect_equal(a@metrics$logloss, b@metrics$logloss, tolerance=1e-6, scale=b@metrics$logloss)
 }
 
 doTest("Test GBM checkpointing", test.checkpointing)
