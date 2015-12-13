@@ -80,9 +80,9 @@ expect_mm_binomial_equal <- function(a, b, msg) {
   expect_equal(a@metrics$model_category, b@metrics$model_category)
   expect_true(abs(a@metrics$MSE-b@metrics$MSE) < 1e-6*a@metrics$MSE)
   expect_true(abs(a@metrics$r2-b@metrics$r2) < 1e-6*a@metrics$r2)
-  expect_true(abs(a@metrics$giniCoef-b@metrics$giniCoef) < 1e-3*a@metrics$giniCoef)
+  expect_true(abs(a@metrics$giniCoef-b@metrics$giniCoef) < 1e-3)
   expect_true(abs(a@metrics$logloss-b@metrics$logloss) < 1e-6*a@metrics$logloss)
-  expect_true(abs(a@metrics$auc-b@metrics$auc) < 1e-3*a@metrics$auc)
+  expect_true(abs(a@metrics$auc-b@metrics$auc) < 1e-3)
 }
 
 expect_mm_multinomial_equal <- function(a, b, msg) {
