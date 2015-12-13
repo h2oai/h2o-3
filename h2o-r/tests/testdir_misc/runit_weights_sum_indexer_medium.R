@@ -11,7 +11,7 @@ test <- function() {
   weightsSum <- sum(hex[,"weights"])
   print(weightsSum)
   print(sampleSize)
-  expect_true(weightsSum == sampleSize)
+  expect_true(round(weightsSum) == sampleSize)
 }
 
 doTest("sum of weights should be == sampleSize", test)
