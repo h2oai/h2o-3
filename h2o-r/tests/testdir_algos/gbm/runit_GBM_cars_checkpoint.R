@@ -5,8 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.checkpointing <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
-  #seed <- sample(1:1000000, 1)
-  seed <- 505273
+  seed <- sample(1:1000000, 1)
   Log.info(paste0("runif seed: ",seed))
   s <- h2o.runif(cars, seed=seed)
   train <- cars[s > .2,]
@@ -15,7 +14,6 @@ test.checkpointing <- function() {
   # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
   # 2:multinomial
   problem <- sample(0:2,1)
-  problem <- 1
 
   # pick the predictors and response column
   predictors <- c("displacement","power","weight","acceleration","year")
