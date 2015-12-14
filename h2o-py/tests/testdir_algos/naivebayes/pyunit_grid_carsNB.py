@@ -50,6 +50,9 @@ def grid_cars_NB():
     else:
         cars_nb_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
 
+    for model in cars_nb_grid:
+      assert isinstance(model, H2ONaiveBayesEstimator)
+
     print("Performing various checks of the constructed grid...")
 
     print("Check cardinality of grid, that is, the correct number of models have been created...")
@@ -78,6 +81,9 @@ def grid_cars_NB():
     actual_size2 = len(cars_nb_grid2)
     assert actual_size == actual_size2, "Expected duplicates to be ignored. Without dups grid size: {0}. With dups " \
                                         "size: {1}".format(actual_size, actual_size2)
+
+    for model in cars_nb_grid2:
+      assert isinstance(model, H2ONaiveBayesEstimator)
 
     print("Check that the hyper_params that were passed to grid, were used to construct the models...")
     for name in list(grid_space.keys()):

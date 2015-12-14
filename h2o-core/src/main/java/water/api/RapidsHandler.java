@@ -10,10 +10,12 @@ class RapidsHandler extends Handler {
   public RapidsSchema exec(int version, RapidsSchema rapids) {
     if( rapids == null ) return null;
     if( rapids.ast == null || rapids.ast.equals("") ) return rapids;
-    
-    Session ses = InitIDHandler.SESSION;
+    if( rapids.session_id == null || rapids.session_id.equals("") )
+      rapids.session_id = "_specialSess";
+
+    Session ses = InitIDHandler.SESSIONS.get(rapids.session_id);
     if( ses == null )
-      InitIDHandler.SESSION = ses = new water.rapids.Session();
+      InitIDHandler.SESSIONS.put(rapids.session_id, ses = new water.rapids.Session());
 
     Val val;
     try {

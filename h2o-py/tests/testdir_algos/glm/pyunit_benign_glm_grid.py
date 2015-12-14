@@ -18,6 +18,8 @@ def benign_grid():
   hyper_parameters = {'alpha': [0.01,0.5,'a'], 'lambda': [1e-5,1e-6]}
   gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
   gs.train(x=X,y=Y, training_frame=training_data)
+  for model in gs:
+    assert isinstance(model, H2OGeneralizedLinearEstimator)
   gs.show()
   print(gs.sort_by('F1', False))
   best_model_id = gs.sort_by('F1', False)['Model Id'][0]

@@ -159,7 +159,7 @@ class ExprNode(object):
     -------
       The JSON response (as a python dictionary) of the Rapids execution
     """
-    return H2OConnection.post_json("Rapids", ast=quote(expr), _rest_version=99)
+    return H2OConnection.post_json("Rapids", ast=quote(expr),session_id=H2OConnection.session_id(), _rest_version=99)
 
 class ASTId:
   def __init__(self, name=None):

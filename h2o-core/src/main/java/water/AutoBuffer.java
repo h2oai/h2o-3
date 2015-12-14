@@ -665,7 +665,7 @@ public final class AutoBuffer {
   }
 
   // Called when the byte buffer doesn't have enough room
-  // If buffer is array backed, and the needed rooom is small,
+  // If buffer is array backed, and the needed room is small,
   // increase the size of the backing array,
   // otherwise dump into a large direct buffer
   private ByteBuffer expandByteBuffer(int sizeHint) {
