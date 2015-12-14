@@ -137,6 +137,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTSdev());
     init(new ASTSum());
     init(new ASTSumNA());
+    init(new ASTNACnt());
 
     // Time
     init(new ASTDay());

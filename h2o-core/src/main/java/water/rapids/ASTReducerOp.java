@@ -91,15 +91,26 @@ abstract class ASTRollupOp extends ASTReducerOp {
   }
 }
 
-class ASTSum  extends ASTRollupOp { public String str() { return "sum" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
-class ASTMin  extends ASTRollupOp { public String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
-class ASTMax  extends ASTRollupOp { public String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
+class ASTSum   extends ASTRollupOp { public String str() { return "sum" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
+class ASTMin   extends ASTRollupOp { public String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
+class ASTMax   extends ASTRollupOp { public String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
+
+class ASTNACnt extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary"}; }
+  @Override public String str() { return "naCnt"; }
+  @Override int nargs() { return 1+1; }  // (naCnt fr)
+  @Override ValNums apply(Env env, Env.StackHelp stk, AST asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    double ds[] = new double[fr.numCols()];
+    for( int i=0; i<fr.numCols();++i )
+      ds[i] = fr.vec(i).naCnt();
+    return new ValNums(ds);
+  }
+}
 
 class ASTMedian extends ASTPrim {
-  @Override
-  public String[] args() { return new String[]{"ary", "method"}; }
-  @Override
-  public String str() { return "median"; }
+  @Override public String[] args() { return new String[]{"ary", "method"}; }
+  @Override public String str() { return "median"; }
   @Override int nargs() { return 1+2; }  // (median fr method)
   @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();

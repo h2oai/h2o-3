@@ -1208,6 +1208,23 @@ h2o.which <- function(x) {
   else .newExpr("which",x)
 }
 
+#' Count of NAs per column
+#'
+#' Gives the count of NAs per column.
+#'
+#' @param x An H2O H2OFrame object.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' h2o.nacnt(iris.hex)  # should return all 0s
+#' h2o.insertMissingValues(iris.hex)
+#' h2o.nacnt(iris.hex)
+#' }
+#' @export
+h2o.nacnt <- function(x)
+  .eval.scalar(.newExpr("naCnt", x))
+
 #' Returns the Dimensions of an H2O H2OFrame
 #'
 #' Returns the number of rows and columns for a H2OFrame object.
@@ -1348,10 +1365,10 @@ tail.H2OFrame <- h2o.tail
 is.factor <- function(x) {
   # Eager evaluate and use the cached result to return a scalar
   if( is.H2OFrame(x) ) {
-    x <- .fetch.data(x,1L)
-    if( ncol(x)==1L ) x <- x[,1]
+    sapply(.eval.scalar(.newExpr("is.factor", x)), as.logical)
+  } else {
+    base::is.factor(x)
   }
-  base::is.factor(x)
 }
 
 #' Check if numeric
@@ -1361,7 +1378,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.H2OFrame(x) ) .Primitive("is.numeric")(x)
-  else as.logical(.eval.scalar(.newExpr("is.numeric",x)))
+  else sapply(.eval.scalar(.newExpr("is.numeric", x)), as.logical)
 }
 
 #' Check if character
@@ -1371,7 +1388,7 @@ is.numeric <- function(x) {
 #' @export
 is.character <- function(x) {
   if( !is.H2OFrame(x) ) .Primitive("is.character")(x)
-  else as.logical(.eval.scalar(.newExpr("is.character",x)))
+  else sapply(.eval.scalar(.newExpr("is.character", x)), as.logical)
 }
 
 #' Print An H2O H2OFrame
