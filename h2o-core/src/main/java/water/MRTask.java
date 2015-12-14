@@ -514,7 +514,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     catch( InterruptedException ignore ) { }
     catch( Throwable re ) { setException(re);  }
     DException.DistributedException de = getDException();
-    if( de != null ) throw new RuntimeException(de);
+    if( de != null ) throw de;
     assert _topGlobal:"lost top global flag";
     return self();
   }
