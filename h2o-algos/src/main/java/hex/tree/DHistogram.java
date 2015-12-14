@@ -7,6 +7,8 @@ import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.util.*;
 
+import java.util.Arrays;
+
 /** A Histogram, computed in parallel over a Vec.
  *
  *  <p>A {@code DHistogram} bins every value added to it, and computes a the
@@ -55,6 +57,18 @@ public final class DHistogram extends Iced {
     } catch( Exception e ) {
       throw H2O.fail();
     }
+  }
+
+  public static int[] activeColumns(DHistogram[] hist) {
+    int[] cols = new int[hist.length];
+    int len=0;
+    for( int i=0; i<hist.length; i++ ) {
+      if (hist[i]==null) continue;
+      assert hist[i]._min < hist[i]._maxEx && hist[i].nbins() > 1 : "broken histo range "+ hist[i];
+      cols[len++] = i;        // Gather active column
+    }
+//    cols = Arrays.copyOfRange(cols, len, hist.length);
+    return cols;
   }
 
   void setMin( float min ) {

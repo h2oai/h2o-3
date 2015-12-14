@@ -36,11 +36,13 @@ public class DTree extends Iced {
   // Public stats about tree
   public int _leaves;
   public int _depth;
-  public final int _mtrys;           // Number of columns to choose amongst in splits
+  public final int _mtrys;           // Number of columns to choose amongst in splits (at every split)
+  public final int _mtrys_per_tree;  // Number of columns to choose amongst in splits (once per tree)
   final long _seeds[];        // One seed for each chunk, for sampling
   public final transient Random _rand; // RNG for split decisions & sampling
+  public final int[] _cols;
 
-  public DTree( Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, int mtrys, long seed ) {
+  public DTree(Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, int mtrys, int mtrys_per_tree, long seed) {
     _names = fr.names();
     _ncols = ncols;
     _nbins=nbins;
@@ -49,11 +51,29 @@ public class DTree extends Iced {
     _min_rows = min_rows;
     _ns = new Node[1];
     _mtrys = mtrys;
+    _mtrys_per_tree = mtrys_per_tree;
     _seed = seed;
     _rand = SharedTree.createRNG(seed);
     _seeds = new long[fr.vecs()[0].nChunks()];
     for (int i = 0; i < _seeds.length; i++)
       _seeds[i] = _rand.nextLong();
+    int[] activeCols=new int[_ncols];
+    for (int i=0;i<activeCols.length;++i)
+      activeCols[i] = i;
+    // per-tree column sample if _mtrys_per_tree < _ncols
+    int len = activeCols.length;
+    if (mtrys_per_tree < _ncols) {
+      Random colSampleRNG = SharedTree.createRNG(_seed*0xDA7A);
+      for( int i=0; i<mtrys_per_tree; i++ ) {
+        if( len == 0 ) break;
+        int idx2 = colSampleRNG.nextInt(len);
+        int col = activeCols[idx2];
+        activeCols[idx2] = activeCols[--len];
+        activeCols[len] = col;
+      }
+      activeCols = Arrays.copyOfRange(activeCols,len,activeCols.length);
+    }
+    _cols = activeCols;
   }
 
   // Return a deterministic chunk-local RNG.  Can be kinda expensive.
@@ -268,17 +288,31 @@ public class DTree extends Iced {
     // Can return null for 'all columns'.
     public int[] scoreCols() {
       DTree tree = _tree;
-      if (tree._mtrys == _hs.length) return null;
-      int[] cols = new int[_hs.length];
+      if (tree._mtrys == _hs.length && tree._mtrys_per_tree == _hs.length) return null;
+
+      // per-tree pre-selected columns
+      int[] activeCols = tree._cols;
+//      Log.info("For tree with seed " + tree._seed + ", out of " + _hs.length + " cols, the following cols are activated via mtry_per_tree=" + tree._mtrys_per_tree + ": " + Arrays.toString(activeCols));
+
+      int[] cols = new int[activeCols.length];
       int len=0;
-      // Gather all active columns to choose from.
-      for( int i=0; i<_hs.length; i++ ) {
-        if( _hs[i]==null ) continue; // Ignore not-tracked cols
-        assert _hs[i]._min < _hs[i]._maxEx && _hs[i].nbins() > 1 : "broken histo range "+_hs[i];
-        cols[len++] = i;        // Gather active column
+
+      // collect columns that can be split (non-constant, large enough to split, etc.)
+      for(int i = 0; i< activeCols.length; i++ ) {
+        int idx = activeCols[i];
+        assert(idx == i || tree._mtrys_per_tree < _hs.length);
+        if( _hs[idx]==null ) continue; // Ignore not-tracked cols
+        assert _hs[idx]._min < _hs[idx]._maxEx && _hs[idx].nbins() > 1 : "broken histo range "+_hs[idx];
+        cols[len++] = idx;        // Gather active column
       }
+
+//      Log.info("These columns can be split: " + Arrays.toString(Arrays.copyOfRange(cols, 0, len)));
       int choices = len;        // Number of columns I can choose from
       assert choices > 0;
+
+      // This shortcut is correct, but would result in trivially reordering all columns
+      // This reordering can change results due to tie-breaking, as different columns can get picked
+      // if (len == tree._mtrys) return Arrays.copyOfRange(cols, 0, len);
 
       // Draw up to mtry columns at random without replacement.
       for( int i=0; i<tree._mtrys; i++ ) {
@@ -289,6 +323,7 @@ public class DTree extends Iced {
         cols[len] = col;          // Swap chosen in just after 'len'
       }
       assert choices - len > 0;
+//      Log.info("Picking these (mtry=" + tree._mtrys + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
       return Arrays.copyOfRange(cols, len, choices);
     }
 

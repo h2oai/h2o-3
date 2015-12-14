@@ -1,19 +1,27 @@
 package hex.tree.gbm;
 
 import hex.*;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.*;
+import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
+import water.fvec.Vec;
 import water.util.Log;
+import water.util.MathUtils;
+import water.util.Pair;
+import water.util.Triple;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import water.util.MathUtils;
-import water.util.Pair;
-
-import java.util.*;
 
 public class GBMTest extends TestUtil {
 
@@ -1504,57 +1512,63 @@ public class GBMTest extends TestUtil {
 
       GBMModel gbm = null;
       float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
-      float[] col_sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
+      float[] col_sample_rates = new float[]{0.4f, 0.6f, 0.8f, 1.0f};
+      float[] col_sample_rates_per_tree = new float[]{0.4f, 0.6f, 0.8f, 1.0f};
 
-      Map<Double, Pair<Float,Float>> hm = new TreeMap<>();
+      Map<Double, Triple<Float>> hm = new TreeMap<>();
       for (float sample_rate : sample_rates) {
         for (float col_sample_rate : col_sample_rates) {
-          Scope.enter();
-          try {
-            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-            parms._train = ksplits[0];
-            parms._valid = ksplits[1];
-            parms._response_column = "Angaus"; //regression
-            parms._seed = 234;
-            parms._min_rows = 1;
-            parms._max_depth = 15;
-            parms._ntrees = 10;
-            parms._col_sample_rate = col_sample_rate;
-            parms._sample_rate = sample_rate;
+          for (float col_sample_rate_per_tree : col_sample_rates_per_tree) {
+            Scope.enter();
+            try {
+              GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+              parms._train = ksplits[0];
+              parms._valid = ksplits[1];
+              parms._response_column = "Angaus"; //regression
+              parms._seed = 234;
+              parms._min_rows = 1;
+              parms._max_depth = 15;
+              parms._ntrees = 10;
+              parms._col_sample_rate = col_sample_rate;
+              parms._col_sample_rate_per_tree = col_sample_rate_per_tree;
+              parms._sample_rate = sample_rate;
 
-            // Build a first model; all remaining models should be equal
-            GBM job = new GBM(parms);
-            gbm = job.trainModel().get();
+              // Build a first model; all remaining models should be equal
+              GBM job = new GBM(parms);
+              gbm = job.trainModel().get();
 
-            // too slow, but passes (now)
+              // too slow, but passes (now)
 //            // Build a POJO, validate same results
 //            Frame pred = gbm.score(tfr);
 //            Assert.assertTrue(gbm.testJavaScoring(tfr,pred,1e-15));
 //            pred.remove();
 
-            ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._validation_metrics;
-            hm.put(mm.mse(), new Pair<>(sample_rate, col_sample_rate));
+              ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._validation_metrics;
+              hm.put(mm.mse(), new Triple<>(sample_rate, col_sample_rate, col_sample_rate_per_tree));
 
-            job.remove();
-          } finally {
-            if (gbm != null) gbm.delete();
-            Scope.exit();
+              job.remove();
+            } finally {
+              if (gbm != null) gbm.delete();
+              Scope.exit();
+            }
           }
         }
       }
-      Iterator<Map.Entry<Double, Pair<Float, Float>>> it;
-      Pair<Float, Float> last = null;
+      Iterator<Map.Entry<Double, Triple<Float>>> it;
+      Triple<Float> last = null;
       // iterator over results (min to max MSE) - best to worst
       for (it=hm.entrySet().iterator(); it.hasNext();) {
-        Map.Entry<Double, Pair<Float,Float>> n = it.next();
+        Map.Entry<Double, Triple<Float>> n = it.next();
         Log.info( "MSE: " + n.getKey()
-            + ", row sample: " + ((Pair)n.getValue()).getKey()
-            + ", col sample: " + ((Pair)n.getValue()).getValue());
+            + ", row sample: " + n.getValue().v1
+            + ", col sample: " + n.getValue().v2
+            + ", col sample per tree: " + n.getValue().v3);
         last=n.getValue();
       }
-      // worst validation MSE should belong to the most overfit case (1.0, 1.0)
-      Assert.assertTrue(last.getKey()==sample_rates[sample_rates.length-1]);
-      Assert.assertTrue(last.getValue()==col_sample_rates[col_sample_rates.length-1]);
+      // worst validation MSE should belong to the most overfit case (1.0, 1.0, 1.0)
+      Assert.assertTrue(last.v1==sample_rates[sample_rates.length-1]);
+      Assert.assertTrue(last.v2==col_sample_rates[col_sample_rates.length-1]);
+      Assert.assertTrue(last.v3==col_sample_rates_per_tree[col_sample_rates_per_tree.length-1]);
     } finally {
       if (tfr != null) tfr.remove();
       for (Key k : ksplits)

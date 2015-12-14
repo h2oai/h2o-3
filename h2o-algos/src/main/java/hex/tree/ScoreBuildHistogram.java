@@ -1,11 +1,10 @@
 package hex.tree;
 
 import hex.Distribution;
-import water.MRTask;
 import water.H2O.H2OCountedCompleter;
+import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
-import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 
 /**  Score and Build Histogram
@@ -41,10 +40,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   final int   _leaf; // Number of active leaves (per tree)
   // Histograms for every tree, split & active column
   final DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
-  final boolean _subset;      // True if working a subset of cols
   final Distribution.Family _family;
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], boolean subset, Distribution.Family family) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], Distribution.Family family) {
     super(cc);
     _k    = k;
     _ncols= ncols;
@@ -53,7 +51,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _tree = tree;
     _leaf = leaf;
     _hcs  = hcs;
-    _subset = subset;
     _modifiesInputs = true;
     _family = family;
   }
