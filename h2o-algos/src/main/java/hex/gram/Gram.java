@@ -309,8 +309,9 @@ public final class Gram extends Iced<Gram> {
           ++k;
           continue;
         }
-        Rnew[i][l-k] = R[i][l];
+        Rnew[j][l - k] = R[i][l];
       }
+      ++j;
     }
     if((dropped_cols.get(dropped_cols.size()-1)) == ZdiagInv.length-1){
       dropped_cols.remove(dropped_cols.size()-1);
