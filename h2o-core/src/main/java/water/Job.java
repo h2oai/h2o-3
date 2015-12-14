@@ -170,15 +170,29 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     assert created() && !running() && !stopped();
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
-    // Make a wrapper class that only *starts* when the fjtask completes -
-    // especially it only starts even when fjt completes exceptionally... thus
-    // the fjtask onExceptionalCompletion code runs completely before this
-    // empty task starts - providing a simple barrier.  Threads blocking on the
-    // job will block on the "barrier" task, which will block until the fjtask
-    // runs the onCompletion or onExceptionCompletion code.
-    _barrier = new Barrier2();
-    fjtask.setCompleter(new Barrier1(_barrier));
 
+    // F/J rules: upon receiving an exception (the task's compute/compute2
+    // throws an exception caugt by F/J), the task is marked as "completing
+    // exceptionally" - it is marked "completed" before the onExComplete logic
+    // runs.  It is then notified, and wait'ers wake up - before the
+    // onExComplete runs; onExComplete runs on in another thread, so wait'ers
+    // are racing with the onExComplete.  
+
+    // We want wait'ers to *wait* until the task's onExComplete runs, AND Job's
+    // onExComplete runs (marking the Job as stopped, with an error).  So we
+    // add a few wrappers:
+
+    // Make a wrapper class that only *starts* when the task completes -
+    // especially it only starts even when task completes exceptionally... thus
+    // the task onExceptionalCompletion code runs completely before Barrer1
+    // starts - providing a simple barrier.  The Barrier1 onExComplete runs in
+    // parallel with wait'ers on Barrier1.  When Barrier1 onExComplete itself
+    // completes, Barrier2 is notified.
+
+    // Barrier2 is an empty class, and vacuously runs in parallel with wait'ers
+    // of Barrier2 - all callers of Job.get().
+    _barrier = new Barrier2(); 
+    fjtask.setCompleter(new Barrier1(_barrier));
 
     // These next steps must happen in-order:
     // 4 - cannot submitTask without being on job-list, lest all cores get
