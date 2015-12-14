@@ -759,8 +759,8 @@ class H2OFrame(object):
       True if the column is numeric, otherwise return False
     """
     if self._ex._cache.types_valid():
-      return str(list(itervalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]
-    return bool(ExprNode("is.numeric",self)._eager_scalar())
+      return [str(list(itervalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]]
+    return [bool(o) for o in ExprNode("is.numeric",self)._eager_scalar()]
 
   def isstring(self):
     """
@@ -768,7 +768,7 @@ class H2OFrame(object):
     -------
       True if the column is a string column, otherwise False (same as ischaracter)
     """
-    return  bool(ExprNode("is.character",self)._eager_scalar())
+    return  [bool(o) for o in ExprNode("is.character",self)._eager_scalar()]
 
   def ischaracter(self):
     """
@@ -1540,8 +1540,8 @@ class H2OFrame(object):
       False.
     """
     if self._ex._cache.types_valid():
-      return str(list(itervalues(self._ex._cache.types))[0]) == "enum"
-    return bool(ExprNode("is.factor", self)._eager_scalar())
+      return [str(list(itervalues(self._ex._cache.types))[0]) == "enum"]
+    return [bool(o) for o in ExprNode("is.factor", self)._eager_scalar()]
 
   def anyfactor(self):
     """Test if H2OFrame has any factor columns.
