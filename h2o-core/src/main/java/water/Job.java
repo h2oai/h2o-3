@@ -176,8 +176,8 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     // empty task starts - providing a simple barrier.  Threads blocking on the
     // job will block on the "barrier" task, which will block until the fjtask
     // runs the onCompletion or onExceptionCompletion code.
-    _barrier = new Barrier();
-    fjtask.setCompleter(_barrier);
+    _barrier = new Barrier2();
+    fjtask.setCompleter(new Barrier1(_barrier));
 
 
     // These next steps must happen in-order:
@@ -212,7 +212,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     H2O.submitTask(fjtask);
     return this;
   }
-  transient private Barrier _barrier;            // Top-level task to block on
+  transient private Barrier2 _barrier; // Top-level task to block on
 
   // Handy for assertion
   private static class AssertNoKey extends MRTask<AssertNoKey> {
@@ -226,8 +226,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   // A simple barrier.  Threads blocking on the job will block on this
   // "barrier" task, which will block until the fjtask runs the onCompletion or
   // onExceptionCompletion code.
-  private class Barrier extends H2OCountedCompleter<Barrier> {
-    @Override public void compute2() { }
+  private class Barrier1 extends CountedCompleter {
+    Barrier1(CountedCompleter cc) { super(cc,0); }
+    @Override public void compute() { }
     @Override public void onCompletion(CountedCompleter caller) {
       new JAtomic(){
         @Override boolean abort(Job job) { return false; }
@@ -258,10 +259,13 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       return true;
     }
   }
+  private class Barrier2 extends CountedCompleter {
+    @Override public void compute() { }
+  }
 
   /** Blocks until the Job completes  */
   public T get() {
-    Barrier bar = _barrier;
+    Barrier2 bar = _barrier;
     if( bar != null )           // Barrier may be null if task already completed
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
