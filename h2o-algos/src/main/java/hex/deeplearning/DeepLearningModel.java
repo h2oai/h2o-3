@@ -296,6 +296,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(si.time_stamp_ms));
       table.set(row, col++, PrettyPrint.msecs(si.total_training_time_ms, true));
+//      Log.info("1st speed: (samples: " + si.training_samples + ", total_run_time: " + si.total_training_time_ms + ", total_scoring_time: " + si.total_scoring_time_ms + ", total_setup_time: " + si.total_setup_time_ms + ")");
       int speed = (int)(si.training_samples / ((si.total_training_time_ms - si.total_scoring_time_ms - si.total_setup_time_ms)/ 1e3));
       assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + si.training_samples + "/((" + si.total_training_time_ms + "-" + si.total_scoring_time_ms + "-" + si.total_setup_time_ms+")/1e3)";
       table.set(row, col++, si.total_training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
@@ -638,6 +639,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       updateTiming(jobKey);
       // update the scoringInfo object to report proper speed
       scoringInfo.total_training_time_ms = total_training_time_ms;
+      scoringInfo.total_scoring_time_ms = total_scoring_time_ms;
       scoringInfo.this_scoring_time_ms = scoringTime;
       // enlarge the error array by one, push latest score back
       if (this.scoringInfo == null) {
@@ -714,6 +716,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     updateTiming(job_key);
     Job.Progress prog = DKV.getGet(progressKey);
     double progress = prog == null ? 0 : prog.progress();
+//    Log.info("2nd speed: (samples: " + model_info().get_processed_total() + ", total_run_time: " + total_training_time_ms + ", total_scoring_time: " + total_scoring_time_ms + ", total_setup_time: " + total_setup_time_ms + ")");
     int speed = (int)(model_info().get_processed_total() * 1000. / (total_training_time_ms -total_scoring_time_ms-total_setup_time_ms));
     assert(speed >= 0) : "negative speed computed! (total_run_time: " + total_training_time_ms + ", total_scoring_time: " + total_scoring_time_ms + ", total_setup_time: " + total_setup_time_ms + ")";
     String msg =
