@@ -60,6 +60,8 @@ test.checkpointing <- function() {
 
   a <- model2@model$validation_metrics
   b <- model3@model$validation_metrics
+  print(a)
+  print(b)
   if ( problem == 0 ) {       expect_mm_regression_equal(a, b)
   } else if ( problem == 1) { expect_mm_binomial_equal(a, b)
   } else {                    expect_mm_multinomial_equal(a, b) }
@@ -69,8 +71,8 @@ test.checkpointing <- function() {
 
 expect_mm_regression_equal <- function(a, b, msg) {
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_equal(a@metrics$MSE, b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2)
+  expect_true(abs(a@metrics$MSE-b@metrics$MSE) < 1e-4*a@metrics$MSE)
+  expect_true(abs(a@metrics$r2-b@metrics$r2) < 1e-4*a@metrics$r2)
 }
 
 expect_mm_binomial_equal <- function(a, b, msg) {
@@ -78,11 +80,11 @@ expect_mm_binomial_equal <- function(a, b, msg) {
   cmB <- b@metrics$cm$table
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_equal(a@metrics$MSE, b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2)
-  expect_equal(a@metrics$giniCoef, b@metrics$giniCoef)
-  expect_equal(a@metrics$logloss, b@metrics$logloss)
-  expect_equal(a@metrics$auc, b@metrics$auc)
+  expect_true(abs(h2o.mse(a)-h2o.mse(b)) < 1e-4*h2o.mse(a))
+  expect_true(abs(h2o.r2(a)-h2o.r2(b)) < 1e-4)
+  expect_true(abs(h2o.giniCoef(a)-h2o.giniCoef(b)) < 1e-4)
+  expect_true(abs(h2o.logloss(a)-h2o.logloss(b)) < 1e-4*h2o.logloss(a))
+  expect_true(abs(h2o.auc(a)-h2o.auc(b)) < 1e-4)
 }
 
 expect_mm_multinomial_equal <- function(a, b, msg) {
@@ -90,10 +92,10 @@ expect_mm_multinomial_equal <- function(a, b, msg) {
   cmB <- b@metrics$cm$table
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_equal(a@metrics$MSE, b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2)
-  expect_equal(a@metrics$hit_ratio_table$hit_ratio, b@metrics$hit_ratio_table$hit_ratio)
-  expect_equal(a@metrics$logloss, b@metrics$logloss)
+  expect_true(abs(h2o.mse(a)-h2o.mse(b)) < 1e-4*h2o.mse(a))
+  expect_true(abs(h2o.r2(a)-h2o.r2(b)) < 1e-4)
+  expect_true(abs(h2o.logloss(a)-h2o.logloss(b)) < 1e-4*h2o.logloss(a))
+  expect_equal(a@metrics$hit_ratio_table$hit_ratio,b@metrics$hit_ratio_table$hit_ratio) ##not sure how to quickly add relative tolerance
 }
 
 doTest("Test GBM checkpointing", test.checkpointing)

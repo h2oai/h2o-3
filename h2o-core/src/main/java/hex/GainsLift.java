@@ -19,7 +19,7 @@ public class GainsLift extends Iced {
   private double[] _quantiles;
 
   //INPUT
-  public int _groups = 20;
+  public int _groups = -1;
   public Vec _labels;
   public Vec _preds; //of length N, n_i = N/GROUPS
   public Vec _weights;
@@ -91,10 +91,13 @@ public class GainsLift extends Iced {
         }
         DKV.put(fr);
         qp._train = fr._key;
-//      qp._combine_method = QuantileModel.CombineMethod.HIGH;
-        qp._probs = new double[_groups];
-        for (int i = 0; i < _groups; ++i) {
-          qp._probs[i] = (_groups - i - 1.) / _groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
+        if (_groups > 0) {
+          qp._probs = new double[_groups];
+          for (int i = 0; i < _groups; ++i) {
+            qp._probs[i] = (_groups - i - 1.) / _groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
+          }
+        } else {
+          qp._probs = new double[]{0.99, 0.98, 0.97, 0.96, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0};
         }
         Quantile q = new Quantile(qp);
         qm = q.trainModel().get();
@@ -140,7 +143,7 @@ public class GainsLift extends Iced {
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
             new String[events.length],
-            new String[]{"Group", "Lower Threshold", "Cumulative Data Fraction", "Response Rate", "Cumulative Response Rate", "Capture Rate", "Cumulative Capture Rate", "Lift", "Cumulative Lift", "Gain", "Cumulative Gain"},
+            new String[]{"Group", "Cumulative Data Fraction", "Lower Threshold", "Lift", "Cumulative Lift", "Response Rate", "Cumulative Response Rate", "Capture Rate", "Cumulative Capture Rate", "Gain", "Cumulative Gain"},
             new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
             new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
             "");
@@ -158,14 +161,14 @@ public class GainsLift extends Iced {
       double lift=p_i/P; //can be NaN if P==0
       double sum_lift=(double)sum_e_i/sum_n_i/P; //can be NaN if P==0
       table.set(i,0,i+1); //group
-      table.set(i,1,_quantiles[i]); //lower_threshold
-      table.set(i,2,(double)sum_n_i/N); //cumulative_data_fraction
-      table.set(i,3,p_i); //response_rate
-      table.set(i,4,(double)sum_e_i/sum_n_i); //cumulative_response_rate
-      table.set(i,5,(double)e_i/E); //capture_rate
-      table.set(i,6,(double)sum_e_i/E); //cumulative_capture_rate
-      table.set(i,7,lift); //lift
-      table.set(i,8,sum_lift); //cumulative_lift
+      table.set(i,1,(double)sum_n_i/N); //cumulative_data_fraction
+      table.set(i,2,_quantiles[i]); //lower_threshold
+      table.set(i,3,lift); //lift
+      table.set(i,4,sum_lift); //cumulative_lift
+      table.set(i,5,p_i); //response_rate
+      table.set(i,6,(double)sum_e_i/sum_n_i); //cumulative_response_rate
+      table.set(i,7,(double)e_i/E); //capture_rate
+      table.set(i,8,(double)sum_e_i/E); //cumulative_capture_rate
       table.set(i,9,100*(lift-1)); //gain
       table.set(i,10,100*(sum_lift-1)); //cumulative gain
       if (i== events.length-1) {

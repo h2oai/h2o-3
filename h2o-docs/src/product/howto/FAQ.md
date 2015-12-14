@@ -1097,7 +1097,11 @@ model_grid.train(x=x, y=y, distribution="multinomial", epochs=1000, training_fra
    validation_frame=test, score_interval=2, stopping_rounds=3, stopping_tolerance=0.05, stopping_metric="misclassification")
 ```
 
+---
 
+**Do you have a tutorial for grid search in Python?**
+
+Yes, a notebook is available [here](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb) that demonstrates the use of grid search in Python. 
 
 
 

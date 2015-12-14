@@ -305,8 +305,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
               if( _bb.remaining() < bb.limit()+1+2 )
                 sendBuffer();     // Send full batch; reset _bb so taken bb fits
               _bb.putChar((char)bb.limit());
-              bb.position(0);     // Position was carrying priority; just write whole BB
-              _bb.put(bb);        // Jam this BB into the existing batch BB, all in one go (it all fits)
+              _bb.put(bb.array(),0,bb.limit()); // Jam this BB into the existing batch BB, all in one go (it all fits)
               _bb.put((byte)0xef);// Sentinel byte
               bb = _msgQ.poll();  // Go get more, same batch
             }
@@ -327,9 +326,14 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         } catch(IOException ioe) {
           _bb.rewind();           // Position to zero; limit unchanged; retry the operation
           // Log if not shutting down, and not middle-of-cloud-formation where
-          // other node is still booting up (expected common failure)
-          if( !H2O.getShutdownRequested() && (Paxos._cloudLocked || retries++ > 20) )
-            Log.err("Got IO error when sending batch UDP bytes",ioe);
+          // other node is still booting up (expected common failure), or *never*
+          // comes up - such as when not all nodes mentioned in a flatfile will be
+          // booted.  Basically the ERRR log will show endless repeat attempts to
+          // connect to the missing node
+          if( !H2O.getShutdownRequested() && (Paxos._cloudLocked || retries++ > 300) ) {
+            Log.err("Got IO error when sending batch UDP bytes: ",ioe);
+            retries = 150;      // Throttle the pace of error msgs
+          }
           if( _chan != null )
             try { _chan.close(); } catch (Throwable t) {/*ignored*/}
           _chan = null;

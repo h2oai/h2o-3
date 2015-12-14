@@ -65,7 +65,7 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
     #cat("=== Finalizer on ",attr(x, "id"),"\n")
-    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), method = "POST")
+    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
   }
 }
 
@@ -191,7 +191,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
   exec_str <- .eval.impl(x)
   # Execute the AST on H2O
   #print(paste0("EXPR: ",exec_str))
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, session_id=h2o.getConnection()@mutable$session_id, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   if( !is.null(res$scalar) ) { # Fetch out a scalar answer
     y <- res$scalar
@@ -1188,6 +1188,24 @@ trunc <- function(x, ...) {
 `%*%` <- function(x, y) {
   if( !is.H2OFrame(x) ) .Primitive("%*%")(x,y)
   else .newExpr("x",x,y)
+}
+
+#' Which indices are TRUE?
+#'
+#' Give the TRUE indices of a logical object, allowing for array indices.
+#'
+#' @param x An H2O H2OFrame object.
+#' @seealso \code{\link[base]{which}} for the base R method.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' h2o.which(iris.hex[,1]==4.4)
+#' }
+#' @export
+h2o.which <- function(x) {
+  if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
+  else .newExpr("which",x)
 }
 
 #' Returns the Dimensions of an H2O H2OFrame

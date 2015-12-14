@@ -1,26 +1,28 @@
 package water.api;
 
 import water.Key;
+import water.rapids.Session;
+
+import java.util.HashMap;
 
 public class InitIDHandler extends Handler {
   // For now, only 1 active Rapids session-per-cloud.  Needs to be per-session
   // id... but clients then need to announce which session with each rapids call
 
-  static water.rapids.Session SESSION = null;
+  static HashMap<String, Session> SESSIONS = new HashMap<>();
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public InitIDV3 issue(int version, InitIDV3 p) {
-    p.session_key = "_sid" + Key.make().toString();
+    p.session_key = "_sid" + Key.make().toString().substring(0,5);
     return p;
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public InitIDV3 endSession(int version, InitIDV3 p) {
-    if( SESSION != null ) {
-      try { SESSION.end(null); }
-      catch( Throwable ex ) { throw SESSION.endQuietly(ex); }
+    if( SESSIONS.get(p.session_key) != null ) {
+      try { SESSIONS.get(p.session_key).end(null); SESSIONS.remove(p.session_key); }
+      catch( Throwable ex ) { throw SESSIONS.get(p.session_key).endQuietly(ex); }
     }
-    SESSION = null;
     return p;
   }
 }

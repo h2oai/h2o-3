@@ -246,6 +246,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
           dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
+          cp._output._end_time = 0;
           cp.write_lock(self());
 
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
@@ -398,7 +399,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
 
 //        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
-        model._timeLastIterationEnter = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
+        model._timeLastIterationEnter = now;
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           if (!mp._quiet_mode)
@@ -407,6 +409,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
         }
         // put the initial version of the model into DKV
         model.update(self());
+        model.total_setup_time_ms += now - _start_time;
+        Log.info("Total setup time: " + PrettyPrint.msecs(model.total_setup_time_ms, true));
         Log.info("Starting to train the Deep Learning model.");
         new ProgressUpdate("Training...").fork(_progressKey);
 

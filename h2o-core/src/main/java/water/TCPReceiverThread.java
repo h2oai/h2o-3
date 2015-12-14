@@ -170,7 +170,7 @@ public class TCPReceiverThread extends Thread {
           if (res <= 0) throw new IOException("Didn't read any data: res=" + res);         // no eof & progress made
           _h2o._last_heard_from = System.currentTimeMillis();
         }
-        _bb.flip();             // Limit to amount of data, poisition to 0
+        _bb.flip();             // Limit to amount of data, position to 0
       }
       return _bb;
     }

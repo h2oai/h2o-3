@@ -113,6 +113,9 @@ public class MathUtils {
     if (n <= 0) throw new IllegalArgumentException();
     return 31 - Integer.numberOfLeadingZeros(n);
   }
+  public static int log2(long n) {
+    return 63 - Long.numberOfLeadingZeros(n);
+  }
 
   public static float[] div(float[] nums, float n) {
     assert !Float.isInfinite(n) : "Trying to divide " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
