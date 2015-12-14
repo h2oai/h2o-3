@@ -10,11 +10,11 @@ import random
 def pyunit_ischaracter_isnumeric():
 
     iris = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
-    assert iris[0].isnumeric(), "Expected the first column of iris to be numeric"
-    assert not iris[0].ischaracter(), "Expected the first column of iris to be numeric"
-    assert not iris[4].isnumeric(), "Expected the last column of iris to be character"
+    assert iris[0].isnumeric()[0], "Expected the first column of iris to be numeric"
+    assert not iris[0].ischaracter()[0], "Expected the first column of iris to be numeric"
+    assert not iris[4].isnumeric()[0], "Expected the last column of iris to be character"
     iris[4] = iris[4].ascharacter()
-    assert iris[4].isstring(), "Expected the last column of iris to be a string"
+    assert iris[4].isstring()[0], "Expected the last column of iris to be a string"
 
 
 
