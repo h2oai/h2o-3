@@ -2,7 +2,6 @@ package water.parser;
 
 import java.util.ArrayList;
 import water.Key;
-import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 
 class ARFFParser extends CsvParser {
@@ -30,7 +29,7 @@ class ARFFParser extends CsvParser {
       haveData = true; //more than just the header
 
     if (header.size() == 0)
-      throw new H2OParseSetupException("No data!");
+      throw new H2OParseException("No data!");
     headerlines = header.toArray(headerlines);
 
     // process header
@@ -61,7 +60,7 @@ class ARFFParser extends CsvParser {
         }
       }
       if (datablock.size() == 0)
-        throw new H2OParseSetupException("Unexpected line.");
+        throw new H2OParseException("Unexpected line.");
       datalines = datablock.toArray(datalines);
 
       // process data section
@@ -74,7 +73,7 @@ class ARFFParser extends CsvParser {
           if (datalines[0].split(",").length > 2) sep = (byte) ',';
           else if (datalines[0].split(" ").length > 2) sep = ' ';
           else
-            throw new H2OParseSetupException("Failed to detect separator.");
+            throw new H2OParseException("Failed to detect separator.");
         }
         data[0] = determineTokens(datalines[0], sep, singleQuotes);
         ncols = (ncols > 0) ? ncols : data[0].length;
@@ -130,10 +129,10 @@ class ARFFParser extends CsvParser {
     for (int i=0; i<ncols; ++i) {
       data[i] = headerlines[i].split("\\s+");
       if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
-        throw new H2OParseSetupException("Expected line to start with @ATTRIBUTE.");
+        throw new H2OParseException("Expected line to start with @ATTRIBUTE.");
       } else {
         if (data[i].length < 3 ) {
-          throw new H2OParseSetupException("Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>");
+          throw new H2OParseException("Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>");
         }
         labels[i] = data[i][1];
         String type = data[i][2];
@@ -175,7 +174,7 @@ class ARFFParser extends CsvParser {
         }
 
         // only get here if data is invalid ARFF
-        throw new H2OParseSetupException("Unexpected line.");
+        throw new H2OParseException("Unexpected line.");
       }
     }
 

@@ -1,7 +1,6 @@
 package water.parser;
 
 import water.Iced;
-import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.util.IcedHashMap;
 
@@ -244,7 +243,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
     else {
       //sanity checks
       if (prevA._ncols != prevB._ncols)
-        throw new H2OParseSetupException("Files conflict in number of columns. "
+        throw new H2OParseException("Files conflict in number of columns. "
                 + prevA._ncols + " vs. " + prevB._ncols + ".");
       prevA._nlines += prevB._nlines;
       prevA._invalidLines += prevB._invalidLines;
