@@ -70,7 +70,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
         for (int i = 0; i < alpha.length; ++i) {
           params._alpha[0] = alpha[i];
           params._lambda[0] = lambda[i];
-          model = new GLM(Key.make("covtype_multinomial_model_" + s.toString()), "glm test", params).trainModel().get();
+          model = new GLM(params).trainModel().get();
           System.out.println(model._output._training_metrics);
           System.out.println(model._output._validation_metrics);
           assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));

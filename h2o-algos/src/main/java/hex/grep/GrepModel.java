@@ -9,6 +9,8 @@ import water.Key;
 public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepModel.GrepOutput> {
 
   public static class GrepParameters extends Model.Parameters {
+    public String algoName() { return "Grep"; }
+    public String fullName() { return "Grep"; }
     public String _regex;       // The regex
   }
 

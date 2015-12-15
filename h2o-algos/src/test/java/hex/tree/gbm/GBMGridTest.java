@@ -25,7 +25,6 @@ import water.fvec.Vec;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
 
-import static hex.grid.ModelFactories.GBM_MODEL_FACTORY;
 import static org.junit.Assert.assertTrue;
 import static water.util.ArrayUtils.interval;
 
@@ -67,7 +66,7 @@ public class GBMGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "cylinders";
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, GBM_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = (Grid<GBMModel.GBMParameters>) gs.get();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid (models+failures) should match to size of hyper space",
@@ -147,7 +146,7 @@ public class GBMGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "economy";
 
-      Job<Grid>gs = GridSearch.startGridSearch(params, hyperParms, GBM_MODEL_FACTORY);
+      Job<Grid>gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = gs.get();
 
       // Check that duplicate model have not been constructed
@@ -230,7 +229,7 @@ public class GBMGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "economy (mpg)";
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, GBM_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = gs.get();
 
       System.out.println("ntrees search space: " + Arrays.toString(ntreesSpace));

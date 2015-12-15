@@ -20,7 +20,7 @@ import java.util.regex.PatternSyntaxException;
  *  Grep model builder... building a trivial GrepModel
  */
 public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepModel.GrepOutput> {
-  public Grep( GrepModel.GrepParameters parms ) { super("Grep",parms); init(false); }
+  public Grep( GrepModel.GrepParameters parms ) { super(parms); init(false); }
   public ModelBuilderSchema schema() { return new GrepV3(); }
   @Override protected GrepDriver trainModelImpl() { return new GrepDriver(); }
   @Override public long progressUnits() { return _parms.train().numRows(); }

@@ -29,7 +29,6 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       DeepLearningParameters p = new DeepLearningParameters();
 
       // populate model parameters
-      p._model_id = Key.make("first_model");
       p._train = frame._key;
       p._response_column = "CAPSULE"; // last column is the response
       p._activation = DeepLearningParameters.Activation.Rectifier;
@@ -56,8 +55,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
 
       // checkpoint restart after sleep
       DeepLearningParameters p2 = (DeepLearningParameters)p.clone();
-      p2._checkpoint = p2._model_id;
-      p2._model_id = Key.make("second_model");
+      p2._checkpoint = model._key;
       p2._epochs *= 2;
       DeepLearningModel model2 = null;
       try {

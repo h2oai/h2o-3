@@ -155,7 +155,10 @@ public class APIThrPriorTest extends TestUtil {
 
 // Empty model
 class BogusModel extends Model<BogusModel,BogusModel.BogusParameters,BogusModel.BogusOutput> {
-  public static class BogusParameters extends Model.Parameters { }
+  public static class BogusParameters extends Model.Parameters {
+    public String algoName() { return "Bogus"; }
+    public String fullName() { return "Bogus"; }
+  }
   public static class BogusOutput extends Model.Output { }
   BogusModel( Key selfKey, BogusParameters parms, BogusOutput output) { super(selfKey,parms,output); }
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.fail(); }
@@ -172,7 +175,7 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   int _driver_priority = -1;
   @Override public ModelCategory[] can_build() { return null; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
-  public Bogus( BogusModel.BogusParameters parms ) { super("Bogus",parms); init(false); }
+  public Bogus( BogusModel.BogusParameters parms ) { super(parms); init(false); }
   public ModelBuilderSchema schema() { return null; }
   @Override protected H2OCountedCompleter<BogusDriver> trainModelImpl() {
     return new BogusDriver();

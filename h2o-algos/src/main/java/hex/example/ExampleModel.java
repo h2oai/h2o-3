@@ -9,6 +9,8 @@ import water.Key;
 public class ExampleModel extends Model<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
   public static class ExampleParameters extends Model.Parameters {
+    public String algoName() { return "Example"; }
+    public String fullName() { return "Example"; }
     public int _max_iterations = 1000; // Max iterations
   }
 

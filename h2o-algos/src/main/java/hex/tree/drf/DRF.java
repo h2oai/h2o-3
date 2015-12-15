@@ -8,6 +8,7 @@ import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.H2O;
+import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -33,14 +34,14 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   }
 
   // Called from an http request
-  public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF", parms); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms                   ) { super(parms     ); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms, Key<DRFModel> key) { super(parms, key); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms, Job job          ) { super(parms, job); init(false); }
 
   @Override public DRFV3 schema() { return new DRFV3(); }
 
   /** Start the DRF training Job on an F/J thread. */
-  @Override protected H2O.H2OCountedCompleter<Driver> trainModelImpl() {
-    return new DRFDriver();
-  }
+  @Override protected H2O.H2OCountedCompleter<Driver> trainModelImpl() { return new DRFDriver(); }
 
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the

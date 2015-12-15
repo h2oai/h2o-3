@@ -408,7 +408,6 @@ public class DRFTest extends TestUtil {
       drf._mtries = -1;
       drf._sample_rate = 0.66667f;   // Simulated sampling with replacement
       drf._seed = (1L<<32)|2;
-      drf._model_id = Key.make("DRF_model_4_" + hexnametrain);
 
       // Invoke DRF and block till the end
       DRF job = new DRF(drf);

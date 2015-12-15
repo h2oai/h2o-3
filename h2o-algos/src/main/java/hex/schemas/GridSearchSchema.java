@@ -18,8 +18,7 @@ import java.util.Properties;
  * and hyper parameters which are given as a mapping from parameter name to list of possible
  * values.
  *
- * @param <G>  a specific implementation type for GridSearch holding results of grid search (model
- *             list)
+ * @param <G>  a specific implementation type for GridSearch holding results of grid search (model list)
  * @param <S>  self type
  * @param <MP> actual model parameters type
  * @param <P>  a specific model builder parameters schema, since we cannot derive it from P

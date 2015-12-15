@@ -24,20 +24,14 @@ import water.fvec.Vec;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
 
-import static hex.grid.ModelFactories.DRF_MODEL_FACTORY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static water.util.ArrayUtils.interval;
 
 public class DRFGridTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
-  @BeforeClass()
-  public static void setup() {
-    stall_till_cloudsize(5);
-  }
-
-  @Test
-  public void testCarsGrid() {
+  @Test public void testCarsGrid() {
     Grid<DRFModel.DRFParameters> grid = null;
     Frame fr = null;
     Vec old = null;
@@ -66,7 +60,7 @@ public class DRFGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "cylinders";
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = (Grid<DRFModel.DRFParameters>) gs.get();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,
@@ -145,7 +139,7 @@ public class DRFGridTest extends TestUtil {
       params._response_column = "economy";
 
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = gs.get();
 
       // Check that duplicate model have not been constructed
@@ -238,7 +232,7 @@ public class DRFGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "economy (mpg)";
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, DRF_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = gs.get();
 
       System.out.println("Test seed: " + seed);

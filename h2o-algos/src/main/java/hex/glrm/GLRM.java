@@ -55,8 +55,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // Loss function for each column
   private transient GLRMParameters.Loss[] _lossFunc;
 
-  private final Key<GLRMModel> _glrmModel;
-
   @Override public ModelBuilderSchema schema() { return new GLRMV3(); }
   @Override protected GLRMDriver trainModelImpl() { return new GLRMDriver(); }
   @Override public long progressUnits() { return 2 + _parms._max_iterations; }
@@ -65,17 +63,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   public enum Initialization { Random, SVD, PlusPlus, User }
 
   // Called from an http request
-  public GLRM(GLRMParameters parms) {
-    super("GLRM", parms);
-    _glrmModel = _job._result;
-    init(false);
-  }
-
-  public GLRM(Job job, GLRMParameters parms) {
-    super(job, parms);
-    _glrmModel = Key.make(H2O.calcNextUniqueModelId("SVD"));
-    init(false);
-  }
+  public GLRM(GLRMParameters parms         ) { super(parms     ); init(false); }
+  public GLRM(GLRMParameters parms, Job job) { super(parms, job); init(false); }
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
@@ -335,7 +324,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._save_v_frame = false;
 
         SVDModel svd = ModelCacheManager.get(parms);
-        if( svd == null ) svd = new SVD(_job, parms).trainModel().get();
+        if( svd == null ) svd = new SVD(parms,_job).trainModel().get();
         if (_job.stop_requested()) return null;
         model._output._init_key = svd._key;
 
@@ -375,7 +364,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         ModelCacheManager MCM = H2O.getMCM();
         KMeansModel km = MCM.get(parms);
-        if( km == null ) km = new KMeans(_job,parms).trainModel().get();
+        if( km == null ) km = new KMeans(parms,_job).trainModel().get();
         if (_job.stop_requested()) return null;
         model._output._init_key = km._key;
 
@@ -534,7 +523,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
-        model = new GLRMModel(_glrmModel, _parms, new GLRMModel.GLRMOutput(GLRM.this));
+        model = new GLRMModel(dest(),_parms, new GLRMModel.GLRMOutput(GLRM.this));
         model.delete_and_lock(_job);
 
         // Save adapted frame info for scoring later

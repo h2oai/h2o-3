@@ -448,7 +448,6 @@ public class DeepLearningTest extends TestUtil {
       dl._train = frTrain._key;
       dl._response_column = ((Frame)DKV.getGet(dl._train)).lastVecName();
       dl._seed = (1L<<32)|2;
-      dl._model_id = Key.make("DL_model_" + hexnametrain);
       dl._reproducible = true;
       dl._epochs = epochs;
       dl._stopping_rounds = 0;
@@ -459,7 +458,7 @@ public class DeepLearningTest extends TestUtil {
       dl._elastic_averaging = false;
 
       // Invoke DL and block till the end
-      DeepLearning job = new DeepLearning(dl);
+      DeepLearning job = new DeepLearning(dl,Key.<DeepLearningModel>make("DL_model_" + hexnametrain));
       // Get the model
       model = job.trainModel().get();
       Log.info(model._output);
@@ -1133,7 +1132,6 @@ public class DeepLearningTest extends TestUtil {
         parms._initial_weight_scale = 1e20;
         parms._seed = 0xdecaf;
         parms._max_w2 = 1e20f;
-        parms._model_id = Key.make();
 
         // Build a first model; all remaining models should be equal
         DeepLearning job = new DeepLearning(parms);
@@ -1144,7 +1142,7 @@ public class DeepLearningTest extends TestUtil {
           // catch anything - might be a NPE during cleanup
 //          assertTrue(de.getMessage().contains("Trying to predict with an unstable model."));
         }
-        dl = DKV.getGet(parms._model_id);
+        dl = DKV.getGet(job.dest());
         assertTrue(dl.model_info().isUnstable());
         assertTrue(dl._output._job.isCrashed());
       } finally {
@@ -1179,7 +1177,6 @@ public class DeepLearningTest extends TestUtil {
       parms._score_interval = 0;
       parms._hidden = new int[]{100,100};
       parms._seed = 0xdecaf;
-      parms._model_id = Key.make();
 
       // Build a first model; all remaining models should be equal
       dl = new DeepLearning(parms).trainModel().get();
@@ -1209,7 +1206,6 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{100,100};
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
-      parms._model_id = Key.make();
 
       // Build a first model; all remaining models should be equal
       dl = new DeepLearning(parms).trainModel().get();
@@ -1239,14 +1235,12 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{2,2};
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
-      parms._model_id = Key.make();
 
       dl = new DeepLearning(parms).trainModel().get();
 
       DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
       parms2._epochs = 10;
-      parms2._checkpoint = parms._model_id;
-      parms2._model_id = Key.make();
+      parms2._checkpoint = dl._key;
       try {
         dl2 = new DeepLearning(parms2).trainModel().get();
         Assert.fail("Should toss exception instead of reaching here");
@@ -1276,14 +1270,12 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{2,2};
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
-      parms._model_id = Key.make();
 
       dl = new DeepLearning(parms).trainModel().get();
 
       DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
       parms2._epochs = 9;
-      parms2._checkpoint = parms._model_id;
-      parms2._model_id = Key.make();
+      parms2._checkpoint = dl._key;
       try {
         dl2 = new DeepLearning(parms2).trainModel().get();
         Assert.fail("Should toss exception instead of reaching here");
@@ -1313,7 +1305,6 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{2,2};
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
-      parms._model_id = Key.make();
 
       parms._score_duty_cycle = 0.1;
       parms._score_interval = 0;
@@ -1348,7 +1339,6 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{2,2};
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
-      parms._model_id = Key.make();
 
       parms._score_duty_cycle = 1.0;
       parms._score_interval = 0;
@@ -1383,7 +1373,6 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{2,2};
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
-      parms._model_id = Key.make();
 
       parms._score_duty_cycle = 1.0;
       parms._score_interval = 0;
@@ -1426,7 +1415,6 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{2,2};
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
-      parms._model_id = Key.make();
 
       parms._score_duty_cycle = 1.0;
       parms._score_interval = 0;

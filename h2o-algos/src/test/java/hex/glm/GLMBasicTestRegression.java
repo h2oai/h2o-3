@@ -93,14 +93,14 @@ public class GLMBasicTestRegression extends TestUtil {
         parms._train = _weighted._key;
         parms._solver = s;
         parms._weights_column = "weights";
-        model1 = new GLM(Key.make("prostate_model"), "glm test", parms).trainModel().get();
+        model1 = new GLM(parms).trainModel().get();
         HashMap<String, Double> coefs1 = model1.coefficients();
         System.out.println("coefs1 = " + coefs1);
         parms._train = _upsampled._key;
         parms._weights_column = null;
         parms._lambda = null;
         parms._alpha = null;
-        model2 = new GLM(Key.make("prostate_model"), "glm test", parms).trainModel().get();
+        model2 = new GLM(parms).trainModel().get();
         HashMap<String, Double> coefs2 = model2.coefficients();
         System.out.println("coefs2 = " + coefs2);
         System.out.println("mse1 = " + model1._output._training_metrics.mse() + ", mse2 = " + model2._output._training_metrics.mse());
@@ -133,7 +133,7 @@ public class GLMBasicTestRegression extends TestUtil {
       parms._offset_column = "C20";
       parms._compute_p_values = true;
       parms._standardize = false;
-      model1 = new GLM(Key.make("prostate_model"), "glm test", parms).trainModel().get();
+      model1 = new GLM(parms).trainModel().get();
       HashMap<String, Double> coefs1 = model1.coefficients();
       System.out.println("coefs1 = " + coefs1);
       /**
@@ -285,7 +285,7 @@ public class GLMBasicTestRegression extends TestUtil {
       for (Solver s : /*new Solver[]{Solver.IRLSM}*/ GLMParameters.Solver.values()) {
         try {
           parms._solver = s;
-          model = new GLM(Key.make("prostate_model_" + s + "_" + x), "glm test simple poisson", parms).trainModel().get();
+          model = new GLM(parms).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           for (int i = 0; i < cfs1.length; ++i)
@@ -342,7 +342,7 @@ public class GLMBasicTestRegression extends TestUtil {
       for (Solver s : GLMParameters.Solver.values()) {
         try {
           parms._solver = s;
-          model = new GLM(Key.make("prostate_model"), "glm test simple poisson", parms).trainModel().get();
+          model = new GLM(parms).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           for (int i = 0; i < cfs1.length; ++i)
@@ -417,7 +417,7 @@ public class GLMBasicTestRegression extends TestUtil {
 
     GLMModel model = null;
     try {
-      model = new GLM(Key.make("prostate_model"), "glm test p-values", parms).trainModel().get();
+      model = new GLM(parms).trainModel().get();
       String[] names_expected = new String[]{"Intercept", "Swimmer.Occas", "Location.NonBeach", "Age.20-24", "Age.25-29", "Sex.Male"};
       String[] names_actual = model._output.coefficientNames();
       HashMap<String, Integer> coefMap = new HashMap<>();
@@ -476,7 +476,7 @@ public class GLMBasicTestRegression extends TestUtil {
 
     GLMModel model = null;
     try {
-      model = new GLM(Key.make("prostate_model"), "glm test p-values", parms).trainModel().get();
+      model = new GLM(parms).trainModel().get();
       String[] names_expected = new String[]{"Intercept",  "Merit.1", "Merit.2", "Merit.3", "Class.2", "Class.3", "Class.4", "Class.5","Insured","Premium", "Cost", "logInsured" };
       String[] names_actual = model._output.coefficientNames();
       HashMap<String, Integer> coefMap = new HashMap<>();
@@ -541,24 +541,24 @@ public class GLMBasicTestRegression extends TestUtil {
     params._lambda = new double[]{0};
     try {
       params._solver = Solver.L_BFGS;
-      new GLM(Key.make("prostate_model"), "glm test p-values", params).trainModel().get();
+      new GLM(params).trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
-      new GLM(Key.make("prostate_model"), "glm test p-values", params).trainModel().get();
+      new GLM(params).trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
       params._solver = Solver.COORDINATE_DESCENT;
-      new GLM(Key.make("prostate_model"), "glm test p-values", params).trainModel().get();
+      new GLM(params).trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     params._solver = Solver.IRLSM;
-    GLM glm = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+    GLM glm = new GLM(params);
     try {
       params._lambda = new double[]{1};
       glm.trainModel().get();
@@ -575,7 +575,7 @@ public class GLMBasicTestRegression extends TestUtil {
     params._lambda_search = false;
     GLMModel model = null;
     try {
-      model = new GLM(Key.make("prostate_model"), "glm test p-values", params).trainModel().get();
+      model = new GLM(params).trainModel().get();
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
       double[] stder_expected = new double[]{0.4035941476, 0.0002387281, 0.0040245520, 0.2511007120, 0.2593492335, 0.0657117271, 0.0713659021, 0.0937207659, 0.0888124376, 0.0015060289, 0.0013919737, 0.0273258788};
       double[] zvals_expected = new double[]{-1.70241133,  1.29061005, -0.14920829, -0.05883397, -0.56178799,  2.22564893,  3.21891333,  1.22168646, 1.61119882,  3.13650800, -1.39379859,  5.26524961 };
@@ -648,7 +648,7 @@ public class GLMBasicTestRegression extends TestUtil {
     params._standardize = true;
 
     try {
-      model = new GLM(Key.make("prostate_model"), "glm test p-values", params).trainModel().get();
+      model = new GLM(params).trainModel().get();
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
       // do not compare std_err here, depends on the coefficients
 //      double[] stder_expected = new double[]{1.5687858,   0.1534062,   0.1449847,   1.5423974, 1.5827190,   0.3950883,   0.4161974,  0.5426512,   0.5179591,   0.2244733, 0.1620383,   0.1963285};
@@ -676,7 +676,7 @@ public class GLMBasicTestRegression extends TestUtil {
     params._response_column = "IsDepDelayed";
     params._ignored_columns = new String[]{"IsDepDelayed_REC"};
     try {
-      model = new GLM(Key.make("airlines_model"), "glm test p-values on airlines", params).trainModel().get();
+      model = new GLM(params).trainModel().get();
       String[] names_expected = new String[] {"Intercept","fYearf1988","fYearf1989","fYearf1990","fYearf1991","fYearf1992","fYearf1993","fYearf1994","fYearf1995","fYearf1996","fYearf1997","fYearf1998","fYearf1999","fYearf2000","fDayofMonthf10","fDayofMonthf11","fDayofMonthf12","fDayofMonthf13","fDayofMonthf14","fDayofMonthf15","fDayofMonthf16","fDayofMonthf17","fDayofMonthf18","fDayofMonthf19","fDayofMonthf2","fDayofMonthf20","fDayofMonthf21","fDayofMonthf22","fDayofMonthf23","fDayofMonthf24", "fDayofMonthf25",  "fDayofMonthf26",  "fDayofMonthf27",  "fDayofMonthf28",  "fDayofMonthf29" , "fDayofMonthf3"  ,   "fDayofMonthf30" , "fDayofMonthf31",  "fDayofMonthf4", "fDayofMonthf5", "fDayofMonthf6", "fDayofMonthf7"  ,   "fDayofMonthf8" ,  "fDayofMonthf9"  , "fDayOfWeekf2" ,   "fDayOfWeekf3"   , "fDayOfWeekf4"  ,  "fDayOfWeekf5",      "fDayOfWeekf6" ,   "fDayOfWeekf7"  ,  "DepTime",    "ArrTime",    "UniqueCarrierCO",  "UniqueCarrierDL",   "UniqueCarrierHP", "UniqueCarrierPI", "UniqueCarrierTW" ,"UniqueCarrierUA" ,"UniqueCarrierUS", "UniqueCarrierWN" ,  "OriginABQ",  "OriginACY",  "OriginALB",  "OriginATL",  "OriginAUS",  "OriginAVP",    "OriginBDL",  "OriginBGM",  "OriginBHM",  "OriginBNA",  "OriginBOS",  "OriginBTV",    "OriginBUF",  "OriginBUR",  "OriginBWI",  "OriginCAE",  "OriginCHO",  "OriginCHS",    "OriginCLE",  "OriginCLT",  "OriginCMH",  "OriginCOS",  "OriginCRW",  "OriginCVG",    "OriginDAY",  "OriginDCA",  "OriginDEN",  "OriginDFW",  "OriginDSM",  "OriginDTW",    "OriginERI",  "OriginEWR",  "OriginFLL",  "OriginGSO",  "OriginHNL",  "OriginIAD",    "OriginIAH",  "OriginICT",  "OriginIND",  "OriginISP",  "OriginJAX",  "OriginJFK",   "OriginLAS",  "OriginLAX",  "OriginLEX",  "OriginLGA",  "OriginLIH",  "OriginLYH",   "OriginMCI",  "OriginMCO",  "OriginMDT",  "OriginMDW",  "OriginMFR",  "OriginMHT",   "OriginMIA",  "OriginMKE",  "OriginMLB",  "OriginMRY",  "OriginMSP",  "OriginMSY",   "OriginMYR",  "OriginOAK",  "OriginOGG",  "OriginOMA",  "OriginORD",  "OriginORF",   "OriginPBI",  "OriginPHF",  "OriginPHL",  "OriginPHX",  "OriginPIT",  "OriginPSP",   "OriginPVD",  "OriginPWM",  "OriginRDU",  "OriginRIC",  "OriginRNO",  "OriginROA",   "OriginROC",  "OriginRSW",  "OriginSAN",  "OriginSBN",  "OriginSCK",  "OriginSDF",   "OriginSEA",  "OriginSFO",  "OriginSJC",  "OriginSJU",  "OriginSLC",  "OriginSMF",   "OriginSNA",  "OriginSRQ",  "OriginSTL",  "OriginSTX",  "OriginSWF",  "OriginSYR",   "OriginTLH",  "OriginTPA",  "OriginTRI",  "OriginTUS",  "OriginTYS",  "OriginUCA",   "DestABQ",    "DestACY",    "DestALB",    "DestATL",    "DestAVP",    "DestBDL",     "DestBGM",    "DestBNA",    "DestBOS",    "DestBTV",    "DestBUF",    "DestBUR",     "DestBWI",    "DestCAE",    "DestCAK",    "DestCHA",    "DestCHS",    "DestCLE",     "DestCLT",    "DestCMH",    "DestDAY",    "DestDCA",    "DestDEN",    "DestDFW",     "DestDTW",    "DestELM",    "DestERI",    "DestEWR",    "DestFAT",    "DestFAY",     "DestFLL",    "DestFNT",    "DestGEG",    "DestGRR",    "DestGSO",    "DestGSP",     "DestHNL",    "DestHTS",    "DestIAD",    "DestIAH",    "DestICT",    "DestIND",     "DestISP",    "DestJAX",    "DestJFK",    "DestKOA",    "DestLAS",    "DestLAX",     "DestLEX",    "DestLGA",    "DestLIH",    "DestLYH",    "DestMCI",    "DestMCO",     "DestMDT",    "DestMDW",    "DestMHT",    "DestMIA",    "DestMRY",    "DestMSY",     "DestOAJ",    "DestOAK",    "DestOGG",    "DestOMA",    "DestORD",    "DestORF",     "DestORH",    "DestPBI",    "DestPDX",    "DestPHF",    "DestPHL",    "DestPHX",     "DestPIT",    "DestPSP",    "DestPVD",    "DestRDU",    "DestRIC",    "DestRNO",     "DestROA",    "DestROC",    "DestRSW",    "DestSAN",    "DestSCK",    "DestSDF",     "DestSEA",    "DestSFO",    "DestSJC",    "DestSMF",    "DestSNA",    "DestSTL",     "DestSWF",    "DestSYR",    "DestTOL",    "DestTPA",    "DestTUS",    "DestUCA",     "Distance"};
       double[] exp_coefs = new double[] {3.383044e-01,-1.168214e-01,-4.405621e-01,-3.365341e-01,-4.925256e-01,-5.374542e-01,-4.149143e-01,-2.694969e-01,-2.991095e-01,-2.776553e-01,-2.921466e-01,-4.336252e-01
         ,-3.597812e-01,-3.812643e-01,1.024025e-02,2.549787e-02,3.877628e-02,1.650942e-02,-2.981043e-02,-1.167855e-02,1.025499e-02,-4.574083e-03,-2.502898e-02,-5.803535e-02

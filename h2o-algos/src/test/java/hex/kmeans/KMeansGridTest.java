@@ -24,7 +24,6 @@ import water.fvec.Frame;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
 
-import static hex.grid.ModelFactories.KMEANS_MODEL_FACTORY;
 import static org.junit.Assert.assertTrue;
 
 
@@ -66,7 +65,7 @@ public class KMeansGridTest extends TestUtil {
       KMeansModel.KMeansParameters params = new KMeansModel.KMeansParameters();
       params._train = fr._key;
       // Fire off a grid search and get result
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = (Grid<KMeansModel.KMeansParameters>) gs.get();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,
@@ -137,7 +136,7 @@ public class KMeansGridTest extends TestUtil {
       KMeansModel.KMeansParameters params = new KMeansModel.KMeansParameters();
       params._train = fr._key;
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = gs.get();
 
       // Check that duplicate model have not been constructed
@@ -185,7 +184,7 @@ public class KMeansGridTest extends TestUtil {
       params._train = fr._key;
       params._user_points = init._key;
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = gs.get();
 
       // Check that duplicate model have not been constructed
@@ -288,7 +287,7 @@ public class KMeansGridTest extends TestUtil {
         params._user_points = init._key;
       }
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(params, hyperParms, KMEANS_MODEL_FACTORY);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
       grid = gs.get();
 
       // Check that cardinality of grid

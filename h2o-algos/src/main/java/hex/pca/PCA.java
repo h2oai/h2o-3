@@ -53,10 +53,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   // Called from an http request
-  public PCA(PCAParameters parms) {
-    super("PCA", parms);
-    init(false);
-  }
+  public PCA(PCAParameters parms) { super(parms); init(false); }
 
   @Override
   public void init(boolean expensive) {
@@ -244,7 +241,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._save_v_frame = false;
 
           // Build an SVD model
-          SVDModel svd = new SVD(_job, parms).trainModel().get();
+          SVDModel svd = new SVD(parms, _job).trainModel().get();
           if (_job.stop_requested()) return;
           svd.remove(); // Remove from DKV
 
@@ -272,7 +269,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._init = GLRM.Initialization.PlusPlus;
 
           // Build an SVD model
-          GLRMModel glrm = new GLRM(_job, parms).trainModel().get();
+          GLRMModel glrm = new GLRM(parms, _job).trainModel().get();
           if (_job.stop_requested()) return;
           glrm._output._representation_key.get().delete();
           glrm.remove(); // Remove from DKV

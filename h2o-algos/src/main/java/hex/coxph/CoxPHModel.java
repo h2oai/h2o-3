@@ -21,6 +21,8 @@ import water.fvec.Vec;
 
 public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   public static class CoxPHParameters extends Model.Parameters {
+    public String algoName() { return "CoxPH"; }
+    public String fullName() { return "Cox Proportional Hazards"; }
     // get destination_key  from SupervisedModel.SupervisedParameters from Model.Parameters
     // get training_frame   from SupervisedModel.SupervisedParameters from Model.Parameters
     // get validation_frame from SupervisedModel.SupervisedParameters from Model.Parameters

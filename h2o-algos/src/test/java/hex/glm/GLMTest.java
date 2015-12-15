@@ -54,7 +54,7 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
 //      params._standardize= false;
-      model = new GLM(modelKey, "glm test simple gaussian", params).trainModel().get();
+      model = new GLM(params,modelKey).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       assertEquals(0.0, coefs.get("Intercept"), 1e-4);
       assertEquals(0.1, coefs.get("x"), 1e-4);

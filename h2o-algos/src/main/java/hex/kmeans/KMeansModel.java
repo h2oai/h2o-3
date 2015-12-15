@@ -18,6 +18,8 @@ import water.util.SBPrintStream;
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
   public static class KMeansParameters extends ClusteringModel.ClusteringParameters {
+    public String algoName() { return "KMeans"; }
+    public String fullName() { return "K-means"; }
     public int _max_iterations = 1000;     // Max iterations
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed

@@ -61,12 +61,11 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._shuffle_training_data = false;
           p._force_load_balance = false;
           p._replicate_training_data = false;
-          p._model_id = model_id;
           p._adaptive_rate = true;
           p._reproducible = true;
           p._rho = 0.99;
           p._epsilon = 5e-3;
-          new DeepLearning(p).trainModel().get();
+          new DeepLearning(p,model_id).trainModel().get();
         }
 
         // score and check result

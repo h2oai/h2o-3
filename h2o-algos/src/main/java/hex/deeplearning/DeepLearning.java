@@ -29,10 +29,8 @@ import static water.util.MRUtils.sampleFrameStratified;
  */
 public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningParameters,DeepLearningModelOutput> {
   /** Main constructor from Deep Learning parameters */
-  public DeepLearning( DeepLearningParameters parms ) {
-    super("DeepLearning", parms);
-    init(false);
-  }
+  public DeepLearning( DeepLearningParameters parms ) { super(parms); init(false); }
+  public DeepLearning( DeepLearningParameters parms, Key<DeepLearningModel> key ) { super(parms,key); init(false); }
 
   /** Types of models we can build with DeepLearning  */
   @Override public ModelCategory[] can_build() {
@@ -133,7 +131,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
     _parms._stopping_rounds = 0;
     double sum = 0;
     for( ModelBuilder cvmb : cvModelBuilders )
-      sum += ((DeepLearningModel)DKV.getGet(cvmb._parms._model_id)).last_scored().epoch_counter;
+      sum += ((DeepLearningModel)DKV.getGet(cvmb.dest())).last_scored().epoch_counter;
     _parms._epochs = sum/cvModelBuilders.length;
     if( !_parms._quiet_mode ) {
       warn("_epochs", "Setting optimal _epochs to " + _parms._epochs + " for cross-validation main model based on early stopping of cross-validation models.");

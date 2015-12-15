@@ -36,18 +36,37 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
-  /** Unique new job and result key */
+  /** Default easy constructor: Unique new job and unique new result key */
   protected ModelBuilder(P parms) {
     String algoName = parms.algoName();
-    _job = new Job(Key.make(H2O.calcNextUniqueModelId(algoName)), algoName);
-    _result = _job._result;
+    _job = new Job(_result = Key.make(H2O.calcNextUniqueModelId(algoName)), algoName);
     _parms = parms;
   }
 
-  /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
-  public static ModelBuilder createModelBuilder(String algo) {
+  /** Unique new job and named result key */
+  protected ModelBuilder(P parms, Key<M> key) {
+    _job = new Job(_result = key, parms.algoName());
+    _parms = parms;
+  }
+
+  /** Shared pre-existing Job and unique new result key */
+  protected ModelBuilder(P parms, Job job) {
+    _job = job;
+    _result = Key.make(H2O.calcNextUniqueModelId(parms.algoName()));
+    _parms = parms;
+  }
+
+  /** Factory method to create a ModelBuilder instance for given the algo name. */
+  public static ModelBuilder make(Key<Model> result, String algo) {
     throw H2O.unimpl();
   }
+
+  /** List of known ModelBuilders */
+  private static String[] ALGOS;
+  public static String[] algos() { assert ALGOS != null; return ALGOS; }
+  // Called once at startup
+  public static void registerModelBuilders( String[] algos ) { assert ALGOS==null; ALGOS = algos; }
+
 
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone
@@ -97,17 +116,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return _response.mean();
   }
 
-
-  /** Register a ModelBuilder, assigning it an algo name.  */
-  public static void registerModelBuilder(String name, String full_name, Class<? extends ModelBuilder> clz) {
-    if (! (clz.getGenericSuperclass() instanceof ParameterizedType))
-      throw H2O.fail("Class is not parameterized as expected: " + clz);
-    _builders.put(name, clz);
-    Class<? extends Model> model_class = (Class<? extends Model>)ReflectionUtils.findActualClassParameter(clz, 0);
-    _model_class_to_algo.put(model_class, name);
-    _algo_to_algo_full_name.put(name, full_name);
-    _algo_to_model_class.put(name, model_class);
-  }
 
   /**
    * Externally visible default schema

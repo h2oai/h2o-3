@@ -5,7 +5,6 @@ import java.util.NoSuchElementException;
 
 import hex.Model;
 import hex.ModelParametersBuilderFactory;
-import water.Key;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters> {
 
@@ -114,11 +113,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
      */
     final private int _hyperSpaceSize;
 
-    /**
-     *
-     * @param paramsBuilderFactory
-     * @param hyperParams
-     */
+    /**     */
     public CartesianWalker(MP params,
                            Map<String, Object[]> hyperParams,
                            ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
@@ -140,18 +135,15 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         @Override
         public MP nextModelParameters(Model previousModel) {
           _hidx = _hidx != null ? nextModel(_hidx) : new int[_hyperParamNames.length];
-          if (_hidx != null) {
-            // Fill array of hyper-values
-            Object[] hypers = hypers(_hidx, new Object[_hyperParamNames.length]);
-            // Get clone of parameters
-            MP commonModelParams = (MP) _params.clone();
-            // Fill model parameters
-            MP params = getModelParams(commonModelParams, hypers);
-            // We have another model parameters
-            return params;
-          } else {
-            throw new NoSuchElementException("No more elements to explore in hyper-space!");
-          }
+          if (_hidx == null) throw new NoSuchElementException("No more elements to explore in hyper-space!");
+          // Fill array of hyper-values
+          Object[] hypers = hypers(_hidx, new Object[_hyperParamNames.length]);
+          // Get clone of parameters
+          MP commonModelParams = (MP) _params.clone();
+          // Fill model parameters
+          MP params = getModelParams(commonModelParams, hypers);
+          // We have another model parameters
+          return params;
         }
 
         @Override

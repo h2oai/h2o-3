@@ -137,7 +137,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         try {
           params._solver = s;
           System.out.println("SOLVER = " + s);
-          model = new GLM(Key.make("prostate_model"), "glm test simple poisson", params).trainModel().get();
+          model = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
@@ -214,7 +214,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     parms._standardize = false;
     GLMModel m = null;
     try {
-      m = new GLM(Key.make("glm_abcd"), "glm test abcd", parms).trainModel().get();
+      m = new GLM(parms).trainModel().get();
       System.out.println(m.coefficients());
     } finally {
       if(m != null) m.delete();
@@ -332,7 +332,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         try {
           params._solver = s;
           System.out.println("SOLVER = " + s);
-          model = new GLM(Key.make("prostate_model"), "glm test simple poisson", params).trainModel().get();
+          model = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           for (int i = 0; i < cfs1.length; ++i)
@@ -422,7 +422,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       try {
         params._solver = s;
         System.out.println("SOLVER = " + s);
-        model = new GLM(Key.make("prostate_model"), "glm test simple poisson", params).trainModel().get();
+        model = new GLM( params).trainModel().get();
         HashMap<String, Double> coefs = model.coefficients();
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
@@ -562,10 +562,10 @@ public class GLMBasicTestBinomial extends TestUtil {
           params._gradient_epsilon = 1e-8;
           params._objective_epsilon = 0;
           System.out.println("SOLVER = " + s);
-          model = new GLM(Key.make("prostate_model"), "glm test", params).trainModel().get();
+          model = new GLM(params).trainModel().get();
           params._train = _prostateTrainUpsampled._key;
           params._weights_column = null;
-          modelUpsampled = new GLM(Key.make("prostate_model_upsampled"), "glm test", params).trainModel().get();
+          modelUpsampled = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           HashMap<String, Double> coefsUpsampled = modelUpsampled.coefficients();
           System.out.println("coefs = " + coefs);
@@ -673,7 +673,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       try {
         params._solver = s;
         System.out.println("SOLVER = " + s);
-        model = new GLM(Key.make("prostate_model"), "glm test simple poisson", params).trainModel().get();
+        model = new GLM(params).trainModel().get();
         HashMap<String, Double> coefs = model.coefficients();
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
@@ -727,7 +727,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         params._solver = s;
         params._max_iterations = 500;
         System.out.println("SOLVER = " + s);
-        model = new GLM(Key.make("prostate_model"), "glm test simple poisson", params).trainModel().get();
+        model = new GLM(params).trainModel().get();
         HashMap<String, Double> coefs = model.coefficients();
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
@@ -895,12 +895,12 @@ public class GLMBasicTestBinomial extends TestUtil {
           params._valid = fTest._key;
           System.out.println("SOLVER = " + s);
           try {
-            model = new GLM(Key.make("prostate_model"), "glm test", params).trainModel().get();
+            model = new GLM(params).trainModel().get();
           } catch(Exception iae) {
             assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
           }
           params._valid = null;
-          model = new GLM(Key.make("prostate_model"), "glm test simple poisson", params).trainModel().get();
+          model = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           for (int i = 0; i < cfs1.length; ++i)
@@ -1012,21 +1012,21 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._lambda = new double[]{0};
     GLM job0 = null;
     try {
-      job0 = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+      job0 = new GLM(params);
       params._solver = Solver.L_BFGS;
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
-      job0 = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+      job0 = new GLM(params);
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
-      job0 = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+      job0 = new GLM(params);
       params._solver = Solver.COORDINATE_DESCENT;
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
@@ -1034,7 +1034,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     }
     params._solver = Solver.IRLSM;
     try {
-      job0 = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+      job0 = new GLM(params);
       params._lambda = new double[]{1};
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with no regularization",true);
@@ -1048,7 +1048,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     params._lambda_search = false;
-    GLM job = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+    GLM job = new GLM(params);
     GLMModel model = null;
     try {
 
@@ -1123,7 +1123,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 
     params._standardize = true;
 
-    job = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+    job = new GLM(params);
     try {
       model = job.trainModel().get();
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};

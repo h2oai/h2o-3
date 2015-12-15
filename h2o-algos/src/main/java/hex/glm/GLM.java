@@ -73,9 +73,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
   }
 
-  public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
-  public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); init(false); }
-
+  public GLM(GLMModel.GLMParameters parms                   ) { super(parms    ); init(false); }
+  public GLM(GLMModel.GLMParameters parms, Key<GLMModel> key) { super(parms,key); init(false); }
 
 
   static class TooManyPredictorsException extends RuntimeException {}

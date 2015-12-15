@@ -16,6 +16,8 @@ import static hex.glrm.GLRMModel.GLRMParameters.Loss.*;
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> implements Model.GLRMArchetypes {
 
   public static class GLRMParameters extends Model.Parameters {
+    public String algoName() { return "GLRM"; }
+    public String fullName() { return "Generalized Low Rank Modeling"; }
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public int _k = 1;                            // Rank of resulting XY matrix
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix

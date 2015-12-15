@@ -181,7 +181,10 @@ public class ModelSerializationTest extends TestUtil {
     public BlahModel(Key selfKey, BlahParameters params, BlahOutput output) { super(selfKey, params, output); }
     @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { return null; }
     @Override protected double[] score0(double[] data, double[] preds) { return new double[0]; }
-    static class BlahParameters extends Model.Parameters { }
+    static class BlahParameters extends Model.Parameters {
+      public String algoName() { return "Blah"; }
+      public String fullName() { return "Blah"; }
+    }
     static class BlahOutput extends Model.Output {
       public BlahOutput(boolean hasWeights, boolean hasOffset, boolean hasFold) {
         super(hasWeights, hasOffset, hasFold);

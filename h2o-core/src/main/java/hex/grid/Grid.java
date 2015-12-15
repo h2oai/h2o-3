@@ -29,7 +29,7 @@ public class Grid<MP extends Model.Parameters>
    *
    * @see hex.schemas.GridSchemaV99
    */
-  public static final Grid GRID_PROTO = new Grid(null, null, null, null, null);
+  public static final Grid GRID_PROTO = new Grid(null, null, null, null);
 
   /**
    * A cache of double[] hyper-parameters mapping to Models.
@@ -66,11 +66,6 @@ public class Grid<MP extends Model.Parameters>
   private String[][] _failed_raw_params;
 
   /**
-   * Name of model generated included in this grid.
-   */
-  private final String _modelName;
-
-  /**
    * Names of used hyper parameters for this grid search.
    */
   private final String[] _hyper_names;
@@ -86,13 +81,11 @@ public class Grid<MP extends Model.Parameters>
    * @param key        reference to this object
    * @param params     initial parameters used by grid search
    * @param hyperNames names of used hyper parameters
-   * @param modelName  name of model included in this object (e.g., "GBM")
    */
-  protected Grid(Key key, MP params, String[] hyperNames, String modelName, FieldNaming fieldNaming) {
+  protected Grid(Key key, MP params, String[] hyperNames, FieldNaming fieldNaming) {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
-    _modelName = modelName;
     Class<MP> paramsClass = params != null ? (Class<MP>) params.getClass() : null;
     _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
     _failure_details = new String[]{};
@@ -107,7 +100,7 @@ public class Grid<MP extends Model.Parameters>
    * @return name of model (for example, "DRF", "GBM")
    */
   public String getModelName() {
-    return _modelName;
+    return _params.algoName();
   }
 
   /**

@@ -18,6 +18,8 @@ import static water.H2O.technote;
  * Deep Learning Parameters
  */
 public class DeepLearningParameters extends Model.Parameters {
+  public String algoName() { return "DeepLearning"; }
+  public String fullName() { return "Deep Learning"; }
   @Override protected double defaultStoppingTolerance() { return 0; }
   public DeepLearningParameters() {
     super();

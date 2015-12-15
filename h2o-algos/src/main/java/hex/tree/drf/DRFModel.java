@@ -10,6 +10,8 @@ import java.util.Arrays;
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
+    public String algoName() { return "DRF"; }
+    public String fullName() { return "Distributed Random Forest"; }
     public boolean _binomial_double_trees = false;
     public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
 

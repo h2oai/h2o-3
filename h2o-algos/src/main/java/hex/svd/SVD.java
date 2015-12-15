@@ -39,8 +39,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // Number of columns in training set (p)
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
-  private final Key<SVDModel> _svdModel;
-
   @Override public ModelBuilderSchema schema() { return new SVDV99(); }
   @Override protected SVDDriver trainModelImpl() { return new SVDDriver(); }
   @Override public long progressUnits() {
@@ -55,17 +53,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
   // Called from an http request
-  public SVD(SVDModel.SVDParameters parms) {
-    super("SVD", parms);
-    _svdModel = _job._result;
-    init(false);
-  }
-
-  public SVD(Job job, SVDModel.SVDParameters parms) {
-    super(job, parms);
-    _svdModel = Key.make(H2O.calcNextUniqueModelId("SVD"));
-    init(false);
-  }
+  public SVD(SVDModel.SVDParameters parms         ) { super(parms    ); init(false); }
+  public SVD(SVDModel.SVDParameters parms, Job job) { super(parms,job); init(false); }
 
   @Override
   protected void checkMemoryFootPrint() {
@@ -333,7 +322,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
-        model = new SVDModel(_svdModel, _parms, new SVDModel.SVDOutput(SVD.this));
+        model = new SVDModel(dest(), _parms, new SVDModel.SVDOutput(SVD.this));
         model.delete_and_lock(_job);
 
         // 0) Transform training data and save standardization vectors for use in scoring later

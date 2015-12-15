@@ -31,7 +31,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   }
 
   // Called from an http request
-  public GBM( GBMModel.GBMParameters parms) { super(parms); init(false); }
+  public GBM( GBMModel.GBMParameters parms                   ) { super(parms     ); init(false); }
+  public GBM( GBMModel.GBMParameters parms, Key<GBMModel> key) { super(parms, key); init(false); }
 
   @Override public GBMV3 schema() { return new GBMV3(); }
 

@@ -35,19 +35,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   @Override public long progressUnits() { return _parms._max_iterations; }
 
   // Called from an http request
-  public KMeans(Key dest, KMeansModel.KMeansParameters parms) { 
-    super(dest, desc, parms); 
-    init(false); 
-  }
-  public KMeans( KMeansModel.KMeansParameters parms ) { 
-    super("K-means",parms); 
-    init(false); 
-  }
-
-  public KMeans(Job job, KMeansModel.KMeansParameters parms) {
-    super(job, parms);
-    init(false);
-  }
+  public KMeans( KMeansModel.KMeansParameters parms         ) { super(parms    ); init(false); }
+  public KMeans( KMeansModel.KMeansParameters parms, Job job) { super(parms,job); init(false); }
 
   @Override protected void checkMemoryFootPrint() {
     long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);
@@ -258,7 +247,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // Something goes wrong
         if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
         // The model to be built
-        model = new KMeansModel(_kmeansModel, _parms, new KMeansModel.KMeansOutput(KMeans.this));
+        model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
         model.delete_and_lock(_job);
 
         //
