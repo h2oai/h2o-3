@@ -24,6 +24,7 @@
 #' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
 #' @param sample_rate Row sample rate (from \code{0.0} to \code{1.0})
 #' @param col_sample_rate Column sample rate (from \code{0.0} to \code{1.0})
+#' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
 #'        level, then decrease by factor of two per level.
@@ -82,6 +83,7 @@ h2o.gbm <- function(x, y, training_frame,
                     learn_rate = 0.1,
                     sample_rate = 1.0,
                     col_sample_rate = 1.0,
+                    col_sample_rate_per_tree = 1.0,
                     nbins = 20,
                     nbins_top_level,
                     nbins_cats = 1024,
@@ -150,6 +152,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$sample_rate <- sample_rate
   if (!missing(col_sample_rate))
     parms$col_sample_rate <- col_sample_rate
+  if (!missing(col_sample_rate_per_tree))
+    parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(nbins))
     parms$nbins <- nbins
   if (!missing(nbins_top_level))
