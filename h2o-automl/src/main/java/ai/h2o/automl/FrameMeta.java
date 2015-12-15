@@ -10,8 +10,8 @@ import java.util.Arrays;
  * Cache common questions asked upon the frame.
  */
 public class FrameMeta {
-  private static final Frame _fr;
-  private static final int _response;
+  private final Frame _fr;
+  private final int _response;
   ColMeta[] _cols;
 
   // cached things

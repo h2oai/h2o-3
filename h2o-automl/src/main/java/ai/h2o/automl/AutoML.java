@@ -1,5 +1,10 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.guessers.ProblemTypeGuesser;
+import ai.h2o.automl.strategies.initial.InitModel;
+import hex.Model;
+import hex.ModelBuilder;
+import water.Key;
 import water.fvec.Frame;
 
 /**
@@ -18,6 +23,8 @@ public final class AutoML {
   private final boolean _ensemble;       // allow ensembles?
   private final models[] _modelEx;       // model types to exclude; e.g. don't allow DL whatsoever
   private final boolean _allowMutations; // allow for INPLACE mutations on input frame
+
+  private boolean _isClassification;
 
   enum models { GBM, RF, GLM, GLRM, DL }
 
@@ -48,8 +55,33 @@ public final class AutoML {
   //  3. TODO: refinement passes and strategy selection
   //
   public void learn() {
-    // guess if classification or regression problem
-    // vec type, name, data, and the loss method help to inform the guess
 
+    // step 1: gather initial frame metadata and guess the problem type
+    FrameMeta fm = new FrameMeta(_fr, _response);
+    _isClassification = ProblemTypeGuesser.guess(fm.response().get_type(), fm.response().isInt());
+
+    // step 2: build a fast RF
+    ModelBuilder initModel = selectInitial(fm);
+    Model m = (Model)initModel.trainModel().get();
+
+    // gather more data? build more models? start applying transforms? what next ...?
+  }
+
+  private ModelBuilder selectInitial(FrameMeta fm) {  // may use _isClassification so not static method
+    return InitModel.initDRF(
+            Key.make("initDRF" + Key.make().toString().substring(0,5)).toString(),
+            5 /*ntree*/,
+            20 /*depth*/,
+            10 /*minrows*/,
+
+            // https://0xdata.atlassian.net/browse/STEAM-44
+            1 /*stopping rounds*/,
+            0.01 /*stopping tolerance*/,
+
+            500 /*nbins*/,
+            20 /*nbins_cats*/,
+            -1 /*mtries*/,
+            0.667f /*sample_rate*/,
+            -1 /*seed*/);
   }
 }
