@@ -330,6 +330,11 @@ where M is the number of observations, N is the number of columns (categorical c
 
 For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula 250^2*1000000/(32*1e8)  = 19.5 ~= 20). 
 
+- **How is variable importance calculated for GLM?**
+
+For GLM, the variable importance represents the coefficient magnitudes. 
+
+
 
 ###GLM Algorithm
 
@@ -1541,6 +1546,9 @@ To specify the per-class over- or under-sampling factors, use `class\_sampling\_
 
 In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
 
+- **How is variable importance calculated for Deep Learning?**
+
+For Deep Learning, variable importance is calculated using the Gideon method. 
 
 
 ---
