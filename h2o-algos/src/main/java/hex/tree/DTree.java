@@ -40,7 +40,7 @@ public class DTree extends Iced {
   public final int _mtrys_per_tree;  // Number of columns to choose amongst in splits (once per tree)
   final long _seeds[];        // One seed for each chunk, for sampling
   public final transient Random _rand; // RNG for split decisions & sampling
-  public final int[] _cols;
+  public final int[] _cols; // Per-tree selection of columns to consider for splits
 
   public DTree(Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, int mtrys, int mtrys_per_tree, long seed) {
     _names = fr.names();
@@ -61,7 +61,7 @@ public class DTree extends Iced {
     for (int i=0;i<activeCols.length;++i)
       activeCols[i] = i;
     // per-tree column sample if _mtrys_per_tree < _ncols
-    int len = activeCols.length;
+    int len = _ncols;
     if (mtrys_per_tree < _ncols) {
       Random colSampleRNG = SharedTree.createRNG(_seed*0xDA7A);
       for( int i=0; i<mtrys_per_tree; i++ ) {

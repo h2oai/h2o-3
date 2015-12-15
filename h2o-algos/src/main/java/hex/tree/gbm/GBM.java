@@ -131,9 +131,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private class GBMDriver extends Driver {
     @Override protected boolean doOOBScoring() { return false; }
     @Override protected void initializeModelSpecifics() {
-      _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols));
+      _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
-      _mtry = Math.max(1, (int)(_parms._col_sample_rate * _mtry_per_tree));
+      _mtry = Math.max(1, (int)(_parms._col_sample_rate * _parms._col_sample_rate_per_tree * _ncols)); //per-split
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
 
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
