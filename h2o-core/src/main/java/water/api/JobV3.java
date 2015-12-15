@@ -74,11 +74,14 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
     else
       if( job.stop_requested() ) status = "CANCELLED";
       else status = "DONE";
-    if( job.hasEx() ) status = "FAILED";
-
+    Throwable ex = job.ex();
+    if( ex != null ) status = "FAILED";
+    exception = ex == null ? null : ex.toString();
     msec = job.msec();
     Key dest_key = job._result;
-    Class<? extends Keyed> dest_class = ReflectionUtils.findActualClassParameter(job.getClass(), 0); // What type do we expect for this Job?
+    Iced ice = dest_key.get();
+    if( ice == null ) { dest = new KeyV3(dest_key); return this; }
+    Class<? extends Keyed> dest_class = ReflectionUtils.findActualClassParameter(ice.getClass(), 0); // What type do we expect for this Job?
     try {
       dest = KeyV3.forKeyedClass(dest_class, dest_key);
     }
@@ -89,7 +92,6 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
       dest = null;
       Log.warn("JobV3.fillFromImpl(): dest key for job: " + this + " is not the expected type: " + dest_class.getCanonicalName() + ": " + dest_key + ".  Returning null for the dest field.");
     }
-    exception = job.ex().toString();
     return this;
   }
 

@@ -124,6 +124,7 @@ public class APIThrPriorTest extends TestUtil {
       H2O.LOW_PRIORITY_API_WORK = 0;
       H2O.LOW_PRIORITY_API_WORK_CLASS = null;
       // Allow the builder to complete.
+      DKV.put(job); // reinstate the JOB in the DKV, because JOB demands it.
       synchronized(blder) { blder._state = 2; blder.notify(); }
       job.get();                  // Block for builder to complete
     } finally {
@@ -147,7 +148,7 @@ public class APIThrPriorTest extends TestUtil {
     byte[] bs = new byte[n];
     r.data.read(bs,0,n);
     String ss = new String(bs); // Computed to help with debugging
-    Assert.assertEquals(status,(int)Integer.parseInt(r.status.split(" ")[0]));
+    Assert.assertEquals(status,Integer.parseInt(r.status.split(" ")[0]));
     Assert.assertNull("" + s, H2O.LOW_PRIORITY_API_WORK_CLASS);
   }
 }
