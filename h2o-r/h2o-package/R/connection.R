@@ -151,8 +151,28 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   if( strict_version_check && !nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
     verH2O <- h2o.getVersion()
     verPkg <- packageVersion("h2o")
-    if( verH2O != verPkg )
-      stop(sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg)))
+
+    if( verH2O != verPkg ){
+      build_number_H2O <- h2o.getBuildNumber()
+      branch_name_H2O <- h2o.getBranchName()
+
+      if( is.null( build_number_H2O ) ){
+        stop(sprintf("Version mismatch! H2O is running version %s but h2o-R package is version %s.
+        Upgrade H2O and R to latest stable version - http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html",
+        verH2O, toString(verPkg)))
+      } else if (build_number_H2O =="unknown"){
+        stop(sprintf("Version mismatch! H2O is running version %s but h2o-R package is version %s.
+        Upgrade H2O and R to latest stable version - http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html",
+        verH2O, toString(verPkg)))
+      } else if (build_number_H2O =="99999"){
+        stop((sprintf("Version mismatch! H2O is running version %s but h2o-R package is version %s.
+        This is a developer build, please contact your developer",verH2O, toString(verPkg) )))
+      } else {
+         stop(sprintf("Version mismatch! H2O is running version %s but h2o-R package is version %s.
+         Install the matching h2o-R version from - http://h2o-release.s3.amazonaws.com/h2o/%s/%s/index.html",
+         verH2O, toString(verPkg),branch_name_H2O,build_number_H2O))
+      }
+    }
   }
 
   if (warnNthreads) {

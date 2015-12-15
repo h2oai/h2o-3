@@ -758,6 +758,16 @@ h2o.getVersion <- function() {
   res$version
 }
 
+h2o.getBuildNumber <- function() {
+  res = .h2o.__remoteSend(.h2o.__CLOUD)
+  res$build_number
+}
+
+h2o.getBranchName <- function() {
+  res = .h2o.__remoteSend(.h2o.__CLOUD)
+  res$branch_name
+}
+
 .readableTime <- function(epochTimeMillis) {
   days = epochTimeMillis/(24*60*60*1000)
   hours = (days-trunc(days))*24
