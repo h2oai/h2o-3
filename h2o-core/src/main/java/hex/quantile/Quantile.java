@@ -24,7 +24,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   @Override protected boolean logMe() { return false; }
 
   // Called from Nano thread; start the Quantile Job on a F/J thread
-  public Quantile( QuantileModel.QuantileParameters parms ) { super("Quantile",parms); init(false); }
+  public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }
 
   public ModelBuilderSchema schema() { return new QuantileV3(); }
 

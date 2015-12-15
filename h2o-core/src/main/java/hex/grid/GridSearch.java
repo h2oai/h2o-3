@@ -150,9 +150,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   private void gridSearch(Grid<MP> grid) {
     Model model = null;
     // Prepare nice model key and override default key by appending model counter
-    String protoModelKey = _hyperSpaceWalker.getParams()._model_id == null
-                           ? grid._key + "_model_"
-                           : _hyperSpaceWalker.getParams()._model_id.toString() + H2O.calcNextUniqueModelId("") + "_";
+    String protoModelKey =  grid._key + "_model_";
     try {
       // Get iterator to traverse hyper space
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();

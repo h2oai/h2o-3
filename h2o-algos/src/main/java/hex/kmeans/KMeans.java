@@ -27,8 +27,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   // Convergence tolerance
   final private double TOLERANCE = 1e-6;
 
-  private final Key<KMeansModel> _kmeansModel;
-
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
   public enum Initialization { Random, PlusPlus, Furthest, User }
   public ModelBuilderSchema schema() { return new KMeansV3(); }
@@ -37,20 +35,17 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   @Override public long progressUnits() { return _parms._max_iterations; }
 
   // Called from an http request
-  public KMeans(Key dest, String desc, KMeansModel.KMeansParameters parms) { 
+  public KMeans(Key dest, KMeansModel.KMeansParameters parms) { 
     super(dest, desc, parms); 
-    _kmeansModel = _job._result;
     init(false); 
   }
   public KMeans( KMeansModel.KMeansParameters parms ) { 
     super("K-means",parms); 
-    _kmeansModel = _job._result;
     init(false); 
   }
 
   public KMeans(Job job, KMeansModel.KMeansParameters parms) {
     super(job, parms);
-    _kmeansModel = Key.make(H2O.calcNextUniqueModelId("KMeans"));
     init(false);
   }
 

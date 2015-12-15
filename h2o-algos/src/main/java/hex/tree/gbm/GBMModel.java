@@ -20,6 +20,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       _max_depth = 5;
     }
 
+    public String algoName() { return "GBM"; }
+    public String fullName() { return "Gradient Boosting Method"; }
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {

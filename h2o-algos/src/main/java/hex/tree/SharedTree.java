@@ -27,7 +27,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   public static final int MAX_NTREES = 100000;
 
-  public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
+  public SharedTree( P parms) { super(parms); /*only call init in leaf classes*/ }
 
   // Number of trees requested, including prior trees from a checkpoint
   protected int _ntrees;
@@ -828,7 +828,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     _parms._stopping_rounds = 0;
     int sum = 0;
     for( int i=0; i<cvModelBuilders.length; ++i )
-      sum += ((SharedTreeModel.SharedTreeOutput)DKV.<Model>getGet(cvModelBuilders[i]._parms._model_id)._output)._ntrees;
+      sum += ((SharedTreeModel.SharedTreeOutput)DKV.<Model>getGet(cvModelBuilders[i].dest())._output)._ntrees;
     _parms._ntrees = (int)((double)sum/cvModelBuilders.length);
     warn("_epochs", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
     warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");

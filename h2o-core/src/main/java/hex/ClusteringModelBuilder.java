@@ -7,9 +7,7 @@ abstract public class ClusteringModelBuilder<M extends ClusteringModel<M,P,O>, P
   public boolean isSupervised() { return false; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
-  public ClusteringModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
-  public ClusteringModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
-  public ClusteringModelBuilder(Job job, P parms) { super(job,parms);  /*only call init in leaf classes*/ }
+  public ClusteringModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

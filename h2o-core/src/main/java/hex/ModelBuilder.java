@@ -14,9 +14,7 @@ import water.util.Log;
 import water.util.MRUtils;
 import water.util.ReflectionUtils;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,50 +26,27 @@ import java.util.Map;
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
   public final Job<M> _job;     // Job controlling this build
-
-  /** Constructor called from an http request; MUST override in subclasses. */
-  public ModelBuilder(P _) {
-    throw H2O.fail("ModelBuilder subclass failed to override the params constructor: " + this.getClass());
-  }
-
-  /** Constructor making a default destination key */
-  public ModelBuilder(String desc, P parms) {
-    this((Key<M>)((parms == null || parms._model_id == null) ? Key.make(H2O.calcNextUniqueModelId(desc)) : parms._model_id), desc, parms);
-  }
-
-  /** Default constructor, given all arguments */
-  public ModelBuilder(Key<M> dest, String desc, P parms) {
-    _job = new Job<>(dest,desc);
-    _parms = parms;
-  }
-  /** Shared Job constructor */
-  public ModelBuilder(Job job, P parms) {
-    _job = job;
-    _parms = parms;
-  }
-
   /** Block till completion, and return the built model from the DKV */
   public final M get() { return _job.get(); }
-
-  public final Key<M> dest() { return _job._result; }
   public final boolean isStopped() { return _job.isStopped(); }
 
+  // Key of the model being built; note that this is DIFFERENT from
+  // _job._result if the Job is being shared by many sub-models
+  // e.g. cross-validation.
+  private Key<M> _result;  // Built Model key
+  public final Key<M> dest() { return _result; }
+
+  /** Unique new job and result key */
+  protected ModelBuilder(P parms) {
+    String algoName = parms.algoName();
+    _job = new Job(Key.make(H2O.calcNextUniqueModelId(algoName)), algoName);
+    _result = _job._result;
+    _parms = parms;
+  }
+
   /** Factory method to create a ModelBuilder instance of the correct class given the algo name. */
-  // TODO: CLEAN THIS UP.  OVERLY COMPLEX; NO NEED; NON-REFLECTION ALTERNATIVE EXISTS
   public static ModelBuilder createModelBuilder(String algo) {
-    Class<? extends ModelBuilder> clz = ModelBuilder.getModelBuilder(algo);
-    if( clz == null ) 
-      throw new H2OIllegalArgumentException("algo", "createModelBuilder", "Algo not known (" + algo + ")");
-    try {
-      Type[] handler_type_parms = ((ParameterizedType)(clz.getGenericSuperclass())).getActualTypeArguments();
-      // [0] is the Model type; [1] is the Model.Parameters type; [2] is the Model.Output type.
-      Class<? extends Model.Parameters> pclz = (Class<? extends Model.Parameters>)handler_type_parms[1];
-      Constructor<ModelBuilder> constructor = (Constructor<ModelBuilder>)clz.getDeclaredConstructor(new Class[] { (Class)handler_type_parms[1] });
-      Model.Parameters p = pclz.newInstance();
-      return constructor.newInstance(p);
-    } catch (Exception e) {
-      throw H2O.fail("Exception when trying to instantiate ModelBuilder for: " + algo + ": " + e.getCause(), e);
-    }
+    throw H2O.unimpl();
   }
 
   /** All the parameters required to build the model. */
@@ -132,48 +107,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _model_class_to_algo.put(model_class, name);
     _algo_to_algo_full_name.put(name, full_name);
     _algo_to_model_class.put(name, model_class);
-  }
-
-  /** Get a Map of all algo names to their ModelBuilder classes. */
-  public static Map<String, Class<? extends ModelBuilder>>getModelBuilders() { return _builders; }
-
-  /** Get the ModelBuilder class for the given algo name. */
-  public static Class<? extends ModelBuilder> getModelBuilder(String name) {
-    return _builders.get(name);
-  }
-
-  /** Get the Model class for the given algo name. */
-  public static Class<? extends Model> getModelClass(String name) {
-    return _algo_to_model_class.get(name);
-  }
-
-  /** Get the algo name for the given Model. */
-  public static String getAlgo(Model model) {
-    return _model_class_to_algo.get(model.getClass());
-  }
-
-  /** Get the algo full name for the given algo. */
-  public static String getAlgoFullName(String algo) {
-    return _algo_to_algo_full_name.get(algo);
-  }
-
-  public String getAlgo() {
-    return getAlgo(this.getClass());
-  }
-
-  public static String getAlgo(Class<? extends ModelBuilder> clz) {
-    // Check for unknown algo names, but if none are registered keep going; we're probably in JUnit.
-    if (_builders.isEmpty())
-      return "Unknown algo (should only happen under JUnit)";
-
-    if (! _builders.containsValue(clz))
-      throw new H2OIllegalArgumentException("Failed to find ModelBuilder class in registry: " + clz, "Failed to find ModelBuilder class in registry: " + clz);
-
-    for (Map.Entry<String, Class<? extends ModelBuilder>> entry : _builders.entrySet())
-      if (entry.getValue().equals(clz))
-        return entry.getKey();
-    // Note: unreachable:
-    throw new H2OIllegalArgumentException("Failed to find ModelBuilder class in registry: " + clz, "Failed to find ModelBuilder class in registry: " + clz);
   }
 
   /**
@@ -323,9 +256,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
+      cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
-      cv_mb._parms._model_id = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
       cv_mb._parms._train = cvTrain._key;       // All submodels have a weight column, which the main model does not
       cv_mb._parms._valid = cvValid._key;
@@ -333,10 +266,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
       cv_mb.init(false);        // Arg check submodels
       // Error-check all the cross-validation Builders before launching any
-      if( cv_mb.error_count() > 0 ) { // Gather all submodel error messages
+      if( cv_mb.error_count() > 0 ) // Gather all submodel error messages
         for( ValidationMessage vm : cv_mb._messages )
           message(vm._log_level, vm._field_name, vm._message);
-      }
       cvModelBuilders[i] = cv_mb;
     }
 
@@ -384,7 +316,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
       mbs[i] = cvModel.scoreMetrics(adaptFr);
       if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {
-        String predName = "prediction_" + cvModelBuilders[i]._parms._model_id.toString();
+        String predName = "prediction_" + cvModelBuilders[i]._result.toString();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName);
       }
       // free resources as early as possible
@@ -416,7 +348,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     
     for (int i = 0; i < N; ++i) {
       if (i > 0) mbs[0].reduce(mbs[i]);
-      Key<Model> cvModelKey = cvModelBuilders[i]._parms._model_id;
+      Key<M> cvModelKey = cvModelBuilders[i]._result;
       mainModel._output._cross_validation_models[i] = cvModelKey;
       predKeys[i] = Key.make("prediction_" + cvModelKey.toString());
     }

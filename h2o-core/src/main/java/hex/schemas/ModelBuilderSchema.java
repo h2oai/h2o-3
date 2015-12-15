@@ -6,7 +6,6 @@ import hex.ModelCategory;
 import water.AutoBuffer;
 import water.H2O;
 import water.Job;
-import water.Key;
 import water.api.*;
 import water.api.ValidationMessageBase;
 import water.exceptions.H2OIllegalArgumentException;
@@ -85,29 +84,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   /** Create the corresponding impl object, as well as its parameters object. */
   @Override final public B createImpl() {
-    B impl = null;
-
-      try {
-        Class<? extends ModelBuilder> builder_class = (Class<? extends ModelBuilder>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
-        Class<? extends Model.Parameters> parameters_class = (Class<? extends Model.Parameters>) this.parameters.getImplClass();
-
-        // NOTE: we want the parameters to be empty except for the destination_key, so that the builder gets created with any passed-in key name.
-        // We then wipe out the impl parameter's destination_key, so we get the correct default.
-        Model.Parameters _parameters = null;
-
-        if (null != parameters) {
-          _parameters = (Model.Parameters) parameters.createImpl();
-          if (null != parameters.model_id)
-            _parameters._model_id = Key.make(parameters.model_id.name);
-        }
-        Constructor builder_constructor = builder_class.getConstructor(new Class[]{parameters_class});
-        impl = (B) builder_constructor.newInstance(_parameters);
-        impl.clearInitState(); // clear out validation errors from default parameters
-        impl._parms._model_id = null;
-      } catch (Exception e) {
-        throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
-      }
-    return impl;
+    throw H2O.unimpl();
   }
 
   @Override public B fillImpl(B impl) {
@@ -122,8 +99,8 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     // DO NOT, because it can already be running: builder.init(false); // check params
 
     try {
-      this.algo = builder.getAlgo();
-      this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
+      this.algo = builder._parms.algoName();
+      this.algo_full_name = builder._parms.fullName();
     }
     catch (H2OIllegalArgumentException e) {
       this.algo = builder.getClass().getSimpleName();
