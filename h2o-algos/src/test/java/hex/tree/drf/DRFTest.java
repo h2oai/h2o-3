@@ -90,11 +90,11 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(0, 0, 0, 0, 0),
-                    ard(0, 60, 0, 9, 0),
+            ard(ard(0, 2, 0, 0, 0),
+                    ard(0, 58, 8, 2, 0),
                     ard(0, 1, 0, 0, 0),
-                    ard(0, 0, 0, 31, 0),
-                    ard(0, 0, 0, 0, 40)),
+                    ard(1, 3, 1, 28, 1),
+                    ard(0, 0, 0, 2, 37)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -314,8 +314,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(664, 0),
-                    ard(0, 702)),
+            ard(ard(670, 0),
+                    ard(0, 703)),
             s("0", "1"));
   }
   @Test public void testAlphabetRegression() throws Throwable {
@@ -472,7 +472,53 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  // HEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  // PUBDEV-2476 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  @Test public void testChunks() {
+    Frame tfr;
+    final int N = 4;
+    double[] mses = new double[N];
+    int[] chunks = new int[]{1,13,19,39};
+
+    for (int i=0; i<N; ++i) {
+      Scope.enter();
+      // Load data, hack frames
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+
+      // rebalance to 256 chunks
+      Key dest = Key.make("df.rebalanced.hex");
+      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, chunks[i]);
+      H2O.submitTask(rb);
+      rb.join();
+      tfr.delete();
+      tfr = DKV.get(dest).get();
+      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
+      DKV.put(tfr);
+
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "C55";
+      parms._ntrees = 10;
+      parms._seed = 1234;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      DRFModel drf = job.trainModel().get();
+      assertEquals(drf._output._ntrees, parms._ntrees);
+
+      mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
+      job.remove();
+      drf.delete();
+      if (tfr != null) tfr.remove();
+      Scope.exit();
+    }
+    for (int i=0; i<mses.length; ++i) {
+      Log.info("trial: " + i + " -> MSE: " + mses[i]);
+    }
+    for(double mse : mses)
+      assertEquals(mse, mses[0], 1e-15);
+  }
+
+  //
   @Test public void testReproducibility() {
     Frame tfr=null;
     final int N = 5;

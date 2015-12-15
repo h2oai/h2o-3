@@ -38,7 +38,6 @@ public class DTree extends Iced {
   public int _depth;
   public final int _mtrys;           // Number of columns to choose amongst in splits (at every split)
   public final int _mtrys_per_tree;  // Number of columns to choose amongst in splits (once per tree)
-  final long _seeds[];        // One seed for each chunk, for sampling
   public final transient Random _rand; // RNG for split decisions & sampling
   public final int[] _cols; // Per-tree selection of columns to consider for splits
 
@@ -53,17 +52,14 @@ public class DTree extends Iced {
     _mtrys = mtrys;
     _mtrys_per_tree = mtrys_per_tree;
     _seed = seed;
-    _rand = SharedTree.createRNG(seed);
-    _seeds = new long[fr.vecs()[0].nChunks()];
-    for (int i = 0; i < _seeds.length; i++)
-      _seeds[i] = _rand.nextLong();
+    _rand = RandomUtils.getRNG(seed);
     int[] activeCols=new int[_ncols];
     for (int i=0;i<activeCols.length;++i)
       activeCols[i] = i;
     // per-tree column sample if _mtrys_per_tree < _ncols
     int len = _ncols;
     if (mtrys_per_tree < _ncols) {
-      Random colSampleRNG = SharedTree.createRNG(_seed*0xDA7A);
+      Random colSampleRNG = RandomUtils.getRNG(_seed*0xDA7A);
       for( int i=0; i<mtrys_per_tree; i++ ) {
         if( len == 0 ) break;
         int idx2 = colSampleRNG.nextInt(len);
@@ -74,12 +70,6 @@ public class DTree extends Iced {
       activeCols = Arrays.copyOfRange(activeCols,len,activeCols.length);
     }
     _cols = activeCols;
-  }
-
-  // Return a deterministic chunk-local RNG.  Can be kinda expensive.
-  public Random rngForChunk(int cidx) {
-    long seed = _seeds[cidx];
-    return SharedTree.createRNG(seed);
   }
 
   public final Node root() { return _ns[0]; }

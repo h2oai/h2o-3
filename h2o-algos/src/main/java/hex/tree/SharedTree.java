@@ -237,7 +237,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
-        _rand = createRNG(_parms._seed);
+        _rand = RandomUtils.getRNG(_parms._seed);
 
         initializeModelSpecifics();
         resumeFromCheckpoint();
@@ -618,12 +618,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       double bias = train.mean()-test.mean();
       return stddev*stddev+bias*bias;
     }
-  }
-
-  // Helper to unify use of M-T RNG
-  public static Random createRNG(long seed) {
-    return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
-//    return RandomUtils.getRNG((int)(seed>>32L),(int)seed ); //for later
   }
 
   private TwoDimTable createScoringHistoryTable(SharedTreeModel.SharedTreeOutput _output) {

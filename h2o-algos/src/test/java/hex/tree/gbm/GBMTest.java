@@ -1575,4 +1575,53 @@ public class GBMTest extends TestUtil {
         if (k!=null) k.remove();
     }
   }
+
+  // PUBDEV-2476 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  @Test public void testChunks() {
+    Frame tfr;
+    final int N = 4;
+    double[] mses = new double[N];
+    int[] chunks = new int[]{1,13,19,39};
+
+    for (int i=0; i<N; ++i) {
+      Scope.enter();
+      // Load data, hack frames
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+
+      // rebalance to 256 chunks
+      Key dest = Key.make("df.rebalanced.hex");
+      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, chunks[i]);
+      H2O.submitTask(rb);
+      rb.join();
+      tfr.delete();
+      tfr = DKV.get(dest).get();
+      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
+      DKV.put(tfr);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "C55";
+      parms._seed = 1234;
+      parms._col_sample_rate_per_tree = 0.5f;
+      parms._col_sample_rate = 0.3f;
+      parms._ntrees = 10;
+      parms._max_depth = 2;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      GBMModel drf = job.trainModel().get();
+      assertEquals(drf._output._ntrees, parms._ntrees);
+
+      mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
+      job.remove();
+      drf.delete();
+      if (tfr != null) tfr.remove();
+      Scope.exit();
+    }
+    for (int i=0; i<mses.length; ++i) {
+      Log.info("trial: " + i + " -> MSE: " + mses[i]);
+    }
+    for(double mse : mses)
+      assertEquals(mse, mses[0], 1e-10);
+  }
 }
