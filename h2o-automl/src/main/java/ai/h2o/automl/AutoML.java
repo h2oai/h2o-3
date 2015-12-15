@@ -4,7 +4,6 @@ import ai.h2o.automl.guessers.ProblemTypeGuesser;
 import ai.h2o.automl.strategies.initial.InitModel;
 import hex.Model;
 import hex.ModelBuilder;
-import water.Key;
 import water.fvec.Frame;
 
 /**
@@ -68,20 +67,6 @@ public final class AutoML {
   }
 
   private ModelBuilder selectInitial(FrameMeta fm) {  // may use _isClassification so not static method
-    return InitModel.initDRF(
-            Key.make("initDRF" + Key.make().toString().substring(0,5)).toString(),
-            5 /*ntree*/,
-            20 /*depth*/,
-            10 /*minrows*/,
-
-            // https://0xdata.atlassian.net/browse/STEAM-44
-            1 /*stopping rounds*/,
-            0.01 /*stopping tolerance*/,
-
-            500 /*nbins*/,
-            20 /*nbins_cats*/,
-            -1 /*mtries*/,
-            0.667f /*sample_rate*/,
-            -1 /*seed*/);
+    return InitModel.initRF();
   }
 }

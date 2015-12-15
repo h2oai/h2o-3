@@ -19,9 +19,6 @@ public class FrameMeta {
 
   public FrameMeta(Frame fr, int response) {
     _fr=fr;
-    _cols=new ColMeta[fr.numCols()];
-    for(int i=0; i<_fr.numCols(); ++i)
-      _cols[i] = new ColMeta(_fr.vec(i), _fr.name(i), i);
     _response=response;
   }
 
@@ -40,4 +37,8 @@ public class FrameMeta {
 
   public Vec response() { return _fr.vec(_response); }
   public ColMeta responseMeta() { return _cols[_response]; }
+
+  public void computeFrameMetaPass1() {
+
+  }
 }
