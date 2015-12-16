@@ -12,9 +12,7 @@ import water.fvec.Vec;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
-import water.util.ReflectionUtils;
 
-import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -320,7 +318,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Frame cvTrain = cvModelBuilders[i].train();
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      M cvModel = cvModelBuilders[i].get();
+      M cvModel = cvModelBuilders[i].dest().get();
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
       mbs[i] = cvModel.scoreMetrics(adaptFr);
       if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {

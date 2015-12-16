@@ -164,7 +164,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           // Compute the zero-tree error - guessing only the class distribution.
           // MSE is stddev squared when guessing for regression.
           // For classification, guess the largest class.
-          _model = makeModel(_job._result, _parms,
+          _model = makeModel(dest(), _parms,
                   initial_MSE(_response, _response),
                   _valid == null ? Double.NaN : initial_MSE(_response,_vresponse)); // Make a fresh model
           _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
