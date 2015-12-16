@@ -1105,7 +1105,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
 def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,
         distribution=None,tweedie_power=None,ntrees=None,max_depth=None,min_rows=None,
-        learn_rate=None,sample_rate=None,col_sample_rate=None,nbins=None,
+        learn_rate=None,sample_rate=None,col_sample_rate=None,col_sample_rate_per_tree=None,nbins=None,
         nbins_top_level=None,nbins_cats=None,validation_frame=None,
         balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
@@ -1143,6 +1143,8 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
     Row sample rate (from 0.0 to 1.0)
   col_sample_rate : float
     Column sample rate (from 0.0 to 1.0)
+  col_sample_rate_per_tree : float
+    Column sample rate per tree (from 0.0 to 1.0)
   nbins : int
     For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
   nbins_top_level : int
@@ -1356,8 +1358,8 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
 
 
 def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,mtries=None,sample_rate=None,
-                  build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_top_level=None,
-                  nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
+                  col_sample_rate_per_tree=None,build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,
+                  nbins_top_level=None,nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
                   max_after_balance_size=None,seed=None,offset_column=None,weights_column=None,nfolds=None,
                   fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
                   score_each_iteration=None,checkpoint=None,
@@ -1382,7 +1384,9 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
     Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
     where p is the number of predictors.
   sample_rate : float
-    Sample rate, from 0 to 1.0.
+    Row sample rate (from 0.0 to 1.0)
+  col_sample_rate_per_tree : float
+    Column sample rate per tree (from 0.0 to 1.0)
   build_tree_one_node : bool
     Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
   ntrees : int

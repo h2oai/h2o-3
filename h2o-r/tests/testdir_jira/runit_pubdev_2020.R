@@ -43,7 +43,7 @@ test2 <- function() {
 # Check that runif can be seeded for reproducibility
 test3 <- function() {
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
-  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2015)
+  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
   stopifnot(value == 4)
@@ -53,13 +53,13 @@ test3 <- function() {
   stopifnot(value == 22)
   
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
-  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2016)
+  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
   stopifnot(value == 4)
   
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
-  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2016)
+  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
   stopifnot(value == 4)

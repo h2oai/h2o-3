@@ -1548,7 +1548,7 @@ In all cases, the probabilities are adjusted to the pre-sampled space, so the mi
 
 - **How is variable importance calculated for Deep Learning?**
 
-For Deep Learning, variable importance is calculated using the Gideon method. 
+For Deep Learning, variable importance is calculated using the Gedeon method. 
 
 
 ---

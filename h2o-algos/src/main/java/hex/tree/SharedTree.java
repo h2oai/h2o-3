@@ -24,6 +24,7 @@ import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
   protected int _mtry;
+  protected int _mtry_per_tree;
 
   public static final int MAX_NTREES = 100000;
 
@@ -124,6 +125,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
       error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate);
+    if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
+      error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval ]0,1] but it is " + _parms._col_sample_rate_per_tree);
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
@@ -234,7 +237,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
-        _rand = createRNG(_parms._seed);
+        _rand = RandomUtils.getRNG(_parms._seed);
 
         initializeModelSpecifics();
         resumeFromCheckpoint();
@@ -420,7 +423,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _subset, _family).dfork(null,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _family).dfork(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
@@ -615,12 +618,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       double bias = train.mean()-test.mean();
       return stddev*stddev+bias*bias;
     }
-  }
-
-  // Helper to unify use of M-T RNG
-  public static Random createRNG(long seed) {
-    return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
-//    return RandomUtils.getRNG((int)(seed>>32L),(int)seed ); //for later
   }
 
   private TwoDimTable createScoringHistoryTable(SharedTreeModel.SharedTreeOutput _output) {

@@ -43,6 +43,12 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
   @API(help="version", direction=API.Direction.OUTPUT)
   public String version;
 
+  @API(help="branch_name", direction=API.Direction.OUTPUT)
+  public String branch_name;
+
+  @API(help="build_number", direction=API.Direction.OUTPUT)
+  public String build_number;
+
   @API(help="Node index number cloud status is collected from (zero-based)", direction=API.Direction.OUTPUT)
   public int node_idx;
 

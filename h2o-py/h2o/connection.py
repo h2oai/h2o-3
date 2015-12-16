@@ -104,7 +104,32 @@ class H2OConnection(object):
       from .__init__ import __version__
       ver_pkg = "UNKNOWN" if __version__ == "SUBST_PROJECT_VERSION" else __version__
       if ver_h2o != ver_pkg:
-        raise EnvironmentError("Version mismatch. H2O is version {0}, but the python package is version {1}.".format(ver_h2o, str(ver_pkg)))
+        try:
+          branch_name_h2o = cld['branch_name']
+        except KeyError:
+          branch_name_h2o = None
+        else:
+          branch_name_h2o = cld['branch_name']
+
+        try:
+          build_number_h2o = cld['build_number']
+        except KeyError:
+          build_number_h2o = None
+        else:
+          build_number_h2o = cld['build_number']
+
+        if build_number_h2o is None:
+          print("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. Upgrade H2O and h2o-Python to latest stable version - http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html".format(ver_h2o, str(ver_pkg)))
+          sys.exit("STOP: FIX VERSION MISMATCH TO AVOID FUTURE ERRORS")
+        elif build_number_h2o == 'unknown':
+          print("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. Upgrade H2O and h2o-Python to latest stable version - http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html".format(ver_h2o, str(ver_pkg)))
+          sys.exit("STOP: FIX VERSION MISMATCH TO AVOID FUTURE ERRORS")
+        elif build_number_h2o == '99999':
+          print("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. This is a developer build, please contact your developer.".format(ver_h2o, str(ver_pkg)))
+          sys.exit("STOP: FIX VERSION MISMATCH TO AVOID FUTURE ERRORS")
+        else:
+          print("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}.Install the matching h2o-Python version from - http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html.".format(ver_h2o, str(ver_pkg),branch_name_h2o, build_number_h2o))
+          sys.exit("STOP: FIX VERSION MISMATCH TO AVOID FUTURE ERRORS")
 
     self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()

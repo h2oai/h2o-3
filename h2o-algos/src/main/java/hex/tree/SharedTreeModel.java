@@ -1,9 +1,5 @@
 package hex.tree;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import hex.*;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -11,6 +7,10 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
 import water.util.*;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
@@ -39,6 +39,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
 
     public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
+
+    public float _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree
 
     @Override protected long nFoldSeed() { return _seed; }
 
