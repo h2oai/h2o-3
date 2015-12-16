@@ -5,6 +5,15 @@ import hex.tree.drf.DRFModel;
 import water.Key;
 import water.fvec.Frame;
 
+
+/**
+ * Initial Model Selection
+ *
+ * Select a model based on some heuristics from the first pass FrameMeta computation.
+ *
+ * Decision should be influenced by the all kinds of things:
+ *    imbalance, regression, binary, multiclass, wide, tall, sparse, dense, ???
+ */
 public class InitModel {
 
   public static final byte REGRESSION =0;
