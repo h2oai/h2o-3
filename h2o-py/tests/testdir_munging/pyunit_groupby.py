@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -18,7 +19,7 @@ def group_by():
     na_handling = ["rm","all"]
     col_names = h2o_iris.col_names[0:4]
 
-    print "Running smoke test"
+    print("Running smoke test")
 
     # smoke test
     for na in na_handling:
@@ -32,7 +33,7 @@ def group_by():
         .sd(   na=na) \
         .ss(   na=na) \
         .sum(  na=na)
-      print grouped.get_frame()
+      print(grouped.get_frame())
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@
 #'
 #' Parse the Raw Data produced by the import phase.
 #'
-#' @param data An H2O Frame object to be parsed.
+#' @param data An H2O H2OFrame object to be parsed.
 #' @param destination_frame (Optional) The hex key assigned to the parsed file.
 #' @param header (Optional) A logical value indicating whether the first row is
 #'        the column header. If missing, H2O will automatically try to detect
@@ -13,7 +13,7 @@
 #' @param sep (Optional) The field separator character. Values on each line of
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
-#' @param col.names (Optional) A Frame object containing a
+#' @param col.names (Optional) A H2OFrame object containing a
 #'        single delimited line with the column names for the file.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
 #'        over columns.
@@ -51,8 +51,8 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   # Poll on job
   .h2o.__waitOnJob(res$job$key$name)
 
-  # Return a new Frame object
-  x <- .newFrame("Parse",id=hex,-1,-1)
+  # Return a new H2OFrame object
+  x <- .newH2OFrame("Parse",id=hex,-1,-1)
   .fetch.data(x,1L) # Fill in nrow and ncol
   x
 }
@@ -65,8 +65,8 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL, parse_type=NULL) {
 
   # Allow single frame or list of frames; turn singleton into a list
-  if( is.Frame(data) ) data <- list(data)
-  for (d in data) chk.Frame(d)
+  if( is.H2OFrame(data) ) data <- list(data)
+  for (d in data) chk.H2OFrame(d)
 
   .key.validate(destination_frame)
   if(!(is.na(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
@@ -94,7 +94,7 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
 
   # set the column names
   if (!is.null(col.names)) {
-    parseSetup$column_names <- if(is.Frame(col.names)) colnames(col.names) else col.names
+    parseSetup$column_names <- if(is.H2OFrame(col.names)) colnames(col.names) else col.names
     if (!is.null(parseSetup$column_names) && (length(parseSetup$column_names) != parseSetup$number_columns)) {
                   stop("length of col.names must equal to the number of columns in dataset") } }
 

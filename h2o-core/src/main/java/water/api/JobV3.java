@@ -5,6 +5,7 @@ import water.Job;
 import water.Key;
 import water.Keyed;
 import water.api.KeyV3.JobKeyV3;
+import water.exceptions.H2OFailException;
 import water.util.Log;
 import water.util.PojoUtils;
 import water.util.ReflectionUtils;
@@ -71,7 +72,16 @@ public class JobV3<J extends Job, S extends JobV3<J, S>> extends Schema<J, S> {
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;
     Key dest_key = job.dest();
     Class<? extends Keyed> dest_class = ReflectionUtils.findActualClassParameter(job.getClass(), 0); // What type do we expect for this Job?
-    dest = KeyV3.forKeyedClass(dest_class, dest_key);
+    try {
+      dest = KeyV3.forKeyedClass(dest_class, dest_key);
+    }
+    catch (H2OFailException e) {
+      throw e;
+    }
+    catch (Exception e) {
+      dest = null;
+      Log.warn("JobV3.fillFromImpl(): dest key for job: " + this + " is not the expected type: " + dest_class.getCanonicalName() + ": " + dest_key + ".  Returning null for the dest field.");
+    }
     exception = job._exception;
     return (S) this;
   }

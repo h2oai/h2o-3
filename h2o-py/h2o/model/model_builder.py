@@ -1,13 +1,14 @@
+from __future__ import absolute_import
 from ..connection import H2OConnection
 from ..frame      import H2OFrame
 from ..job        import H2OJob
-from model_future import H2OModelFuture
-from dim_reduction import H2ODimReductionModel
-from autoencoder import H2OAutoEncoderModel
-from multinomial import H2OMultinomialModel
-from regression import H2ORegressionModel
-from binomial import H2OBinomialModel
-from clustering import H2OClusteringModel
+from .model_future import H2OModelFuture
+from .dim_reduction import H2ODimReductionModel
+from .autoencoder import H2OAutoEncoderModel
+from .multinomial import H2OMultinomialModel
+from .regression import H2ORegressionModel
+from .binomial import H2OBinomialModel
+from .clustering import H2OClusteringModel
 
 
 def build_model(algo_params):
@@ -35,7 +36,7 @@ def _model_build(x, y, tframe, vframe, algo, kwargs):
 
 def _resolve_model(future_model, **kwargs):
   future_model.poll()
-  if '_rest_version' in kwargs.keys(): model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
+  if '_rest_version' in list(kwargs.keys()): model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
   else:                                model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
 
   model_type = model_json["output"]["model_category"]

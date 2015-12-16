@@ -1,7 +1,8 @@
+from builtins import object
 
 #classes for grid search
 
-class H2OAutoEncoderGridSearch():
+class H2OAutoEncoderGridSearch(object):
 
   def anomaly(self,test_data,per_feature=False):
     """Obtain the reconstruction error for the input test_data.
@@ -20,7 +21,7 @@ class H2OAutoEncoderGridSearch():
     """
     return {model.model_id:model.anomaly(test_data,per_feature) for model in self.models}
 
-class H2OBinomialGridSearch():
+class H2OBinomialGridSearch(object):
 
   def F1(self, thresholds=None, train=False, valid=False, xval=False):
     """Get the F1 values for a set of thresholds for the models explored
@@ -370,7 +371,7 @@ class H2OBinomialGridSearch():
     """
     return {model.model_id:model.find_idx_by_threshold(threshold, train, valid, xval) for model in self.models}
 
-class H2OClusteringGridSearch():
+class H2OClusteringGridSearch(object):
   def size(self, train=False, valid=False, xval=False):
     """
     Get the sizes of each cluster.
@@ -555,7 +556,7 @@ class H2OClusteringGridSearch():
     """
     return {model.model_id:model.centers_std() for model in self.models}
 
-class H2ODimReductionGridSearch():
+class H2ODimReductionGridSearch(object):
   def num_iterations(self):
     """
     Get the number of iterations that it took to converge or reach max iterations.
@@ -587,7 +588,7 @@ class H2ODimReductionGridSearch():
     """
     return {model.model_id:model.archetypes for model in self.models}
 
-class H2OMultinomialGridSearch():
+class H2OMultinomialGridSearch(object):
 
   def confusion_matrix(self, data):
     """
@@ -610,5 +611,5 @@ class H2OMultinomialGridSearch():
     """
     return {model.model_id:model.hit_ratio_table(train, valid, xval) for model in self.models}
 
-class H2ORegressionGridSearch():
+class H2ORegressionGridSearch(object):
   pass

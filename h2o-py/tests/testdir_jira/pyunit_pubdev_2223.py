@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -15,11 +16,11 @@ def pubdev_2223():
                                balance_classes=False, reproducible=True, seed=1234,
                                export_weights_and_biases=True)
 
-    print "Normalization/Standardization multipliers for numeric predictors: {0}\n".format(dlmodel.normmul())
-    print "Normalization/Standardization offsets for numeric predictors: {0}\n".format(dlmodel.normsub())
-    print "Normalization/Standardization multipliers for numeric response: {0}\n".format(dlmodel.respmul())
-    print "Normalization/Standardization offsets for numeric response: {0}\n".format(dlmodel.respsub())
-    print "Categorical offsets for one-hot encoding: {0}\n".format(dlmodel.catoffsets())
+    print("Normalization/Standardization multipliers for numeric predictors: {0}\n".format(dlmodel.normmul()))
+    print("Normalization/Standardization offsets for numeric predictors: {0}\n".format(dlmodel.normsub()))
+    print("Normalization/Standardization multipliers for numeric response: {0}\n".format(dlmodel.respmul()))
+    print("Normalization/Standardization offsets for numeric response: {0}\n".format(dlmodel.respsub()))
+    print("Categorical offsets for one-hot encoding: {0}\n".format(dlmodel.catoffsets()))
 
 
 

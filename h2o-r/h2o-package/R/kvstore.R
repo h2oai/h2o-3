@@ -13,12 +13,13 @@
 
 .key.make <- function(prefix = "rapids") {
   conn <- h2o.getConnection()
+  session_id <- conn@mutable$session_id
   if (conn@mutable$key_count == .Machine$integer.max) {
-    conn@mutable$session_id <- .init.session_id()
+    session_id <- conn@mutable$session_id <- .init.session_id()
     conn@mutable$key_count  <- 0L
   }
   conn@mutable$key_count <- conn@mutable$key_count + 1L
-  sprintf("%s_%d", prefix, conn@mutable$key_count)  # removed session_id
+  sprintf("%s%s_%d", prefix, session_id, conn@mutable$key_count)  # removed session_id
 }
 
 
@@ -83,16 +84,16 @@ h2o.rm <- function(ids) {
   if( !is.vector(ids) ) x_list = c(ids) else x_list = ids
   for (xi in x_list) {
     if( is.null(xi) ) stop("h2o.rm with NULL object is not supported")
-    if( is.Frame(xi) ) {
+    if( is.H2OFrame(xi) ) {
       xi_id <- attr(xi, "id")       # String or None
       if( is.null(xi_id) ) return() # Lazy frame, never evaluated, nothing in cluster
-      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",xi_id[[1]],")"), method = "POST")
+      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",xi_id[[1]],")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
     } else if( is(xi, "H2OModel") ) {
       .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi@model_id), method = "DELETE")
     } else if( is.character(xi) ) {
       .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE")
     } else {
-      stop("input to h2o.rm must be one of: Frame, H2OModel, or character")
+      stop("input to h2o.rm must be one of: H2OFrame, H2OModel, or character")
     }
   }
 
@@ -110,7 +111,7 @@ h2o.rm <- function(ids) {
 #' @param id A string indicating the unique frame of the dataset to retrieve.
 #' @export
 h2o.getFrame <- function(id) {
-  fr <- .newFrame(id,id,-1,-1)
+  fr <- .newH2OFrame(id,id,-1,-1)
   .fetch.data(fr,1L)
   fr
 }
@@ -161,7 +162,7 @@ h2o.getModel <- function(model_id) {
         value <- -Inf
 
       # Parse frame information to a key
-      if (type == "Frame")
+      if (type == "H2OFrame")
         value <- value$name
       # Parse model information to a key
       if (type == "H2OModel") {

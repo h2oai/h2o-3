@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Functions for python logging
 
 import tempfile
@@ -35,7 +36,7 @@ def start_logging(full_logfile_path=None):
     global __LOG_FILE_NAME__
     __LOG_FILE_NAME__ = full_logfile_path
     __IS_LOGGING__ = True
-    print "Appending REST API transactions to log file " + full_logfile_path + "\n"
+    print("Appending REST API transactions to log file " + full_logfile_path + "\n")
     return full_logfile_path
 
 def stop_logging():
@@ -47,7 +48,7 @@ def stop_logging():
     """
     global __IS_LOGGING__
     __IS_LOGGING__ = False
-    print "Logging stopped\n"
+    print("Logging stopped\n")
 
 def clear_log():
     """
@@ -57,7 +58,7 @@ def clear_log():
     :return: None
     """
     os.remove(_get_log_file_name())
-    print "Removed file " + _get_log_file_name() + "\n"
+    print("Removed file " + _get_log_file_name() + "\n")
 
 def open_log():
     """

@@ -1,9 +1,13 @@
 package water;
 
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
 import org.junit.*;
-
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
 
 @Ignore
 public class OOMTest extends TestUtil {
@@ -80,5 +84,52 @@ public class OOMTest extends TestUtil {
     // Cleanup
     vrnd1.remove();
     vrnd2.remove();
+  }
+
+
+  // too slow for standard junit
+  // repeatedly throws OOM exception purpose, which breaks many things.
+  // tested now in gradle via the custom main() below
+  @Test @Ignore
+  public void testParseMemoryStress() {
+    // "bigdata directory is not always available"
+    if( find_test_file_static("bigdata/laptop/usecases/cup98LRN_z.csv") == null ) return;
+    if( find_test_file_static("bigdata/laptop/usecases/cup98VAL_z.csv") == null ) return;
+    ArrayList<Frame> frames = new ArrayList<>();
+    File ice = new File(water.H2O.ICE_ROOT.toString(),"ice" + water.H2O.API_PORT);
+    Assert.assertTrue(MemoryManager.MEM_MAX <= 1536L*1024L*1024L); // No more than 1.5Gig of heap; forces swapping
+    String[] dirs = ice.list();
+    Assert.assertTrue(dirs == null || dirs.length==0); // ICE empty before we start
+    try {
+      // Force much swap-to-disk
+      for( int i=0; i<4; i++ ) {
+        frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98LRN_z.csv"));
+        frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98VAL_z.csv"));
+      }
+    } finally {
+      dirs = ice.list();
+      Assert.assertNotNull("Swap directory not created; no swapping happened; test failed to stresss enough",dirs);
+      Assert.assertTrue(dirs.length>0); // Much got swapped to disk
+      Log.info("Deleting swap files at test end");
+      for( Frame fr : frames )
+        fr.delete();            // Cleanup swap-to-disk
+    }
+    // Assert nothing remains
+    dirs = ice.list();
+    Assert.assertTrue(dirs.length==0);
+  }
+
+  public static void main(String[] args) {
+    stall_till_cloudsize(1);
+    try {
+      new OOMTest().testParseMemoryStress();    // Throws on assertion error
+    } catch( Throwable e ) {
+      Log.err(e);
+      StringWriter sw = new StringWriter();
+      e.printStackTrace(new PrintWriter(sw));
+      Log.err(sw);
+      System.exit(-1);
+    }
+    System.exit(0);
   }
 }

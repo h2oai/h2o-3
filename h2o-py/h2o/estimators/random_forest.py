@@ -2,10 +2,10 @@ from .estimator_base import *
 
 
 class H2ORandomForestEstimator(H2OEstimator):
-  def __init__(self, model_id=None, mtries=None, sample_rate=None, build_tree_one_node=None,
-               ntrees=None, max_depth=None, min_rows=None, nbins=None, nbins_cats=None,
-               binomial_double_trees=None, balance_classes=None, max_after_balance_size=None,
-               seed=None, nfolds=None, fold_assignment=None,
+  def __init__(self, model_id=None, mtries=None, sample_rate=None, col_sample_rate_per_tree=None,
+               build_tree_one_node=None, ntrees=None, max_depth=None, min_rows=None, nbins=None,
+               nbins_cats=None, binomial_double_trees=None, balance_classes=None,
+               max_after_balance_size=None, seed=None, nfolds=None, fold_assignment=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
                score_each_iteration=None, keep_cross_validation_predictions=None, checkpoint=None):
     """Builds a Random Forest Model on an H2OFrame
@@ -20,7 +20,9 @@ class H2ORandomForestEstimator(H2OEstimator):
       defaults to sqrt{p} for classification, and p/3 for regression, where p is the
       number of predictors.
     sample_rate : float
-      Sample rate, from 0 to 1.0.
+      Row sample rate (from 0.0 to 1.0)
+    col_sample_rate_per_tree : float
+      Column sample rate per tree (from 0.0 to 1.0)
     build_tree_one_node : bool
       Run on one node only; no network overhead but fewer CPUs used.
       Suitable for small datasets.
@@ -77,7 +79,7 @@ class H2ORandomForestEstimator(H2OEstimator):
     """
     super(H2ORandomForestEstimator, self).__init__()
     self._parms = locals()
-    self._parms = {k:v for k,v in self._parms.iteritems() if k!="self"}
+    self._parms = {k:v for k,v in self._parms.items() if k!="self"}
 
   @property
   def mtries(self):
@@ -94,6 +96,14 @@ class H2ORandomForestEstimator(H2OEstimator):
   @sample_rate.setter
   def sample_rate(self, value):
     self._parms["sample_rate"] = value
+
+  @property
+  def col_sample_rate_per_tree(self):
+    return self._parms["col_sample_rate_per_tree"]
+
+  @col_sample_rate_per_tree.setter
+  def col_sample_rate_per_tree(self, value):
+    self._parms["col_sample_rate_per_tree"] = value
 
   @property
   def build_tree_one_node(self):

@@ -1,9 +1,8 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-
-
 
 
 def test_as_data():
@@ -14,9 +13,9 @@ def test_as_data():
   # that is, h2o cannot understand:
   # 1 integer days since epoch (or since any other date);
   # 2 dates formatted as %d/%m/%y (in strptime format strings)
-  print hdf.summary()
+  print(hdf.summary())
 
-  print 'adding date columns'
+  print('adding date columns')
   # NB: h2o automagically recognizes and if it doesn't recognize, you're out of luck
   hdf["ds5"] = hdf["ds5"].as_date("%d/%m/%y %H:%M")
   hdf["ds6"] = hdf["ds6"].as_date("%d/%m/%Y %H:%M:%S")
@@ -25,7 +24,7 @@ def test_as_data():
   hdf["ds9"] = hdf["ds9"].asfactor().as_date("%Y%m%d")
   hdf["ds10"] = hdf["ds10"].as_date("%Y_%m_%d")
 
-  print 'extracting year and month from posix date objects'
+  print('extracting year and month from posix date objects')
   hdf["year2"] = hdf["ds2"].year()
   hdf["year3"] = hdf["ds3"].year()
   hdf["year4"] = hdf["ds4"].year()
@@ -55,24 +54,22 @@ def test_as_data():
   hdf["idx10"] = hdf["ds10"].year() * 12 + hdf["ds10"].month()
 
   # frames
-  hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
-  hdf["ds9"] = hdf["ds9"].asfactor()
+  hdf2 = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
+  hdf2["ds9"] = hdf2["ds9"].asfactor()
 
-  hdf5 = hdf["ds5"]
-  hdf6 = hdf["ds6"]
-  hdf7 = hdf["ds7"]
-  hdf8 = hdf["ds8"]
-  hdf9 = hdf["ds9"]
-  hdf10 = hdf["ds10"]
+  hdf5 = hdf2["ds5"]
+  hdf6 = hdf2["ds6"]
+  hdf7 = hdf2["ds7"]
+  hdf8 = hdf2["ds8"]
+  hdf9 = hdf2["ds9"]
+  hdf10 = hdf2["ds10"]
 
-  hdf5 = hdf5.as_date("%d/%m/%y %H:%M")
-  hdf6 = hdf6.as_date("%d/%m/%Y %H:%M:%S")
-  hdf7 = hdf7.as_date("%m/%d/%y")
-  hdf8 = hdf8.as_date("%m/%d/%Y")
-  hdf9 = hdf9.as_date("%Y%m%d")
-  hdf10 = hdf10.as_date("%Y_%m_%d")
-
-
+  print(hdf5.as_date("%d/%m/%y %H:%M"))
+  print(hdf6.as_date("%d/%m/%Y %H:%M:%S"))
+  print(hdf7.as_date("%m/%d/%y"))
+  print(hdf8.as_date("%m/%d/%Y"))
+  print(hdf9.as_date("%Y%m%d"))
+  print(hdf10.as_date("%Y_%m_%d"))
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(test_as_data)

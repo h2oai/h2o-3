@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ##
 # Test: Logging H2O from R
 # Description: Capture POST commands sent from R and corresponding HTTP response.

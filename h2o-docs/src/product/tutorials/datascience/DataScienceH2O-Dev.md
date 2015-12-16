@@ -79,7 +79,7 @@ The output is a matrix of the cluster assignments and the coordinates of the clu
 
 - **How does the algorithm handle missing values during training?**
    
-  Missing values are automatically imputed by the column mean.
+  Missing values are automatically imputed by the column mean.  K-means also handles missing values by assuming that missing feature distance contributions are equal to the average of all other distance term contributions.
 
 - **How does the algorithm handle missing values during testing?**
    
@@ -319,6 +319,21 @@ By default, the following output displays:
 - **When building the model, does GLM use all features or a selection of the best features?**
 
   Typically, GLM picks the best predictors, especially if lasso is used (`alpha = 1`). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors. 
+
+- **When running GLM, is it better to create a cluster that uses many smaller nodes or fewer larger nodes?** 
+
+A rough heuristic would be: 
+
+  nodes ~=M*N^2/(p*1e8)
+
+where M is the number of observations, N is the number of columns (categorical columns count as a single column in this case), and p is the number of CPU cores per node. 
+
+For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula 250^2*1000000/(32*1e8)  = 19.5 ~= 20). 
+
+- **How is variable importance calculated for GLM?**
+
+For GLM, the variable importance represents the coefficient magnitudes. 
+
 
 
 ###GLM Algorithm
@@ -576,6 +591,11 @@ By default, the following output displays:
 - **What if there are a large number of categorical factor levels?**
 
   Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
+
+- **How is variable importance calculated for DRF?**
+
+Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result. 
+
 
 ###DRF Algorithm 
 
@@ -1420,7 +1440,7 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **How does the algorithm handle missing values during training?**
 
-  User-specifiable treatment of missing values via `missing_values_handling`. Specify either the skip or mean-impute option.
+Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default. 
 
 - **How does the algorithm handle missing values during testing?**
 
@@ -1526,6 +1546,9 @@ To specify the per-class over- or under-sampling factors, use `class\_sampling\_
 
 In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
 
+- **How is variable importance calculated for Deep Learning?**
+
+For Deep Learning, variable importance is calculated using the Gedeon method. 
 
 
 ---

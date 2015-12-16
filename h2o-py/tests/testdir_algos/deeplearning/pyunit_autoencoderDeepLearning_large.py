@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -24,13 +25,13 @@ def deeplearning_autoencoder():
 
   # unsupervised data for autoencoder
   train_unsupervised = train_hex[sid >= 0.5]
-  train_unsupervised.drop(resp)
-  train_unsupervised.describe()
+  train_unsupervised.pop(resp)
+  #train_unsupervised.describe()
 
 
   # supervised data for drf
   train_supervised = train_hex[sid < 0.5]
-  train_supervised.describe()
+  #train_supervised.describe()
 
   # train autoencoder
   ae_model = H2OAutoEncoderEstimator(activation="Tanh",
@@ -39,9 +40,9 @@ def deeplearning_autoencoder():
                                      reproducible=True,
                                      seed=1234)
 
-  ae_model.train(range(resp), training_frame=train_supervised)
+  ae_model.train(list(range(resp)), training_frame=train_unsupervised)
 
-  # conver train_supervised with autoencoder to lower-dimensional space
+  # convert train_supervised with autoencoder to lower-dimensional space
   train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp], 0)
 
   assert train_supervised_features.ncol == nfeatures, "Dimensionality of reconstruction is wrong!"
@@ -50,7 +51,7 @@ def deeplearning_autoencoder():
 
   # Train DRF on extracted feature space
   drf_model = H2ORandomForestEstimator(ntrees=10, min_rows=10, seed=1234)
-  drf_model.train(x=range(20), y=train_supervised_features.ncol-1, training_frame=train_supervised_features)
+  drf_model.train(x=list(range(20)), y=train_supervised_features.ncol-1, training_frame=train_supervised_features)
 
   # Test the DRF model on the test set (processed through deep features)
   test_features = ae_model.deepfeatures(test_hex[0:resp], 0)
@@ -60,8 +61,8 @@ def deeplearning_autoencoder():
   cm = drf_model.confusion_matrix(test_features)
   cm.show()
 
-  # 10% error +/- 0.001
-  assert abs(cm.cell_values[10][10] - 0.081) <= 0.01, "Error. Expected 0.081, but got {0}".format(cm.cell_values[10][10])
+  # 8.8% error +/- 0.001
+  assert abs(cm.cell_values[10][10] - 0.0882) < 0.001, "Error. Expected 0.0847, but got {0}".format(cm.cell_values[10][10])
 
 
 if __name__ == "__main__":

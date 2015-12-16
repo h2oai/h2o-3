@@ -4,7 +4,6 @@ import hex.Distribution;
 import hex.Model;
 import hex.ScoreKeeper;
 import water.H2O;
-import static water.H2O.technote;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -12,6 +11,8 @@ import water.util.RandomUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+
+import static water.H2O.technote;
 
 /**
  * Deep Learning Parameters
@@ -413,7 +414,7 @@ public class DeepLearningParameters extends Model.Parameters {
    * Activation functions
    */
   public enum Activation {
-    Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout
+    Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout, ExpRectifier, ExpRectifierWithDropout
   }
 
   /**
@@ -464,13 +465,13 @@ public class DeepLearningParameters extends Model.Parameters {
       }
     }
 
-    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
+    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
       dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
     }
     if (_hidden_dropout_ratios != null) {
       if (_hidden_dropout_ratios.length != _hidden.length) {
         dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
-      } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
+      } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
         if (!_quiet_mode)
           dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
       } else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
@@ -575,7 +576,7 @@ public class DeepLearningParameters extends Model.Parameters {
     if (_score_validation_samples < 0)
       dl.error("_score_validation_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
     if (_autoencoder && _sparsity_beta > 0) {
-      if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout) {
+      if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout || _activation == Activation.ExpRectifier || _activation == Activation.ExpRectifierWithDropout) {
         if (_average_activation >= 1 || _average_activation <= -1)
           dl.error("_average_activation", "Tanh average activation must be in (-1,1).");
       } else if (_activation == Activation.Rectifier || _activation == Activation.RectifierWithDropout) {
@@ -608,7 +609,7 @@ public class DeepLearningParameters extends Model.Parameters {
       if (_class_sampling_factors != null && !_balance_classes) {
         dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
       }
-      if (_replicate_training_data && null != train() && train().byteSize() > 1e10) {
+      if (_replicate_training_data && null != train() && train().byteSize() > 1e10 && H2O.CLOUD.size() > 1) {
         dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
       }
     }
@@ -797,7 +798,9 @@ public class DeepLearningParameters extends Model.Parameters {
       if (fromParms._hidden_dropout_ratios == null) {
         if (fromParms._activation == Activation.TanhWithDropout
                 || fromParms._activation == Activation.MaxoutWithDropout
-                || fromParms._activation == Activation.RectifierWithDropout) {
+                || fromParms._activation == Activation.RectifierWithDropout
+                || fromParms._activation == Activation.ExpRectifierWithDropout
+            ) {
           toParms._hidden_dropout_ratios = new double[fromParms._hidden.length];
           if (!fromParms._quiet_mode)
             Log.info("_hidden_dropout_ratios: Automatically setting all hidden dropout ratios to 0.5.");

@@ -73,7 +73,7 @@ public class TaskGetKey extends DTask<TaskGetKey> {
 
     // Hence we can do a blind putIfMatch here over a null or empty Value
     // If it fails, what is there is also the TGK result.
-    Value old = H2O.raw_get(_xkey);
+    Value old = H2O.STORE.get(_xkey);
     if( old != null && !old.isEmpty() ) old=null;
     Value res = H2O.putIfMatch(_xkey,_val,old);
     if( res != old ) _val = res;

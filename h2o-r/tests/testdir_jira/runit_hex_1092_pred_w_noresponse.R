@@ -1,10 +1,12 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 test.predict.withoutresponse <- function(h) {
 
 	ir = h2o.uploadFile(normalizePath(locate("smalldata/iris/iris.csv")),destination_frame="ir")
-	ss = h2o.splitFrame(data=ir, ratios=.2, seed = 16)
+	ss = h2o.splitFrame(data=ir, ratios=.2, seed = 0)
 
 	train = ss[[2]] 
-	expect_equal(nrow(train),118)
+	expect_equal(nrow(train),117)
 	test = ss[[1]] 
 	test = test[,-5] 
 	expect_equal(ncol(test),4) 

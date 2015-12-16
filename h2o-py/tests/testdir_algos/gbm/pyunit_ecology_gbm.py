@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -37,7 +38,7 @@ def ecologyGBM():
                                          distribution="bernoulli",
                                          min_rows=min_rows,
                                          max_depth=max_depth)
-  gbm_h2o.train(x=range(2,ecology_train.ncol), y="Angaus", training_frame=ecology_train)
+  gbm_h2o.train(x=list(range(2,ecology_train.ncol)), y="Angaus", training_frame=ecology_train)
 
   # Train scikit GBM Model:
   gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learn_rate, n_estimators=ntrees, max_depth=max_depth,

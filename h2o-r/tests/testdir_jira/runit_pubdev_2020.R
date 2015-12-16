@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 # Check for 2 parts
 test1 <- function() {
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
@@ -41,26 +43,26 @@ test2 <- function() {
 # Check that runif can be seeded for reproducibility
 test3 <- function() {
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
-  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2015)
+  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
-  stopifnot(value == 7)
+  stopifnot(value == 4)
   value = part2[2,"C2"]
-  stopifnot(value == 13)
+  stopifnot(value == 11)
   value = part2[3,"C3"]
   stopifnot(value == 22)
   
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
-  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2016)
+  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
-  stopifnot(value == 17)
+  stopifnot(value == 4)
   
   df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
-  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 2016)
+  splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
-  stopifnot(value == 17)
+  stopifnot(value == 4)
 }
 
 test.pubdev_2020 <- function() {

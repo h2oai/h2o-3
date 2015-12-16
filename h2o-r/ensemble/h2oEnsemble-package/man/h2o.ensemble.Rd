@@ -24,7 +24,7 @@ A vector containing the names of the predictors in the model.
 The name of the response variable in the model.
 }
   \item{training_frame}{
-An H2O Frame object containing the variables in the model.
+An H2O H2OFrame object containing the variables in the model.
 }
   \item{family}{
 A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
@@ -33,7 +33,7 @@ A description of the error distribution and link function to be used in the mode
 (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
 }
   \item{validation_frame}{
-(Optional) An H2O Frame object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not used.
+(Optional) An H2O H2OFrame object indicating the validation dataset used to contruct the confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}.  Currently not used.
 }
   \item{learner}{
 A string or character vector naming the prediction algorithm(s) used to train the base models for the ensemble.  The functions must have the same format as the h2o wrapper functions.
@@ -51,7 +51,7 @@ A random seed to be set (integer); defaults to 1. If \code{NULL}, then a random 
 A character string specifying optional parallelization. Use \code{"seq"} for sequential computation (the default) of the cross-validation and base learning steps. Use \code{"multicore"} to perform the V-fold (internal) cross-validation step as well as the final base learning step in parallel over all available cores. Or parallel can be a snow cluster object. Both parallel options use the built-in functionality of the R core "parallel" package.  Currently, only \code{"seq"} is compatible with the parallelized H2O algorithms, so this argument may be removed or modified in the future.
 }
 \item{keep_levelone_data}{
-  Logical, defaults to \code{TRUE}.  Keep the \code{levelone} H2O Frame of cross-validated predicted values (Z matrix) and original response vector, y (cbind to Z).
+  Logical, defaults to \code{TRUE}.  Keep the \code{levelone} H2O H2OFrame of cross-validated predicted values (Z matrix) and original response vector, y (cbind to Z).
 }
 }
 
@@ -88,7 +88,7 @@ A list of H2O models, each of which are trained using the \code{data} object.  T
 The predictive model which is learned by regressing \code{y} on \code{Z} (see description of \code{Z} below).  The type of model is specified using the \code{metalearner} argument.
 }
 \item{levelone}{
-An H2O Frame object.  The \code{levelone} H2O Frame includes the "Z matrix" (the cross-validated predicted values for each base learner) and original response vector, y.  In the stacking ensemble literature, the Z matrix is the design matrix used to train the metalearner.
+An H2O H2OFrame object.  The \code{levelone} H2O H2OFrame includes the "Z matrix" (the cross-validated predicted values for each base learner) and original response vector, y.  In the stacking ensemble literature, the Z matrix is the design matrix used to train the metalearner.
 }
 \item{runtime}{
 A list of runtimes for various steps of the algorithm.  The list contains \code{cv}, \code{metalearning}, \code{baselearning} and \code{total} elements.  The \code{cv} element is the time it takes to create the \code{Z} matrix (see above).  The \code{metalearning} element is the training time for the metalearning step.  The \code{baselearning} element is a list of training times for each of the models in the ensemble.  The time to run the entire \code{h2o.ensemble} function is given in \code{total}.

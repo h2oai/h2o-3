@@ -1,10 +1,6 @@
 package water;
 
 import water.fvec.*;
-import water.serial.AutoBufferSerializer;
-
-import java.util.Collections;
-import java.util.List;
 
 /** Iced, with a Key.  Support for DKV removal. */
 public abstract class Keyed<T extends Keyed> extends Iced<T> {
@@ -13,6 +9,7 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   public Keyed() { _key = null; } // NOTE: every Keyed that can come out of the REST API has to have a no-arg constructor.
   public Keyed( Key<T> key ) { _key = key; }
 
+  // ---
   /** Remove this Keyed object, and all subparts; blocking. */
   public final void remove( ) { remove(new Futures()).blockForPending(); }
   /** Remove this Keyed object, and all subparts.  */
@@ -39,6 +36,23 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     ((Keyed)val.get()).remove(fs);
   }
 
+  // ---
+  /** Write this Keyed object, and all nested Keys. */
+  public AutoBuffer writeAll(AutoBuffer ab) { return writeAll_impl(ab.put(this)); }
+  // Override this to write out subparts
+  protected AutoBuffer writeAll_impl(AutoBuffer ab) { return ab; }
+
+  /** Read a Keyed object, and all nested Keys.  Nested Keys are injected into the K/V store
+   *  overwriting what was there before.  */
+  public static Keyed readAll(AutoBuffer ab) { 
+    Futures fs = new Futures();
+    Keyed k = ab.getKey(fs);
+    fs.blockForPending();       // Settle out all internal Key puts
+    return k;
+  }
+  // Override this to read in subparts
+  protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { return this; }
+
   /**
    * High-quality 64-bit checksum of the <i>content</i> of the
    * object.  Similar to hashcode(), but a long to reduce the
@@ -56,23 +70,5 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     long x = checksum_impl();
     if( x==0 ) x=1;
     return (_checksum=x);
-  }
-
-  protected static class BinarySerializer<X extends Keyed> extends AutoBufferSerializer<X> {
-  }
-
-  /** Returns a model serializer into AutoBuffer. */
-  public AutoBufferSerializer<Keyed> getBinarySerializer() {
-    return new BinarySerializer<>();
-  }
-
-  public static final List<Key> EMPTY_KEY_LIST = Collections.emptyList();
-
-  /**
-   * Returns a list of keys which are published by this object.
-   * @return key list
-   */
-  public List<Key> getPublishedKeys() {
-    return EMPTY_KEY_LIST;
   }
 }

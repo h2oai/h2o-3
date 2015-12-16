@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -15,48 +17,49 @@ def baddataKmeans():
 
   rows = 100
   cols = 10
-  rawdata = [[random.random() for r in range(rows)] for c in range(cols)]
+  rawdata = [[random.random() for c in range(cols)] for r in range(rows)]
 
   # Row elements that are None will be replaced with mean of column
   #Log.info("Training data with 1 row of all Nones: replace with column mean")
   data = rawdata[:]
-  for col in data: col[24] = None
+  data[24] = [None]*cols
   frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 10, "expected center to be 10 dimensional"
+  assert len(centers) == 5, "expected 5 centers"
+  assert len(centers[0]) == 10, "expected center to be 10 dimensional"
 
   # Columns with constant value will be automatically dropped
   #Log.info("Training data with 1 col of all 5's: drop automatically")
   data = rawdata[:]
-  data[4] = [5] * rows
+  for row in data: row[4] = 5
   frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 9, "expected center to be 9-dimensional"
+  assert len(centers) == 5, "expected 5 centers"
+  assert len(centers[0]) == 9, "expected center to be 9-dimensional"
   # TODO: expect_warning(km_model = h2o.kmeans(x=frame, k=5))
 
   # Log.info("Training data with 1 col of all None's, 1 col of all zeroes: drop automatically")
   data = rawdata[:]
-  data[4] = [None] * rows
-  data[7] = [0] * rows
+  for row in data:
+    row[4] = None
+    row[7] = 0
   frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
 
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 8, "expected center to be 8-dim "
+  assert len(centers) == 5, "expected 5 centers"
+  assert len(centers[0]) == 8, "expected center to be 8-dim "
   # TODO: expect_warning(km_model = h2o.kmeans(x=frame, k=5))
 
   # Log.info("Training data with all None's")
-  data = [[None for c in range(rows)] for r in range(cols)]
+  data = [[None for r in range(cols)] for c in range(rows)]
   frame = h2o.H2OFrame(data)
 
   try:
@@ -66,21 +69,21 @@ def baddataKmeans():
     assert True
 
   # Log.info("Training data with a categorical column(s)")
-  data = [[random.choice(string.ascii_uppercase) for c in range(rows)] for r in range(cols)]
+  data = [[random.choice(string.ascii_uppercase) for r in range(cols)] for c in range(rows)]
   frame = h2o.H2OFrame(data)
 
   km_model = h2o.kmeans(x=frame, k=5)
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 10, "expected center to be 10 "+str(len(centers))
+  assert len(centers) == 5, "expected 5 centers"
+  assert len(centers[0]) == 10, "expected center to be 10 "+str(len(centers))
 
   # Log.info("Importing iris.csv data...\n")
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
   km_model = h2o.kmeans(x=iris, k=5)
   centers = km_model.centers()
-  assert len(centers[0]) == 5, "expected 5 centers"
-  assert len(centers) == 5, "expected center to be 5 "+str(len(centers))
+  assert len(centers) == 5, "expected 5 centers"
+  assert len(centers[0]) == 5, "expected center to be 5 "+str(len(centers))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,8 @@
-from model_base import ModelBase
-from metrics_base import *
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
+from .model_base import ModelBase
+from .metrics_base import *
 
 
 class H2ODimReductionModel(ModelBase):
@@ -89,17 +92,17 @@ class H2ODimReductionModel(ModelBase):
         try:
             imp.find_module('matplotlib')
             import matplotlib
-            if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
+            if 'server' in list(kwargs.keys()) and kwargs['server']: matplotlib.use('Agg', warn=False)
             import matplotlib.pyplot as plt
         except ImportError:
-            print "matplotlib is required for this function!"
+            print("matplotlib is required for this function!")
             return
 
         variances = [s**2 for s in self._model_json['output']['importance'].cell_values[0][1:]]
         plt.xlabel('Components')
         plt.ylabel('Variances')
         plt.title('Scree Plot')
-        plt.xticks(range(1,len(variances)+1))
-        if type == "barplot": plt.bar(range(1,len(variances)+1), variances)
-        elif type == "lines": plt.plot(range(1,len(variances)+1), variances, 'b--')
-        if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
+        plt.xticks(list(range(1,len(variances)+1)))
+        if type == "barplot": plt.bar(list(range(1,len(variances)+1)), variances)
+        elif type == "lines": plt.plot(list(range(1,len(variances)+1)), variances, 'b--')
+        if not ('server' in list(kwargs.keys()) and kwargs['server']): plt.show()

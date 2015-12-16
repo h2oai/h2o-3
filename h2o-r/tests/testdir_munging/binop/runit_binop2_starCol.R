@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 
 
@@ -31,7 +33,7 @@ test.slice.star <- function() {
   Log.info("5 * sliced: ")
   print(head(fiveStarSliced))
 
-  Log.info("Checking the variation of H2OFrame * H2OFrame")
+  Log.info("Checking the variation of H2OH2OFrame * H2OH2OFrame")
 
   hexStarHex <- fiveStarSliced * slicedStarFive
 

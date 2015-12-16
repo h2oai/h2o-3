@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -12,7 +13,7 @@ def grid_wineGBM():
 
     wine = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/wine.data"))
     #wine.summary()
-    x_cols = range(2,14) + [0]
+    x_cols = list(range(2,14)) + [0]
     wine_grid = h2o.gbm(y=wine[1],
                         x=wine[x_cols],
                         distribution='gaussian',

@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../h2o-r/scripts/h2o-r-test-setup.R")
 #-----------------------------------------------------------------------
 # Purpose:  This test shows import from s3 and hdfs from Hadoop cluster.
 #-----------------------------------------------------------------------

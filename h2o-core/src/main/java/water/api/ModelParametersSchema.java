@@ -1,25 +1,15 @@
 package water.api;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import hex.Model;
 import hex.ScoreKeeper;
-import water.AutoBuffer;
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.Value;
+import water.*;
 import water.api.KeyV3.FrameKeyV3;
 import water.api.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
 import water.util.PojoUtils;
+
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  * An instance of a ModelParameters schema contains the Model build parameters (e.g., K and max_iterations for KMeans).
@@ -119,7 +109,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   }
 
   public S fillFromImpl(P impl) {
-    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES );
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
 
     if (null != impl._train) {
       Value v = DKV.get(impl._train);

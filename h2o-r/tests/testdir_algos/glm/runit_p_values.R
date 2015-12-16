@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 test.GLM.nonnegative <- function() {
   Log.info("Importing prostate.csv data...\n")
   prostate.hex = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), "prostate.hex")

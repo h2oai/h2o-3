@@ -14,7 +14,7 @@ import water.util.StringUtils;
  *  Jobs produce a {@link Keyed} result, such as a Frame (from Parsing), or a Model.
  *  NOTE: the Job class is parametrized on the type of its _dest field.
  */
-public class Job<T extends Keyed> extends Keyed {
+public class Job<T extends Keyed> extends Keyed<Job> {
   /** A system key for global list of Job keys. */
   public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
   private static class JobList extends Keyed {
@@ -106,7 +106,7 @@ public class Job<T extends Keyed> extends Keyed {
     }
   }
 
-  private Job(Key<T> jobKey, Key<T> dest, String desc) {
+  private Job(Key<Job> jobKey, Key<T> dest, String desc) {
     super(jobKey);
     _description = desc;
     _dest = dest;
@@ -121,14 +121,14 @@ public class Job<T extends Keyed> extends Keyed {
   }
   // Job Keys are pinned to this node (i.e., the node that invoked the
   // computation), because it should be almost always updated locally
-  private static Key defaultJobKey() { return Key.make((byte) 0, Key.JOB, false, H2O.SELF); }
+  private static Key<Job> defaultJobKey() { return Key.make((byte) 0, Key.JOB, false, H2O.SELF); }
 
 
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
    *  @param work Units of work to be completed
    *  @param restartTimer
-   * @return this job in {@link JobState#RUNNING} state
+   *  @return this job in {@link JobState#RUNNING} state
    *
    *  @see JobState
    *  @see H2OCountedCompleter
@@ -363,7 +363,17 @@ public class Job<T extends Keyed> extends Keyed {
 
   @Override protected Futures remove_impl(Futures fs) {
     if (null != _progressKey && deleteProgressKey()) DKV.remove(_progressKey, fs);
-    return fs;
+    return super.remove_impl(fs);
+  }
+
+  /** Write out K/V pairs, in this case progress. */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+    ab.putKey(_progressKey);
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    ab.getKey(_progressKey,fs);
+    return super.readAll_impl(ab,fs);
   }
 
   /** Default checksum; not really used by Jobs.  */

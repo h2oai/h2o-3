@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 ##
 # Test out the dim() functionality
 # If data frame, get back a vector of two numbers: [1] nrows ncols

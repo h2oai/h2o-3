@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -8,7 +11,7 @@ from tests import pyunit_utils
 
 def cumsumminprodmax():
     # TODO PUBDEV-1748
-    foo = h2o.H2OFrame(zip(*[[x,y] for x,y in zip(range(10),range(9,-1,-1))]))
+    foo = h2o.H2OFrame([[x,y] for x,y in zip(list(range(10)),list(range(9,-1,-1)))])
     foo.show()
 
     cumsum1 = foo[0].cumsum()
@@ -31,7 +34,7 @@ def cumsumminprodmax():
                                                                                                     cummin2[9,0])
 
     cumprod1.show()
-    print cumprod1.dim
+    print(cumprod1.dim)
     assert cumprod1[8,0] == cumprod2[8,0] == 362880, "expected cumprod to be 362880, but got {0} and " \
                                                      "{1}".format(cumprod1[8,0], cumprod2[8,0])
 

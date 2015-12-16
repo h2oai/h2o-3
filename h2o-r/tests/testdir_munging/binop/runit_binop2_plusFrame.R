@@ -1,7 +1,9 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-test.plus.onFrame <- function() {
+test.plus.onH2OFrame <- function() {
   hex <- as.h2o( iris)
 
   Log.info("Try adding scalar to frame: 5 + hex")
@@ -58,5 +60,5 @@ test.plus.onFrame <- function() {
   
 }
 
-doTest("BINOP2 EXEC2 TEST: '+' with Frames", test.plus.onFrame)
+doTest("BINOP2 EXEC2 TEST: '+' with H2OFrames", test.plus.onH2OFrame)
 

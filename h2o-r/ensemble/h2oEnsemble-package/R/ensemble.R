@@ -12,17 +12,17 @@ h2o.ensemble <- function(x, y, training_frame,
   starttime <- Sys.time()
   runtime <- list()
   
-  # Training_frame may be a key or an H2O Frame object
-  if ((!inherits(training_frame, "Frame") && !inherits(training_frame, "H2OFrame")))
+  # Training_frame may be a key or an H2O H2OFrame object
+  if ((!inherits(training_frame, "H2OFrame") && !inherits(training_frame, "H2OH2OFrame")))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid H2O Frame or id")
+               stop("argument \"training_frame\" must be a valid H2O H2OFrame or id")
              })
   if (!is.null(validation_frame)) {
     if (is.character(validation_frame))
       tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                error = function(err) {
-                 stop("argument \"validation_frame\" must be a valid H2O Frame or id")
+                 stop("argument \"validation_frame\" must be a valid H2O H2OFrame or id")
                })
   }
   N <- dim(training_frame)[1L]  #Number of observations in training set
@@ -53,7 +53,7 @@ h2o.ensemble <- function(x, y, training_frame,
     if (!is.numeric(training_frame[,y])) {
       stop("When `family` is gaussian, the repsonse column must be numeric.")
     }
-    # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OFrame cols
+    # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OH2OFrame cols
     ylim <- c(min(training_frame[,y]), max(training_frame[,y]))  #Used to enforce bounds  
   } else {
     if (!is.factor(training_frame[,y])) {
@@ -225,7 +225,13 @@ h2o.ensemble <- function(x, y, training_frame,
 .fitFun <- function(l, y, x, training_frame, validation_frame, family, learner, seed, fold_column) {
   if (!is.null(fold_column)) cv = TRUE
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
-  fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
+  if (("x" %in% names(formals(learner[l]))) && (as.character(formals(learner[l])$x)[1] != "")) {
+    # Special case where we pass a subset of the colnames, x, in a custom learner function wrapper
+    fit <- match.fun(learner[l])(y = y, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
+  } else {
+    # Use all predictors in training set for training
+    fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
+  }
   #fit <- get(learner[l], mode = "function", envir = parent.frame())(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
   return(fit)
 }

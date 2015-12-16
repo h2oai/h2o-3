@@ -1,5 +1,6 @@
 package water.parser;
 
+import com.google.common.base.Charsets;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
@@ -24,8 +25,6 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import com.google.common.base.Charsets;
 
 public final class ParseDataset extends Job<Frame> {
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
@@ -110,7 +109,7 @@ public final class ParseDataset extends Job<Frame> {
       }
     }
 
-    long memsz = H2O.CLOUD.memsz();
+    long memsz = H2O.CLOUD.free_mem();
     if( totalParseSize > memsz*4 )
       throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(totalParseSize)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
 
@@ -374,14 +373,15 @@ public final class ParseDataset extends Job<Frame> {
           for( int j = 0; j < chk._len; ++j){
             if( chk.isNA(j) )continue;
             final int old = (int) chk.at8(j);
-            if (old < 0 || old >= _parse2GlobalCatMaps[i].length)
+            if (old < 0 || (_parse2GlobalCatMaps[i] != null && old >= _parse2GlobalCatMaps[i].length))
               chk.reportBrokenCategorical(i, j, old, _parse2GlobalCatMaps[i], _fr.vec(i).domain().length);
-            if(_parse2GlobalCatMaps[i][old] < 0)
+            if(_parse2GlobalCatMaps[i] != null && _parse2GlobalCatMaps[i][old] < 0)
               throw new H2OParseException("Error in unifying categorical values. This is typically "
                   +"caused by unrecognized characters in the data.\n The problem categorical value "
                   +"occurred in the " + PrettyPrint.withOrdinalIndicator(i+1)+ " categorical col, "
                   +PrettyPrint.withOrdinalIndicator(chk.start() + j) +" row.");
-            chk.set(j, _parse2GlobalCatMaps[i][old]);
+            if (_parse2GlobalCatMaps[i] != null)
+              chk.set(j, _parse2GlobalCatMaps[i][old]);
           }
           Log.trace("Updated domains for "+PrettyPrint.withOrdinalIndicator(i+1)+ " categorical column.");
         }
@@ -557,7 +557,7 @@ public final class ParseDataset extends Job<Frame> {
             // locally-homed chunks only - to keep the data distribution.
             int nlines = 0;
             for( Vec vec : _f.vecs() ) {
-              Value val = H2O.get(vec.chunkKey(fi)); // Local-get only
+              Value val = Value.STORE_get(vec.chunkKey(fi)); // Local-get only
               if( val != null ) {
                 nlines = ((Chunk)val.get())._len;
                 break;
@@ -568,7 +568,7 @@ public final class ParseDataset extends Job<Frame> {
             for(int j = 0; j < _f.numCols(); ++j) {
               Vec vec = _f.vec(j);
               Key k = vec.chunkKey(fi);
-              Value val = H2O.get(k);   // Local-get only
+              Value val = Value.STORE_get(k);   // Local-get only
               if( val == null )         // Missing?  Fill in w/zero chunk
                 H2O.putIfMatch(k, new Value(k, new C0LChunk(0, fnlines)), null);
             }
@@ -894,7 +894,7 @@ public final class ParseDataset extends Job<Frame> {
         for(int i=0; i < 2; i++) {  // iterate over this chunk and the next one
           cidx += i;
           if (!_visited.add(cidx)) { // Second visit
-            Value v = H2O.get(in.vec().chunkKey(cidx));
+            Value v = Value.STORE_get(in.vec().chunkKey(cidx));
             if (v == null || !v.isPersisted()) return; // Not found, or not on disk somewhere
             v.freePOJO();           // Eagerly toss from memory
             v.freeMem();

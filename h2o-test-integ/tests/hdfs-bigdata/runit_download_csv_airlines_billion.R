@@ -1,10 +1,9 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../h2o-r/scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This test exercises downloadCSV of large predictions frame
 #           50GB
 #----------------------------------------------------------------------
-
-setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit-hadoop.R')
 
 ipPort <- get_args(commandArgs(trailingOnly = TRUE))
 myIP   <- ipPort[[1]]
@@ -15,7 +14,7 @@ print(hdfs_name_node)
 library(RCurl)
 library(h2o)
 
-heading("BEGIN TEST")
+#heading("BEGIN TEST")
 h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 h2o.removeAll()
 
@@ -59,4 +58,4 @@ h2o.downloadCSV(predictions1, myFile)
 #expect_equal(r1, r2, info="Expected the same number of rows")
 #expect_equal(c1, c2, info="Expected the same number of cols")
 
-PASS_BANNER()
+

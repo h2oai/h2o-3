@@ -1,14 +1,11 @@
 # encoding: utf-8
 # module h2o
 # from (h2o)
+from __future__ import absolute_import
 __version__ = "SUBST_PROJECT_VERSION"
-from h2o import *
-from model import *
-from demo import *
-from h2o_logging import *
-from frame import H2OFrame
-from group_by import GroupBy
-from two_dim_table import H2OTwoDimTable
-from assembly import H2OAssembly
 
-__all__ = ["H2OFrame", "H2OConnection", "H2OTwoDimTable", "GroupBy"]
+from .h2o import *
+
+__all__ = ['assembly', 'astfun', 'connection', 'cross_validation', 'demo', 'display',
+           'expr', 'frame', 'group_by', 'h2o', 'h2o_logging', 'h2o_model_builder',
+           'job', 'two_dim_table', 'estimators', 'grid', 'model', 'transforms']

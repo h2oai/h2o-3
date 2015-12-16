@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -7,12 +9,12 @@ from tests import pyunit_utils
 def anomaly():
     
 
-    print "Deep Learning Anomaly Detection MNIST"
+    print("Deep Learning Anomaly Detection MNIST")
 
     train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
     test = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))
 
-    predictors = range(0,784)
+    predictors = list(range(0,784))
     resp = 784
 
     # unsupervised -> drop the response column (digit: 0-9)

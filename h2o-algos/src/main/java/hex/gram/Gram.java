@@ -11,7 +11,9 @@ import water.*;
 import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ForkJoinPool;
 
 public final class Gram extends Iced<Gram> {
   boolean _hasIntercept;
@@ -142,6 +144,182 @@ public final class Gram extends Iced<Gram> {
       }
     return res;
   }
+
+  private static double f_eps = 1e-8;
+  private static final int MIN_PAR = 1000;
+
+  private final void updateZij(int i, int j, double [][] Z, double [] gamma) {
+    double [] Zi = Z[i];
+    double Zij = Zi[j];
+    for (int k = 0; k < j; ++k)
+      Zij -= gamma[k] * Zi[k];
+    Zi[j] = Zij;
+  }
+  private final void updateZ(final double [] gamma, final double [][] Z, int j){
+    for (int i = j + 1; i < Z.length; ++i)  // update xj to zj //
+      updateZij(i,j,Z,gamma);
+  }
+
+  private final void updateUnitMatrix_ij(final double [] gamma, final double [][] unit_matrix, int i, int j) {
+    double unit_ij = unit_matrix[i][j];
+    double[] unit_i = unit_matrix[i];
+    for (int k = i; k < j; ++k)
+      unit_ij -= gamma[k] * unit_i[k];
+    unit_i[j] = unit_ij;
+  }
+  private final void updateUnitMatrix(final double [] gamma, int j, final double [][] unit_matrix) {
+    for (int i = 0; i < unit_matrix.length; ++i)
+      updateUnitMatrix_ij(gamma,unit_matrix,i,j);
+  }
+
+  /**
+   * Compute Cholesky decompostion by computing partial QR decomposition (R == LU).
+   *
+   * The advantage of this method over the standard solve is that it can deal with Non-SPD matrices.
+   * Gram matrix comes out as Non-SPD if we have co-linear columns.
+   * QR decomposition can identify co-linear (redundant) columns and remove them from the dataset.
+   *
+   * QR computation:
+   * QR is computed using Gram-Schmidt elimination, using Gram matrix instead of the underlying dataset.
+   *
+   * Gram-schmidt decomposition can be computed as follows: (from "The Eelements of Statistical Learning")
+   * 1. set z0 = x0 = 1 (Intercept)
+   * 2. for j = 1:p
+   *      for l = 1:j-1
+   *        gamma_jl = dot(x_l,x_j)/dot(x_l,x_l)
+   *      zj = xj - sum(gamma_j[l]*x_l)
+   *      if(zj ~= 0) xj was redundant (co-linear)
+   * Zjs are orthogonal projections of xk and form base of the X space. (dot(z_i,z_j) == 0 for i != j)
+   * In the end, gammas contain (Scaled) R from the QR decomp which is == LU from cholesky decomp.
+   *
+   *
+   * Note that all of these operations can be be computed from the Gram matrix only, as gram matrix contains
+   * dot(x_i,x_j) for i = 1..N, j = 1..N
+   *
+   * We can obviously compute gamma_lk directly, instead of replacing xk with zk, we fix the gram matrix.
+   * When doing that, we need to replace dot(xi,xk) with dot(xi,zk) for all i.
+   * There are two cases,
+   *   1)  dot(xk,xk) -> dot(zk,zk)
+   *       dot(xk - sum(gamma_l*x_l,xk - sum(gamma_l*x_l)
+   *       = dot(xk,xk) - 2* sum(gamma_l*dot(x_i,x_k) + sum(gamma_l*sum(gamma_k*dot(x_l,x_k)))
+   *       (can be simplified using the fact that dot(zi,zj) == 0 for i != j
+   *   2)  dot(xi,xk) -> dot(xi,zk) for i != k
+   *      dot(xi, xj - sum(gamma_l*x_l))
+   *      = dot(xi, xj) - dot(xi,sum(gamma_l*x_l))
+   *      = dot(xi,xj) - sum(gamma_l*dot(xi,x_l)) (linear combination
+   *
+   * The algorithm then goes as follows:
+   *   for j = 1:n
+   *     for l = 1:j-1
+   *       compute gamma_jl
+   *     update gram by replacing xk with zk = xk- sum(gamma_jl*s*xl);
+   *
+   * @param dropped_cols - empty list which will be filled with co-linear columns removed during computation
+   * @return Cholesky - cholesky decomposition fo the gram
+   */
+  public Cholesky qrCholesky(ArrayList<Integer> dropped_cols) {
+    final double [][] Z = getXX(true);
+    // put intercept first
+    int icpt_id = Z.length-1;
+    double d = Z[0][0];
+    Z[0][0] = Z[icpt_id][icpt_id];
+    Z[icpt_id][icpt_id] = d;
+    for(int i = 1; i < Z.length-1; ++i) {
+      d = Z[i][0];
+      Z[i][0] = Z[icpt_id][i];
+      Z[icpt_id][i] = d;
+    }
+    // todo add diagonal hack to save on the largest categorical variable
+    final double [][] R = new double[Z.length][];
+    final double [] ZdiagInv = new double[Z.length];
+    for(int i = 0; i < Z.length; ++i)
+      ZdiagInv[i] = 1.0/Z[i][i];
+    for(int j = 0; j < Z.length; ++j) {
+      final double [] gamma = R[j] = new double[j+1];
+      for(int l = 0; l <= j; ++l) // compute gamma_l_j
+        gamma[l] = Z[j][l]*ZdiagInv[l];
+      double zjj = Z[j][j];
+      for(int k = 0; k < j; ++k) // only need the diagonal, the rest is 0 (dot product of orthogonal vectors)
+        zjj += gamma[k] * (gamma[k] * Z[k][k] - 2*Z[j][k]);
+      ZdiagInv[j] = 1./zjj;
+      if(-f_eps < zjj && zjj < f_eps) { // co-linear column, drop it!
+        zjj = 0;
+        dropped_cols.add(j);
+        ZdiagInv[j] = 0;
+      }
+      Z[j][j] = zjj;
+      int jchunk = Math.max(1,MIN_PAR/(Z.length-j));
+      int nchunks = (Z.length - j - 1)/jchunk;
+      nchunks = Math.min(nchunks,H2O.NUMCPUS);
+      if(nchunks <= 1) { // single trheaded update
+        updateZ(gamma,Z,j);
+      } else { // multi-threaded update
+        final int fjchunk = (Z.length - 1 - j)/nchunks;
+        int rem = Z.length - 1 - j - fjchunk*nchunks;
+        for(int i = Z.length-rem; i < Z.length; ++i)
+          updateZij(i,j,Z,gamma);
+        RecursiveAction[] ras = new RecursiveAction[nchunks];
+        final int fj = j;
+        int k = 0;
+        for (int i = j + 1; i < Z.length-rem; i += fjchunk) { // update xj to zj //
+          final int fi = i;
+          ras[k++] = new RecursiveAction() {
+            @Override
+            protected final void compute() {
+              int max_i = Math.min(fi+fjchunk,Z.length);
+              for(int i = fi; i < max_i; ++i)
+                updateZij(i,fj,Z,gamma);
+            }
+          };
+        }
+        ForkJoinTask.invokeAll(ras);
+      }
+    }
+    // update the R - we computed Rt/sqrt(diag(Z)) which we can directly use to solve the problem
+    if(R.length < 500)
+      for(int i = 0; i < R.length; ++i)
+        for (int j = 0; j <= i; ++j)
+          R[i][j] *= Math.sqrt(Z[j][j]);
+    else {
+      RecursiveAction [] ras = new RecursiveAction[R.length];
+      for(int i = 0; i < ras.length; ++i) {
+        final int fi = i;
+        final double [] Rrow = R[i];
+        ras[i] = new RecursiveAction() {
+          @Override
+          protected void compute() {
+            for (int j = 0; j <= fi; ++j)
+              Rrow[j] *= Math.sqrt(Z[j][j]);
+          }
+        };
+      }
+      ForkJoinTask.invokeAll(ras);
+    }
+    // drop the ignored cols
+    if(dropped_cols.isEmpty()) return new Cholesky(R,new double[0], true);
+    double [][] Rnew = new double[R.length-dropped_cols.size()][];
+    for(int i = 0; i < Rnew.length; ++i)
+      Rnew[i] = new double[i+1];
+    int j = 0;
+    for(int i = 0; i < R.length; ++i) {
+      if(Z[i][i] == 0) continue;
+      int k = 0;
+      for(int l = 0; l <= i; ++l) {
+        if(k < dropped_cols.size() && l == dropped_cols.get(k)) {
+          ++k;
+          continue;
+        }
+        Rnew[j][l - k] = R[i][l];
+      }
+      ++j;
+    }
+    if((dropped_cols.get(dropped_cols.size()-1)) == ZdiagInv.length-1){
+      dropped_cols.remove(dropped_cols.size()-1);
+      dropped_cols.add(0,0); // first and last columns are switched so that the intercept is the first drugin the QR decomp
+    }
+    return new Cholesky(Rnew,new double[0], true);
+  }
+
 
   public String toString(){
     if(_fullN >= 1000){
@@ -309,17 +487,19 @@ public final class Gram extends Iced<Gram> {
     return chol;
   }
 
-  public double[][] getXX() {
+  public double[][] getXX(){return getXX(false);}
+  public double[][] getXX(boolean lowerDiag) {
     final int N = _fullN;
     double[][] xx = new double[N][];
     for( int i = 0; i < N; ++i )
-      xx[i] = MemoryManager.malloc8d(N);
+      xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
     for( int i = 0; i < _diag.length; ++i )
       xx[i][i] = _diag[i];
     for( int i = 0; i < _xx.length; ++i ) {
       for( int j = 0; j < _xx[i].length; ++j ) {
         xx[i + _diag.length][j] = _xx[i][j];
-        xx[j][i + _diag.length] = _xx[i][j];
+        if(!lowerDiag)
+          xx[j][i + _diag.length] = _xx[i][j];
       }
     }
     return xx;
@@ -353,25 +533,43 @@ public final class Gram extends Iced<Gram> {
       if( Double.isInfinite(d) || Double.isNaN(d) ) return true;
     return false;
   }
-
-
+  
   public static final class Cholesky {
     public final double[][] _xx;
     protected final double[] _diag;
     private boolean _isSPD;
+    private final boolean _icptFirst;
 
     public Cholesky(double[][] xx, double[] diag) {
       _xx = xx;
       _diag = diag;
+      _icptFirst = false;
     }
 
-    public Cholesky(Gram gram) {
-      _xx = gram._xx.clone();
-      for( int i = 0; i < _xx.length; ++i )
-        _xx[i] = gram._xx[i].clone();
-      _diag = gram._diag.clone();
+    public Cholesky(double[][] xx, double[] diag, boolean icptFirst) {
+      _xx = xx;
+      _diag = diag;
+      _icptFirst = icptFirst;
+      _isSPD = true;
     }
-
+    public double [] getInvDiag(){
+      final double [] res = new double[_xx.length + _diag.length];
+      RecursiveAction [] ras = new RecursiveAction[res.length];
+      for(int i = 0; i < ras.length; ++i) {
+        final int fi = i;
+        ras[i] = new RecursiveAction() {
+          @Override
+          protected void compute() {
+            double [] tmp = new double[res.length];
+            tmp[fi] = 1;
+            solve(tmp);
+            res[fi] = tmp[fi];
+          }
+        };
+      }
+      ForkJoinTask.invokeAll(ras);
+      return res;
+    }
     public double[][] getXX() {
       final int N = _xx.length+_diag.length;
       double[][] xx = new double[N][];
@@ -710,6 +908,11 @@ public final class Gram extends Iced<Gram> {
      */
     public final void   solve(double[] y) {
       if( !isSPD() ) throw new NonSPDMatrixException();
+      if(_icptFirst) {
+        double d = y[y.length-1];
+        y[y.length-1] = y[0];
+        y[0] = d;
+      }
       // diagonal
       for( int k = 0; k < _diag.length; ++k )
         y[k] /= _diag[k];
@@ -731,6 +934,11 @@ public final class Gram extends Iced<Gram> {
       // diagonal
       for( int k = _diag.length - 1; k >= 0; --k )
         y[k] /= _diag[k];
+      if(_icptFirst) {
+        double d = y[y.length-1];
+        y[y.length-1] = y[0];
+        y[0] = d;
+      }
     }
     public final boolean isSPD() {return _isSPD;}
     public final void setSPD(boolean b) {_isSPD = b;}
@@ -830,22 +1038,38 @@ public final class Gram extends Iced<Gram> {
     mul(x,res);
     return res;
   }
+  private double [][] XX = null;
 
   public void mul(double [] x, double [] res){
     Arrays.fill(res,0);
-    for(int i = 0; i < _diagN; ++i)
-      res[i] = x[i] * _diag[i];
-    for(int ii = 0; ii < _xx.length; ++ii){
-      final int n = _xx[ii].length-1;
-      final int i = _diagN + ii;
-      for(int j = 0; j < n; ++j) {
-        double e = _xx[ii][j];  // we store only lower diagonal, so we have two updates:
-        res[i] += x[j]*e;       // standard matrix mul, row * vec, except short (only up to diag)
-        res[j] += x[i]*e;       // symmetric matrix => each non-diag element adds to 2 places
-      }
-      res[i] += _xx[ii][n]*x[n]; // diagonal element
+    if(XX == null) XX = getXX(false);
+    for(int i = 0; i < XX.length; ++i){
+      double d  = 0;
+      double [] xi = XX[i];
+      for(int j = 0; j < XX.length; ++j)
+        d += xi[j]*x[j];
+      res[i] = d;
     }
   }
+//  public void mul(double [] x, double [] res){
+//    Arrays.fill(res,0);
+//    for(int i = 0; i < _diagN; ++i)
+//      res[i] = x[i] * _diag[i];
+//    for(int ii = 0; ii < _xx.length; ++ii){
+//      final int n = _xx[ii].length-1;
+//      double [] xi = _xx[ii];
+//      int i = ii + _diagN;
+//      double d = res[i];
+//      for(int j = 0; j < n; ++j) {
+//        double e = xi[j];
+//        d += x[j] * e;  // standard matrix mul, row * vec, except short (only up to diag)
+//        x[i] += x[i]*e;
+//      }
+//      d += _xx[ii][n]*x[n]; // diagonal element
+//      res[i] = d;
+//    }
+//  }
+
   /**
    * Task to compute gram matrix normalized by the number of observations (not counting rows with NAs).
    * in R's notation g = t(X)%*%X/nobs, nobs = number of rows of X with no NA.

@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -18,7 +19,7 @@ def offset_tweedie():
                                      max_depth=1,
                                      min_rows=1,
                                      learn_rate=0.1)
-  gbm.train(x=range(3), y="Claims", training_frame=insurance, offset_column="offset")
+  gbm.train(x=list(range(3)), y="Claims", training_frame=insurance, offset_column="offset")
 
   predictions = gbm.predict(insurance)
 

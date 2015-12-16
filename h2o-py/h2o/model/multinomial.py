@@ -1,6 +1,7 @@
-from . import H2OFrame
-from . import H2OConnection
-from model_base import ModelBase
+from builtins import zip
+from ..frame import H2OFrame
+from ..h2o import H2OConnection
+from .model_base import ModelBase
 
 class H2OMultinomialModel(ModelBase):
 
@@ -31,8 +32,8 @@ class H2OMultinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(tm.keys(),tm.values()): m[k] = None if v is None else v.hit_ratio_table()
-    return m.values()[0] if len(m) == 1 else m
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.hit_ratio_table()
+    return list(m.values())[0] if len(m) == 1 else m
 
   def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
     """

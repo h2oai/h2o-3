@@ -128,7 +128,7 @@ public class PersistManager {
     }
   }
 
-  public void store(int backend, Value v) {
+  public void store(int backend, Value v) throws IOException {
     stats[backend].store_count.incrementAndGet();
     I[backend].store(v);
   }

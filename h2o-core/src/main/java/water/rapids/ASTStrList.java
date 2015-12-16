@@ -153,14 +153,13 @@ class ASTIsCharacter extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.character col)
   @Override public String str() { return "is.character"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNums apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValNum(fr.anyVec().isString()?1:0);
+    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.anyVec().isString()?1:0});
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isString() ? 1 : 0;
-    Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    return new ValFrame(new Frame(new String[]{"is.character"}, new Vec[]{vec}));
+    return new ValNums(ds);
   }
 }
 
@@ -169,14 +168,13 @@ class ASTIsFactor extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.factor col)
   @Override public String str() { return "is.factor"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNums apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValNum(fr.anyVec().isCategorical()?1:0);
+    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.anyVec().isCategorical()?1:0});
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isCategorical() ? 1 : 0;
-    Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    return new ValFrame(new Frame(new String[]{"is.factor"}, new Vec[]{vec}));
+    return new ValNums(ds);
   }
 }
 
@@ -185,14 +183,13 @@ class ASTIsNumeric extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (is.numeric col)
   @Override public String str() { return "is.numeric"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override ValNums apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValNum(fr.anyVec().isNumeric()?1:0);
+    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.anyVec().isNumeric()?1:0});
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
       ds[i] = fr.vec(i).isNumeric() ? 1 : 0;
-    Vec vec = Vec.makeVec(ds,fr.anyVec().group().addVec());
-    return new ValFrame(new Frame(new String[]{"is.numeric"}, new Vec[]{vec}));
+    return new ValNums(ds);
   }
 }
 

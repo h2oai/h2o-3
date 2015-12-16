@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -9,14 +10,14 @@ def pyunit_types():
 
   pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
   types = pros.types
-  print types
+  print(types)
   assert sorted(types.values())==sorted(['int','int','int','int','int','int','real','real','int'])
 
   pros[1] = pros[1].asfactor()
 
   types2 = pros.types
 
-  print types2
+  print(types2)
   assert sorted(types2.values())==sorted(['int','enum','int','int','int','int','real','real','int'])
 
 

@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -13,7 +14,7 @@ def mnist_many_cols_gbm_large():
                                            max_depth=1,
                                            min_rows=10,
                                            learn_rate=0.01)
-  gbm_mnist.train(x=range(784), y=784, training_frame=train)
+  gbm_mnist.train(x=list(range(784)), y=784, training_frame=train)
   gbm_mnist.show()
 
 

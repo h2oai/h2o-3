@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -15,7 +17,7 @@ def cv_carsRF():
 
     # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
     # 2:multinomial
-    problem = random.sample(range(3),1)[0]
+    problem = random.sample(list(range(3)),1)[0]
     problem = 2
 
     # pick the predictors and the correct response column
@@ -29,7 +31,7 @@ def cv_carsRF():
     else              :
         response_col = "economy"
 
-    print "Response column: {0}".format(response_col)
+    print("Response column: {0}".format(response_col))
 
     ## cross-validation
     # 1. check that cv metrics are the same over repeated seeded "Modulo" runs
@@ -50,7 +52,7 @@ def cv_carsRF():
 
     # 3. folds_column
     num_folds = random.randint(2,5)
-    fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1) for f in range(cars.nrow)]])
+    fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1)] for f in range(cars.nrow)])
     fold_assignments.set_names(["fold_assignments"])
     cars = cars.cbind(fold_assignments)
     rf = h2o.random_forest(y=cars[response_col], x=cars[predictors], training_frame=cars,

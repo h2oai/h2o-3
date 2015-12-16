@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
@@ -14,22 +15,22 @@ def weights_and_distributions():
 
   # gamma
   dl = H2ODeepLearningEstimator(distribution="gamma")
-  dl.train(x=range(3),y="medskad",training_frame=htable, weights_column="antskad")
+  dl.train(x=list(range(3)),y="medskad",training_frame=htable, weights_column="antskad")
   predictions = dl.predict(htable)
 
   # gaussian
   dl = H2ODeepLearningEstimator(distribution="gaussian")
-  dl.train(x=range(3),y="medskad",training_frame=htable, weights_column="antskad")
+  dl.train(x=list(range(3)),y="medskad",training_frame=htable, weights_column="antskad")
   predictions = dl.predict(htable)
 
   # poisson
   dl = H2ODeepLearningEstimator(distribution="poisson")
-  dl.train(x=range(3),y="medskad",training_frame=htable, weights_column="antskad")
+  dl.train(x=list(range(3)),y="medskad",training_frame=htable, weights_column="antskad")
   predictions = dl.predict(htable)
 
   # tweedie
   dl = H2ODeepLearningEstimator(distribution="tweedie")
-  dl.train(x=range(3),y="medskad",training_frame=htable, weights_column="antskad")
+  dl.train(x=list(range(3)),y="medskad",training_frame=htable, weights_column="antskad")
   predictions = dl.predict(htable)
 
 if __name__ == "__main__":

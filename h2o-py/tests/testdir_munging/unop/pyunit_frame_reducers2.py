@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -13,7 +16,7 @@ def expr_reducers():
 
 
     data = [[random.uniform(-10000,10000) for r in range(10)] for c in range(10)]
-    h2o_data_1 = h2o.H2OFrame(zip(*data))
+    h2o_data_1 = h2o.H2OFrame(data)
     np_data = np.array(data)
     row, col = h2o_data_1.dim
     h2o_data = h2o_data_1 + 2
@@ -28,7 +31,7 @@ def expr_reducers():
             num_val = numpy_data[r,c]
             if not abs(h2o_val - num_val) < 1e-06:
                 success = False
-                print "check unsuccessful! h2o computed {0} and numpy computed {1}".format(h2o_val,num_val)
+                print("check unsuccessful! h2o computed {0} and numpy computed {1}".format(h2o_val,num_val))
         return success
 
     h2o_val = h2o_data.min()

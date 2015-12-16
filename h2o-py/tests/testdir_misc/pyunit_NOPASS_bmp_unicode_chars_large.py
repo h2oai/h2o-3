@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import chr
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -13,11 +15,11 @@ def bmp_unicode_chars():
 
     # get all h2o-supported utf-8 characters (the basic multilingual plane, minus some control characters)
     codes_in_decimal = open(pyunit_utils.locate("smalldata/unicode/h2o_supported_utf8_codes.csv"))
-    codes_in_uni = [[unichr(int(code.strip())).encode('utf-8')] for code in codes_in_decimal]
-    print codes_in_uni[0:10]
+    codes_in_uni = [[chr(int(code.strip())).encode('utf-8')] for code in codes_in_decimal]
+    print(codes_in_uni[0:10])
 
     # load them into h2o
-    codes_in_h2o = h2o.H2OFrame(codes_in_uni)
+    codes_in_h2o = h2o.H2OFrame(list(zip(*codes_in_uni)))
 
     # retrieve the codes from h2o and compare them to their ground-truth encoding
     for idx, u in enumerate(codes_in_uni):

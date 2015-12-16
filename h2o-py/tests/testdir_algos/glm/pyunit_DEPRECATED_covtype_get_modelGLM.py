@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -15,7 +16,7 @@ def covtype_get_model():
     covtype = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
 
     Y = 54
-    X = range(0,20) + range(29,54)
+    X = list(range(0,20)) + list(range(29,54))
 
     # Set response to be indicator of a particular class
     res_class = random.randint(1,4)

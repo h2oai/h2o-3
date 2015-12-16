@@ -1,6 +1,9 @@
+from __future__ import print_function
+from __future__ import absolute_import
 from collections import namedtuple
-import uuid, urllib2
-from h2o import H2OConnection, _quoted, get_frame, H2OFrame
+import uuid
+from .utils.shared_utils import urlopen
+from .h2o import H2OConnection, _quoted, H2OFrame
 
 
 class H2OAssembly:
@@ -11,7 +14,7 @@ class H2OAssembly:
   """
 
   # static properties pointing to H2OFrame methods
-  divide = H2OFrame.__div__
+  divide = H2OFrame.__truediv__
   plus   = H2OFrame.__add__
   multiply= H2OFrame.__mul__
   minus = H2OFrame.__sub__
@@ -42,20 +45,20 @@ class H2OAssembly:
 
   @property
   def names(self):
-    return zip(*self.steps)[0][:-1]
+    return list(zip(*self.steps))[0][:-1]
 
   def to_pojo(self, pojo_name="", path="", get_jar=True):
     if pojo_name=="": pojo_name = unicode("AssemblyPOJO_" + str(uuid.uuid4()))
     java = H2OConnection.get("Assembly.java/" + self.id + "/" + pojo_name, _rest_version=99)
     file_path = path + "/" + pojo_name + ".java"
-    if path == "": print java.text
+    if path == "": print(java.text)
     else:
       with open(file_path, 'wb') as f:
-        f.write(java.text)
+        f.write(java.text.encode("utf-8"))
     if get_jar and path!="":
       url = H2OConnection.make_url("h2o-genmodel.jar")
       filename = path + "/" + "h2o-genmodel.jar"
-      response = urllib2.urlopen(url)
+      response = urlopen()(url)
       with open(filename, "wb") as f:
         f.write(response.read())
 
@@ -77,7 +80,7 @@ class H2OAssembly:
     res = "[" + ",".join([_quoted(r.replace('"',"'")) for r in res]) + "]"
     j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr.frame_id, _rest_version=99)
     self.id = j["assembly"]["name"]
-    return get_frame(j["result"]["name"])
+    return H2OFrame.get_frame(j["result"]["name"])
 
 
 class H2OCol:

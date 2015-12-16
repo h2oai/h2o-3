@@ -35,15 +35,17 @@ public class MRUtils {
     Frame r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
-        final Random rng = getRNG(seed + cs[0].cidx());
+        final Random rng = getRNG(0);
         int count = 0;
-        for (int r = 0; r < cs[0]._len; r++)
+        for (int r = 0; r < cs[0]._len; r++) {
+          rng.setSeed(seed+r+cs[0].start());
           if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
             count++;
             for (int i = 0; i < ncs.length; i++) {
               ncs[i].addNum(cs[i].atd(r));
             }
           }
+        }
       }
     }.doAll(fr.types(), fr).outputFrame(newKey, fr.names(), fr.domains());
     if (r.numRows() == 0) {
@@ -260,9 +262,10 @@ public class MRUtils {
     Frame r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
-        final Random rng = getRNG(seed + cs[0].cidx());
+        final Random rng = getRNG(seed);
         for (int r = 0; r < cs[0]._len; r++) {
           if (cs[labelidx].isNA(r)) continue; //skip missing labels
+          rng.setSeed(cs[0].start()+r+seed);
           final int label = (int)cs[labelidx].at8(r);
           assert(sampling_ratios.length > label && label >= 0);
           int sampling_reps;

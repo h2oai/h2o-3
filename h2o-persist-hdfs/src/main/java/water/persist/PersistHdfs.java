@@ -194,7 +194,6 @@ public final class PersistHdfs extends Persist {
     byte[] m = v.memOrLoad();
     assert (m == null || m.length == v._max); // Assert not saving partial files
     store(new Path(_iceRoot, getIceName(v)), m);
-    v.setdsk(); // Set as write-complete to disk
   }
 
   public static void store(final Path path, final byte[] data) {

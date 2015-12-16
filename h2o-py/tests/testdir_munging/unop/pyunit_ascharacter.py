@@ -11,8 +11,8 @@ def ascharacter():
     h2oframe.show()
     h2oframe['cylinders'] = h2oframe['cylinders'].asfactor()
     h2oframe['cylinders'].ascharacter()
-    assert h2oframe["cylinders"].isfactor(), "expected the column be a factor"
-    assert not h2oframe["cylinders"].isstring(), "expected the column to not be a string"
+    assert h2oframe["cylinders"].isfactor()[0], "expected the column be a factor"
+    assert not h2oframe["cylinders"].isstring()[0], "expected the column to not be a string"
 
 
 

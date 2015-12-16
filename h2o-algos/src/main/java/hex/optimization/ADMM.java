@@ -45,8 +45,8 @@ public class ADMM {
       ABSTOL = abstol;
     }
 
-    public boolean solve(ProximalSolver solver, double[] res, double lambda) {
-      return solve(solver, res, lambda, true, null, null);
+    public boolean solve(ProximalSolver solver, double[] res, double lambda, boolean hasIntercept) {
+      return solve(solver, res, lambda, hasIntercept, null, null);
     }
 
     private double computeErr(double[] z, double[] grad, double lambda, double[] lb, double[] ub) {

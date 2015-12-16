@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -12,21 +14,21 @@ def link_incompatible_error():
   print("Throw error when trying to create model with incompatible logit link.")
   try:
     model = H2OGeneralizedLinearEstimator( family="gaussian", link="logit")
-    model.train(x=range(1,8),y=8, training_frame=prostate)
+    model.train(x=list(range(1,8)),y=8, training_frame=prostate)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
 
   try:
     model = H2OGeneralizedLinearEstimator(family="tweedie", link="log")
-    model.train(x=range(1,8), y=8, training_frame=prostate)
+    model.train(x=list(range(1,8)), y=8, training_frame=prostate)
     assert False, "expected an error"
   except EnvironmentError:
     assert True
 
   try:
     model = H2OGeneralizedLinearEstimator(family="binomial", link="inverse")
-    model.train(x=range(2,9), y=1, training_frame=prostate)
+    model.train(x=list(range(2,9)), y=1, training_frame=prostate)
     assert False, "expected an error"
   except EnvironmentError:
     assert True

@@ -12,8 +12,8 @@ import water.fvec.Vec;
  */
 class ASTQtile extends ASTPrim {
   @Override
-  public String[] args() { return new String[]{"ary", "probs", "interpolationMethod"}; }
-  @Override int nargs() { return 1+3; }
+  public String[] args() { return new String[]{"ary", "probs", "interpolationMethod", "weights_column"}; }
+  @Override int nargs() { return 1+4; }
   @Override
   public String str() { return "quantile"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
@@ -29,6 +29,7 @@ class ASTQtile extends ASTPrim {
 
     String inter = asts[3].exec(env).getStr();
     parms._combine_method = QuantileModel.CombineMethod.valueOf(inter.toUpperCase());
+    parms._weights_column = asts[4].str().equals("_") ? null : asts[4].str();
 
     // Compute Quantiles
     QuantileModel q = new Quantile(parms).trainModel().get();
@@ -37,14 +38,19 @@ class ASTQtile extends ASTPrim {
     DKV.remove(fr_wkey._key);
 
     // Reshape all outputs as a Frame, with probs in col 0 and the
-    // quantiles in cols 1 thru fr.numCols()
-    Vec[] vecs = new Vec[1 /*1 more for the probs themselves*/ +fr.numCols()];
+    // quantiles in cols 1 thru fr.numCols() - except the optional weights vec
+    int ncols = fr.numCols();
+    if (parms._weights_column != null) ncols--;
+    Vec[] vecs = new Vec[1 /*1 more for the probs themselves*/ + ncols];
     String[] names = new String[vecs.length];
     vecs [0] = Vec.makeCon(null,parms._probs);
     names[0] = "Probs";
-    for( int i=0; i<fr.numCols(); ++i ) {
+    int w=0;
+    for( int i=0; i<vecs.length-1; ++i ) {
+      if (fr._names[i].equals(parms._weights_column)) w=1;
+      assert(w==0 || w==1);
       vecs [i+1] = Vec.makeCon(null,q._output._quantiles[i]);
-      names[i+1] = fr._names[i]+"Quantiles";
+      names[i+1] = fr._names[w+i]+"Quantiles";
     }
     q.delete();
 

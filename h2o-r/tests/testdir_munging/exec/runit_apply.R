@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 
 
@@ -44,6 +46,12 @@ test.apply <- function() {
 
   zzz <- 2.5
   print(apply( hex, 2, function(x) { zzz }))
+
+
+  # PUBDEV-1749
+  fun1 <- function(x) { x + x }
+  fun <-  function(x) { x * fun1(x) }
+  print(apply(hex, 2, fun))
 
   
 }

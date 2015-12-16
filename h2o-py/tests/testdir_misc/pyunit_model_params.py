@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -11,8 +12,8 @@ def pyunit_model_params():
   pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
 
   m = h2o.kmeans(pros,k=4)
-  print m.params
-  print m.full_parameters
+  print(m.params)
+  print(m.full_parameters)
 
 
 

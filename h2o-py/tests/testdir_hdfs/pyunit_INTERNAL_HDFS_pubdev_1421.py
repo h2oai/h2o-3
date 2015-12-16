@@ -20,7 +20,7 @@ def pubdev_1421():
         url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_airlines_test_file)
         air_test = h2o.import_file(url)
     else:
-        raise(EnvironmentError, "Not running on H2O internal network.  No access to HDFS.")
+        raise EnvironmentError
 
 
 

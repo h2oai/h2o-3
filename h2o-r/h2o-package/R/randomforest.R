@@ -1,6 +1,6 @@
 #' Build a Big Data Random Forest Model
 #'
-#' Builds a Random Forest Model on an H2O Frame
+#' Builds a Random Forest Model on an H2O H2OFrame
 #'
 #' @param x A vector containing the names or indices of the predictor variables
 #'        to use in building the GBM model.
@@ -8,17 +8,18 @@
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
 #'        or a categorical variable).
-#' @param training_frame An H2O Frame object containing the
+#' @param training_frame An H2O H2OFrame object containing the
 #'        variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
-#' @param validation_frame An H2O Frame object containing the variables in the model.  Default is NULL.
+#' @param validation_frame An H2O H2OFrame object containing the variables in the model.  Default is NULL.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
 #'        where p is the number of predictors.
 #' @param sample_rate Sample rate, from 0 to 1.0.
+#' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param ntrees A nonnegative integer that determines the number of trees to
@@ -64,6 +65,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
+                             col_sample_rate_per_tree = 1.0,
                              build_tree_one_node = FALSE,
                              ntrees = 50,
                              max_depth = 20,
@@ -87,17 +89,17 @@ h2o.randomForest <- function(x, y, training_frame,
                              stopping_tolerance=1e-3
                              )
 {
-  # Training_frame and validation_frame may be a key or a Frame object
-  if (!is.Frame(training_frame))
+  # Training_frame and validation_frame may be a key or a H2OFrame object
+  if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid Frame or key")
+               stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
   if (!is.null(validation_frame)) {
-    if (!is.Frame(validation_frame))
+    if (!is.H2OFrame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid Frame or key")
+                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
                  })
   }
 
@@ -122,6 +124,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$mtries <- mtries
   if(!missing(sample_rate))
     parms$sample_rate <- sample_rate
+  if(!missing(col_sample_rate_per_tree))
+    parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if(!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
   if(!missing(binomial_double_trees))

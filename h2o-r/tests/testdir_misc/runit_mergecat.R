@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 
 
 
@@ -28,4 +30,4 @@ test.mergecat <- function() {
   
 }
 
-doTest("Merging H2O Frames that contain categorical columns", test.mergecat)
+doTest("Merging H2O H2OFrames that contain categorical columns", test.mergecat)

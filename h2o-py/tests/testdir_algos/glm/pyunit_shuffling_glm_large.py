@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -13,15 +16,15 @@ def shuffling_large():
 
   print("Create model on original Arcene dataset.")
   h2o_model = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, alpha=0.5)
-  h2o_model.train(x=range(1000), y=1000, training_frame=train_data)
+  h2o_model.train(x=list(range(1000)), y=1000, training_frame=train_data)
 
   print("Create second model on original Arcene dataset.")
   h2o_model_2 = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, alpha=0.5)
-  h2o_model_2.train(x=range(1000), y=1000, training_frame=train_data)
+  h2o_model_2.train(x=list(range(1000)), y=1000, training_frame=train_data)
 
   print("Create model on shuffled Arcene dataset.")
   h2o_model_s = H2OGeneralizedLinearEstimator(family="binomial", lambda_search=True, alpha=0.5)
-  h2o_model_s.train(x=range(1000), y=1000, training_frame=train_data_shuffled)
+  h2o_model_s.train(x=list(range(1000)), y=1000, training_frame=train_data_shuffled)
 
   print("Assert that number of predictors remaining and their respective coefficients are equal.")
 

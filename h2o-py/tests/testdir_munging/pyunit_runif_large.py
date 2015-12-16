@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -16,8 +17,8 @@ def runif_check():
     imported_frame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
     r_i = imported_frame[0].runif(1234)
 
-    print "This demonstrates that seeding runif on identical frames with different chunk distributions provides " \
-          "different results. upload_file: {0}, import_frame: {1}.".format(r_u.mean()[0], r_i.mean()[0])
+    print("This demonstrates that seeding runif on identical frames with different chunk distributions provides " \
+          "different results. upload_file: {0}, import_frame: {1}.".format(r_u.mean()[0], r_i.mean()[0]))
 
 
 

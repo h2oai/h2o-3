@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 
 import water.H2O;
 import water.H2ONode;
-import water.H2ONode.H2OSmallMessage;
 import water.JettyHTTPD;
 import water.util.Log;
 
@@ -459,12 +458,12 @@ public class NetworkInit {
   // Multicast send-and-close.  Very similar to udp_send, except to the
   // multicast port (or all the individuals we can find, if multicast is
   // disabled).
-  public static void multicast( ByteBuffer bb , int priority) {
+  public static void multicast( ByteBuffer bb , byte priority) {
     try { multicast2(bb, priority); }
     catch (Exception ie) {}
   }
 
-  static private void multicast2( ByteBuffer bb, int priority ) {
+  static private void multicast2( ByteBuffer bb, byte priority ) {
     if( H2O.STATIC_H2OS == null ) {
       byte[] buf = new byte[bb.remaining()];
       bb.get(buf);
@@ -517,14 +516,13 @@ public class NetworkInit {
       HashSet<H2ONode> nodes = (HashSet<H2ONode>)H2O.STATIC_H2OS.clone();
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
-      H2OSmallMessage msg = H2O.ARGS.useUDP?null:H2OSmallMessage.make(bb,priority);
       for( H2ONode h2o : nodes ) {
         try {
           if(H2O.ARGS.useUDP) {
             bb.reset();
             CLOUD_DGRAM.send(bb, h2o._key);
           } else {
-            h2o.sendMessage(msg);
+            h2o.sendMessage(bb,priority);
           }
         } catch( IOException e ) {
           Log.warn("Multicast Error to "+h2o, e);

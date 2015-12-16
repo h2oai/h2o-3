@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 
 
@@ -34,7 +36,7 @@ colPlus.numeric <- function() {
   expect_that(as.data.frame(slicedPlusFive), equals(as.data.frame(fivePlusSliced)))
 
 
-  Log.info("Checking the variation of H2OFrame + H2OFrame")
+  Log.info("Checking the variation of H2OH2OFrame + H2OH2OFrame")
 
   hexPlusHex <- fivePlusSliced + slicedPlusFive
 

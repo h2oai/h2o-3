@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -14,7 +15,7 @@ def iris_get_model():
 
 
   model =H2ORandomForestEstimator(ntrees=50)
-  model.train(y=4, x=range(4), training_frame=iris)
+  model.train(y=4, x=list(range(4)), training_frame=iris)
   model.show()
 
   model = h2o.get_model(model._id)

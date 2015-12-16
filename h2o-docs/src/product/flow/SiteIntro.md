@@ -194,6 +194,10 @@ Pythonistas will be glad to know that H2O now provides support for this popular 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/PythonParity.md" target="_blank">Python Parity</a>: This document is is a list of Python capabilities that were previously available only through the H2O R interface but are now available in H2O using the Python interface. 
 
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb" target="_blank"> Grid Search in Python</a>: This notebook demonstrates the use of grid search in Python. 
+
+
+
 ---
 
 <a name="R"></a>

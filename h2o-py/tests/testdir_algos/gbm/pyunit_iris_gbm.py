@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -13,13 +15,13 @@ def iris_gbm():
   my_gbm = H2OGradientBoostingEstimator(ntrees=50,
                                         learn_rate=0.1,
                                         distribution="multinomial")
-  my_gbm.train(x=range(1,4),y="class",training_frame=train,validation_frame=train)
+  my_gbm.train(x=list(range(1,4)),y="class",training_frame=train,validation_frame=train)
   my_gbm.show()
 
   my_gbm_metrics = my_gbm.model_performance(train)
   my_gbm_metrics.show()
 
-  print my_gbm_metrics  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
+  print(my_gbm_metrics)  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
 
 

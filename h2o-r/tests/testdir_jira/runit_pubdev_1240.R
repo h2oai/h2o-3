@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 
 
 
@@ -43,4 +45,4 @@ test.merge.examples <- function() {
   
 }
 
-doTest("Merging H2O Frames causes IllegalArgumentException", test.merge.examples)
+doTest("Merging H2O H2OFrames causes IllegalArgumentException", test.merge.examples)

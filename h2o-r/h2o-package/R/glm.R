@@ -4,9 +4,9 @@
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GLM model.
 #' @param y A character string or index that represent the response variable in the model.
-#' @param training_frame An H2O Frame object containing the variables in the model.
+#' @param training_frame An H2O H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
-#' @param validation_frame An H2O Frame object containing the variables in the model.  Defaults to NULL.
+#' @param validation_frame An H2O H2OFrame object containing the variables in the model.  Defaults to NULL.
 #' @param max_iterations A non-negative integer specifying the maximum number of iterations.
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param beta_epsilon A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
@@ -39,9 +39,11 @@
 #'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number
 #'                         of variables then \code{lambda_min_ratio} = 0.01.
 #' @param beta_constraints A data.frame or H2OParsedData object with the columns ["names",
-#'        "lower_bounds", "upper_bounds", "beta_given"], where each row corresponds to a predictor
+#'        "lower_bounds", "upper_bounds", "beta_given", "rho"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower_bounds" and "upper_bounds" are the lower
-#'        and upper bounds of beta, and "beta_given" is some supplied starting values for beta.
+#'        and upper bounds of beta, "beta_given" is some supplied starting values for beta, and "rho" is the
+#'        proximal penalty constant that is used with "beta_given". If "rho" is not specified when "beta_given"
+#'        is then we will take the default rho value of zero.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
@@ -58,6 +60,7 @@
 #' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold.
 #' @param non_negative Logical, allow only positive coefficients.
 #' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are co-linear predictors.
+#' @param remove_colinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -128,11 +131,12 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     objective_epsilon = -1,
                     gradient_epsilon = -1,
                     non_negative = FALSE,
-                    compute_p_values = FALSE)
+                    compute_p_values = FALSE,
+                    remove_colinear_columns = FALSE)
 {
   # if (!is.null(beta_constraints)) {
-  #     if (!inherits(beta_constraints, "data.frame") && !is.Frame(beta_constraints))
-  #       stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
+  #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame(beta_constraints))
+  #       stop(paste("`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ", class(beta_constraints)))
   #     if (inherits(beta_constraints, "data.frame")) {
   #       beta_constraints <- as.h2o(beta_constraints)
   #     }
@@ -141,10 +145,10 @@ h2o.glm <- function(x, y, training_frame, model_id,
         beta_constraints <- as.h2o(beta_constraints)
   }
 
-  if (!is.Frame(training_frame))
+  if (!is.H2OFrame(training_frame))
    tryCatch(training_frame <- h2o.getFrame(training_frame),
             error = function(err) {
-              stop("argument \"training_frame\" must be a valid Frame or ID")
+              stop("argument \"training_frame\" must be a valid H2OFrame or ID")
             })
 
   # Parameter list to send to model builder
@@ -184,6 +188,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(gradient_epsilon) )          parms$gradient_epsilon       <- gradient_epsilon
   if( !missing(non_negative) )              parms$non_negative           <- non_negative
   if( !missing(compute_p_values) )          parms$compute_p_values       <- compute_p_values
+  if( !missing(remove_colinear_columns) )   parms$remove_colinear_columns<- remove_colinear_columns
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
@@ -239,17 +244,17 @@ h2o.makeGLMModel <- function(model,beta) {
 #                    )
 #{
 #  # if (!is.null(beta_constraints)) {
-#  #     if (!inherits(beta_constraints, "data.frame") && !is.Frame("Frame"))
-#  #       stop(paste("`beta_constraints` must be an H2OFrame or R data.frame. Got: ", class(beta_constraints)))
+#  #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame("H2OFrame"))
+#  #       stop(paste("`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ", class(beta_constraints)))
 #  #     if (inherits(beta_constraints, "data.frame")) {
 #  #       beta_constraints <- as.h2o(beta_constraints)
 #  #     }
 #  # }
 #
-#  if (!is.Frame(training_frame))
+#  if (!is.H2OFrame(training_frame))
 #      tryCatch(training_frame <- h2o.getFrame(training_frame),
 #               error = function(err) {
-#                 stop("argument \"training_frame\" must be a valid Frame or model ID")
+#                 stop("argument \"training_frame\" must be a valid H2OFrame or model ID")
 #              })
 #
 #    parms <- list()

@@ -56,34 +56,27 @@ final class PersistFS extends Persist {
   }
 
   // Store Value v to disk.
-  @Override public void store(Value v) {
+  @Override public void store(Value v) throws IOException {
     assert !v.isPersisted();
-    new File(_dir, getIceDirectory(v._key)).mkdirs();
-    // Nuke any prior file.
-    FileOutputStream s = null;
-    try { s = new FileOutputStream(getFile(v)); }
-    catch( FileNotFoundException e ) { throw Log.throwErr(e); }
-    try {
-      byte[] m = v.memOrLoad(); // we are not single threaded anymore
-      if( m != null && m.length == v._max ) {
-        Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
-        v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
-      }
-      new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
-      v.setdsk();             // Set as write-complete to disk
-    } finally {
-      if( s!=null ) try { s.close(); } catch( IOException ie ) { }
+    File dirs = new File(_dir, getIceDirectory(v._key));
+    if( !dirs.mkdirs() && !dirs.exists() )
+      throw new java.io.IOException("mkdirs failed making "+dirs);
+    try(FileOutputStream s = new FileOutputStream(getFile(v))) {
+        byte[] m = v.memOrLoad(); // we are not single threaded anymore
+        if( m != null && m.length != v._max ) {
+          Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
+          v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
+        }
+        new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
+      } catch( AutoBuffer.AutoBufferException abe ) {
+      throw abe._ioe;
     }
   }
 
   @Override public void delete(Value v) {
-    assert !v.isPersisted();   // Upper layers already cleared out
-    File f = getFile(v);
-    f.delete();
-    if( v.isVec() ) { // Also nuke directory if the top-level Vec dies
-      f = new File(_dir.toString(), getIceDirectory(v._key));
-      f.delete();
-    }
+    getFile(v).delete();        // Silently ignore errors
+    // Attempt to delete empty containing directory
+    new File(_dir, getIceDirectory(v._key)).delete();
   }
 
   @Override public long getUsableSpace() {

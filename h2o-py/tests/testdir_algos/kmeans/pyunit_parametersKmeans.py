@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -8,13 +10,13 @@ from h2o.estimators.kmeans import H2OKMeansEstimator
 
 def parametersKmeans():
 
-  print "Getting data..."
+  print("Getting data...")
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
-  print "Create and and duplicate..."
+  print("Create and and duplicate...")
 
   iris_km = H2OKMeansEstimator(k=3, seed=1234)
-  iris_km.train(x=range(4),training_frame=iris)
+  iris_km.train(x=list(range(4)),training_frame=iris)
   parameters = iris_km._model_json['parameters']
   param_dict = {}
   for p in range(len(parameters)):
@@ -25,14 +27,14 @@ def parametersKmeans():
   del param_dict['training_frame']
   del param_dict['validation_frame']
   iris_km_again = H2OKMeansEstimator(**param_dict)
-  iris_km_again.train(x=range(4), training_frame=iris, fold_column=fold_column)
+  iris_km_again.train(x=list(range(4)), training_frame=iris, fold_column=fold_column)
 
-  print "wss"
+  print("wss")
   wss = iris_km.withinss().sort()
   wss_again = iris_km_again.withinss().sort()
   assert wss == wss_again, "expected wss to be equal"
 
-  print "centers"
+  print("centers")
   centers = iris_km.centers()
   centers_again = iris_km_again.centers()
   assert centers == centers_again, "expected centers to be the same"

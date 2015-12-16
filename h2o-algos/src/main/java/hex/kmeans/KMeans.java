@@ -43,7 +43,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
   protected void checkMemoryFootPrint() {
     long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);
-    long max_mem = H2O.SELF.get_max_mem();
+    long max_mem = H2O.SELF._heartbeat.get_free_mem();
     if (mem_usage > max_mem) {
       String msg = "Centroids won't fit in the driver node's memory ("
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)

@@ -10,10 +10,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 
 import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -911,6 +908,12 @@ public class ArrayUtils {
     System.arraycopy(b,0,tmp,a.length,b.length);
     return tmp;
   }
+  public static int[] append(int[] a, int b) {
+    if( a==null || a.length == 0) return  new int[]{b};
+    int[] tmp = Arrays.copyOf(a,a.length+1);
+    tmp[a.length] = b;
+    return tmp;
+  }
 
   static public String[] prepend(String[] ary, String s) {
     if (ary==null) return new String[] { s };
@@ -993,6 +996,14 @@ public class ArrayUtils {
       res[i] = ary[idxs[i]];
     return res;
   }
+
+  public static double[] select(double[] ary, int[] idxs) {
+    double [] res = MemoryManager.malloc8d(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+
 
   /**
    * Sort an integer array of indices based on values
@@ -1158,5 +1169,36 @@ public class ArrayUtils {
   public static Frame frame(double[]... rows) { return frame(null, rows); }
   public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(), names, rows); }
   public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
+
+  /**
+   * Remove b from a, both a,b are assumed to be sorted.
+   */
+  public static int[] removeSorted(int [] a, int [] b) {
+    int [] indeces = new int[b.length];
+    indeces[0] = Arrays.binarySearch(a,0,a.length,b[0]);
+    if(indeces[0] < 0)
+      throw new NoSuchElementException("value " + b[0] + " not found in the first array.");
+    for(int i = 1; i < b.length; ++i) {
+      indeces[i] = Arrays.binarySearch(a,indeces[i-1],a.length,b[i]);
+      if(indeces[i] < 0)
+        throw new NoSuchElementException("value " + b[i] + " not found in the first array.");
+    }
+    return removeIds(a,indeces);
+  }
+
+  public static int[] removeIds(int[] x, int[] ids) {
+    int [] res = new int[x.length-ids.length];
+    int j = 0;
+    for(int i = 0; i < x.length; ++i)
+      if(j == ids.length || i != ids[j]) res[i-j] = x[i]; else ++j;
+    return res;
+  }
+  public static double[] removeIds(double[] x, int[] ids) {
+    double [] res = new double[x.length-ids.length];
+    int j = 0;
+    for(int i = 0; i < x.length; ++i)
+      if(i != ids[j]) res[i-j] = x[i]; else ++j;
+    return res;
+  }
 
 }

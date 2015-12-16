@@ -107,14 +107,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _objective_epsilon = 1e-5;
+    public double _objective_epsilon = 1e-6;
     public double _gradient_epsilon = 1e-4;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
+    public boolean _remove_colinear_columns = false;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1;
+    public boolean _stdOverride; // standardization override by beta constraints
 
     public void validate(GLM glm) {
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
@@ -619,9 +621,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public void pickBestModel() {
-      int i = _submodels.length - 1;
-      while(i > 0 && _submodels[i-1].devianceTest <= _submodels[i].devianceTest)--i;
-      setSubmodelIdx(_best_lambda_idx = i);
+
+      double bestDev = Double.POSITIVE_INFINITY;
+      int bestId = 0;
+      if(!Double.isNaN(_submodels[_submodels.length-1].devianceTest)) {
+        for(int i =1; i < _submodels.length; ++i)
+          if(_submodels[i] != null && _submodels[i].devianceTest < bestDev) {
+            bestId = i;
+            bestDev = _submodels[i].devianceTest;
+          }
+      } else {
+        for(int i =1; i < _submodels.length; ++i)
+          if(_submodels[i] != null && _submodels[i].devianceTrain < bestDev) {
+            bestId = i;
+            bestDev = _submodels[i].devianceTrain;
+          }
+      }
+      setSubmodelIdx(_best_lambda_idx = bestId);
     }
 
     public double[] getNormBeta() {
@@ -986,7 +1002,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       body.ip("for(int i = ").p(dinfo()._cats).p("; i < b.length-1-").p(noff).p("; ++i)").nl();
       body.ip("  eta += b[").p(noff).p("+i]*data[i];").nl();
       body.ip("eta += b[b.length-1]; // reduce intercept").nl();
-      body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
+      if(_parms._family != Family.tweedie)
+        body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
+      else
+        body.ip("double mu = hex.genmodel.GenModel.GLM_tweedieInv(eta," + _parms._tweedie_link_power);
 //    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
       body.p(");").nl();
       if (_parms._family == Family.binomial) {

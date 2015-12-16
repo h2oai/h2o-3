@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -10,7 +11,7 @@ def offset_bernoulli_cars():
   cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
   cars = cars[cars["economy_20mpg"].isna() == 0]
   cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-  offset = h2o.H2OFrame([[.5 for x in range(398)]])
+  offset = h2o.H2OFrame([[.5]]*398)
   offset.set_names(["x1"])
   cars = cars.cbind(offset)
 
@@ -18,7 +19,7 @@ def offset_bernoulli_cars():
                                      max_depth=1,
                                      min_rows=1,
                                      learn_rate=1)
-  gbm.train(x=range(2,8),y="economy_20mpg", training_frame=cars, offset_column="x1")
+  gbm.train(x=list(range(2,8)),y="economy_20mpg", training_frame=cars, offset_column="x1")
 
   predictions = gbm.predict(cars)
 

@@ -194,6 +194,7 @@ def validate_model_builder_result(result, original_params, model_name):
     elif result['__http_response']['status_code'] != requests.codes.ok:
         error = True
         print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
+        print "dev_msg: " + result['dev_msg']
 
     elif 'error_count' in result and result['error_count'] > 0:
         # error case
@@ -226,7 +227,8 @@ def validate_grid_builder_result(result, original_params, grid_params, grid_id):
 
     elif result['__http_response']['status_code'] != requests.codes.ok:
         error = True
-        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
+        print "FAIL: expected 200 OK from a good grid validation request, got: " + str(result['__http_response']['status_code'])
+        print "dev_msg: " + result['dev_msg']
 
     if error:
         print 'Input parameters: '
@@ -610,7 +612,7 @@ class GridSpec(dict):
         combos = 1
         for k, vals in self['grid_params'].iteritems():
             combos *= len(vals)
-        assert combos == len(grid['model_ids']), 'FAIL: Expected ' + combos + ' models; got: ' + len(grid['model_ids'])
+        assert combos == len(grid['model_ids']), 'FAIL: Expected ' + str(combos) + ' models; got: ' + str(len(grid['model_ids']))
 
         if isVerbose(): print 'Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")"
         return grid

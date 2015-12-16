@@ -1,9 +1,11 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 
 
 
 rtest <- function() {
 
-hdfs_name_node = hadoop.namenode()
+hdfs_name_node = HADOOP.NAMENODE
 hdfs_airlines_file = "/datasets/airlines_all.csv"
 #----------------------------------------------------------------------
 # Single file cases.
@@ -19,7 +21,7 @@ if (n != 116695259) {
     stop("nrows is wrong")
 }
 
-if (class(data.hex) != "Frame") {
+if (class(data.hex) != "H2OFrame") {
     stop("data.hex is the wrong type")
 }
 print ("Import worked")

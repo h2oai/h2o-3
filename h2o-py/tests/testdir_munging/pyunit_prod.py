@@ -1,3 +1,5 @@
+from builtins import zip
+from builtins import range
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -11,7 +13,7 @@ import random
 def test_prod():
 
     data = [[random.uniform(1,10)] for c in range(10)]
-    h2o_data = h2o.H2OFrame(zip(*data))
+    h2o_data = h2o.H2OFrame(data)
     np_data = np.array(data)
 
     h2o_prod = h2o_data.prod()

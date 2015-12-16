@@ -23,13 +23,13 @@ def asfactor_basic():
   meow = h2oframe['cylinders'].asfactor()
   meow.show()
 
-  foo = h2oframe["cylinders"].isfactor()
+  foo = h2oframe["cylinders"].isfactor()[0]
   assert not foo, "expected the foo H2OVec to be a not factor"
 
   h2oframe["cylinders"] = h2oframe['cylinders'].asfactor()
   h2oframe.show()
 
-  bar = h2oframe["cylinders"].isfactor()
+  bar = h2oframe["cylinders"].isfactor()[0]
   assert bar, "expected the bar H2OVec to be a factor"
 
 

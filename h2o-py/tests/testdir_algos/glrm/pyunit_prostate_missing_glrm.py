@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -9,7 +11,7 @@ from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 def glrm_prostate_miss():
   missing_ratios = np.arange(0.1, 1, 0.1).tolist()
 
-  print "Importing prostate_cat.csv data and saving for validation..."
+  print("Importing prostate_cat.csv data and saving for validation...")
   prostate_full = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"), na_strings=["NA"]*8)
   prostate_full.describe()
   totnas = 0
@@ -24,12 +26,12 @@ def glrm_prostate_miss():
 
   for i in range(len(missing_ratios)):
     ratio = missing_ratios[i]
-    print "Importing prostate_cat.csv and inserting {0}% missing entries".format(100*ratio)
+    print("Importing prostate_cat.csv and inserting {0}% missing entries".format(100*ratio))
     prostate_miss = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"))
     prostate_miss = prostate_miss.insert_missing_values(fraction=ratio)
     prostate_miss.describe()
 
-    print "H2O GLRM with {0}% missing entries".format(100*ratio)
+    print("H2O GLRM with {0}% missing entries".format(100*ratio))
     prostate_glrm = H2OGeneralizedLowRankEstimator(k=8,
                                                    ignore_const_cols=False,
                                                    loss="Quadratic",
@@ -63,10 +65,10 @@ def glrm_prostate_miss():
     # h2o.remove(prostate_glrm._model_json['output']['loading_key']['name'])
 
   for i in range(len(missing_ratios)):
-    print "Missing ratio: {0}% --> Training numeric error: {1}\tValidation numeric error: {2}".format(missing_ratios[i]*100, train_numerr[i], valid_numerr[i])
+    print("Missing ratio: {0}% --> Training numeric error: {1}\tValidation numeric error: {2}".format(missing_ratios[i]*100, train_numerr[i], valid_numerr[i]))
 
   for i in range(len(missing_ratios)):
-    print "Missing ratio: {0}% --> Training categorical error: {1}\tValidation categorical error: {2}".format(missing_ratios[i]*100, train_caterr[i], valid_caterr[i])
+    print("Missing ratio: {0}% --> Training categorical error: {1}\tValidation categorical error: {2}".format(missing_ratios[i]*100, train_caterr[i], valid_caterr[i]))
 
 
 

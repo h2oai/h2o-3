@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -11,18 +12,18 @@ def vec_show():
     
 
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    print "iris:"
+    print("iris:")
     iris.show()
 
     ###################################################################
 
     res = 2 - iris
     res2 = res[0]
-    print "res2:"
+    print("res2:")
     res2.show()
 
     res3 = res[1]
-    print "res3:"
+    print("res3:")
     res3.show()
 
     iris[2].show()

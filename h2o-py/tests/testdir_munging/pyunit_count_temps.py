@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -69,13 +70,12 @@ def date_munge():
 
   tmps1 = pyunit_utils.temp_ctr(); ntmps = tmps1-tmps0
   rest1 = pyunit_utils.rest_ctr(); nrest = rest1-rest0
-  print("Number of temps used: ",ntmps)
-  print("Number of RESTs used: ",nrest)
-  assert ntmps <= 10
-  assert nrest < 30
+  print(("Number of temps used: ",ntmps))
+  print(("Number of RESTs used: ",nrest))
+  assert ntmps <= 15
+  assert nrest <= 15
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(date_munge)
 else:
   date_munge()
-

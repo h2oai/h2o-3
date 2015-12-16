@@ -122,7 +122,7 @@ If you are using Hadoop and the job is still running:
 
 ---
 
-- Download the logs using R. In R, enter the command `h2o.downloadAllLogs(client = localH2O,filename = "logs.zip")` (where `client` is the H2O cluster and `filename` is the specified filename for the logs).
+- Download the logs using R. In R, enter the command `h2o.downloadAllLogs(filename = "logs.zip")` (where `filename` is the specified filename for the logs).
 
 ---
 
@@ -231,7 +231,7 @@ If you are not using Hadoop and the job is still running:
 		```
 		
   0. Copy the displayed file path. 
-	 Enter `less` and paste the file path. 
+	  In Terminal, enter `less` and paste the file path. 
   0. Press Enter. A time-stamped log of all REST API transactions displays. 
 
 ```		
@@ -254,7 +254,7 @@ If you are not using Hadoop and the job is still running:
 	
 ---
 
-- Download the logs using R. In R, enter the command `h2o.downloadAllLogs(client = localH2O,filename = "logs.zip")` (where `client` is the H2O cluster and `filename` is the specified filename for the logs).
+- Download the logs using R. In R, enter the command `h2o.downloadAllLogs(filename = "logs.zip")` (where `filename` is the specified filename for the logs).
 
 ---
 

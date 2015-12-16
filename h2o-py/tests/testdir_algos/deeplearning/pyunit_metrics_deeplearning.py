@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
@@ -27,12 +29,12 @@ def deep_learning_metrics_test():
   test.tail()
 
   # Run DeepLearning
-  print "Train a Deeplearning model: "
+  print("Train a Deeplearning model: ")
 
   dl = H2ODeepLearningEstimator(epochs=100, hidden=[10,10,10], loss="CrossEntropy")
-  dl.train(x=range(2,train.ncol),y="CAPSULE", training_frame=train)
-  print "Binomial Model Metrics: "
-  print
+  dl.train(x=list(range(2,train.ncol)),y="CAPSULE", training_frame=train)
+  print("Binomial Model Metrics: ")
+  print()
   dl.show()
   dl.model_performance(test).show()
 

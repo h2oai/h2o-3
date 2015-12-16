@@ -1,3 +1,4 @@
+from builtins import object
 class H2OModelFuture(object):
     """
     A class representing a future H2O model (a model that may, or may not, be in the process of being built)

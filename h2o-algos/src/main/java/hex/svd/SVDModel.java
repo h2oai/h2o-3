@@ -5,10 +5,7 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
-import water.DKV;
-import water.Futures;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -92,6 +89,18 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     return super.remove_impl(fs);
   }
 
+  /** Write out K/V pairs */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+    ab.putKey(_output._u_key);
+    ab.putKey(_output._v_key);
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+    ab.getKey(_output._u_key,fs);
+    ab.getKey(_output._v_key,fs);
+    return super.readAll_impl(ab,fs);
+  }
+
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     return new ModelMetricsSVD.SVDModelMetrics(_parms._nv);
   }
@@ -109,7 +118,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
       @Override public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
-      @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame preds) {
+      @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
         return m._output.addModelMetrics(new ModelMetricsSVD(m, f));
       }
     }
@@ -138,7 +147,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
     f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
     DKV.put(f);
-    makeMetricBuilder(null).makeModelMetrics(this, orig, null);
+    makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
     return f;
   }
 

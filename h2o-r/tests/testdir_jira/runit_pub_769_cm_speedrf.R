@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ######################################################################
 # Test for PUB-769
 # Ensure that the number of rows scored in the CM for binary classes is == number of rows in the dataset

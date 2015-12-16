@@ -1047,21 +1047,21 @@ public class GLMTest  extends TestUtil {
       d8[rnd.nextInt(d2.length)] = rnd.nextDouble();
       d9[rnd.nextInt(d2.length)] = 1;
     }
+    Vec.VectorGroup vg_1 = Vec.VectorGroup.VG_LEN1;
+    Vec v01 = Vec.makeVec(c1, dom, vg_1.addVec());
+    Vec v02 = Vec.makeVec(c2, dom,vg_1.addVec());
+    Vec v03 = Vec.makeVec(d0, vg_1.addVec());
+    Vec v04 = Vec.makeVec(d1, vg_1.addVec());
+    Vec v05 = Vec.makeVec(d2, vg_1.addVec());
+    Vec v06 = Vec.makeVec(d3, vg_1.addVec());
+    Vec v07 = Vec.makeVec(d4, vg_1.addVec());
+    Vec v08 = Vec.makeVec(d5, vg_1.addVec());
+    Vec v09 = Vec.makeVec(d6, vg_1.addVec());
+    Vec v10 = Vec.makeVec(d7, vg_1.addVec());
+    Vec v11 = Vec.makeVec(d8, vg_1.addVec());
+    Vec v12 = Vec.makeVec(d9, vg_1.addVec());
 
-    Vec v01 = Vec.makeVec(c1, dom, Vec.newKey());
-    Vec v02 = Vec.makeVec(c2, dom, Vec.newKey());
-    Vec v03 = Vec.makeVec(d0, Vec.newKey());
-    Vec v04 = Vec.makeVec(d1, Vec.newKey());
-    Vec v05 = Vec.makeVec(d2, Vec.newKey());
-    Vec v06 = Vec.makeVec(d3, Vec.newKey());
-    Vec v07 = Vec.makeVec(d4, Vec.newKey());
-    Vec v08 = Vec.makeVec(d5, Vec.newKey());
-    Vec v09 = Vec.makeVec(d6, Vec.newKey());
-    Vec v10 = Vec.makeVec(d7, Vec.newKey());
-    Vec v11 = Vec.makeVec(d8, Vec.newKey());
-    Vec v12 = Vec.makeVec(d9, Vec.newKey());
-
-    Frame f = new Frame(Key.make("TestData"),null,new Vec[]{v01,v02,v03,v04,v05,v05,v06,v07,v08,v09,v10,v11,v12});
+    Frame f = new Frame(Key.make("TestData"), null, new Vec[]{v01, v02, v03, v04, v05, v05, v06, v07, v08, v09, v10, v11, v12});
     DKV.put(f);
     DataInfo dinfo = new DataInfo(Key.make(),f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
     GLMParameters params = new GLMParameters(Family.gaussian);
@@ -1574,8 +1574,8 @@ public class GLMTest  extends TestUtil {
       GLMIterationTaskTest gtt = (GLMIterationTaskTest)new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu[0],model3).doAll(dinfo._adaptedFrame);
       System.out.println("val1 = " + gtt._val.toString());
       System.out.println("val2 = " + gtt._val2.toString());
-      ModelMetrics mm1 = gtt._val .makeModelMetrics(model3, dinfo._adaptedFrame, null);
-      ModelMetrics mm2 = gtt._val2.makeModelMetrics(model3, dinfo._adaptedFrame, null);
+      ModelMetrics mm1 = gtt._val .makeModelMetrics(model3, dinfo._adaptedFrame, null, null);
+      ModelMetrics mm2 = gtt._val2.makeModelMetrics(model3, dinfo._adaptedFrame, null, null);
       System.out.println("mm1 = " + mm1.toString());
       System.out.println("mm2 = " + mm2.toString());
       assert mm1.equals(mm2);

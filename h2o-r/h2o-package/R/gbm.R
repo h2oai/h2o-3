@@ -10,7 +10,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param training_frame An H2O Frame object containing the variables in the model.
+#' @param training_frame An H2O H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
@@ -24,12 +24,13 @@
 #' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
 #' @param sample_rate Row sample rate (from \code{0.0} to \code{1.0})
 #' @param col_sample_rate Column sample rate (from \code{0.0} to \code{1.0})
+#' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
 #'        level, then decrease by factor of two per level.
 #' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
-#' @param validation_frame An H2O Frame object indicating the validation dataset used to contruct the
+#' @param validation_frame An H2O H2OFrame object indicating the validation dataset used to contruct the
 #'        confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
 #' @param balance_classes logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data).
@@ -82,6 +83,7 @@ h2o.gbm <- function(x, y, training_frame,
                     learn_rate = 0.1,
                     sample_rate = 1.0,
                     col_sample_rate = 1.0,
+                    col_sample_rate_per_tree = 1.0,
                     nbins = 20,
                     nbins_top_level,
                     nbins_cats = 1024,
@@ -105,17 +107,17 @@ h2o.gbm <- function(x, y, training_frame,
   .gbm.map <- c("x" = "ignored_columns",
                 "y" = "response_column")
 
-  # Training_frame may be a key or an H2O Frame object
-  if (!is.Frame(training_frame))
+  # Training_frame may be a key or an H2O H2OFrame object
+  if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
-               stop("argument \"training_frame\" must be a valid Frame or key")
+               stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
   if (!is.null(validation_frame)) {
-    if (!is.Frame(validation_frame))
+    if (!is.H2OFrame(validation_frame))
         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
                  error = function(err) {
-                   stop("argument \"validation_frame\" must be a valid Frame or key")
+                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
                  })
   }
 
@@ -150,6 +152,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$sample_rate <- sample_rate
   if (!missing(col_sample_rate))
     parms$col_sample_rate <- col_sample_rate
+  if (!missing(col_sample_rate_per_tree))
+    parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(nbins))
     parms$nbins <- nbins
   if (!missing(nbins_top_level))

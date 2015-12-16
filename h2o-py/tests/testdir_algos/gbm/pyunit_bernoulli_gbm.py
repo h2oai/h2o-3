@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -33,7 +34,7 @@ def bernoulli_gbm():
                                          max_depth=depth,
                                          min_rows=min_rows,
                                          distribution="bernoulli")
-  gbm_h2o.train(x=range(1,prostate_train.ncol),y="CAPSULE", training_frame=prostate_train)
+  gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
 
   # Build scikit GBM classification model
   #Log.info("scikit GBM with same parameters\n")

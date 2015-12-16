@@ -7,6 +7,8 @@ import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.util.*;
 
+import java.util.Arrays;
+
 /** A Histogram, computed in parallel over a Vec.
  *
  *  <p>A {@code DHistogram} bins every value added to it, and computes a the
@@ -38,13 +40,13 @@ public final class DHistogram extends Iced {
   public final transient String _name; // Column name (for debugging)
   public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
   public final char  _nbin;     // Bin count
-  public final float _step;     // Linear interpolation step per bin
-  public final float _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
+  public final double _step;     // Linear interpolation step per bin
+  public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
   public double _bins[];   // Bins, shared, atomically incremented
   private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
 
-  // Atomically updated float min/max
-  protected    float  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
+  // Atomically updated double min/max
+  protected    double  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
   static private final long _min2Offset;
   static private final long _max2Offset;
@@ -57,21 +59,33 @@ public final class DHistogram extends Iced {
     }
   }
 
-  void setMin( float min ) {
-    int imin = Float.floatToRawIntBits(min);
-    float old = _min2;
-    while( min < old && !_unsafe.compareAndSwapInt(this, _min2Offset, Float.floatToRawIntBits(old), imin ) )
+  public static int[] activeColumns(DHistogram[] hist) {
+    int[] cols = new int[hist.length];
+    int len=0;
+    for( int i=0; i<hist.length; i++ ) {
+      if (hist[i]==null) continue;
+      assert hist[i]._min < hist[i]._maxEx && hist[i].nbins() > 1 : "broken histo range "+ hist[i];
+      cols[len++] = i;        // Gather active column
+    }
+//    cols = Arrays.copyOfRange(cols, len, hist.length);
+    return cols;
+  }
+
+  void setMin( double min ) {
+    long imin = Double.doubleToRawLongBits(min);
+    double old = _min2;
+    while( min < old && !_unsafe.compareAndSwapLong(this, _min2Offset, Double.doubleToRawLongBits(old), imin ) )
       old = _min2;
   }
   // Find Inclusive _max2
-  void setMax( float max ) {
-    int imax = Float.floatToRawIntBits(max);
-    float old = _maxIn;
-    while( max > old && !_unsafe.compareAndSwapInt(this, _max2Offset, Float.floatToRawIntBits(old), imax ) )
+  void setMax( double max ) {
+    long imax = Double.doubleToRawLongBits(max);
+    double old = _maxIn;
+    while( max > old && !_unsafe.compareAndSwapLong(this, _max2Offset, Double.doubleToRawLongBits(old), imax ) )
       old = _maxIn;
   }
 
-  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx) {
+  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx) {
     assert nbins > 1;
     assert nbins_cats > 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -79,8 +93,8 @@ public final class DHistogram extends Iced {
     _name = name;
     _min=min;
     _maxEx=maxEx;               // Set Exclusive max
-    _min2 =  Float.MAX_VALUE;   // Set min/max to outer bounds
-    _maxIn= -Float.MAX_VALUE;
+    _min2 =  Double.MAX_VALUE;   // Set min/max to outer bounds
+    _maxIn= -Double.MAX_VALUE;
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
     int xbins = isInt == 2 ? nbins_cats : nbins;
@@ -90,16 +104,16 @@ public final class DHistogram extends Iced {
       _step = 1.0f;                           // Fixed stepsize
     } else {
       _step = xbins/(maxEx-min);              // Step size for linear interpolation, using mul instead of div
-      assert _step > 0 && !Float.isInfinite(_step);
+      assert _step > 0 && !Double.isInfinite(_step);
     }
     _nbin = (char)xbins;
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
 
   // Interpolate d to find bin#
-  int bin( float col_data ) {
-    if( Float.isNaN(col_data) ) return 0; // Always NAs to bin 0
-    if (Float.isInfinite(col_data)) // Put infinity to most left/right bin
+  int bin( double col_data ) {
+    if( Double.isNaN(col_data) ) return 0; // Always NAs to bin 0
+    if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
       else return _bins.length-1;
     // When the model is exposed to new test data, we could have data that is
@@ -111,7 +125,7 @@ public final class DHistogram extends Iced {
     if( idx1 == _bins.length) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
     return idx1;
   }
-  float binAt( int b ) { return _min+b/_step; }
+  double binAt( int b ) { return _min+b/_step; }
 
   public int nbins() { return _nbin; }
   public double bins(int b) { return _bins[b]; }
@@ -126,12 +140,12 @@ public final class DHistogram extends Iced {
   // Add one row to a bin found via simple linear interpolation.
   // Compute bin min/max.
   // Compute response mean & variance.
-  void incr( float col_data, double y, double w ) {
-    assert Float.isNaN(col_data) || Float.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
+  void incr( double col_data, double y, double w ) {
+    assert Double.isNaN(col_data) || Double.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
     int b = bin(col_data);      // Compute bin# via linear interpolation
     water.util.AtomicUtils.DoubleArray.add(_bins,b,w); // Bump count in bin
     // Track actual lower/upper bound per-bin
-    if (!Float.isInfinite(col_data)) {
+    if (!Double.isInfinite(col_data)) {
       setMin(col_data);
       setMax(col_data);
     }
@@ -152,15 +166,15 @@ public final class DHistogram extends Iced {
   }
 
   // Inclusive min & max
-  float find_min  () { return _min2 ; }
-  float find_maxIn() { return _maxIn; }
+  double find_min  () { return _min2 ; }
+  double find_maxIn() { return _maxIn; }
   // Exclusive max
-  float find_maxEx() { return find_maxEx(_maxIn,_isInt); }
-  static private float find_maxEx(float maxIn, int isInt ) {
-    float ulp = Math.ulp(maxIn);
+  double find_maxEx() { return find_maxEx(_maxIn,_isInt); }
+  static private double find_maxEx(double maxIn, int isInt ) {
+    double ulp = Math.ulp(maxIn);
     if( isInt > 0 && 1 > ulp ) ulp = 1;
-    float res = maxIn+ulp;
-    return Float.isInfinite(res) ? maxIn : res;
+    double res = maxIn+ulp;
+    return Double.isInfinite(res) ? maxIn : res;
   }
 
   // The initial histogram bins are setup from the Vec rollups.
@@ -168,9 +182,9 @@ public final class DHistogram extends Iced {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
-      final float minIn = (float)Math.max(v.min(),-Float.MAX_VALUE); // inclusive vector min
-      final float maxIn = (float)Math.min(v.max(), Float.MAX_VALUE); // inclusive vector max
-      final float maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
+      final double minIn = Math.max(v.min(),-Double.MAX_VALUE); // inclusive vector min
+      final double maxIn = Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
+      final double maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
       final long vlen = v.length();
       hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null :
         make(fr._names[c],nbins, nbins_cats, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx);
@@ -179,7 +193,7 @@ public final class DHistogram extends Iced {
     return hs;
   }
 
-  static public DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, float min, float maxEx) {
+  static public DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx) {
     return new DHistogram(name,nbins, nbins_cats, isInt, min, maxEx);
   }
 
@@ -195,7 +209,7 @@ public final class DHistogram extends Iced {
       double mean = mean(b);
       if( mean != m )
         if( Double.isNaN(m) ) m=mean; // Capture mean of first non-empty bin
-        else if( !MathUtils.compare(m,mean,1e-5,1e-5) ) {
+        else if( !MathUtils.compare(m,mean,1e-3/*abs*/,1e-3/*rel*/) ) {
           Log.warn("Response should be constant, but mean of first non-empty bin is " + m + ", but another bin (" + b + ") has mean(b) = " + mean);
           return false;
         }
@@ -241,19 +255,19 @@ public final class DHistogram extends Iced {
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
   void incr0( int b, double y, double w ) {
-    AtomicUtils.DoubleArray.add(_sums,b,(float)(w*y)); //See 'HistogramTest' JUnit for float-casting rationalization
-    AtomicUtils.DoubleArray.add(_ssqs,b,(float)(w*y*y));
+    AtomicUtils.DoubleArray.add(_sums,b,w*y); //See 'HistogramTest' JUnit for float-casting rationalization (not done right now)
+    AtomicUtils.DoubleArray.add(_ssqs,b,w*y*y);
   }
   // Same, except square done by caller
   void incr1( int b, double y, double yy) {
-    AtomicUtils.DoubleArray.add(_sums,b,(float)y); //See 'HistogramTest' JUnit for float-casting rationalization
-    AtomicUtils.DoubleArray.add(_ssqs,b,(float)yy);
+    AtomicUtils.DoubleArray.add(_sums,b,y); //See 'HistogramTest' JUnit for float-casting rationalization (not done right now)
+    AtomicUtils.DoubleArray.add(_ssqs,b,yy);
   }
 
   // Merge two equal histograms together.
   // Done in a F/J reduce, so no synchronization needed.
   void add0( DHistogram dsh ) {
-    ArrayUtils.add(_sums, dsh._sums);
+    ArrayUtils.add(_sums,dsh._sums);
     ArrayUtils.add(_ssqs,dsh._ssqs);
   }
 
@@ -261,7 +275,7 @@ public final class DHistogram extends Iced {
   // Score is the sum of the MSEs when the data is split at a single point.
   // mses[1] == MSE for splitting between bins  0  and 1.
   // mses[n] == MSE for splitting between bins n-1 and n.
-  public DTree.Split scoreMSE( int col, double min_rows ) {
+  public DTree.Split scoreMSE( int col, double min_rows, int nid ) {
     final int nbins = nbins();
     assert nbins > 1;
 

@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -12,7 +14,7 @@ def test_get_future_model():
   myX=list(set(range(54)) - set([20,28]))   # Cols 21 and 29 are constant, so must be explicitly ignored
 
   # Set response to be indicator of a particular class
-  res_class=random.sample(range(1,5), 1)[0]
+  res_class=random.sample(list(range(1,5)), 1)[0]
   covtype[myY] = covtype[myY] == res_class
   covtype[myY] = covtype[myY].asfactor()
 

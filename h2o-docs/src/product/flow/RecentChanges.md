@@ -2,6 +2,118 @@
 
 ##H2O
 
+###Tibshirani (3.6.0.9) - 12/7/15  
+
+####New Features 
+
+These changes represent features that have been added since the previous release:
+
+
+#####API
+
+- [PUBDEV-2189](https://0xdata.atlassian.net/browse/PUBDEV-2189): H2O now allows selection of the `non_negative` flag in GLM for R and Python
+
+
+#####Algorithms
+
+- [PUBDEB-1540](https://0xdata.atlassian.net/browse/PUBDEV-1540): Added Generalized Low-Rank Model (GLRM) algorithm
+- [PUBDEV-2119](https://0xdata.atlassian.net/browse/PUBDEV-2119): Added gains/lift computation 
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/f4d2f85f3e61cfa03a1c80ea3a973e9d2f3ba20b): Added `remove_colinear_columns` parameter to GLM
+
+
+#####R
+
+- [PUBDEV-2079](https://0xdata.atlassian.net/browse/PUBDEV-2079): R now retrieves column types for a H2O Frame more efficiently
+
+#####Python
+
+- [PUBDEV-2294](https://0xdata.atlassian.net/browse/PUBDEV-2294): Added Python equivalent for `h2o.num_iterations`
+- [PUBDEV-2233](https://0xdata.atlassian.net/browse/PUBDEV-2233): Added `sub` and `gsub` to Python client
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/dbef536dc48fa56eb21d65339f1f1857724012f1): Added weighted quantiles to Python API
+- [PUBDEV-1304](https://0xdata.atlassian.net/browse/PUBDEV-1304): Added `sapply` operator to Python
+- [PUBDEV-1969](https://0xdata.atlassian.net/browse/PUBDEV-1969): H2O now plots decision boundaries for classifiers in Python
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+
+#####Algorithms
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/315201eb41a8439a1a77fb632b0e32a8181a2785): Change in behavior in GLM beta constraints - when ignoring constant/bad columns, remove them from `beta_constraints` as well
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/8035f7388560801e4af69c92c81a436a96f02957): Added `ignore_const_cols` to all algos
+- [PUBDEV-2311](https://0xdata.atlassian.net/browse/PUBDEV-2311): Improved ability to sort by model metric of choice in client
+
+#####Python 
+
+- [PUBDEV-2409](https://0xdata.atlassian.net/browse/PUBDEV-2409): H2O now checks for `H2O_DISABLE_STRICT_VERSION_CHECK` env variable in Python [GitHub commit](https://github.com/h2oai/h2o-3/commit/238a1c80e091c681da8b4b52eca308281244a7b9)
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/953b892560242146af0ffc124f32e7a9ddb89b04): H2O now allows l/r values to be null or an empty string
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/7e368a4df9c39b30ca4f4eac77e2c739ef38bbf6): H2O now accomodates `LOAD_FAST` and `LOAD_GLOBAL` in `bytecode_to_ast`
+
+#####R
+
+- [PUBDEV-1378](https://0xdata.atlassian.net/browse/PUBDEV-1378): In R, `h2o.getTimezone()` previously returned a list of one, now it just returns the string
+
+
+#####System
+
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/e1c9272bc21d4fcf3ab55f4fe646656a061ce542): Added more tweaks to help various low-memory configurations
+
+
+
+####Bug Fixes
+
+The following changes resolve incorrect software behavior: 
+
+
+#####API
+
+- [PUBDEV-2042](https://0xdata.atlassian.net/browse/PUBDEV-2042): `h2o.grid` failed when REST API version was not default
+- [PUBDEV-2401](https://0xdata.atlassian.net/browse/PUBDEV-2401): `/Jobs` failed if you built a Model and then overwrote it in the DKV with any other type [GitHub commit](https://github.com/h2oai/h2o-3/commit/453db68b4d31130bdaa2b6a31cf80a88447baabf)
+- [PUBDEV-2392](https://0xdata.atlassian.net/browse/PUBDEV-2392): `/3/Jobs` failed with exception after running `/3/SplitFrame`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/888cc021694fe0b34aadba70bdd0d79811cfb30d): PUBDEV-2426 - Fixed error where sd and mean were adjusted to weights even if no observation weights were passed
+
+#####Algorithms
+
+- [PUBDEV-2396](https://0xdata.atlassian.net/browse/PUBDEV-2396):  GLRM validation frames must have the same number of rows as the training frame
+- [PUBDEV-2053](https://0xdata.atlassian.net/browse/PUBDEV-2053): Fixed assertion failure in Deep Learning
+- [PUBDEV-2315](https://0xdata.atlassian.net/browse/PUBDEV-2315): Could not compile POJO using K-means 
+- [PUBDEV-2317](https://0xdata.atlassian.net/browse/PUBDEV-2317): Could not compile POJO using PCA
+- [PUBDEV-2320](https://0xdata.atlassian.net/browse/PUBDEV-2320): Could not compile POJO using Naive Bayes
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/928002f60a4523ad1b065635f55ccd2bb2b9091c): Fixed weighted mean and standard deviation computation in GLM
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/147fd0990b484747439ba0921f72763211d10072): Fixed stopping criteria for lambda search and multinomial in GLM
+
+
+#####Python
+
+- [PUBDEV-2262](https://0xdata.atlassian.net/browse/PUBDEV-2262): H2OFrame indexing was no longer Pythonic on Bleeding Edge 10/23
+- [PUBDEV-2278](https://0xdata.atlassian.net/browse/PUBDEV-2278): Trying to get help in python client displayed the frame
+- [PUBDEV-2371](https://0xdata.atlassian.net/browse/PUBDEV-2371): Fixed ASTEQ `str_op` bug [GitHub commit](https://github.com/h2oai/h2o-3/commit/4fc88caa8d86679c4ed584d6a2c32ec931f03cdd)
+
+
+
+
+
+#####R
+
+- [PUBDEV-1749](https://0xdata.atlassian.net/browse/PUBDEV-1749): `h2o.apply` did not correctly handle functions
+- [PUBDEV-2335](https://0xdata.atlassian.net/browse/PUBDEV-2335): R: as.numeric for a string column only converted strings to ints rather than reals
+- [PUBDEV-2319](https://0xdata.atlassian.net/browse/PUBDEV-2319): R: `sd` was not working inside `group_by`
+- [PUBDEV-2397](https://0xdata.atlassian.net/browse/PUBDEV-2397): R: Ignore Constant Columns was not an argument in Algos in R like it is in Flow
+- [PUBDEV-2134](https://0xdata.atlassian.net/browse/PUBDEV-2134): When a dataset was sliced, the int mapping of enums was returned 
+- [PUBDEV-2408](https://0xdata.atlassian.net/browse/PUBDEV-2408): Improved handling when H2O has already been shutdown in R [GitHub commit](https://github.com/h2oai/h2o-3/commit/00d1505681135960722bc74def2a951ba01682ba)
+- [PUBDEV-2231](https://0xdata.atlassian.net/browse/PUBDEV-2231): Fixed categorical levels mapping bug
+
+#####System
+
+- [PUBDEV-2403](https://0xdata.atlassian.net/browse/PUBDEV-2403): Parser read file of empty strings as 0 rows  [GitHub commit](https://github.com/h2oai/h2o-3/commit/eee101ba16e11bcbc10e35ddd1f96bfb749156d3)
+- [PUBDEV-2404](https://0xdata.atlassian.net/browse/PUBDEV-2404): Empty strings in python objects were parsed as missing  [GitHub commit](https://github.com/h2oai/h2o-3/commit/fb4817a6847192a9dc3f359b0f3ec2d63268aaef)
+- [PUBDEV-2375](https://0xdata.atlassian.net/browse/PUBDEV-2375): Save Model (Deeplearning): the filename for the model metrics file is too long for windows to handle
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/76aaf1ce863ea3cdfc5531dc0b551a26ff3ddf48): Fixed streaming load bug for large files
+- [PUBDEV-2241](https://0xdata.atlassian.net/browse/PUBDEV-2241): Column width slowness warning now prints before model build, not after
+
+---
+
 ###Tibshirani (3.6.0.7) - 11/23/15  
 
 
@@ -153,7 +265,7 @@ The following changes resolve incorrect software behavior:
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/cc02cc6f19360a79232a781328c6afae80a4861a): Added `_to_string` method 
 - [PUBDEV-2166](https://0xdata.atlassian.net/browse/PUBDEV-2166): Added Python grid client [GitHub commit](https://github.com/h2oai/h2o-3/commit/16589b7d3362dce6a2caaed6e23287c605896a8a)
 - [PUBDEV-2098](https://0xdata.atlassian.net/browse/PUBDEV-2098): Scoring history in Python is now visualized ([GitHub commit](https://github.com/h2oai/h2o-3/commit/77b27109c84c4739f9f1b7a3078f8992beefc813))
-- [GitHub commit](https://github.com/h2oai/h2o-3/commit/3cda6e1a810dcbee5182dde5821a65f3b8800a69): PUBDEV-2020: Python implementation and test for `split_frame()`
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/3cda6e1a810dcbee5182dde5821a65f3b8800a69): [PUBDEV-2020](https://0xdata.atlassian.net/browse/PUBDEV-2020): Python implementation and test for `split_frame()`
 
 
 #####R
@@ -194,7 +306,7 @@ The following changes resolve incorrect software behavior:
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/5ccc4699f3c71dccb64f7c11fac5a91ddff514ba): GLRM is now deterministic between one vs. many chunks
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/ae79aec8a84d0b7bdabb60f15e8138218e5e227e): Input parameters are now immutable
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/c6ad99d06a337f7535720852213e4d55fa116e8a): PUBDEV-2135: Cleaned up N-fold CV model parameter sanity checking and error message propagation; now checks all N-fold model parameters upfront and lets the main model carry the message to the user
-- [GitHub commit](https://github.com/h2oai/h2o-3/commit/756ed15a8a8e34e4383cba1a6580c24806603c49): PUBDEV-2130: N-fold CV models are no longer deleted when the main model is deleted
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/756ed15a8a8e34e4383cba1a6580c24806603c49): [PUBDEV-2130](https://0xdata.atlassian.net/browse/PUBDEV-2130): N-fold CV models are no longer deleted when the main model is deleted
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/c7339d0597f690aef491b343797368c27645bb64): PUBDEV-2107: The title in `plot.H2OBinomialMetrics` is now editable 
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/61d125c4b1a457fc95c5daf2a2423b3934a1d6eb): Parse Python lambda (bytecode -> ast -> rapids)
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/2534dc6d4bb2c534cd0122e317317ad0459e4d3e): PUBDEV-1847: Cleaned up/refactored GBM/DRF
@@ -357,6 +469,8 @@ The following changes resolve incorrect software behavior:
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/e703181d0b545dc0be152bcac1d9e32f68f03f1a): Fixed a bug in GLRM init in R
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/613bd6ab537f09e24cb287addd0989178ee14134): Fixed bug in `h2o.summary` (constant categorical columns)
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/42f4635f6c5b17937b1eb58a46c505507979b89c): Fixed bug in `plot.H2OModel`
+- [PUBDEV-1974](https://0xdata.atlassian.net/browse/PUBDEV-1974): When imputing columns from R, many temp files were created, which did not occur in Flow
+
 
 #####System
 

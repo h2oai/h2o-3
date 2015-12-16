@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 ##
 # Check factor levels of numeric and enum columns
 ##
@@ -8,7 +10,7 @@ test <- function(conn) {
   Log.info("Find the factor levels h2o and R frame...")
   levels1 <- sort(h2o.levels(iris.hex$Species))
   levels2 <- sort(levels(iris$Species))
-  print("Factor levels for Species column for H2OFrame...")
+  print("Factor levels for Species column for H2OH2OFrame...")
   print(levels1)
   print("Factor levels for Species column for dataframe...")
   print(levels2)
@@ -21,7 +23,7 @@ test <- function(conn) {
   Log.info("Try printing the levels of a numeric column...")
   levels1 <- levels(iris$Sepal.Length)
   levels2 <- h2o.levels(iris.hex$Sepal.Length)
-  print("Factor levels for Sepal.Length column for H2OFrame...")
+  print("Factor levels for Sepal.Length column for H2OH2OFrame...")
   print(levels1)
   print("Factor levels for Sepal.Length column for dataframe...")
   print(levels2)  

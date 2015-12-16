@@ -1,8 +1,14 @@
 """
 A confusion matrix from H2O.
 """
+from __future__ import division
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 
-from . import H2OTwoDimTable
+from ..two_dim_table import H2OTwoDimTable
 
 
 class ConfusionMatrix(object):
@@ -12,7 +18,7 @@ class ConfusionMatrix(object):
     if not cm: raise ValueError("Missing data, `cm_raw` is None")
     if not isinstance(cm, list):  raise ValueError("`cm` is not a list. Got: " + type(cm))
 
-    if len(cm)==2: cm=zip(*cm)  # transpose if 2x2
+    if len(cm)==2: cm=list(zip(*cm))  # transpose if 2x2
     nclass = len(cm)
     class_errs = [0] * nclass
     class_sums = [0] * nclass
@@ -26,7 +32,7 @@ class ConfusionMatrix(object):
       class_sums[i] = sum([v[i] for v in cm])  # row sums
       class_err_strings[i] = \
           " (" + str(class_errs[i]) + "/" + str(class_sums[i]) + ")"
-      class_errs[i] = float("nan") if class_sums[i] == 0 else round(float(class_errs[i]) / float(class_sums[i]), self.ROUND)
+      class_errs[i] = float("nan") if class_sums[i] == 0 else round(old_div(float(class_errs[i]), float(class_sums[i])), self.ROUND)
       # and the cell_values are
       cell_values[i] = [v[i] for v in cm] + [str(class_errs[i])] + [class_err_strings[i]]
 
@@ -35,7 +41,7 @@ class ConfusionMatrix(object):
     totals += [sum(class_sums)]
     class_err_strings += [" (" + str(total_errs) + "/" + str(totals[-1]) + ")"]
 
-    class_errs[-1] = float("nan") if totals[-1] == 0 else round(float(total_errs) / float(totals[-1]), self.ROUND)
+    class_errs[-1] = float("nan") if totals[-1] == 0 else round(old_div(float(total_errs), float(totals[-1])), self.ROUND)
 
     # do the last row of cell_values ... the "totals" row
     cell_values[-1] = totals[0:-1] + [str(class_errs[-1])] + [class_err_strings[-1]]

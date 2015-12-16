@@ -354,11 +354,10 @@ OS X should already have Git installed. To download and update h2o-3 source code
 
 ### 4.5. Setup on Ubuntu 14.04
 
-##### Step 1. Install Node.js, npm, and bower:
+##### Step 1. Install Node.js
 
-    sudo apt-get install npm
-    sudo ln -s /usr/bin/nodejs /usr/bin/node
-    npm install -g bower
+    curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
+    sudo apt-get install -y nodejs
 
 ##### Step 2. Install JDK:
 
@@ -393,15 +392,10 @@ Download and update h2o-3 source codes:
 
 ### 4.6. Setup on Ubuntu 13.10
 
-##### Step 1. Install Node.js, npm, and bower
+##### Step 1. Install Node.js
 
-On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default npm (v1.2.18) is too old, so use a fresh install from the npm website:
-
-    sudo apt-get install node
-    sudo ln -s /usr/bin/nodejs /usr/bin/node
-    wget http://npmjs.org/install.sh
-    sudo apt-get install curl
-    sudo sh install.sh
+    curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
+    sudo apt-get install -y nodejs
    
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
@@ -415,6 +409,56 @@ For users of Intellij's IDEA, generate project files with:
 For users of Eclipse, generate project files with:
 
     ./gradlew eclipse
+
+
+
+###4.7 Setup on CentOS 7
+
+```
+cd /opt
+sudo wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/7u79-b15/jdk-7u79-linux-x64.tar.gz"
+
+sudo tar xzf jdk-7u79-linux-x64.tar.gz
+cd jdk1.7.0_79
+
+sudo alternatives --install /usr/bin/java java /opt/jdk1.7.0_79/bin/java 2
+
+sudo alternatives --install /usr/bin/jar jar /opt/jdk1.7.0_79/bin/jar 2
+sudo alternatives --install /usr/bin/javac javac /opt/jdk1.7.0_79/bin/javac 2
+sudo alternatives --set jar /opt/jdk1.7.0_79/bin/jar
+sudo alternatives --set javac /opt/jdk1.7.0_79/bin/javac
+                                                                                                                                                                       
+cd /opt
+
+sudo wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+sudo rpm -ivh epel-release-7-5.noarch.rpm
+
+sudo echo "multilib_policy=best" >> /etc/yum.conf
+sudo yum -y update
+
+sudo yum -y install R R-devel git python-pip openssl-devel libxml2-devel libcurl-devel gcc gcc-c++ make openssl-devel kernel-devel texlive texinfo texlive-latex-fonts libX11-devel mesa-libGL-devel mesa-libGL nodejs npm python-devel numpy scipy python-pandas
+
+sudo pip install scikit-learn grip tabulate statsmodels wheel
+
+mkdir ~/Rlibrary
+export JAVA_HOME=/opt/jdk1.7.0_79
+export JRE_HOME=/opt/jdk1.7.0_79/jre
+export PATH=$PATH:/opt/jdk1.7.0_79/bin:/opt/jdk1.7.0_79/jre/bin
+export R_LIBS_USER=~/Rlibrary
+
+# install local R packages
+R -e 'install.packages(c("RCurl","jsonlite","statmod","devtools","roxygen2","testthat"), dependencies=TRUE, repos="http://cran.rstudio.com/")'
+
+cd
+git clone https://github.com/h2oai/h2o-3.git
+cd h2o-3
+
+# Build H2O
+./gradlew syncSmalldata
+./gradlew syncRPackages
+./gradlew build -x test
+
+```
 
 
 <a name="Launching"></a>

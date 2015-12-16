@@ -1,3 +1,5 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../scripts/h2o-r-test-setup.R")
 
 
 
@@ -13,7 +15,7 @@ test.bad.headers <- function() {
 
   r.median <- median(f.df$start.station.id)
 
-  if(!is.Frame(f[,"start station id"])) stop("Didn't subset column correctly")
+  if(!is.H2OFrame(f[,"start station id"])) stop("Didn't subset column correctly")
 
   h2o.median <- median(f[,"start station id"])
   h2o.median <- as.data.frame(h2o.median)[1,1] 

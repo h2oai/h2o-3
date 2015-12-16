@@ -171,7 +171,7 @@
     }
 
     # H2O primitives we invoke directly
-    fr.name <- paste0(fname,".Frame")
+    fr.name <- paste0(fname,".H2OFrame")
     if( fname %in% .h2o.primitives || exists(fr.name) ) {
       if( exists(fr.name) ) { # Append any missing default args
         formal_args <- formals(get(fr.name))

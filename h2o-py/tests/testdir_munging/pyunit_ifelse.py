@@ -1,3 +1,5 @@
+from __future__ import division
+from past.utils import old_div
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -11,11 +13,11 @@ def insert_missing():
 
   data = h2o.import_file(path=air_path)
 
-  hour1 = data["CRSArrTime"] / 100
+  hour1 = old_div(data["CRSArrTime"], 100)
   mins1 = data["CRSArrTime"] % 100
   arrTime = hour1*60 + mins1
 
-  hour2 = data["CRSDepTime"] / 100
+  hour2 = old_div(data["CRSDepTime"], 100)
   mins2 = data["CRSDepTime"] % 100
   depTime = hour2*60 + mins2
 

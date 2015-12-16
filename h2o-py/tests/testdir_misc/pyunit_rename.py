@@ -1,3 +1,4 @@
+from builtins import range
 from h2o.estimators.estimator_base import H2OEstimator
 import sys
 sys.path.insert(1,"../../")
@@ -11,7 +12,7 @@ def save_load_model():
   training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
 
   Y = 3
-  X = range(3) + range(4,11)
+  X = list(range(3)) + list(range(4,11))
 
   from h2o.estimators.glm import H2OGeneralizedLinearEstimator
   model = H2OGeneralizedLinearEstimator(model_id="original_id", family="binomial", alpha=0, Lambda=1e-5)

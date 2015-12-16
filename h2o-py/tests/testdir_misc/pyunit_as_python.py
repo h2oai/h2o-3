@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -19,11 +20,11 @@ def as_python_test():
   airlines.show()
 
 
-  print h2o.as_list(iris)
+  print(h2o.as_list(iris))
 
-  print h2o.as_list(prostate)
+  print(h2o.as_list(prostate))
 
-  print h2o.as_list(airlines)
+  print(h2o.as_list(airlines))
 
 
 

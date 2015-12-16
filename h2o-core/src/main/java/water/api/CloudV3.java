@@ -1,7 +1,6 @@
 package water.api;
 
 import water.*;
-import water.util.PrettyPrint;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,7 +31,7 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
    *
    * Note there is no attempt to distinguish between REST API sessions.  Every call updates the last tick count info.
    */
-  private static transient ConcurrentHashMap<String,LastTicksEntry> ticksHashMap = new ConcurrentHashMap<String, LastTicksEntry>();
+  private static transient ConcurrentHashMap<String,LastTicksEntry> ticksHashMap = new ConcurrentHashMap<>();
 
   public CloudV3() {}
 
@@ -43,6 +42,12 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
   // Output fields
   @API(help="version", direction=API.Direction.OUTPUT)
   public String version;
+
+  @API(help="branch_name", direction=API.Direction.OUTPUT)
+  public String branch_name;
+
+  @API(help="build_number", direction=API.Direction.OUTPUT)
+  public String build_number;
 
   @API(help="Node index number cloud status is collected from (zero-based)", direction=API.Direction.OUTPUT)
   public int node_idx;
@@ -90,30 +95,40 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
     @API(help="Time (in msec) of last ping", direction=API.Direction.OUTPUT)
     public long last_ping;
 
+    @API(help="PID", direction=API.Direction.OUTPUT)
+    public int pid;
+
+    @API(help="num_cpus", direction=API.Direction.OUTPUT)
+    public int num_cpus;
+
+    @API(help="cpus_allowed", direction=API.Direction.OUTPUT)
+    public int cpus_allowed;
+
+    @API(help="nthreads", direction=API.Direction.OUTPUT)
+    public int nthreads;
+
     @API(help="System load; average #runnables/#cores", direction=API.Direction.OUTPUT)
     public float sys_load;       // Average #runnables/#cores
 
-    @API(help="Linpack GFlops", direction=API.Direction.OUTPUT)
-    public double gflops;
+    @API(help="System CPU percentage used by this H2O process in last interval", direction=API.Direction.OUTPUT)
+    public int my_cpu_pct;
 
-    @API(help="Memory Bandwidth", direction=API.Direction.OUTPUT)
-    public double mem_bw;
+    @API(help="System CPU percentage used by everything in last interval", direction=API.Direction.OUTPUT)
+    public int sys_cpu_pct;
 
-    @API(help="Data on Node (memory or disk)", direction=API.Direction.OUTPUT)
-    public long total_value_size;
-
-    @API(help="Data on Node (memory only)", direction=API.Direction.OUTPUT)
+    @API(help="Data on Node memory", direction=API.Direction.OUTPUT)
     public long mem_value_size;
+    @API(help="Temp (non Data) memory", direction=API.Direction.OUTPUT)
+    public long pojo_mem;
+    @API(help="Free heap", direction=API.Direction.OUTPUT)
+    public long free_mem;
+    @API(help="Maximum memory size for node", direction=API.Direction.OUTPUT)
+    public long max_mem;
+    @API(help="Size of data on node's disk", direction=API.Direction.OUTPUT)
+    public long swap_mem;
 
     @API(help="#local keys", direction=API.Direction.OUTPUT)
     public int num_keys;
-
-    @API(help="Free heap", direction=API.Direction.OUTPUT)
-    public long free_mem;
-    @API(help="Total heap", direction=API.Direction.OUTPUT)
-    public long tot_mem;
-    @API(help="Max heap", direction=API.Direction.OUTPUT)
-    public long max_mem;
 
     @API(help="Free disk", direction=API.Direction.OUTPUT)
     public long free_disk;
@@ -135,23 +150,11 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
     @API(help="Open File Descripters", direction=API.Direction.OUTPUT)
     public int open_fds;
 
-    @API(help="num_cpus", direction=API.Direction.OUTPUT)
-    public int num_cpus;
+    @API(help="Linpack GFlops", direction=API.Direction.OUTPUT)
+    public double gflops;
 
-    @API(help="cpus_allowed", direction=API.Direction.OUTPUT)
-    public int cpus_allowed;
-
-    @API(help="nthreads", direction=API.Direction.OUTPUT)
-    public int nthreads;
-
-    @API(help="System CPU percentage used by this H2O process in last interval", direction=API.Direction.OUTPUT)
-    public int my_cpu_pct;
-
-    @API(help="System CPU percentage used by everything in last interval", direction=API.Direction.OUTPUT)
-    public int sys_cpu_pct;
-
-    @API(help="PID", direction=API.Direction.OUTPUT)
-    public String pid;
+    @API(help="Memory Bandwidth", direction=API.Direction.OUTPUT)
+    public double mem_bw;
 
     NodeV3(H2ONode h2o, boolean skip_ticks) {
       HeartBeat hb = h2o._heartbeat;
@@ -166,13 +169,13 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
       mem_bw = hb._membw;
 
       // Memory being used
-      total_value_size = hb.get_tvalsz();
-      mem_value_size = hb.get_mvalsz();
-      num_keys = hb._keys;
-      // GC health
+      mem_value_size = hb.get_kv_mem();
+      pojo_mem = hb.get_pojo_mem();
       free_mem = hb.get_free_mem();
-      tot_mem = hb.get_tot_mem();
-      max_mem = hb.get_max_mem();
+      swap_mem = hb.get_swap_mem();
+      max_mem = pojo_mem + free_mem + mem_value_size;
+      num_keys = hb._keys;
+
       // Disk health
       free_disk = hb.get_free_disk();
       max_disk  = hb.get_max_disk();
@@ -222,23 +225,5 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
         ticksHashMap.put(h2o.toString(), newLte);
       }
     }
-  }
-
-  private void fjadd( short[] fjs, int x, short fj ) {
-    if( fj==-1 ) return;
-    fjs[x] = (short)((fjs[x] == -1 ? 0 : fjs[x]) + fj);
-  }
-
-  private String fjq( short[] fjs ) {
-    int max_lo;
-    for( max_lo=H2O.MIN_HI_PRIORITY; max_lo>0; max_lo-- )
-      if( fjs[max_lo-1]!= -1 ) break;
-    StringBuffer s = new StringBuffer("<br>[");
-    for( int i=0; i<max_lo; i++ ) s.append(Math.max(fjs[i],0)).append("/");
-    s.append(".../");
-    for( int i=H2O.MIN_HI_PRIORITY; i<fjs.length-1; i++ ) s .append(fjs[i]).append("/");
-    s.append(fjs[fjs.length-1]);
-    s.append("]");
-    return s.toString();
   }
 }

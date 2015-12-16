@@ -1,3 +1,4 @@
+from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..",".."))
 import h2o
@@ -11,7 +12,7 @@ def offsets_and_distributions():
   cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
   cars = cars[cars["economy_20mpg"].isna() == 0]
   cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-  offset = h2o.H2OFrame([[.5] for x in range(398)])
+  offset = h2o.H2OFrame([[.5]]*398)
   offset.set_name(0,"x1")
   cars = cars.cbind(offset)
 
@@ -28,22 +29,22 @@ def offsets_and_distributions():
 
   # gamma
   dl = H2ODeepLearningEstimator(distribution="gamma")
-  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # gaussian
   dl = H2ODeepLearningEstimator(distribution="gaussian")
-  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # poisson
   dl = H2ODeepLearningEstimator(distribution="poisson")
-  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
   # tweedie
   dl = H2ODeepLearningEstimator(distribution="tweedie")
-  dl.train(x=range(3),y="Claims", training_frame=insurance, offset_column="offset")
+  dl.train(x=list(range(3)),y="Claims", training_frame=insurance, offset_column="offset")
   predictions = dl.predict(insurance)
 
 if __name__ == "__main__":

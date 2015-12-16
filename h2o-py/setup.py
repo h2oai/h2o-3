@@ -26,7 +26,7 @@ setup(
 
     # Author details
     author='H2O.ai',
-    author_email='support@0xdata.com',
+    author_email='support@h2o.ai',
 
     # Choose your license
     license='Apache v2',
@@ -55,6 +55,7 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Langauge :: Python :: 3.5',
         ],
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
@@ -62,7 +63,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # run-time dependencies
-    install_requires=['requests', 'tabulate'],
+    install_requires=['requests', 'tabulate', 'future'],
 
 
     data_files=[('h2o_jar', ['../build/h2o.jar']), ('h2o_data', ['../h2o-r/h2o-package/inst/extdata/iris.csv',
