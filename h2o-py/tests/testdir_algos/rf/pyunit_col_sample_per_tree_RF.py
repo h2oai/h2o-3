@@ -43,7 +43,7 @@ def colsamplepertree():
   print("")
   print("--------------------")
 
-  assert err_regular >= err_colsample, "col sample per tree makes it worse!"
+  assert err_regular >= 0.99*err_colsample, "col sample per tree makes it worse!"
 
 
 
