@@ -50,21 +50,18 @@ public class MetaCollector {
   // TODO: add hiddenNAFinder https://0xdata.atlassian.net/browse/STEAM-76
 
 
-  public static class ParallelColMetaPass1 extends H2O.H2OCountedCompleter {
+  public static class ParallelTasks<T extends MRTask<T>> extends H2O.H2OCountedCompleter {
 
     // IN
     private final AtomicInteger _ctr; // Concurrency control
     private static int MAXP = 100;    // Max number of concurrent columns
     private final Frame _fr;          // Frame to compute all the metadata on
-    private final int _response;      // col idx of response
+    private final T[] _tasks;         // task holder
 
-    private ColMetaTask[] _tasks;     // task holder
-
-    ParallelColMetaPass1(Frame fr, int response) {
+    public ParallelTasks(Frame fr, T[] tasks) {
       _fr = fr;
-      _response = response;
       _ctr = new AtomicInteger(MAXP-1);
-      _tasks = new ColMetaTask[_fr.numCols()];
+      _tasks = tasks;
     }
 
     @Override protected void compute2() {
@@ -75,12 +72,13 @@ public class MetaCollector {
 
     // Compute ColMeta for each column
     private void asyncVecTask(final int colnum) {
-      _tasks[colnum] = new ColMetaTask(new Callback(), colnum==_response, _fr.name(colnum), colnum).asyncExec(_fr.vec(colnum));
+      _tasks[colnum].setCompleter(new Callback());
+      _tasks[colnum].asyncExec(_fr.vec(colnum));
     }
 
     private class Callback extends H2O.H2OCallback {
-      public Callback(){super(ParallelColMetaPass1.this);}
-      @Override public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
+      public Callback(){super(ParallelTasks.this);}
+      @Override public void callback(H2O.H2OCountedCompleter cc) {
         int i = _ctr.incrementAndGet();
         if( i < _fr.numCols() )
           asyncVecTask(i);
@@ -88,7 +86,7 @@ public class MetaCollector {
     }
   }
 
-  private static class ColMetaTask extends MRTask<ColMetaTask> {
+  public static class ColMetaTaskPass1 extends MRTask<ColMetaTaskPass1> {
 
     // IN
     private final boolean _response;
@@ -96,12 +94,11 @@ public class MetaCollector {
     // OUT
     public final ColMeta _colMeta;
 
-    ColMetaTask(H2O.H2OCountedCompleter cc, boolean response, String colname, int idx) {
-      super(cc);
+    public ColMetaTaskPass1(boolean response, String colname, int idx) {
       _colMeta = new ColMeta(_fr.anyVec(), colname, idx, _response=response);
     }
 
-    @Override public void map( Chunk c ) {
+    @Override public void map( Chunk c ) {  // TODO: roll chunk type specific methods
 
     }
   }

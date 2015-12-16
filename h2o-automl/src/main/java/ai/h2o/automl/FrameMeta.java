@@ -1,5 +1,7 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.collectors.MetaCollector;
+import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -20,6 +22,7 @@ public class FrameMeta {
   public FrameMeta(Frame fr, int response) {
     _fr=fr;
     _response=response;
+    _cols = new ColMeta[_fr.numCols()];
   }
 
   public int[] ignoredCols() {  // publishes private field
@@ -38,7 +41,16 @@ public class FrameMeta {
   public Vec response() { return _fr.vec(_response); }
   public ColMeta responseMeta() { return _cols[_response]; }
 
-  public void computeFrameMetaPass1() {
+  // blocking call to compute 1st pass of column metadata
+  public FrameMeta computeFrameMetaPass1() {
+    MetaCollector.ColMetaTaskPass1[] tasks = new MetaCollector.ColMetaTaskPass1[_fr.numCols()];
+    for(int i=0;i<tasks.length;++i)
+      tasks[i] = new MetaCollector.ColMetaTaskPass1(i==_response, _fr.name(i), i);
 
+    MetaCollector.ParallelTasks metaCollector = new MetaCollector.ParallelTasks<>(_fr, tasks);
+    H2O.submitTask(metaCollector).join();
+    for(MetaCollector.ColMetaTaskPass1 cmt: tasks)
+      _cols[cmt._colMeta._idx] = cmt._colMeta;
+    return this;
   }
 }

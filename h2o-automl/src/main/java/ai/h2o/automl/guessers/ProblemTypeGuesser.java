@@ -1,6 +1,7 @@
 package ai.h2o.automl.guessers;
 
 
+import ai.h2o.automl.ColMeta;
 import water.fvec.Vec;
 
 /**
@@ -18,14 +19,18 @@ import water.fvec.Vec;
  * If no decision is made what should we do? WARN or ERROR??
  */
 public class ProblemTypeGuesser {
+  ColMeta _meta;
 
-  public static boolean guess(byte vecType, boolean isInt) {
-    if( vecType == Vec.T_CAT ) return true;
-    else if( !isInt ) {
-      // do some guessing to reinforce that this is a regression problem
+  public static boolean guess(Vec v) { // true -> classification; false -> regression
+    if( v.get_type() == Vec.T_CAT ) return true;
+    else if( !v.isInt()) {
+      if( v.isNumeric() ) return false;
+      // should probably throw up if v.isString() (no h2o algo works in that case)
       return true;
     } else {
+      if( v.isBinary()) return true;  // only checks for 0/1
       // do some more thorough analysis on the column, might be somewhat intensive
+      // let's try to histo into 256 bins, we'll save some of this data for the metadata
       return false;
     }
   }
