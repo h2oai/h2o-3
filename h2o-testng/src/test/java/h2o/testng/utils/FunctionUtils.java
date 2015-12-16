@@ -544,10 +544,10 @@ public class FunctionUtils {
 
 				// Binomial metrics
 				if( trainingMetrics instanceof ModelMetricsBinomial) {
-					train.put("AUC",((ModelMetricsBinomial) trainingMetrics).auc()._auc);
-					test.put("AUC",((ModelMetricsBinomial) testMetrics).auc()._auc);
-					train.put("Gini",((ModelMetricsBinomial) trainingMetrics).auc()._gini);
-					test.put("Gini",((ModelMetricsBinomial) testMetrics).auc()._gini);
+					train.put("AUC",((ModelMetricsBinomial) trainingMetrics).auc());
+					test.put("AUC",((ModelMetricsBinomial) testMetrics).auc());
+					train.put("Gini",((ModelMetricsBinomial) trainingMetrics)._auc._gini);
+					test.put("Gini",((ModelMetricsBinomial) testMetrics)._auc._gini);
 					train.put("Logloss",((ModelMetricsBinomial) trainingMetrics).logloss());
 					test.put("Logloss",((ModelMetricsBinomial) testMetrics).logloss());
 					train.put("F1",((ModelMetricsBinomial) trainingMetrics).cm().F1());
