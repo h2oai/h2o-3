@@ -19,12 +19,12 @@ def colsamplepertree():
   train = splits[0]
   valid = splits[1]
 
-  regular = H2ORandomForestEstimator(ntrees=10, seed=1234, nfolds=3)
+  regular = H2ORandomForestEstimator(ntrees=50, seed=1234)
   regular.train(x=list(range(54)), y=54, training_frame=train)
   mm_regular = regular.model_performance(valid)
   mm_regular.show()
 
-  colsample = H2ORandomForestEstimator(ntrees=10, seed=1234, nfolds=3, col_sample_rate_per_tree=0.9)
+  colsample = H2ORandomForestEstimator(ntrees=50, seed=1234, col_sample_rate_per_tree=0.9)
   colsample.train(x=list(range(54)), y=54, training_frame=train)
   mm_colsample = colsample.model_performance(valid)
   mm_colsample.show()
