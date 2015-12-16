@@ -36,6 +36,9 @@ class H2OConnection(object):
   GET, POST, and DELETE.
   """
 
+  __ENCODING__ = "utf-8"
+  __ENCODING_ERROR__ = "replace"
+
   def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
                license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True, proxies=None):
     """
@@ -133,6 +136,11 @@ class H2OConnection(object):
 
     self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()
+
+  @staticmethod
+  def default():
+    H2OConnection.__ENCODING__ = "utf-8"
+    H2OConnection.__ENCODING_ERROR__ = "replace"
 
   @staticmethod
   def jar_paths():
@@ -485,17 +493,17 @@ class H2OConnection(object):
         for l in v:
           if isinstance(l,list):
             x += '['
-            x += ','.join([str(e) if PY3 else str(e).encode("utf-8") for e in l])
+            x += ','.join([str(e) if PY3 else str(e).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__) for e in l])
             x += ']'
           else:
-            x += str(l) if PY3 else str(l).encode("utf-8")
+            x += str(l) if PY3 else str(l).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__)
           x += ','
         x = x[:-1]
         x += ']'
       else:
-        x = str(v) if PY3 else str(v).encode("utf-8")
+        x = str(v) if PY3 else str(v).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__)
       query_string += k+"="+x+"&"
-    query_string = query_string[:-1] # Remove trailing extra &
+    query_string = query_string[:-1]  # Remove trailing extra &
 
     post_body = ""
     if not file_upload_info:
