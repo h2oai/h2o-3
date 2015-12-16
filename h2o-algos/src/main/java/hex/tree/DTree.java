@@ -157,7 +157,7 @@ public class DTree extends Iced {
       DHistogram h = hs[_col];
       assert _bin > 0 && _bin < h.nbins();
       assert _bs==null : "Dividing point is a bitset, not a bin#, so dont call splat() as result is meaningless";
-      if( _equal == 1 ) { assert h.bins(_bin)!=0; return h.binAt(_bin); }
+      if( _equal == 1 ) { assert h.bins(_bin)!=0; return (float)h.binAt(_bin); }
       assert _equal==0; // not here for bitset splits, just range splits
       // Find highest non-empty bin below the split
       int x=_bin-1;
@@ -175,11 +175,11 @@ public class DTree extends Iced {
       // and we set hi=48.4.  Since this is an integer column, we round lo to
       // 48 (largest integer below the split) and hi to 49 (smallest integer
       // above the split).  Finally we average them, and split at 48.5.
-      float lo = h.binAt(x+1);
-      float hi = h.binAt(n  );
-      if( h._isInt > 0 ) lo = h._step==1 ? lo-1 : (float)Math.floor(lo);
-      if( h._isInt > 0 ) hi = h._step==1 ? hi   : (float)Math.ceil (hi);
-      return (lo+hi)/2.0f;
+      double lo = h.binAt(x+1);
+      double hi = h.binAt(n  );
+      if( h._isInt > 0 ) lo = h._step==1 ? lo-1 : Math.floor(lo);
+      if( h._isInt > 0 ) hi = h._step==1 ? hi   : Math.ceil (hi);
+      return (float)((lo+hi)/2.0);
     }
 
     // Split a DHistogram.  Return null if there is no point in splitting
@@ -189,7 +189,7 @@ public class DTree extends Iced {
     // has constant data, or was not being tracked by a prior DHistogram
     // (for being constant data from a prior split), then that column will be
     // null in the returned array.
-    public DHistogram[] split(int way, char nbins, char nbins_cats, double min_rows, DHistogram hs[], float splat) {
+    public DHistogram[] split(int way, char nbins, char nbins_cats, double min_rows, DHistogram hs[], double splat) {
       double n = way==0 ? _n0 : _n1;
       if( n < min_rows || n <= 1 ) return null; // Too few elements
       double se = way==0 ? _se0 : _se1;
@@ -205,7 +205,7 @@ public class DTree extends Iced {
         // min & max come from the original column data, since splitting on an
         // unrelated column will not change the j'th columns min/max.
         // Tighten min/max based on actual observed data for tracked columns
-        float min, maxEx;
+        double min, maxEx;
         if( h._bins == null ) { // Not tracked this last pass?
           min = h._min;         // Then no improvement over last go
           maxEx = h._maxEx;
@@ -223,7 +223,7 @@ public class DTree extends Iced {
             if( h._bins[_bin]==0 )
               throw H2O.unimpl(); // Here I should walk up & down same as split() above.
             assert _bs==null : "splat not defined for BitSet splits";
-            float split = splat;
+            double split = splat;
             if( h._isInt > 0 ) split = (float)Math.ceil(split);
             if( way == 0 ) maxEx= split;
             else           min  = split;
@@ -239,7 +239,7 @@ public class DTree extends Iced {
         }
         if( min >  maxEx ) continue; // Happens for all-NA subsplits
         if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
-        if( Float.isInfinite(adj_nbins/(maxEx-min)) ) continue;
+        if( Double.isInfinite(adj_nbins/(maxEx-min)) ) continue;
         if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
         nhists[j] = DHistogram.make(h._name, adj_nbins, nbins_cats, h._isInt, min, maxEx);
@@ -442,7 +442,7 @@ public class DTree extends Iced {
       for( int i=0; i<maxCols; i++ ) {
         int col = u._scoreCols == null ? i : u._scoreCols[i];
         if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
-        findSplits[i] = new FindSplits(hs, col);
+        findSplits[i] = new FindSplits(hs, col, u._nid);
         if (isSmall) findSplits[i].compute2();
         else H2O.submitTask(findSplits[i]);
       }
@@ -457,13 +457,14 @@ public class DTree extends Iced {
     }
 
     class FindSplits extends H2O.H2OCountedCompleter<FindSplits> {
-      FindSplits(DHistogram[] hs, int col) { _hs = hs; _col = col; }
+      FindSplits(DHistogram[] hs, int col, int nid) { _hs = hs; _col = col; _nid = nid;}
       final DHistogram[] _hs;
       final int _col;
       DTree.Split _s;
+      final int _nid;
       @Override
       protected void compute2() {
-        _s = _hs[_col].scoreMSE(_col, _tree._min_rows);
+        _s = _hs[_col].scoreMSE(_col, _tree._min_rows, _nid);
         tryComplete();
       }
     }
@@ -480,7 +481,7 @@ public class DTree extends Iced {
         Arrays.fill(_nids,-1);
         return;
       }
-      _splat = (_split._equal == 0 || _split._equal == 1) ? _split.splat(hs) : -1; // Split-at value (-1 for group-wise splits)
+      _splat = (_split._equal == 0 || _split._equal == 1) ? _split.splat(hs) : -1f; // Split-at value (-1 for group-wise splits)
       final char nbins   = _tree._nbins;
       final char nbins_cats = _tree._nbins_cats;
       final double min_rows = _tree._min_rows;
@@ -494,7 +495,7 @@ public class DTree extends Iced {
     }
 
     public int ns( Chunk chks[], int row ) {
-      float d = (float)chks[_split._col].atd(row);
+      double d = chks[_split._col].atd(row);
       int bin;
       // Note that during *scoring* (as opposed to training), we can be exposed
       // to data which is outside the bin limits.

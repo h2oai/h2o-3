@@ -160,6 +160,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     }
   }
 
+// For debugging - simple code
   // All rows, some cols, accumulate histograms
   private void accum_subset(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
     for( int row=0; row<nnids.length; row++ ) { // Over all rows
@@ -174,11 +175,11 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         if (sCols == null) {
           for(int col=0; col<nhs.length; ++col ) { //all columns
             if (nhs[col]!=null)
-              nhs[col].incr((float) chks[col].atd(row), resp, w); // Histogram row/col
+              nhs[col].incr(chks[col].atd(row), resp, w); // Histogram row/col
           }
         } else {
           for( int col : sCols )
-            nhs[col].incr((float) chks[col].atd(row), resp, w); // Histogram row/col
+            nhs[col].incr(chks[col].atd(row), resp, w); // Histogram row/col
         }
       }
     }
@@ -243,8 +244,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     int rhbinslen = rhbins.length;
     final int lo = n==0 ? 0 : nh[n-1];
     final int hi = nh[n];
-    float min = rh._min2;
-    float max = rh._maxIn;
+    double min = rh._min2;
+    double max = rh._maxIn;
     // While most of the time we are limited to nbins, we allow more bins
     // in a few cases (top-level splits have few total bins across all
     // the (few) splits) so it's safe to bin more; also categoricals want
@@ -261,7 +262,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       int row = rows[xrow];
       double w = weight.atd(row);
       if (w == 0) continue;
-      float col_data = (float)chk.atd(row);
+      double col_data = chk.atd(row);
       if( col_data < min ) min = col_data;
       if( col_data > max ) max = col_data;
       int b = rh.bin(col_data); // Compute bin# via linear interpolation
