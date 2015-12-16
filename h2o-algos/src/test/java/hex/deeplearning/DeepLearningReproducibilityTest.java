@@ -52,7 +52,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
           p._train = train._key;
           p._valid = test._key;
-          p._model_id = Key.make();
           p._response_column = train.names()[train.names().length-1];
           int ci = train.names().length-1;
           Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec())._key);

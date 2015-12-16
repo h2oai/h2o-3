@@ -1,6 +1,5 @@
 package hex.glm;
 
-import hex.ModelMetricsBinomialGLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -14,8 +13,6 @@ import water.parser.ParseDataset;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.nio.file.Files;
 
@@ -87,7 +84,7 @@ public class GLMBasic extends TestNGUtil {
             Scope.enter();
 
             if(gaussian.equals("x") && dataset.equals("airquality.csv")) {
-                job = new GLM(Key.make("model"), "basic glm test", params);
+                job = new GLM(params,Key.<GLMModel>make("model") );
                 model = job.trainModel().get();
 
                 //HashMap<String, Double> coefs = model.coefficients();

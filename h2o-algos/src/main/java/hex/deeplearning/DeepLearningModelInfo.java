@@ -2,6 +2,8 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import static java.lang.Double.isNaN;
+
+import hex.Model;
 import water.*;
 import water.fvec.Frame;
 import water.util.*;
@@ -102,13 +104,11 @@ final public class DeepLearningModelInfo extends Iced {
   }
 
   public DeepLearningParameters parameters;
-
-  public final DeepLearningParameters get_params() {
-    return parameters;
-  }
-
-  public final void set_params(DeepLearningParameters p) {
+  Key<Model> _model_id;
+  public final DeepLearningParameters get_params() { return parameters; }
+  public final void set_params(DeepLearningParameters p, Key<Model> model_id ) {
     parameters = (DeepLearningParameters) p.clone();
+    _model_id = model_id;
   }
 
   private double[] mean_rate;
@@ -711,11 +711,11 @@ final public class DeepLearningModelInfo extends Iced {
   }
 
   public Key localModelInfoKey(H2ONode node) {
-    return Key.make(get_params()._model_id + ".node" + node.index(), (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
+    return Key.make(_model_id + ".node" + node.index(), (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
   }
 
   public Key elasticAverageModelInfoKey() {
-    return Key.make(get_params()._model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
+    return Key.make(_model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
   }
 
   static public class GradientCheck {

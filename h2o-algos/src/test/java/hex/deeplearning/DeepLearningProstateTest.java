@@ -187,7 +187,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                           DeepLearningParameters p = new DeepLearningParameters();
                                           {
                                             Log.info("Using seed: " + myseed);
-                                            p._model_id = Key.make(Key.make().toString() + "first");
                                             p._train = frame._key;
                                             p._response_column = frame._names[resp];
                                             p._valid = valid==null ? null : valid._key;
@@ -217,13 +216,13 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p._score_validation_sampling = csm;
                                             p._elastic_averaging = elastic_averaging;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
-                                            DeepLearning dl = new DeepLearning(p);
+                                            DeepLearning dl = new DeepLearning(p, Key.<DeepLearningModel>make(Key.make().toString() + "first"));
                                             try {
                                               model1 = dl.trainModel().get();
                                               checkSums.add(model1.checksum());
                                               testcount++;
                                             } catch(Throwable t) {
-                                              model1 = DKV.getGet(p._model_id);
+                                              model1 = DKV.getGet(dl.dest());
                                               if (model1 != null)
                                                 Assert.assertTrue(model1._output._job.isCrashed());
                                               throw t;
@@ -268,7 +267,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                           Assert.assertTrue(model1.model_info().get_processed_total() >= frame.numRows() * epochs);
 
                                           {
-                                            p2._model_id = Key.make();
                                             p2._checkpoint = model1._key;
                                             p2._distribution = dist;
                                             p2._loss = loss;
@@ -295,7 +293,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             try {
                                               model2 = dl.trainModel().get();
                                             } catch(Throwable t) {
-                                              model2 = DKV.getGet(p2._model_id);
+                                              model2 = DKV.getGet(dl.dest());
                                               if (model2 != null)
                                                 Assert.assertTrue(model2._output._job.isCrashed());
                                               throw t;
@@ -394,10 +392,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                             }
                                           }
                                           Log.info("Parameters combination " + count + ": PASS");
-                                        } catch (H2OModelBuilderIllegalArgumentException t) {
-                                          H2O.fail("should not get here");
-                                        } catch (IllegalArgumentException t) {
-                                          H2O.fail("should not get here");
+                                        } catch (H2OModelBuilderIllegalArgumentException | IllegalArgumentException _) {
+                                          throw H2O.fail("should not get here");
                                         } catch (RuntimeException t) {
                                           Assert.assertTrue(t.getMessage().contains("unstable"));
                                         } catch (Throwable t) {
