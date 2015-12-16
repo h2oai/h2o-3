@@ -451,9 +451,6 @@ public class FunctionUtils {
 					drfModel = drfJob.trainModel().get();
 					modelStopTime = System.currentTimeMillis();
 
-					System.out.println("Predict testcase");
-					score = drfModel.score(trainFrame);
-
 					modelOutput = drfModel._output;
 					break;
 
@@ -466,11 +463,6 @@ public class FunctionUtils {
 					modelStartTime = System.currentTimeMillis();
 					glmModel = glmJob.trainModel().get();
 					modelStopTime = System.currentTimeMillis();
-
-					coef = glmModel.coefficients();
-
-					System.out.println("Predict testcase ");
-					score = glmModel.score(trainFrame);
 
 					modelOutput = glmModel._output;
 					break;
@@ -485,9 +477,6 @@ public class FunctionUtils {
 					gbmModel = gbmJob.trainModel().get();
 					modelStopTime = System.currentTimeMillis();
 
-					System.out.println("Predict testcase ");
-					score = gbmModel.score(trainFrame);
-
 					modelOutput = gbmModel._output;
 					break;
 
@@ -500,9 +489,6 @@ public class FunctionUtils {
 					modelStartTime = System.currentTimeMillis();
 					dlModel = dlJob.trainModel().get();
 					modelStopTime = System.currentTimeMillis();
-
-					System.out.println("Predict testcase ");
-					score = dlModel.score(trainFrame);
 
 					modelOutput = dlModel._output;
 					break;
