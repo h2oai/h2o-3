@@ -477,7 +477,7 @@ public class DRFTest extends TestUtil {
     Frame tfr;
     final int N = 4;
     double[] mses = new double[N];
-    int[] chunks = new int[]{1,13,19,39};
+    int[] chunks = new int[]{1,13,19,39,500};
 
     for (int i=0; i<N; ++i) {
       Scope.enter();
@@ -515,7 +515,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for(double mse : mses)
-      assertEquals(mse, mses[0], 1e-15);
+      assertEquals(mse, mses[0], 1e-10);
   }
 
   //
