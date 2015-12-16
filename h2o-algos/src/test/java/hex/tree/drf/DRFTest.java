@@ -24,7 +24,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 
 public class DRFTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
@@ -48,8 +48,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(25, 0, 0),
-                    ard(0, 16, 2),
+            ard(ard(15, 0, 0),
+                    ard(0, 18, 0),
                     ard(0, 1, 17)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
 
@@ -69,9 +69,9 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(41, 0, 0),
-                    ard(0, 39, 3),
-                    ard(0, 3, 42)),
+            ard(ard(43, 0, 0),
+                    ard(0, 37, 4),
+                    ard(0, 4, 39)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
   }
 
@@ -112,11 +112,11 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(0, 3, 0, 0, 0),
-                    ard(0, 171, 2, 11, 0),
-                    ard(0, 1, 1, 0, 0),
-                    ard(0, 2, 2, 68, 2),
-                    ard(0, 0, 0, 0, 90)),
+            ard(ard(1, 2, 0, 0, 0),
+                    ard(0, 177, 3,  3, 0),
+                    ard(0, 2, 0, 0, 0),
+                    ard(2, 5, 0, 68, 0),
+                    ard(0, 0, 0, 2, 84)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -193,8 +193,8 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(0, 81),
-                    ard(0, 53)),
+            ard(ard(0, 70),
+                    ard(0, 59)),
             s("0", "1"));
 
   }
@@ -213,7 +213,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            84.83960821204235
+            59.87077260106929
     );
 
   }
@@ -232,7 +232,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            62.34506879389341
+            58.857160962841164
     );
 
   }
@@ -251,7 +251,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            48.16452593965962
+            49.42453594627541
     );
 
   }
@@ -631,7 +631,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2148575516521361, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.21313496892235484, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
@@ -688,10 +688,10 @@ public class DRFTest extends TestUtil {
     Scope.exit();
   }
 
-  static double _AUC = 0.9285714285714285;
-  static double _MSE = 0.07692307692307693;
-  static double _R2 = 0.6904761904761905;
-  static double _LogLoss = 2.656828953454668;
+  static double _AUC = 1.0;
+  static double _MSE = 0.041294642857142856;
+  static double _R2 = 0.8313802083333334;
+  static double _LogLoss = 0.14472835908293025;
 
   @Test
   public void testNoRowWeights() {
@@ -873,10 +873,10 @@ public class DRFTest extends TestUtil {
       // OOB
       // Shuffling changes the row sampling -> results differ
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.975, mm.auc_obj()._auc, 1e-8);
-      assertEquals(0.09254807692307693, mm.mse(), 1e-8);
-      assertEquals(0.6089843749999999, mm.r2(), 1e-6);
-      assertEquals(0.24567709133200652, mm.logloss(), 1e-6);
+      assertEquals(1.0, mm.auc_obj()._auc, 1e-8);
+      assertEquals(0.0290178571428571443, mm.mse(), 1e-8);
+      assertEquals(0.8815104166666666, mm.r2(), 1e-6);
+      assertEquals(0.10824081452821664, mm.logloss(), 1e-6);
 
       job.remove();
     } finally {
@@ -912,10 +912,10 @@ public class DRFTest extends TestUtil {
       // OOB
       // Reduced number of rows changes the row sampling -> results differ
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
-      assertEquals(0.9, mm.auc_obj()._auc, 1e-8);
-      assertEquals(0.09090909090909091, mm.mse(), 1e-8);
-      assertEquals(0.6333333333333333, mm.r2(), 1e-6);
-      assertEquals(3.1398887631736985, mm.logloss(), 1e-6);
+      assertEquals(1.0, mm.auc_obj()._auc, 1e-8);
+      assertEquals(0.05823863636363636, mm.mse(), 1e-8);
+      assertEquals(0.7651041666666667, mm.r2(), 1e-6);
+      assertEquals(0.21035264541934587, mm.logloss(), 1e-6);
 
 
       // test set scoring (on the same dataset, but without normalizing the weights)
@@ -924,9 +924,9 @@ public class DRFTest extends TestUtil {
 
       // Non-OOB
       assertEquals(1, mm2.auc_obj()._auc, 1e-8);
-      assertEquals(0.006172839506172841, mm2.mse(), 1e-8);
-      assertEquals(0.9753086419753086, mm2.r2(), 1e-8);
-      assertEquals(0.02252583933934247, mm2.logloss(), 1e-8);
+      assertEquals(0.0154320987654321, mm2.mse(), 1e-8);
+      assertEquals(0.93827160493827166, mm2.r2(), 1e-8);
+      assertEquals(0.08349430638608361, mm2.logloss(), 1e-8);
 
       pred.remove();
       job.remove();
@@ -1311,7 +1311,7 @@ public class DRFTest extends TestUtil {
       gbm = job.trainModel().get();
 
       ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
-      assertEquals(0.12765426703095312, mm.mse(), 1e-4);
+      assertEquals(0.12413922945308474, mm.mse(), 1e-4);
 
       job.remove();
     } finally {
