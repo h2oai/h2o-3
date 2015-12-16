@@ -26,7 +26,7 @@ test.rf.colsamplepertree <- function() {
   print("err_colsample")
   print(err_colsample)
 
-  expect_true(err_regular >= 0.99*err_colsample, "col sampling made validation error worse!")
+  expect_true(err_regular >= 0.9*err_colsample, "col sampling made validation error worse!")
 }
 
 doTest("rf colSamplePerTree", test.rf.colsamplepertree)
