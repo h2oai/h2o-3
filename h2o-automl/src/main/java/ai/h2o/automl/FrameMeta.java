@@ -2,22 +2,21 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.collectors.MetaCollector;
 import water.H2O;
+import water.Iced;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * Cache common questions asked upon the frame.
  */
-public class FrameMeta {
-  private final Frame _fr;
+public class FrameMeta extends Iced {
+  final Frame _fr;
   private final int _response;
   ColMeta[] _cols;
 
   // cached things
-  private int[] _ignoredCols;
+  private String[] _ignoredCols;
 
   public FrameMeta(Frame fr, int response) {
     _fr=fr;
@@ -25,26 +24,24 @@ public class FrameMeta {
     _cols = new ColMeta[_fr.numCols()];
   }
 
-  public int[] ignoredCols() {  // publishes private field
+  public String[] ignoredCols() {  // publishes private field
     if( _ignoredCols==null ) {
       ArrayList<Integer> cols = new ArrayList<>();
       for(ColMeta c: _cols)
         if( c._ignored ) cols.add(c._idx);
-      _ignoredCols=new int[cols.size()];
+      _ignoredCols=new String[cols.size()];
       for(int i=0;i<cols.size();++i)
-        _ignoredCols[i]=cols.get(i);
-      Arrays.sort(_ignoredCols);
+        _ignoredCols[i]=_fr.name(cols.get(i));
     }
     return _ignoredCols;
   }
 
-  public Vec response() { return _fr.vec(_response); }
-  public ColMeta responseMeta() { return _cols[_response]; }
+  public ColMeta response() { return _cols[_response]; }
 
   // blocking call to compute 1st pass of column metadata
   public FrameMeta computeFrameMetaPass1() {
     MetaCollector.ColMetaTaskPass1[] tasks = new MetaCollector.ColMetaTaskPass1[_fr.numCols()];
-    for(int i=0;i<tasks.length;++i)
+    for(int i=0; i<tasks.length; ++i)
       tasks[i] = new MetaCollector.ColMetaTaskPass1(i==_response, _fr.name(i), i);
 
     MetaCollector.ParallelTasks metaCollector = new MetaCollector.ParallelTasks<>(_fr, tasks);

@@ -1,6 +1,5 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.guessers.ProblemTypeGuesser;
 import ai.h2o.automl.strategies.initial.InitModel;
 import hex.Model;
 import hex.ModelBuilder;
@@ -57,16 +56,18 @@ public final class AutoML {
 
     // step 1: gather initial frame metadata and guess the problem type
     FrameMeta fm = new FrameMeta(_fr, _response).computeFrameMetaPass1();
-    _isClassification = ProblemTypeGuesser.guess(fm.response());
+    _isClassification = fm.response().isClassification();
 
     // step 2: build a fast RF
     ModelBuilder initModel = selectInitial(fm);
+    initModel._parms._ignored_columns = fm.ignoredCols();
+
     Model m = (Model)initModel.trainModel().get();
 
     // gather more data? build more models? start applying transforms? what next ...?
   }
 
   private ModelBuilder selectInitial(FrameMeta fm) {  // may use _isClassification so not static method
-    return InitModel.initRF();
+    return InitModel.initRF(fm._fr, fm.response()._name);
   }
 }

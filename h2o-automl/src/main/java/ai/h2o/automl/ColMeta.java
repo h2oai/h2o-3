@@ -2,6 +2,7 @@ package ai.h2o.automl;
 
 
 import ai.h2o.automl.guessers.ColNameScanner;
+import ai.h2o.automl.guessers.ProblemTypeGuesser;
 import water.Iced;
 import water.fvec.Vec;
 
@@ -12,23 +13,30 @@ import java.util.Arrays;
  * Holds usual rollup stats and additional interesting bits of information.
  */
 public class ColMeta extends Iced {
-
-  public final transient Vec _v;  // the column, do not serialize
+  public final Vec _v;  // the column
   public final byte _nameType;  // guessed at by ColNameScanner
-  public final String _colname;
+  public final String _name;
   public final int _idx;
 
+  public boolean _ignored;  // should this column be ignored outright
+  public boolean _response; // is this a response column?
+
+  // FIRST PASS
+  public DynamicHisto _histo;
+  public long _timeToMRTask;
+  public double _percentNA;  // fraction of NAs in the column
+  public SpecialNA _specialNAs; // found special NAs like 9999 or -1 or 0
+  private boolean _isClassification;
+
+
+  // SECOND PASS
   // https://0xdata.atlassian.net/browse/STEAM-41 --column metadata to gather
   public long _numUniq;
   public double _numUniqPerChunk;
 
-  public boolean  _chunksMonotonicallyIncreasing;  // interesting if all the chunks are monotonically increasing
+  public boolean  _chunksMonotonicallyIncreasing;  //
   public double[] _chkBndries;                     // boundary values for each chunk [c1.min, c1.max, c2.min, c2.max, ...]; only for numeric vecs
 
-  public double _percentNA;  // fraction of NAs in the column
-
-  public DynamicHisto _histo;
-  public long _timeToMRTask;
   public double _kurtosis;
   public double _skew;
   public double _median;
@@ -43,22 +51,26 @@ public class ColMeta extends Iced {
   //   - possibly next to other date columns?
   public boolean _isDate;
 
-  public boolean _ignored;  // should this column be ignored outright
-  public boolean _response; // is this a response column?
-
-  public SpecialNA _specialNAs; // found special NAs like 9999 or -1 or 0
-
   public ColMeta(Vec v, String colname, int idx, boolean response) {
-    _v=v;
-    _colname=colname;
-    _nameType=ColNameScanner.scan(_colname);
-    _idx=idx;
-    _response=response;
+    _v = v;
+    _name = colname;
+    _nameType = ColNameScanner.scan(_name);
+    _idx = idx;
+    _response = response;
     _specialNAs = new SpecialNA(
             _v.isNumeric()
                     ? (_v.isInt() ? SpecialNA.INT : SpecialNA.DBL)
                     : SpecialNA.STR
     );
+    _percentNA = (double)v.naCnt() / (double)v.length();
+    _ignored = v.isConst() || v.isString() || v.isBad() || v.isUUID(); // auto ignore from the outset
+    if( _response )
+      _isClassification = ProblemTypeGuesser.guess(v);
+  }
+
+  public boolean isClassification() {
+    if( !_response ) throw new UnsupportedOperationException("not a response column");
+    return _isClassification;
   }
 
   // stupid wrapper class for possibly special types of NAs; things like 999999 or -1 or 0

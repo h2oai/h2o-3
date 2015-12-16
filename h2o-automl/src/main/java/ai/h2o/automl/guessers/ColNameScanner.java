@@ -20,11 +20,11 @@ public final class ColNameScanner {
   private final static String[] _gender = {"gender", "sex", "male", "female", "male_female"};
   private final static String[] _datetime = {"ts", "dt", "date", "year", "month", "day", "hour", "minute", "sec", "s", "time", "datetime"};
 
-  private final static byte UNK = 0;
-  private final static byte ID  = 1;
-  private final static byte AGE = 2;
-  private final static byte GENDER = 3;
-  private final static byte DATETIME = 4;
+  public final static byte UNK = 0;
+  public final static byte ID  = 1;
+  public final static byte AGE = 2;
+  public final static byte GENDER = 3;
+  public final static byte DATETIME = 4;
 
   public static byte scan(String columnName) {
     return UNK;
