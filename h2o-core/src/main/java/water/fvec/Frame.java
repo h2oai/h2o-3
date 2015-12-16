@@ -1284,7 +1284,7 @@ public class Frame extends Lockable<Frame> {
     H2O.submitTask(new RebalanceDataSet(this, f, k)).join();
     Frame f2 = (Frame)k.get();
     DKV.remove(k);
-    for (Vec v : f2.vecs()) Scope.track(v._key);
+    for (Vec v : f2.vecs()) Scope.track(v);
     return f2.vecs();
   }
 

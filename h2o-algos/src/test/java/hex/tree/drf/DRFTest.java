@@ -401,7 +401,7 @@ public class DRFTest extends TestUtil {
     try {
       frTrain = parse_test_file(fnametrain);
       Vec removeme = unifyFrame(drf, frTrain, prep, classification);
-      if (removeme != null) Scope.track(removeme._key);
+      if (removeme != null) Scope.track(removeme);
       DKV.put(frTrain._key, frTrain);
       // Configure DRF
       drf._train = frTrain._key;
@@ -616,7 +616,7 @@ public class DRFTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
+      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec()));
       DKV.put(tfr);
 
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();

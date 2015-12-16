@@ -1,5 +1,8 @@
 package water;
 
+import water.fvec.Frame;
+import water.fvec.Vec;
+
 import java.util.*;
 
 /** A "scope" for tracking Key lifetimes; an experimental API.
@@ -40,7 +43,7 @@ public class Scope {
       Futures fs = new Futures();
       for (Key key : keys.pop()) {
         int found = Arrays.binarySearch(arrkeep, key);
-        if (arrkeep.length == 0 || found < 0) Keyed.remove(key, fs);
+        if ((arrkeep.length == 0 || found < 0) && key != null) Keyed.remove(key, fs);
       }
       fs.blockForPending();
     }
@@ -54,13 +57,31 @@ public class Scope {
     return keys.size() > 0 ? keys.pop().toArray(new Key[0]) : null;
   }
 
-
-  static public void track( Key k ) {
+  static void track_internal( Key k ) {
     if( k.user_allowed() || !k.isVec() ) return; // Not tracked
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
-    if( scope == null ) return; // Not tracking this thread
-    if( scope._keys.size() == 0 ) return; // Tracked in the past, but no scope now
-    if (!scope._keys.peek().contains(k))
-      scope._keys.peek().add(k);            // Track key
+    if (scope == null) return;
+    track_impl(scope, k);
   }
+
+  static public void track( Vec vec ) {
+    Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
+    assert scope != null;
+    track_impl(scope, vec._key);
+  }
+
+  static public void track( Frame fr ) {
+    Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
+    assert scope != null;
+    for( Vec vec: fr.vecs() ) track_impl(scope, vec._key);
+    track_impl(scope, fr._key);
+  }
+
+  static private void track_impl(Scope scope, Key key) {
+    // key size is 0 when tracked in the past, but no scope now
+    if (scope._keys.size() > 0 && !scope._keys.peek().contains(key))
+      scope._keys.peek().add(key);            // Track key
+  }
+
+  
 }

@@ -58,10 +58,10 @@ public class GainsLift extends Iced {
     // The vectors are from different groups => align them, but properly delete it after computation
     if (!_labels.group().equals(_preds.group())) {
       _preds = _labels.align(_preds);
-      Scope.track(_preds._key);
+      Scope.track(_preds);
       if (_weights !=null) {
         _weights = _labels.align(_weights);
-        Scope.track(_weights._key);
+        Scope.track(_weights);
       }
     }
 
