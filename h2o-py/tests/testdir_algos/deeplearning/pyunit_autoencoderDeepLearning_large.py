@@ -61,8 +61,8 @@ def deeplearning_autoencoder():
   cm = drf_model.confusion_matrix(test_features)
   cm.show()
 
-  # 10% error +/- 0.001
-  assert abs(cm.cell_values[10][10] - 0.081) <= 0.01, "Error. Expected 0.081, but got {0}".format(cm.cell_values[10][10])
+  # 8.8% error +/- 0.001
+  assert abs(cm.cell_values[10][10] - 0.0847) <= 0.001, "Error. Expected 0.0847, but got {0}".format(cm.cell_values[10][10])
 
 
 if __name__ == "__main__":
