@@ -54,7 +54,7 @@ public class ASTKFold extends ASTPrim {
 
     return new MRTask() {
 
-      private int getFoldId(int absoluteRow, long seed) {
+      private int getFoldId(long absoluteRow, long seed) {
         return Math.abs(getRNG(absoluteRow + seed).nextInt()) % nfolds;
       }
 
@@ -78,7 +78,7 @@ public class ASTKFold extends ASTPrim {
       //      Downside is this performs nfolds*nClass passes over each Chunk. For
       //      "reasonable" classification problems, this could be 100 passes per Chunk.
       @Override public void map(Chunk[] y) {
-        int start = (int)y[0].start();
+        long start = y[0].start();
         for(int testFold=0; testFold < nfolds; ++testFold) {
           for(int classLabel = 0; classLabel < nClass; ++classLabel) {
             for(int row=0;row<y[0]._len;++row ) {
