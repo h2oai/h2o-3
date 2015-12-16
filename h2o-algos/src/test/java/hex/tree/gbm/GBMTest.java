@@ -562,7 +562,7 @@ public class GBMTest extends TestUtil {
         parms._train = tfr._key;
         parms._response_column = "C55";
         parms._nbins = 1000;
-        parms._ntrees = 1;
+        parms._ntrees = 5;
         parms._max_depth = 8;
         parms._learn_rate = 0.1f;
         parms._min_rows = 10;
@@ -1579,23 +1579,23 @@ public class GBMTest extends TestUtil {
   // PUBDEV-2476 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
   @Test public void testChunks() {
     Frame tfr;
-    final int N = 4;
+    int[] chunks = new int[]{1,2,2,39,39,500};
+    final int N = chunks.length;
     double[] mses = new double[N];
-    int[] chunks = new int[]{1,13,19,39};
-
     for (int i=0; i<N; ++i) {
       Scope.enter();
       // Load data, hack frames
       tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
 
-      // rebalance to 256 chunks
+      // rebalance to a given number of chunks
       Key dest = Key.make("df.rebalanced.hex");
       RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, chunks[i]);
       H2O.submitTask(rb);
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
+      assertEquals(tfr.vec(0).nChunks(), chunks[i]);
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
       DKV.put(tfr);
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -1604,8 +1604,8 @@ public class GBMTest extends TestUtil {
       parms._seed = 1234;
       parms._col_sample_rate_per_tree = 0.5f;
       parms._col_sample_rate = 0.3f;
-      parms._ntrees = 10;
-      parms._max_depth = 2;
+      parms._ntrees = 5;
+      parms._max_depth = 5;
 
       // Build a first model; all remaining models should be equal
       GBM job = new GBM(parms);
