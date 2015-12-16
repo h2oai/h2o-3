@@ -24,7 +24,7 @@ public class GBMTest extends TestUtil {
   static final String ignored_aircols[] = new String[] { "DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsDepDelayed"};
 
   @Test public void testGBMRegressionGaussian() {
-    GBMModel gbm;
+    GBMModel gbm = null;
     Frame fr = null, fr2 = null;
     try {
       fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
@@ -57,6 +57,7 @@ public class GBMTest extends TestUtil {
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
+      if( gbm != null ) gbm.remove();
     }
   }
 

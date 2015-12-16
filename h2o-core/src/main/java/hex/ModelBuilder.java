@@ -158,7 +158,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return Cross-validation Job
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
-  public Job<M> computeCrossValidation() {
+  public void computeCrossValidation() {
     assert _job.isRunning();    // main Job is still running
     final Integer N = nFoldWork();
     try {
@@ -190,7 +190,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     } finally {
       Scope.exit();
     }
-    throw H2O.unimpl();
   }
 
   // Step 1: Assign each row to a fold
@@ -315,7 +314,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Futures fs = new Futures();
     for (int i=0; i<N; ++i) {
       if( _job.stop_requested() ) return null; //don't waste time scoring if the CV run is stopped
-      Frame cvTrain = cvModelBuilders[i].train();
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
       M cvModel = cvModelBuilders[i].dest().get();
@@ -330,8 +328,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Model.cleanup_adapt(adaptFr, cvValid);
         DKV.remove(adaptFr._key,fs);
       }
-      DKV.remove(cvTrain._key,fs);
-      DKV.remove(cvValid._key,fs);
+      DKV.remove(cvModelBuilders[i]._parms._train,fs);
+      DKV.remove(cvModelBuilders[i]._parms._valid,fs);
       weights[2*i  ].remove(fs);
       weights[2*i+1].remove(fs);
     }

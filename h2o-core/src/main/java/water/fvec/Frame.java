@@ -1075,6 +1075,12 @@ public class Frame extends Lockable<Frame> {
     String[][] strCells = new String[len+5][ncols];
     double[][] dblCells = new double[len+5][ncols];
     for( int i=0; i<ncols; i++ ) {
+      if( DKV.get(_keys[i]) == null ) { // deleted Vec in Frame
+        coltypes[i] = "string";
+        for( int j=0; j<len+5; j++ ) dblCells[j][i] = TwoDimTable.emptyDouble;
+        for( int j=0; j<len; j++ ) strCells[j+5][i] = "NO_VEC";
+        continue;
+      }
       Vec vec = vecs[i];
       dblCells[0][i] = vec.min();
       dblCells[1][i] = vec.mean();

@@ -24,7 +24,7 @@ import java.util.Arrays;
  *  manage the M/R job computing the rollups.  Losers block for the same
  *  rollup.  Remote requests *always* forward to the Rollup Key's master.
  */
-class RollupStats extends Iced {
+final class RollupStats extends Iced {
   /** The count of missing elements.... or -2 if we have active writers and no
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last
@@ -280,8 +280,7 @@ class RollupStats extends Iced {
     RollupStats rs = getOrNull(vec,rskey);
     if(rs == null || (computeHisto && !rs.hasHisto()))
       fs.add(new RPC(rskey.home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
-        @Override
-        public void callback(H2OCountedCompleter h2OCountedCompleter) {
+        @Override public void callback(H2OCountedCompleter h2OCountedCompleter) {
           DKV.get(rskey); // fetch new results via DKV to enable caching of the results.
         }
       }).call());
