@@ -34,4 +34,23 @@ public class ProblemTypeGuesser {
       return false;
     }
   }
+
+
+  public static void advancedGuesser() {
+    // TODO:
+    // Interesting long-term idea: ask the users what their data is about.
+    // NLP on that can likely advise some interesting strategies that might
+    // be hard to discover using regular metafeatures.
+    //
+    // Idea comes from thinking that I can often tell what algorithms will do
+    // well and what won't by just reading a problem statement. And largely this
+    // is where you see generic approaches failing--way different contexts. We
+    // want to be able to do it from data characteristics, but if that's difficult
+    // to get up and running, maybe we just ask.
+    // A lot you could do with that for future analysis too, if you start collecting
+    // it at the outset. You tell me you have a fraud case, but
+    // WARNING: your data looks nothing like what I would normally expect in fraud.
+    // No reason to think that can't be done.
+  }
+
 }
