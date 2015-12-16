@@ -12,6 +12,10 @@ public class MySQLConnection {
 
 	public void initConnection() throws SQLException {
 
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+		} catch (ClassNotFoundException e) { e.printStackTrace(); }
+
 		String url = String.format("jdbc:mysql://%s:%s/%s", config.getHost(), config.getPort(),
 				config.getDatabasename());
 

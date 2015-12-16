@@ -1,9 +1,8 @@
 package h2o.testng.utils;
 
 import h2o.testng.db.MySQL;
+import hex.*;
 import hex.Distribution.Family;
-import hex.Model;
-import hex.ModelMetrics;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningConfig;
 import hex.deeplearning.DeepLearningModel;
@@ -418,7 +417,8 @@ public class FunctionUtils {
 		Frame trainFrame = null;
 		Frame score = null;
 		Model.Output modelOutput = null;
-		ModelMetrics modelMetrics = null;
+		ModelMetrics trainingMetrics = null;
+		ModelMetrics testMetrics = null;
 
 		DRF drfJob = null;
 		DRFModel drfModel = null;
@@ -438,6 +438,8 @@ public class FunctionUtils {
 
 		try {
 			Scope.enter();
+			double modelStartTime = 0;
+			double modelStopTime = 0;
 			switch (algorithm) {
 				case FunctionUtils.drf:
 
@@ -445,7 +447,9 @@ public class FunctionUtils {
 					drfJob = new DRF((DRFModel.DRFParameters) parameter);
 
 					System.out.println("Train model:");
+					modelStartTime = System.currentTimeMillis();
 					drfModel = drfJob.trainModel().get();
+					modelStopTime = System.currentTimeMillis();
 
 					System.out.println("Predict testcase");
 					score = drfModel.score(trainFrame);
@@ -459,7 +463,9 @@ public class FunctionUtils {
 					glmJob = new GLM(modelKey, "basic glm test", (GLMParameters) parameter);
 
 					System.out.println("Train model");
+					modelStartTime = System.currentTimeMillis();
 					glmModel = glmJob.trainModel().get();
+					modelStopTime = System.currentTimeMillis();
 
 					coef = glmModel.coefficients();
 
@@ -475,7 +481,9 @@ public class FunctionUtils {
 					gbmJob = new GBM((GBMParameters) parameter);
 
 					System.out.println("Train model");
+					modelStartTime = System.currentTimeMillis();
 					gbmModel = gbmJob.trainModel().get();
+					modelStopTime = System.currentTimeMillis();
 
 					System.out.println("Predict testcase ");
 					score = gbmModel.score(trainFrame);
@@ -489,7 +497,9 @@ public class FunctionUtils {
 					dlJob = new DeepLearning((DeepLearningParameters) parameter);
 
 					System.out.println("Train model");
+					modelStartTime = System.currentTimeMillis();
 					dlModel = dlJob.trainModel().get();
+					modelStopTime = System.currentTimeMillis();
 
 					System.out.println("Predict testcase ");
 					score = dlModel.score(trainFrame);
@@ -512,17 +522,81 @@ public class FunctionUtils {
 			if (!isNegativeTestcase) {
 				System.out.println("Testcase passed.");
 
-				modelMetrics = modelOutput._training_metrics;
-				System.out.println("MSE: " + modelMetrics._MSE);
+				trainingMetrics = modelOutput._training_metrics;
+				testMetrics = modelOutput._validation_metrics;
 
-				if (modelMetrics.auc() != null) {
-					System.out.println("AUC: " + modelMetrics.auc()._auc);
-					MySQL.save(String.valueOf(modelMetrics._MSE), String.valueOf(modelMetrics.auc()._auc), rawInput);
+				HashMap<String,Double> train = new HashMap<String,Double>();
+				HashMap<String,Double> test = new HashMap<String,Double>();
+
+				train.put("ModelBuildTime", modelStopTime - modelStartTime);
+
+				// Supervised metrics
+				train.put("MSE",trainingMetrics.mse());
+				test.put("MSE",testMetrics.mse());
+				train.put("R2",((ModelMetricsSupervised) trainingMetrics).r2());
+				test.put("R2",((ModelMetricsSupervised) testMetrics).r2());
+
+				// Regression metrics
+				if( trainingMetrics instanceof ModelMetricsRegression) {
+					train.put("MeanResidualDeviance",((ModelMetricsRegression) trainingMetrics)._mean_residual_deviance);
+					test.put("MeanResidualDeviance",((ModelMetricsRegression) testMetrics)._mean_residual_deviance);
 				}
-				else {
-					System.out.println("AUC: NA");
-					MySQL.save(String.valueOf(modelMetrics._MSE), null, rawInput);
+
+				// Binomial metrics
+				if( trainingMetrics instanceof ModelMetricsBinomial) {
+					train.put("AUC",((ModelMetricsBinomial) trainingMetrics).auc()._auc);
+					test.put("AUC",((ModelMetricsBinomial) testMetrics).auc()._auc);
+					train.put("Gini",((ModelMetricsBinomial) trainingMetrics).auc()._gini);
+					test.put("Gini",((ModelMetricsBinomial) testMetrics).auc()._gini);
+					train.put("Logloss",((ModelMetricsBinomial) trainingMetrics).logloss());
+					test.put("Logloss",((ModelMetricsBinomial) testMetrics).logloss());
+					train.put("F1",((ModelMetricsBinomial) trainingMetrics).cm().F1());
+					test.put("F1",((ModelMetricsBinomial) testMetrics).cm().F1());
+					train.put("F2",((ModelMetricsBinomial) trainingMetrics).cm().F2());
+					test.put("F2",((ModelMetricsBinomial) testMetrics).cm().F2());
+					train.put("F0point5",((ModelMetricsBinomial) trainingMetrics).cm().F0point5());
+					test.put("F0point5",((ModelMetricsBinomial) testMetrics).cm().F0point5());
+					train.put("Accuracy",((ModelMetricsBinomial) trainingMetrics).cm().accuracy());
+					test.put("Accuracy",((ModelMetricsBinomial) testMetrics).cm().accuracy());
+					train.put("Error",((ModelMetricsBinomial) trainingMetrics).cm().err());
+					test.put("Error",((ModelMetricsBinomial) testMetrics).cm().err());
+					train.put("Precision",((ModelMetricsBinomial) trainingMetrics).cm().precision());
+					test.put("Precision",((ModelMetricsBinomial) testMetrics).cm().precision());
+					train.put("Recall",((ModelMetricsBinomial) trainingMetrics).cm().recall());
+					test.put("Recall",((ModelMetricsBinomial) testMetrics).cm().recall());
+					train.put("MCC",((ModelMetricsBinomial) trainingMetrics).cm().mcc());
+					test.put("MCC",((ModelMetricsBinomial) testMetrics).cm().mcc());
+					train.put("MaxPerClassError",((ModelMetricsBinomial) trainingMetrics).cm().max_per_class_error());
+					test.put("MaxPerClassError",((ModelMetricsBinomial) testMetrics).cm().max_per_class_error());
 				}
+
+				// GLM-specific metrics
+				if( trainingMetrics instanceof ModelMetricsRegressionGLM) {
+					train.put("ResidualDeviance",((ModelMetricsRegressionGLM) trainingMetrics)._resDev);
+					test.put("ResidualDeviance",((ModelMetricsRegressionGLM) testMetrics)._resDev);
+					train.put("ResidualDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) trainingMetrics)._residualDegressOfFreedom);
+					test.put("ResidualDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) testMetrics)._residualDegressOfFreedom);
+					train.put("NullDeviance",((ModelMetricsRegressionGLM) trainingMetrics)._nullDev);
+					test.put("NullDeviance",((ModelMetricsRegressionGLM) testMetrics)._nullDev);
+					train.put("NullDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) trainingMetrics)._nullDegressOfFreedom);
+					test.put("NullDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) testMetrics)._nullDegressOfFreedom);
+					train.put("AIC",((ModelMetricsRegressionGLM) trainingMetrics)._AIC);
+					test.put("AIC",((ModelMetricsRegressionGLM) testMetrics)._AIC);
+				}
+				if( trainingMetrics instanceof ModelMetricsBinomialGLM) {
+					train.put("ResidualDeviance",((ModelMetricsBinomialGLM) trainingMetrics)._resDev);
+					test.put("ResidualDeviance",((ModelMetricsBinomialGLM) testMetrics)._resDev);
+					train.put("ResidualDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) trainingMetrics)._residualDegressOfFreedom);
+					test.put("ResidualDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) testMetrics)._residualDegressOfFreedom);
+					train.put("NullDeviance",((ModelMetricsBinomialGLM) trainingMetrics)._nullDev);
+					test.put("NullDeviance",((ModelMetricsBinomialGLM) testMetrics)._nullDev);
+					train.put("NullDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) trainingMetrics)._nullDegressOfFreedom);
+					test.put("NullDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) testMetrics)._nullDegressOfFreedom);
+					train.put("AIC",((ModelMetricsBinomialGLM) trainingMetrics)._AIC);
+					test.put("AIC",((ModelMetricsBinomialGLM) testMetrics)._AIC);
+				}
+
+				MySQL.save(train, test, rawInput);
 			}
 		}
 		catch (Exception ex) {

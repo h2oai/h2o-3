@@ -28,14 +28,23 @@ import water.TestNGUtil;
 
 public class TestNG extends TestNGUtil {
 
+	private static String algorithm = "";
+	private static String size = null;
+	private static String testcaseId = null;
+
+	private static HashMap<String, Dataset> dataSetCharacteristic;
+
 	@BeforeClass
 	public void beforeClass() {
 
-		String dbConfigFilePath = System.getProperty("dbConfigFilePath");
+		//String dbConfigFilePath = System.getProperty("dbConfigFilePath");
+		String dbConfigFilePath = "/Users/ece/0xdata/h2o-dev/DBConfig.properties";
 
 		algorithm = System.getProperty("algorithm");
+		//algorithm = "drf";
 		size = System.getProperty("size");
-		testcaseId = System.getProperty("testcaseId");
+		//testcaseId = System.getProperty("testcaseId");
+		testcaseId = "dl_testcase_13";
 
 		if (StringUtils.isNotEmpty(testcaseId)) {
 			algorithm = "";
@@ -48,7 +57,7 @@ public class TestNG extends TestNGUtil {
 
 			MySQLConfig.initConfig().setConfigFilePath(dbConfigFilePath);
 
-			MySQL.createTable();
+			//MySQL.createTable();
 		}
 
 		System.out.println(String.format("run TestNG with algorithm: %s, size: %s, testcaseId: %s", algorithm, size,
@@ -178,10 +187,4 @@ public class TestNG extends TestNGUtil {
 
 		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
 	}
-
-	private static String algorithm = "";
-	private static String size = null;
-	private static String testcaseId = null;
-
-	private static HashMap<String, Dataset> dataSetCharacteristic;
 }
