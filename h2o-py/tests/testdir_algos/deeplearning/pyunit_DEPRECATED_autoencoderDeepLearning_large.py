@@ -44,7 +44,7 @@ def deeplearning_autoencoder():
 
     train_supervised_features = train_supervised_features.cbind(train_supervised[resp])
     # Train DRF on extracted feature space
-    drf_model = h2o.random_forest(x=train_supervised_features[0:20],
+    drf_model = h2o.random_forest(x=train_supervised_features[0:nfeatures],
                                   y=train_supervised_features[train_supervised_features.ncol-1],
                                   ntrees=10,
                                   min_rows=10,
