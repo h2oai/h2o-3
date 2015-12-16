@@ -56,8 +56,8 @@ public final class AutoML {
   public void learn() {
 
     // step 1: gather initial frame metadata and guess the problem type
-    FrameMeta fm = new FrameMeta(_fr, _response);
-    _isClassification = ProblemTypeGuesser.guess(fm.response().get_type(), fm.response().isInt());
+    FrameMeta fm = new FrameMeta(_fr, _response).computeFrameMetaPass1();
+    _isClassification = ProblemTypeGuesser.guess(fm.response());
 
     // step 2: build a fast RF
     ModelBuilder initModel = selectInitial(fm);

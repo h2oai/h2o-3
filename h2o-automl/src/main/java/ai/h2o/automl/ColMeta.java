@@ -22,7 +22,12 @@ public class ColMeta extends Iced {
   public long _numUniq;
   public double _numUniqPerChunk;
 
-  public long _timeToHisto;
+  public boolean  _chunksMonotonicallyIncreasing;  // interesting if all the chunks are monotonically increasing
+  public double[] _chkBndries;                     // boundary values for each chunk [c1.min, c1.max, c2.min, c2.max, ...]; only for numeric vecs
+
+  public double _percentNA;  // fraction of NAs in the column
+
+  public DynamicHisto _histo;
   public long _timeToMRTask;
   public double _kurtosis;
   public double _skew;
@@ -100,5 +105,10 @@ public class ColMeta extends Iced {
         _strs[_idx++]=val;
       }
     }
+  }
+
+  // folds together ideas from ASTHist and DHistogram
+  public static class DynamicHisto extends Iced {
+
   }
 }
