@@ -55,27 +55,23 @@ public class FunctionUtils {
 	// execute testcase
 	// ---------------------------------------------- //
 	private static String validateTestcaseType(Dataset train_dataset, HashMap<String, String> rawInput) {
-
-		if (train_dataset == null || !train_dataset.isAvailabel()) {
-			return null;
-		}
-
-		String result = null;
-		String[] columnNames = train_dataset.getColumnNames();
-		String[] columnTypes = train_dataset.getColumnTypes();
-		String reponseColumnType = columnTypes[ArrayUtils.indexOf(columnNames, train_dataset.getResponseColumn())];
-		if (Param.parseBoolean(rawInput.get(CommonHeaders.classification))
-				&& !"enum".equals(reponseColumnType.toLowerCase())) {
-
-			result = "This is classification testcase but response_column type is not enum";
-		}
-		else if (Param.parseBoolean(rawInput.get(CommonHeaders.regression))
-				&& "enum".equals(reponseColumnType.toLowerCase())) {
-
-			result = "This is regresstion testcase but response_column type is enum";
-		}
-
-		return result;
+//		String result = null;
+//		String[] columnNames = train_dataset.getColumnNames();
+//		String[] columnTypes = train_dataset.getColumnTypes();
+//		String reponseColumnType = columnTypes[ArrayUtils.indexOf(columnNames, train_dataset.getResponseColumn())];
+//		if (Param.parseBoolean(rawInput.get(CommonHeaders.classification))
+//				&& !"enum".equals(reponseColumnType.toLowerCase())) {
+//
+//			result = "This is classification testcase but response_column type is not enum";
+//		}
+//		else if (Param.parseBoolean(rawInput.get(CommonHeaders.regression))
+//				&& "enum".equals(reponseColumnType.toLowerCase())) {
+//
+//			result = "This is regresstion testcase but response_column type is enum";
+//		}
+//
+//		return result;
+		return null;
 	}
 
 	public static String validate(Param[] params, String train_dataset_id, Dataset train_dataset,
@@ -92,13 +88,6 @@ public class FunctionUtils {
 		}
 		else if (train_dataset == null) {
 			result = String.format("Dataset id %s do not have in dataset characteristic", train_dataset_id);
-		}
-		else if (!train_dataset.isAvailabel()) {
-			result = String.format("Dataset id %s is not available in dataset characteristic", train_dataset_id);
-		}
-		else if (StringUtils.isNotEmpty(validate_dataset_id)
-				&& (validate_dataset == null || !validate_dataset.isAvailabel())) {
-			result = String.format("Dataset id %s is not available in dataset characteristic", validate_dataset_id);
 		}
 		else if (verifyTrainDSMessage != null) {
 			result = verifyTrainDSMessage;
@@ -156,7 +145,7 @@ public class FunctionUtils {
 	 * @param responseColumn
 	 * @return null if testcase do not require betaconstraints otherwise return beta constraints frame
 	 */
-	private static Frame createBetaConstraints(HashMap<String, String> rawInput, Frame trainFrame, String responseColumn) {
+	private static Frame createBetaConstraints(HashMap<String, String> rawInput, Frame trainFrame, int responseColumn) {
 
 		Frame betaConstraints = null;
 		boolean isBetaConstraints = Param.parseBoolean(rawInput.get("betaConstraints"));
@@ -329,7 +318,7 @@ public class FunctionUtils {
 		}
 
 		// set response_column param
-		modelParameter._response_column = train_dataset.getResponseColumn();
+		modelParameter._response_column = train_dataset.dataSetFrame._names[train_dataset.responseColumn];
 
 		// set train/validate params
 		Frame trainFrame = null;
@@ -339,16 +328,15 @@ public class FunctionUtils {
 		try {
 
 			System.out.println("Create train frame: " + train_dataset_id);
-			trainFrame = train_dataset.getFrame();
+			trainFrame = train_dataset.dataSetFrame;
 
-			if (StringUtils.isNotEmpty(validate_dataset_id) && validate_dataset != null
-					&& validate_dataset.isAvailabel()) {
+			if (StringUtils.isNotEmpty(validate_dataset_id) && validate_dataset != null) {
 				System.out.println("Create validate frame: " + validate_dataset_id);
-				validateFrame = validate_dataset.getFrame();
+				validateFrame = validate_dataset.dataSetFrame;
 			}
 
 			if (algorithm.equals(FunctionUtils.glm)) {
-				betaConstraints = createBetaConstraints(rawInput, trainFrame, train_dataset.getResponseColumn());
+				betaConstraints = createBetaConstraints(rawInput, trainFrame, train_dataset.responseColumn);
 				if (betaConstraints != null) {
 					((GLMParameters) modelParameter)._beta_constraints = betaConstraints._key;
 				}
@@ -634,7 +622,7 @@ public class FunctionUtils {
 	// ---------------------------------------------- //
 	// initiate data. Read testcase files
 	// ---------------------------------------------- //
-	public static Object[][] readAllTestcase(HashMap<String, Dataset> dataSetCharacteristic, String algorithm) {
+	public static Object[][] readAllTestcase(HashMap<Integer, Dataset> dataSetCharacteristic, String algorithm) {
 
 		if (StringUtils.isNotEmpty(algorithm)) {
 			return readAllTestcaseOneAlgorithm(dataSetCharacteristic, algorithm);
@@ -692,7 +680,7 @@ public class FunctionUtils {
 		return result;
 	}
 
-	private static Object[][] readAllTestcaseOneAlgorithm(HashMap<String, Dataset> dataSetCharacteristic,
+	private static Object[][] readAllTestcaseOneAlgorithm(HashMap<Integer, Dataset> dataSetCharacteristic,
 			String algorithm) {
 
 		int indexRowHeader = 0;
@@ -739,7 +727,7 @@ public class FunctionUtils {
 		return result;
 	}
 
-	private static Object[][] dataProvider(HashMap<String, Dataset> dataSetCharacteristic, List<String> listHeaders,
+	private static Object[][] dataProvider(HashMap<Integer, Dataset> dataSetCharacteristic, List<String> listHeaders,
 			String algorithm, String positiveTestcaseFilePath, String negativeTestcaseFilePath, int indexRowHeader) {
 
 		Object[][] result = null;
@@ -783,7 +771,7 @@ public class FunctionUtils {
 		return result;
 	}
 
-	private static Object[][] readTestcaseFile(HashMap<String, Dataset> dataSetCharacteristic,
+	private static Object[][] readTestcaseFile(HashMap<Integer, Dataset> dataSetCharacteristic,
 			List<String> listHeaders, String fileName, int indexRowHeader, String algorithm, boolean isNegativeTestcase) {
 
 		System.out.println("Read testcase: " + fileName);
@@ -915,7 +903,7 @@ public class FunctionUtils {
 				// because we have to show any INVALID testcase thus we have to add this testcase
 				temp[r++] = testcases[i];
 			}
-			else if (size.equals(dataset.getDataSetDirectory())) {
+			else if (size.equals(dataset.dataSetURI)) {
 				temp[r++] = testcases[i];
 			}
 		}
@@ -938,18 +926,10 @@ public class FunctionUtils {
 	// ---------------------------------------------- //
 	// management dataset characteristic file
 	// ---------------------------------------------- //
-	public static HashMap<String, Dataset> readDataSetCharacteristic() {
+	public static HashMap<Integer, Dataset> readDataSetCharacteristic() {
 
-		HashMap<String, Dataset> result = new HashMap<String, Dataset>();
+		HashMap<Integer, Dataset> result = new HashMap<Integer, Dataset>();
 		final String dataSetCharacteristicFilePath = "h2o-testng/src/test/resources/datasetCharacteristics.csv";
-
-		final int numCols = 6;
-		final int dataSetId = 0;
-		final int dataSetDirectory = 1;
-		final int fileName = 2;
-		final int responseColumn = 3;
-		final int columnNames = 4;
-		final int columnTypes = 5;
 
 		File file = null;
 		List<String> lines = null;
@@ -968,44 +948,22 @@ public class FunctionUtils {
 			System.out.println("read line: " + line);
 			String[] arr = line.trim().split(",", -1);
 
-			if (arr.length < numCols) {
-				System.out.println("length of line is short");
+			System.out.println("parse to DataSet object");
+			String[] predictorColumnsStrings = arr[3].trim().split(";", -1);
+			int[] predictorColumns= new int[predictorColumnsStrings.length];
+			for(int i = 0; i < predictorColumnsStrings.length; i++) {
+				predictorColumns[i] = Integer.parseInt(predictorColumnsStrings[i]);
 			}
-			else {
-				System.out.println("parse to DataSet object");
-				Dataset dataset = new Dataset(arr[dataSetId], arr[dataSetDirectory], arr[fileName],
-						arr[responseColumn], arr[columnNames], arr[columnTypes]);
 
-				result.put(arr[dataSetId], dataset);
-			}
+			Dataset dataset = new Dataset(Integer.parseInt(arr[0]), arr[1], Integer.parseInt(arr[2]), predictorColumns);
+
+			result.put(Integer.parseInt(arr[0]), dataset);
 		}
 
 		return result;
 	}
 
-	public static void removeDatasetInDatasetCharacteristic(HashMap<String, Dataset> mapDatasetCharacteristic,
-			String dataSetDirectory) {
-
-		if (StringUtils.isEmpty(dataSetDirectory)) {
-			return;
-		}
-
-		Dataset temp = null;
-		for (String key : mapDatasetCharacteristic.keySet()) {
-
-			temp = mapDatasetCharacteristic.get(key);
-			if (temp != null && dataSetDirectory.equals(temp.getDataSetDirectory())) {
-				temp.closeFrame();
-				mapDatasetCharacteristic.remove(key);
-			}
-		}
-	}
-
-	public static void closeAllFrameInDatasetCharacteristic(HashMap<String, Dataset> mapDatasetCharacteristic) {
-
-		for (String key : mapDatasetCharacteristic.keySet()) {
-
-			mapDatasetCharacteristic.get(key).closeFrame();
-		}
+	public static void closeAllFrameInDatasetCharacteristic(HashMap<Integer, Dataset> mapDatasetCharacteristic) {
+		for (int key : mapDatasetCharacteristic.keySet()) mapDatasetCharacteristic.get(key).closeFrame();
 	}
 }

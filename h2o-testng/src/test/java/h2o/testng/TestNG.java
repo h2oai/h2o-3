@@ -32,7 +32,7 @@ public class TestNG extends TestNGUtil {
 	private static String size = null;
 	private static String testcaseId = null;
 
-	private static HashMap<String, Dataset> dataSetCharacteristic;
+	private static HashMap<Integer, Dataset> dataSetCharacteristic;
 
 	@BeforeClass
 	public void beforeClass() {
@@ -184,7 +184,6 @@ public class TestNG extends TestNGUtil {
 
 	@AfterClass
 	public void afterClass() {
-
 		FunctionUtils.closeAllFrameInDatasetCharacteristic(dataSetCharacteristic);
 	}
 }
