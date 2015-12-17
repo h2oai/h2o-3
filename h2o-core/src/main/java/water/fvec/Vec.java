@@ -571,7 +571,7 @@ public class Vec extends Keyed<Vec> {
       @Override public void map(Chunk c){
         Random rng = new RandomUtils.PCGRNG(c._start,1);
         for(int i = 0; i < c._len; ++i) {
-          rng.setSeed(c._start+i); // Determinstic per-row
+          rng.setSeed(seed+c._start+i); // Determinstic per-row
           c.set(i, rng.nextFloat());
         }
       }
