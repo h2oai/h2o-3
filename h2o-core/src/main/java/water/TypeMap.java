@@ -210,6 +210,14 @@ public class TypeMap {
     assert iced != null : "No instance of id "+id+", class="+CLAZZES[id];
     return (Freezable) iced.clone();
   }
+  /** Create a new freezable object based on its className.
+   *
+   * @param className class name
+   * @return new instance of Freezable object
+   */
+  public static Freezable newFreezable(String className) {
+    return (Freezable)theFreezable(onIce(className)).clone();
+  }
   // The single golden instance of an Iced, used for cloning and instanceof tests
   static Freezable theFreezable(int id) {
     try {

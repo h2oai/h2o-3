@@ -2,6 +2,7 @@ package water.api;
 
 import water.H2O;
 import water.Iced;
+import water.TypeMap;
 import water.util.MarkdownBuilder;
 
 import java.lang.reflect.Method;
@@ -51,11 +52,7 @@ final class Route extends Iced {
     _doc_method = doc_method;
     _path_params = path_params;
     _handler_factory = handler_factory;
-    try {
-      _handler = _handler_factory.create(_handler_class);
-    } catch (Exception e) {
-      throw H2O.fail("Could not create handler", e);
-    }
+    _handler = (Handler)TypeMap.newFreezable(_handler_class.getName());
   }
 
   /**

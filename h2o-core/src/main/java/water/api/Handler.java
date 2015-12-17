@@ -23,8 +23,8 @@ import water.util.ReflectionUtils;
 import water.util.annotations.IgnoreJRERequirement;
 
 public class Handler extends H2OCountedCompleter {
-  protected Handler( ) { super(); }
-  protected Handler( Handler completer ) { super(completer); }
+  public Handler( ) { }
+  public Handler( Handler completer ) { super(completer); }
 
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 

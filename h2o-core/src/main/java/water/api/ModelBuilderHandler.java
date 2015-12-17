@@ -2,12 +2,13 @@ package water.api;
 
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
+import water.H2O;
 import water.Job;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.HttpResponseStatus;
 import water.util.PojoUtils;
 
-abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
+public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
   /**
    * Create a model by launching a ModelBuilder algo.  If the model
    * parameters pass validation this returns a Job schema; if not it
@@ -39,5 +40,16 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
     S builder_schema = (S) builder.schema().fillFromImpl(builder);
     builder_schema.setHttpStatus(HttpResponseStatus.OK.getCode());
     return builder_schema;
+  }
+
+  
+@SuppressWarnings("unused") // called through reflection by RequestServer
+  public void train(int version, S schema) {
+    throw H2O.unimpl();
+  }
+
+@SuppressWarnings("unused") // called through reflection by RequestServer
+  public void validate_parameters(int version, S schema) {
+    throw H2O.unimpl();
   }
 }

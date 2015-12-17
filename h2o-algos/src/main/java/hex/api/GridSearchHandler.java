@@ -10,6 +10,7 @@ import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.schemas.GridSearchSchema;
+import water.H2O;
 import water.Job;
 import water.Key;
 import water.api.API;
@@ -38,6 +39,11 @@ public class GridSearchHandler<G extends Grid<MP>,
     S extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
     P extends ModelParametersSchema> extends Handler {
+
+@SuppressWarnings("unused") // called through reflection by RequestServer
+  public void train(int version, S schema) {
+    throw H2O.unimpl();
+  }
 
   public S do_train(int version,
                     S gridSearchSchema) { // just following convention of model builders
