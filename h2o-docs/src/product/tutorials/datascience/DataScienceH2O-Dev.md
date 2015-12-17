@@ -598,7 +598,7 @@ By default, the following output displays:
 
 Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result. 
 
-- **How is the sampling rate calculated for DRF?**
+- **How is column sampling implemented for DRF?**
 
 For an example model using: 
 
@@ -1191,14 +1191,13 @@ The output for GBM includes the following:
  
 This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature. 
 
-- **How is the sampling rate calculated for GBM?**
+- **How is column sampling implemented for GBM?**
 
 For an example model using: 
 
 - 100 columns
 - `col_sample_rate_per_tree=0.754`
 - `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
-
 
 For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
 
