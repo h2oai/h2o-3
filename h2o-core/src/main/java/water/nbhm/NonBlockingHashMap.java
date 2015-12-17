@@ -923,8 +923,9 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // prevent integer overflow - limit of 2^31 elements in a Java array
       // so here, 2^30 + 2 is the largest number of elements in the hash table
       if ((int)len!=len) {
-        len = (1L << 30) + 2;
-        if (newsz > ((len >> 2) + (len >> 1))) throw new RuntimeException("Table is full.");
+        log2 = 30;
+        len = (1L << log2) + 2;
+        if (sz > ((len >> 2) + (len >> 1))) throw new RuntimeException("Table is full.");
       }
 
       // Now limit the number of threads actually allocating memory to a
