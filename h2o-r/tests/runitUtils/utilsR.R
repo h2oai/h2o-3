@@ -105,7 +105,7 @@ function(cur.dir, root, root.parent = NULL) {
 #' Load a handful of packages automatically. Runit tests that require additional packages must be loaded explicitly
 default.packages <-
 function() {
-  to_require <- c("jsonlite", "RCurl", "RUnit", "R.utils", "testthat", "ade4", "glmnet", "gbm", "ROCR", "e1071",
+  to_require <- c("jsonlite", "RCurl", "RUnit", "R.utils", "testthat", "ade4", "glmnet", "gbm", "ROCR", "e1071", "survival",
                   "tools", "statmod", "fpc", "cluster")
   if (Sys.info()['sysname'] == "Windows") {
     options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))) }
