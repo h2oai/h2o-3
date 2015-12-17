@@ -13,13 +13,19 @@ def test_hadoop():
     hdfs_name_node = os.getenv("NAME_NODE")
     print("Importing hdfs data")
     h2o_data = h2o.import_file("hdfs://" + hdfs_name_node + "/datasets/100k.csv")
+
     print("Spliting data")
     train,test = h2o_data.split_frame(ratios=[0.9])
+
     print("Exporting file to hdfs")
     h2o.export_file(test[:,0:2], "hdfs://" + hdfs_name_node + "/datasets/exported.csv")
 
-    h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=0.5, Lambda=0.01)
+    print("Reading file back in and comparing if data is the same")
+    new_test = h2o.import_file("hdfs://" + hdfs_name_node + "/datasets/exported.csv")
+    assert((test[:,1] - new_test[:,1]).sum() == 0)
+
     print("Training")
+    h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=0.5, Lambda=0.01)
     h2o_glm.train(x=range(1, 10), y=0, training_frame=train) # dont need to train on all features
 
     hdfs_model_path = os.getenv("MODEL_PATH")
