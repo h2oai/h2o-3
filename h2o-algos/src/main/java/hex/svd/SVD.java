@@ -310,7 +310,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       return u;
     }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       SVDModel model = null;
       DataInfo dinfo = null;
       Frame u = null, qfrm = null;

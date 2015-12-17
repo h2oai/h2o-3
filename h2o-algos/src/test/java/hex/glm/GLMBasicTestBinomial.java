@@ -895,12 +895,12 @@ public class GLMBasicTestBinomial extends TestUtil {
           params._valid = fTest._key;
           System.out.println("SOLVER = " + s);
           try {
-            model = new GLM(params).trainModel().get();
+            model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           } catch(Exception iae) {
             assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
           }
           params._valid = null;
-          model = new GLM(params).trainModel().get();
+          model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           for (int i = 0; i < cfs1.length; ++i)

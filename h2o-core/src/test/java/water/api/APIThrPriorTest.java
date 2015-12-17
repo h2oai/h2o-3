@@ -185,7 +185,8 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
 
   private class BogusDriver extends H2OCountedCompleter<BogusDriver> {
     protected BogusDriver() { super(true); } // bump priority of drivers
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       _driver_priority = _priority; // Get H2OCountedCompleter priority
       synchronized(Bogus.this) {
         if( _state == 0 ) _state = 1;

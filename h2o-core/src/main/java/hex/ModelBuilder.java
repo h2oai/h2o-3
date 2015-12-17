@@ -132,11 +132,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
     return _job.start(new H2O.H2OCountedCompleter() {
-        @Override protected void compute2() {
+        @Override
+        public void compute2() {
           computeCrossValidation();
           tryComplete();
         }
       }, (1/*for all pre-fold work*/+nFoldWork()+1/*for all the post-fold work*/) * progressUnits());
+  }
+
+  /** Train a model as part of a larger Job; the Job already exists and has started. */
+  final public M trainModelNested() {
+    if (error_count() > 0)
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+
+    if( !nFoldCV() ) trainModelImpl().compute2();
+    else computeCrossValidation();
+    return _result.get();
   }
 
   /** Model-specific implementation of model training

@@ -172,7 +172,8 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       return true;
     }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       NaiveBayesModel model = null;
       DataInfo dinfo = null;
 

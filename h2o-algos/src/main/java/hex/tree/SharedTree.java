@@ -141,7 +141,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   abstract protected class Driver extends H2OCountedCompleter<Driver> {
     protected Driver() { super(true); } // bump priority of model drivers
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       _model = null;            // Resulting model!
       try {
         Scope.enter();          // Cleanup temp keys

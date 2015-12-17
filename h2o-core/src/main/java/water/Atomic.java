@@ -44,7 +44,8 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
   }
 
   // The (remote) workhorse:
-  @Override protected final void compute2( ) {
+  @Override
+  public final void compute2() {
     assert _key.home() : "Atomic on wrong node; SELF="+H2O.SELF+
       ", key_home="+_key.home_node()+", key_is_home="+_key.home()+", class="+getClass();
     Futures fs = new Futures(); // Must block on all invalidates eventually

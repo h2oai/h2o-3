@@ -58,7 +58,7 @@ class UDPRebooted extends UDP {
       H2O.exit(exitCode);
     }
     @Override
-    protected void compute2() {
+    public void compute2() {
       Log.info("Orderly shutdown from " + _killer);
       // start a separate thread which will force termination after timeout expires (in case we don't get ack ack in time)
       new Thread(){

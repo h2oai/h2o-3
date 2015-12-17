@@ -1060,7 +1060,7 @@ final public class H2O {
     public void compute1() { compute2(); }
 
     /** Override to specify actual work to do */
-    protected abstract void compute2();
+    public abstract void compute2();
 
     /** Exceptional completion path; mostly does printing if the exception was
      *  not handled earlier in the stack.  */
@@ -1112,7 +1112,8 @@ final public class H2O {
   public static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
     public H2OCallback(){}
     public H2OCallback(H2OCountedCompleter cc){super(cc);}
-    @Override protected void compute2(){throw H2O.fail();}
+    @Override
+    public void compute2(){throw H2O.fail();}
     @Override public    void onCompletion(CountedCompleter caller){callback((T) caller);}
     public abstract void callback(T t);
   }

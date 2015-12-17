@@ -77,7 +77,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       @Override public void reduce(SumWeights mrt) { sum+=mrt.sum; }
     }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       QuantileModel model = null;
       try {
         Scope.enter();

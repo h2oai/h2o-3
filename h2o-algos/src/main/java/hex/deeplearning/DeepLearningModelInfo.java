@@ -160,12 +160,13 @@ final public class DeepLearningModelInfo extends Iced {
    * @param train User-given training data frame, prepared by AdaptTestTrain
    * @param valid User-specified validation data frame, prepared by AdaptTestTrain
    */
-  public DeepLearningModelInfo(final DeepLearningParameters params, final DataInfo dinfo, int nClasses, Frame train, Frame valid) {
+  public DeepLearningModelInfo(final DeepLearningParameters params, Key model_id, final DataInfo dinfo, int nClasses, Frame train, Frame valid) {
     _classification = nClasses > 1;
     _train = train;
     _valid = valid;
     data_info = dinfo;
     parameters = (DeepLearningParameters) params.clone(); //make a copy, don't change model's parameters
+    _model_id = model_id;
     DeepLearningParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
 
     final int num_input = dinfo.fullN();

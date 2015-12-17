@@ -324,7 +324,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._save_v_frame = false;
 
         SVDModel svd = ModelCacheManager.get(parms);
-        if( svd == null ) svd = new SVD(parms,_job).trainModel().get();
+        if( svd == null ) svd = new SVD(parms,_job).trainModelNested();
         if (_job.stop_requested()) return null;
         model._output._init_key = svd._key;
 
@@ -364,7 +364,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         ModelCacheManager MCM = H2O.getMCM();
         KMeansModel km = MCM.get(parms);
-        if( km == null ) km = new KMeans(parms,_job).trainModel().get();
+        if( km == null ) km = new KMeans(parms,_job).trainModelNested();
         if (_job.stop_requested()) return null;
         model._output._init_key = km._key;
 
@@ -511,7 +511,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
               new String[model._output._eigenvectors_raw.length][], model._output._eigenvectors_raw);
     }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       GLRMModel model = null;
       DataInfo dinfo = null, xinfo = null, tinfo = null;
       Frame fr = null;

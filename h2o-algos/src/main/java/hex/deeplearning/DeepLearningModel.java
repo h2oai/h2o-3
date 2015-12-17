@@ -85,7 +85,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
   // Default publicly visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV3(); }
 
-  void set_model_info(DeepLearningModelInfo mi) { assert(mi != null); model_info = mi; }
+  void set_model_info(DeepLearningModelInfo mi) {
+    assert(mi != null);
+    assert mi.data_info()._key.equals(model_info.data_info._key);
+    model_info = mi;
+  }
+
   final public DeepLearningModelInfo model_info() { return model_info; }
   final public VarImp varImp() { return _output.errors.variable_importances; }
 
@@ -294,7 +299,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       table.set(row, col++, fmt.print(si.time_stamp));
       table.set(row, col++, PrettyPrint.msecs(si.training_time_ms, true));
       int speed = (int)(si.training_samples / ((si.training_time_ms - scoring_time)/ 1e3));
-      assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + si.training_samples + "/((" + si.training_time_ms + "-" + scoring_time + ")/1e3)";
+      //assert(speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + si.training_samples + "/((" + si.training_time_ms + "-" + scoring_time + ")/1e3)";
       table.set(row, col++, si.training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
       table.set(row, col++, si.epoch_counter);
       table.set(row, col++, si.iterations);
@@ -432,7 +437,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo);
-    model_info = new DeepLearningModelInfo(parms, dinfo, nClasses, train, valid);
+    model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
     if (parms._nfolds != 0) actual_best_model_key = null;

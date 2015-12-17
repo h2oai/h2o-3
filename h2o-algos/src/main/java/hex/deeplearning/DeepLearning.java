@@ -16,10 +16,7 @@ import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static water.util.MRUtils.sampleFrame;
 import static water.util.MRUtils.sampleFrameStratified;
@@ -125,7 +122,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
   }
 
   @Override public void modifyParmsForCrossValidationMainModel(ModelBuilder[] cvModelBuilders) {
-    assert !_parms._overwrite_with_best_model : "Should already have disabled overwrite_with_best_model during cross-val";
+    _parms._overwrite_with_best_model = false;
     if( _parms._stopping_rounds == 0 ) return; // No exciting changes to stopping conditions
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     _parms._stopping_rounds = 0;
@@ -141,7 +138,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningPar
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
     protected DeepLearningDriver() { super(true); } // bump priority of drivers
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       try {
         long cs = _parms.checksum();
         init(true);

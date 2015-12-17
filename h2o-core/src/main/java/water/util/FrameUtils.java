@@ -170,7 +170,8 @@ public class FrameUtils {
     class MissingInserterDriver extends H2O.H2OCountedCompleter {
       final Frame _frame;
       MissingInserterDriver(Frame frame) {_frame = frame; }
-      @Override protected void compute2() {
+      @Override
+      public void compute2() {
         new MRTask() {
           @Override public void map (Chunk[]cs){
             final Random rng = RandomUtils.getRNG(0);

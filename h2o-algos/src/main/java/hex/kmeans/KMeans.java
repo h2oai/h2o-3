@@ -236,7 +236,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
 
     // Main worker thread
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
 
       KMeansModel model = null;
       try {

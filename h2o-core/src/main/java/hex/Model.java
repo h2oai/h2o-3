@@ -320,6 +320,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (Key/Data leak management issues), and might throw IAE if there are too
      *  many classes. */
     public Output( ModelBuilder b ) {
+      _job = b._job;
       if( b == null ) {
         _hasOffset = false;
         _hasWeights = false;

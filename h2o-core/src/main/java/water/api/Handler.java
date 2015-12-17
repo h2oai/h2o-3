@@ -77,7 +77,8 @@ public class Handler extends H2OCountedCompleter {
     return result;
   }
 
-  @Override final protected void compute2() {
+  @Override
+  public final void compute2() {
     throw H2O.fail();
   }
 

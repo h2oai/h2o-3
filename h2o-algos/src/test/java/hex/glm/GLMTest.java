@@ -1031,7 +1031,7 @@ public class GLMTest  extends TestUtil {
     // now do the same but wieghted, use LSM solution as beta to generate meaningfull weights
     H2O.submitTask(new H2OCountedCompleter() {
       @Override
-      protected void compute2() {
+      public void compute2() {
         new GLM.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, 0, null, null).solve(null, beta);
         tryComplete();
       }

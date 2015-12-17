@@ -383,7 +383,7 @@ final class RollupStats extends Iced {
     }
 
     @Override
-    protected void compute2() {
+    public void compute2() {
       assert _rsKey.home();
       final Vec vec = DKV.getGet(_vecKey);
       while(true) {

@@ -394,7 +394,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       CoxPHModel model ;
       try {
         Scope.enter();

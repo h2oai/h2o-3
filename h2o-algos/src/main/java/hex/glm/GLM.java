@@ -593,7 +593,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override
-    protected void compute2() {
+    public void compute2() {
       // get filtered dataset's mean and number of observations
       new YMUTask(_dinfo, nclasses(), !_parms._stdOverride, new H2OCallback<YMUTask>(this) {
         @Override
@@ -913,7 +913,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override
-    protected void compute2() {
+    public void compute2() {
       Scope.enter();
       init(true);
       _adapt_keys = Scope.pop();
@@ -1866,7 +1866,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }).setValidate(_parms._intercept ? _taskInfo._ymu[0] : _parms._family == Family.binomial ? 0.5 : 0, score).asyncExec(_dinfo._adaptedFrame);
     }
     @Override
-    protected void compute2() { // part of the outer loop to compute sol for lambda_k+1. keep active cols using strong rules and calls solve.
+    public void compute2() { // part of the outer loop to compute sol for lambda_k+1. keep active cols using strong rules and calls solve.
       if(_job.stop_requested()) throw new GLMCancelledException();
       _start_time = System.currentTimeMillis();
       double previousLambda = _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1];

@@ -31,7 +31,8 @@ public class DCTTransformer extends Transformer<Frame> {
 
     return _job.start(
             new H2O.H2OCountedCompleter() {
-              @Override protected void compute2() {
+              @Override
+              public void compute2() {
                 Frame fft;
                 if (_dimensions[1] == 1 && _dimensions[2] == 1) {
                   fft = MathUtils.DCT.transform1D(_dataset, _dimensions[0], _inverse);

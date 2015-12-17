@@ -219,7 +219,6 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     assert is_locked(job_key);
   }
   private void set_read_lock(Key<Job> job_key) {
-    assert !is_locked(job_key); // no double locking
     assert !is_wlocked();       // not write locked
     _lockers = _lockers == null ? new Key[2] : Arrays.copyOf(_lockers,_lockers.length+1);
     _lockers[_lockers.length-1] = job_key;
@@ -236,13 +235,12 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     } else {                    // Else one of many readers
       assert lks.length>2;
       _lockers = Arrays.copyOf(lks,lks.length-1);
-      int j=1;                  // Skip the initial null slot
       for( int i=1; i<lks.length; i++ )
-        if( job_key != null && !job_key.equals(lks[i]) || (job_key == null && lks[i] != null) )
-          _lockers[j++] = lks[i];
-      assert j==lks.length-1;   // Was locked exactly once
+        if( (job_key != null && job_key.equals(lks[i])) || (job_key == null && lks[i] == null) ) {
+          if( i < _lockers.length ) _lockers[i] = lks[lks.length-1];
+          break;
+        }
     }
-    assert !is_locked(job_key);
   }
 
   /** Force-unlock (break a lock) all lockers; useful in some debug situations. */

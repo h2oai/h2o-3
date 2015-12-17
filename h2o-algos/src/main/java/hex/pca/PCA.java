@@ -178,7 +178,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     }
 
     // Main worker thread
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       PCAModel model = null;
       DataInfo dinfo = null;
 
@@ -241,7 +242,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._save_v_frame = false;
 
           // Build an SVD model
-          SVDModel svd = new SVD(parms, _job).trainModel().get();
+          SVDModel svd = new SVD(parms, _job).trainModelNested();
           if (_job.stop_requested()) return;
           svd.remove(); // Remove from DKV
 
