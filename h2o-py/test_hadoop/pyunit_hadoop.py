@@ -14,7 +14,7 @@ def test_hadoop():
     print("Importing hdfs data")
     h2o_data = h2o.import_file("hdfs://" + hdfs_name_node + "/datasets/100k.csv")
     print("Spliting data")
-    train,test = h2o_data.split_frame(ratios=[0.1])
+    train,test = h2o_data.split_frame(ratios=[0.9])
     h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=0.5, Lambda=0.01)
     print("Training")
     h2o_glm.train(x=range(1, 10), y=0, training_frame=train) # dont need to train on all features
@@ -24,7 +24,8 @@ def test_hadoop():
     new_model_path = h2o.save_model(h2o_glm, "hdfs://" + hdfs_name_node + "/" + hdfs_model_path)
     print("Loading back model")
     new_model = h2o.load_model(new_model_path)
-
+    print("Running predictions")
+    preds = new_model.predict(test)
 
 
 if __name__ == "__main__":
