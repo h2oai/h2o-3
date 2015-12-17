@@ -249,6 +249,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         @Override public void update(Job old) {
           assert old._end_time==0 : "onComp should be called once at most, and never if onExComp is called";
           old._end_time = System.currentTimeMillis();
+          if( old._worked < old._work ) old._worked = old._work;
         }
       };
       update_from_remote();
