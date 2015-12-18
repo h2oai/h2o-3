@@ -9,9 +9,6 @@ import water.util.IcedBitSet;
  */
 public interface JCodeSB<T extends JCodeSB> {
 
-  // Append primitves
-  T ps(String s);
-
   T p(String s);
 
   T p(float s);
@@ -50,8 +47,11 @@ public interface JCodeSB<T extends JCodeSB> {
   // Java specific append of float
   T pj(float s);
 
-  /* Append Java string - escape all " and \ */
+  /* Append Java string - escape all " and \ and encapsulate it into "..." */
   T pj(String s);
+
+  /** Append full name of class. */
+  T pj(Class c);
 
   /** Append Java Long */
   T pj(long l);

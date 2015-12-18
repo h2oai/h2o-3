@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import hex.Model;
 import hex.ModelMetrics;
+import hex.genmodel.GenModel;
 import water.Key;
 
 import static water.codegen.java.JCodeGenUtil.field;
@@ -59,18 +60,18 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
     // Build a model class generator by composing small pieces
     return new ClassCodeGenerator(getModelName())
         .withModifiers(PUBLIC)
-        .withExtend("GenModel")
+        .withExtend(GenModel.class)
         .withAnnotation(s("@ModelPojo(name=\"").p(getModelName()).p("\", algorithm=\"").p(getAlgoName()).p("\")"))
         .withMethod(
             method("getModelCategory")
               .withModifiers(PUBLIC)
-              .withReturnType("hex.ModelCategory")
+              .withReturnType(hex.ModelCategory.class)
               .withBody(s("return hex.ModelCategory.").p( model._output.getModelCategory()).p( ";"))
         )
         .withMethod(
             method("getUUID")
               .withModifiers(PUBLIC)
-              .withReturnType("String")
+              .withReturnType(String.class)
               .withBody(s("return Long.toString(").pj(model.checksum()).p(");"))
         )
         .withField( // FIXME: be more domain-specific, derive field type for value passed.
@@ -86,17 +87,17 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
               .withValue(
                   larray(getModelName() + "_ColumnNames", model._output._names, 0, model._output.nfeatures())
                       .withClassContainer(this)
-                      .withType("String")
-                      .withModifiers(PRIVATE))
-        ).withField(
+                      .withType(String.class))
+        )
+        .withField(
             field("String[][]", "DOMAINS")
                 .withComment("Column domains. The last array contains domain of response column.")
                 .withModifiers(PUBLIC | STATIC | FINAL)
-                /*.withValue(
-                    larray(getModelName() + "_ColInfo", model._output._domains))
+                .withValue(
+                    larray(getModelName() + "_ColumnInfo", model._output._domains)
                         .withClassContainer(this)
-                        .withType("String")
-                        .withModifier(PRIVATE)*/)
+                        .withType(String.class))
+        )
         .withField(
             field("double[]", "PRIOR_CLASS_DISTRIB")
                 .withComment("Prior class distribution")
@@ -133,7 +134,7 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
   @Override
   public void add(ClassCodeGenerator ccg) {
     CompilationUnitGenerator cu = new CompilationUnitGenerator(this.packageName, ccg.name);
-    ccg.modifiers &= ~STATIC;
+    ccg.modifiers &= ~(STATIC | PRIVATE); // Remove illegal modifiers from top-level classes
     cu.withClassGenerator(ccg);
     withCompilationUnit(cu);
   }

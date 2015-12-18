@@ -11,6 +11,8 @@ import water.util.IcedBitSet;
  */
 public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream> {
 
+  private static final Package JAVA_LANG_PACKAGE = String.class.getPackage();
+
   private int _indent = 0;
 
   public SBPrintStream(OutputStream out) {
@@ -38,11 +40,13 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return p(s.getContent());
   }
 
+  @Override
   public SBPrintStream p(String s) {
     append(s);
     return this;
   }
 
+  @Override
   public SBPrintStream p(float s) {
     if (Float.isNaN(s)) {
       append("Float.NaN");
@@ -54,6 +58,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return this;
   }
 
+  @Override
   public SBPrintStream p(double s) {
     if (Double.isNaN(s)) {
       append("Double.NaN");
@@ -65,21 +70,25 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return this;
   }
 
+  @Override
   public SBPrintStream p(char s) {
     append(s);
     return this;
   }
 
+  @Override
   public SBPrintStream p(int s) {
     append(s);
     return this;
   }
 
+  @Override
   public SBPrintStream p(long s) {
     append(s);
     return this;
   }
 
+  @Override
   public SBPrintStream p(boolean s) {
     append(Boolean.toString(s));
     return this;
@@ -87,16 +96,19 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
 
   // Not spelled "p" on purpose: too easy to accidentally say "p(1.0)" and
   // suddenly call the the autoboxed version.
+  @Override
   public SBPrintStream pobj(Object s) {
     append(s.toString());
     return this;
   }
 
+  @Override
   public SBPrintStream p(Enum e) {
     append(e.toString());
     return this;
   }
 
+  @Override
   public SBPrintStream i(int d) {
     for (int i = 0; i < d + _indent; i++) {
       p("  ");
@@ -104,20 +116,24 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return this;
   }
 
+  @Override
   public SBPrintStream i() {
     return i(0);
   }
 
+  @Override
   public SBPrintStream ip(String s) {
     return i().p(s);
   }
 
+  @Override
   public SBPrintStream s() {
     append(' ');
     return this;
   }
 
   // Java specific append of double
+  @Override
   public SBPrintStream pj(double s) {
     if (Double.isInfinite(s)) {
       append("Double.").append(s > 0 ? "POSITIVE_INFINITY" : "NEGATIVE_INFINITY");
@@ -130,6 +146,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   }
 
   // Java specific append of float
+  @Override
   public SBPrintStream pj(float s) {
     if (Float.isInfinite(s)) {
       append("Float.").append(s > 0 ? "POSITIVE_INFINITY" : "NEGATIVE_INFINITY");
@@ -142,11 +159,20 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   }
 
   /* Append Java string - escape all " and \ */
+  @Override
   public SBPrintStream pj(String s) {
-    append(SB.escapeJava(s));
+    append('"').append(SB.escapeJava(s)).append('"');
     return this;
   }
 
+  @Override
+  public SBPrintStream pj(Class c) {
+    Package p = c.getPackage();
+    append(p != null && p == JAVA_LANG_PACKAGE ? c.getSimpleName() : c.getCanonicalName());
+    return this;
+  }
+
+  @Override
   public SBPrintStream pj( long l ) {
     append(l).append('L');
     return this;
@@ -181,6 +207,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return this;
   }
 
+  @Override
   public SBPrintStream p(IcedBitSet ibs) {
     SB sb = new SB();
     sb = ibs.toString(sb);
@@ -192,23 +219,27 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   }
 
   // Increase indentation
+  @Override
   public SBPrintStream ii(int i) {
     _indent += i;
     return this;
   }
 
   // Decrease indentation
+  @Override
   public SBPrintStream di(int i) {
     _indent -= i;
     return this;
   }
 
   // Copy indent from given string buffer
+  @Override
   public SBPrintStream ci(JCodeSB sb) {
     _indent = sb.getIndent();
     return this;
   }
 
+  @Override
   public SBPrintStream nl() {
     return p('\n').i();
   }
@@ -220,6 +251,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   }
 
   // Convert a String[] into a valid Java String initializer
+  @Override
   public SBPrintStream toJavaStringInit(String[] ss) {
     if (ss == null) {
       return p("null");
@@ -234,6 +266,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return p('}');
   }
 
+  @Override
   public SBPrintStream toJavaStringInit(float[] ss) {
     if (ss == null) {
       return p("null");
@@ -248,6 +281,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return p('}');
   }
 
+  @Override
   public SBPrintStream toJavaStringInit(double[] ss) {
     if (ss == null) {
       return p("null");
@@ -262,6 +296,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return p('}');
   }
 
+  @Override
   public SBPrintStream toJavaStringInit(double[][] ss) {
     if (ss == null) {
       return p("null");
@@ -276,6 +311,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return p('}');
   }
 
+  @Override
   public SBPrintStream toJavaStringInit(double[][][] ss) {
     if (ss == null) {
       return p("null");
@@ -290,6 +326,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return p('}');
   }
 
+  @Override
   public SBPrintStream toJSArray(float[] nums) {
     p('[');
     for (int i = 0; i < nums.length; i++) {
@@ -301,6 +338,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return p(']');
   }
 
+  @Override
   public SBPrintStream toJSArray(String[] ss) {
     p('[');
     for (int i = 0; i < ss.length; i++) {

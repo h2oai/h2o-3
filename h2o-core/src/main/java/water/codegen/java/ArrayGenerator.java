@@ -10,7 +10,7 @@ abstract public class ArrayGenerator<S extends ArrayGenerator<S>> extends Simple
   /** Modifiers for generated classes. */
   int modifiers;
   /** Array component type */
-  String type;
+  Class type;
   /** Class containter which will hold generated classes. */
   ClassGenContainer classContainer;
   /** Prefix for generated classes. */
@@ -31,7 +31,7 @@ abstract public class ArrayGenerator<S extends ArrayGenerator<S>> extends Simple
     return self();
   }
 
-  public S withType(String type) {
+  public S withType(Class type) {
     this.type = type;
     return self();
   }

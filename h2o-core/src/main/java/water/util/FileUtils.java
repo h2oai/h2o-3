@@ -1,15 +1,26 @@
 package water.util;
 
 import org.eclipse.jetty.io.EofException;
-import water.Key;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+
+import water.Key;
 
 /**
  * File utilities.
  */
 public class FileUtils {
+
+  private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
+
+  private static final int EOF = -1;
+
+
   /**
    * Silently close given files.
    *
@@ -20,21 +31,27 @@ public class FileUtils {
       try { if( c != null ) c.close(); } catch( IOException xe ) { }
   }
 
-  public static void copyStream(InputStream is, OutputStream os, final int buffer_size) {
+  public static long copyStream(InputStream is, OutputStream os) {
+    return copyStream(is, os, DEFAULT_BUFFER_SIZE);
+  }
+
+  public static long copyStream(InputStream is, OutputStream os, final int bufferSize) {
+    return copyStream(is, os, new byte[bufferSize]);
+  }
+
+  public static long copyStream(InputStream is, OutputStream os, byte[] buffer) {
+    long count = 0;
     try {
-      byte[] bytes=new byte[buffer_size];
-      while( is.available() > 0 )
-      {
-        int count=is.read(bytes, 0, buffer_size);
-        if(count<=0)
-          break;
-        os.write(bytes, 0, count);
+      int n = 0;
+      while (EOF != (n = is.read(buffer))) {
+        os.write(buffer, 0, n);
+        count += n;
       }
-    }
-    catch(EofException eofe) {
-      // no problem
-    }
-    catch(Exception ex) {
+      return count;
+    } catch (EofException eofe) { // This is Jetty EOFException!
+      // Return without problem
+      return count;
+    } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
   }
