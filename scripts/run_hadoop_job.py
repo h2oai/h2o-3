@@ -16,7 +16,7 @@ def swallow(x):
 
 
 def print_barrier():
-    print("------------------------------------------------------------")
+    print("----------------------------------------------------------------------")
 
 
 def is_flow(file_name):
@@ -75,11 +75,7 @@ class H2OCloud:
             print("+ CMD: " + str(cmd))
             subprocess.check_call(cmd)
         except Exception, e:
-            print("")
-            print("")
             print e
-            print("")
-            print("")
         finally:
             self.job_id = None
 
@@ -99,11 +95,11 @@ def signal_handler(signum, stackframe):
     g_handling_signal = True
 
     print("")
-    print("----------------------------------------------------------------------")
+    print_barrier()
     print("")
     print("SIGNAL CAUGHT (" + str(signum) + ").  TEARING DOWN CLOUD.")
     print("")
-    print("----------------------------------------------------------------------")
+    print_barrier()
     g_runner.stop()
 
 
@@ -141,17 +137,19 @@ def main():
             print("+ CMD: " + str(cmd))
             subprocess.check_call(cmd)
     except Exception, e:
-        print("")
-        print("")
         print e
-        print("")
-        print("")
-    finally:
-        try:
-            shutil.rmtree(abspath_tempdir)
-        except Exception, ignore:
-            swallow(ignore)
+
+    try:
         g_runner.stop()
+    except Exception, ignore:
+        swallow(ignore)
+
+    try:
+        print_barrier()
+        print("Removing temp dir " + abspath_tempdir)
+        shutil.rmtree(abspath_tempdir)
+    except Exception, ignore:
+        swallow(ignore)
 
 
 if __name__ == "__main__":
