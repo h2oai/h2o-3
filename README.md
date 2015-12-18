@@ -178,6 +178,8 @@ git pull
 
 ### 4.2. Setup on all Platforms
 
+> **Note**: The following instructions assume you have installed the latest version of [**Pip**](https://pip.pypa.io/en/latest/installing/#install-or-upgrade-pip), which is installed with the latest version of [**Python**](https://www.python.org/downloads/).  
+
 ##### Install required Python packages (prepending with `sudo` if unsuccessful)
 
     pip install grip
