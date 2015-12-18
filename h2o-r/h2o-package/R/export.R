@@ -41,7 +41,7 @@ h2o.exportFile <- function(data, path, force = FALSE) {
   if(!is.logical(force) || length(force) != 1L || is.na(force))
     stop("`force` must be TRUE or FALSE")
 
-  .h2o.__remoteSend(data@conn, .h2o.__EXPORT_FILES(data,path,force))
+  .h2o.__remoteSend(.h2o.__EXPORT_FILES(data,path,force))
 }
 
 #'
@@ -80,7 +80,7 @@ h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
 
-  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', data@frame_id)
+  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', h2o.getId(data))
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))
@@ -153,7 +153,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
     path <- file.path(dir, name)
 
   stop("Currently not implemented", call. = FALSE)
-  # res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@model_id, path=path, force=force)
+  # res <- .h2o.__remoteSend(.h2o.__PAGE_SaveModel, model=object@model_id, path=path, force=force)
 
 # path
 }

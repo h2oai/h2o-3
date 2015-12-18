@@ -78,5 +78,5 @@ h2o.naiveBayes <- function(x, y, training_frame,
   parms$eps_prob <- eps
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'naivebayes', parms)
+  .h2o.createModel('naivebayes', parms)
 }

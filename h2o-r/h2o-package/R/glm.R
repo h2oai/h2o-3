@@ -109,7 +109,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
       if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "H2OFrame"))
         stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
       if (inherits(beta_constraints, "data.frame")) {
-        beta_constraints <- as.h2o(training_frame@conn, beta_constraints)
+        beta_constraints <- as.h2o(beta_constraints)
       }
   }
   #Handle ellipses
@@ -170,12 +170,12 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
   if(!missing(beta_constraints)){
     delete <- !.is.eval(beta_constraints)
     if (delete) {
-        temp_key <- beta_constraints@frame_id
-        .h2o.eval.frame(conn = beta_constraints@conn, ast = beta_constraints@mutable$ast, frame_id = temp_key)
+        temp_key <- h2o.getId(beta_constraints)
+        .h2o.eval.frame(ast = beta_constraints@mutable$ast, frame_id = temp_key)
     }
     parms$beta_constraints <- beta_constraints
   }
-  m <- .h2o.createModel(training_frame@conn, 'glm', parms)
+  m <- .h2o.createModel('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
@@ -191,7 +191,7 @@ h2o.glm <- function(x, y, training_frame, model_id, validation_frame,
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
    cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
-   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model_id=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+   res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model_id=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
    m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
    names(m@model$coefficients) <- m@model$coefficients_table[,1]
@@ -230,7 +230,7 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
       if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "H2OFrame"))
         stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
       if (inherits(beta_constraints, "data.frame")) {
-        beta_constraints <- as.h2o(training_frame@conn, beta_constraints)
+        beta_constraints <- as.h2o(beta_constraints)
       }
   }
 
@@ -281,7 +281,7 @@ h2o.startGLMJob <- function(x, y, training_frame, model_id, validation_frame,
     if(!missing(nfolds))
       parms$nfolds <- nfolds
 
-    .h2o.startModelJob(training_frame@conn, 'glm', parms)
+    .h2o.startModelJob('glm', parms)
 }
 
 # TODO: make this possible for all model types
@@ -296,6 +296,6 @@ h2o.getGLMModel <- function(keys, conn) {
   if(missing(conn)) conn <- h2o.getConnection()
   job_key  <- keys[[1]]
   dest_key <- keys[[1]]
-  .h2o.__waitOnJob(conn, job_key)
-  model <- h2o.getModel(dest_key, conn)
+  .h2o.__waitOnJob(job_key)
+  model <- h2o.getModel(dest_key)
 }

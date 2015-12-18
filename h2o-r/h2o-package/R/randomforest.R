@@ -98,5 +98,5 @@ h2o.randomForest <- function( x, y, training_frame,
   if(!missing(seed))
     parms$seed <- seed
 
-  .h2o.createModel(training_frame@conn, 'drf', parms)
+  .h2o.createModel('drf', parms)
 }

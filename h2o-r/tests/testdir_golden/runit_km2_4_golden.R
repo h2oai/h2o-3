@@ -5,7 +5,7 @@ test.kmsplit.golden <- function(conn) {
   library(flexclust)
   Log.info("Importing ozone.csv data...\n")
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
-  ozoneH2O <- h2o.uploadFile(conn, locate("smalldata/glm_test/ozone.csv"))
+  ozoneH2O <- h2o.uploadFile( locate("smalldata/glm_test/ozone.csv"))
   
   # to get deterministic results, don't randomly split. use full dataset for test/train
   # Log.info("Split into test and training sets\n")

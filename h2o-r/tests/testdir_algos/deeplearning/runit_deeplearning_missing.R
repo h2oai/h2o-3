@@ -7,7 +7,7 @@ check.deeplearning_missing <- function(conn) {
   missing_ratios = c(0, 0.1, 0.25, 0.5, 0.75, 0.99)
   errors = c(0, 0, 0, 0, 0, 0)
 
-  data = h2o.uploadFile(conn, locate("smalldata/junit/weather.csv"))
+  data = h2o.uploadFile( locate("smalldata/junit/weather.csv"))
   data[,16] = as.factor(data[,16]) #ChangeTempDir
   data[,17] = as.factor(data[,17]) #ChangeTempMag
   data[,18] = as.factor(data[,18]) #ChangeWindDirect

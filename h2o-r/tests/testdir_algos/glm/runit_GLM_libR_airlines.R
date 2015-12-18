@@ -85,8 +85,8 @@ test.LiblineaR.airlines <- function(conn) {
   #airlinesTest  <- locate("smalldata/airlines/AirlinesTest.csv.zip")
   #aTrain        <- na.omit(read.zip(zipfile = airlinesTrain, exdir = exdir))
   #aTest         <- na.omit(read.zip(zipfile = airlinesTest,  exdir = exdir))
-  #trainhex      <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
-  #testhex       <- h2o.uploadFile(conn, paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
+  #trainhex      <- h2o.uploadFile( paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
+  #testhex       <- h2o.uploadFile( paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
   #remove_exdir(exdir)
   #
   #print(trainhex)

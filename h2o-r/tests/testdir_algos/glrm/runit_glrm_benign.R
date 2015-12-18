@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 test.glrm.benign <- function(conn) {
   Log.info("Importing benign.csv data...\n")
-  benign.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/benign.csv"))
+  benign.hex <- h2o.uploadFile( locate("smalldata/logreg/benign.csv"))
   benign.sum <- summary(benign.hex)
   print(benign.sum)
 

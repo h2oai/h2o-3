@@ -74,11 +74,11 @@ h2o.glrm <- function(training_frame, x, k,
              })
   
   ## -- Force evaluate temporary ASTs -- ##
-  delete <- !.is.eval(training_frame)
-  if( delete ) {
-    temp_key <- training_frame@frame_id
-    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
-  }
+#  delete <- !.is.eval(training_frame)
+#  if( delete ) {
+#    temp_key <- h2o.getId(training_frame)
+#    h2o.rm(temp_key)
+#  }
   
   # Gather user input
   parms <- list()
@@ -122,7 +122,7 @@ h2o.glrm <- function(training_frame, x, k,
     # Convert user-specified starting points to H2OFrame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-      init <- as.h2o(init, training_frame@conn)
+      init <- as.h2o(init)
     }
     parms[["user_points"]] <- init
     # Set k
@@ -139,5 +139,5 @@ h2o.glrm <- function(training_frame, x, k,
   }
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'glrm', parms, 99)
+  .h2o.createModel('glrm', parms, 99)
 }

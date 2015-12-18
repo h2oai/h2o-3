@@ -4,7 +4,7 @@ source('../../h2o-runit.R')
 # Test PCA on arrests.csv
 test.pca.arrests <- function(conn) {
   Log.info("Importing arrests.csv data...\n")
-  arrests.hex <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"))
+  arrests.hex <- h2o.uploadFile( locate("smalldata/pca_test/USArrests.csv"))
   arrests.sum <- summary(arrests.hex)
   print(arrests.sum)
 

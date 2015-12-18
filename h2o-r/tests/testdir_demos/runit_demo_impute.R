@@ -8,7 +8,7 @@ cp <- function(this) this[1:nrow(this), 1:ncol(this)]
 numNAs <- function(col) sum(is.na(col))
 
 conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
-prostate.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_missing.csv"), "prostate.hex")
+prostate.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate_missing.csv"), "prostate.hex")
 dim(prostate.hex)
 
 print("Summary of the data in iris_missing.csv")

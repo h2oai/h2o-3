@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 # Test k-means clustering on R's iris dataset
 test.km.iris <- function(conn) {
-  iris.hex <- as.h2o(conn, iris)
+  iris.hex <- as.h2o(iris)
   start <- iris[c(2,70,148),1:4]
   start.hex <- iris.hex[c(2,70,148),1:4]
 

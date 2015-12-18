@@ -43,7 +43,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   if (!is(trainingFrame, "H2OFrame")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
   if (!is(trainingFrame, "H2OFrame")) stop("Could not evaluate `trainingFrame` as an H2OFrame object")
 
-  params <- list(training_frame = trainingFrame@frame_id,
+  params <- list(training_frame = h2o.getId(trainingFrame),
                  wordModel = wordModel,
                  normModel = normModel,
                  minWordFreq = minWordFreq,
@@ -54,11 +54,11 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
                  initLearningRate = initLearningRate,
                  epochs = epochs)
 
-  res <- .h2o.__remoteSend(trainingFrame@conn, .h2o.__W2V, .params = params)
-  .h2o.__waitOnJob(trainingFrame@conn, res$job)
-  dest_key <- .h2o.__remoteSend(trainingFrame@conn, paste0(.h2o.__JOBS, "/", res$job))$jobs[[1L]]$dest$name
-  w2vmodel <- h2o.getModel(dest_key, trainingFrame@conn)
-  new("H2OW2V", h2o = trainingFrame@conn, key = dest_key, train.data=trainingFrame)
+  res <- .h2o.__remoteSend(.h2o.__W2V, .params = params)
+  .h2o.__waitOnJob(res$job)
+  dest_key <- .h2o.__remoteSend(paste0(.h2o.__JOBS, "/", res$job))$jobs[[1L]]$dest$name
+  w2vmodel <- h2o.getModel(dest_key)
+  new("H2OW2V", key = dest_key, train.data=trainingFrame)
 }
 
 ##
@@ -78,7 +78,7 @@ function(word2vec, target, count) {
 
   params <- list(key = word2vec@model_id, target=target, cnt=count)
   if (length(target) == 1L) {
-    res <- .h2o.__remoteSend(word2vec@conn, .h2o.__SYNONYMS, .params = params)
+    res <- .h2o.__remoteSend(.h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
     fr[with(fr, order(-cosine.similarity)),]
   } else {
@@ -86,7 +86,7 @@ function(word2vec, target, count) {
 #    vecs <- lapply(target, h2o.transform, word2vec)
 #    vec <- colSums(as.data.frame(vecs))
 #    params$vec <- vec
-#    res <- .h2o.__remoteSend(data@conn, .h2o.__SYNONYMS, params)
+#    res <- .h2o.__remoteSend(.h2o.__SYNONYMS, params)
 #    return(h2o.getFrame(res$key))
   }
 }
@@ -103,6 +103,6 @@ function(word2vec, target, count) {
 #  if (length(target) > 1) stop("`target` must be a single word")
 #
 #  params <- params <- c(data = word2vec@word2vec@model_id, target = target, word2vec@params)
-#  res <- .h2o.__remoteSend(data@conn, .h2o.__TRANSFORM, params)
+#  res <- .h2o.__remoteSend(.h2o.__TRANSFORM, params)
 #  res$vec
 #})

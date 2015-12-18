@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
 test.gbm.mult.accessors <- function(conn) {
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")

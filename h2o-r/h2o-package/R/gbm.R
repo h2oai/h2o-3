@@ -115,6 +115,6 @@ h2o.gbm <- function(x, y, training_frame,
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
 
-  .h2o.createModel(training_frame@conn, 'gbm', parms)
+  .h2o.createModel('gbm', parms)
 }
 

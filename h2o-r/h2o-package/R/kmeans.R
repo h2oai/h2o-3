@@ -78,7 +78,7 @@ h2o.kmeans <- function(training_frame, x, k,
     # Convert user-specified starting points to H2OFrame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
       if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-      init <- as.h2o(init, training_frame@conn)
+      init <- as.h2o(init)
     }
     parms[["user_points"]] <- init
     # Set k
@@ -95,5 +95,5 @@ h2o.kmeans <- function(training_frame, x, k,
   }
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'kmeans', parms)
+  .h2o.createModel('kmeans', parms)
 }

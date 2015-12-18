@@ -7,12 +7,11 @@
 #' @import methods
 #' @import RCurl
 #' @importFrom graphics barplot lines
-#' @importFrom rjson fromJSON
-#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot
+#' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot na.omit
 #' @importFrom statmod tweedie
 #' @importFrom tools md5sum
 #' @importFrom utils download.file packageVersion read.csv
-#'           setTxtProgressBar txtProgressBar URLencode write.csv
+#'           setTxtProgressBar txtProgressBar URLencode write.csv head tail
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   GET & POST
@@ -20,22 +19,29 @@
 
 .skip_if_not_developer <- function() {
   # TODO: Verify this function serves a useful purpose
-  if (!(Sys.getenv("USER") %in% c("tomk", "amy")))
+  if (!(Sys.getenv("USER") %in% c("cliffc", "tomk", "amy")))
     return(TRUE)
   FALSE
 }
 
-.h2o.calcBaseURL <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix) {
+.h2o.calcBaseURL <- function(conn,h2oRestApiVersion, urlSuffix) {
+  if( missing(conn) ) conn <- h2o.getConnection()
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
 
+  if (conn@https) {
+    scheme = "https"
+  } else {
+    scheme = "http"
+  }
+
   if (missing(h2oRestApiVersion))
-    sprintf("http://%s:%s/%s", conn@ip, as.character(conn@port), urlSuffix)
+    sprintf("%s://%s:%s/%s", scheme, conn@ip, as.character(conn@port), urlSuffix)
   else
-    sprintf("http://%s:%s/%s/%s", conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
+    sprintf("%s://%s:%s/%s/%s", scheme, conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
 }
 
-.h2o.doRawREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
   timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
@@ -57,7 +63,23 @@
     print(timeout_secs)
   }
 
-  url = .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
+  url = .h2o.calcBaseURL(conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
+
+  opts = curlOptions()
+  if (!is.na(conn@username)) {
+    if (is.na(conn@password)) {
+      stop("Password not specified")
+    }
+
+    userpwd = sprintf("%s:%s", conn@username, conn@password)
+    basicAuth = 1L
+    opts = curlOptions(userpwd = userpwd, httpauth = basicAuth, .opts = opts)
+  }
+  if (conn@https) {
+    if (conn@insecure) {
+      opts = curlOptions(ssl.verifypeer = 0L, .opts = opts)
+    }
+  }
 
   queryString = ""
   i = 1L
@@ -105,30 +127,37 @@
   beginTimeSeconds = as.numeric(proc.time())[3L]
 
   tmp <- NULL
-  if (method == "GET") {
-    h = basicHeaderGatherer()
-    tmp = tryCatch(getURL(url = url,
-                          headerfunction = h$update,
-                          useragent = R.version.string,
-                          timeout = timeout_secs),
-                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+  if ((method == "GET") || (method == "DELETE")) {
+    h <- basicHeaderGatherer()
+    t <- basicTextGatherer(.mapUnicode = FALSE)
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                httpheader = c('Connection' = 'close'),
+                                verbose = FALSE,
+                                timeout = timeout_secs,
+                                .opts = opts),
+                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
-      payload = tmp
+      payload = t$value()
     }
   } else if (! missing(fileUploadInfo)) {
     stopifnot(method == "POST")
     h = basicHeaderGatherer()
-    t = basicTextGatherer()
+    t = basicTextGatherer(.mapUnicode = FALSE)
     tmp = tryCatch(postForm(uri = url,
                             .params = list(fileUploadInfo = fileUploadInfo),
                             .opts=curlOptions(writefunction = t$update,
                                               headerfunction = h$update,
                                               useragent = R.version.string,
-                                              httpheader = c('Expect' = ''),
+                                              httpheader = c('Expect' = '', 'Connection' = 'close'),
                                               verbose = FALSE,
-                                              timeout = timeout_secs)),
+                                              timeout = timeout_secs,
+                                              .opts = opts)),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
@@ -137,39 +166,23 @@
     }
   } else if (method == "POST") {
     h = basicHeaderGatherer()
-    t = basicTextGatherer()
+    t = basicTextGatherer(.mapUnicode = FALSE)
     tmp = tryCatch(curlPerform(url = url,
                                postfields = postBody,
                                writefunction = t$update,
                                headerfunction = h$update,
                                useragent = R.version.string,
-                               httpheader = c('Expect' = ''),
+                               httpheader = c('Expect' = '', 'Connection' = 'close'),
                                verbose = FALSE,
-                               timeout = timeout_secs),
+                               timeout = timeout_secs,
+                               .opts = opts),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
       payload = t$value()
     }
-  } else if (method == "DELETE") {
-    h <- basicHeaderGatherer()
-    t <- basicTextGatherer()
-    tmp <- tryCatch(curlPerform(url = url,
-                                customrequest = method,
-                                writefunction = t$update,
-                                headerfunction = h$update,
-                                useragent=R.version.string,
-                                verbose = FALSE,
-                                timeout = timeout_secs),
-                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    if (! .__curlError) {
-      httpStatusCode = as.numeric(h$value()["status"])
-      httpStatusMessage = h$value()["statusMessage"]
-      payload = t$value()
-    }
-  }
-  else {
+  } else {
     message = sprintf("Unknown HTTP method %s", method)
     stop(message)
   }
@@ -214,7 +227,6 @@
 #'     $httpStatusMessage  -- A string describing the httpStatusCode.
 #'     $payload            -- The raw response payload as a character vector.
 #'
-#' @param conn An H2OConnection object
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, the version prefix is skipped.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
@@ -239,7 +251,6 @@
 #'     $httpStatusMessage  -- A string describing the httpStatusCode.
 #'     $payload            -- The raw response payload as a character vector.
 #'
-#' @param conn An H2OConnection object
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, the version prefix is skipped.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
@@ -265,45 +276,43 @@
 
 #' Just like doRawGET but fills in the default h2oRestApiVersion if none is provided
 #'
-#' @param conn An H2OConnection object
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
-.h2o.doGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, ...) {
-  .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+.h2o.doGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
+  .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
               parms = parms, method = "GET", ...)
 }
 
 #' Just like doRawPOST but fills in the default h2oRestApiVersion if none is provided
 #'
-#' @param conn An H2OConnection object
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
-.h2o.doPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, ...) {
-  .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+.h2o.doPOST <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
+  .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
               parms = parms, method = "POST", ...)
 }
 
-.h2o.doSafeREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
-  stopifnot(is(conn, "H2OConnection"))
+.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
   if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
 
-  rv = .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+  rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                    parms = parms, method = method, fileUploadInfo = fileUploadInfo, ...)
 
   if (rv$curlError) {
+  
     stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
   } else if (rv$httpStatusCode != 200) {
     cat("\n")
     cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
     cat("\n")
 
-    jsonObject = fromJSON(rv$payload)
+    jsonObject = jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE)
 
     exceptionType = jsonObject$exception_type
     if (! is.null(exceptionType)) {
@@ -333,13 +342,12 @@
 #' If a failure occurred, then stop() is called with an error message.
 #' Since all necessary error checking is done inside this call, the valid payload is directly returned if the function successfully finishes without calling stop().
 #'
-#' @param conn An H2OConnection object
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @return The raw response payload as a character vector
-.h2o.doSafeGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, ...) {
-  .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+.h2o.doSafeGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
+  .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                   parms = parms, method = "GET", ...)
 }
 
@@ -349,14 +357,13 @@
 #' If a failure occurred, then stop() is called with an error message.
 #' Since all necessary error checking is done inside this call, the valid payload is directly returned if the function successfully finishes without calling stop().
 #'
-#' @param conn An H2OConnection object
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @return The raw response payload as a character vector
-.h2o.doSafePOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
-  .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+.h2o.doSafePOST <- function(h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
+  .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                   parms = parms, method = "POST", fileUploadInfo = fileUploadInfo, ...)
 }
 
@@ -390,6 +397,7 @@
           tbl <- do.call(cbind, lapply(x$data, sapply, function(cell) if (is.null(cell)) "" else cell))
         cnms <- sapply(x$columns, `[[`, "name")
         fmts <- sapply(x$columns, `[[`, "format")
+        descr <- x$description
         if( x$name=="Confusion Matrix" ) {
           colnames(tbl) <- make.unique(cnms)
           rownames(tbl) <- make.unique(c(cnms[1:(length(cnms)-2)], "Totals"))
@@ -426,6 +434,7 @@
         if( x$name == "Confusion Matrix") attr(tbl, "header") <- paste0(x$name, " - (", x$description, ")")
         else                              attr(tbl, "header")  <- x$name
         attr(tbl, "formats") <- fmts
+        attr(tbl, "description")   <- descr
         oldClass(tbl) <- c("H2OTable", "data.frame")
         x <- tbl
       }
@@ -434,13 +443,19 @@
     }
     x
   }
-  res <- processMatrices(fromJSON(txt, ...))
+  res <- processMatrices(txt, ...)
   processTables(res)
 }
 
+
 .format.helper <- function(x, format) {
-    if( is.list(x) ) lapply(x, .format.helper, format)
-    else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+    tryCatch(
+      if( is.list(x) ) lapply(x, .format.helper, format)
+      else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+    , error=function(e) {
+      print("\n\n Format Error \n\n")
+      print("x:"); print(x); print("format: "); print(format); print(e)
+    })
 }
 
 #' Print method for H2OTable objects
@@ -456,10 +471,11 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   # format columns
   formats <- attr(x, "formats")
   xx <- x
-
-  for (j in seq_along(x)) {
-    if( formats[j] == "%d" ) formats[j] <- "%f"
-    xx[[j]] <- .format.helper(x[[j]], formats[j])
+  if( !is.null(formats) ) {  # might be NULL if resulted from slicing H2OTable (no need for full blown slice method on H2OTable... allow to be data frame at that point)
+    for (j in seq_along(x)) {
+      if( formats[j] == "%d" ) formats[j] <- "%.f"
+      xx[[j]] <- .format.helper(x[[j]], formats[j])
+    }
   }
   # drop empty columns
   nz <- unlist(lapply(xx, function(y) any(nzchar(y))), use.names = FALSE)
@@ -470,8 +486,13 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
   # use data.frame print method
   xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
-  if( header && !is.null(attr(x, "header")) )
-    cat(attr(x, "header"), ":\n", sep = "")
+  if( header && !is.null(attr(x, "header")) ) {
+    cat(attr(x, "header"), ":", sep="")
+    if( !is.null(attr(x,"description")) )
+      cat(" ", attr(x, "description"),sep="")
+    cat("\n")
+  }
+
 
   # pretty print the frame if it is large (e.g. > 20 rows)
   nr <- nrow(xx)
@@ -491,12 +512,11 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
-.h2o.__remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-  stopifnot(is(conn, "H2OConnection"))
+.h2o.__remoteSend <- function(page, method = "GET", ..., .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
 
-  .h2o.__checkConnectionHealth(conn)
+  .h2o.__checkConnectionHealth()
   timeout <- NULL
   if (length(.params) == 0L) {
     l <- list(...)
@@ -511,11 +531,11 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
   rawREST <- ""
 
-  if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
-  else                    rawREST <- .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
+  if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
+  else                    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
 
   if( raw ) rawREST
-  else      .h2o.fromJSON(rawREST)
+  else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
 }
 
 
@@ -525,14 +545,19 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
 #' Determine if an H2O cluster is up or not
 #'
-#' @param conn H2O connection object
+#' @param conn H2OConnection object
 #' @return TRUE if the cluster is up; FALSE otherwise
+#' @export
 h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
   if (!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
 
   rv <- .h2o.doRawGET(conn = conn, urlSuffix = "")
+  if (rv$curlError) return(FALSE)
 
-  !rv$curlError && ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
+  if (rv$httpStatusCode == 401)
+    warning("401 Unauthorized Access.  Did you forget to provide a username and password?")
+
+  ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
 }
 
 #'
@@ -540,24 +565,22 @@ h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
 #'
 #' A poor man's profiler, but effective.
 #'
-#' @param conn an \linkS4class{H2OConnection} class object.
 #' @export
-h2o.killMinus3 <- function(conn = h2o.getConnection()) {
-  rv <- .h2o.doSafeGET(conn=conn, urlSuffix="KillMinus3")
+h2o.killMinus3 <- function() {
+  rv <- .h2o.doSafeGET(urlSuffix="KillMinus3")
 }
 
 #' Print H2O cluster info
-#'
-#' @param conn H2O connection object
-h2o.clusterInfo <- function(conn = h2o.getConnection()) {
-  stopifnot(is(conn, "H2OConnection"))
+#' @export
+h2o.clusterInfo <- function() {
+  conn = h2o.getConnection()
   if(! h2o.clusterIsUp(conn)) {
     ip = conn@ip
     port = conn@port
     stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
-  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   nodeInfo <- res$nodes
   numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
@@ -567,21 +590,29 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     # to post its information yet.
     threeSeconds = 3L
     Sys.sleep(threeSeconds)
-    res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+    res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   }
 
   nodeInfo <- res$nodes
-  maxMem   <- sum(sapply(nodeInfo,function(x) as.numeric(x['max_mem']))) / (1024 * 1024 * 1024)
+  freeMem  <- sum(sapply(nodeInfo,function(x) as.numeric(x['free_mem']))) / (1024 * 1024 * 1024)
   numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
   allowedCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['cpus_allowed'])))
   clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy'])))
 
-  cat("R is connected to H2O cluster:\n")
+  is_client <- res$is_client
+  if (is.null(is_client)) {
+    is_client <- FALSE
+  }
+  assign("IS_CLIENT", is_client, .pkg.env)
+  m <- ": \n"
+  if( is_client ) m <- " (in client mode): \n"
+
+  cat(paste0("R is connected to the H2O cluster", m))
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
   cat("    H2O cluster version:       ", res$version, "\n")
   cat("    H2O cluster name:          ", res$cloud_name, "\n")
   cat("    H2O cluster total nodes:   ", res$cloud_size, "\n")
-  cat("    H2O cluster total memory:  ", sprintf("%.2f GB", maxMem), "\n")
+  cat("    H2O cluster total memory:  ", sprintf("%.2f GB", freeMem), "\n")
   cat("    H2O cluster total cores:   ", numCPU, "\n")
   cat("    H2O cluster allowed cores: ", allowedCPU, "\n")
   cat("    H2O cluster healthy:       ", clusterHealth, "\n")
@@ -595,9 +626,9 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
-.h2o.__checkConnectionHealth <- function(conn = h2o.getConnection()) {
-  rv <- .h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
-
+.h2o.__checkConnectionHealth <- function() {
+  rv <- .h2o.doGET(urlSuffix = .h2o.__CLOUD)
+  conn = h2o.getConnection()
   if (rv$curlError) {
     ip = conn@ip
     port = conn@port
@@ -612,7 +643,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
          sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
   }
 
-  cloudStatus <- .h2o.fromJSON(rv$payload)
+  cloudStatus <- .h2o.fromJSON(jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE))
   nodes = cloudStatus$nodes
   overallHealthy = TRUE
   for (i in 1:length(nodes)) {
@@ -620,34 +651,34 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     healthy = node$healthy
     if (! healthy) {
       ip_port = node$ip_port
-      warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = T)
+      warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = TRUE)
       overallHealthy = FALSE
     }
   }
   if (! overallHealthy) {
-    url <- .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
-    warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = T)
+    url <- .h2o.calcBaseURL( conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
+    warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = TRUE)
   }
-
-  0L
 }
 
+#'
+#' Check Client Mode Connection
+#'
+#' @export
+h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   Job Polling
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__waitOnJob <- function(conn = h2o.getConnection(), job_key, pollInterval = 1, progressBar = TRUE) {
-  if (progressBar) {
-    pb <- txtProgressBar(style = 3L)
-  }
-
+.h2o.__waitOnJob <- function(job_key, pollInterval = 1, progressBar = TRUE) {
+  if (progressBar) pb <- txtProgressBar(style = 3L)
   keepRunning <- TRUE
   tryCatch({
     while (keepRunning) {
       myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
-      rawResponse <- .h2o.doSafeGET(conn,urlSuffix = myJobUrlSuffix)
-      jsonObject <- .h2o.fromJSON(rawResponse)
+      rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+      jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
       jobs <- jsonObject$jobs
       if (length(jobs) > 1) {
         stop("Job list has more than 1 entry")
@@ -707,23 +738,23 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   },
     interrupt = function(x) {
       url.suf <- paste0(.h2o.__JOBS,"/",job_key,"/cancel")
-      .h2o.doSafePOST(conn,urlSuffix=url.suf)
+      .h2o.doSafePOST(urlSuffix=url.suf)
       message(paste0("\nJob ",job_key," was cancelled.\n"))
       return()
     })
 }
 
 #------------------------------------ Utilities ------------------------------------#
-h2o.getBaseURL <- function(conn = h2o.getConnection()) {
-  stopifnot(is(conn, "H2OConnection"))
-
-  .h2o.calcBaseURL(conn = conn, urlSuffix = "")
+h2o.getBaseURL <- function(conn) {
+  .h2o.calcBaseURL( conn, urlSuffix = "")
 }
 
-h2o.getVersion <- function(conn = h2o.getConnection()) {
-  stopifnot(is(conn, "H2OConnection"))
-
-  res = .h2o.__remoteSend(conn, .h2o.__CLOUD)
+#' Get h2o version
+#'
+#' @rdname h2o.getVersion
+#' @export
+h2o.getVersion <- function() {
+  res = .h2o.__remoteSend(.h2o.__CLOUD)
   res$version
 }
 

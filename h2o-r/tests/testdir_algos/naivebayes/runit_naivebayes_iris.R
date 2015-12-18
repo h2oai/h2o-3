@@ -4,7 +4,7 @@ source('../../h2o-runit.R')
 # Test naive Bayes on iris_wheader.csv
 test.nbayes.iris <- function(conn) {
   Log.info("Importing iris_wheader.csv data...\n")
-  iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris_wheader.csv"))
   iris.sum <- summary(iris.hex)
   print(iris.sum)
    

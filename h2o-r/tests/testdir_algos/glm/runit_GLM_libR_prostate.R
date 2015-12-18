@@ -140,8 +140,8 @@ test.LiblineaR <- function(conn) {
   }
 
   #Log.info("Importing prostate test/train data...\n")
-  #prostate.train.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_train.csv"), "pTrain.hex")
-  #prostate.test.hex  <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_test.csv"), "pTest.hex")
+  #prostate.train.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate_train.csv"), "pTrain.hex")
+  #prostate.test.hex  <- h2o.uploadFile( locate("smalldata/logreg/prostate_test.csv"), "pTest.hex")
   #prostate.train.hex$CAPSULE <- as.factor(prostate.train.hex$CAPSULE)
   #prostate.test.hex$CAPSULE <- as.factor(prostate.test.hex$CAPSULE)
   #prostate.train.dat <- read.csv(locate("smalldata/logreg/prostate_train.csv")) #head(prostate.train.hex,nrow(prostate.train.hex))

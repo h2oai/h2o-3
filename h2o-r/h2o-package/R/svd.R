@@ -49,8 +49,8 @@ h2o.svd <- function(training_frame, x, nv,
   ## -- Force evaluate temporary ASTs -- ##
   delete <- !.is.eval(training_frame)
   if( delete ) {
-    temp_key <- training_frame@frame_id
-    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, frame_id = temp_key)
+    temp_key <- h2o.getId(training_frame)
+    .h2o.eval.frame(ast = training_frame@mutable$ast, frame_id = temp_key)
   }
   
   # Gather user input
@@ -68,5 +68,5 @@ h2o.svd <- function(training_frame, x, nv,
     parms$seed <- seed
   
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'svd', parms, 99)
+  .h2o.createModel('svd', parms, 99)
 }

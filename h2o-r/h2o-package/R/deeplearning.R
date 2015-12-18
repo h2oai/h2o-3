@@ -165,7 +165,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              ...)
 {
   # Pass over ellipse parameters and deprecated parameters
-  dots <- .model.ellipses(list(...))
+#  dots <- .model.ellipses(list(...))
 
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -303,7 +303,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if(!missing(export_weights_and_biases))
     parms$export_weights_and_biases <- export_weights_and_biases
 
-  .h2o.createModel(training_frame@conn, 'deeplearning', parms)
+  .h2o.createModel('deeplearning', parms)
 }
 
 #' Anomaly Detection via H2O Deep Learning Model
@@ -328,8 +328,8 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' head(prostate.anon)
 #' @export
 h2o.anomaly <- function(object, data) {
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
-  res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
+  url <- paste0('Predictions/models/', h2o.getId(object), '/frames/', h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE)
   key <- res$model_metrics[[1L]]$predictions$frame_id$name
 
   h2o.getFrame(key)
@@ -361,8 +361,8 @@ h2o.anomaly <- function(object, data) {
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
 
-  url <- paste0('Predictions/models/', object@model_id, '/frames/', data@frame_id)
-  res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
+  url <- paste0('Predictions/models/', h2o.getId(object), '/frames/', h2o.getId(data))
+  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
   key <- res$predictions$name
 
   h2o.getFrame(key)

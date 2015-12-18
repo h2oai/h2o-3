@@ -16,7 +16,7 @@ heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort)
 
 filePath <- "smalldata/airlines/allyears2k_headers.zip"
-air.hex <- h2o.uploadFile(conn, locate(filePath), "air.hex")
+air.hex <- h2o.uploadFile( locate(filePath), "air.hex")
 
 dim(air.hex)
 colnames(air.hex)
