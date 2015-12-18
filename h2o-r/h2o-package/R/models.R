@@ -1932,10 +1932,6 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       } else if (!(timestep %in% c("duration","number_of_trees"))) {
         stop("timestep for gbm or drf must be one of: duration, number_of_trees")
       }
-      # Delete first row of RF scoring history since it contains NAs & NaNs
-      #if (df$number_of_trees[1] == 0) {
-      #  df <- df[-1,]
-      #}
     } else { # x@algorithm == "deeplearning"
       # Delete first row of DL scoring history since it contains NAs & NaNs
       if (df$samples[1] == 0) {
