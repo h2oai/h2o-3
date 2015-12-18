@@ -19,8 +19,8 @@ phantom.onError = (message, stacktrace) ->
 printUsageAndExit = (message) ->
   console.log "*** #{message} ***"
   console.log 'Usage: phantomjs run-flow.js [--host ip:port] [--timeout seconds] --flow experiment.flow'
-  console.log '    --host ip:port of a running H2O cloud  Defaults to localhost:54321'
-  console.log '    --timeout max allowed runtime          Defaults to 3600'
+  console.log '    --host ip:port of a running H2O cloud      Defaults to localhost:54321'
+  console.log '    --timeout max allowed runtime in seconds   Defaults to forever'
   phantom.exit 1
 
 parseOpts = (args) ->
@@ -40,9 +40,12 @@ hostname = opts['--host'] ? 'localhost:54321'
 console.log "Using host #{hostname}"
 
 timeout = if timeoutArg = opts['--timeout']
-  1000 * parseInt timeoutArg, 10
+  timeoutSecs = parseInt timeoutArg, 10
+  if isNaN timeoutSecs
+    printUsageAndExit "Invalid --timeout: #{timeoutArg}"
+  1000 * timeoutSecs
 else
-  3600000
+  Infinity
 
 console.log "Using timeout #{timeout}ms"
 
