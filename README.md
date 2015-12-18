@@ -193,6 +193,7 @@ Python tests require:
     pip install pandas
     pip install statsmodels
     pip install patsy
+    pip install future
 
 ### 4.3. Setup on Windows
 
