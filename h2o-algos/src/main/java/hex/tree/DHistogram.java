@@ -334,7 +334,7 @@ public final class DHistogram extends Iced {
     // but we might have NA's in THIS column...
     double var = ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins];
     if( var == 0 ) {
-      assert isConstantResponse();
+//      assert isConstantResponse();
       return null;
     }
     // If variance is really small, then the predictions (which are all at
