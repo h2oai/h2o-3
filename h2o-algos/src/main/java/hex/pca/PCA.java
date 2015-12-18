@@ -206,6 +206,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       DataInfo dinfo = null;
 
       try {
+        Scope.enter();
         init(true);   // Initialize parameters
         _parms.read_lock_frames(PCA.this); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
@@ -345,6 +346,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         _parms.read_unlock_frames(PCA.this);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
+        Scope.exit();
       }
       tryComplete();
     }

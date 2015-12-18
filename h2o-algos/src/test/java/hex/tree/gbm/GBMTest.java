@@ -63,7 +63,8 @@ public class GBMTest extends TestUtil {
 
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
-      double sq_err = new MathUtils.SquareError().doAll(job.response(),fr2.vecs()[0])._sum;
+      //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced 
+      double sq_err = new MathUtils.SquareError().doAll(fr.vecs()[1],fr2.vecs()[0])._sum;
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.12337641386,mse,0.1);
       assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);
@@ -149,7 +150,7 @@ public class GBMTest extends TestUtil {
               int prep(Frame fr) {
                 fr.remove("ID").remove(); // Remove not-predictive ID
                 int ci = fr.find("RACE"); // Change RACE to categorical
-                Scope.track(fr.replace(ci,fr.vecs()[ci].toCategoricalVec())._key);
+                Scope.track(fr.replace(ci,fr.vecs()[ci].toCategoricalVec()));
                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
               }
             }, false, Distribution.Family.bernoulli);
@@ -166,7 +167,7 @@ public class GBMTest extends TestUtil {
       int idx = prep.prep(fr); // hack frame per-test
       if (family == Distribution.Family.bernoulli || family == Distribution.Family.multinomial) {
         if (!fr.vecs()[idx].isCategorical()) {
-          Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec())._key);
+          Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec()));
         }
       }
       DKV.put(fr);             // Update frame after hacking it
@@ -225,7 +226,7 @@ public class GBMTest extends TestUtil {
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");    // Convert response to categorical
-      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec())._key);
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -267,7 +268,7 @@ public class GBMTest extends TestUtil {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");
-      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec())._key);   // Convert response 'Angaus' to categorical
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -351,7 +352,7 @@ public class GBMTest extends TestUtil {
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       fr.remove("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
-      Scope.track(fr.replace(ci, fr.vecs()[ci].toCategoricalVec())._key);   // Convert response 'Angaus' to categorical
+      Scope.track(fr.replace(ci, fr.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(fr);                       // Update after hacking
       parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -504,11 +505,11 @@ public class GBMTest extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
-      Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec())._key);   // Convert response 'C785' to categorical
+      Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
       DKV.put(tfr);
 
       vfr = parse_test_file("bigdata/laptop/mnist/test.csv.gz");
-      Scope.track(vfr.replace(784, vfr.vecs()[784].toCategoricalVec())._key);   // Convert response 'C785' to categorical
+      Scope.track(vfr.replace(784, vfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
       DKV.put(vfr);
 
       // Same parms for all
@@ -712,7 +713,7 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       tfr = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
-      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec())._key);
+      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -753,8 +754,8 @@ public class GBMTest extends TestUtil {
       tfr = parse_test_file("./bigdata/covktr.csv");
       vfr = parse_test_file("./bigdata/covkts.csv");
       int idx = tfr.find("V55");
-      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toCategoricalVec())._key);
-      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toCategoricalVec())._key);
+      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toCategoricalVec()));
+      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toCategoricalVec()));
       DKV.put(tfr);
       DKV.put(vfr);
 
@@ -1402,8 +1403,8 @@ public class GBMTest extends TestUtil {
         for (String s : new String[]{
                 "Merit", "Class"
         }) {
-          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec())._key);
-          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toCategoricalVec())._key);
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec()));
+          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toCategoricalVec()));
         }
         DKV.put(tfr);
         DKV.put(vfr);

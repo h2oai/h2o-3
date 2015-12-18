@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 public class GLRMCategoricalTest extends TestUtil {
   public final double TOLERANCE = 1e-6;
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   private static String colFormat(String[] cols, String format) {
     int[] idx = new int[cols.length];
@@ -71,6 +71,7 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._max_iterations = 1000;
 
       try {
+        Scope.enter();
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
@@ -82,6 +83,7 @@ public class GLRMCategoricalTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
+        Scope.exit();
       }
     } catch (Throwable t) {
       t.printStackTrace();
@@ -102,7 +104,7 @@ public class GLRMCategoricalTest extends TestUtil {
       Scope.enter();
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -158,7 +160,7 @@ public class GLRMCategoricalTest extends TestUtil {
     try {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -198,6 +200,7 @@ public class GLRMCategoricalTest extends TestUtil {
 
             GLRM job = new GLRM(parms);
             try {
+              Scope.enter();
               model = job.trainModel().get();
               Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
               model.score(train).delete();
@@ -207,6 +210,7 @@ public class GLRMCategoricalTest extends TestUtil {
               throw t;
             } finally {
               job.remove();
+              Scope.exit();
             }
           } catch (Throwable t) {
             t.printStackTrace();
@@ -233,7 +237,7 @@ public class GLRMCategoricalTest extends TestUtil {
     try {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec())._key);
+        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
@@ -328,7 +332,7 @@ public class GLRMCategoricalTest extends TestUtil {
       Scope.enter();
       fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toCategoricalVec())._key);
+        Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toCategoricalVec()));
       fr.remove("ID").remove();
       DKV.put(fr._key, fr);
       DataInfo dinfo = new DataInfo(Key.make(), fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);

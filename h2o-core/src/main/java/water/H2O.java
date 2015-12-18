@@ -1503,7 +1503,7 @@ final public class H2O {
     if( old != null && val == null ) old.removePersist(); // Remove the old guy
     if( val != null ) {
       Cleaner.dirty_store(); // Start storing the new guy
-      if( old==null ) Scope.track(key); // New Key - start tracking
+      if( old==null ) Scope.track_internal(key); // New Key - start tracking
     }
     return old; // Return success
   }

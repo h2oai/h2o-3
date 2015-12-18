@@ -549,7 +549,7 @@ public class Frame extends Lockable<Frame> {
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs(),fr.numCols()); return this; }
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs().clone(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
@@ -1284,7 +1284,7 @@ public class Frame extends Lockable<Frame> {
     H2O.submitTask(new RebalanceDataSet(this, f, k)).join();
     Frame f2 = (Frame)k.get();
     DKV.remove(k);
-    for (Vec v : f2.vecs()) Scope.track(v._key);
+    for (Vec v : f2.vecs()) Scope.track(v);
     return f2.vecs();
   }
 

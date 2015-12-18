@@ -11,18 +11,18 @@ h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit w
   levelone <- object$levelone  #includes y
   # Check that levelone is not NULL
   if (is.null(levelone)) {
-    stop("The `metalearn` function requires that the `levelone` object contain an H2O H2OFrame (not NULL)")
+    stop("The `metalearn` function requires that the `levelone` object contain an H2OFrame (not NULL)")
   }
   N <- nrow(levelone)
   family <- object$family
   runtime <- object$runtime
   learner <- names(object$basefits)
   
-  # object$levelone may be a key or an H2O H2OFrame object
-  if ((!inherits(levelone, "H2OFrame") && !inherits(levelone, "H2OH2OFrame")))
+  # object$levelone may be a key or an H2OFrame object
+  if ((!inherits(levelone, "Frame") && !inherits(levelone, "H2OFrame")))
     tryCatch(levelone <- h2o.getFrame(levelone),
              error = function(err) {
-               stop("object$levelone must be a valid H2O H2OFrame or id")
+               stop("object$levelone must be a valid H2OFrame or id")
              })
   
   

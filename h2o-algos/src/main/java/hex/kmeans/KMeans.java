@@ -256,6 +256,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
       KMeansModel model = null;
       try {
+        Scope.enter();
         init(true);
         // Do lock even before checking the errors, since this block is finalized by unlock
         // (not the best solution, but the code is more readable)
@@ -329,6 +330,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(KMeans.this);
+        Scope.exit();
       }
       tryComplete();
     }
@@ -546,10 +548,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       int N = cs.length - (_hasWeight?1:0);
       double[] values = new double[N];
       ArrayList<double[]> list = new ArrayList<>();
-      Random rand = RandomUtils.getRNG(_seed + cs[0].start());
+      Random rand = RandomUtils.getRNG(0);
       ClusterDist cd = new ClusterDist();
 
       for( int row = 0; row < cs[0]._len; row++ ) {
+        rand.setSeed(_seed + cs[0].start()+row);
         data(values, cs, row, _means, _mults, _modes);
         double sqr = minSqr(_centers, values, _isCats, cd);
         if( _probability * sqr > rand.nextDouble() * _sqr )

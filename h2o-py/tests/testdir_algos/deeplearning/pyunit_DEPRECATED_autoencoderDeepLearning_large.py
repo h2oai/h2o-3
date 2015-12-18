@@ -17,7 +17,7 @@ def deeplearning_autoencoder():
     test_hex[resp] = test_hex[resp].asfactor()
 
     # split data into two parts
-    sid = train_hex[0].runif(1234)
+    sid = train_hex[0].runif(0)
 
     # unsupervised data for autoencoder
     train_unsupervised = train_hex[sid >= 0.5]

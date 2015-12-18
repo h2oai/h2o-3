@@ -17,7 +17,7 @@ check.deeplearning_autoencoder <- function() {
      test_hex[,resp] <- as.factor(test_hex[,resp])
 
      # split data into two parts (first part for unsupervised training, second part for supervised training)
-     sid <- h2o.runif(train_hex, 1234)
+     sid <- h2o.runif(train_hex, seed=0)
      # split <- h2o.splitFrame(train_hex, 0.5)
 
 

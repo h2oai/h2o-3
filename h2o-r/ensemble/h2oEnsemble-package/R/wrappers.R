@@ -87,7 +87,7 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = "",
                                      fold_assignment = c("AUTO", "Random", "Modulo"), 
                                      keep_cross_validation_predictions = TRUE, ...) {
   
-  # Currently ignoring the `family` arg, will get class from outcome in H2OH2OFrame
+  # Currently ignoring the `family` arg, will get class from outcome in H2OFrame
   # TO DO: Add a check to make sure that outcome/family type is correct
   h2o.randomForest(x = x, y = y, training_frame = training_frame, model_id = model_id, 
                    validation_frame = validation_frame, mtries = mtries, sample_rate = sample_rate, 
@@ -134,7 +134,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = "",
                                      fold_column = NULL, fold_assignment  = c("AUTO", "Random", "Modulo"),
                                      keep_cross_validation_predictions = TRUE, ...) {
   
-  # Currently ignoring the `family` arg, will get class from outcome in H2OH2OFrame
+  # Currently ignoring the `family` arg, will get class from outcome in H2OFrame
   h2o.deeplearning(x = x, y = y, training_frame = training_frame, model_id = model_id,
                    overwrite_with_best_model = overwrite_with_best_model, 
                    validation_frame = validation_frame, checkpoint = checkpoint, 

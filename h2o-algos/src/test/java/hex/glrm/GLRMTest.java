@@ -6,11 +6,9 @@ import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -107,6 +105,7 @@ public class GLRMTest extends TestUtil {
       parms._seed = seed;
 
       try {
+        Scope.enter();
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
@@ -118,6 +117,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
+        Scope.exit();
       }
     } catch (Throwable t) {
       t.printStackTrace();
@@ -149,6 +149,7 @@ public class GLRMTest extends TestUtil {
       parms._max_iterations = 2000;
 
       try {
+        Scope.enter();
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
@@ -160,6 +161,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
+        Scope.exit();
       }
     } catch (Throwable t) {
       t.printStackTrace();
@@ -199,6 +201,7 @@ public class GLRMTest extends TestUtil {
 
       GLRM job = new GLRM(parms);
       try {
+        Scope.enter();
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
         // checkStddev(sval, model._output._singular_vals, 1e-4);
@@ -212,6 +215,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
+        Scope.exit();
       }
     } catch (Throwable t) {
       t.printStackTrace();
@@ -361,6 +365,7 @@ public class GLRMTest extends TestUtil {
       parms._max_iterations = 2000;
 
       try {
+        Scope.enter();
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
@@ -374,6 +379,7 @@ public class GLRMTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
+        Scope.exit();
       }
     } catch (Throwable t) {
       t.printStackTrace();
@@ -397,6 +403,7 @@ public class GLRMTest extends TestUtil {
     long seed = 1234;
 
     try {
+      Scope.enter();
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
@@ -493,6 +500,7 @@ public class GLRMTest extends TestUtil {
     } finally {
       init.delete();
       if (train != null) train.delete();
+      Scope.exit();
     }
   }
 }

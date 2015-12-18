@@ -4,13 +4,6 @@ This document describes how to define the models and how to interpret the model,
 
 ##Commonalities 
 
-###Missing Value Handling for Training
-
-If missing values are found in the validation frame during model training or during the scoring process for creating predictions, the missing values are automatically imputed. 
-
-If the missing values are found during POJO scoring, the answer is converted to `NaN`. 
-
-
 ###Quantiles
 
 
@@ -485,7 +478,9 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **mtries**: Specify the columns to randomly select at each level. If the default value of `-1` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). The range is -1 to >=1. 
 
-- **sample\_rate**: Specify the sample rate. The range is 0 to 1.0. 
+- **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
+
+- **col\_sample_rate**: Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -595,6 +590,20 @@ By default, the following output displays:
 - **How is variable importance calculated for DRF?**
 
 Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result. 
+
+- **How is column sampling implemented for DRF?**
+
+For an example model using: 
+
+- 100 columns
+- `col_sample_rate_per_tree` is 0.602
+- `mtries` is -1 or 7 (refers to the number of active predictor columns for the dataset)
+
+For each tree, the floor is used to determine the number - for this example, (0.602*100)=60 out of the 100 - of columns that are randomly picked. For classification cases where `mtries=-1`, the square root - for this example, (100)=10 columns - are then randomly chosen for each split decision (out of the total 60). 
+
+For regression, the floor - in this example, (100/3)=33 columns - is used for each split by default. If `mtries=7`, then 7 columns are picked for each split decision (out of the 60). 
+
+`mtries` is configured independently of `col_sample_rate_per_tree`, but it can be limited by it. For example, if `col_sample_rate_per_tree=0.01`, then there's only one column left for each split, regardless of how large the value for `mtries` is.
 
 
 ###DRF Algorithm 
@@ -1175,6 +1184,15 @@ The output for GBM includes the following:
  
 This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature. 
 
+- **How is column sampling implemented for GBM?**
+
+For an example model using: 
+
+- 100 columns
+- `col_sample_rate_per_tree=0.754`
+- `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
+
+For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
 
 
 

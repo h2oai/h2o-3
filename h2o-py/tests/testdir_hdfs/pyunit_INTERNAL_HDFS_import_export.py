@@ -6,7 +6,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 import os
 
 
-def test_hadoop():
+def test_hdfs_io():
     '''
     Test H2O read and write to hdfs
     '''
@@ -38,7 +38,7 @@ def test_hadoop():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_hadoop)
+    pyunit_utils.standalone_test(test_hdfs_io)
 else:
-    test_hadoop()
+    test_hdfs_io()
 

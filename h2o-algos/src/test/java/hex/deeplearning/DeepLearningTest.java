@@ -442,7 +442,7 @@ public class DeepLearningTest extends TestUtil {
     try {
       frTrain = parse_test_file(fnametrain);
       Vec removeme = unifyFrame(dl, frTrain, prep, classification);
-      if (removeme != null) Scope.track(removeme._key);
+      if (removeme != null) Scope.track(removeme);
       DKV.put(frTrain._key, frTrain);
       // Configure DL
       dl._train = frTrain._key;
@@ -1003,7 +1003,7 @@ public class DeepLearningTest extends TestUtil {
         for (String s : new String[]{
             "Merit", "Class"
         }) {
-          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec())._key);
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec()));
         }
         DKV.put(tfr);
         DeepLearningParameters parms = new DeepLearningParameters();
@@ -1056,7 +1056,7 @@ public class DeepLearningTest extends TestUtil {
         for (String s : new String[]{
             "Merit", "Class"
         }) {
-          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec())._key);
+          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec()));
         }
         DKV.put(tfr);
         DeepLearningParameters parms = new DeepLearningParameters();
@@ -1102,7 +1102,7 @@ public class DeepLearningTest extends TestUtil {
       for (String s : new String[]{
           "Merit", "Class"
       }) {
-        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec())._key);
+        Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec()));
       }
       DKV.put(tfr);
       DeepLearningParameters parms = new DeepLearningParameters();
