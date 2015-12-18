@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import water.DKV;
 import water.Job;
 import water.H2O;
+import water.Scope;
 import water.fvec.Vec;
 import water.util.Log;
 
@@ -73,6 +74,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       float tDiff;
 
       try {
+        Scope.enter();
         _parms.read_lock_frames(Word2Vec.this);
         init(true);
 
@@ -112,6 +114,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         updateModelOutput();
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Word2Vec.this);
+        Scope.exit();
       }
       tryComplete();
     }

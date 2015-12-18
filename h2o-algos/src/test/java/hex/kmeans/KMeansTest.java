@@ -45,7 +45,7 @@ public class KMeansTest extends TestUtil {
     return kmm;
   }
 
-  //PUBDEV-781: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
+  //PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
   private static void checkConsistency(KMeansModel kmm) {
     //FIXME: TODO: remove this false, and fix the algo! PUBDEV-871
     if (false) {
@@ -395,6 +395,7 @@ public class KMeansTest extends TestUtil {
     }
   }
 
+  @Ignore
   @Test public void testValidationSame() {
     for (boolean categorical : new boolean[]{true,false}) {
       for (boolean missing : new boolean[]{/*true,*/false}) { //FIXME: Enable missing PUBDEV-871
@@ -495,11 +496,11 @@ public class KMeansTest extends TestUtil {
     }
   }
 
-  double _ref_betweenss = 528.5603501427154;
-  double _ref_tot_withinss = 167.43963679143025;
+  double _ref_betweenss = 429.75370357154713;
+  double _ref_tot_withinss = 266.24628336259855;
   double _ref_totss = 695.9999869341457;
-  double _ref_withinss[] = new double[]{ 67.82696780398858, 48.15831080234685, 43.36554094593457};
-  long _ref_size[] = new long[]{54, 50, 46};
+  double _ref_withinss[] = new double[]{ 195.73312749536535, 17.291967560290328, 27.73183120896519};
+  long _ref_size[] = new long[]{96, 32, 22};
 
   @Test
   public void testNfolds() {

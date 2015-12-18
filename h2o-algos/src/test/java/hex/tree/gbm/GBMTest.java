@@ -63,7 +63,8 @@ public class GBMTest extends TestUtil {
 
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
-      double sq_err = new MathUtils.SquareError().doAll(job.response(),fr2.vecs()[0])._sum;
+      //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced 
+      double sq_err = new MathUtils.SquareError().doAll(fr.vecs()[1],fr2.vecs()[0])._sum;
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.12337641386,mse,0.1);
       assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);

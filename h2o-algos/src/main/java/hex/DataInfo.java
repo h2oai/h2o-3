@@ -101,7 +101,7 @@ public class DataInfo extends Keyed {
   public final boolean _imputeMissing;
   public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
   public final int [][] _catLvls;
-
+  public String[] _coefNames;
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
   private DataInfo() { super(null); _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
@@ -423,7 +423,8 @@ public class DataInfo extends Keyed {
   public final int fullN(){return _nums + _catOffsets[_cats];}
   public final int largestCat(){return _cats > 0?_catOffsets[1]:0;}
   public final int numStart(){return _catOffsets[_cats];}
-  public final String [] coefNames(){
+  public final String[] coefNames(){
+    if (_coefNames != null) return _coefNames; 
     int k = 0;
     final int n = fullN();
     String [] res = new String[n];
@@ -439,6 +440,7 @@ public class DataInfo extends Keyed {
     }
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
+    _coefNames = res;
     return res;
   }
 

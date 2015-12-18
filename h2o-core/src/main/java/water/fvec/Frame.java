@@ -549,7 +549,7 @@ public class Frame extends Lockable<Frame> {
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs(),fr.numCols()); return this; }
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs().clone(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {

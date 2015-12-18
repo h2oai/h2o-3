@@ -8,6 +8,7 @@ import water.rapids.ASTKFold;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
+import water.fvec.RebalanceDataSet;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.FrameUtils;
@@ -857,7 +858,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _train.remove(_parms._ignored_columns);
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
-
+    // Rebalance train and valid datasets
+    if (expensive && error_count() == 0) {
+      _train = rebalance(_train, false, _key + ".temporary.train");
+      _valid = rebalance(_valid, false, _key + ".temporary.valid");
+    }
+    
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
     // can use them, and otherwise all algos will then be forced to remove
     // them.  Text algos (grep, word2vec) take raw text columns - which are
@@ -989,6 +995,39 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
     }
+  }
+  
+  /**
+   * Rebalance a frame for load balancing
+   * @param original_fr Input frame
+   * @param local Whether to only create enough chunks to max out all cores on one node only
+   * @param name Name of rebalanced frame
+   * @return Frame that has potentially more chunks
+   */
+  
+  protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
+    if (original_fr == null) return null;
+    int chunks = desiredChunks(original_fr, local);
+    if (original_fr.anyVec().nChunks() >= chunks) {
+      Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() + 
+              " chunks. No need to rebalance.");
+      return original_fr;
+    }
+    Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
+    Key newKey = Key.make(name + ".chunks" + chunks);
+    RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
+    H2O.submitTask(rb).join();
+    Frame rebalanced_fr = DKV.get(newKey).get();
+    Scope.track(rebalanced_fr);
+    return rebalanced_fr;
+  }
+  
+  /**
+   * Find desired number of chunks. If fewer, dataset will be rebalanced.
+   * @return Lower bound on number of chunks after rebalancing.
+   */
+  protected int desiredChunks(final Frame original_fr, boolean local) {
+    return Math.min((int) Math.ceil(original_fr.numRows() / 1e3), H2O.NUMCPUS);
   }
 
   public void checkDistributions() {

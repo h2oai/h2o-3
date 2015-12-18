@@ -916,6 +916,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_tInfos[0]._iVec != null)
           _tInfos[0]._iVec.remove();
       }
+      Scope.exit();
     }
     @Override public void onCompletion(CountedCompleter cc) {
       _model.unlock(GLM.this._key);

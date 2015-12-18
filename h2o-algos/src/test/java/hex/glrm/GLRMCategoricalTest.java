@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 public class GLRMCategoricalTest extends TestUtil {
   public final double TOLERANCE = 1e-6;
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   private static String colFormat(String[] cols, String format) {
     int[] idx = new int[cols.length];
@@ -71,6 +71,7 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._max_iterations = 1000;
 
       try {
+        Scope.enter();
         job = new GLRM(parms);
         model = job.trainModel().get();
         Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
@@ -82,6 +83,7 @@ public class GLRMCategoricalTest extends TestUtil {
         throw new RuntimeException(t);
       } finally {
         job.remove();
+        Scope.exit();
       }
     } catch (Throwable t) {
       t.printStackTrace();
@@ -198,6 +200,7 @@ public class GLRMCategoricalTest extends TestUtil {
 
             GLRM job = new GLRM(parms);
             try {
+              Scope.enter();
               model = job.trainModel().get();
               Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
               model.score(train).delete();
@@ -207,6 +210,7 @@ public class GLRMCategoricalTest extends TestUtil {
               throw t;
             } finally {
               job.remove();
+              Scope.exit();
             }
           } catch (Throwable t) {
             t.printStackTrace();
