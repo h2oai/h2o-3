@@ -1743,6 +1743,43 @@ h2o.summary <- function(object, factors=6L, ...) {
   result
 }
 
+#' H2O Description of A Dataset
+#'
+#' Reports the "Flow" style summary rollups on an instance of H2OFrame. Includes
+#' information about column types, mins/maxs/missing/zero counts/stds/number of levels
+#'
+#' @name h2o.describe
+#' @param object An H2O H2OFrame object.
+#' @return A table with the Frame stats.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(path = prosPath)
+#' h2o.describe(prostate.hex)
+#' }
+#' @export
+h2o.describe <- function(frame) {
+  fr.sum <- .h2o.__remoteSend(paste0("Frames/", h2o.getId(frame), "/summary"), method = "GET", `_exclude_fields`="frames/columns/data,frames/columns/domain,frames/columns/histogram_bins,frames/columns/percentiles")$frames[[1]]
+  res <- data.frame(t(sapply(fr.sum$columns, function(col) {
+                                    c(col$label,
+                                      col$type,
+                                      col$missing_count,
+                                      col$zero_count,
+                                      col$positive_infinity_count,
+                                      col$negative_infinity_count,
+                                      col$mins[1],
+                                      col$maxs[1],
+                                      ifelse(col$mean=="NaN", NA, col$mean),
+                                      ifelse(col$sigma=="NaN",NA, col$sigma),
+                                      ifelse(col$type=="enum", col$domain_cardinality, NA)
+                                    )
+         })))
+  names(res) <- c("label", "type", "Missing", "Zeros", "PosInf", "NegInf", "min", "max", "mean", "sigma", "cardinality")
+  res
+}
+
 #' @rdname h2o.summary
 #' @usage \method{summary}{H2OFrame}(object, factors, ...)
 #' @method summary H2OFrame
