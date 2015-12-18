@@ -67,7 +67,7 @@ public class HeartBeatThread extends Thread {
       // with each other.  Stagger them using the hashcode.
       // Run this benchmark *before* testing the heap or GC, so the GC numbers
       // are current as of the send time.
-      if( (counter+Math.abs(H2O.SELF.hashCode())) % 300 == 0) {
+      if( (counter+Math.abs(H2O.SELF.hashCode()*0xDECAF /*spread wider than 1 apart*/)) % 300 == 0) {
         hb._gflops   = (float)Linpack.run(hb._cpus_allowed);
         hb._membw    = (float)MemoryBandwidth.run(hb._cpus_allowed);
       }
