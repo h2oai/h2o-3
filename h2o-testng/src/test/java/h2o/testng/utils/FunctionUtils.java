@@ -739,8 +739,8 @@ public class FunctionUtils {
 
 		positiveData = readTestcaseFile(dataSetCharacteristic, listHeaders, positiveTestcaseFilePath, indexRowHeader,
 				algorithm, false);
-		negativeData = readTestcaseFile(dataSetCharacteristic, listHeaders, negativeTestcaseFilePath, indexRowHeader,
-				algorithm, true);
+//		negativeData = readTestcaseFile(dataSetCharacteristic, listHeaders, negativeTestcaseFilePath, indexRowHeader,
+//				algorithm, true);
 
 		if (positiveData != null && positiveData.length != 0) {
 			numRow += positiveData.length;
@@ -834,8 +834,8 @@ public class FunctionUtils {
 			result[r][1] = rawInput.get(CommonHeaders.test_description);
 			result[r][2] = rawInput.get(CommonHeaders.train_dataset_id);
 			result[r][3] = rawInput.get(CommonHeaders.validate_dataset_id);
-			result[r][4] = dataSetCharacteristic.get(result[r][2]);
-			result[r][5] = dataSetCharacteristic.get(result[r][3]);
+			result[r][4] = dataSetCharacteristic.get(Integer.parseInt((String) result[r][2]));
+			result[r][5] = dataSetCharacteristic.get(Integer.parseInt((String) result[r][3]));
 			result[r][6] = algorithm;
 			result[r][7] = isNegativeTestcase;
 			result[r][8] = rawInput;
@@ -944,20 +944,19 @@ public class FunctionUtils {
 			e.printStackTrace();
 		}
 
+		int response_col;
+		int i = 0;
 		for (String line : lines) {
+			if (i == 0) {
+				i++;
+				continue;
+			}
 			System.out.println("read line: " + line);
 			String[] arr = line.trim().split(",", -1);
-
-			System.out.println("parse to DataSet object");
-			String[] predictorColumnsStrings = arr[3].trim().split(";", -1);
-			int[] predictorColumns= new int[predictorColumnsStrings.length];
-			for(int i = 0; i < predictorColumnsStrings.length; i++) {
-				predictorColumns[i] = Integer.parseInt(predictorColumnsStrings[i]);
+			if(!arr[2].equals("")) {
+				Dataset dataset = new Dataset(Integer.parseInt(arr[0]), arr[1], Integer.parseInt(arr[2]));
+				result.put(Integer.parseInt(arr[0]), dataset);
 			}
-
-			Dataset dataset = new Dataset(Integer.parseInt(arr[0]), arr[1], Integer.parseInt(arr[2]), predictorColumns);
-
-			result.put(Integer.parseInt(arr[0]), dataset);
 		}
 
 		return result;

@@ -17,51 +17,6 @@ public class MySQL {
 	public final static String tuned = "tuned";
 	public final static String tuned_or_defaults = "tuned_or_defaults";
 
-	public static boolean createTable() {
-
-		if (!config.isUsedDB()) {
-			System.out.println("Program is configured don't use database");
-			return false;
-		}
-
-		final String sql = "create table if not exists " + config.getTableName() + "("
-				+ "test_case_id			 VARCHAR(125)," 
-				+ "training_frame_id	 VARCHAR(125),"
-				+ "validation_frame_id	 VARCHAR(125)," 
-				+ "mse_result			 DOUBLE," 
-				+ "auc_result			 DOUBLE,"
-				+ "date					 datetime," 
-				+ "interpreter_version	 VARCHAR(125)," 
-				+ "machine_name			 VARCHAR(125),"
-				+ "total_hosts			 INT," 
-				+ "cpus_per_hosts		 INT," 
-				+ "total_nodes			 INT," 
-				+ "source				 VARCHAR(125),"
-				+ "parameter_list		 TEXT," 
-				+ "git_hash_number		 VARCHAR(125),"
-				+ "tuned_or_defaults	 VARCHAR(125)" 
-				+ ")";
-
-		MySQLConnection connection = new MySQLConnection();
-		Statement statement = null;
-
-		try {
-			statement = connection.createStatement();
-			statement.executeUpdate(sql);
-		}
-		catch (Exception ex) {
-			System.out.println("Can't create table: " + config.getTableName());
-			ex.printStackTrace();
-			return false;
-		}
-		finally {
-			connection.closeConnection();
-		}
-
-		System.out.println("Create successfully table");
-		return true;
-	}
-
 	public static boolean save(HashMap<String,Double> trainingResults, HashMap<String,Double> testingResults,
 														 HashMap<String, String> rawInput) {
 

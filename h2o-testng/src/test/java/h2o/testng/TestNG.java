@@ -40,11 +40,11 @@ public class TestNG extends TestNGUtil {
 		//String dbConfigFilePath = System.getProperty("dbConfigFilePath");
 		String dbConfigFilePath = "/Users/ece/0xdata/h2o-dev/DBConfig.properties";
 
-		algorithm = System.getProperty("algorithm");
-		//algorithm = "drf";
+		//algorithm = System.getProperty("algorithm");
+		algorithm = "glm";
 		size = System.getProperty("size");
 		//testcaseId = System.getProperty("testcaseId");
-		testcaseId = "dl_testcase_13";
+		testcaseId = "406";
 
 		if (StringUtils.isNotEmpty(testcaseId)) {
 			algorithm = "";
@@ -53,12 +53,8 @@ public class TestNG extends TestNGUtil {
 
 		dataSetCharacteristic = FunctionUtils.readDataSetCharacteristic();
 
-		if (StringUtils.isNotEmpty(dbConfigFilePath)) {
-
+		if (StringUtils.isNotEmpty(dbConfigFilePath))
 			MySQLConfig.initConfig().setConfigFilePath(dbConfigFilePath);
-
-			//MySQL.createTable();
-		}
 
 		System.out.println(String.format("run TestNG with algorithm: %s, size: %s, testcaseId: %s", algorithm, size,
 				testcaseId));

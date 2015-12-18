@@ -11,15 +11,13 @@ public class Dataset extends TestUtil{
 	public int dataSetId;
 	public String dataSetURI;
 	public int responseColumn;
-	public int[] predictorColumns;
 	public File dataSetFile;
 	public Frame dataSetFrame;
 
-	public Dataset(int dataSetId, String dataSetURI, int responseColumn, int[] predictorColumns) {
+	public Dataset(int dataSetId, String dataSetURI, int responseColumn) {
 		this.dataSetId = dataSetId;
 		this.dataSetURI = dataSetURI;
 		this.responseColumn = responseColumn;
-		this.predictorColumns = predictorColumns;
 		this.dataSetFile = makeDataSetFile(dataSetURI);
 		try {
 			this.dataSetFrame = TestUtil.parse_test_file(dataSetFile.getCanonicalPath());
