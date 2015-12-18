@@ -37,12 +37,20 @@ public class JCodeGenUtil {
     return new FieldCodeGenerator(fieldName);
   }
 
+  public static <T> LargeArrayGenerator larray(String name, T[] value) {
+    return new LargeArrayGenerator(name, value, 0, value != null ? value.length : 0);
+  }
+
   public static <T> LargeArrayGenerator larray(String name, T[] value, int off, int len) {
     return new LargeArrayGenerator(name, value, off, len);
   }
 
   public static SB s(String s) {
     return new SB(s);
+  }
+
+  public static SB s(Class c) {
+    return new SB().pj(c);
   }
 
   public static SB s() {

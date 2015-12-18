@@ -9,11 +9,13 @@ import water.util.IcedBitSet;
  *  Short short names on purpose; so they don't obscure the printing.
  *  Can't believe this wasn't done long long ago. */
 public final class SB implements JCodeSB<SB> {
+
+  private static final Package JAVA_LANG_PACKAGE = String.class.getPackage();
+
   public final StringBuilder _sb;
   int _indent = 0;
   public SB(        ) { _sb = new StringBuilder( ); }
   public SB(String s) { _sb = new StringBuilder(s); }
-  public SB ps( String s ) { _sb.append("\""); pj(s); _sb.append("\""); return this;  }
   public SB p( String s ) { _sb.append(s); return this; }
   public SB p( float  s ) {
     if( Float.isNaN(s) )
@@ -64,7 +66,17 @@ public final class SB implements JCodeSB<SB> {
     return this;
   }
   /* Append Java string - escape all " and \ */
-  public SB pj( String s ) { _sb.append(escapeJava(s)); return this; }
+  public SB pj( String s ) {
+    _sb.append('"').append(escapeJava(s)).append('"');
+    return this;
+  }
+
+  @Override
+  public SB pj(Class c) {
+    Package p = c.getPackage();
+    _sb.append(p != null && p == JAVA_LANG_PACKAGE ? c.getSimpleName() : c.getCanonicalName());
+    return this;
+  }
 
   public SB pj( int i ) {
     _sb.append(i);

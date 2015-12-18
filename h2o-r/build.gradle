@@ -181,7 +181,6 @@ task cleaner << {
 def testsPath = new File("./tests")
 
 task smokeTest(type: Exec) {
-    println "R smoke test (run.py --wipeall --testsize s)..."
     workingDir testsPath
     commandLine 'python', 'run.py', '--wipeall', '--testsize', 's'
 }

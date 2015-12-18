@@ -14,9 +14,16 @@ public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S>> extends A
 
   @Override
   public void generate(JCodeSB out) {
-    for (CodeGenerator codeGen : this) {
-      codeGen.generate(out);
+    for (int i = 0; i < this.size(); i++) {
+      CodeGenerator cg = this.get(i);
+      cg.generate(out);
     }
+  }
+
+  @Override
+  public boolean add(CodeGenerator codeGenerator) {
+    assert codeGenerator != null : "Ups";
+    return super.add(codeGenerator);
   }
 
   private String id;

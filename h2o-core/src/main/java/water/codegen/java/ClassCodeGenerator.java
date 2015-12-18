@@ -17,9 +17,9 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
   /** Class modifiers - e.g., "public static" */
   int modifiers;
   /** Extend given class */
-  String extendClass;
+  Class extendClass;
   /** Implements interface */
-  String[] interfaces;
+  Class[] interfaces;
   /** Annotation generators */
   CodeGenerator[] acgs;
 
@@ -34,12 +34,12 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
     return this;
   }
 
-  public ClassCodeGenerator withImplements(String ... interfaces) {
+  public ClassCodeGenerator withImplements(Class ... interfaces) {
     this.interfaces = append(this.interfaces, interfaces);
     return this;
   }
 
-  public ClassCodeGenerator withExtend(String extendClass) {
+  public ClassCodeGenerator withExtend(Class extendClass) {
     this.extendClass = extendClass;
     return this;
   }
@@ -99,7 +99,13 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
     // Starts to define class
     sb.p(Modifier.toString(modifiers)).p(" class ").p(name);
     if (extendClass != null) {
-      sb.p(" extends ").p(extendClass);
+      sb.p(" extends ").pj(extendClass);
+    }
+    if (interfaces != null && interfaces.length > 0) {
+      sb.p(" implements ").pj(interfaces[0]);
+      for (int i = 1; i < interfaces.length; i++) {
+        sb.p(", ").pj(interfaces[i]);
+      }
     }
     sb.p(" {").nl();
 

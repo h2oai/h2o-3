@@ -20,9 +20,9 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
   final String name;
 
   private int modifiers;
-  private String[] paramTypes;
+  private Class[] paramTypes;
   private String[] paramNames;
-  private String returnType;
+  private Class returnType = void.class;
 
   protected MethodCodeGenerator(String name) {
     this.name = name;
@@ -35,7 +35,7 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
     return this;
   }
 
-  public MethodCodeGenerator withReturnType(String returnType) {
+  public MethodCodeGenerator withReturnType(Class returnType) {
     this.returnType = returnType;
     return this;
   }
@@ -55,20 +55,16 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
     return this;
   }
 
-  public MethodCodeGenerator withParams(String type, String name) {
+  public MethodCodeGenerator withParams(Class type, String name) {
     this.paramTypes = append(this.paramTypes, type);
     this.paramNames = append(this.paramNames, name);
     return this;
   }
 
-  protected String returnType() {
-    return returnType != null ? returnType : "void";
-  }
-
   @Override
   public void generate(JCodeSB out) {
     // Output method preamble
-    pMethodParams(out.p(Modifier.toString(modifiers)).p(' ').p(returnType()).p(' ').p(name).p('('), paramTypes, paramNames).p(") {").ii(2).nl();
+    pMethodParams(out.p(Modifier.toString(modifiers)).p(' ').pj(returnType).p(' ').p(name).p('('), paramTypes, paramNames).p(") {").ii(2).nl();
     // Generate method body
     super.generate(out);
     // Close method

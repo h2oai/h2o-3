@@ -320,7 +320,7 @@ public class JCodeGen {
     sb.ip("static final class ").p(clzName).p(" implements java.io.Serializable {").ii(1).nl();
     sb.ip("static final void fill(String[] sa) {").ii(1).nl();
     for (int i=0; i<len; i++) {
-      sb.ip("sa[").p(start+i).p("] = ").ps(values[start+i]).p(";").nl();
+      sb.ip("sa[").p(start+i).p("] = ").pj(values[start+i]).p(";").nl();
     }
     sb.di(1).ip("}").nl();
     sb.di(1).ip("}").nl();
@@ -495,13 +495,13 @@ public class JCodeGen {
     public int isSupportedOption(String option) { return _fileManager.isSupportedOption(option); }
   }
 
-  public static JCodeSB pMethodParams(JCodeSB sb, String[] types, String[] names) {
+  public static JCodeSB pMethodParams(JCodeSB sb, Class[] types, String[] names) {
     assert types == null && names == null || types.length == names.length : "Length of types does not match length of names";
     if (types != null) {
       for (int i = 0; i < types.length; i++) {
         if (i > 0)
           sb.p(", ");
-        sb.p(types[i]).p(' ').p(names[i]);
+        sb.pj(types[i]).p(' ').p(names[i]);
       }
     }
     return sb;
