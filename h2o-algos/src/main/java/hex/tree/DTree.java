@@ -298,21 +298,23 @@ public class DTree extends Iced {
 
 //      Log.info("These columns can be split: " + Arrays.toString(Arrays.copyOfRange(cols, 0, len)));
       int choices = len;        // Number of columns I can choose from
-      assert choices > 0;
 
       // This shortcut is correct, but would result in trivially reordering all columns
       // This reordering can change results due to tie-breaking, as different columns can get picked
       // if (len == tree._mtrys) return Arrays.copyOfRange(cols, 0, len);
 
-      // Draw up to mtry columns at random without replacement.
-      for( int i=0; i<tree._mtrys; i++ ) {
-        if( len == 0 ) break;   // Out of choices!
-        int idx2 = tree._rand.nextInt(len);
-        int col = cols[idx2];     // The chosen column
-        cols[idx2] = cols[--len]; // Compress out of array; do not choose again
-        cols[len] = col;          // Swap chosen in just after 'len'
+      // It can happen that we have no choices, because this node cannot be split any more (all active columns are constant, for example).
+      if (choices > 0) {
+        // Draw up to mtry columns at random without replacement.
+        for (int i = 0; i < tree._mtrys; i++) {
+          if (len == 0) break;   // Out of choices!
+          int idx2 = tree._rand.nextInt(len);
+          int col = cols[idx2];     // The chosen column
+          cols[idx2] = cols[--len]; // Compress out of array; do not choose again
+          cols[len] = col;          // Swap chosen in just after 'len'
+        }
+        assert len < choices;
       }
-      assert choices - len > 0;
 //      Log.info("Picking these (mtry=" + tree._mtrys + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
       return Arrays.copyOfRange(cols, len, choices);
     }
