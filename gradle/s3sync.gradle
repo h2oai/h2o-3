@@ -9,13 +9,13 @@ buildscript {
         jcenter()
     }
     dependencies { //Gradle seems to require these dependencies be listed in build.gradle AND here
-        classpath 'de.undercouch:gradle-download-task:1.1'
+        classpath 'de.undercouch:gradle-download-task:2.1.0'
         classpath 'joda-time:joda-time:2.2'
     }
 }
 
 // Shows download progress, nice for large file downloads
-apply plugin: 'download-task'
+apply plugin: 'de.undercouch.download'
 import de.undercouch.gradle.tasks.download.Download
 
 // Amazon timestamps are only easily read by Joda
