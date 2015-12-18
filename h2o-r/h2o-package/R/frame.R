@@ -1749,7 +1749,7 @@ h2o.summary <- function(object, factors=6L, ...) {
 #' information about column types, mins/maxs/missing/zero counts/stds/number of levels
 #'
 #' @name h2o.describe
-#' @param object An H2O H2OFrame object.
+#' @param frame An H2O H2OFrame object.
 #' @return A table with the Frame stats.
 #' @examples
 #' \donttest{
@@ -1776,7 +1776,7 @@ h2o.describe <- function(frame) {
                                       ifelse(col$type=="enum", col$domain_cardinality, NA)
                                     )
          })))
-  names(res) <- c("label", "type", "Missing", "Zeros", "PosInf", "NegInf", "min", "max", "mean", "sigma", "cardinality")
+  names(res) <- c("Label", "Type", "Missing", "Zeros", "PosInf", "NegInf", "Min", "Max", "Mean", "Sigma", "Cardinality")
   res
 }
 
