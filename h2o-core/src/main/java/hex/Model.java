@@ -1,18 +1,6 @@
 package hex;
 
-import hex.genmodel.GenModel;
-import hex.genmodel.easy.EasyPredictModelWrapper;
-import hex.genmodel.easy.RowData;
-import hex.genmodel.easy.exception.PredictException;
-import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
-import water.*;
-import water.api.StreamWriter;
-import water.codegen.CodeGenerator;
-import water.codegen.CodeGeneratorPipeline;
-import water.exceptions.JCodeSB;
-import water.fvec.*;
-import water.util.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -20,15 +8,44 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 import hex.genmodel.GenModel;
-import water.*;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.AbstractPrediction;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import hex.genmodel.easy.prediction.ClusteringModelPrediction;
+import hex.genmodel.easy.prediction.MultinomialModelPrediction;
+import hex.genmodel.easy.prediction.RegressionModelPrediction;
+import water.AutoBuffer;
+import water.DKV;
+import water.Futures;
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
+import water.Keyed;
+import water.Lockable;
+import water.MRTask;
+import water.MemoryManager;
+import water.Weaver;
 import water.api.StreamWriter;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.codegen.JCodeGen;
 import water.codegen.JCodeSB;
 import water.codegen.SBPrintStream;
-import water.fvec.*;
-import water.util.*;
+import water.fvec.C0DChunk;
+import water.fvec.CategoricalWrappedVec;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.LineLimitOutputStreamWrapper;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.TwoDimTable;
+import water.util.VecUtils;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 

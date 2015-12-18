@@ -45,8 +45,28 @@ public class CodeGeneratorTest {
     BlahModelCodeGenerator model = new BlahModelCodeGenerator(
         new BlahModel(Key.make("BlahModel#43"), new Model.Parameters() {
           @Override
+          public String algoName() {
+            return "Blah";
+          }
+
+          @Override
+          public String fullName() {
+            return "BlahALgo";
+          }
+
+          @Override
+          public String javaName() {
+            return "java.Blah";
+          }
+
+          @Override
           protected long nFoldSeed() {
             return 3;
+          }
+
+          @Override
+          public long progressUnits() {
+            return 0;
           }
         }, new Model.Output() {{
           int len = 40;
