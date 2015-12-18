@@ -4,13 +4,6 @@ This document describes how to define the models and how to interpret the model,
 
 ##Commonalities 
 
-###Missing Value Handling for Training
-
-If missing values are found in the validation frame during model training or during the scoring process for creating predictions, the missing values are automatically imputed. 
-
-If the missing values are found during POJO scoring, the answer is converted to `NaN`. 
-
-
 ###Quantiles
 
 
