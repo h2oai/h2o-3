@@ -65,7 +65,7 @@ public class HeartBeat extends Iced<HeartBeat> {
   }
 
   // Internal profiling
-  public float _gflops;         // Number of GFlops for this node
+  public float _gflops = Float.NaN;         // Number of GFlops for this node
   public float _membw;          // Memory bandwidth in GB/s
 
   // Number of elements & threads in high FJ work queues
