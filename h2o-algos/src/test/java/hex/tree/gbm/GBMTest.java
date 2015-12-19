@@ -7,6 +7,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
@@ -1332,6 +1333,195 @@ public class GBMTest extends TestUtil {
         gbm2.delete();
       }
       Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNfoldsColumn() {
+    Frame tfr = null;
+    Vec old = null;
+    GBMModel gbm1 = null;
+
+    try {
+      tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      tfr.remove("name").remove(); // Remove unique id
+      DKV.put(tfr);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "economy_20mpg";
+      parms._fold_column = "cylinders";
+      parms._ntrees = 10;
+
+      GBM job1 = new GBM(parms);
+      gbm1 = job1.trainModel().get();
+      Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
+      job1.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (old != null) old.remove();
+      if (gbm1 != null) {
+        gbm1.deleteCrossValidationModels();
+        gbm1.delete();
+      }
+    }
+  }
+
+  @Test
+  public void testNfoldsColumnWithHoles() {
+    Frame tfr = null;
+    Vec old = null;
+    GBMModel gbm1 = null;
+
+    try {
+      tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      tfr.remove("name").remove(); // Remove unique id
+      new MRTask() {
+        @Override
+        public void map(Chunk c) {
+          for (int i=0;i<c.len();++i)
+            if (c.at8(i)==4) c.set(i, 188);
+        }
+      }.doAll(tfr.vec("cylinders"));
+      DKV.put(tfr);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "economy_20mpg";
+      parms._fold_column = "cylinders";
+      parms._ntrees = 10;
+
+      GBM job1 = new GBM(parms);
+      gbm1 = job1.trainModel().get();
+      Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
+      job1.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (old != null) old.remove();
+      if (gbm1 != null) {
+        gbm1.deleteCrossValidationModels();
+        gbm1.delete();
+      }
+    }
+  }
+
+  @Test
+  public void testNfoldsColumnNumbersFrom0() {
+    Frame tfr = null;
+    Vec old = null;
+    GBMModel gbm1 = null;
+
+    try {
+      tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      tfr.remove("name").remove(); // Remove unique id
+      new MRTask() {
+        @Override
+        public void map(Chunk c) {
+          for (int i=0;i<c.len();++i) {
+            if (c.at8(i) == 3) c.set(i, 0);
+            if (c.at8(i) == 4) c.set(i, 1);
+            if (c.at8(i) == 5) c.set(i, 2);
+            if (c.at8(i) == 6) c.set(i, 3);
+            if (c.at8(i) == 8) c.set(i, 4);
+          }
+        }
+      }.doAll(tfr.vec("cylinders"));
+      DKV.put(tfr);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "economy_20mpg";
+      parms._fold_column = "cylinders";
+      parms._ntrees = 10;
+
+      GBM job1 = new GBM(parms);
+      gbm1 = job1.trainModel().get();
+      Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
+      job1.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (old != null) old.remove();
+      if (gbm1 != null) {
+        gbm1.deleteCrossValidationModels();
+        gbm1.delete();
+      }
+    }
+  }
+
+  @Test
+  public void testNfoldsColumnNumbersFrom193() {
+    Frame tfr = null;
+    Vec old = null;
+    GBMModel gbm1 = null;
+
+    try {
+      tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      tfr.remove("name").remove(); // Remove unique id
+      new MRTask() {
+        @Override
+        public void map(Chunk c) {
+          for (int i=0;i<c.len();++i) {
+            if (c.at8(i) == 3) c.set(i, 193+0);
+            if (c.at8(i) == 4) c.set(i, 193+1);
+            if (c.at8(i) == 5) c.set(i, 193+2);
+            if (c.at8(i) == 6) c.set(i, 193+3);
+            if (c.at8(i) == 8) c.set(i, 193+4);
+          }
+        }
+      }.doAll(tfr.vec("cylinders"));
+      DKV.put(tfr);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "economy_20mpg";
+      parms._fold_column = "cylinders";
+      parms._ntrees = 10;
+
+      GBM job1 = new GBM(parms);
+      gbm1 = job1.trainModel().get();
+      Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
+      job1.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (old != null) old.remove();
+      if (gbm1 != null) {
+        gbm1.deleteCrossValidationModels();
+        gbm1.delete();
+      }
+    }
+  }
+
+  @Test
+  public void testNfoldsColumnCategorical() {
+    Frame tfr = null;
+    Vec old = null;
+    GBMModel gbm1 = null;
+
+    try {
+      tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      tfr.remove("name").remove(); // Remove unique id
+      old = tfr.remove("cylinders");
+      tfr.add("folds", old.toCategoricalVec());
+      old.remove();
+      DKV.put(tfr);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "economy_20mpg";
+      parms._fold_column = "folds";
+      parms._ntrees = 10;
+
+      GBM job1 = new GBM(parms);
+      gbm1 = job1.trainModel().get();
+      Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
+      job1.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (old != null) old.remove();
+      if (gbm1 != null) {
+        gbm1.deleteCrossValidationModels();
+        gbm1.delete();
+      }
     }
   }
 

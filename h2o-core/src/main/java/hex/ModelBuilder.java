@@ -244,11 +244,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
     Vec f = train().vec(_parms._fold_column);
-    if(!f.isInt() && !f.isCategorical())
-      error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be integer or categorical");
     Vec fc = VecUtils.toCategoricalVec(f);
     int N = fc.domain().length;
-    if (fc != f) fc.remove();
+    fc.remove();
     return N;
   }
   // Temp zero'd vector, same size as train()
@@ -296,7 +294,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final Vec foldAssignment;
     final Vec foldCol = origTrainFrame.vec(_parms._fold_column);
     if (_parms._fold_column != null) {
-      foldAssignment = VecUtils.toCategoricalVec(foldCol);
+      foldAssignment = makeFoldAssignment(foldCol);
     } else {
       final long seed = _parms.nFoldSeed();
       Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
@@ -367,7 +365,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // clean up memory (mostly small helper vectors and Frame headers)
-    if (foldAssignment != foldCol || _parms._fold_column == null) foldAssignment.remove();
+    foldAssignment.remove();
     if (origWeightsName == null) origWeight.remove();
 
     // adapt main Job's progress bar to build N+1 models
@@ -523,6 +521,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       updateModelOutput(); //update the state of the model (tiny race condition here: someone might fetch the model without the updated state/time)
     }
     return this;
+  }
+
+  /**
+   * Create a fold assignment column from the fold_column
+   * If the fold_column is contiguous integers, then use that.
+   * @param foldCol
+   * @return
+   */
+  private Vec makeFoldAssignment(Vec foldCol){
+    Vec foldAssignment;
+    int numRange = foldCol.isNumeric() ? (int)(foldCol.max()-foldCol.min()+1) : 0;
+    Vec foldCat = VecUtils.toCategoricalVec(foldCol);
+    if (numRange == foldCat.domain().length) {
+      foldCat.remove();
+      foldAssignment = VecUtils.toNumericVec(foldCol);
+      Log.info(foldCat.domain().length + "-fold cross-validation holdout fold assignment:");
+      for (int i=(int)foldAssignment.min();i<=(int)foldAssignment.max();++i)
+        Log.info("(numeric) fold_column value: " + i + " -> fold " + ((i%numRange)+1));
+    } else {
+      foldAssignment = foldCat;
+      Log.info("Fold assignment:");
+      for (int i=0;i<foldAssignment.domain().length;++i)
+        Log.info("(categorical) fold_column value: " + foldAssignment.domain()[i] + " -> fold " + (i+1));
+    }
+    return foldAssignment;
   }
 
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
