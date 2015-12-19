@@ -541,7 +541,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Log.info("(numeric) fold_column value: " + i + " -> fold " + ((i%numRange)+1));
     } else {
       foldAssignment = foldCat;
-      Log.info("Fold assignment:");
+      Log.info(foldCat.domain().length + "-fold cross-validation holdout fold assignment:");
       for (int i=0;i<foldAssignment.domain().length;++i)
         Log.info("(categorical) fold_column value: " + foldAssignment.domain()[i] + " -> fold " + (i+1));
     }
