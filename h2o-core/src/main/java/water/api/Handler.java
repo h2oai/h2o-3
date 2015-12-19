@@ -38,6 +38,11 @@ public class Handler extends H2OCountedCompleter {
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   final Schema handle(int version, Route route, Properties parms) throws Exception {
+    // CNC: Override this in BuilderHandler,
+    // (1) peel out the 'this' class: GBMBuilderHandler,
+    // (2) Peel out the "GBM"
+    // (3) Make a GBMV3 via TypeMap
+    // (4) Either finish out here, or call fillFromParms, then GBMV3.method
     Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);
     Schema schema = Schema.newInstance(handler_schema_class);
 
@@ -61,6 +66,7 @@ public class Handler extends H2OCountedCompleter {
     _t_start = System.currentTimeMillis();
     Schema result = null;
     try {
+      route._handler_method.setAccessible(true);
       result = (Schema)route._handler_method.invoke(this, version, schema);
     }
     // Exception throws out of the invoked method turn into InvocationTargetException

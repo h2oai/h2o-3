@@ -49,7 +49,10 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
   }
 
 @SuppressWarnings("unused") // called through reflection by RequestServer
-  public void validate_parameters(int version, S schema) {
-    throw H2O.unimpl();
+  public S validate_parameters(int version, S schema) {
+    B builder = schema.createAndFillImpl();
+    S builder_schema = (S) builder.schema().fillFromImpl(builder);
+    builder_schema.setHttpStatus(HttpResponseStatus.OK.getCode());
+    return builder_schema;
   }
 }

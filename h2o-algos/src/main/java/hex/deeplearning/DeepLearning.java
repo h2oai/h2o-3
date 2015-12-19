@@ -1,7 +1,7 @@
 package hex.deeplearning;
 
 import hex.*;
-import hex.deeplearning.DeepLearningModel.DeepLearningModelOutput;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -24,7 +24,7 @@ import static water.util.MRUtils.sampleFrameStratified;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningParameters,DeepLearningModelOutput> {
+public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
   /** Main constructor from Deep Learning parameters */
   public DeepLearning( DeepLearningParameters parms ) { super(parms); init(false); }
   public DeepLearning( DeepLearningParameters parms, Key<DeepLearningModel> key ) { super(parms,key); init(false); }

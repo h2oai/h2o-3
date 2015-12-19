@@ -292,7 +292,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   /**
    * Get the highest schema version number that we've encountered during schema registration.
    */
-  public final static int getLatestVersion() {
+  public static int getLatestVersion() {
     return latest_version;
   }
 
@@ -300,14 +300,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * Get the highest schema version that we support.  This bounds the search for a schema if we haven't yet
    * registered all schemas and don't yet know the latest_version.
    */
-  public final static int getHighestSupportedVersion() {
+  public static int getHighestSupportedVersion() {
     return HIGHEST_SUPPORTED_VERSION;
    }
 
   /**
    * Get the experimental schema version, which indicates that a schema is not guaranteed stable between H2O releases.
    */
-  public final static int getExperimentalVersion() {
+  public static int getExperimentalVersion() {
     return EXPERIMENTAL_VERSION;
   }
 

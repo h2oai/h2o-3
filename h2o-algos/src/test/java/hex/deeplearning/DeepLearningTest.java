@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.Distribution;
 import hex.ModelMetricsAutoEncoder;
 import hex.ModelMetricsRegression;

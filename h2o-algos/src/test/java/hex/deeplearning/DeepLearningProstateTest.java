@@ -2,7 +2,8 @@ package hex.deeplearning;
 
 import hex.ConfusionMatrix;
 import hex.Distribution;
-import hex.deeplearning.DeepLearningParameters.ClassSamplingMethod;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

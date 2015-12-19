@@ -57,6 +57,7 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
 
   // Version&Schema-specific filling from the impl
   @Override public JobV3 fillFromImpl(Job job) {
+    if( job == null ) return this;
     // Handle fields in subclasses:
     PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make consistent and remove

@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

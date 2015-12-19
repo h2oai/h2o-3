@@ -2,9 +2,9 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.Distribution;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.*;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 
 import java.nio.ByteBuffer;

@@ -1,8 +1,6 @@
 package water.api;
 
 import hex.Model;
-import hex.ModelBuilder;
-import water.Iced;
 import water.api.KeyV3.ModelKeyV3;
 import water.api.KeyV3.FrameKeyV3;
 

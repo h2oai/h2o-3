@@ -9,6 +9,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
@@ -31,7 +32,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Key of the model being built; note that this is DIFFERENT from
   // _job._result if the Job is being shared by many sub-models
   // e.g. cross-validation.
-  private Key<M> _result;  // Built Model key
+  protected Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
   /** Default easy constructor: Unique new job and unique new result key */
@@ -55,15 +56,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Factory method to create a ModelBuilder instance for given the algo name. */
-  public static ModelBuilder make(Key<Model> result, String algo) {
-    throw H2O.unimpl();
+  public static <B extends ModelBuilder> B make(Key<Model> result, String algo) {
+    int idx = ArrayUtils.find(ALGOBASE,algo);
+    assert idx != -1 : "Unregistered algorithm "+algo;
+    B mb = (B)TypeMap.newFreezable(ALGOFULL[idx]);
+    mb._result = result;
+    String prefix = ALGOFULL[idx].substring(ALGOFULL[idx].lastIndexOf('.')+1);
+    String smodel = ALGOFULL[idx]+"Model";
+    String pmodel = smodel+"$"+algo+"Parameters";
+    Model.Parameters parms = (Model.Parameters)TypeMap.newFreezable(pmodel);
+    mb._parms = parms;
+    return mb;
   }
 
   /** List of known ModelBuilders */
-  private static String[] ALGOS;
-  public static String[] algos() { assert ALGOS != null; return ALGOS; }
+  private static String[] ALGOFULL = new String[0];
+  private static String[] ALGOBASE = new String[0];
+  public static String[] algos() { return ALGOBASE; }
   // Called once at startup
-  public static void registerModelBuilders( String[] algos ) { assert ALGOS==null; ALGOS = algos; }
+  public static void registerModelBuilder( String clazz, String base ) { 
+    TypeMap.newFreezable(clazz); // Make on, to make sure we can... (early assert death)
+    ALGOFULL = Arrays.copyOf(ALGOFULL,ALGOFULL.length+1);
+    ALGOBASE = Arrays.copyOf(ALGOBASE,ALGOBASE.length+1);
+    ALGOFULL[ALGOFULL.length-1] = clazz;
+    ALGOBASE[ALGOBASE.length-1] = base;
+  }
 
 
   /** All the parameters required to build the model. */

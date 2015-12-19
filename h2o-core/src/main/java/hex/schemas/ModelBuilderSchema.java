@@ -14,7 +14,7 @@ import water.util.*;
 import java.lang.reflect.Constructor;
 import java.util.Properties;
 
-public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends RequestSchema<B,S> implements SpecifiesHttpResponseCode {
+public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends RequestSchema<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
 
@@ -84,7 +84,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   /** Create the corresponding impl object, as well as its parameters object. */
   @Override final public B createImpl() {
-    throw H2O.unimpl();
+    return ModelBuilder.make(null,get__meta().getSchema_type());
   }
 
   @Override public B fillImpl(B impl) {
@@ -98,25 +98,21 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   @Override public S fillFromImpl(B builder) {
     // DO NOT, because it can already be running: builder.init(false); // check params
 
-    try {
-      this.algo = builder._parms.algoName();
-      this.algo_full_name = builder._parms.fullName();
-    }
-    catch (H2OIllegalArgumentException e) {
-      this.algo = builder.getClass().getSimpleName();
-      this.algo_full_name = this.algo;
-    }
+    this.algo = builder._parms.algoName().toLowerCase();
+    this.algo_full_name = builder._parms.fullName();
 
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
-    job = (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
-    this.messages = new ValidationMessageBase[builder._messages.length];
-    int i = 0;
-    for( ModelBuilder.ValidationMessage vm : builder._messages ) {
-      this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+    job = (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder._job);
+    if( builder._messages != null ) {
+      this.messages = new ValidationMessageBase[builder._messages.length];
+      int i = 0;
+      for (ModelBuilder.ValidationMessage vm : builder._messages) {
+        this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+      }
+      // default fieldname hacks
+      ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
     }
-    // default fieldname hacks
-    ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
     this.error_count = builder.error_count();
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);

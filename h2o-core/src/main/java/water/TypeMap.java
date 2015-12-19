@@ -188,7 +188,7 @@ public class TypeMap {
       try { f = Weaver.genDelegate(id,ice_clz); }
       catch( Exception e ) {
         Log.err("Weaver generally only throws if classfiles are not found, e.g. IDE setups running test code from a remote node that is not in the classpath on this node.");
-        Log.throwErr(e);
+        throw Log.throwErr(e);
       }
       // Now install until the TypeMap class lock, so the GOLD array is not
       // resized out from under the installation.
@@ -223,6 +223,7 @@ public class TypeMap {
     try {
       Icer f = goForGold(id);
       return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
-    } catch( ClassNotFoundException e ) { throw Log.throwErr(e); }
+    } catch( ClassNotFoundException e ) {
+      throw Log.throwErr(e); }
   }
 }

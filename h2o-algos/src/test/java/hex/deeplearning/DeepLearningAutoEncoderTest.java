@@ -7,7 +7,7 @@ import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.util.Log;
-
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import java.util.HashSet;
 
 public class DeepLearningAutoEncoderTest extends TestUtil {

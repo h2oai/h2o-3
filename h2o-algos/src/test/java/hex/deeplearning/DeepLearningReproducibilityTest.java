@@ -11,7 +11,7 @@ import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.FrameUtils;
 import water.util.Log;
-
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import static org.junit.Assert.assertTrue;
 
 public class DeepLearningReproducibilityTest extends TestUtil {
