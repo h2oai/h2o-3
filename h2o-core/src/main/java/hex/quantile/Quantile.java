@@ -40,6 +40,10 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     return train().numCols()*_parms._probs.length;
   }
 
+  @Override
+  protected int desiredChunks(final Frame original_fr, boolean local) {
+    return 1; //any number of chunks is fine - don't rebalance - it's not worth it for a few passes over the data (at most)
+  }
 
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{ModelCategory.Unknown};

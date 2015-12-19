@@ -1009,7 +1009,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
     if (original_fr.anyVec().nChunks() >= chunks) {
-      Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() + 
+      if (chunks>1)
+        Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() +
               " chunks. No need to rebalance.");
       return original_fr;
     }
