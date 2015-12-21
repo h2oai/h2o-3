@@ -5,6 +5,7 @@ import hex.ModelMetrics;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
@@ -87,6 +88,7 @@ public class GLRMTest extends TestUtil {
     }
   }
 
+  @Ignore
   @Test public void testSubset() throws InterruptedException, ExecutionException {
     //Analogous to pyunit_subset_glrm.py
     GLRM job = null;
