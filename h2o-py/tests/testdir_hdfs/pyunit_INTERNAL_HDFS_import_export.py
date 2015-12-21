@@ -12,21 +12,24 @@ def test_hdfs_io():
     '''
     hdfs_name_node = os.getenv("NAME_NODE")
     print("Importing hdfs data")
-    h2o_data = h2o.import_file("hdfs://" + hdfs_name_node + "/datasets/100k.csv")
+    h2o_data = h2o.import_file("hdfs://" + hdfs_name_node + "/datasets/airlines/airlines_all.05p.csv")
 
     print("Spliting data")
+    for c in ["Month","DayofMonth","IsArrDelayed"]:
+        h2o_data[c] = h2o_data[c].asfactor()
+    myX = ["Month","DayofMonth","Distance"]
     train,test = h2o_data.split_frame(ratios=[0.9])
 
     print("Exporting file to hdfs")
-    h2o.export_file(test[:,0:2], "hdfs://" + hdfs_name_node + "/datasets/exported.csv")
+    h2o.export_file(test[:,"Distance"], "hdfs://" + hdfs_name_node + "/datasets/exported.csv")
 
     print("Reading file back in and comparing if data is the same")
     new_test = h2o.import_file("hdfs://" + hdfs_name_node + "/datasets/exported.csv")
-    assert((test[:,1] - new_test[:,1]).sum() == 0)
+    assert((test[:,"Distance"] - new_test[:,"Distance"]).sum() == 0)
 
     print("Training")
     h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=0.5, Lambda=0.01)
-    h2o_glm.train(x=range(1, 10), y=0, training_frame=train) # dont need to train on all features
+    h2o_glm.train(x=myX, y="IsArrDelayed", training_frame=train) # dont need to train on all features
 
     hdfs_model_path = os.getenv("MODEL_PATH")
     print("Saving model")
