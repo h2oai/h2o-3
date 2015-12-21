@@ -12,15 +12,20 @@ import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import water.*;
+import water.fvec.FVecTest;
+import water.fvec.Frame;
+import water.parser.ParseDataset;
 import water.util.Log;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class TestCase extends TestUtil {
   private static String testCasesPath = "h2o-testng/src/test/resources/accuracy_test_cases.csv";
 
-  private int testCaseId;
+  public int testCaseId;
   private String algo;
   private String algoParameters;
   private boolean tuned;
@@ -138,7 +143,7 @@ public class TestCase extends TestUtil {
       HashMap<String,Double> trainingMetrics = getMetrics(modelOutput._training_metrics);
       trainingMetrics.put("ModelBuildTime", modelStopTime - modelStartTime);
       HashMap<String,Double> testingMetrics = getMetrics(modelOutput._validation_metrics);
-      MySQL.save(trainingMetrics, testingMetrics);
+      MySQL.save(testCaseId, trainingMetrics, testingMetrics);
     }
     catch (Exception e) {
       Log.err(e.getMessage());
@@ -216,12 +221,138 @@ public class TestCase extends TestUtil {
   }
 
   private GLMModel.GLMParameters makeGlmModelParameters() {
-    return null;
+    GLMModel.GLMParameters glmParams = new GLMModel.GLMParameters();
+    String[] glmAlgoParamsMap = new String[]{
+      "gaussian",
+      "binomial",
+      "poisson",
+      "gamma",
+      "tweedie",
+      "auto",
+      "irlsm",
+      "lbfgs",
+      "coordinate_descent_naive",
+      "coordinate_descent",
+      "_nfolds",
+      "_fold_column",
+      "_ignore_const_cols",
+      "_offset_column",
+      "_weights_column",
+      "_alpha",
+      "_lambda",
+      "_lambda_search",
+      "_standardize",
+      "_non_negative",
+      "betaConstraints",
+      "lowerBound",
+      "upperBound"
+      ,"",
+      "_intercept",
+      "_prior",
+      "_max_active_predictors"
+    };
+
+    String[] tokens = algoParameters.trim().split(";", -1);
+    assert tokens.length == 27;
+
+    // _distribution
+    if      (tokens[0].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.gaussian; }
+    else if (tokens[1].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.binomial; }
+    else if (tokens[2].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.poisson; }
+    else if (tokens[3].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.gamma; }
+    else if (tokens[4].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.tweedie; }
+
+    // _solver
+    if      (tokens[5].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.AUTO; }
+    else if (tokens[6].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.IRLSM; }
+    else if (tokens[7].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.L_BFGS; }
+    else if (tokens[8].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT_NAIVE; }
+    else if (tokens[9].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT; }
+
+    for (int i = 10; i < tokens.length; i++) {
+      if (tokens[i].isEmpty() || i == 20 || i == 21 || i == 22 || i == 23) { continue; } // skip _beta_constraints
+      switch (glmAlgoParamsMap[i]) {
+        case "_nfolds":                    glmParams._nfolds = Integer.parseInt(tokens[i]);
+          break;
+        case "_fold_column":               glmParams._fold_column = tokens[i];
+          break;
+        case "_ignore_const_cols":         glmParams._ignore_const_cols = true;
+          break;
+        case "_offset_column":             glmParams._offset_column = tokens[i];
+          break;
+        case "_weights_column":            glmParams._weights_column = tokens[i];
+          break;
+        case "_alpha":                     glmParams._alpha = new double[]{Double.parseDouble(tokens[i])};
+          break;
+        case "_lambda":                    glmParams._lambda = new double[]{Double.parseDouble(tokens[i])};
+          break;
+        case "_lambda_search":             glmParams._lambda_search = true;
+          break;
+        case "_standardize":               glmParams._standardize = true;
+          break;
+        case "_non_negative":              glmParams._non_negative = true;
+          break;
+        case "_intercept":                 glmParams._intercept = true;
+          break;
+        case "_prior":                     glmParams._prior = Double.parseDouble(tokens[i]);
+          break;
+        case "_max_active_predictors":     glmParams._max_active_predictors = Integer.parseInt(tokens[i]);
+          break;
+        default:
+          Log.err(glmAlgoParamsMap[i] + " parameter is not supported for glm test cases");
+          System.exit(-1);
+          break;
+      }
+    }
+    // _train, _valid, _response
+    glmParams._train = trainingDataSet.getFrame()._key;
+    glmParams._valid = testingDataSet.getFrame()._key;
+    glmParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
+
+    // beta constraints
+    if (tokens[20].equals("x")) {
+      double lowerBound = Double.parseDouble(tokens[21]);
+      double upperBound = Double.parseDouble(tokens[22]);
+      glmParams._beta_constraints = makeBetaConstraints(lowerBound, upperBound);
+    }
+    return glmParams;
   }
+
+  private Key makeBetaConstraints(double lowerBound, double upperBound) {
+    Frame trainingFrame = trainingDataSet.getFrame();
+    int responseColumn = trainingDataSet.getResponseColumn();
+    String betaConstraintsString = "names, lower_bounds, upper_bounds\n";
+    List<String> predictorNames = Arrays.asList(trainingFrame._names);
+    for (String name : predictorNames) {
+      // ignore the response column and any constant column in bc.
+      // we only want predictors
+      if (!name.equals(trainingFrame._names[responseColumn]) && !trainingFrame.vec(name).isConst()) {
+        // need coefficient names for each level of a categorical column
+        if (trainingFrame.vec(name).isCategorical()) {
+          for (String level : trainingFrame.vec(name).domain()) {
+            betaConstraintsString += String.format("%s.%s,%s,%s\n", name, level, lowerBound, upperBound);
+          }
+        }
+        else { // numeric columns only need one coefficient name
+          betaConstraintsString += String.format("%s,%s,%s\n", name, lowerBound, upperBound);
+        }
+      }
+    }
+    Key betaConsKey = Key.make("beta_constraints");
+    FVecTest.makeByteVec(betaConsKey, betaConstraintsString);
+    return ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey)._key;
+  }
+
   private GBMModel.GBMParameters makeGbmModelParameters() {
     GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
-    String[] gbmParamStrings = new String[]{
-      "_distribution",
+    String[] gbmAlgoParamsMap = new String[]{
+      "auto",
+      "gaussian",
+      "binomial",
+      "multinomial",
+      "poisson",
+      "gamma",
+      "tweedie",
       "_nfolds",
       "_fold_column",
       "_ignore_const_cols",
@@ -241,96 +372,72 @@ public class TestCase extends TestUtil {
       "_build_tree_one_node",
       "_class_sampling_factors",
       "_sample_rate",
-      "_col_sample_rate",
-      "_train",
-      "_valid",
-      "_response_column"};
+      "_col_sample_rate"
+    };
 
     String[] tokens = algoParameters.trim().split(";", -1);
-    for (String p : gbmParamStrings) {
-      switch (p) {
-        case "_distribution": // auto,gaussian,binomial,multinomial,poisson,gamma,tweedie
-          if      (tokens[0].equals("x")) { gbmParams._distribution = Distribution.Family.AUTO; }
-          else if (tokens[1].equals("x")) { gbmParams._distribution = Distribution.Family.gaussian; }
-          else if (tokens[2].equals("x")) { gbmParams._distribution = Distribution.Family.bernoulli; }
-          else if (tokens[3].equals("x")) { gbmParams._distribution = Distribution.Family.multinomial; }
-          else if (tokens[4].equals("x")) { gbmParams._distribution = Distribution.Family.poisson; }
-          else if (tokens[5].equals("x")) { gbmParams._distribution = Distribution.Family.gamma; }
-          else if (tokens[6].equals("x")) { gbmParams._distribution = Distribution.Family.tweedie; }
+    assert tokens.length == 27;
+
+    // _distribution
+    if      (tokens[0].equals("x")) { gbmParams._distribution = Distribution.Family.AUTO; }
+    else if (tokens[1].equals("x")) { gbmParams._distribution = Distribution.Family.gaussian; }
+    else if (tokens[2].equals("x")) { gbmParams._distribution = Distribution.Family.bernoulli; }
+    else if (tokens[3].equals("x")) { gbmParams._distribution = Distribution.Family.multinomial; }
+    else if (tokens[4].equals("x")) { gbmParams._distribution = Distribution.Family.poisson; }
+    else if (tokens[5].equals("x")) { gbmParams._distribution = Distribution.Family.gamma; }
+    else if (tokens[6].equals("x")) { gbmParams._distribution = Distribution.Family.tweedie; }
+
+    for (int i = 7; i < tokens.length; i++) {
+      if (tokens[i].isEmpty()) { continue; }
+      switch (gbmAlgoParamsMap[i]) {
+        case "_nfolds":                    gbmParams._nfolds = Integer.parseInt(tokens[i]);
           break;
-        case "_nfolds":
-          if (!tokens[7].isEmpty()) { gbmParams._nfolds = Integer.parseInt(tokens[7]); }
+        case "_fold_column":               gbmParams._fold_column = tokens[i];
           break;
-        case "_fold_column":
-          if (!tokens[8].isEmpty()) { gbmParams._fold_column = tokens[8]; }
+        case "_ignore_const_cols":         gbmParams._ignore_const_cols = true;
           break;
-        case "_ignore_const_cols":
-          if (!tokens[9].isEmpty()) { gbmParams._ignore_const_cols = true; }
+        case "_offset_column":             gbmParams._offset_column = tokens[i];
           break;
-        case "_offset_column":
-          if (!tokens[10].isEmpty()) { gbmParams._offset_column = tokens[10]; }
+        case "_weights_column":            gbmParams._weights_column = tokens[i];
           break;
-        case "_weights_column":
-          if (!tokens[11].isEmpty()) { gbmParams._weights_column = tokens[11]; }
+        case "_ntrees":                    gbmParams._ntrees = Integer.parseInt(tokens[i]);
           break;
-        case "_ntrees":
-          if (!tokens[12].isEmpty()) { gbmParams._ntrees = Integer.parseInt(tokens[12]); }
+        case "_max_depth":                 gbmParams._max_depth = Integer.parseInt(tokens[i]);
           break;
-        case "_max_depth":
-          if (!tokens[13].isEmpty()) { gbmParams._max_depth = Integer.parseInt(tokens[13]); }
+        case "_min_rows":                  gbmParams._min_rows = Double.parseDouble(tokens[i]);
           break;
-        case "_min_rows":
-          if (!tokens[14].isEmpty()) { gbmParams._min_rows = Double.parseDouble(tokens[14]); }
+        case "_nbins":                     gbmParams._nbins = Integer.parseInt(tokens[i]);
           break;
-        case "_nbins":
-          if (!tokens[15].isEmpty()) { gbmParams._nbins = Integer.parseInt(tokens[15]); }
+        case "_nbins_cats":                gbmParams._nbins_cats = Integer.parseInt(tokens[i]);
           break;
-        case "_nbins_cats":
-          if (!tokens[16].isEmpty()) { gbmParams._nbins_cats = Integer.parseInt(tokens[16]); }
+        case "_learn_rate":                gbmParams._learn_rate = Float.parseFloat(tokens[i]);
           break;
-        case "_learn_rate":
-          if (!tokens[17].isEmpty()) { gbmParams._learn_rate = Float.parseFloat(tokens[17]); }
+        case "_score_each_iteration":      gbmParams._score_each_iteration = true;
           break;
-        case "_score_each_iteration":
-          if (!tokens[18].isEmpty()) { gbmParams._score_each_iteration = true; }
+        case "_balance_classes":           gbmParams._balance_classes = true;
           break;
-        case "_balance_classes":
-          if (!tokens[19].isEmpty()) { gbmParams._balance_classes = true; }
+        case "_max_confusion_matrix_size": gbmParams._max_confusion_matrix_size = Integer.parseInt(tokens[i]);
           break;
-        case "_max_confusion_matrix_size":
-          if (!tokens[20].isEmpty()) { gbmParams._max_confusion_matrix_size = Integer.parseInt(tokens[20]); }
+        case "_max_hit_ratio_k":           gbmParams._max_hit_ratio_k = Integer.parseInt(tokens[i]);
           break;
-        case "_max_hit_ratio_k":
-          if (!tokens[21].isEmpty()) { gbmParams._max_hit_ratio_k = Integer.parseInt(tokens[21]); }
+        case "_r2_stopping":               gbmParams._r2_stopping = Double.parseDouble(tokens[i]);
           break;
-        case "_r2_stopping":
-          if (!tokens[22].isEmpty()) { gbmParams._r2_stopping = Double.parseDouble(tokens[22]); }
+        case "_build_tree_one_node":       gbmParams._build_tree_one_node = true;
           break;
-        case "_build_tree_one_node":
-          if (!tokens[23].isEmpty()) { gbmParams._build_tree_one_node = true; }
+        case "_sample_rate":               gbmParams._sample_rate = Float.parseFloat(tokens[i]);
           break;
-        case "_class_sampling_factors":
-          if (!tokens[24].isEmpty()) {
-            Log.info("_class_sampling_factors not supported for drf test cases");
-            System.exit(-1);
-          }
+        case "_col_sample_rate":           gbmParams._col_sample_rate = Float.parseFloat(tokens[i]);
           break;
-        case "_sample_rate":
-          if (!tokens[25].isEmpty()) { gbmParams._sample_rate = Float.parseFloat(tokens[25]); }
+        default:
+          Log.err(gbmAlgoParamsMap[i] + " parameter is not supported for gbm test cases");
+          System.exit(-1);
           break;
-        case "_col_sample_rate":
-          if (!tokens[26].isEmpty()) { gbmParams._col_sample_rate = Float.parseFloat(tokens[26]); }
-          break;
-        case "_train":
-          gbmParams._train = trainingDataSet.getFrame()._key;
-          break;
-        case "_valid":
-          gbmParams._valid = testingDataSet.getFrame()._key;
-          break;
-        case "_response_column":
-          gbmParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
       }
     }
+    // _train, _valid, _response
+    gbmParams._train = trainingDataSet.getFrame()._key;
+    gbmParams._valid = testingDataSet.getFrame()._key;
+    gbmParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
     return gbmParams;
   }
 
@@ -339,8 +446,14 @@ public class TestCase extends TestUtil {
   }
   private DRFModel.DRFParameters makeDrfModelParameters() {
     DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
-    String[] drfParamStrings = new String[]{
-      "_distribution",
+    String[] drfAlgoParamsMap = new String[]{
+      "auto",
+      "gaussian",
+      "binomial",
+      "multinomial",
+      "poisson",
+      "gamma",
+      "tweedie",
       "_nfolds",
       "_fold_column",
       "_ignore_const_cols",
@@ -360,99 +473,70 @@ public class TestCase extends TestUtil {
       "_class_sampling_factors",
       "_binomial_double_trees",
       "_checkpoint",
-      "_nbins_top_level",
-      "_train",
-      "_valid",
-      "_response_column"};
+      "_nbins_top_level"
+    };
 
     String[] tokens = algoParameters.trim().split(";", -1);
-    for (String p : drfParamStrings) {
-      switch (p) {
-        case "_distribution": // auto,gaussian,binomial,multinomial,poisson,gamma,tweedie
-          if      (tokens[0].equals("x")) { drfParams._distribution = Distribution.Family.AUTO; }
-          else if (tokens[1].equals("x")) { drfParams._distribution = Distribution.Family.gaussian; }
-          else if (tokens[2].equals("x")) { drfParams._distribution = Distribution.Family.bernoulli; }
-          else if (tokens[3].equals("x")) { drfParams._distribution = Distribution.Family.multinomial; }
-          else if (tokens[4].equals("x")) { drfParams._distribution = Distribution.Family.poisson; }
-          else if (tokens[5].equals("x")) { drfParams._distribution = Distribution.Family.gamma; }
-          else if (tokens[6].equals("x")) { drfParams._distribution = Distribution.Family.tweedie; }
+    assert tokens.length == 27;
+
+    // _distribution
+    if      (tokens[0].equals("x")) { drfParams._distribution = Distribution.Family.AUTO; }
+    else if (tokens[1].equals("x")) { drfParams._distribution = Distribution.Family.gaussian; }
+    else if (tokens[2].equals("x")) { drfParams._distribution = Distribution.Family.bernoulli; }
+    else if (tokens[3].equals("x")) { drfParams._distribution = Distribution.Family.multinomial; }
+    else if (tokens[4].equals("x")) { drfParams._distribution = Distribution.Family.poisson; }
+    else if (tokens[5].equals("x")) { drfParams._distribution = Distribution.Family.gamma; }
+    else if (tokens[6].equals("x")) { drfParams._distribution = Distribution.Family.tweedie; }
+
+    for (int i = 7; i < tokens.length; i++) {
+      if (tokens[i].isEmpty()) { continue; }
+      switch (drfAlgoParamsMap[i]) {
+        case "_nfolds":                    drfParams._nfolds = Integer.parseInt(tokens[i]);
           break;
-        case "_nfolds":
-          if (!tokens[7].isEmpty()) { drfParams._nfolds = Integer.parseInt(tokens[7]); }
+        case "_fold_column":               drfParams._fold_column = tokens[i];
           break;
-        case "_fold_column":
-          if (!tokens[8].isEmpty()) { drfParams._fold_column = tokens[8]; }
+        case "_ignore_const_cols":         drfParams._ignore_const_cols = true;
           break;
-        case "_ignore_const_cols":
-          if (!tokens[9].isEmpty()) { drfParams._ignore_const_cols = true; }
+        case "_offset_column":             drfParams._offset_column = tokens[i];
           break;
-        case "_offset_column":
-          if (!tokens[10].isEmpty()) { drfParams._offset_column = tokens[10]; }
+        case "_weights_column":            drfParams._weights_column = tokens[i];
           break;
-        case "_weights_column":
-          if (!tokens[11].isEmpty()) { drfParams._weights_column = tokens[11]; }
+        case "_ntrees":                    drfParams._ntrees = Integer.parseInt(tokens[i]);
           break;
-        case "_ntrees":
-          if (!tokens[12].isEmpty()) { drfParams._ntrees = Integer.parseInt(tokens[12]); }
+        case "_max_depth":                 drfParams._max_depth = Integer.parseInt(tokens[i]);
           break;
-        case "_max_depth":
-          if (!tokens[13].isEmpty()) { drfParams._max_depth = Integer.parseInt(tokens[13]); }
+        case "_min_rows":                  drfParams._min_rows = Double.parseDouble(tokens[i]);
           break;
-        case "_min_rows":
-          if (!tokens[14].isEmpty()) { drfParams._min_rows = Double.parseDouble(tokens[14]); }
+        case "_nbins":                     drfParams._nbins = Integer.parseInt(tokens[i]);
           break;
-        case "_nbins":
-          if (!tokens[15].isEmpty()) { drfParams._nbins = Integer.parseInt(tokens[15]); }
+        case "_nbins_cats":                drfParams._nbins_cats = Integer.parseInt(tokens[i]);
           break;
-        case "_nbins_cats":
-          if (!tokens[16].isEmpty()) { drfParams._nbins_cats = Integer.parseInt(tokens[16]); }
+        case "_score_each_iteration":      drfParams._score_each_iteration = true;
           break;
-        case "_score_each_iteration":
-          if (!tokens[17].isEmpty()) { drfParams._score_each_iteration = true; }
+        case "_balance_classes":           drfParams._balance_classes = true;
           break;
-        case "_balance_classes":
-          if (!tokens[18].isEmpty()) { drfParams._balance_classes = true; }
+        case "_max_confusion_matrix_size": drfParams._max_confusion_matrix_size = Integer.parseInt(tokens[i]);
           break;
-        case "_max_confusion_matrix_size":
-          if (!tokens[19].isEmpty()) { drfParams._max_confusion_matrix_size = Integer.parseInt(tokens[19]); }
+        case "_max_hit_ratio_k":           drfParams._max_hit_ratio_k = Integer.parseInt(tokens[i]);
           break;
-        case "_max_hit_ratio_k":
-          if (!tokens[20].isEmpty()) { drfParams._max_hit_ratio_k = Integer.parseInt(tokens[20]); }
+        case "_r2_stopping":               drfParams._r2_stopping = Double.parseDouble(tokens[i]);
           break;
-        case "_r2_stopping":
-          if (!tokens[21].isEmpty()) { drfParams._r2_stopping = Double.parseDouble(tokens[21]); }
+        case "_build_tree_one_node":       drfParams._build_tree_one_node = true;
           break;
-        case "_build_tree_one_node":
-          if (!tokens[22].isEmpty()) { drfParams._build_tree_one_node = true; }
+        case "_binomial_double_trees":     drfParams._binomial_double_trees = true;
           break;
-        case "_class_sampling_factors":
-          if (!tokens[23].isEmpty()) {
-            Log.info("_class_sampling_factors not supported for drf test cases");
-            System.exit(-1);
-          }
+        case "_nbins_top_level":           drfParams._nbins_top_level = Integer.parseInt(tokens[i]);
           break;
-        case "_binomial_double_trees":
-          if (!tokens[24].isEmpty()) { drfParams._binomial_double_trees = true; }
+        default:
+          Log.err(drfAlgoParamsMap[i] + " parameter is not supported for gbm test cases");
+          System.exit(-1);
           break;
-        case "_checkpoint":
-          if (!tokens[25].isEmpty()) {
-            Log.info("_checkpoint not supported for drf test cases");
-            System.exit(-1);
-          }
-          break;
-        case "_nbins_top_level":
-          if (!tokens[26].isEmpty()) { drfParams._nbins_top_level = Integer.parseInt(tokens[26]); }
-          break;
-        case "_train":
-          drfParams._train = trainingDataSet.getFrame()._key;
-          break;
-        case "_valid":
-          drfParams._valid = testingDataSet.getFrame()._key;
-          break;
-        case "_response_column":
-          drfParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
       }
     }
+    // _train, _valid, _response
+    drfParams._train = trainingDataSet.getFrame()._key;
+    drfParams._valid = testingDataSet.getFrame()._key;
+    drfParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
     return drfParams;
   }
 }

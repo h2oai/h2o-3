@@ -16,14 +16,13 @@ public class MySQL {
 	public final static String tuned = "tuned";
 	public final static String tuned_or_defaults = "tuned_or_defaults";
 
-	public static boolean save(HashMap<String,Double> trainingResults, HashMap<String,Double> testingResults) {
+	public static boolean save(int testCaseId, HashMap<String,Double> trainingResults, HashMap<String,Double> testingResults) {
 
 		if (!config.isUsedDB()) {
 			Log.info("Program is configured don't use database");
 			return false;
 		}
 
-		String testcaseId = "1";
 		String ipAddr = "NULL";
 		try { ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
 		} catch (UnknownHostException e) { e.printStackTrace(); };
@@ -37,7 +36,7 @@ public class MySQL {
 				"%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, '%s', '%s', '%s', %s, '%s', " +
 				"%s)",
 			config.getTableName(),
-			testcaseId,
+			testCaseId,
 			trainingResults.get("R2") == null || Double.isNaN(trainingResults.get("R2")) ? "NULL" : Double.toString(trainingResults.get("R2")),
 			trainingResults.get("Logloss") == null || Double.isNaN(trainingResults.get("Logloss")) ? "NULL" : Double.toString(trainingResults.get("Logloss")),
 			trainingResults.get("MeanResidualDeviance") == null || Double.isNaN(trainingResults.get("MeanResidualDeviance")) ? "NULL" : Double.toString(trainingResults.get("MeanResidualDeviance")),

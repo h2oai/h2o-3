@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.testng.annotations.*;
@@ -29,10 +28,10 @@ public class AccuracyTestingFramework extends TestNGUtil {
 
 		// Retrieve algorithm and testcaseId command-line parameters. These are used to filter the set of test cases.
 		//algorithm = System.getProperty("algo");
-		String algorithm = "gbm";
+		String algorithm = "glm";
 
 		//testCaseId = System.getProperty("testcaseId");
-		int testCaseId = Integer.parseInt("406");
+		int testCaseId = Integer.parseInt("454");
 
 		return createTestCases(algorithm, testCaseId);
 	}
@@ -86,6 +85,8 @@ public class AccuracyTestingFramework extends TestNGUtil {
 	@Test(dataProvider = "TestCaseProvider")
 	public void accuracyTest(TestCase tc) {
 		//redirectStandardStreams();
+
+		Log.info("Running test case: " + tc.testCaseId);
 
 		// Only load the data sets when the test case is about to be executed, instead of when the test case is
 		// constructed in the testCaseProvider(), for example.
