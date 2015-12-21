@@ -21,11 +21,11 @@ def test_hdfs_io():
     train,test = h2o_data.split_frame(ratios=[0.9])
 
     print("Exporting file to hdfs")
-    h2o.export_file(test[:,"Distance"], "hdfs://" + hdfs_name_node + "/datasets/exported.csv")
+    h2o.export_file(test[:,["Year","DayOfWeek"], "hdfs://" + hdfs_name_node + "/datasets/exported.csv")
 
     print("Reading file back in and comparing if data is the same")
     new_test = h2o.import_file("hdfs://" + hdfs_name_node + "/datasets/exported.csv")
-    assert((test[:,"Distance"] - new_test[:,"Distance"]).sum() == 0)
+    assert((test[:,"DayOfWeek"] - new_test[:,"DayOfWeek"]).sum() == 0)
 
     print("Training")
     h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=0.5, Lambda=0.01)
