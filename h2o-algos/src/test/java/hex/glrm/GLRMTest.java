@@ -8,11 +8,18 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.RebalanceDataSet;
+import water.fvec.UploadFileVec;
 import water.fvec.Vec;
+import water.parser.ParseDataset;
+import water.rapids.Exec;
+import water.rapids.Val;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
@@ -80,6 +87,61 @@ public class GLRMTest extends TestUtil {
     }
   }
 
+  @Test public void testSubset() throws InterruptedException, ExecutionException {
+    //Analogous to pyunit_subset_glrm.py
+    GLRM job = null;
+    GLRMModel model = null;
+    Frame train;
+    InputStream is;
+    try {
+      is = new FileInputStream(find_test_file("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip"));
+      UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
+      UploadFileVec.readPut("train",is,stats);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    ParseDataset.parse(Key.make("train_parsed"),Key.make("train"));
+    train = DKV.getGet("train_parsed");
+    try {
+      Log.info("num chunks: ", train.anyVec().nChunks());
+      Vec[] acs_zcta_vec = {train.vec(0).toCategoricalVec()};
+      Frame acs_zcta_fr = new Frame(Key.make("acs_zcta_fr"),new String[] {"name"}, acs_zcta_vec);
+      DKV.put(acs_zcta_fr);
+      train.remove(0).remove();
+      DKV.put(train);
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._gamma_x = 0.25;
+      parms._gamma_y = 0.5;
+      parms._regularization_x = GLRMParameters.Regularizer.Quadratic;
+      parms._regularization_y = GLRMParameters.Regularizer.L1;
+      parms._k = 10;
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._max_iterations = 1;
+      parms._loss = GLRMParameters.Loss.Quadratic;
+      try {
+        Scope.enter();
+        job = new GLRM(parms);
+        model = job.trainModel().get();
+        String s = "(tmp= py_4 (rows (cols_py " + model._output._representation_key + " [0 1]) (tmp= py_3 (| (| (| (| (| (== (tmp= py_2 " + acs_zcta_fr._key + ") \"10065\") (== py_2 \"11219\")) (== py_2 \"66753\")) (== py_2 \"84104\")) (== py_2 \"94086\")) (== py_2 \"95014\")))))";
+        Val val = Exec.exec(s);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+        acs_zcta_fr.delete();
+        Scope.exit();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+      if (model != null) model.delete();
+    }
+  }
+  
   @Test public void testArrests() throws InterruptedException, ExecutionException {
     // Initialize using first k rows of standardized training frame
     Frame yinit = ArrayUtils.frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),

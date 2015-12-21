@@ -376,7 +376,7 @@ public class JettyHTTPD {
         //
         // Here is an example of how to upload a file from the command line.
         //
-        // curl -v -F "file=@allyears2k_headers.zip" "http://localhost:54321/PostFile.bin?destination_frame=a.zip"
+        // curl -v -F "file=@allyears2k_headers.zip" "http://localhost:54321/3/PostFile.bin?destination_frame=a.zip"
         //
         // JSON Payload returned is:
         //     { "destination_frame": "key_name", "total_bytes": nnn }
