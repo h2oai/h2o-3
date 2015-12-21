@@ -1,5 +1,7 @@
 package h2o.testng.db;
 
+import water.util.Log;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,7 +33,7 @@ public class MySQLConfig {
 
 		File configFile = new File(dbConfigFilePath);
 		if (!configFile.exists()) {
-			System.out.println("Database config file not exists: " + dbConfigFilePath);
+			Log.err("Database config file not exists: " + dbConfigFilePath);
 			System.exit(-1);
 		}
 
@@ -40,18 +42,18 @@ public class MySQLConfig {
 		try {
 			properties.load(new BufferedReader(new FileReader(configFile)));
 		}
-		catch (FileNotFoundException ex) {
-			System.out.println("Database config file not found: " + dbConfigFilePath);
-			ex.printStackTrace();
+		catch (FileNotFoundException e) {
+			Log.err("Database config file not found: " + dbConfigFilePath);
+			e.printStackTrace();
 			System.exit(-1);
 		}
-		catch (IOException ex) {
-			System.out.println("Can not read config file: " + dbConfigFilePath);
-			ex.printStackTrace();
+		catch (IOException e) {
+			Log.err("Can not read config file: " + dbConfigFilePath);
+			e.printStackTrace();
 			System.exit(-1);
 		}
 
-		System.out.println("Loaded database config file successfully");
+		Log.info("Loaded database config file successfully.");
 	}
 
 	public void setConfigFilePath(String configFilePath) {

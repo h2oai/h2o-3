@@ -86,23 +86,19 @@ public class MySQL {
 			H2O.ABV.lastCommitHash(),
 			trainingResults.get("ModelBuildTime") == null || Double.isNaN(trainingResults.get("R2")) ? "NULL" : Double.toString(trainingResults.get("ModelBuildTime")));
 
-		Log.info("saved script SQL:");
-		Log.info(sql);
-
 		try {
 			statement = connection.createStatement();
 			statement.executeUpdate(sql);
 		}
-		catch (Exception ex) {
-			Log.err("Can't insert into table: " + config.getTableName());
-			ex.printStackTrace();
+		catch (Exception e) {
+			Log.err("Couldn't execute the following sql statement: " + sql);
+			Log.err(e.getMessage());
 			return false;
 		}
 		finally {
 			connection.closeConnection();
 		}
-
-		Log.info("The result is saved successfully in database");
+		Log.info("Successfully executed the following sql statement: " + sql);
 		return true;
 	}
 }

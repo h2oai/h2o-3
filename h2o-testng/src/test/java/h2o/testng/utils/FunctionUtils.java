@@ -1,24 +1,9 @@
 package h2o.testng.utils;
 
-import h2o.testng.db.MySQL;
-import hex.*;
-import hex.Distribution.Family;
-import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningConfig;
-import hex.deeplearning.DeepLearningModel;
-import hex.deeplearning.DeepLearningParameters;
-import hex.glm.GLM;
 import hex.glm.GLMConfig;
-import hex.glm.GLMModel;
-import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Solver;
-import hex.tree.drf.DRF;
 import hex.tree.drf.DRFConfig;
-import hex.tree.drf.DRFModel;
-import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMConfig;
-import hex.tree.gbm.GBMModel;
-import hex.tree.gbm.GBMModel.GBMParameters;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -31,7 +16,6 @@ import org.testng.Assert;
 
 import au.com.bytecode.opencsv.CSVReader;
 import water.Key;
-import water.Scope;
 import water.TestNGUtil;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
@@ -52,22 +36,6 @@ public class FunctionUtils {
 	// execute testcase
 	// ---------------------------------------------- //
 	private static String validateTestcaseType(DataSet train_dataset, HashMap<String, String> rawInput) {
-//		String result = null;
-//		String[] columnNames = train_dataset.getColumnNames();
-//		String[] columnTypes = train_dataset.getColumnTypes();
-//		String reponseColumnType = columnTypes[ArrayUtils.indexOf(columnNames, train_dataset.getResponseColumn())];
-//		if (Param.parseBoolean(rawInput.get(CommonHeaders.classification))
-//				&& !"enum".equals(reponseColumnType.toLowerCase())) {
-//
-//			result = "This is classification testcase but response_column type is not enum";
-//		}
-//		else if (Param.parseBoolean(rawInput.get(CommonHeaders.regression))
-//				&& "enum".equals(reponseColumnType.toLowerCase())) {
-//
-//			result = "This is regresstion testcase but response_column type is enum";
-//		}
-//
-//		return result;
 		return null;
 	}
 
@@ -106,9 +74,8 @@ public class FunctionUtils {
 
 	/**
 	 * Only use for DRF algorithm
-	 * 
-	 * @param tcHeaders
-	 * @param input
+	 *
+	 * @param rawInput
 	 * @return
 	 */
 	public static String checkImplemented(HashMap<String, String> rawInput) {
@@ -135,8 +102,7 @@ public class FunctionUtils {
 
 	/**
 	 * This function is only used for GLM algorithm.
-	 * 
-	 * @param tcHeaders
+	 *
 	 * @param rawInput
 	 * @param trainFrame
 	 * @param responseColumn
@@ -183,162 +149,6 @@ public class FunctionUtils {
 		return betaConstraints;
 	}
 
-//	public static Model.Parameters toModelParameter(Param[] params, String algorithm, String train_dataset_id,
-//			String validate_dataset_id, DataSet train_dataset, DataSet validate_dataset,
-//			HashMap<String, String> rawInput) {
-//
-//		Log.info("Fill in Model.Parameters object for respective algorithm: " + rawInput.get(CommonHeaders.test_case_id));
-//
-//		Model.Parameters modelParameter = null;
-//
-//		switch (algorithm) {
-//			case FunctionUtils.drf:
-//
-//				modelParameter = new DRFModel.DRFParameters();
-//
-//				// set distribution param
-//				Family drfFamily = (Family) DRFConfig.familyParams.getValue(rawInput);
-//
-//				if (drfFamily != null) {
-//					Log.info("Set _distribution: " + drfFamily);
-//					modelParameter._distribution = drfFamily;
-//				}
-//				break;
-//
-//			case FunctionUtils.glm:
-//
-//				modelParameter = new GLMParameters();
-//
-//				hex.glm.GLMModel.GLMParameters.Family glmFamily = (hex.glm.GLMModel.GLMParameters.Family) GLMConfig.familyOptionsParams
-//						.getValue(rawInput);
-//				Solver s = (Solver) GLMConfig.solverOptionsParams.getValue(rawInput);
-//
-//				if (glmFamily != null) {
-//					Log.info("Set _family: " + glmFamily);
-//					((GLMParameters) modelParameter)._family = glmFamily;
-//				}
-//				if (s != null) {
-//					Log.info("Set _solver: " + s);
-//					((GLMParameters) modelParameter)._solver = s;
-//				}
-//				break;
-//
-//			case FunctionUtils.gbm:
-//
-//				modelParameter = new GBMParameters();
-//
-//				// set distribution param
-//				Family gbmFamily = (Family) GBMConfig.familyParams.getValue(rawInput);
-//
-//				if (gbmFamily != null) {
-//					Log.info("Set _distribution: " + gbmFamily);
-//					modelParameter._distribution = gbmFamily;
-//				}
-//				break;
-//			case FunctionUtils.dl:
-//
-//				modelParameter = new DeepLearningParameters();
-//
-//				// set distribution param
-//				Family dlDistribution = (Family) DeepLearningConfig.distributionOptionsParams.getValue(rawInput);
-//
-//				if (dlDistribution != null) {
-//					Log.info("Set _distribution: " + dlDistribution);
-//					modelParameter._distribution = dlDistribution;
-//				}
-//
-//				DeepLearningParameters.Activation dlActivation = (DeepLearningParameters.Activation) DeepLearningConfig.activationOptionsParams
-//						.getValue(rawInput);
-//
-//				if (dlActivation != null) {
-//					Log.info("Set _activation: " + dlActivation);
-//					((DeepLearningParameters) modelParameter)._activation = dlActivation;
-//				}
-//
-//				DeepLearningParameters.Loss dlLoss = (DeepLearningParameters.Loss) DeepLearningConfig.lossOptionsParams
-//						.getValue(rawInput);
-//
-//				if (dlLoss != null) {
-//					Log.info("Set _activation: " + dlLoss);
-//					((DeepLearningParameters) modelParameter)._loss = dlLoss;
-//
-//				}
-//
-//				DeepLearningParameters.InitialWeightDistribution dlInitialWeightDistribution = (DeepLearningParameters.InitialWeightDistribution) DeepLearningConfig.initialWeightDistributionOptionsParams
-//						.getValueKey(rawInput, "_initial_weight_distribution");
-//
-//				if (dlInitialWeightDistribution != null) {
-//					Log.info("Set _initial_weight_distribution: " + dlInitialWeightDistribution);
-//					((DeepLearningParameters) modelParameter)._initial_weight_distribution = dlInitialWeightDistribution;
-//				}
-//
-//				DeepLearningParameters.MissingValuesHandling dlMissingValuesHandling = (DeepLearningParameters.MissingValuesHandling) DeepLearningConfig.missingValuesHandlingOptionsParams
-//						.getValueKey(rawInput, "_missing_values_handling");
-//
-//				if (dlMissingValuesHandling != null) {
-//					Log.info("Set _missing_values_handling: " + dlMissingValuesHandling);
-//					((DeepLearningParameters) modelParameter)._missing_values_handling = dlMissingValuesHandling;
-//				}
-//
-//				break;
-//
-//			default:
-//				Log.info("can not parse to object parameter with algorithm: " + algorithm);
-//		}
-//
-//		// set Model.Parameter object's
-//		Param.setAutoSetParams(modelParameter, params, rawInput);
-//
-//		// set response_column param
-//		modelParameter._response_column = train_dataset.dataSetFrame._names[train_dataset.responseColumn];
-//
-//		// set train/validate params
-//		Frame trainFrame = null;
-//		Frame validateFrame = null;
-//		Frame betaConstraints = null;
-//
-//		try {
-//
-//			Log.info("Create train frame: " + train_dataset_id);
-//			trainFrame = train_dataset.dataSetFrame;
-//
-//			if (StringUtils.isNotEmpty(validate_dataset_id) && validate_dataset != null) {
-//				Log.info("Create validate frame: " + validate_dataset_id);
-//				validateFrame = validate_dataset.dataSetFrame;
-//			}
-//
-//			if (algorithm.equals(FunctionUtils.glm)) {
-//				betaConstraints = createBetaConstraints(rawInput, trainFrame, train_dataset.responseColumn);
-//				if (betaConstraints != null) {
-//					((GLMParameters) modelParameter)._beta_constraints = betaConstraints._key;
-//				}
-//			}
-//		}
-//		catch (Exception e) {
-//			if (trainFrame != null) {
-//				trainFrame.remove();
-//			}
-//			if (validateFrame != null) {
-//				validateFrame.remove();
-//			}
-//			if (betaConstraints != null) {
-//				betaConstraints.remove();
-//			}
-//			throw e;
-//		}
-//
-//		Log.info("Set train frame");
-//		modelParameter._train = trainFrame._key;
-//
-//		if (validateFrame != null) {
-//			Log.info("Set validate frame");
-//			modelParameter._valid = validateFrame._key;
-//		}
-//
-//		Log.info("Create success modelParameter object.");
-//		return modelParameter;
-//	}
-
 	/**
 	 * If the testcase is negative testcase. The function will compare error message with a message in testcase
 	 * 
@@ -369,227 +179,6 @@ public class FunctionUtils {
 			Assert.fail(exception.getMessage(), exception);
 		}
 	}
-
-//	public static void basicTesting(String algorithm, Model.Parameters parameter, boolean isNegativeTestcase,
-//			HashMap<String, String> rawInput) {
-//
-//		boolean isTestSuccessfully = false;
-//		Frame trainFrame = null;
-//		Frame score = null;
-//		Model.Output modelOutput = null;
-//		ModelMetrics trainingMetrics = null;
-//		ModelMetrics testMetrics = null;
-//
-//		DRF drfJob = null;
-//		DRFModel drfModel = null;
-//
-//		Key modelKey = Key.make("model");
-//		GLM glmJob = null;
-//		GLMModel glmModel = null;
-//		HashMap<String, Double> coef = null;
-//
-//		GBM gbmJob = null;
-//		GBMModel gbmModel = null;
-//
-//		DeepLearning dlJob = null;
-//		DeepLearningModel dlModel = null;
-//
-//		trainFrame = parameter._train.get();
-//
-//		try {
-//			Scope.enter();
-//			double modelStartTime = 0;
-//			double modelStopTime = 0;
-//			switch (algorithm) {
-//				case FunctionUtils.drf:
-//
-//					Log.info("Build model");
-//					drfJob = new DRF((DRFModel.DRFParameters) parameter);
-//
-//					Log.info("Train model:");
-//					modelStartTime = System.currentTimeMillis();
-//					drfModel = drfJob.trainModel().get();
-//					modelStopTime = System.currentTimeMillis();
-//
-//					modelOutput = drfModel._output;
-//					break;
-//
-//				case FunctionUtils.glm:
-//
-//					Log.info("Build model");
-//					glmJob = new GLM(modelKey, "basic glm test", (GLMParameters) parameter);
-//
-//					Log.info("Train model");
-//					modelStartTime = System.currentTimeMillis();
-//					glmModel = glmJob.trainModel().get();
-//					modelStopTime = System.currentTimeMillis();
-//
-//					modelOutput = glmModel._output;
-//					break;
-//
-//				case FunctionUtils.gbm:
-//
-//					Log.info("Build model ");
-//					gbmJob = new GBM((GBMParameters) parameter);
-//
-//					Log.info("Train model");
-//					modelStartTime = System.currentTimeMillis();
-//					gbmModel = gbmJob.trainModel().get();
-//					modelStopTime = System.currentTimeMillis();
-//
-//					modelOutput = gbmModel._output;
-//					break;
-//
-//				case FunctionUtils.dl:
-//
-//					Log.info("Build model ");
-//					dlJob = new DeepLearning((DeepLearningParameters) parameter);
-//
-//					Log.info("Train model");
-//					modelStartTime = System.currentTimeMillis();
-//					dlModel = dlJob.trainModel().get();
-//					modelStopTime = System.currentTimeMillis();
-//
-//					modelOutput = dlModel._output;
-//					break;
-//			}
-//
-//			// check regression/classification
-//			if (modelOutput.isClassifier() && !Param.parseBoolean(rawInput.get(CommonHeaders.classification))) {
-//				Assert.fail("This is regression testcase");
-//			}
-//			else if (!modelOutput.isClassifier() && Param.parseBoolean(rawInput.get(CommonHeaders.classification))) {
-//				Assert.fail("This is classification testcase");
-//			}
-//
-//			isTestSuccessfully = true;
-//
-//			// write the MSE/AUC result to log and database
-//			if (!isNegativeTestcase) {
-//				Log.info("Testcase passed.");
-//
-//				trainingMetrics = modelOutput._training_metrics;
-//				testMetrics = modelOutput._validation_metrics;
-//
-//				HashMap<String,Double> train = new HashMap<String,Double>();
-//				HashMap<String,Double> test = new HashMap<String,Double>();
-//
-//				train.put("ModelBuildTime", modelStopTime - modelStartTime);
-//
-//				// Supervised metrics
-//				train.put("MSE",trainingMetrics.mse());
-//				test.put("MSE",testMetrics.mse());
-//				train.put("R2",((ModelMetricsSupervised) trainingMetrics).r2());
-//				test.put("R2",((ModelMetricsSupervised) testMetrics).r2());
-//
-//				// Regression metrics
-//				if( trainingMetrics instanceof ModelMetricsRegression) {
-//					train.put("MeanResidualDeviance",((ModelMetricsRegression) trainingMetrics)._mean_residual_deviance);
-//					test.put("MeanResidualDeviance",((ModelMetricsRegression) testMetrics)._mean_residual_deviance);
-//				}
-//
-//				// Binomial metrics
-//				if( trainingMetrics instanceof ModelMetricsBinomial) {
-//					train.put("AUC",((ModelMetricsBinomial) trainingMetrics).auc());
-//					test.put("AUC",((ModelMetricsBinomial) testMetrics).auc());
-//					train.put("Gini",((ModelMetricsBinomial) trainingMetrics)._auc._gini);
-//					test.put("Gini",((ModelMetricsBinomial) testMetrics)._auc._gini);
-//					train.put("Logloss",((ModelMetricsBinomial) trainingMetrics).logloss());
-//					test.put("Logloss",((ModelMetricsBinomial) testMetrics).logloss());
-//					train.put("F1",((ModelMetricsBinomial) trainingMetrics).cm().F1());
-//					test.put("F1",((ModelMetricsBinomial) testMetrics).cm().F1());
-//					train.put("F2",((ModelMetricsBinomial) trainingMetrics).cm().F2());
-//					test.put("F2",((ModelMetricsBinomial) testMetrics).cm().F2());
-//					train.put("F0point5",((ModelMetricsBinomial) trainingMetrics).cm().F0point5());
-//					test.put("F0point5",((ModelMetricsBinomial) testMetrics).cm().F0point5());
-//					train.put("Accuracy",((ModelMetricsBinomial) trainingMetrics).cm().accuracy());
-//					test.put("Accuracy",((ModelMetricsBinomial) testMetrics).cm().accuracy());
-//					train.put("Error",((ModelMetricsBinomial) trainingMetrics).cm().err());
-//					test.put("Error",((ModelMetricsBinomial) testMetrics).cm().err());
-//					train.put("Precision",((ModelMetricsBinomial) trainingMetrics).cm().precision());
-//					test.put("Precision",((ModelMetricsBinomial) testMetrics).cm().precision());
-//					train.put("Recall",((ModelMetricsBinomial) trainingMetrics).cm().recall());
-//					test.put("Recall",((ModelMetricsBinomial) testMetrics).cm().recall());
-//					train.put("MCC",((ModelMetricsBinomial) trainingMetrics).cm().mcc());
-//					test.put("MCC",((ModelMetricsBinomial) testMetrics).cm().mcc());
-//					train.put("MaxPerClassError",((ModelMetricsBinomial) trainingMetrics).cm().max_per_class_error());
-//					test.put("MaxPerClassError",((ModelMetricsBinomial) testMetrics).cm().max_per_class_error());
-//				}
-//
-//				// GLM-specific metrics
-//				if( trainingMetrics instanceof ModelMetricsRegressionGLM) {
-//					train.put("ResidualDeviance",((ModelMetricsRegressionGLM) trainingMetrics)._resDev);
-//					test.put("ResidualDeviance",((ModelMetricsRegressionGLM) testMetrics)._resDev);
-//					train.put("ResidualDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) trainingMetrics)._residualDegressOfFreedom);
-//					test.put("ResidualDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) testMetrics)._residualDegressOfFreedom);
-//					train.put("NullDeviance",((ModelMetricsRegressionGLM) trainingMetrics)._nullDev);
-//					test.put("NullDeviance",((ModelMetricsRegressionGLM) testMetrics)._nullDev);
-//					train.put("NullDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) trainingMetrics)._nullDegressOfFreedom);
-//					test.put("NullDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) testMetrics)._nullDegressOfFreedom);
-//					train.put("AIC",((ModelMetricsRegressionGLM) trainingMetrics)._AIC);
-//					test.put("AIC",((ModelMetricsRegressionGLM) testMetrics)._AIC);
-//				}
-//				if( trainingMetrics instanceof ModelMetricsBinomialGLM) {
-//					train.put("ResidualDeviance",((ModelMetricsBinomialGLM) trainingMetrics)._resDev);
-//					test.put("ResidualDeviance",((ModelMetricsBinomialGLM) testMetrics)._resDev);
-//					train.put("ResidualDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) trainingMetrics)._residualDegressOfFreedom);
-//					test.put("ResidualDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) testMetrics)._residualDegressOfFreedom);
-//					train.put("NullDeviance",((ModelMetricsBinomialGLM) trainingMetrics)._nullDev);
-//					test.put("NullDeviance",((ModelMetricsBinomialGLM) testMetrics)._nullDev);
-//					train.put("NullDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) trainingMetrics)._nullDegressOfFreedom);
-//					test.put("NullDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) testMetrics)._nullDegressOfFreedom);
-//					train.put("AIC",((ModelMetricsBinomialGLM) trainingMetrics)._AIC);
-//					test.put("AIC",((ModelMetricsBinomialGLM) testMetrics)._AIC);
-//				}
-//
-//				MySQL.save(train, test, rawInput);
-//			}
-//		}
-//		catch (Exception ex) {
-//
-//			handleTestcaseFailed(isNegativeTestcase, ex, rawInput);
-//		}
-//		catch (AssertionError ae) {
-//
-//			handleTestcaseFailed(isNegativeTestcase, ae, rawInput);
-//		}
-//		finally {
-//			if (drfJob != null) {
-//				drfJob.remove();
-//			}
-//			if (drfModel != null) {
-//				drfModel.delete();
-//			}
-//			if (glmJob != null) {
-//				glmJob.remove();
-//			}
-//			if (glmModel != null) {
-//				glmModel.delete();
-//			}
-//			if (gbmJob != null) {
-//				gbmJob.remove();
-//			}
-//			if (gbmModel != null) {
-//				gbmModel.delete();
-//			}
-//			if (dlJob != null) {
-//				dlJob.remove();
-//			}
-//			if (dlModel != null) {
-//				dlModel.delete();
-//			}
-//			if (score != null) {
-//				score.remove();
-//				score.delete();
-//			}
-//			Scope.exit();
-//		}
-//
-//		if (isNegativeTestcase && isTestSuccessfully) {
-//			Log.info("It is negative testcase");
-//			Assert.fail("It is negative testcase");
-//		}
-//	}
 
 	// ---------------------------------------------- //
 	// initiate data. Read testcase files
@@ -701,8 +290,6 @@ public class FunctionUtils {
 		int r = 0;
 
 		positiveData = readTestcaseFile(dataSetCharacteristic, testCaseSchema, positiveTestcaseFilePath, algorithm, false);
-//		negativeData = readTestcaseFile(dataSetCharacteristic, testCaseSchema, negativeTestcaseFilePath, indexRowHeader,
-//				algorithm, true);
 
 		if (positiveData != null && positiveData.length != 0) {
 			numRow += positiveData.length;
@@ -823,59 +410,5 @@ public class FunctionUtils {
 		}
 
 		return result;
-	}
-
-//	public static Object[][] removeAllTestcase(Object[][] testcases, String size) {
-//
-//		if (testcases == null || testcases.length == 0) {
-//			return null;
-//		}
-//
-//		if (StringUtils.isEmpty(size)) {
-//			return testcases;
-//		}
-//
-//		Object[][] result = null;
-//		Object[][] temp = null;
-//		int nrows = 0;
-//		int ncols = 0;
-//		int r = 0;
-//		int i = 0;
-//		Dataset dataset = null;
-//
-//		ncols = testcases.length;
-//		nrows = testcases[0].length;
-//		temp = new Object[ncols][nrows];
-//
-//		for (i = 0; i < ncols; i++) {
-//
-//			dataset = (Dataset) testcases[i][4];
-//
-//			if (dataset == null) {
-//				// because we have to show any INVALID testcase thus we have to add this testcase
-//				temp[r++] = testcases[i];
-//			}
-//			else if (size.equals(dataset.dataSetURI)) {
-//				temp[r++] = testcases[i];
-//			}
-//		}
-//
-//		if (r == 0) {
-//			Log.info(String.format("dataset characteristic have no size what is: %s.", size));
-//		}
-//		else {
-//
-//			result = new Object[r][nrows];
-//
-//			for (i = 0; i < r; i++) {
-//				result[i] = temp[i];
-//			}
-//		}
-//
-//		return result;
-//	}
-
-	public static void closeAllFrameInDatasetCharacteristic(HashMap<Integer, DataSet> mapDatasetCharacteristic) {
-		for (int key : mapDatasetCharacteristic.keySet()) mapDatasetCharacteristic.get(key).closeFrame();
 	}
 }

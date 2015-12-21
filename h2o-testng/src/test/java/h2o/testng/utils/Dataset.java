@@ -39,7 +39,7 @@ public class DataSet extends TestUtil{
 			}
 		}
 		if (!foundDataSet) {
-			Log.info("Couldn't find data set id: " + id + " in csv: " + dataSetsPath);
+			Log.err("Couldn't find data set id: " + id + " in csv: " + dataSetsPath);
 			System.exit(-1);
 		}
 
@@ -77,10 +77,8 @@ public class DataSet extends TestUtil{
 
 	private File makeDataSetFile(String uri) {
 		String filePath;
-		if (uri.contains("bigdata"))
-			filePath = "bigdata/laptop/testng/";
-		else
-			filePath = "smalldata/testng/";
+		if (uri.contains("bigdata")) { filePath = "bigdata/laptop/testng/"; }
+		else {                         filePath = "smalldata/testng/"; }
 
 		String[] uriTokens = uri.trim().split("/", -1);
 		String fileName = uriTokens[uriTokens.length - 1];
