@@ -13,7 +13,7 @@ import java.util.List;
 public class DeepLearningConfig {
 
 	public final static int indexRowHeader = 3;
-	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/dlCases.csv";
+	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/accuracy_test_cases.csv";
 	public final static String negativeTestcaseFilePath = "h2o-testng/src/test/resources/dlNegCases.csv";
 	
 	// below are single param which can set automatically to a GLM Object
@@ -130,7 +130,19 @@ public class DeepLearningConfig {
 			}
 	);
 
-	public static List<String> listHeaders = new ArrayList<String>(
+	public static List<String> testCaseSchema = new ArrayList<String> (
+		Arrays.asList(
+			"test_case_id",
+			"algorithm",
+			"algo_parameters",
+			"tuned",
+			"regression",
+			"training_dataset_id",
+			"testing_dataset_id"
+		)
+	);
+
+	public static List<String> algoParamsSchema = new ArrayList<String>(
 			Arrays.asList(
 					"auto",
 					"bernoulli",
@@ -203,6 +215,6 @@ public class DeepLearningConfig {
 	);
 	
 	static {
-	    listHeaders.addAll(CommonHeaders.commonHeaders);
+		algoParamsSchema.addAll(CommonHeaders.commonHeaders);
 	}
 }

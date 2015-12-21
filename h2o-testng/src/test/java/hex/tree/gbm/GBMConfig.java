@@ -13,7 +13,7 @@ import java.util.List;
 public class GBMConfig {
 
 	public final static int indexRowHeader = 5;
-	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/gbmCases.csv";
+	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/accuracy_test_cases.csv";
 	public final static String negativeTestcaseFilePath = "h2o-testng/src/test/resources/gbmNegCases.csv";
 
 	public static Param[] params = new Param[] {
@@ -46,8 +46,20 @@ public class GBMConfig {
 	public final static OptionsGroupParam familyParams = new OptionsGroupParam(
 			new String[] {CommonHeaders.family_auto, CommonHeaders.family_gaussian, CommonHeaders.family_binomial, CommonHeaders.family_multinomial, CommonHeaders.family_poisson, CommonHeaders.family_gamma, CommonHeaders.family_tweedie},
 			new Object[] {Family.AUTO, Family.gaussian, Family.bernoulli, Family.multinomial, Family.poisson, Family.gamma, Family.tweedie});
-	
-	public static List<String> listHeaders = new ArrayList<String>(
+
+	public static List<String> testCaseSchema = new ArrayList<String> (
+		Arrays.asList(
+			"test_case_id",
+			"algorithm",
+			"algo_parameters",
+			"tuned",
+			"regression",
+			"training_dataset_id",
+			"testing_dataset_id"
+		)
+	);
+
+	public static List<String> algoParamsSchema = new ArrayList<String>(
 			Arrays.asList(
 					CommonHeaders.family_auto,
 					CommonHeaders.family_gaussian,
@@ -83,6 +95,6 @@ public class GBMConfig {
 	);
 	
 	static {
-	    listHeaders.addAll(CommonHeaders.commonHeaders);
+		algoParamsSchema.addAll(CommonHeaders.commonHeaders);
 	}
 }

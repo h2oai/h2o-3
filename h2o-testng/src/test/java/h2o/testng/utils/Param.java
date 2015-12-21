@@ -67,7 +67,7 @@ public class Param {
 		return result;
 	}
 
-	public static boolean setAutoSetParams(Model.Parameters modelParameter, Param[] params,
+	public static void setAutoSetParams(Model.Parameters modelParameter, Param[] params,
 			HashMap<String, String> rawInput) {
 
 		System.out.println("set auto_set params");
@@ -79,8 +79,6 @@ public class Param {
 				isSetValue |= p.parseAndSet(modelParameter, rawInput.get(p.name));
 			}
 		}
-
-		return isSetValue;
 	}
 
 	/**

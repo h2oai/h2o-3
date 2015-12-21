@@ -1,13 +1,12 @@
 package h2o.testng.db;
 
-import h2o.testng.utils.CommonHeaders;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Statement;
 import java.util.HashMap;
 
 import water.H2O;
+import water.util.Log;
 
 public class MySQL {
 
@@ -17,11 +16,10 @@ public class MySQL {
 	public final static String tuned = "tuned";
 	public final static String tuned_or_defaults = "tuned_or_defaults";
 
-	public static boolean save(HashMap<String,Double> trainingResults, HashMap<String,Double> testingResults,
-														 HashMap<String, String> rawInput) {
+	public static boolean save(HashMap<String,Double> trainingResults, HashMap<String,Double> testingResults) {
 
 		if (!config.isUsedDB()) {
-			System.out.println("Program is configured don't use database");
+			Log.info("Program is configured don't use database");
 			return false;
 		}
 
@@ -88,15 +86,15 @@ public class MySQL {
 			H2O.ABV.lastCommitHash(),
 			trainingResults.get("ModelBuildTime") == null || Double.isNaN(trainingResults.get("R2")) ? "NULL" : Double.toString(trainingResults.get("ModelBuildTime")));
 
-		System.out.println("saved script SQL:");
-		System.out.println(sql);
+		Log.info("saved script SQL:");
+		Log.info(sql);
 
 		try {
 			statement = connection.createStatement();
 			statement.executeUpdate(sql);
 		}
 		catch (Exception ex) {
-			System.out.println("Can't insert into table: " + config.getTableName());
+			Log.err("Can't insert into table: " + config.getTableName());
 			ex.printStackTrace();
 			return false;
 		}
@@ -104,7 +102,7 @@ public class MySQL {
 			connection.closeConnection();
 		}
 
-		System.out.println("The result is saved successfully in database");
+		Log.info("The result is saved successfully in database");
 		return true;
 	}
 }

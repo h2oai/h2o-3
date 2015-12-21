@@ -13,7 +13,7 @@ import java.util.List;
 public class DRFConfig {
 	
 	public final static int indexRowHeader = 5;
-	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/drfCases.csv";
+	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/accuracy_test_cases.csv";
 	public final static String negativeTestcaseFilePath = "h2o-testng/src/test/resources/drfNegCases.csv";
 	
 	public static Param[] params = new Param[] {
@@ -42,8 +42,20 @@ public class DRFConfig {
 		new Param("_checkpoint", "Key"),
 		new Param("_nbins_top_level", "int"),
 	}; 
-	
-	public static List<String> listHeaders = new ArrayList<String>(
+
+	public static List<String> testCaseSchema = new ArrayList<String> (
+		Arrays.asList(
+			"test_case_id",
+			"algorithm",
+			"algo_parameters",
+			"tuned",
+			"regression",
+			"training_dataset_id",
+			"testing_dataset_id"
+		)
+	);
+
+	public static List<String> algoParamsSchema = new ArrayList<String>(
 			Arrays.asList(
 					"auto",
 					"gaussian",
@@ -79,7 +91,7 @@ public class DRFConfig {
 			);
 	
 	static {
-	    listHeaders.addAll(CommonHeaders.commonHeaders);
+	    algoParamsSchema.addAll(CommonHeaders.commonHeaders);
 	}
 	
 	//TODO: missing binomial attribute in hex.Distributions.Family class

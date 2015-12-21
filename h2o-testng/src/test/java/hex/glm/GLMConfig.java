@@ -13,7 +13,7 @@ import java.util.List;
 public class GLMConfig {
 
 	public final static int indexRowHeader = 4;
-	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/glmCases.csv";
+	public final static String positiveTestcaseFilePath = "h2o-testng/src/test/resources/accuracy_test_cases.csv";
 	public final static String negativeTestcaseFilePath = "h2o-testng/src/test/resources/glmNegCases.csv";
 	
 	// below are single param which can set automatically to a GLM Object
@@ -47,9 +47,21 @@ public class GLMConfig {
 	public static OptionsGroupParam solverOptionsParams = new OptionsGroupParam(
 			new String[] {"auto","irlsm", "lbfgs", "coordinate_descent_naive", "coordinate_descent"},
 			new Object[] {Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}
-	); 
+	);
 
-	public static List<String> listHeaders = new ArrayList<String>(
+	public static List<String> testCaseSchema = new ArrayList<String> (
+		Arrays.asList(
+			"test_case_id",
+			"algorithm",
+			"algo_parameters",
+			"tuned",
+			"regression",
+			"training_dataset_id",
+			"testing_dataset_id"
+		)
+	);
+
+	public static List<String> algoParamsSchema = new ArrayList<String>(
 			Arrays.asList(
 					"gaussian",
 					"binomial",
@@ -87,6 +99,6 @@ public class GLMConfig {
 	);
 	
 	static {
-	    listHeaders.addAll(CommonHeaders.commonHeaders);
+		algoParamsSchema.addAll(CommonHeaders.commonHeaders);
 	}
 }
