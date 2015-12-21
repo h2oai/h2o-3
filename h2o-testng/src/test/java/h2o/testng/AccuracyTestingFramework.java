@@ -16,8 +16,6 @@ import org.testng.annotations.*;
 import water.TestNGUtil;
 
 public class AccuracyTestingFramework extends TestNGUtil {
-	static HashMap<Integer, DataSet> dataSets = new HashMap<Integer, DataSet>();
-
 	@DataProvider(name = "TestCaseProvider")
 	public Object[][] testCaseProvider() {
 		// Retrieve the Accuracy database configuration information
