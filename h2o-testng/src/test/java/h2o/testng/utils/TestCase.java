@@ -245,8 +245,8 @@ public class TestCase extends TestUtil {
       "_non_negative",
       "betaConstraints",
       "lowerBound",
-      "upperBound"
-      ,"",
+      "upperBound",
+      "",
       "_intercept",
       "_prior",
       "_max_active_predictors"
@@ -442,8 +442,194 @@ public class TestCase extends TestUtil {
   }
 
   private DeepLearningModel.Parameters makeDlModelParameters() {
-    return null;
+    DeepLearningParameters dlParams = new DeepLearningParameters();
+    String[] dlAlgoParamsMap = new String[]{
+      "auto",
+      "bernoulli",
+      "multinomial",
+      "gaussian",
+      "poisson",
+      "gamma",
+      "tweedie",
+      "_nfolds",
+      "tanh",
+      "tanhwithdropout",
+      "rectifier",
+      "rectifierwithdropout",
+      "maxout",
+      "maxoutwithdropout",
+      "_hidden", // TODO: only 2 hidden layers supported at this time
+      "_epochs",
+      "_variable_importances",
+      "_fold_column",
+      "_offset_column",
+      "_weights_column",
+      "_balance_classes",
+      "_max_confusion_matrix_size",
+      "_max_hit_ratio_k",
+      "_check_point",
+      "_use_all_factor_levels",
+      "_train_samples_per_iteration",
+      "_adaptive_rate",
+      "_input_dropout_ratio",
+      "_l1",
+      "_l2",
+      "automatic",
+      "crossentropy",
+      "quadratic",
+      "huber",
+      "absolute",
+      "",
+      "_score_interval",
+      "_score_training_samples",
+      "_score_duty_cycle",
+      "_replicate_training_data",
+      "_autoencoder",
+      "_class_sampling_factors",
+      "_target_ratio_comm_to_comp",
+      "_seed",
+      "_rho",
+      "_epsilon",
+      "_max_w2",
+      "_initial_weight_distribution",
+      "_regression_stop",
+      "_diagnostics",
+      "_fast_mode",
+      "_force_load_balance",
+      "_single_node_mode",
+      "_shuffle_training_data",
+      "_missing_values_handling",
+      "_quiet_mode",
+      "_sparse",
+      "_col_major",
+      "_average_activation",
+      "_sparsity_beta",
+      "_max_categorical_features",
+      "_reproducible",
+      "_export_weights_and_biases"
+    };
+
+    String[] tokens = algoParameters.trim().split(";", -1);
+    assert tokens.length == 63;
+
+    // _distribution
+    if      (tokens[0].equals("x")) { dlParams._distribution = Distribution.Family.AUTO; }
+    else if (tokens[1].equals("x")) { dlParams._distribution = Distribution.Family.bernoulli; }
+    else if (tokens[2].equals("x")) { dlParams._distribution = Distribution.Family.multinomial; }
+    else if (tokens[3].equals("x")) { dlParams._distribution = Distribution.Family.gaussian; }
+    else if (tokens[4].equals("x")) { dlParams._distribution = Distribution.Family.poisson; }
+    else if (tokens[5].equals("x")) { dlParams._distribution = Distribution.Family.gamma; }
+    else if (tokens[6].equals("x")) { dlParams._distribution = Distribution.Family.tweedie; }
+
+    // _activation
+    if      (tokens[8].equals("x"))  { dlParams._activation = DeepLearningParameters.Activation.Tanh; }
+    else if (tokens[9].equals("x"))  { dlParams._activation = DeepLearningParameters.Activation.TanhWithDropout; }
+    else if (tokens[10].equals("x")) { dlParams._activation = DeepLearningParameters.Activation.Rectifier; }
+    else if (tokens[11].equals("x")) { dlParams._activation = DeepLearningParameters.Activation.RectifierWithDropout; }
+    else if (tokens[12].equals("x")) { dlParams._activation = DeepLearningParameters.Activation.Maxout; }
+    else if (tokens[13].equals("x")) { dlParams._activation = DeepLearningParameters.Activation.MaxoutWithDropout; }
+
+    // _loss
+    if      (tokens[30].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.Automatic; }
+    else if (tokens[31].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.CrossEntropy; }
+    else if (tokens[32].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.Quadratic; }
+    else if (tokens[33].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.Huber; }
+    else if (tokens[34].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.Absolute; }
+
+    for (int i = 7; i < tokens.length; i++) {
+      if (tokens[i].isEmpty() || i == 8 || i == 9 || i == 10 || i == 11 || i == 12 || i == 13 || i == 30 || i == 31
+        || i == 32 || i == 33 || i == 34 || i == 35) { continue; } // skip _activation, _loss
+      switch (dlAlgoParamsMap[i]) {
+        case "_hidden":
+          String[] hidden = tokens[i].trim().split(":", -1);
+          dlParams._hidden = new int[]{ Integer.parseInt(hidden[0]), Integer.parseInt(hidden[0])};
+          break;
+        case "_epochs":                      dlParams._epochs = Double.parseDouble(tokens[i]);
+          break;
+        case "_variable_importances":        dlParams._variable_importances = true;
+          break;
+        case "_fold_column":                 dlParams._fold_column = tokens[i];
+          break;
+        case "_weights_column":              dlParams._weights_column = tokens[i];
+          break;
+        case "_balance_classes":             dlParams._balance_classes = true;
+          break;
+        case "_max_confusion_matrix_size":   dlParams._max_confusion_matrix_size = Integer.parseInt(tokens[i]);
+          break;
+        case "_use_all_factor_levels":       dlParams._use_all_factor_levels = true;
+          break;
+        case "_train_samples_per_iteration": dlParams._train_samples_per_iteration = Long.parseLong(tokens[i]);
+          break;
+        case "_adaptive_rate":               dlParams._adaptive_rate = true;
+          break;
+        case "_input_dropout_ratio":         dlParams._input_dropout_ratio = Double.parseDouble(tokens[i]);
+          break;
+        case "_l1":                          dlParams._l1 = Double.parseDouble(tokens[i]);
+          break;
+        case "_l2":                          dlParams._l2 = Double.parseDouble(tokens[i]);
+          break;
+        case "_score_interval":              dlParams._score_interval = Double.parseDouble(tokens[i]);
+          break;
+        case "_score_training_samples":      dlParams._score_training_samples = Long.parseLong(tokens[i]);
+          break;
+        case "_score_duty_cycle":            dlParams._score_duty_cycle = Double.parseDouble(tokens[i]);
+          break;
+        case "_replicate_training_data":     dlParams._replicate_training_data = true;
+          break;
+        case "_autoencoder":                 dlParams._autoencoder = true;
+          break;
+        case "_target_ratio_comm_to_comp":   dlParams._target_ratio_comm_to_comp = Double.parseDouble(tokens[i]);
+          break;
+        case "_seed":                        dlParams._seed = Long.parseLong(tokens[i]);
+          break;
+        case "_rho":                         dlParams._rho = Double.parseDouble(tokens[i]);
+          break;
+        case "_epsilon":                     dlParams._epsilon = Double.parseDouble(tokens[i]);
+          break;
+        case "_max_w2":                      dlParams._max_w2 = Float.parseFloat(tokens[i]);
+          break;
+        case "_regression_stop":             dlParams._regression_stop = Double.parseDouble(tokens[i]);
+          break;
+        case "_diagnostics":                 dlParams._diagnostics = true;
+          break;
+        case "_fast_mode":                   dlParams._fast_mode = true;
+          break;
+        case "_force_load_balance":          dlParams._force_load_balance = true;
+          break;
+        case "_single_node_mode":            dlParams._single_node_mode = true;
+          break;
+        case "_shuffle_training_data":       dlParams._shuffle_training_data = true;
+          break;
+        case "_quiet_mode":                  dlParams._quiet_mode = true;
+          break;
+        case "_sparse":                      dlParams._sparse = true;
+          break;
+        case "_col_major":                   dlParams._col_major = true;
+          break;
+        case "_average_activation":          dlParams._average_activation = Double.parseDouble(tokens[i]);
+          break;
+        case "_sparsity_beta":               dlParams._sparsity_beta = Double.parseDouble(tokens[i]);
+          break;
+        case "_max_categorical_features":    dlParams._max_categorical_features = Integer.parseInt(tokens[i]);
+          break;
+        case "_reproducible":                dlParams._reproducible = true;
+          break;
+        case "_export_weights_and_biases":   dlParams._export_weights_and_biases = true;
+          break;
+        default:
+          Log.err(dlAlgoParamsMap[i] + " parameter is not supported for dl test cases");
+          System.exit(-1);
+          break;
+      }
+    }
+    // _train, _valid, _response
+    dlParams._train = trainingDataSet.getFrame()._key;
+    dlParams._valid = testingDataSet.getFrame()._key;
+    dlParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
+
+    return dlParams;
   }
+
   private DRFModel.DRFParameters makeDrfModelParameters() {
     DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
     String[] drfAlgoParamsMap = new String[]{

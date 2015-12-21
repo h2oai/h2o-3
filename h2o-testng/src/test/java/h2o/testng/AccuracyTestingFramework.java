@@ -28,10 +28,10 @@ public class AccuracyTestingFramework extends TestNGUtil {
 
 		// Retrieve algorithm and testcaseId command-line parameters. These are used to filter the set of test cases.
 		//algorithm = System.getProperty("algo");
-		String algorithm = "glm";
+		String algorithm = null;
 
 		//testCaseId = System.getProperty("testcaseId");
-		int testCaseId = Integer.parseInt("454");
+		int testCaseId = Integer.parseInt("348");
 
 		return createTestCases(algorithm, testCaseId);
 	}
