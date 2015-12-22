@@ -1,13 +1,8 @@
-#----------------------------------------------------------------------
-# Purpose:  Create random data and run 20 iterations of GLM on it.
-#----------------------------------------------------------------------
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
 
 # Data frame size 
 rows <- c(1e4,1e5) 

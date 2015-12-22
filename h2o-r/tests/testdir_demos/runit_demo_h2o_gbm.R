@@ -1,13 +1,7 @@
-##
-# Test out the h2o.gbm R demo
-# It imports a dataset, parses it, and prints a summary
-# Then, it runs h2o.gbm on a subset of the dataset
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.h2o.gbm <- function(conn) {
+test.h2o.gbm <- function() {
   prosPath <- system.file("extdata", "prostate.csv", package="h2o")
   Log.info(paste("Uploading", prosPath))
   prostate.hex <- h2o.uploadFile( path = prosPath, destination_frame = "prostate.hex")
@@ -36,7 +30,6 @@ test.h2o.gbm <- function(conn) {
   iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex, distribution = "multinomial")
   print(iris.gbm)
 
-  testEnd()
 }
 
 doTest("Test out the h2o.gbm R demo", test.h2o.gbm)

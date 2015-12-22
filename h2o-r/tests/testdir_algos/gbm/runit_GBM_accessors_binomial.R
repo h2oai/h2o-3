@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.gbm.bin.accessors <- function(conn) {
+test.gbm.bin.accessors <- function() {
   Log.info("Making gbm with and without validation_frame...")
   pros.hex <- h2o.uploadFile( locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
@@ -68,7 +68,6 @@ test.gbm.bin.accessors <- function(conn) {
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.gbm))
 
-  testEnd()
 }
 
 doTest("Testing model accessors for GBM", test.gbm.bin.accessors)

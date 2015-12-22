@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.GBM.ecology <- function(conn) {
+test.GBM.ecology <- function() {
   Log.info("==============================")
   Log.info("Gaussian Behavior")
   Log.info("==============================")
@@ -40,7 +40,6 @@ test.GBM.ecology <- function(conn) {
   eco.model <- h2o.gbm(x = 1:8, y = "Method", training_frame = eco.hex, distribution="multinomial")
   expect_true(class(eco.model) == "H2OMultinomialModel")
 
-  testEnd()
 }
 
 doTest("GBM: Ecology Data", test.GBM.ecology)

@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 library(gbm)
 
-test.GBM.smallcat <- function(conn) {
+test.GBM.smallcat <- function() {
   # Training set has 26 categories from A to Z
   # Categories A, C, E, G, ... are perfect predictors of y = 1
   # Categories B, D, F, H, ... are perfect predictors of y = 0
@@ -52,7 +52,6 @@ test.GBM.smallcat <- function(conn) {
   # pred <- ifelse(drfmodel.r.pred == "0", 0, 1)
   # R.auc = gbm.roc.area(actual, pred)
   # Log.info(paste("R AUC:", R.auc, "\tH2O (Group Split) AUC:", drfmodel.grpsplit@model$AUC))
-  testEnd()
 }
 
 doTest("GBM Test: Classification with 26 categorical level predictor", test.GBM.smallcat)

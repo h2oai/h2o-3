@@ -1,14 +1,7 @@
-##
-# Test: Saving and Loading GLM Model (HEX-1775)
-# Description: Build GLM model, save model in R, copy model and load in R
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-# setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_jira")
+source("../../../scripts/h2o-r-test-setup.R")
 
-source('../h2o-runit.R')
-
-test.hex_1908 <- function(conn) {
+test.hex_1908 <- function() {
   h2o.removeAll(conn)
   temp_dir = tempdir()
   temp_subdir1 = paste(temp_dir, "tmp", sep = .Platform$file.sep)
@@ -17,7 +10,7 @@ test.hex_1908 <- function(conn) {
   
   # Test saving and loading of GLM model
   Log.info("Importing airlines.csv...")
-  airlines.hex = h2o.importFile(conn, normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
+  airlines.hex = h2o.importFile( normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
   
   # Set x and y variables
   myY = "IsDepDelayed"
@@ -55,7 +48,7 @@ test.hex_1908 <- function(conn) {
   file.rename(temp_subdir1, temp_subdir2)
 
   # Check to make sure predictions made on loaded model is the same as glm.pred
-  airlines.hex = h2o.importFile(conn, normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
+  airlines.hex = h2o.importFile( normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
   
   # Load model back into H2O
   Log.info(paste("Model saved in", temp_subdir2))
@@ -90,7 +83,6 @@ test.hex_1908 <- function(conn) {
   expect_equal(glm.pred, glm_xval.pred)
   
   h2o.removeAll(conn)
-  testEnd()
 }
 
 doTest("HEX-1908 Test: Save and Load All Models", test.hex_1908)

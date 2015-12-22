@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.pub_699_negative_indexes <- function(H2Oserver) {
+test.pub_699_negative_indexes <- function() {
 
 prostatePath = locate("smalldata/prostate/prostate.csv")
-prostate.hex = h2o.importFile(H2Oserver, path = prostatePath, destination_frame = "prostate.hex")
+prostate.hex = h2o.importFile( path = prostatePath, destination_frame = "prostate.hex")
 
 prostate.local = as.data.frame(prostate.hex)
 
@@ -33,7 +33,7 @@ expect_equal(380, dim(prostate.hex[-c(1000:9230),])[1])
 
   Log.info("Now trying with a multi-chunk data set")
 
-  covtype <- h2o.importFile(H2Oserver, normalizePath(locate("smalldata/covtype/covtype.altered.gz")), "cov")
+  covtype <- h2o.importFile( normalizePath(locate("smalldata/covtype/covtype.altered.gz")), "cov")
 
   Log.info("Number of columns & rows in covtype")
   print(dim(covtype))
@@ -57,7 +57,6 @@ expect_equal(380, dim(prostate.hex[-c(1000:9230),])[1])
 
   expect_equal(length(slice_range_across_chunks), nrow(covtype) - nrow(sliced_cov))
 
-testEnd()
 
 }
 

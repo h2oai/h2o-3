@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.string.concat_to_date <- function(conn){
+test.string.concat_to_date <- function(){
   Log.info("Loading in weather data...")
   wthr1 <- h2o.importFile(path = locate("bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2013.csv"))
 
@@ -11,7 +11,6 @@ test.string.concat_to_date <- function(conn){
                               sep = "."), format = "%Y.%m.%d.%h")
   print(wthr2$msec)
 
-  testEnd()
 }
 
 doTest("Turning Separate Columns into a Single Date Columns", test.string.concat_to_date)

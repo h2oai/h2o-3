@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.glrmvanilla.golden <- function(conn) {
+test.glrmvanilla.golden <- function() {
   Log.info("Importing arrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
   arrestsH2O <- h2o.uploadFile( locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
@@ -19,7 +19,6 @@ test.glrmvanilla.golden <- function(conn) {
   # Log.info("Compare Importance between R and H2O\n")
   # expect_equal(as.matrix(pcimpH2O), as.matrix(pcimpR), tolerance = 1e-4)
   
-  testEnd()
 }
 
 doTest("GLRM Golden Test: USArrests with Centering", test.glrmvanilla.golden)

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.setLevel <- function(conn) {
+test.setLevel <- function() {
   library(MASS)
  
   # ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ test.setLevel <- function(conn) {
   y <- rbinom(N, 1, p)
   data <- data.frame(y = y, x1 = x1, x2 = x2, x3 = x3, x4 = x4, x5 = x5, 
                    x6 = x6, x7 = x7) 
-  data.hex <- as.h2o(conn, data)
+  data.hex <- as.h2o( data)
   head(data.hex)
   str(data.hex)
 
@@ -89,7 +89,6 @@ test.setLevel <- function(conn) {
   # 5       0 0.8178309 0.1821690
   # 6       0 0.5456495 0.4543505
   
-  testEnd()
 }
 
 doTest("Import a dataset with a header H2OParsedData Object", test.setLevel)

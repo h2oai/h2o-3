@@ -1,12 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.rdocclusterstatus.golden <- function(H2Oserver) {
+test.rdocclusterstatus.golden <- function() {
 	
 
  h2o.clusterStatus(H2Oserver)
 
-testEnd()
 }
 
 doTest("R Doc Cluster Status", test.rdocclusterstatus.golden)

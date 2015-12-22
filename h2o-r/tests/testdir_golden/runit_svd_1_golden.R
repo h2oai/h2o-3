@@ -1,11 +1,11 @@
-!setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.svd.golden <- function(H2Oserver) {
+test.svd.golden <- function() {
   # Import data: 
   Log.info("Importing arrests.csv data...") 
   arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  arrestsH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
+  arrestsH2O <- h2o.uploadFile( locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   
   Log.info("Compare with SVD")
   fitR <- svd(arrestsR, nv = 4)
@@ -29,7 +29,6 @@ test.svd.golden <- function(H2Oserver) {
   isFlipped2 <- checkSignedCols(uH2O.df, fitR$u, tolerance = 5e-5)
   expect_equal(isFlipped1, isFlipped2)
   
-  testEnd()
 }
 
 doTest("SVD Golden Test: USArrests", test.svd.golden)

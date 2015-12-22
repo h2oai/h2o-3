@@ -1,13 +1,5 @@
-#----------------------------------------------------------------------
-# Purpose:  This test exercises slices and quantiles from R.
-#----------------------------------------------------------------------
-
-options(error=traceback, warn=1)
-# setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_misc")
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-options(echo=TRUE)
-TEST_ROOT_DIR <- ".."
-source(sprintf("%s/%s", TEST_ROOT_DIR, "h2o-runit.R"))
+source("../../../scripts/h2o-r-test-setup.R")
 
 
 #----------------------------------------------------------------------
@@ -83,7 +75,7 @@ df.gen <- function() {
 
 set.seed(556677)
 df = df.gen()
-df = as.h2o(conn, df, key = "orig.hex")
+df = as.h2o( df, key = "orig.hex")
 
 
 #----------------------------------------------------------------------
@@ -145,7 +137,7 @@ slices = slices.gen()
 
 heading("Doing each slice and calculating the quantile...")
 
-h2o.removeLastValues <- function(conn) {
+h2o.removeLastValues <- function() {
     df <- h2o.ls(conn)
     keys_to_remove <- grep("^Last\\.value\\.", perl=TRUE, x=df$Key, value=TRUE)
     # TODO: Why are there duplicates?  Probably a bug.

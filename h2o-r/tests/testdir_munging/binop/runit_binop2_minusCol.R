@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.minus <- function(conn) {
-  hex <- as.h2o(conn, iris)
+test.minus <- function() {
+  hex <- as.h2o( iris)
 
   Log.info("Try adding scalar to a numeric column: 5 - hex[,col]")
 
@@ -37,7 +37,6 @@ test.minus <- function(conn) {
   Log.info("fiveMinusSliced - slicedMinusFive: ")
   print(head(hexMinusHex))
 
-  testEnd()
 }
 
 doTest("BINOP2 EXEC2 TEST: '-'", test.minus)

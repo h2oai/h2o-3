@@ -1,5 +1,5 @@
-!setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 test.predict.withoutresponse <- function(h) {
 
@@ -15,7 +15,6 @@ test.predict.withoutresponse <- function(h) {
 	gg= h2o.gbm(x=1:4,y = 5,training_frame=train) 
 	pr = h2o.predict(object=gg,newdata=test) 
   	
-  	testEnd()
 }
 
 doTest("Test predicts on data without response for multiclass", test.predict.withoutresponse)

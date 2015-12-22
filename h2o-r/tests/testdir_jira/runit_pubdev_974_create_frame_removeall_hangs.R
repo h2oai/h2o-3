@@ -1,9 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
 
 myframe <- h2o.createFrame(conn, 'myframe', rows = 100, cols = 10,
                            seed = 12345, randomize = T, value = 0, real_range = 100, 

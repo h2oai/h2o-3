@@ -1,7 +1,7 @@
-!setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
-test <- function(conn) {
+test <- function() {
   data <- h2o.uploadFile(locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
   dim(data)
   split = h2o.splitFrame(data=data,ratios=.8)
@@ -17,7 +17,6 @@ test <- function(conn) {
   dim(train)
   dim(test)
 
-  testEnd()
 }
 
 doTest("PUBDEV-784", test)

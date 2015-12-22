@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 
 rfReg.vi.test<-
-function(conn) {
+function() {
 
     data2.hex <- h2o.uploadFile( locate("smalldata/gbm_test/BostonHousing.csv"), destination_frame="data2.hex")
     x=1:13
@@ -13,6 +13,5 @@ function(conn) {
     vi=match(rf@model$variable_importances[,1], colnames(data2.hex))
 
     expect_equal(vi[1:2], c(13,6))
-    testEnd()
 }
 doTest("Variable Importance RF Test: Boston Housing Smalldata", rfReg.vi.test)

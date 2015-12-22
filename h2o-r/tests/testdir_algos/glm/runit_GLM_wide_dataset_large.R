@@ -1,15 +1,8 @@
-##
-# Testing glm modeling performance with wide Arcene dataset with and without strong rules. 
-# Test for JIRA PUB-853 
-# 'Early termination in glm resulting in underfitting'
-##
-
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 
-test <- function(conn) {
+test <- function() {
     print("Reading in Arcene training data for binomial modeling.")
         arcene.train = h2o.uploadFile( locate("smalldata/arcene/arcene_train.data"), destination_frame="arcene.train")
         arcene.label = h2o.uploadFile( locate("smalldata/arcene/arcene_train_labels.labels"), destination_frame="arcene.label")
@@ -36,7 +29,6 @@ test <- function(conn) {
     print("Check that prediction AUC better than guessing (0.5).")
         stopifnot(h2o.auc(perf.noSR.3250) > 0.5)
 
-  testEnd()
 }
 
 doTest("Testing glm modeling performance with wide Arcene dataset with and without strong rules", test)

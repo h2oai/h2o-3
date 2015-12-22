@@ -1,12 +1,5 @@
-#----------------------------------------------------------------------
-# Purpose:  This test exercises sending lots of characters to the POST interface.
-#           logAndEcho logs the message in the H2O log file, and echoes it back
-#           as part of the response.
-#----------------------------------------------------------------------
-
-# setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_http_daemon")
-
-source('../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 conn <- new("H2OConnection", ip=myIP, port=myPort)
 

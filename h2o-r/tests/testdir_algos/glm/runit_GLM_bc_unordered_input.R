@@ -1,17 +1,13 @@
-###############################################################
-#### Test Order of input features for Beta Constraints  #######
-###############################################################
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test <- function(conn) {
+test <- function() {
   ## Import data
   if (!file.exists("/mnt/0xcustomer-datasets/c27/data.csv")) {
       Log.info("h2o-only data")
-      testEnd()
   } else {
-    h2oData <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c27/data.csv")
-    bc <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+    h2oData <- h2o.importFile( "/mnt/0xcustomer-datasets/c27/data.csv")
+    bc <- h2o.importFile( "/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
     bc <- bc[1:(nrow(bc)-1),] # remove intercept
     bc <- as.data.frame(bc)
 
@@ -44,7 +40,6 @@ test <- function(conn) {
 
     checkEqualsNumeric(h2o.coef(a), h2o.coef(b))
     checkEqualsNumeric(h2o.coef(b), h2o.coef(c))
-    testEnd()
   }
 }
 

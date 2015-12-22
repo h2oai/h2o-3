@@ -1,12 +1,7 @@
-## This test is to check the offset argument for GLM
-## The test will import the prostate data set,
-## runs glm with and without intecept and create predictions from both models,
-## compare the two h2o glm models with a glmnet model ran without offset.
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.GLM.offset <- function(conn) {
+test.GLM.offset <- function() {
 
   compare_res_deviance <- function(h2o_model, r_model){
     diff <- h2o_model@model$deviance - r_model$deviance
@@ -28,7 +23,7 @@ test.GLM.offset <- function(conn) {
 
   Log.info ('Check binomial models for GLM with and without offset')
   Log.info ('Import prostate dataset into H2O and R...')
-  prostate.hex <- h2o.importFile(conn, locate("smalldata/prostate/prostate.csv"))
+  prostate.hex <- h2o.importFile( locate("smalldata/prostate/prostate.csv"))
   prostate.csv <- as.data.frame(prostate.hex)
 
   family_type <- c("binomial", "poisson")
@@ -51,7 +46,6 @@ test.GLM.offset <- function(conn) {
 
   run_models <- sapply(family_type, check_models)
   print(run_models)
-  testEnd()
 }
 
 doTest("GLM Test: Offset", test.GLM.offset)

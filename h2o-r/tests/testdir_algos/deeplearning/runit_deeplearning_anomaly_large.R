@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-check.deeplearning_anomaly <- function(conn) {
+check.deeplearning_anomaly <- function() {
   Log.info("Deep Learning Anomaly Detection MNIST)")
   
   TRAIN <- "bigdata/laptop/mnist/train.csv.gz"
@@ -14,7 +14,6 @@ check.deeplearning_anomaly <- function(conn) {
     print(train_hex)
   } else {
     library(h2o)
-    conn <- h2o.init()
     homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
     train_hex <- h2o.importFile( path = paste0(homedir,TRAIN), header = F, sep = ',', destination_frame = 'train.hex')
     test_hex <- h2o.importFile( path = paste0(homedir,TEST), header = F, sep = ',', destination_frame = 'test.hex')
@@ -90,7 +89,6 @@ check.deeplearning_anomaly <- function(conn) {
   plotDigits(test_recon, test_rec_error, c(9976:10000))
   plotDigits(test_hex,   test_rec_error, c(9976:10000))
   
-  testEnd()
 }
 
 doTest("Deep Learning Anomaly Detection MNIST", check.deeplearning_anomaly)

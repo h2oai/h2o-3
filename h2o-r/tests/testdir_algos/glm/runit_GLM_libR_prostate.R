@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 Log.info("Loading LiblineaR and ROCR packages\n")
 
@@ -9,7 +9,7 @@ Log.info("Loading LiblineaR and ROCR packages\n")
 library(LiblineaR)
 library(ROCR)
 
-test.LiblineaR <- function(conn) {
+test.LiblineaR <- function() {
   L1logistic <- function(train,trainLabels,test,testLabels,trainhex,testhex) {
     Log.info("Using default parameters for LiblineaR: \n")
     Log.info("   type =    0: Logistic Regression L2-Regularized\n")
@@ -153,7 +153,6 @@ test.LiblineaR <- function(conn) {
   #models             <- L1logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
   ##models2            <- L2logistic(xTrain,yTrain,xTest,yTest,prostate.train.hex,prostate.test.hex)
   #compareCoefs(models[[1]], models[[2]])
-  testEnd()
 }
 
 doTest("LiblineaR Test: Prostate", test.LiblineaR)

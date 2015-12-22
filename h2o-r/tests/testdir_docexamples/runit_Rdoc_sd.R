@@ -1,5 +1,5 @@
-!setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 test.rdocsd.golden <- function(localH2O) {
 
@@ -7,7 +7,6 @@ test.rdocsd.golden <- function(localH2O) {
     prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
     sd(prostate.hex$AGE)
 
-testEnd()
 }
 
 doTest("R Doc SD", test.rdocsd.golden)

@@ -1,15 +1,13 @@
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 # use this for interactive setup
 #    library(h2o)
 #    library(testthat)
 #    h2o.startLogging()
-#    conn = h2o.init()
 
 
-test.quoted_comma <- function(conn) {
+test.quoted_comma <- function() {
 
     a_initial <- data.frame(cbind(
     v1 = c("a,b","c,d", "e,f", "e,f"),
@@ -28,7 +26,7 @@ test.quoted_comma <- function(conn) {
     print("b = a")
 
 
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o( a_initial, destination_frame="r.hex")
     b.h2o <- a.h2o
 
     b.h2o.R <- as.data.frame(b.h2o)
@@ -41,7 +39,6 @@ test.quoted_comma <- function(conn) {
     print(b.h2o.R)
     expect_that(all(b == b.h2o.R), equals(T))
 
-    testEnd()
 }
 
 doTest("Test for quoted_comma.", test.quoted_comma)

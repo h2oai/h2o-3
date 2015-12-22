@@ -1,12 +1,11 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.rdoc_log_echo.golden <- function(H2Oserver) {
+test.rdoc_log_echo.golden <- function() {
 	
 
  h2o.logAndEcho(H2Oserver, "Test log and echo method.")
 
-testEnd()
 }
 
 doTest("R Doc Log and Echo", test.rdoc_log_echo.golden)

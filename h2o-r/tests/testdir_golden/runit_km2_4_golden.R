@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.kmsplit.golden <- function(conn) {
+test.kmsplit.golden <- function() {
   library(flexclust)
   Log.info("Importing ozone.csv data...\n")
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
@@ -38,7 +38,7 @@ test.kmsplit.golden <- function(conn) {
   classR <- predict(fitR, testR)
   # FIXME: predict directly on sliced H2O frame breaks
   # classH2O <- predict(fitH2O, testH2O)
-  classH2O <- predict(fitH2O, as.h2o(conn, testR))
+  classH2O <- predict(fitH2O, as.h2o( testR))
   # expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)
   # H2O indexes from 0, but R indexes from 1
   forCompareH2O <- as.matrix(classH2O)+1
@@ -68,7 +68,6 @@ test.kmsplit.golden <- function(conn) {
   # default tolerance is close to 1.5e-8. but should be comparing integers
   expect_true(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
   
-  testEnd()
 }
 
 doTest("KMeans Test: Golden Kmeans - Ozone Test/Train Split without Standardization", test.kmsplit.golden)

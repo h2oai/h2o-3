@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-check.deeplearning_imbalanced <- function(conn) {
+check.deeplearning_imbalanced <- function() {
   Log.info("Test checks if Deep Learning weights and biases are accessible from R")
   
   covtype <- h2o.uploadFile( locate("smalldata/covtype/covtype.20k.data"))
@@ -37,7 +37,6 @@ check.deeplearning_imbalanced <- function(conn) {
   checkTrue(ncol(biases3) == 1, "wrong dimensionality!")
   checkTrue(nrow(biases3) == 7, "wrong dimensionality!")
 
-  testEnd()
 }
 
 doTest("Deep Learning Weights/Biases Test", check.deeplearning_imbalanced)

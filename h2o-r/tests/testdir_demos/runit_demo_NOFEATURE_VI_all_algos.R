@@ -1,8 +1,5 @@
-# This Demo shows how to access Variable Importance from different H2O algorithms namely, GBM, Random Forest, GLM, Deeplearning.
-# Data source: Data is obtained from -https://archive.ics.uci.edu/ml/datasets/Bank+Marketing
-# Expectation:  The predictor "duration" should be picked as the most important variable by all algos
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 source('../h2o-runit.R')
 
 test <- function(h) {
@@ -99,7 +96,6 @@ print(dl.VI)
 barplot(t(dl.VI[1:20]),las=2,main="VI from Deep Learning")
 
 
-testEnd()
 }
 
 doTest("Plot to compare the Variable Importance as predicted by different algorithms on the bank-marketing dataset", test)

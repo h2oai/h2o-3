@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.GBM.nfolds <- function(conn) {
+test.GBM.nfolds <- function() {
   prostate.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
   print(summary(prostate.hex))
   prostate.hex[,2] = as.factor(prostate.hex[,2])
@@ -18,7 +18,6 @@ test.GBM.nfolds <- function(conn) {
 
 
 
-  testEnd()
 }
 
 doTest("GBM Cross-Validation Test: Prostate", test.GBM.nfolds)

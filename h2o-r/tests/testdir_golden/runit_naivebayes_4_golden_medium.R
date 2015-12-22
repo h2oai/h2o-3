@@ -1,10 +1,10 @@
-!setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.nbayes.golden <- function(H2Oserver) {
+test.nbayes.golden <- function() {
   Log.info("Importing covtype.20k.data training data...") 
   covtypeR <- read.csv(locate("smalldata/covtype/covtype.20k.data"), header = FALSE)
-  covtypeH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/covtype/covtype.20k.data"), destination_frame = "covtypeH2O", header = FALSE)
+  covtypeH2O <- h2o.uploadFile( locate("smalldata/covtype/covtype.20k.data"), destination_frame = "covtypeH2O", header = FALSE)
   expect_equal(dim(covtypeH2O), dim(covtypeR))
   
   Log.info("Converting response y = 55 to a factor...")
@@ -27,7 +27,6 @@ test.nbayes.golden <- function(H2Oserver) {
   checkNaiveBayesPrediction(predH2O, classR, type = "class", tolerance = 1e-4)
   checkNaiveBayesPrediction(predH2O, postR, type = "raw", tolerance = 1e-4)
   
-  testEnd()
 }
 
 doTest("Naive Bayes Golden Test: Covtype without Laplace smoothing", test.nbayes.golden)

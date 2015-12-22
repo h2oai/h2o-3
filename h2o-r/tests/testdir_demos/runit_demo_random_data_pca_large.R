@@ -1,14 +1,8 @@
-#----------------------------------------------------------------------
-# Purpose:  Create random data and run 20 iterations of PCA on it.
-# Compared to timings for R's pca on same data (#R#)
-#----------------------------------------------------------------------
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
 
 # Data frame size
 

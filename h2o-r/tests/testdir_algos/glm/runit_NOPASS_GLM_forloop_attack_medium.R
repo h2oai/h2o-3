@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 randomParams <- function(family, train, test, x, y) {
   parms <- list()
@@ -121,7 +121,7 @@ randomParams <- function(family, train, test, x, y) {
 }
 
 
-test.glm.rand_attk_forloop <- function(conn) {
+test.glm.rand_attk_forloop <- function() {
   Log.info("Import and data munging...")
   pros.hex <- h2o.uploadFile( locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
@@ -152,7 +152,6 @@ test.glm.rand_attk_forloop <- function(conn) {
   for(i in 1:10)
     randomParams("gamma", cars.train, cars.test, 3:7, 2)
 
-  testEnd()
 }
 
 doTest("Checking GLM in Random Attack For Loops", test.glm.rand_attk_forloop)

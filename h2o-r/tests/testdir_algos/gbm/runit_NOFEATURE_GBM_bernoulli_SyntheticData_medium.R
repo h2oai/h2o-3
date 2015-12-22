@@ -1,10 +1,7 @@
-#   This test is to check bernoulli gbm implementation, 
-#   It creates a synthetic dataset, runs gbm grid in H2O and R and compares aucs
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.GBM.bernoulli.SyntheticData <- function(conn) {
+test.GBM.bernoulli.SyntheticData <- function() {
 
     #   Generate dataset
     # http://www.stat.missouri.edu/~speckman/stat461/boost.R
@@ -84,6 +81,5 @@ test.GBM.bernoulli.SyntheticData <- function(conn) {
                 " R_auc:", R_auc, sep=''),quote=F)
                 expect_that(H2O_auc >= (R_auc-.01), is_true())                     # Compare H2O and R auc's; here tolerance is 0.01
     }
-    testEnd()
 }
 doTest("GBM Grid Test: Synthetic dataset with Bernoulli distribution H2O vs R", test.GBM.bernoulli.SyntheticData)

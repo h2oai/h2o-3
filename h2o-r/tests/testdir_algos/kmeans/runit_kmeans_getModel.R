@@ -1,12 +1,12 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 # Test k-means clustering on benign.csv
-test.km.benign <- function(conn) {
+test.km.benign <- function() {
   Log.info("Importing benign.csv data...\n")
   # benign.hex = h2o.importURL(conn, "https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/benign.csv")
-  # benign.hex = h2o.importFile(conn, normalizePath("../../../smalldata/logreg/benign.csv"))
-  benign.hex <- h2o.importFile(conn, locate("smalldata/logreg/benign.csv"))
+  # benign.hex = h2o.importFile( normalizePath("../../../smalldata/logreg/benign.csv"))
+  benign.hex <- h2o.importFile( locate("smalldata/logreg/benign.csv"))
   benign.sum <- summary(benign.hex)
   print(benign.sum)
   
@@ -23,7 +23,6 @@ test.km.benign <- function(conn) {
     benign.km <- kmeans(benign.data, centers = i)
   }
   
-  testEnd()
 }
 
 doTest("KMeans Test: Benign Data", test.km.benign)

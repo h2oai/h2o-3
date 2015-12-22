@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 test.eq2.h2o.assign<-
-function(conn) {
-    iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris.csv"), "iris.hex")
+function() {
+    iris.hex <- h2o.importFile( locate("smalldata/iris/iris.csv"), "iris.hex")
     dim(iris.hex)
     Log.info("Slicing out some columns and rows from iris.hex")
     Log.info("Slicing out rows 20,40,60,80")
@@ -20,7 +20,7 @@ function(conn) {
     expect_true(grepl("slicedIris.hex", irisSlice@frame_id))
     h2o.removeAll(conn)
 
-    iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris.csv"), "iris.hex")
+    iris.hex <- h2o.importFile( locate("smalldata/iris/iris.csv"), "iris.hex")
     Log.info("Now slicing out rows 1:50 and columns 2:5")
     print(dim(iris.hex))
     iris.hex <- iris.hex[c(1:50), c(2,3,4,5)]
@@ -35,7 +35,6 @@ function(conn) {
     Log.info("Check that the dimension of this subsetted iris.hex is 50x4")
     print(dim(iris.hex))
     expect_that(dim(iris.hex), equals(c(50,4)))
-    testEnd()
 }
 
 doTest("Test h2o.assign(data,frame_id)", test.eq2.h2o.assign)

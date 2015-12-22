@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.glm.bin.accessors <- function(conn) {
+test.glm.bin.accessors <- function() {
   cars.hex <- h2o.uploadFile( locate("smalldata/junit/cars.csv"))
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
@@ -92,7 +92,6 @@ test.glm.bin.accessors <- function(conn) {
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.glm))
 
-  testEnd()
 }
 
 doTest("Testing model accessors for GLM", test.glm.bin.accessors)

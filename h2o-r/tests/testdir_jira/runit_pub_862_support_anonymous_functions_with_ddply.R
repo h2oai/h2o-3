@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.pub_862_support_anonymous_functions_with_ddply <- function(H2Oserver) {
+test.pub_862_support_anonymous_functions_with_ddply <- function() {
 
-covtype.hex <- h2o.importFile(H2Oserver, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile( normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 
 covtype.local <- as.data.frame(covtype.hex)
 
@@ -17,7 +17,6 @@ expect_equal(55, dim(covtype.local)[2])
 
 h2o.ddply(covtype.hex, c(2), function(x) { mean( x[,2]) })
 
-testEnd()
 
 }
 

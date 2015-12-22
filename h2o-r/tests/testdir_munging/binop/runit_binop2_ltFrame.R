@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 
-test.lt.frame <- function(conn) {
-  hex <- as.h2o(conn, iris)
+test.lt.frame <- function() {
+  hex <- as.h2o( iris)
  
   Log.info("Expectation is a frame of booleans")
   
@@ -22,7 +22,6 @@ test.lt.frame <- function(conn) {
   # else hexLTHex <- hex < hex
   hexLTHex <- hex < hex
   
-  testEnd()
 }
 
 doTest("EXEC2 TEST: BINOP2 test of '<' on frames", test.lt.frame)

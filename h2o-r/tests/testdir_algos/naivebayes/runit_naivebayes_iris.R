@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 # Test naive Bayes on iris_wheader.csv
-test.nbayes.iris <- function(conn) {
+test.nbayes.iris <- function() {
   Log.info("Importing iris_wheader.csv data...\n")
   iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris_wheader.csv"))
   iris.sum <- summary(iris.hex)
@@ -15,7 +15,6 @@ test.nbayes.iris <- function(conn) {
     print(iris.nbayes.h2o)
   }
   
-  testEnd()
 }
 
 doTest("Naive Bayes Test: Iris Data with Laplace Smoothing", test.nbayes.iris)

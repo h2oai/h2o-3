@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 library(randomForest)
 
-test.DRF.bigcat <- function(conn) {
+test.DRF.bigcat <- function() {
   # Training set has 100 categories from cat001 to cat100
   # Categories cat001, cat003, ... are perfect predictors of y = 1
   # Categories cat002, cat004, ... are perfect predictors of y = 0
@@ -27,7 +27,6 @@ test.DRF.bigcat <- function(conn) {
   default_cm <- h2o.confusionMatrix(drfmodel,bigcat.hex)[[1]]
 #  expect_equal(default_cm[1,2], 0)
 #  expect_equal(default_cm[2,1], 0)
-  testEnd()
 }
 
 doTest("DRF Test: Classification with 100 categorical level predictor", test.DRF.bigcat)

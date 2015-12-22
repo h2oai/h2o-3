@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.h2o.rf.balance.classes <- function(conn) {
+test.h2o.rf.balance.classes <- function() {
 
     #uploading data file to h2o
     filePath <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
@@ -52,7 +52,6 @@ test.h2o.rf.balance.classes <- function(conn) {
     cat("\n\nWITH CLASS BALANCING\n")
     func(air.rf.balance)
 
-  testEnd()
 }
 
 doTest("Demo random forest balance classes feature", test.h2o.rf.balance.classes)

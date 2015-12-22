@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-check.deeplearning.gridlayers <- function(conn) {
+check.deeplearning.gridlayers <- function() {
   iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
   print(summary(iris.hex))
 
@@ -30,7 +30,6 @@ check.deeplearning.gridlayers <- function(conn) {
   expect_true(all(hh_params %in% hidden_layers))
   print(hh)
 
-  testEnd()
 }
 
 doTest("Deep Learning Grid Search: Hidden Layers", check.deeplearning.gridlayers)

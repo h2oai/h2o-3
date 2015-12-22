@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 test_one_file <- function(localH2O, fnam, mins, maxs) {
 DF <- h2o.importFile(localH2O, h2o:::.h2o.locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
@@ -19,7 +19,6 @@ mytest = function(localH2O) {
     test_one_file(localH2O, "test4", mins=c(2L,5L,8L,11L,NA), maxs=c(11L,8L,5L,2L,NA))
     test_one_file(localH2O, "test5", mins=c(2L,5L,8L,11L,14L), maxs=c(14L,11L,8L,5L,2L))
     test_one_file(localH2O, "test6", mins=c(2L,5L,8L,11L,14L), maxs=c(17L,14L,11L,8L,5L))
-    testEnd()
 }
 
 doTest("PUBDEV-150: summary mins and maxs on files of 0 to 6 rows", mytest)

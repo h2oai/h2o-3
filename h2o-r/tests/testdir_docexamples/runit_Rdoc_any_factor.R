@@ -1,5 +1,5 @@
-!setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 test.anyFactor <- function(localH2O) {
 
@@ -7,7 +7,6 @@ test.anyFactor <- function(localH2O) {
  iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
  h2o.anyFactor(iris.hex)
 
-testEnd()
 }
 
 doTest("R Doc h2o.anyFactor", test.anyFactor)

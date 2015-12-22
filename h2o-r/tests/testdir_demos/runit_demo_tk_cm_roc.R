@@ -1,17 +1,5 @@
-#----------------------------------------------------------------------
-# Tom's demonstration example.
-#
-# Purpose:  Split Airlines dataset into train and validation sets.
-#           Build model and predict on a test Set.
-#           Print Confusion matrix and performance measures for test set
-#----------------------------------------------------------------------
-
-# Source setup code to define myIP and myPort and helper functions.
-# If you are having trouble running this, just set the condition to FALSE
-# and hardcode myIP and myPort.
-if (TRUE) {
-  # Set working directory so that the source() below works.
-  setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
   if (FALSE) {
       setwd("/Users/tomk/0xdata/ws/h2o-dev/h2o-r/tests/testdir_demos")
@@ -33,10 +21,9 @@ if (TRUE) {
 }
 
 h2o.startLogging()
-conn <- h2o.init(ip=myIP, port=myPort, startH2O=T)
 
 #uploading data file to h2o
-air <- h2o.importFile(conn, filePath, "air")
+air <- h2o.importFile( filePath, "air")
 
 
 #Constructing validation and train sets by sampling (20/80)
@@ -65,7 +52,7 @@ print(p@metrics$AUC)
 # print(air.rf)
 
 #uploading test file to h2o
-air.test <- h2o.importFile(conn,testFilePath,destination_frame="air.test")
+air.test <- h2o.importFile(testFilePath,destination_frame="air.test")
 
 model_object <- air.gbm # air.rf #air.glm air.gbm air.dl
 

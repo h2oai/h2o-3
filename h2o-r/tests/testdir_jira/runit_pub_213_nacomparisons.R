@@ -1,15 +1,10 @@
-#
-# na comparisons
-#
-
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 
-na_comparisons <- function(conn){
+na_comparisons <- function(){
   Log.info('uploading testing dataset')
-  df.h <- h2o.importFile(conn, locate('smalldata/jira/pub_213.csv'))
+  df.h <- h2o.importFile( locate('smalldata/jira/pub_213.csv'))
 
   Log.info('printing from h2o')
   Log.info( head(df.h) )
@@ -27,7 +22,6 @@ na_comparisons <- function(conn){
   print(is.na(loc[,3]))
   
   #expect_true(all(is.na(loc[,3]) == c(FALSE,FALSE,FALSE,TRUE,FALSE,TRUE,FALSE)))
-  testEnd()
 }
 
 if(F){

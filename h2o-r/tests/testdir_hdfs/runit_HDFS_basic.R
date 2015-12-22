@@ -1,9 +1,5 @@
-#----------------------------------------------------------------------
-# Purpose:  This test exercises HDFS operations from R.
-#----------------------------------------------------------------------
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -25,7 +21,6 @@ if (running_inside_h2o) {
 
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
 
 #----------------------------------------------------------------------
 # Single file cases.
@@ -33,7 +28,7 @@ conn <- h2o.init(ip=myIP, port=myPort)
 
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
-iris.hex <- h2o.importFile(conn, url)
+iris.hex <- h2o.importFile( url)
 head(iris.hex)
 tail(iris.hex)
 n <- nrow(iris.hex)
@@ -52,7 +47,7 @@ print ("Import worked")
 
 heading("Testing directory importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_dir)
-iris.dir.hex <- h2o.importFile(conn, url)
+iris.dir.hex <- h2o.importFile( url)
 head(iris.dir.hex)
 tail(iris.dir.hex)
 n <- nrow(iris.dir.hex)

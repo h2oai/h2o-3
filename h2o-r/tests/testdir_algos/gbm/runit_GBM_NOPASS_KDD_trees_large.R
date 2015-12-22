@@ -1,7 +1,7 @@
-!setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
-check.test_KDD_trees <- function(conn){
+check.test_KDD_trees <- function(){
     Log.info("Test to verify that identical models produce idential MSEs")
 
     cup98LRN_z = h2o.uploadFile(path = locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
@@ -26,7 +26,6 @@ check.test_KDD_trees <- function(conn){
 
     expect_equal(test1@model$mse_train, test2@model$mse_train, tolerance = 0.0001)
 
-    testEnd()
 }
 
 doTest("GBM Test: KDD tress", check.test_KDD_trees)

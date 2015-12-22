@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 test.pub_505 <- function(localH2O) {
 
@@ -24,7 +24,6 @@ print(sum_R)
 
 expect_equal(sum_h2o, sum_R)
 
-testEnd()
 
 }
 

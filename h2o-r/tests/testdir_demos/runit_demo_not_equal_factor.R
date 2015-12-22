@@ -1,10 +1,5 @@
-#----------------------------------------------------------------------
-# Try to slice by using != factor_level
-#----------------------------------------------------------------------
-
-if (TRUE) {
-  # Set working directory so that the source() below works.
-  setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
   if (FALSE) {
       setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_demos")
@@ -25,10 +20,9 @@ if (TRUE) {
   testFilePath <-"https://raw.github.com/0xdata/h2o/master/smalldata/airlines/allyears2k_headers.zip"
 }
 
-conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 # Uploading data file to h2o.
-air <- h2o.importFile(conn, filePath, "air")
+air <- h2o.importFile( filePath, "air")
 
 # Print dataset size.
 dim(air)

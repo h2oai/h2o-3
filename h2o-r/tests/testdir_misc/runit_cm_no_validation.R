@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.cm.no.valid <- function(conn) {
+test.cm.no.valid <- function() {
   Log.info("Creating a binomial GBM model...")
   pros.hex <- h2o.uploadFile( locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
@@ -47,7 +47,6 @@ test.cm.no.valid <- function(conn) {
   expect_warning(h2o.confusionMatrix(pros.gbm, valid = TRUE))
   expect_error(h2o.confusionMatrix(pros.gbm, valid = TRUE, newdata = pros.test))
   expect_error(h2o.confusionMatrix(iris.glm, thresholds = 0.5))
-  testEnd()
 }
 
 doTest("Testing h2o.confusionMatrix on a model with no validation frame", test.cm.no.valid)

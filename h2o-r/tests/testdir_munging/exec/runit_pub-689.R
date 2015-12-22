@@ -1,15 +1,13 @@
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 # use this for interactive setup
 #      library(h2o)
 #      library(testthat)
 #      h2o.startLogging()
-#      conn = h2o.init()
 
 
-test.nonexistent_rhs_col <- function(conn) {
+test.nonexistent_rhs_col <- function() {
 
     a_initial <- data.frame(
     v1=c(1,0,1,0,1,0,1,0,1,0),
@@ -21,24 +19,24 @@ test.nonexistent_rhs_col <- function(conn) {
     a <- a_initial
 
     b <- a$"13"
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o( a_initial, destination_frame="r.hex")
     b.h2o <- a.h2o$"3"
 
     expect_that(is.null(b.h2o), equals(T))
 
     b <- a$C13
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o( a_initial, destination_frame="r.hex")
     b.h2o <- a.h2o$C13
 
     expect_that(is.null(b.h2o), equals(T))
 
     # b <- a[,"13"]
-    # a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    # a.h2o <- as.h2o( a_initial, destination_frame="r.hex")
     # b.h2o <- a.h2o[,"13"]
     # expect_that(all(b == b.h2o.R), equals(T))
 
     # b <- a[,"C13"]
-    # a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    # a.h2o <- as.h2o( a_initial, destination_frame="r.hex")
     # b.h2o <- a.h2o[,"C13"]
     # b.h2o.R <- as.data.frame(b.h2o)
     # b
@@ -46,7 +44,6 @@ test.nonexistent_rhs_col <- function(conn) {
     # expect_that(all(b == b.h2o.R), equals(T))
     # This doesn't work in R
 
-    testEnd()
 }
 
 doTest("Test nonexistent rhs col.", test.nonexistent_rhs_col)

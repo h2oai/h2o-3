@@ -1,9 +1,5 @@
-#----------------------------------------------------------------------
-# Purpose:  This test compares k-means centers between H2O and MLlib.
-#----------------------------------------------------------------------
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -23,7 +19,6 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
 local_err_bench = locate("smalldata/mllib_bench/bigcross_wcsse.csv")
 # local_err_bench = locate("smalldata/mllib_bench/ozone_wcsse.csv")
 
@@ -33,7 +28,7 @@ local_err_bench = locate("smalldata/mllib_bench/bigcross_wcsse.csv")
 
 heading("Import BigCross.data from HDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_cross_file)
-cross.hex <- h2o.importFile(conn, url)
+cross.hex <- h2o.importFile( url)
 n <- nrow(cross.hex)
 print(paste("Imported n =", n, "rows"))
 

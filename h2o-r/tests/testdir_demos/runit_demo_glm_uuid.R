@@ -1,13 +1,8 @@
-##
-# Testing parsing, splitting, modelling, and computation on data with UUID column
-##
-
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 
-test <- function(conn) {
+test <- function() {
   print("Reading in data (tiny airline with UUIDs).")
     airline.hex <- h2o.uploadFile( locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
     print("Summary of airline data: ")
@@ -81,7 +76,6 @@ test <- function(conn) {
     print("Head of strongest predictions: ")
     head(top.air)
   
-  testEnd()
 }
 
 doTest("Test parsing, splitting, modelling, and computation on data with UUID column", test)

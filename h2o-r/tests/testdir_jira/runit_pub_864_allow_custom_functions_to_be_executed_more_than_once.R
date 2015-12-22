@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 test.pub_864_allow_custom_functions_to_be_executed_more_than_once <- function(localH2O) {
 
@@ -20,7 +20,6 @@ fun = function(x) { mean( x[,2]) }
 h2o.ddply(covtype.hex, c(2), fun)
 h2o.ddply(covtype.hex, c(2), fun)
 
-testEnd()
 
 }
 

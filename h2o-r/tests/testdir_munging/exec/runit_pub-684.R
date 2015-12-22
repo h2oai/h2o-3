@@ -1,18 +1,16 @@
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 # use this for interactive setup
 #    library(h2o)
 #    library(testthat)
 #    h2o.startLogging()
-#    conn = h2o.init()
 
 
 
 # IFELSE is unimpl
 
-test.ifelse <- function(conn) {
+test.ifelse <- function() {
 
     a_initial <- data.frame(
     v1=c(1,0,1,0,1,0,1,0,1,0),
@@ -26,7 +24,7 @@ test.ifelse <- function(conn) {
     expect_that(all(b == a[,4]), equals(T))
 
 
-    a.h2o <- as.h2o(conn, a_initial, destination_frame="r.hex")
+    a.h2o <- as.h2o( a_initial, destination_frame="r.hex")
     b.h2o <- ifelse(a.h2o[,1], a.h2o[,3], a.h2o[,2])
 
     b.h2o.R <- as.data.frame(b.h2o)
@@ -34,7 +32,6 @@ test.ifelse <- function(conn) {
     b.h2o.R
     expect_that(all(b == b.h2o.R), equals(T))
 
-    testEnd()
 }
 
 doTest("Test for ifelse.", test.ifelse)

@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-check.deeplearning_imbalanced <- function(conn) {
+check.deeplearning_imbalanced <- function() {
   Log.info("Test checks if Deep Learning works fine with an imbalanced dataset")
   
   covtype <- h2o.uploadFile( locate("smalldata/covtype/covtype.20k.data"))
@@ -31,7 +31,6 @@ check.deeplearning_imbalanced <- function(conn) {
   }
   checkTrue(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
 
-  testEnd()
 }
 
 doTest("Deep Learning Imbalanced Test", check.deeplearning_imbalanced)

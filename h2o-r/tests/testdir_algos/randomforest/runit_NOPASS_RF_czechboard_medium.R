@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.DRF.Czechboard <- function(conn) {
+test.DRF.Czechboard <- function() {
   # Training set has checkerboard pattern
   Log.info("Importing czechboard_300x300.csv data...\n")
   board.hex <- h2o.uploadFile(
@@ -18,7 +18,6 @@ test.DRF.Czechboard <- function(conn) {
                                      training_frame = board.hex, ntrees = 50,
                                      max_depth = 20, min_rows = 500)
   print(drfmodel)
-  testEnd()
 }
 
 doTest("DRF Test: Classification with Checkerboard Group Split", test.DRF.Czechboard)

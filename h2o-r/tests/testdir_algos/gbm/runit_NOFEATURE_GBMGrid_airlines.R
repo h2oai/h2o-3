@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 gbm.grid.test<-
-function(conn) {
+function() {
     air.hex <- h2o.uploadFile( locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="air.hex")
     print(summary(air.hex))
     myX <- c("DayofMonth", "DayOfWeek")
@@ -12,7 +12,6 @@ function(conn) {
                    max_depth=c(2,3,4),
                    learn_rate=c(0.1,0.2))
     print(air.grid)
-    testEnd()
 }
 
 doTest("GBM Grid Test: Airlines Smalldata", gbm.grid.test)

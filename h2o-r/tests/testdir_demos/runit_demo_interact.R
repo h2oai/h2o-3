@@ -1,9 +1,5 @@
-!#----------------------------------------------------------------------
-# Purpose:  Create the x-prod interaction terms between two categorical vectors
-#----------------------------------------------------------------------
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 

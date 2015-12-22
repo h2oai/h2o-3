@@ -1,23 +1,10 @@
-##
-# 
-# Check the types of the columns returned from h2o after
-# calling as.data.frame.
-#
-# Should check both VA and FV...
-#
-# Check that "num"-type columns (double columns) are "num"
-# Check that "int"-type columns are "int"
-# Check that factor (or character) type columns are factor/character
-#
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 # setupRandomSeed(1994831827)
 
-data.frame.type.test <- function(conn) {
-   iris.FV <- as.h2o(conn, iris)
+data.frame.type.test <- function() {
+   iris.FV <- as.h2o( iris)
    df.iris.FV <- iris
 
    #Check each column:
@@ -32,7 +19,7 @@ data.frame.type.test <- function(conn) {
    expect_that(levels(df.iris.FV[,5]), equals(levels(iris[,5])))
 
    #Check on prostate data now...
-   prostate.FV <- h2o.importFile(conn, locate("smalldata/logreg/prostate.csv"))
+   prostate.FV <- h2o.importFile( locate("smalldata/logreg/prostate.csv"))
    df.prostate.FV <- as.data.frame(prostate.FV)
 
    #Check each column:
@@ -46,7 +33,6 @@ data.frame.type.test <- function(conn) {
    expect_that(typeof(df.prostate.FV[,8]), equals("double"))
    expect_that(typeof(df.prostate.FV[,9]), equals("integer"))
 
-   testEnd()
 }
 
 doTest("Type check data frame", data.frame.type.test)

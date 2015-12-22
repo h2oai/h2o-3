@@ -1,9 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.head_tail <- function(conn) {
+test.head_tail <- function() {
   Log.info("Uploading iris/iris_wheader.csv")
-  iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris_wheader.csv"), "iris_wheader.hex")
+  iris.hex <- h2o.importFile( locate("smalldata/iris/iris_wheader.csv"), "iris_wheader.hex")
   iris.dat <- read.csv(locate("smalldata/iris/iris_wheader.csv"))
   nrows <- nrow(iris.dat)
   ncols <- ncol(iris.dat)
@@ -23,7 +23,6 @@ test.head_tail <- function(conn) {
     expect_equivalent(as.data.frame(head(iris.hex, n = s)), head(iris.dat, n = s))
     expect_equivalent(as.data.frame(tail(iris.hex, n = s)), tail(iris.dat, n = s))
   }
-  testEnd()
 }
 
 doTest("Test out head() and tail() functionality", test.head_tail)

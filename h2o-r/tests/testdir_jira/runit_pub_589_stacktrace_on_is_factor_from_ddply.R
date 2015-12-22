@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 test.pub_589_stacktrace_on_is_factor_from_ddply <- function(localH2O) {
 
@@ -26,7 +26,6 @@ h2o.ddply(covtype.hex, c(2), ncol)
 h2o.ddply(covtype.hex, c(2), length)
 h2o.ddply(covtype.hex, c(2), function(x) { is.factor(x[,1]) })
 
-testEnd()
 
 }
 

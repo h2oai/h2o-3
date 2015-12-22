@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.GBM.SWpreds <- function(conn) {
+test.GBM.SWpreds <- function() {
   # Training set has two predictor columns
   # X1: 10 categorical levels, 100 observations per level; X2: Unif(0,1) noise
   # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)
@@ -47,7 +47,6 @@ test.GBM.SWpreds <- function(conn) {
   #expect_true(h2o.auc(drfmodel.grpsplit2.perf) >= h2o.auc(drfmodel.nogrp2.perf) - tol)
   #expect_true(h2o.accuracy(drfmodel.grpsplit2.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp2.perf, 0.5) + tol)
   
-  testEnd()
 }
 
 doTest("GBM Test: Classification with Strong/Weak Predictors", test.GBM.SWpreds)

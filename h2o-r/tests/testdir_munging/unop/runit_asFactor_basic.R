@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.as.factor.basic <- function(conn) {
-  hex <- h2o.importFile(conn, locate("smalldata/junit/cars.csv"), destination_frame = "cars.hex")
+test.as.factor.basic <- function() {
+  hex <- h2o.importFile( locate("smalldata/junit/cars.csv"), destination_frame = "cars.hex")
 
   Log.info("Printing out the head of the cars datasets") 
 
@@ -34,7 +34,6 @@ test.as.factor.basic <- function(conn) {
 
 
   #expect_true(is.factor(hex[,"cylinders"])[1])
-  testEnd()
 }
 
 doTest("Test the as.factor unary operator", test.as.factor.basic)

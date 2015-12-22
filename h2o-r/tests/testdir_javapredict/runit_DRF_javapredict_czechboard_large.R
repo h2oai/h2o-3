@@ -1,18 +1,5 @@
-#----------------------------------------------------------------------
-# Purpose:  This test exercises the RF model downloaded as java code
-#           for the dhisttest data set. It checks whether the generated
-#           java correctly splits categorical predictors into non-
-#           contiguous groups at each node.
-#
-# Notes:    Assumes unix environment.
-#           curl, javac, java must be installed.
-#           java must be at least 1.6.
-#----------------------------------------------------------------------
-
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../h2o-runit.R")
+source("../../../scripts/h2o-r-test-setup.R")
 
 
 #----------------------------------------------------------------------

@@ -1,13 +1,12 @@
-!setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.rdocstr.golden <- function(H2Oserver) {
+test.rdocstr.golden <- function() {
 
 irisPath <- system.file("extdata", "iris.csv", package="h2o")
-iris.hex <- h2o.uploadFile(H2Oserver, path = irisPath, destination_frame = "iris.hex")
+iris.hex <- h2o.uploadFile( path = irisPath, destination_frame = "iris.hex")
 summary(iris.hex)
 
-testEnd()
 }
 
 doTest("R Doc str", test.rdocstr.golden)

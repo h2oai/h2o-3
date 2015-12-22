@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.DRF.groupsplit <- function(conn) {
+test.DRF.groupsplit <- function() {
   # Training set has only 45 categories cat1 through cat45
   Log.info("Importing 50_cattest_train.csv data...\n")
   train.hex <- h2o.uploadFile( locate("smalldata/gbm_test/50_cattest_train.csv"), destination_frame = "train.hex")
@@ -34,7 +34,6 @@ test.DRF.groupsplit <- function(conn) {
   # print(test.cm)
   test.perf <- h2o.performance(drfmodel.h2o, test.hex)
   print(test.perf)
-  testEnd()
 }
 
 doTest("DRF Test: Classification with 50 categorical level predictor", test.DRF.groupsplit)

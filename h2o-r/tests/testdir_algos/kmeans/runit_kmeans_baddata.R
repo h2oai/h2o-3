@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.km.bad_data <- function(conn) {
+test.km.bad_data <- function() {
   prop <- 0.1
   rawdata <- matrix(rnorm(1000), nrow = 100, ncol = 10)
   
@@ -42,7 +42,6 @@ test.km.bad_data <- function(conn) {
   expect_equal(dim(getCenters(fitH2O)), c(5,5))
   # expect_error(h2o.kmeans(iris.hex, k = 5))
   
-  testEnd()
 }
 
 doTest("KMeans Test: Test handling of bad training data", test.km.bad_data)

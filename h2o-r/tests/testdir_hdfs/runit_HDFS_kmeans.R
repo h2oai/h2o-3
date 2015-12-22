@@ -1,9 +1,5 @@
-#----------------------------------------------------------------------
-# Purpose:  This tests k-means on a large dataset.
-#----------------------------------------------------------------------
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -24,7 +20,6 @@ if (running_inside_h2o) {
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
 
 #----------------------------------------------------------------------
 # Single file cases.
@@ -32,7 +27,7 @@ conn <- h2o.init(ip=myIP, port=myPort)
 
 heading("Import iris_wheader.csv from HDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
-iris.hex <- h2o.importFile(conn, url)
+iris.hex <- h2o.importFile( url)
 n <- nrow(iris.hex)
 print(n)
 if (n != 150) {
@@ -47,7 +42,7 @@ print(iris.km)
 
 heading("Importing covtype.data from HDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_covtype_file)
-covtype.hex <- h2o.importFile(conn, url)
+covtype.hex <- h2o.importFile( url)
 n <- nrow(covtype.hex)
 print(n)
 if (n != 581012) {

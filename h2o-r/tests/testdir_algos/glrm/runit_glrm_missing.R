@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.glrm.missing <- function(conn) {
+test.glrm.missing <- function() {
   seed <- 1234
   missing_frac <- seq(from = 0.1, to = 0.9, by = 0.1)
   
@@ -36,7 +36,6 @@ test.glrm.missing <- function(conn) {
                    AvgChangeObj = obj_delta,
                    Iterations = iters, 
                    StepSize = step))
-  testEnd()
 }
 
 doTest("GLRM Test: USArrests Data with Missing Entries Inserted", test.glrm.missing)

@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 Log.info("Loading LiblineaR and ROCR packages\n")
 if(!"LiblineaR" %in% rownames(installed.packages())) install.packages("LiblineaR")
@@ -7,7 +7,7 @@ if(!"ROCR" %in% rownames(installed.packages())) install.packages("ROCR")
 require(LiblineaR)
 require(ROCR)
 
-test.LiblineaR.airlines <- function(conn) {
+test.LiblineaR.airlines <- function() {
   L1logistic <- function(train,trainLabels,test,testLabels,trainhex,testhex) {
     Log.info("Using these parameters for LiblineaR: \n")
     Log.info("   type =    0: Logistic Regression L1-Regularized\n")
@@ -107,7 +107,6 @@ test.LiblineaR.airlines <- function(conn) {
   #models  <- L1logistic(xTrain,yTrain,xTest,yTest,trainhex,testhex)
   #compareCoefs(models[[1]], models[[2]], conn)
   
-  testEnd()
 }
 
 doTest("LiblineaR Test: Airlines", test.LiblineaR.airlines)

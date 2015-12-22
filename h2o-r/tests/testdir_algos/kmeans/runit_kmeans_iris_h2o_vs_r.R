@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 # Test k-means clustering on R's iris dataset
-test.km.iris <- function(conn) {
+test.km.iris <- function() {
   iris.hex <- as.h2o(iris)
   start <- iris[c(2,70,148),1:4]
   start.hex <- iris.hex[c(2,70,148),1:4]
@@ -26,7 +26,6 @@ test.km.iris <- function(conn) {
     }
   }
 
-  testEnd()
 }
 
 doTest("KMeans Test: Iris Data (H2O vs. R)", test.km.iris)

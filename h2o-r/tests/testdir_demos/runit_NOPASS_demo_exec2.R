@@ -1,16 +1,10 @@
-##
-# Test out the H2OExec2Demo.R
-# This demo imports a dataset, parses it, and prints a summary
-# Then, it runs data munging operations such as slice, quantile, and column creation
-##
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
-test.exec2.demo <- function(conn) {
+test.exec2.demo <- function() {
   prosPath <- system.file("extdata", "prostate.csv", package="h2o")
   Log.info(paste("Importing", prosPath))
-  prostate.hex <- h2o.importFile(conn, path = prosPath, destination_frame = "prostate.hex")
+  prostate.hex <- h2o.importFile( path = prosPath, destination_frame = "prostate.hex")
 
   Log.info("Print out summary, head, and tail")
   print(summary(prostate.hex))
@@ -102,7 +96,6 @@ test.exec2.demo <- function(conn) {
   prostate.glm.lin <- h2o.glm(y = 10, x = c("AGE", "RACE", "VOL", "GLEASON"), training_frame = prostate.hex, family = "binomial")
   print(prostate.glm.lin)
 
-  testEnd()
 }
 
 doTest("Test out H2OExec2Demo.R", test.exec2.demo)

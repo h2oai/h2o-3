@@ -1,8 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 gbm.grid.test<-
-function(conn) {
+function() {
     wine.hex <- h2o.uploadFile( locate("smalldata/gbm_test/wine.data"), destination_frame="wine.hex")
     print(summary(wine.hex))
     x <- 3:14
@@ -12,7 +12,6 @@ function(conn) {
                    max_depth=c(2,3,4),
                    learn_rate=c(0.1,0.2))
     print(wine.grid)
-    testEnd()
 }
 
 doTest("GBM Grid Test: wine.data from smalldata", gbm.grid.test)

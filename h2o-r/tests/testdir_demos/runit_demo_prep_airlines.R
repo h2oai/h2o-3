@@ -1,19 +1,8 @@
-#----------------------------------------------------------------------
-# Purpose:  Condition an Airline dataset by filtering out NAs where the
-#           departure delay in the input dataset is unknown.
-#
-#           Then treat anything longer than minutesOfDelayWeTolerate
-#           as delayed.
-#----------------------------------------------------------------------
-
-# setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_demos")
-
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
 
 filePath <- "smalldata/airlines/allyears2k_headers.zip"
 air.hex <- h2o.uploadFile( locate(filePath), "air.hex")

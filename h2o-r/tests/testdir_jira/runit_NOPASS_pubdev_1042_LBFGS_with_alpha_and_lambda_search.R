@@ -1,12 +1,12 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source('../h2o-runit.R')
+source("../../../scripts/h2o-r-test-setup.R")
 
 
 ## ---------------------------------------------------- ##
 # GLM fails with LBFGS, alpha > 0, and lambda_search = T #
 ## ---------------------------------------------------- ##
 
-test.pubdev1042 <- function(conn){
+test.pubdev1042 <- function(){
   pros.hex <- h2o.uploadFile( locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
@@ -19,7 +19,6 @@ test.pubdev1042 <- function(conn){
 
   h2o.glm(x = 3:9, y = 2, training_frame = pros.train, family = "binomial", solver = "L_BFGS", alpha = 0.5, lambda_search = TRUE)
 
-  testEnd()
 }
 
 doTest("Testing LBFGS with alpha and lambda search", test.pubdev1042)
