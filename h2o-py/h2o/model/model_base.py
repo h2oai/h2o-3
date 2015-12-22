@@ -595,6 +595,7 @@ class ModelBase(object):
         valid = validation_metric in scoring_history.col_header
         ylim = (min(min(scoring_history[[training_metric, validation_metric]])), max(max(scoring_history[[training_metric, validation_metric]]))) if valid \
           else (min(scoring_history[training_metric]), max(scoring_history[training_metric]))
+      if ylim[0] == ylim[1]: ylim = (0,1)
 
       if valid:  # Training and validation scoring history
         plt.xlabel(timestep)
