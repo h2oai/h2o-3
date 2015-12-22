@@ -511,7 +511,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
     // Note: actual communication time is estimated by the NetworkTest's collective test.
     if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && iteration > 1) {
-      Log.info("Auto-tuning train_samples_per_iteration.");
+      Log.debug("Auto-tuning train_samples_per_iteration.");
       if (time_for_communication_us > 1e4) {
         Log.debug("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
         Log.debug("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_since_last_iter, true));
