@@ -338,7 +338,7 @@ def locate(path):
 def hadoop_namenode_is_accessible():
     url = "http://{0}:50070".format(hadoop_namenode())
     try:
-        urllib.request.urlopen(urllib.request.Request(url))
+        urllib.urlopen(url)
         internal = True
     except:
         internal = False
