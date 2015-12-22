@@ -1,4 +1,4 @@
-package testngframework;
+package accuracy;
 
 import java.lang.reflect.Method;
 import java.net.*;

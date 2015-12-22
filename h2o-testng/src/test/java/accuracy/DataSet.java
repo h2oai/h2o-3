@@ -1,4 +1,4 @@
-package h2o.testng.utils;
+package accuracy;
 
 import java.io.File;
 import java.io.IOException;

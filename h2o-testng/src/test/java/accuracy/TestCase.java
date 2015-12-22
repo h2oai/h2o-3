@@ -1,4 +1,4 @@
-package h2o.testng.utils;
+package accuracy;
 
 import hex.*;
 import hex.deeplearning.DeepLearning;
@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class TestCase extends TestUtil {
-  private static String testCasesPath = "h2o-testng/src/test/resources/accuracy_test_cases.csv";
+  private static String testCasesPath = "h2o-testng/src/test/resources/accuracyTestCases.csv";
 
   public int testCaseId;
   private String algo;
@@ -131,7 +131,7 @@ public class TestCase extends TestUtil {
           modelStopTime = System.currentTimeMillis();
           modelOutput = gbmModel._output;
           break;
-        case FunctionUtils.dl:
+        case "dl":
           dlJob = new DeepLearning((DeepLearningParameters) params);
           Log.info("Train model");
           modelStartTime = System.currentTimeMillis();

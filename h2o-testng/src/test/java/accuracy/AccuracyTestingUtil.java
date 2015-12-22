@@ -1,6 +1,5 @@
-package h2o.testng;
+package accuracy;
 
-import h2o.testng.utils.*;
 import water.util.Log;
 
 import java.io.*;
@@ -14,7 +13,7 @@ import org.testng.annotations.*;
 
 import water.TestNGUtil;
 
-public class AccuracyTestingFramework extends TestNGUtil {
+public class AccuracyTestingUtil extends TestNGUtil {
 	public static String accuracyDBHost;
 	public static String accuracyDBPort;
 	public static String accuracyDBUser;

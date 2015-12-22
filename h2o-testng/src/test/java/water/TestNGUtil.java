@@ -3,7 +3,7 @@ package water;
 import org.testng.Reporter;
 import org.testng.annotations.*;
 
-import testngframework.NodeContainer;
+import accuracy.NodeContainer;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;

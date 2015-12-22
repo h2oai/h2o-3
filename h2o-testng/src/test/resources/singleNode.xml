@@ -2,7 +2,7 @@
 	<test name="Basic (S)">
 		<classes>
 			<parameter name="numNodes" value="1" />
-			<class name="h2o.testng.AccuracyTestingFramework" />
+			<class name="accuracy.AccuracyTestingUtil" />
 		</classes>
 	</test>
 </suite>

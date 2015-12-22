@@ -1,6 +1,5 @@
-package h2o.testng.utils;
+package accuracy;
 
-import h2o.testng.AccuracyTestingFramework;
 import water.util.Log;
 
 import java.sql.Connection;
@@ -40,12 +39,12 @@ public class TestCaseResult {
     // Connect to the Accuracy database
     try { Class.forName("com.mysql.jdbc.Driver");
     } catch (ClassNotFoundException e) { e.printStackTrace(); }
-    String url = String.format("jdbc:mysql://%s:%s/%s", AccuracyTestingFramework.accuracyDBHost,
-      AccuracyTestingFramework.accuracyDBPort, AccuracyTestingFramework.accuracyDBName);
+    String url = String.format("jdbc:mysql://%s:%s/%s", AccuracyTestingUtil.accuracyDBHost,
+      AccuracyTestingUtil.accuracyDBPort, AccuracyTestingUtil.accuracyDBName);
     Connection connection = null;
     try {
-      connection = DriverManager.getConnection(url, AccuracyTestingFramework.accuracyDBUser,
-        AccuracyTestingFramework.accuracyDBPwd);
+      connection = DriverManager.getConnection(url, AccuracyTestingUtil.accuracyDBUser,
+        AccuracyTestingUtil.accuracyDBPwd);
     } catch (SQLException e) {
       Log.err("Unable to connect to Accuracy database.");;
       e.printStackTrace();
@@ -77,7 +76,7 @@ public class TestCaseResult {
   }
 
   private String makeSQLCmd() {
-    String sql = String.format("insert into %s values(%s, ", AccuracyTestingFramework.accuracyDBTableName, testCaseId);
+    String sql = String.format("insert into %s values(%s, ", AccuracyTestingUtil.accuracyDBTableName, testCaseId);
     for (String m : metrics) {
       sql += (trainingMetrics.get(m) == null || Double.isNaN(trainingMetrics.get(m)) ? "NULL, " :
         Double.toString(trainingMetrics.get(m)) + ", ");
