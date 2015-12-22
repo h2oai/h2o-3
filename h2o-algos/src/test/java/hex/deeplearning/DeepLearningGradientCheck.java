@@ -23,7 +23,7 @@ public class DeepLearningGradientCheck extends TestUtil {
   static final float SAMPLE_RATE = 0.1f;
 
   @Test
-  public void cancar() {
+  public void gradientCheck() {
     Frame tfr = null;
     DeepLearningModel dl = null;
 
