@@ -1128,7 +1128,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   model_id : str
     (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
   distribution : str
-     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace" or "gaussian"
   tweedie_power : float
     Tweedie power (only for Tweedie distribution, must be between 1 and 2)
   ntrees : int

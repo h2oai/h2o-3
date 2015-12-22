@@ -1815,4 +1815,37 @@ public class GBMTest extends TestUtil {
     for(double mse : mses)
       assertEquals(mse, mses[0], 1e-10);
   }
+
+  @Test public void testLaplace() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame pred=null, res=null;
+    Scope.enter();
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      train.remove("Site").remove();     // Remove unique ID
+      train.remove("Method").remove();   // Remove categorical
+      DKV.put(train);                    // Update frame after hacking it
+      parms._train = train._key;
+      parms._response_column = "DSDist"; // Train on the outcome
+      parms._distribution = Distribution.Family.laplace;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+      job.remove();
+
+      pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
+      res = gbm.score(pred);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
+
+    } finally {
+      parms._train.remove();
+      if( gbm  != null ) gbm .delete();
+      if( pred != null ) pred.remove();
+      if( res  != null ) res .remove();
+      Scope.exit();
+    }
+  }
 }

@@ -16,7 +16,7 @@
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param distribution A \code{character} string. The distribution function of the response.
-#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace" or "gaussian"
 #' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
@@ -75,7 +75,7 @@ h2o.gbm <- function(x, y, training_frame,
                     model_id,
                     checkpoint,
                     ignore_const_cols = TRUE,
-                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),
+                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace"),
                     tweedie_power = 1.5,
                     ntrees = 50,
                     max_depth = 5,
