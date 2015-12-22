@@ -2008,21 +2008,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         long callbackStart = System.currentTimeMillis();
         final double [] newBeta;
         final Cholesky chol;
-        if(_parms._remove_colinear_columns || _parms._compute_p_values) {
-          if(_taskInfo._iter == 1) { // did not check for co-linear cols yet
+        if(_parms._remove_collinear_columns || _parms._compute_p_values) {
+          if(_taskInfo._iter == 1) { // did not check for collinear cols yet
             ArrayList<Integer> ignored_cols = new ArrayList<>();
             chol = glmt._gram.qrCholesky(ignored_cols);
             if(!ignored_cols.isEmpty()) { // got some redundant cols
-              int [] colinear_cols = new int[ignored_cols.size()];
-              for(int i = 0; i < colinear_cols.length; ++i)
-                colinear_cols[i] = ignored_cols.get(i);
-              String [] colinear_col_names = ArrayUtils.select(_activeData.coefNames(),colinear_cols);
-              if(!_parms._remove_colinear_columns)
-                throw new IllegalArgumentException("Got colinear columns, can not compute p-values unless some of the co-lienar columns are removed, please re-run with remove co-linear_columns flag on or remove the co-linear columns manually. Found following dependent columns " + colinear_col_names);
+              int [] collinear_cols = new int[ignored_cols.size()];
+              for(int i = 0; i < collinear_cols.length; ++i)
+                collinear_cols[i] = ignored_cols.get(i);
+              String [] collinear_col_names = ArrayUtils.select(_activeData.coefNames(),collinear_cols);
+              if(!_parms._remove_collinear_columns)
+                throw new IllegalArgumentException("Got collinear columns, can not compute p-values unless some of the co-lienar columns are removed, please re-run with remove collinear_columns flag on or remove the collinear columns manually. Found following dependent columns " + collinear_col_names);
               // need to drop the cols from everywhere
-              _model.addWarning("Removed co-linear columns " + colinear_col_names);
-              Log.warn("Removed co-linear columns " + Arrays.toString(colinear_col_names));
-              int [] activeCols = ArrayUtils.removeSorted(_activeData.activeCols(),colinear_cols);
+              _model.addWarning("Removed collinear columns " + collinear_col_names);
+              Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
+              int [] activeCols = ArrayUtils.removeSorted(_activeData.activeCols(),collinear_cols);
               _activeData = _activeData.filterExpandedColumns(activeCols);
               if(_taskInfo._ginfo != null)
                 _taskInfo._ginfo = new GLMGradientInfo(_taskInfo._ginfo._likelihood, _taskInfo._ginfo._objVal, contractVec(_taskInfo._ginfo._gradient, activeCols));
