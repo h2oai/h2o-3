@@ -11,10 +11,7 @@ import water.fvec.Chunk;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.MRUtils;
-import water.util.ReflectionUtils;
+import water.util.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
@@ -246,8 +243,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Work for each requested fold
   private int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
-    Vec fc = train().vec(_parms._fold_column);
-    return ((int)fc.max()-(int)fc.min()) + 1;
+    Vec f = train().vec(_parms._fold_column);
+    Vec fc = VecUtils.toCategoricalVec(f);
+    int N = fc.domain().length;
+    fc.remove();
+    return N;
   }
   // Temp zero'd vector, same size as train()
   private Vec zTmp() { return train().anyVec().makeZero(); }
@@ -292,8 +292,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
     final Integer N = nFoldWork();
     final Vec foldAssignment;
+    final Vec foldCol = origTrainFrame.vec(_parms._fold_column);
     if (_parms._fold_column != null) {
-      foldAssignment = origTrainFrame.vec(_parms._fold_column);
+      foldAssignment = makeFoldAssignment(foldCol);
     } else {
       final long seed = _parms.nFoldSeed();
       Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
@@ -364,7 +365,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // clean up memory (mostly small helper vectors and Frame headers)
-    if (_parms._fold_column == null) foldAssignment.remove();
+    foldAssignment.remove();
     if (origWeightsName == null) origWeight.remove();
 
     // adapt main Job's progress bar to build N+1 models
@@ -522,6 +523,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return this;
   }
 
+  /**
+   * Create a fold assignment column from the fold_column
+   * If the fold_column is contiguous integers, then use that.
+   * @param foldCol
+   * @return
+   */
+  private Vec makeFoldAssignment(Vec foldCol){
+    Vec foldAssignment;
+    int numRange = foldCol.isNumeric() ? (int)(foldCol.max()-foldCol.min()+1) : 0;
+    Vec foldCat = VecUtils.toCategoricalVec(foldCol);
+    if (numRange == foldCat.domain().length) {
+      foldCat.remove();
+      foldAssignment = VecUtils.toNumericVec(foldCol);
+      Log.info(foldCat.domain().length + "-fold cross-validation holdout fold assignment:");
+      for (int i=(int)foldAssignment.min();i<=(int)foldAssignment.max();++i)
+        Log.info("(numeric) fold_column value: " + i + " -> fold " + ((i%numRange)+1));
+    } else {
+      foldAssignment = foldCat;
+      Log.info(foldCat.domain().length + "-fold cross-validation holdout fold assignment:");
+      for (int i=0;i<foldAssignment.domain().length;++i)
+        Log.info("(categorical) fold_column value: " + foldAssignment.domain()[i] + " -> fold " + (i+1));
+    }
+    return foldAssignment;
+  }
+
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
   private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
     @Override
@@ -657,8 +683,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if(f == null)
         error("_fold_column","Fold column '" + _parms._fold_column  + "' not found in the training frame");
       else {
-        if(!f.isInt())
-          error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be integer");
+        if(!f.isInt() && !f.isCategorical())
+          error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be integer or categorical");
         if(f.min() < 0)
           error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be non-negative");
         if(f.isConst())
@@ -1009,7 +1035,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
     if (original_fr.anyVec().nChunks() >= chunks) {
-      Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() + 
+      if (chunks>1)
+        Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() +
               " chunks. No need to rebalance.");
       return original_fr;
     }

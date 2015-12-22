@@ -62,7 +62,8 @@ def deeplearning_autoencoder():
   cm.show()
 
   # 8.8% error +/- 0.001
-  assert abs(cm.cell_values[10][10] - 0.0882) < 0.001, "Error. Expected 0.0882, but got {0}".format(cm.cell_values[10][10])
+  #compare to runit_deeplearning_autoencoder_large.py
+  assert abs(cm.cell_values[10][10] - 0.0880) < 0.001, "Error. Expected 0.0880, but got {0}".format(cm.cell_values[10][10])
 
 
 if __name__ == "__main__":

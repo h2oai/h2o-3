@@ -997,15 +997,14 @@ public class Frame extends Lockable<Frame> {
     Frame frows = (Frame)orows;
     // It's a compatible Vec; use it as boolean selector.
     // Build column names for the result.
-    Vec [] vecs = new Vec[c2.length+1];
-    String [] names = new String[c2.length+1];
+    Vec [] vecs = new Vec[c2.length];
+    String [] names = new String[c2.length];
     for(int i = 0; i < c2.length; ++i){
       vecs[i] = _vecs[c2[i]];
       names[i] = _names[c2[i]];
     }
-    vecs[c2.length] = frows.anyVec();
-    names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
+    ff.add("preidcate", frows.anyVec());
     return new DeepSelect().doAll(types(c2),ff).outputFrame(names(c2),domains(c2));
   }
 

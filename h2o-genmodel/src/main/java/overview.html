@@ -182,7 +182,51 @@ h2o.download_pojo(model)
 TODO: provide pointer of doing this directly from Java
 
 <h3>From Sparkling Water:</h3>
-TODO: provide pointer of doing this from Sparkling Water
+The following code snippet represents an example of H2O building a model and downloading its
+corresponding POJO from a Sparkling water script:
+
+<pre>
+{@code
+import org.apache.spark.h2o._
+val h2oContext = H2OContext.getOrCreate(sc)
+
+import h2oContext._
+import org.apache.spark.examples.h2o._
+import java.io.File
+val dataFile = "examples/smalldata/allyears2k_headers.csv.gz"
+val airlinesData = new H2OFrame(new File(dataFile))
+
+import _root_.hex.tree.gbm.GBM
+import _root_.hex.tree.gbm.GBMModel.GBMParameters
+val gbmParams = new GBMParameters()
+  gbmParams._train = airlinesData
+  gbmParams._response_column = 'IsDepDelayed
+  gbmParams._model_id = water.Key.make("model")
+  gbmParams._ntrees = 5
+  gbmParams._max_depth = 2
+
+val gbm = new GBM(gbmParams)
+val model = gbm.trainModel.get
+
+import water._
+import _root_.hex._
+import java.net.URI
+import water.serial.ObjectTreeBinarySerializer
+
+def exportPOJOModel(model : Model[_, _,_], destination: URI): URI = {
+    val destFile = new File(destination)
+    val fos = new java.io.FileOutputStream(destFile)
+    val writer = new model.JavaModelStreamWriter(false)
+    try {
+      writer.writeTo(fos)
+    } finally {
+      fos.close()
+    }
+    destination
+}
+exportPOJOModel(model, new File("./GbmModel.java").toURI)
+}
+</pre>
 
 <!-- ============================================================ -->
 <!-- ============================================================ -->
@@ -199,9 +243,9 @@ The {@link hex.genmodel.tools.PredictCsv} class is used by the H2O test harness 
 predictions on new data points.
 
 <h3>Getting a new observation from a JSON request and returning a prediction</h3>
-TODO: write an example for this
+See the <a href="https://github.com/h2oai/app-consumer-loan" target="_blank">Consumer loan application github repository</a>.
 
 <h3>A user-defined-function called directly from hive</h3>
-See the <a href="https://github.com/h2oai/h2o-3-training" target="_blank">H2O-3 training github repository</a>
+See the <a href="https://github.com/h2oai/h2o-world-2015-training" target="_blank">H2O World 2015 Training github repository</a>.
 
 </body>
