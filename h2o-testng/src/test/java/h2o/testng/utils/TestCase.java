@@ -1,6 +1,5 @@
 package h2o.testng.utils;
 
-import h2o.testng.db.MySQL;
 import hex.*;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
@@ -18,6 +17,8 @@ import water.parser.ParseDataset;
 import water.util.Log;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +90,7 @@ public class TestCase extends TestUtil {
     }
   }
 
-  public void execute() {
+  public TestCaseResult execute() {
     Model.Output modelOutput = null;
 
     DRF drfJob = null;
@@ -101,10 +102,10 @@ public class TestCase extends TestUtil {
     DeepLearning dlJob = null;
     DeepLearningModel dlModel = null;
 
+    double modelStartTime = 0, modelStopTime = 0;
+
     try {
       Scope.enter();
-      double modelStartTime = 0;
-      double modelStopTime = 0;
       switch (algo) {
         case "drf":
           drfJob = new DRF((DRFModel.DRFParameters) params);
@@ -139,11 +140,6 @@ public class TestCase extends TestUtil {
           modelOutput = dlModel._output;
           break;
       }
-
-      HashMap<String,Double> trainingMetrics = getMetrics(modelOutput._training_metrics);
-      trainingMetrics.put("ModelBuildTime", modelStopTime - modelStartTime);
-      HashMap<String,Double> testingMetrics = getMetrics(modelOutput._validation_metrics);
-      MySQL.save(testCaseId, trainingMetrics, testingMetrics);
     }
     catch (Exception e) {
       Log.err(e.getMessage());
@@ -160,6 +156,21 @@ public class TestCase extends TestUtil {
       if (dlModel != null)  { dlModel.delete(); }
       Scope.exit();
     }
+
+    // Gather some more information about the test case
+    // TODO: this information might be better gathered in the AccuracyTestingFramework class
+    String ipAddr = "NULL";
+    try {
+      ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
+    } catch (UnknownHostException e) {
+      e.printStackTrace();
+    }
+    int ncpu = Runtime.getRuntime().availableProcessors();
+    String h2oVersion = H2O.ABV.projectVersion();
+    String gitHash = H2O.ABV.lastCommitHash();
+
+    return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
+      getMetrics(modelOutput._validation_metrics), modelStopTime - modelStartTime, ipAddr, ncpu, h2oVersion, gitHash);
   }
 
   public void cleanUp() {
@@ -318,7 +329,7 @@ public class TestCase extends TestUtil {
     return glmParams;
   }
 
-  private Key makeBetaConstraints(double lowerBound, double upperBound) {
+  private Key<Frame> makeBetaConstraints(double lowerBound, double upperBound) {
     Frame trainingFrame = trainingDataSet.getFrame();
     int responseColumn = trainingDataSet.getResponseColumn();
     String betaConstraintsString = "names, lower_bounds, upper_bounds\n";

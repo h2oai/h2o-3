@@ -1,38 +1,58 @@
 package h2o.testng;
 
-import h2o.testng.db.MySQLConfig;
 import h2o.testng.utils.*;
 import water.util.Log;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import org.testng.annotations.*;
 
 import water.TestNGUtil;
 
 public class AccuracyTestingFramework extends TestNGUtil {
+	public static String accuracyDBHost;
+	public static String accuracyDBPort;
+	public static String accuracyDBUser;
+	public static String accuracyDBPwd;
+	public static String accuracyDBName;
+	public static String accuracyDBTableName;
+	public static String accuracyDBTimeout;
+
+	private void setDBConfig(String configPath) {
+		File configFile = new File(configPath);
+		Properties properties = new Properties();
+		try { properties.load(new BufferedReader(new FileReader(configFile))); }
+		catch (IOException e) {
+			Log.err("Cannot load database configuration: " + configPath);
+			e.printStackTrace();
+		}
+		accuracyDBHost = properties.getProperty("db.host");
+		accuracyDBPort = properties.getProperty("db.port");
+		accuracyDBUser = properties.getProperty("db.user");
+		accuracyDBPwd = properties.getProperty("db.password");
+		accuracyDBName = properties.getProperty("db.databaseName");
+		accuracyDBTableName = properties.getProperty("db.tableName");
+		accuracyDBTimeout = properties.getProperty("db.queryTimeout");
+	}
+
 	@DataProvider(name = "TestCaseProvider")
 	public Object[][] testCaseProvider() {
-		// Retrieve the Accuracy database configuration information
+		// Configure access to the Accuracy database
 		//dbConfigFilePath = System.getProperty("dbConfigFilePath");
 		String dbConfigFilePath = "/Users/ece/0xdata/h2o-dev/DBConfig.properties";
-
-		// 	Setup Accuracy database connection configuration
-		if (!(null == dbConfigFilePath)) MySQLConfig.initConfig().setConfigFilePath(dbConfigFilePath);
+		if (!(null == dbConfigFilePath)) setDBConfig(dbConfigFilePath);
 
 		// Create the set of test cases
-
 		// Retrieve algorithm and testcaseId command-line parameters. These are used to filter the set of test cases.
 		//algorithm = System.getProperty("algo");
-		String algorithm = null;
-
+		String algorithm = "dl";
 		//testCaseId = System.getProperty("testcaseId");
 		int testCaseId = Integer.parseInt("348");
-
 		return createTestCases(algorithm, testCaseId);
 	}
 
@@ -96,7 +116,10 @@ public class AccuracyTestingFramework extends TestNGUtil {
 		tc.setModelParameters();
 
 		// Execute the provided test case
-		tc.execute();
+		TestCaseResult result = tc.execute();
+
+		// Store the test case result
+		result.saveToAccuracyDB();
 
 		tc.cleanUp();
 
