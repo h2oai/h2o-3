@@ -353,7 +353,7 @@ def hadoop_namenode():
     if hasattr(sys.modules["tests.pyunit_utils"], '__hadoop_namenode__'):
         return sys.modules["tests.pyunit_utils"].__hadoop_namenode__
     elif os.getenv("NAME_NODE"):
-        return os.getenv("NAME_NODE")
+        return os.getenv("NAME_NODE").split(".")[0]
     return None
 
 def pyunit_exec(test_name):
