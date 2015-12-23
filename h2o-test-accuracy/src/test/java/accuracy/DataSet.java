@@ -13,7 +13,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 public class DataSet extends TestUtil{
-	private static String dataSetsPath = "h2o-testng/src/test/resources/datasetCharacteristics.csv";
+	private static String dataSetsPath = "h2o-test-accuracy/src/test/resources/datasetCharacteristics.csv";
 
 	private int id;
 	private String uri;

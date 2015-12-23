@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class TestCase extends TestUtil {
-  private static String testCasesPath = "h2o-testng/src/test/resources/accuracyTestCases.csv";
+  private static String testCasesPath = "h2o-test-accuracy/src/test/resources/accuracyTestCases.csv";
 
   public int testCaseId;
   private String algo;
