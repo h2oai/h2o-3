@@ -33,7 +33,8 @@ def test_hdfs_io():
 
     hdfs_model_path = os.getenv("MODEL_PATH")
     print("Saving model")
-    new_model_path = h2o.save_model(h2o_glm, "maprfs://" + hdfs_name_node + "/" + hdfs_model_path)
+    # Does not understand maprfs:// for model saving?
+    new_model_path = h2o.save_model(h2o_glm, "hdfs://" + hdfs_name_node + "/" + hdfs_model_path)
     print("Loading back model")
     new_model = h2o.load_model(new_model_path)
     print("Running predictions")
