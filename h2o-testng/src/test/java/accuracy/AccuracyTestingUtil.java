@@ -1,5 +1,6 @@
 package accuracy;
 
+import org.testng.TestNGException;
 import water.util.Log;
 
 import java.io.*;
@@ -27,7 +28,7 @@ public class AccuracyTestingUtil extends TestNGUtil {
 		Properties properties = new Properties();
 		try { properties.load(new BufferedReader(new FileReader(configFile))); }
 		catch (IOException e) {
-			Log.err("Cannot load database configuration: " + configPath);
+			err("Cannot load database configuration: " + configPath);
 			e.printStackTrace();
 		}
 		accuracyDBHost = properties.getProperty("db.host");
@@ -42,29 +43,28 @@ public class AccuracyTestingUtil extends TestNGUtil {
 	@DataProvider(name = "TestCaseProvider")
 	public Object[][] testCaseProvider() {
 		// Configure access to the Accuracy database
-		//dbConfigFilePath = System.getProperty("dbConfigFilePath");
-		String dbConfigFilePath = "/Users/ece/0xdata/h2o-dev/DBConfig.properties";
+		String dbConfigFilePath = System.getProperty("dbConfigFilePath");
+		//String dbConfigFilePath = "/Users/ece/0xdata/h2o-dev/DBConfig.properties";
 		if (!(null == dbConfigFilePath)) setDBConfig(dbConfigFilePath);
 
 		// Create the set of test cases
 		// Retrieve algorithm and testcaseId command-line parameters. These are used to filter the set of test cases.
-		//algorithm = System.getProperty("algo");
-		String algorithm = "dl";
-		//testCaseId = System.getProperty("testcaseId");
-		int testCaseId = Integer.parseInt("348");
+		String algorithm = System.getProperty("algorithm");
+		//String algorithm = "dl";
+		String testCaseId = System.getProperty("testcaseId");
 		return createTestCases(algorithm, testCaseId);
 	}
 
-	public Object[][] createTestCases(String algorithm, int testCaseId) {
+	public Object[][] createTestCases(String algorithm, String testCaseId) {
 		List<String> testCaseEntries = null;
 		try {
-			Log.info("Reading test cases from: " + TestCase.getTestCasesPath());
+			info("Reading test cases from: " + TestCase.getTestCasesPath());
 			testCaseEntries = Files.readAllLines(TestNGUtil.find_test_file_static(TestCase.getTestCasesPath()).toPath(),
 				Charset.defaultCharset());
 		}
 		catch (Exception e) {
-			Log.err("Cannot read the test cases from: " + TestCase.getTestCasesPath());
-			Log.err(e.getMessage());
+			err("Cannot read the test cases from: " + TestCase.getTestCasesPath());
+			e.printStackTrace();
 			System.exit(-1);
 		}
 
@@ -80,17 +80,17 @@ public class AccuracyTestingUtil extends TestNGUtil {
 			if (!(null == algorithm)) {
 				if (!(algorithm.equals(testCaseEntry[1]))) { continue; }
 			}
-			else if (!(testCaseId == 0)) {
-				if (!(testCaseId == Integer.parseInt(testCaseEntry[0]))) { continue; }
+			else if (!(testCaseId.isEmpty())) {
+				if (!(testCaseId.equals(testCaseEntry[0]))) { continue; }
 			}
-			Log.info("Creating test case: " + t);
+			info("Creating test case: " + t);
 			try {
 				testCaseArray.add(testCaseCounter++, new TestCase(Integer.parseInt(testCaseEntry[0]), testCaseEntry[1],
 					testCaseEntry[2], testCaseEntry[3].equals("1"), testCaseEntry[4].equals("1"),
 					Integer.parseInt(testCaseEntry[5]), Integer.parseInt(testCaseEntry[6])));
-			} catch (IOException e) {
-				Log.err("Couldn't create test case: " + t);
-				Log.err(e.getMessage());
+			} catch (Exception e) {
+				err("Couldn't create test case: " + t);
+				e.printStackTrace();
 				System.exit(-1);
 			}
 		}
@@ -103,25 +103,63 @@ public class AccuracyTestingUtil extends TestNGUtil {
 
 	@Test(dataProvider = "TestCaseProvider")
 	public void accuracyTest(TestCase tc) {
-		//redirectStandardStreams();
-
-		Log.info("Running test case: " + tc.testCaseId);
+		info("Running test case: " + tc.testCaseId);
 
 		// Only load the data sets when the test case is about to be executed, instead of when the test case is
 		// constructed in the testCaseProvider(), for example.
-		tc.loadTestCaseDataSets();
+		try {
+			tc.loadTestCaseDataSets();
+		} catch (IOException e) {
+			AccuracyTestingUtil.err("Couldn't load data sets for test case: " + tc.testCaseId);
+			e.printStackTrace();
+			throw new TestNGException("Test case " + tc.testCaseId + " failed");
+		}
 
 		// Only make the model parameters object once the training and testing data sets have been loaded into H2O
-		tc.setModelParameters();
+		try {
+			tc.setModelParameters();
+		} catch (Exception e) {
+			AccuracyTestingUtil.err("Couldn't set the model parameters for test case: " + tc.testCaseId);
+			e.printStackTrace();
+			throw new TestNGException("Test case " + tc.testCaseId + " failed");
+		}
 
 		// Execute the provided test case
-		TestCaseResult result = tc.execute();
+		TestCaseResult result;
+		try {
+			result = tc.execute();
+		} catch (Exception e) {
+			AccuracyTestingUtil.err("Couldn't execute test case: " + tc.testCaseId);
+			e.printStackTrace();
+			throw new TestNGException("Test case " + tc.testCaseId + " failed");
+		}
 
 		// Store the test case result
-		result.saveToAccuracyDB();
+		try {
+			result.saveToAccuracyDB();
+		} catch (Exception e) {
+			AccuracyTestingUtil.err("Couldn't save the test case result for test case: " + tc.testCaseId + " to the " +
+				"Accuracy database.");
+			e.printStackTrace();
+			throw new TestNGException("Test case " + tc.testCaseId + " failed");
+		}
 
 		tc.cleanUp();
+	}
 
-		//resetStandardStreams();
+	public static void info(String message) {
+		Log.info("");
+		Log.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		Log.info(message);
+		Log.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		Log.info("");
+	}
+
+	public static void err(String message) {
+		Log.err("");
+		Log.err("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		Log.err(message);
+		Log.err("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		Log.err("");
 	}
 }

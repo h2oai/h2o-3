@@ -1,10 +1,7 @@
 package accuracy;
 
-import water.util.Log;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 
@@ -32,47 +29,22 @@ public class TestCaseResult {
     this.gitHash = gitHash;
   }
 
-  public void saveToAccuracyDB() {
+  public void saveToAccuracyDB() throws Exception {
     // Construct the sql command to be executed
     String sql = makeSQLCmd();
 
     // Connect to the Accuracy database
-    try { Class.forName("com.mysql.jdbc.Driver");
-    } catch (ClassNotFoundException e) { e.printStackTrace(); }
+    Class.forName("com.mysql.jdbc.Driver");
     String url = String.format("jdbc:mysql://%s:%s/%s", AccuracyTestingUtil.accuracyDBHost,
       AccuracyTestingUtil.accuracyDBPort, AccuracyTestingUtil.accuracyDBName);
-    Connection connection = null;
-    try {
-      connection = DriverManager.getConnection(url, AccuracyTestingUtil.accuracyDBUser,
-        AccuracyTestingUtil.accuracyDBPwd);
-    } catch (SQLException e) {
-      Log.err("Unable to connect to Accuracy database.");;
-      e.printStackTrace();
-    }
+    Connection connection = DriverManager.getConnection(url, AccuracyTestingUtil.accuracyDBUser,
+      AccuracyTestingUtil.accuracyDBPwd);
 
     // Execute the SQL command
-    boolean sqlSuccess = true;
-    Statement statement = null;
-    try { statement = connection.createStatement();
-    } catch (SQLException e) {
-      sqlSuccess = false;
-      Log.err("Unable to create sql statement.");
-      e.printStackTrace();
-    }
-    try { statement.executeUpdate(sql);
-    } catch (SQLException e) {
-      sqlSuccess = false;
-      Log.err("Unable to execute sql statement: " + sql);
-      e.printStackTrace();
-    }
-    try {
-      connection.close();
-    } catch (SQLException e) {
-      sqlSuccess = false;
-      Log.err("Unable to close sql connection");
-      e.printStackTrace();
-    }
-    if (sqlSuccess) Log.info("Successfully executed the following sql statement: " + sql);
+    Statement statement = connection.createStatement();
+    statement.executeUpdate(sql);
+    connection.close();
+    AccuracyTestingUtil.info("Successfully executed the following sql statement: " + sql);
   }
 
   private String makeSQLCmd() {

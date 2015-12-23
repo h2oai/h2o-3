@@ -14,11 +14,9 @@ import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
-import water.util.Log;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +38,7 @@ public class TestCase extends TestUtil {
   private DataSet testingDataSet;
 
   public TestCase(int testCaseId, String algo, String algoParameters, boolean tuned, boolean regression, int
-    trainingDataSetId, int testingDataSetId) throws IOException {
+    trainingDataSetId, int testingDataSetId) throws Exception {
     this.testCaseId = testCaseId;
     this.algo = algo;
     this.algoParameters = algoParameters;
@@ -55,22 +53,12 @@ public class TestCase extends TestUtil {
 
   public static String getTestCasesPath() { return testCasesPath; }
 
-  public void loadTestCaseDataSets() {
-    loadTestCaseDataSet(trainingDataSet);
-    loadTestCaseDataSet(testingDataSet);
+  public void loadTestCaseDataSets() throws IOException{
+    trainingDataSet.load(regression);
+    testingDataSet.load(regression);
   }
 
-  private void loadTestCaseDataSet(DataSet d) {
-    try {
-      d.load(regression);
-    } catch (IOException e) {
-      Log.err("Couldn't load data set: " + d.getId() + " into H2O.");
-      Log.err(e.getMessage());
-      System.exit(-1);
-    }
-  }
-
-  public void setModelParameters() {
+  public void setModelParameters() throws Exception{
     switch (algo) {
       case "drf":
         params = makeDrfModelParameters();
@@ -85,12 +73,11 @@ public class TestCase extends TestUtil {
         params = makeGbmModelParameters();
         break;
       default:
-        Log.err("Cannot set model parameters for algo: " + algo);
-        System.exit(-1);
+        throw new Exception("No algo: " + algo);
     }
   }
 
-  public TestCaseResult execute() {
+  public TestCaseResult execute() throws Exception {
     Model.Output modelOutput = null;
 
     DRF drfJob = null;
@@ -109,7 +96,7 @@ public class TestCase extends TestUtil {
       switch (algo) {
         case "drf":
           drfJob = new DRF((DRFModel.DRFParameters) params);
-          Log.info("Train DRF model:");
+          AccuracyTestingUtil.info("Train DRF model:");
           modelStartTime = System.currentTimeMillis();
           drfModel = drfJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -117,7 +104,7 @@ public class TestCase extends TestUtil {
           break;
         case "glm":
           glmJob = new GLM(Key.make("GLMModel"), "GLM Model", (GLMModel.GLMParameters) params);
-          Log.info("Train GLM model");
+          AccuracyTestingUtil.info("Train GLM model");
           modelStartTime = System.currentTimeMillis();
           glmModel = glmJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -125,7 +112,7 @@ public class TestCase extends TestUtil {
           break;
         case "gbm":
           gbmJob = new GBM((GBMModel.GBMParameters) params);
-          Log.info("Train GBM model");
+          AccuracyTestingUtil.info("Train GBM model");
           modelStartTime = System.currentTimeMillis();
           gbmModel = gbmJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -133,19 +120,16 @@ public class TestCase extends TestUtil {
           break;
         case "dl":
           dlJob = new DeepLearning((DeepLearningParameters) params);
-          Log.info("Train model");
+          AccuracyTestingUtil.info("Train model");
           modelStartTime = System.currentTimeMillis();
           dlModel = dlJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
           modelOutput = dlModel._output;
           break;
       }
-    }
-    catch (Exception e) {
-      Log.err(e.getMessage());
-      System.exit(-1);
-    }
-    finally {
+    } catch (Exception e) {
+      throw new Exception(e);
+    } finally {
       if (drfJob != null)   { drfJob.remove(); }
       if (drfModel != null) { drfModel.delete(); }
       if (glmJob != null)   { glmJob.remove(); }
@@ -160,11 +144,7 @@ public class TestCase extends TestUtil {
     // Gather some more information about the test case
     // TODO: this information might be better gathered in the AccuracyTestingFramework class
     String ipAddr = "NULL";
-    try {
-      ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
-    } catch (UnknownHostException e) {
-      e.printStackTrace();
-    }
+    ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
     int ncpu = Runtime.getRuntime().availableProcessors();
     String h2oVersion = H2O.ABV.projectVersion();
     String gitHash = H2O.ABV.lastCommitHash();
@@ -175,7 +155,7 @@ public class TestCase extends TestUtil {
 
   public void cleanUp() {
     //FIXME: This was just copied over from RemoveAllHandler.
-    Log.info("Removing all objects.");
+    AccuracyTestingUtil.info("Removing all objects.");
     trainingDataSet.closeFrame();
     testingDataSet.closeFrame();
     Futures fs = new Futures();
@@ -186,7 +166,7 @@ public class TestCase extends TestUtil {
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     H2O.getPM().getIce().cleanUp();
-    Log.info("Finished removing objects.");
+    AccuracyTestingUtil.info("Finished removing objects.");
   }
 
   private HashMap<String,Double> getMetrics(ModelMetrics mm) {
@@ -231,7 +211,7 @@ public class TestCase extends TestUtil {
     return mmMap;
   }
 
-  private GLMModel.GLMParameters makeGlmModelParameters() {
+  private GLMModel.GLMParameters makeGlmModelParameters() throws Exception {
     GLMModel.GLMParameters glmParams = new GLMModel.GLMParameters();
     String[] glmAlgoParamsMap = new String[]{
       "gaussian",
@@ -310,9 +290,7 @@ public class TestCase extends TestUtil {
         case "_max_active_predictors":     glmParams._max_active_predictors = Integer.parseInt(tokens[i]);
           break;
         default:
-          Log.err(glmAlgoParamsMap[i] + " parameter is not supported for glm test cases");
-          System.exit(-1);
-          break;
+          throw new Exception(glmAlgoParamsMap[i] + " parameter is not supported for glm test cases");
       }
     }
     // _train, _valid, _response
@@ -354,7 +332,7 @@ public class TestCase extends TestUtil {
     return ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey)._key;
   }
 
-  private GBMModel.GBMParameters makeGbmModelParameters() {
+  private GBMModel.GBMParameters makeGbmModelParameters() throws Exception {
     GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
     String[] gbmAlgoParamsMap = new String[]{
       "auto",
@@ -440,9 +418,7 @@ public class TestCase extends TestUtil {
         case "_col_sample_rate":           gbmParams._col_sample_rate = Float.parseFloat(tokens[i]);
           break;
         default:
-          Log.err(gbmAlgoParamsMap[i] + " parameter is not supported for gbm test cases");
-          System.exit(-1);
-          break;
+          throw new Exception(gbmAlgoParamsMap[i] + " parameter is not supported for gbm test cases");
       }
     }
     // _train, _valid, _response
@@ -452,7 +428,7 @@ public class TestCase extends TestUtil {
     return gbmParams;
   }
 
-  private DeepLearningModel.Parameters makeDlModelParameters() {
+  private DeepLearningModel.Parameters makeDlModelParameters() throws Exception {
     DeepLearningParameters dlParams = new DeepLearningParameters();
     String[] dlAlgoParamsMap = new String[]{
       "auto",
@@ -628,9 +604,7 @@ public class TestCase extends TestUtil {
         case "_export_weights_and_biases":   dlParams._export_weights_and_biases = true;
           break;
         default:
-          Log.err(dlAlgoParamsMap[i] + " parameter is not supported for dl test cases");
-          System.exit(-1);
-          break;
+          throw new Exception(dlAlgoParamsMap[i] + " parameter is not supported for dl test cases");
       }
     }
     // _train, _valid, _response
@@ -641,7 +615,7 @@ public class TestCase extends TestUtil {
     return dlParams;
   }
 
-  private DRFModel.DRFParameters makeDrfModelParameters() {
+  private DRFModel.DRFParameters makeDrfModelParameters() throws Exception {
     DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
     String[] drfAlgoParamsMap = new String[]{
       "auto",
@@ -725,9 +699,7 @@ public class TestCase extends TestUtil {
         case "_nbins_top_level":           drfParams._nbins_top_level = Integer.parseInt(tokens[i]);
           break;
         default:
-          Log.err(drfAlgoParamsMap[i] + " parameter is not supported for gbm test cases");
-          System.exit(-1);
-          break;
+          throw new Exception(drfAlgoParamsMap[i] + " parameter is not supported for gbm test cases");
       }
     }
     // _train, _valid, _response

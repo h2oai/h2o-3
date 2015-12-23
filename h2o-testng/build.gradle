@@ -19,22 +19,19 @@ test {
 
     useTestNG{
         useDefaultListeners = true
-        
+
+        if(rootProject.hasProperty("algorithm")){
+            systemProperty 'algorithm', "$algorithm"
+        }
         if(rootProject.hasProperty("testcaseId")){
         	systemProperty 'testcaseId', "$testcaseId"
-        	println("algorithm and size parameter will be ignored.");
         }
-        else{
-	        if(rootProject.hasProperty("algorithm")){
-	        	systemProperty 'algorithm', "$algorithm"
-	        }
-	        if(rootProject.hasProperty("size")){
-	        	systemProperty 'size', "$size"
-	        }
-	    }
 	    if(rootProject.hasProperty("dbConfigFilePath")){
 	    	systemProperty 'dbConfigFilePath', "$dbConfigFilePath"
 	    }
+        if(rootProject.hasProperty("stdOutToFile")){
+            systemProperty 'stdOutToFile', "$stdOutToFile"
+        }
         
         if (singleNode) { suites("src/test/resources/singleNode.xml") }
         else { suites("src/test/resources/multipleNode.xml") }
@@ -48,8 +45,8 @@ test {
     }
 }
 
-task updateTestNGReport(type: Exec) {
-    commandLine 'python', 'scripts/update_testng_report.py', '-d', 'build/reports/tests/'
-}
+//task accuracySuiteSummary(type: Exec) {
+//    commandLine 'python', 'scripts/update_testng_report.py', '-d', 'results/'
+//}
 
-test.finalizedBy(updateTestNGReport)
+//test.finalizedBy(accuracySuiteSummary)

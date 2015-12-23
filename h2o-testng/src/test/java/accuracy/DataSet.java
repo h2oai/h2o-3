@@ -11,7 +11,6 @@ import water.Scope;
 import water.TestNGUtil;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.Log;
 
 public class DataSet extends TestUtil{
 	private static String dataSetsPath = "h2o-testng/src/test/resources/datasetCharacteristics.csv";
@@ -22,7 +21,7 @@ public class DataSet extends TestUtil{
 	private File csvFile;
 	private Frame frame;
 
-	public DataSet(int id, File csvFile, List<String> entries) {
+	public DataSet(int id, File csvFile, List<String> entries) throws Exception{
 		this.id = id;
 		this.csvFile = csvFile;
 
@@ -38,29 +37,26 @@ public class DataSet extends TestUtil{
 				break;
 			}
 		}
-		if (!foundDataSet) {
-			Log.err("Couldn't find data set id: " + id + " in csv: " + dataSetsPath);
-			System.exit(-1);
-		}
+		if (!foundDataSet) { throw new Exception("Couldn't find data set id: " + id + " in csv: " + dataSetsPath); }
 
 	}
 
-	public DataSet(int id, File csvFile) throws IOException {
+	public DataSet(int id, File csvFile) throws Exception {
 		this(id, TestNGUtil.find_test_file_static(dataSetsPath),
 			Files.readAllLines(csvFile.toPath(), Charset.defaultCharset()));
 	}
 
-	public DataSet(int id) throws IOException {
+	public DataSet(int id) throws Exception{
 		this(id, TestNGUtil.find_test_file_static(dataSetsPath));
 	}
 
 	public void load(boolean regression) throws IOException {
-		Log.info("Loading data set: " + this.id);
+		AccuracyTestingUtil.info("Loading data set: " + this.id);
 		frame = TestUtil.parse_test_file(makeDataSetFile(this.uri).getCanonicalPath());
 		if (!regression) {
 			String responseColumnName = frame._names[responseColumn];
-			Log.info("Converting response column idx/name: " + responseColumn + "/" + responseColumnName + " to " +
-				"categorical");
+			AccuracyTestingUtil.info("Converting response column (idx/name): " + responseColumn + "/" + responseColumnName
+				+ " to categorical for dataset: " + this.id);
 			Scope.track(frame.replace(responseColumn, frame.vecs()[responseColumn].toCategoricalVec()));
 			DKV.put(frame);
 		}

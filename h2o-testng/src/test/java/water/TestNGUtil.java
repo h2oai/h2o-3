@@ -1,17 +1,14 @@
 package water;
 
-import org.testng.Reporter;
+import accuracy.AccuracyTestingUtil;
 import org.testng.annotations.*;
 
 import accuracy.NodeContainer;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import static org.testng.Assert.assertTrue;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
@@ -20,13 +17,6 @@ public class TestNGUtil extends Iced {
     private static boolean _stall_called_before = false;
     protected static int _initial_keycnt = 0;
     protected static int MINCLOUDSIZE;
-
-    private static final PrintStream stderr = System.err;
-    private static final PrintStream stdout = System.out;
-
-    private ByteArrayOutputStream baOutStream = new ByteArrayOutputStream();
-    private PrintStream outputStream = new PrintStream(baOutStream);
-
 
     public TestNGUtil() { this(1); }
     public TestNGUtil(int minCloudSize) { MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize); }
@@ -38,8 +28,7 @@ public class TestNGUtil extends Iced {
             if (H2O.getCloudSize() < x) {
                 // Leader node, where the tests execute from.
                 String cloudName = UUID.randomUUID().toString();
-                String[] args = new String[]{"-name",cloudName,"-ice_root",find_test_file_static("h2o-testng/" +
-                        "build").toString()};
+                String[] args = new String[]{"-name",cloudName};
                 H2O.main(args);
 
                 // Secondary nodes, skip if expected to be pre-built
@@ -57,8 +46,29 @@ public class TestNGUtil extends Iced {
     @BeforeClass
     @Parameters("numNodes")
     public void setupCloud(@Optional("5") String numNodes) {
+        String stdOutToFile = System.getProperty("stdOutToFile");
+        if (!(null == stdOutToFile) && stdOutToFile.equals("T"))
+        {
+            try {
+                redirectStandardStreams();
+            } catch (IOException e) {
+                AccuracyTestingUtil.err("Cannot direct stdout and stderr to h2olog.txt");
+                e.printStackTrace();
+                System.exit(-1);
+            }
+        }
         stall_till_cloudsize(Integer.parseInt(numNodes));
         _initial_keycnt = H2O.store_size();
+    }
+
+    public void redirectStandardStreams() throws IOException {
+        File h2oResultsDir = new File("results");
+        if (!h2oResultsDir.exists()) { h2oResultsDir.mkdir(); }
+        File h2oLog = new File("results/h2oLog.txt");
+        h2oLog.createNewFile();
+        PrintStream ps = new PrintStream(new FileOutputStream(h2oLog, false));
+        System.setOut(ps);
+        System.setErr(ps);
     }
 
 /** Temporarily Remove this due to unneeded
@@ -106,32 +116,6 @@ public class TestNGUtil extends Iced {
             file = null;
         return file;
     }
-
-
-    //@BeforeMethod(alwaysRun = true)
-    public void redirectStandardStreams() {
-        System.setOut(outputStream);
-        System.setErr(outputStream);
-    }
-
-    //@AfterMethod(alwaysRun = true)
-    public void resetStandardStreams() {
-
-    	// wait 100 mili-sec for output/error to be stored
-		try {
-			Thread.sleep(100);
-		}
-		catch (InterruptedException ex) {
-			Thread.currentThread().interrupt();
-		}
-    	
-        System.setOut(stdout);
-        System.setErr(stderr);
-        
-        Reporter.log(baOutStream.toString(), true);
-        baOutStream.reset();
-    }
-
 
     /** Hunt for test files in likely places.  Null if cannot find.
      *  @param fname Test filename
