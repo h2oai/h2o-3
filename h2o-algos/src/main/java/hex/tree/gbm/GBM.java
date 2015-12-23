@@ -520,21 +520,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       H2O.submitTask(sqt);
       sqt.join();
 
-//      // DEBUGGING for full quantiles
-//      if (strata==null) {
-//        QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
-//        parms._train = Key.make();
-//        Frame dummy = new Frame(parms._train, new String[]{"y", "weights"}, new Vec[]{response, weights});
-//        parms._weights_column = "weights";
-////      Frame dummy = new Frame(parms._train, new String[]{"y"}, new Vec[]{y});
-//        DKV.put(dummy);
-//        parms._probs = new double[]{quantile};
-//        Job<QuantileModel> job1 = new Quantile(parms).trainModel();
-//        QuantileModel kmm = job1.get();
-//        dummy.delete();
-//        assert (sqt._quantiles[0] == kmm._output._quantiles[0][0]);
-//      }
-
       for (int i = 0; i < ktrees[0]._len - leafs[0]; i++) {
         float val = (float) (_parms._learn_rate * sqt._quantiles[i]);
         assert !Float.isNaN(val) && !Float.isInfinite(val);
