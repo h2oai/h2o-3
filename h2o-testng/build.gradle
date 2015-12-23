@@ -1,4 +1,4 @@
-description = "H2O Test Integration - TestNG"
+description = "H2O Accuracy Testing"
 
 dependencies {
 	compile 'net.sf.opencsv:opencsv:2.3'
