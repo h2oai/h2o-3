@@ -6,6 +6,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.List;
 
+import water.AccuracyUtil;
 import water.DKV;
 import water.Scope;
 import water.TestUtil;

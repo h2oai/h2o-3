@@ -1,4 +1,4 @@
-package accuracy;
+package water;
 
 import java.lang.reflect.Method;
 import java.net.*;

@@ -2,7 +2,7 @@
     <test name="Accuracy Test">
         <classes>
             <parameter name="numNodes" value="5"/>
-            <class name="accuracy.AccuracyTesting" />
+            <class name="water.AccuracyTesting" />
         </classes>
     </test>
 </suite>

@@ -1,7 +1,8 @@
-package accuracy;
+package water;
 
+import accuracy.TestCase;
+import accuracy.TestCaseResult;
 import org.testng.TestNGException;
-import water.util.Log;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -36,7 +37,7 @@ public class AccuracyTesting {
 		List<String> testCaseEntries = null;
 		try {
 			AccuracyUtil.log("Reading test cases from: " + TestCase.getTestCasesPath());
-			testCaseEntries = Files.readAllLines(AccuracyUtil.find_test_file_static(TestCase.getTestCasesPath()).toPath(),
+			testCaseEntries = Files.readAllLines(TestUtil.find_test_file_static(TestCase.getTestCasesPath()).toPath(),
 				Charset.defaultCharset());
 		}
 		catch (Exception e) {
@@ -82,7 +83,7 @@ public class AccuracyTesting {
 	public void accuracyTest(TestCase tc) {
 		tc.cleanUp();
 		String errorMessage;
-		info("Running test case: " + tc.testCaseId);
+		AccuracyUtil.info("Running test case: " + tc.testCaseId);
 		AccuracyUtil.log("****************** Running test case: " + tc.testCaseId + "******************");
 
 		// Only load the data sets when the test case is about to be executed, instead of when the test case is
@@ -132,13 +133,5 @@ public class AccuracyTesting {
 			AccuracyUtil.logStackTrace(e);
 			throw new TestNGException(errorMessage);
 		}
-	}
-
-	public static void info(String message) {
-		Log.info("");
-		Log.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-		Log.info(message);
-		Log.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-		Log.info("");
 	}
 }
