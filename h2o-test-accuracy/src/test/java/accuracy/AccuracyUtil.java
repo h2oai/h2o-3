@@ -1,9 +1,6 @@
-package water;
+package accuracy;
 
-import accuracy.AccuracyTestingUtil;
-import org.testng.annotations.*;
-
-import accuracy.NodeContainer;
+import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
@@ -11,15 +8,80 @@ import water.parser.ParseSetup;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.UUID;
 
-public class TestNGUtil extends Iced {
+// TODO: I think this should just extent TestUtil and maybe override the stall_till_cloudsize method???
+public class AccuracyUtil extends Iced {
     private static boolean _stall_called_before = false;
     protected static int _initial_keycnt = 0;
     protected static int MINCLOUDSIZE;
 
-    public TestNGUtil() { this(1); }
-    public TestNGUtil(int minCloudSize) { MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize); }
+    private static String accuracyDBHost, accuracyDBPort, accuracyDBUser, accuracyDBPwd, accuracyDBName,
+      accuracyDBTableName, accuracyDBTimeout;
+    private static PrintStream summaryPrintStream;
+
+
+    public AccuracyUtil() { this(1); }
+    public AccuracyUtil(int minCloudSize) { MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize); }
+
+    // Logging utils
+    public static void setupLogging() throws IOException {
+        File h2oResultsDir = new File(find_test_file_static("h2o-test-accuracy").getCanonicalFile().toString() +
+          "/results");
+        if (!h2oResultsDir.exists()) { h2oResultsDir.mkdir(); }
+
+        File suiteSummary = new File(find_test_file_static("h2o-test-accuracy/results").getCanonicalFile().toString() +
+          "/summary.txt");
+        suiteSummary.createNewFile();
+        summaryPrintStream = new PrintStream(new FileOutputStream(suiteSummary, false));
+
+        System.out.println("Commenced logging to h2o-test-accuracy/results directory.");
+    }
+    public static void log(String info) { summaryPrintStream.println(info + "\n"); }
+    public static void logStackTrace(Exception e) {
+        StringWriter stringWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stringWriter));
+        log(stringWriter.toString());
+    }
+
+    // Database utils
+    public static void configureAccessToDB() {
+        //String configPath = System.getProperty("dbConfigFilePath");
+        String configPath = "/Users/ece/0xdata/h2o-3/DBConfig.properties";
+        if (!(null == configPath)) {
+            File configFile = new File(configPath);
+            Properties properties = new Properties();
+            try {
+                properties.load(new BufferedReader(new FileReader(configFile)));
+            } catch (IOException e) {
+                summaryPrintStream.println("Cannot load database configuration: " + configPath);
+                summaryPrintStream.println(e.getMessage());
+                System.exit(-1);
+            }
+            summaryPrintStream.println("The following database configuration settings were read from " + configPath);
+            summaryPrintStream.println(accuracyDBHost = properties.getProperty("db.host"));
+            summaryPrintStream.println(accuracyDBPort = properties.getProperty("db.port"));
+            summaryPrintStream.println(accuracyDBUser = properties.getProperty("db.user"));
+            summaryPrintStream.println(accuracyDBPwd = properties.getProperty("db.password"));
+            summaryPrintStream.println(accuracyDBName = properties.getProperty("db.databaseName"));
+            summaryPrintStream.println(accuracyDBTableName = properties.getProperty("db.tableName"));
+            summaryPrintStream.println(accuracyDBTimeout = properties.getProperty("db.queryTimeout"));
+            summaryPrintStream.println("");
+        }
+    }
+    public static String getDBHost()      { return accuracyDBHost; }
+    public static String getDBPort()      { return accuracyDBPort; }
+    public static String getDBName()      { return accuracyDBName; }
+    public static String getDBUser()      { return accuracyDBUser; }
+    public static String getDBPwd()       { return accuracyDBPwd; }
+    public static String getDBTableName() { return accuracyDBTableName; }
+
+    // H2O cloud setup utils
+    public static void setupH2OCloud(int numNodes) {
+        stall_till_cloudsize(numNodes);
+        _initial_keycnt = H2O.store_size();
+    }
 
     // ==== Test Setup & Teardown Utilities ====
     // Stall test until we see at least X members of the Cloud
@@ -28,7 +90,8 @@ public class TestNGUtil extends Iced {
             if (H2O.getCloudSize() < x) {
                 // Leader node, where the tests execute from.
                 String cloudName = UUID.randomUUID().toString();
-                String[] args = new String[]{"-name",cloudName};
+                String[] args = new String[]{"-name",cloudName,"-ice_root",find_test_file_static("h2o-test-accuracy/" +
+                  "results").toString()};
                 H2O.main(args);
 
                 // Secondary nodes, skip if expected to be pre-built
@@ -43,58 +106,6 @@ public class TestNGUtil extends Iced {
         }
     }
 
-    @BeforeClass
-    @Parameters("numNodes")
-    public void setupCloud(@Optional("5") String numNodes) {
-        String stdOutToFile = System.getProperty("stdOutToFile");
-        if (!(null == stdOutToFile) && stdOutToFile.equals("T"))
-        {
-            try {
-                redirectStandardStreams();
-            } catch (IOException e) {
-                AccuracyTestingUtil.err("Cannot direct stdout and stderr to h2olog.txt");
-                e.printStackTrace();
-                System.exit(-1);
-            }
-        }
-        stall_till_cloudsize(Integer.parseInt(numNodes));
-        _initial_keycnt = H2O.store_size();
-    }
-
-    public void redirectStandardStreams() throws IOException {
-        File h2oResultsDir = new File("results");
-        if (!h2oResultsDir.exists()) { h2oResultsDir.mkdir(); }
-        File h2oLog = new File("results/h2oLog.txt");
-        h2oLog.createNewFile();
-        PrintStream ps = new PrintStream(new FileOutputStream(h2oLog, false));
-        System.setOut(ps);
-        System.setErr(ps);
-    }
-
-/** Temporarily Remove this due to unneeded
-    @AfterClass
-    public static void checkLeakedKeys() {
-        int leaked_keys = H2O.store_size() - _initial_keycnt;
-        if( leaked_keys > 0 ) {
-            int cnt=0;
-            for( Key k : H2O.localKeySet() ) {
-                Value value = Value.STORE_get(k);
-                // Ok to leak VectorGroups and the Jobs list
-                if( value.isVecGroup() || k == Job.LIST ||
-                        // Also leave around all attempted Jobs for the Jobs list
-                        (value.isJob() && value.<Job>get().isStopped()) )
-                    leaked_keys--;
-                else {
-                    if( cnt++ < 10 )
-                        System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
-                }
-            }
-            if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
-        }
-        assertTrue(leaked_keys <= 0, "No keys leaked");
-        _initial_keycnt = H2O.store_size();
-    }
-*/
     // ==== Data Frame Creation Utilities ====
 
     /** Hunt for test files in likely places.  Null if cannot find.
@@ -223,70 +234,4 @@ public class TestNGUtil extends Iced {
         return r;
     }
     public static <T> T[] aro(T ...a) { return a ;}
-
-
-//  // ==== Comparing Results ====
-//
-//  /** Compare 2 doubles within a tolerance
-//   *  @param a double
-//   *  @param b double
-//   *  @param abseps - Absolute allowed tolerance
-//   *  @param releps - Relative allowed tolerance
-//   *  @return true if equal within tolerances  */
-//  protected boolean compare(double a, double b, double abseps, double releps) {
-//    return
-//      Double.compare(a, b) == 0 || // check for equality
-//      Math.abs(a-b)/Math.max(a,b) < releps ||  // check for small relative error
-//      Math.abs(a - b) <= abseps; // check for small absolute error
-//  }
-//
-//  /** Compare 2 doubles within a tolerance
-//   *  @param fr1 Frame
-//   *  @param fr2 Frame
-//   *  @return true if equal  */
-//  protected static boolean isBitIdentical( Frame fr1, Frame fr2 ) {
-//    if( fr1.numCols() != fr2.numCols() ) return false;
-//    if( fr1.numRows() != fr2.numRows() ) return false;
-//    if( fr1.checkCompatible(fr2) )
-//      return !(new Cmp1().doAll(new Frame(fr1).add(fr2))._unequal);
-//    // Else do it the slow hard way
-//    return !(new Cmp2(fr2).doAll(fr1)._unequal);
-//  }
-//  // Fast compatible Frames
-//  private static class Cmp1 extends MRTask<Cmp1> {
-//    boolean _unequal;
-//    @Override public void map( Chunk chks[] ) {
-//      for( int cols=0; cols<chks.length>>1; cols++ ) {
-//        Chunk c0 = chks[cols                 ];
-//        Chunk c1 = chks[cols+(chks.length>>1)];
-//        for( int rows = 0; rows < chks[0].len(); rows++ ) {
-//          double d0 = c0.at0(rows), d1 = c1.at0(rows);
-//          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
-//            _unequal = true; return;
-//          }
-//        }
-//      }
-//    }
-//    @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
-//  }
-//  // Slow incompatible frames
-//  private static class Cmp2 extends MRTask<Cmp2> {
-//    final Frame _fr;
-//    Cmp2( Frame fr ) { _fr = fr; }
-//    boolean _unequal;
-//    @Override public void map( Chunk chks[] ) {
-//      for( int cols=0; cols<chks.length>>1; cols++ ) {
-//        if( _unequal ) return;
-//        Chunk c0 = chks[cols];
-//        Vec v1 = _fr.vecs()[cols];
-//        for( int rows = 0; rows < chks[0].len(); rows++ ) {
-//          double d0 = c0.at0(rows), d1 = v1.at(c0.start() + rows);
-//          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
-//            _unequal = true; return;
-//          }
-//        }
-//      }
-//    }
-//    @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
-//  }
 }

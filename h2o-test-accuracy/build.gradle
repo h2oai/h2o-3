@@ -29,9 +29,6 @@ test {
 	    if(rootProject.hasProperty("dbConfigFilePath")){
 	    	systemProperty 'dbConfigFilePath', "$dbConfigFilePath"
 	    }
-        if(rootProject.hasProperty("stdOutToFile")){
-            systemProperty 'stdOutToFile', "$stdOutToFile"
-        }
         
         if (singleNode) { suites("src/test/resources/singleNode.xml") }
         else { suites("src/test/resources/multipleNode.xml") }
@@ -45,6 +42,7 @@ test {
     }
 }
 
+// Example of how one might do some scraping after executing the tests
 //task accuracySuiteSummary(type: Exec) {
 //    commandLine 'python', 'scripts/update_testng_report.py', '-d', 'results/'
 //}

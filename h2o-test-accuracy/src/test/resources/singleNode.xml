@@ -1,8 +1,8 @@
 <suite name="Single Node" verbose="5">
-	<test name="Basic (S)">
+	<test name="Accuracy Test">
 		<classes>
 			<parameter name="numNodes" value="1" />
-			<class name="accuracy.AccuracyTestingUtil" />
+			<class name="accuracy.AccuracyTesting" />
 		</classes>
 	</test>
 </suite>

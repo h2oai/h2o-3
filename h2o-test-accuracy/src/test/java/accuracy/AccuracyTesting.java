@@ -8,63 +8,40 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 import org.testng.annotations.*;
 
-import water.TestNGUtil;
+public class AccuracyTesting {
 
-public class AccuracyTestingUtil extends TestNGUtil {
-	public static String accuracyDBHost;
-	public static String accuracyDBPort;
-	public static String accuracyDBUser;
-	public static String accuracyDBPwd;
-	public static String accuracyDBName;
-	public static String accuracyDBTableName;
-	public static String accuracyDBTimeout;
-
-	private void setDBConfig(String configPath) {
-		File configFile = new File(configPath);
-		Properties properties = new Properties();
-		try { properties.load(new BufferedReader(new FileReader(configFile))); }
-		catch (IOException e) {
-			err("Cannot load database configuration: " + configPath);
-			e.printStackTrace();
-		}
-		accuracyDBHost = properties.getProperty("db.host");
-		accuracyDBPort = properties.getProperty("db.port");
-		accuracyDBUser = properties.getProperty("db.user");
-		accuracyDBPwd = properties.getProperty("db.password");
-		accuracyDBName = properties.getProperty("db.databaseName");
-		accuracyDBTableName = properties.getProperty("db.tableName");
-		accuracyDBTimeout = properties.getProperty("db.queryTimeout");
+	@BeforeClass
+	@Parameters("numNodes")
+	private void accuracySuiteSetup(@Optional("1") String numNodes) throws IOException {
+		AccuracyUtil.setupLogging();
+		AccuracyUtil.configureAccessToDB();
+		AccuracyUtil.setupH2OCloud(Integer.parseInt(numNodes));
 	}
 
 	@DataProvider(name = "TestCaseProvider")
 	public Object[][] testCaseProvider() {
-		// Configure access to the Accuracy database
-		String dbConfigFilePath = System.getProperty("dbConfigFilePath");
-		//String dbConfigFilePath = "/Users/ece/0xdata/h2o-dev/DBConfig.properties";
-		if (!(null == dbConfigFilePath)) setDBConfig(dbConfigFilePath);
-
 		// Create the set of test cases
 		// Retrieve algorithm and testcaseId command-line parameters. These are used to filter the set of test cases.
-		String algorithm = System.getProperty("algorithm");
-		//String algorithm = "dl";
+		//String algorithm = System.getProperty("algorithm");
+		String algorithm = "dl";
 		String testCaseId = System.getProperty("testcaseId");
+		//String testCaseId = "880";
 		return createTestCases(algorithm, testCaseId);
 	}
 
 	public Object[][] createTestCases(String algorithm, String testCaseId) {
 		List<String> testCaseEntries = null;
 		try {
-			info("Reading test cases from: " + TestCase.getTestCasesPath());
-			testCaseEntries = Files.readAllLines(TestNGUtil.find_test_file_static(TestCase.getTestCasesPath()).toPath(),
+			AccuracyUtil.log("Reading test cases from: " + TestCase.getTestCasesPath());
+			testCaseEntries = Files.readAllLines(AccuracyUtil.find_test_file_static(TestCase.getTestCasesPath()).toPath(),
 				Charset.defaultCharset());
 		}
 		catch (Exception e) {
-			err("Cannot read the test cases from: " + TestCase.getTestCasesPath());
-			e.printStackTrace();
+			AccuracyUtil.log("Cannot read the test cases from: " + TestCase.getTestCasesPath());
+			AccuracyUtil.logStackTrace(e);
 			System.exit(-1);
 		}
 
@@ -83,14 +60,14 @@ public class AccuracyTestingUtil extends TestNGUtil {
 			else if (!(testCaseId.isEmpty())) {
 				if (!(testCaseId.equals(testCaseEntry[0]))) { continue; }
 			}
-			info("Creating test case: " + t);
+			AccuracyUtil.log("Creating test case: " + t);
 			try {
 				testCaseArray.add(testCaseCounter++, new TestCase(Integer.parseInt(testCaseEntry[0]), testCaseEntry[1],
 					testCaseEntry[2], testCaseEntry[3].equals("1"), testCaseEntry[4].equals("1"),
 					Integer.parseInt(testCaseEntry[5]), Integer.parseInt(testCaseEntry[6])));
 			} catch (Exception e) {
-				err("Couldn't create test case: " + t);
-				e.printStackTrace();
+				AccuracyUtil.log("Couldn't create test case: " + t);
+				AccuracyUtil.logStackTrace(e);
 				System.exit(-1);
 			}
 		}
@@ -103,25 +80,30 @@ public class AccuracyTestingUtil extends TestNGUtil {
 
 	@Test(dataProvider = "TestCaseProvider")
 	public void accuracyTest(TestCase tc) {
+		tc.cleanUp();
+		String errorMessage;
 		info("Running test case: " + tc.testCaseId);
+		AccuracyUtil.log("****************** Running test case: " + tc.testCaseId + "******************");
 
 		// Only load the data sets when the test case is about to be executed, instead of when the test case is
 		// constructed in the testCaseProvider(), for example.
 		try {
 			tc.loadTestCaseDataSets();
 		} catch (IOException e) {
-			AccuracyTestingUtil.err("Couldn't load data sets for test case: " + tc.testCaseId);
-			e.printStackTrace();
-			throw new TestNGException("Test case " + tc.testCaseId + " failed");
+			errorMessage = "Couldn't load data sets for test case: " + tc.testCaseId;
+			AccuracyUtil.log(errorMessage);
+			AccuracyUtil.logStackTrace(e);
+			throw new TestNGException(errorMessage);
 		}
 
 		// Only make the model parameters object once the training and testing data sets have been loaded into H2O
 		try {
 			tc.setModelParameters();
 		} catch (Exception e) {
-			AccuracyTestingUtil.err("Couldn't set the model parameters for test case: " + tc.testCaseId);
-			e.printStackTrace();
-			throw new TestNGException("Test case " + tc.testCaseId + " failed");
+			errorMessage = "Couldn't set the model parameters for test case: " + tc.testCaseId;
+			AccuracyUtil.log(errorMessage);
+			AccuracyUtil.logStackTrace(e);
+			throw new TestNGException(errorMessage);
 		}
 
 		// Execute the provided test case
@@ -129,22 +111,27 @@ public class AccuracyTestingUtil extends TestNGUtil {
 		try {
 			result = tc.execute();
 		} catch (Exception e) {
-			AccuracyTestingUtil.err("Couldn't execute test case: " + tc.testCaseId);
-			e.printStackTrace();
-			throw new TestNGException("Test case " + tc.testCaseId + " failed");
+			errorMessage = "Couldn't execute test case: " + tc.testCaseId;
+			AccuracyUtil.log(errorMessage);
+			AccuracyUtil.logStackTrace(e);
+			throw new TestNGException(errorMessage);
+		} catch (AssertionError ae) {
+			errorMessage = "Couldn't execute test case: " + tc.testCaseId;
+			AccuracyUtil.log(errorMessage);
+			AccuracyUtil.log(ae.getMessage());
+			throw new TestNGException(errorMessage);
 		}
 
 		// Store the test case result
 		try {
 			result.saveToAccuracyDB();
 		} catch (Exception e) {
-			AccuracyTestingUtil.err("Couldn't save the test case result for test case: " + tc.testCaseId + " to the " +
-				"Accuracy database.");
-			e.printStackTrace();
-			throw new TestNGException("Test case " + tc.testCaseId + " failed");
+			errorMessage = "Couldn't save the test case result for test case: " + tc.testCaseId + " to the " +
+				"Accuracy database.";
+			AccuracyUtil.log(errorMessage);
+			AccuracyUtil.logStackTrace(e);
+			throw new TestNGException(errorMessage);
 		}
-
-		tc.cleanUp();
 	}
 
 	public static void info(String message) {
@@ -153,13 +140,5 @@ public class AccuracyTestingUtil extends TestNGUtil {
 		Log.info(message);
 		Log.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 		Log.info("");
-	}
-
-	public static void err(String message) {
-		Log.err("");
-		Log.err("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-		Log.err(message);
-		Log.err("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-		Log.err("");
 	}
 }

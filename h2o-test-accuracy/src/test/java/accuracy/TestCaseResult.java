@@ -35,20 +35,19 @@ public class TestCaseResult {
 
     // Connect to the Accuracy database
     Class.forName("com.mysql.jdbc.Driver");
-    String url = String.format("jdbc:mysql://%s:%s/%s", AccuracyTestingUtil.accuracyDBHost,
-      AccuracyTestingUtil.accuracyDBPort, AccuracyTestingUtil.accuracyDBName);
-    Connection connection = DriverManager.getConnection(url, AccuracyTestingUtil.accuracyDBUser,
-      AccuracyTestingUtil.accuracyDBPwd);
+    String url = String.format("jdbc:mysql://%s:%s/%s", AccuracyUtil.getDBHost(), AccuracyUtil.getDBPort(),
+      AccuracyUtil.getDBName());
+    Connection connection = DriverManager.getConnection(url, AccuracyUtil.getDBUser(), AccuracyUtil.getDBPwd());
 
     // Execute the SQL command
     Statement statement = connection.createStatement();
     statement.executeUpdate(sql);
     connection.close();
-    AccuracyTestingUtil.info("Successfully executed the following sql statement: " + sql);
+    AccuracyUtil.log("Successfully executed the following sql statement: " + sql);
   }
 
   private String makeSQLCmd() {
-    String sql = String.format("insert into %s values(%s, ", AccuracyTestingUtil.accuracyDBTableName, testCaseId);
+    String sql = String.format("insert into %s values(%s, ", AccuracyUtil.getDBTableName(), testCaseId);
     for (String m : metrics) {
       sql += (trainingMetrics.get(m) == null || Double.isNaN(trainingMetrics.get(m)) ? "NULL, " :
         Double.toString(trainingMetrics.get(m)) + ", ");

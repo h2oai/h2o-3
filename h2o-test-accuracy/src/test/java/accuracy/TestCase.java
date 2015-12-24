@@ -77,7 +77,7 @@ public class TestCase extends TestUtil {
     }
   }
 
-  public TestCaseResult execute() throws Exception {
+  public TestCaseResult execute() throws Exception, AssertionError {
     Model.Output modelOutput = null;
 
     DRF drfJob = null;
@@ -96,7 +96,7 @@ public class TestCase extends TestUtil {
       switch (algo) {
         case "drf":
           drfJob = new DRF((DRFModel.DRFParameters) params);
-          AccuracyTestingUtil.info("Train DRF model:");
+          AccuracyUtil.log("Train DRF model:");
           modelStartTime = System.currentTimeMillis();
           drfModel = drfJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -104,7 +104,7 @@ public class TestCase extends TestUtil {
           break;
         case "glm":
           glmJob = new GLM(Key.make("GLMModel"), "GLM Model", (GLMModel.GLMParameters) params);
-          AccuracyTestingUtil.info("Train GLM model");
+          AccuracyUtil.log("Train GLM model");
           modelStartTime = System.currentTimeMillis();
           glmModel = glmJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -112,7 +112,7 @@ public class TestCase extends TestUtil {
           break;
         case "gbm":
           gbmJob = new GBM((GBMModel.GBMParameters) params);
-          AccuracyTestingUtil.info("Train GBM model");
+          AccuracyUtil.log("Train GBM model");
           modelStartTime = System.currentTimeMillis();
           gbmModel = gbmJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -120,7 +120,7 @@ public class TestCase extends TestUtil {
           break;
         case "dl":
           dlJob = new DeepLearning((DeepLearningParameters) params);
-          AccuracyTestingUtil.info("Train model");
+          AccuracyUtil.log("Train model");
           modelStartTime = System.currentTimeMillis();
           dlModel = dlJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -155,7 +155,7 @@ public class TestCase extends TestUtil {
 
   public void cleanUp() {
     //FIXME: This was just copied over from RemoveAllHandler.
-    AccuracyTestingUtil.info("Removing all objects.");
+    AccuracyUtil.log("Removing all objects.");
     trainingDataSet.closeFrame();
     testingDataSet.closeFrame();
     Futures fs = new Futures();
@@ -166,7 +166,7 @@ public class TestCase extends TestUtil {
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     H2O.getPM().getIce().cleanUp();
-    AccuracyTestingUtil.info("Finished removing objects.");
+    AccuracyUtil.log("Finished removing objects.");
   }
 
   private HashMap<String,Double> getMetrics(ModelMetrics mm) {
