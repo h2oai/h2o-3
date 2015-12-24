@@ -41,4 +41,3 @@ test.apply <- function() {
 }
 
 doTest("Test for apply.", test.apply)
-

@@ -1,11 +1,12 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 
+if (TRUE) {
   if (FALSE) {
       setwd("/Users/tomk/0xdata/ws/h2o-dev/h2o-r/tests/testdir_demos")
   }
 
-  source('../h2o-runit.R')
+#  source('../h2o-runit.R')
   options(echo=TRUE)
   filePath <- normalizePath(h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
   testFilePath <- normalizePath(h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))

@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -7,10 +7,10 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-running_inside_h2o = is.running.internal.to.h2o()
+running_inside_h2o = hadoop.namenode.is.accessible()
 
 if (running_inside_h2o) {
-    hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+    hdfs_name_node = HADOOP.NAMENODE
     hdfs_cross_file = "/datasets/runit/BigCross.data"
 } else {
     stop("Not running on H2O internal network. No access to HDFS.")

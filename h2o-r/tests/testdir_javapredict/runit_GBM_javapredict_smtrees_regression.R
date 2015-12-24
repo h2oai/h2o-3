@@ -1,23 +1,39 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
-
-
+source("../../scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
-# Parameters for the test.
+# Purpose:  This test exercises the GBM model downloaded as java code
+#           for the iris data set.
+#
+# Notes:    Assumes unix environment.
+#           curl, javac, java must be installed.
+#           java must be at least 1.6.
 #----------------------------------------------------------------------
 
-n.trees <- 3
-interaction.depth <- 1
-n.minobsinnode <- 2
-shrinkage <- 1
-distribution <- "gaussian"
-train <- locate("smalldata/gbm_test/smtrees.csv")
-test <- locate("smalldata/gbm_test/smtrees.csv")
-x = c("girth","height")
-y = "vol"
 
 
-#----------------------------------------------------------------------
-# Run the test
-#----------------------------------------------------------------------
-source('../Utils/shared_javapredict_GBM.R')
+test.gbm.javapredict.smtrees <-
+function() {
+    #----------------------------------------------------------------------
+    # Parameters for the test.
+    #----------------------------------------------------------------------
+    training_file <- locate("smalldata/gbm_test/smtrees.csv")
+    test_file <- locate("smalldata/gbm_test/smtrees.csv")
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+
+    params                 <- list()
+    params$ntrees          <- 3
+    params$max_depth       <- 1
+    params$min_rows        <- 2
+    params$learn_rate      <- 1
+    params$x               <- c("girth","height")
+    params$y               <- "vol"
+    params$training_frame  <- training_frame
+
+    #----------------------------------------------------------------------
+    # Run the test
+    #----------------------------------------------------------------------
+    doJavapredictTest("gbm",test_file,test_frame,params)
+}
+
+doTest("GBM test", test.gbm.javapredict.smtrees)

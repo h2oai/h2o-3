@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 complexFilterTest_Goalies_43 <- function() {
     Log.info("A munge-task R unit test on data <Goalies> testing the functional unit <['!', '!=', '&', '>=', '|', '>=']> ")
     Log.info("Uploading Goalies")

@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 sliceTest_poisson_tst1_3 <- function() {
     Log.info("A munge-task R unit test on data <poisson_tst1> testing the functional unit <[> ")
     Log.info("Uploading poisson_tst1")

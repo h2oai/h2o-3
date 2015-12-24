@@ -1,10 +1,17 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
+## This test is to check the beta contraint argument for GLM
+## The test will import the prostate data set,
+## runs glm with and without beta contraints which will be checked
+## against glmnet's results.
+
+
+
 
 test.LR.betaConstraints <- function(){
 
   #Log.info("Importing prostate dataset...")
-  prostate_h2o <- h2o.importFile( locate("smalldata/prostate/prostate.csv"))
+  prostate_h2o <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
 
   #Log.info("Create beta constraints frame...")
   myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
@@ -25,8 +32,8 @@ test.LR.betaConstraints <- function(){
 
   #Log.info("Run a Linear Regression with CAPSULE ~ AGE with bound beta->[0,1] in R...")
   intercept <- rep(0, times = nrow(prostate_h2o))
-  xDataFrame <- data.frame(AGE = prostate_r[,"AGE"], Intercept = intercept)
-  xMatrix_age <- as.matrix(xDataFrame)
+  xDataH2OFrame <- data.frame(AGE = prostate_r[,"AGE"], Intercept = intercept)
+  xMatrix_age <- as.matrix(xDataH2OFrame)
   lr.R <- glmnet(x = xMatrix_age, alpha = 0., lambda = lr.h2o@model$lambda, standardize = T,
                  y = prostate_r[,"CAPSULE"], family = "gaussian", lower.limits = 0, upper.limits = 1)
   checkGLMModel2(lr.h2o, lr.R)
@@ -43,8 +50,8 @@ test.LR.betaConstraints <- function(){
     if(!nrow_prior == nrow_after) stop("H2OParsedData object is being overwritten.")
 
     #Log.info("Shift AGE column to reflect negative upperbound...")
-    xDataFrame <- data.frame(AGE = prostate_r[,"AGE"]*(1+-0.002), Intercept = intercept)
-    xMatrix_age <- as.matrix(xDataFrame)
+    xDataH2OFrame <- data.frame(AGE = prostate_r[,"AGE"]*(1+-0.002), Intercept = intercept)
+    xMatrix_age <- as.matrix(xDataH2OFrame)
     lr_negativeUpper.R <- glmnet(x = xMatrix_age, alpha = 0., lambda = lr.h2o@model$lambda, standardize = T,
                                  y = prostate_r[,"CAPSULE"], family = family_type, lower.limits = -0.008,
                                  upper.limits = 0.0)
@@ -53,7 +60,7 @@ test.LR.betaConstraints <- function(){
 
   full_test <- sapply(c("binomial", "gaussian"), run_glm)
   print(full_test)
+  
 }
 
 doTest("GLM Test: LR w/ Beta Constraints", test.LR.betaConstraints)
-

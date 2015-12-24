@@ -1,6 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
+
+library(h2o)
+#h2o.init()
 
 
 
@@ -9,7 +12,7 @@ interact.helper <- function(r_level, l_level, l_vec, r_vec) {
    v1 <- l_vec == l_level;
    v2 <- r_vec == r_level;
    vec <- v1 & v2
-   key <- vec@frame_id
+#   key <- vec@frame_id
    ret <- h2o.assign(vec, paste('l', l_level, '_', 'r', r_level, sep = ""))
    ret
 }
@@ -46,10 +49,10 @@ interact <- function(fr, l_vec, r_vec) {
 
 # Begin Demo #
 
-h <- h2o.init(ip=myIP, port=myPort)
+#h <- h2o.init(ip=myIP, port=myPort)
 #uploading data file to h2o
 filePath <- locate("smalldata/logreg/prostate.csv")
-hex <- h2o.uploadFile(h, filePath, "prostate")[1:10,]
+hex <- h2o.uploadFile(filePath, "prostate")[1:10,]
 
 hex$RACE <- as.factor(hex$RACE)
 hex$GLEASON <- as.factor(hex$GLEASON)

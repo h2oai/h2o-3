@@ -1,11 +1,19 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
+#
+# h2o.ddply
+#
+
+
+
+
+
 
 
 h2o.ddplytest <- function(){
   Log.info('uploading h2o.ddply testing dataset')
   dataset_path = normalizePath(locate('smalldata/jira/pub-180.csv'))
-  df.h <- h2o.importFile( dataset_path)
+  df.h <- h2o.importFile(dataset_path)
   print(df.h)
 
   Log.info('printing from h2o')
@@ -105,6 +113,7 @@ h2o.ddplytest <- function(){
   # expect_that( all(df.4d == df.4), equals(T))   # See above .notation
 
 
+  
 }
 
 if(F){

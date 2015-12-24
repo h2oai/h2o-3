@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 
 #----------------------------------------------------------------------
 # Parameters for the test.
@@ -7,10 +7,10 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-running_inside_h2o = is.running.internal.to.h2o()
+hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
 
-if (running_inside_h2o) {
-    hdfs_name_node = H2O_INTERNAL_HDFS_NAME_NODE
+if (hadoop_namenode_is_accessible) {
+    hdfs_name_node = HADOOP.NAMENODE
     hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
     hdfs_iris_dir  = "/datasets/runit/iris_test_train"
 } else {
@@ -21,43 +21,47 @@ if (running_inside_h2o) {
 
 
 heading("BEGIN TEST")
+check.hdfs_basic <- function() {
 
-#----------------------------------------------------------------------
-# Single file cases.
-#----------------------------------------------------------------------
+  #----------------------------------------------------------------------
+  # Single file cases.
+  #----------------------------------------------------------------------
 
-heading("Testing single file importHDFS")
-url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
-iris.hex <- h2o.importFile( url)
-head(iris.hex)
-tail(iris.hex)
-n <- nrow(iris.hex)
-print(n)
-if (n != 150) {
-    stop("nrows is wrong")
+  heading("Testing single file importHDFS")
+  url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
+  iris.hex <- h2o.importFile(url)
+  head(iris.hex)
+  tail(iris.hex)
+  n <- nrow(iris.hex)
+  print(n)
+  if (n != 150) {
+      stop("nrows is wrong")
+  }
+  if (class(iris.hex) != "Frame") {
+      stop("iris.hex is the wrong type")
+  }
+  print ("Import worked")
+
+  #----------------------------------------------------------------------
+  # Directory file cases.
+  #----------------------------------------------------------------------
+
+  heading("Testing directory importHDFS")
+  url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_dir)
+  iris.dir.hex <- h2o.importFile(url)
+  head(iris.dir.hex)
+  tail(iris.dir.hex)
+  n <- nrow(iris.dir.hex)
+  print(n)
+  if (n != 150) {
+      stop("nrows is wrong")
+  }
+  if (class(iris.dir.hex) != "Frame") {
+      stop("iris.dir.hex is the wrong type")
+  }
+  print ("Import worked")
+
+
 }
-if (class(iris.hex) != "H2OFrame") {
-    stop("iris.hex is the wrong type")
-}
-print ("Import worked")
 
-#----------------------------------------------------------------------
-# Directory file cases.
-#----------------------------------------------------------------------
-
-heading("Testing directory importHDFS")
-url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_dir)
-iris.dir.hex <- h2o.importFile( url)
-head(iris.dir.hex)
-tail(iris.dir.hex)
-n <- nrow(iris.dir.hex)
-print(n)
-if (n != 150) {
-    stop("nrows is wrong")
-}
-if (class(iris.dir.hex) != "H2OFrame") {
-    stop("iris.dir.hex is the wrong type")
-}
-print ("Import worked")
-
-PASS_BANNER()
+doTest("HDFS operations", check.hdfs_basic)

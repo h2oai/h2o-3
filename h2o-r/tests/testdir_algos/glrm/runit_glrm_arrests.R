@@ -9,8 +9,8 @@ test.glrmvanilla.golden <- function() {
   
   Log.info("Compare with PCA when center = TRUE, scale. = TRUE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = TRUE)
-  fitH2O <- h2o.glrm(arrestsH2O, gamma_x = 0, gamma_y = 0, init = initCent, transform = "STANDARDIZE", recover_svd = TRUE)
-  # checkPCAModel(fitH2O, fitR, tolerance = 1e-4)
+  fitH2O <- h2o.glrm(arrestsH2O, k=4, init = "User",user_y=initCent, transform = "STANDARDIZE", loss="Quadratic", regularization_x="None",regularization_y="None",recover_svd = TRUE)
+#   checkPCAModel(fitH2O, fitR, tolerance = 1e-4)
   
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$pc_importance

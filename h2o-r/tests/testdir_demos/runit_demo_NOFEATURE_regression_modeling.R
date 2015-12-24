@@ -1,5 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
+
 test <- function(h) {
 	#If you want to run the below code in R terminal, add the next two commented lines that inports h2o library into R and starts H2O cloud
 	#Then modify file path on line 16 to specify full path to the data file, like- "/Users/.../.." 

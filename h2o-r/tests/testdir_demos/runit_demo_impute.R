@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 
 # a useful function to make a quick copy of a data frame in H2O
 cp <- function(this) this[1:nrow(this), 1:ncol(this)]

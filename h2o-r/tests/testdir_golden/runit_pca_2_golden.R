@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 
 test.pcastand.golden <- function() {
   # Import data: 
@@ -13,7 +13,7 @@ test.pcastand.golden <- function() {
   checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   
   pcimpR <- summary(fitR)$importance
-  pcimpH2O <- fitH2O@model$pc_importance
+  pcimpH2O <- fitH2O@model$importance
   Log.info("R Importance of Components:"); print(pcimpR)
   Log.info("H2O Importance of Components:"); print(pcimpH2O)
   Log.info("Compare Importance between R and H2O\n")

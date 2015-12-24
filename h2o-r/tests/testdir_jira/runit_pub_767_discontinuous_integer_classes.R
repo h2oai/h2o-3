@@ -1,9 +1,31 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
+######################################################################
+# Test for PUB-767
+#
+#  Handle discontinuity in integer respones classes
+#   covtype.altered has classes: -1, 2, 3, 6, 10000
+#
+# From disk:
+#  cut -d, -f55 covtype.altered | sort | uniq -c | sort
+#
+#  -1     2160
+#   1     22025
+#   2     66751
+#   3     2160
+#   4     2160
+#   6     2160
+#   10000 2583
+#
+######################################################################
+
+
+options(echo=TRUE)
+
 
 test.pub.767 <- function() {
   Log.info('Importing the altered covtype training_data from smalldata.')
-  cov <- h2o.importFile( normalizePath(locate('smalldata/jira/covtype.altered.gz')), 'cov')
+  cov <- h2o.importFile(normalizePath(locate('smalldata/covtype/covtype.altered.gz')), 'cov')
 
   Log.info('Print head of dataset')
   Log.info(head(cov))
@@ -16,6 +38,7 @@ test.pub.767 <- function() {
                         max_depth = 100)
 
   print(m)
+  
 }
 
 doTest("PUB-767: randomForest on discontinuous integer classes.", test.pub.767)

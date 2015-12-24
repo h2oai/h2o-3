@@ -1,5 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
+
 complexFilterTest_allyears2k_headers_38 <- function() {
     Log.info("A munge-task R unit test on data <allyears2k_headers> testing the functional unit <['', '<=']> ")
     Log.info("Uploading allyears2k_headers")

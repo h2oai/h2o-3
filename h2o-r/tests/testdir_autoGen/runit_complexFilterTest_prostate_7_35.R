@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 complexFilterTest_prostate_7_35 <- function() {
     Log.info("A munge-task R unit test on data <prostate_7> testing the functional unit <['', '<=']> ")
     Log.info("Uploading prostate_7")

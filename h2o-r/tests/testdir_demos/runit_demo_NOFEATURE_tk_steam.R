@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
   
   if (FALSE) {
     setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_demos")

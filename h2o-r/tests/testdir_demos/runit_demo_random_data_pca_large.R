@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 heading("BEGIN TEST")
@@ -30,14 +30,14 @@ for(i in 1:length(rows)){ # changing number of rows
     ncols <- cols[j]
     col_grid[j] <- ncols
     names <- c(names, nrows * ncols) # set the name to be the problem size
-    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrows, cols = ncols,
+    sst <- system.time(myframe <- h2o.createFrame(rows = nrows, cols = ncols,
                                                  seed = 12345, randomize = T, value = 0, real_range = 100,
                                                  categorical_fraction = 0.0, factors = 10,
                                                  integer_fraction = 0.4, integer_range = 100,
                                                  missing_fraction = 0, response_factors = 1, has_response = TRUE) )
 
     create_frm_time[i,j] = as.numeric(sst[3])
-    mem <- h2o.ls(conn)
+    mem <- h2o.ls()
     frm_size[i,j] <- as.numeric(mem[1,1])
     head(myframe)
     #str(myframe)
@@ -62,7 +62,7 @@ for(i in 1:length(rows)){ # changing number of rows
 }
 myframe <- NULL
 gc()
-h2o.rm(conn,"myframe")
+h2o.rm("myframe")
 #col_grid
 #row_grid
 #create_frm_time

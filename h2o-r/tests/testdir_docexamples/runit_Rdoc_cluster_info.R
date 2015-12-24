@@ -1,10 +1,10 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../scripts/h2o-r-test-setup.R")
+source("../../scripts/h2o-r-test-setup.R")
 
 test.rdocclusterinfo.golden <- function() {
 	
 
-h2o.clusterInfo(H2Oserver)
+h2o.clusterInfo()
 
 }
 
