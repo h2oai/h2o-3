@@ -323,7 +323,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._impute_missing = true;
         parms._save_v_frame = false;
 
-        SVDModel svd = ModelCacheManager.get(parms);
+        SVDModel svd = (SVDModel)ModelCacheManager.get(parms);
         if( svd == null ) svd = new SVD(parms,_job).trainModelNested();
         if (_job.stop_requested()) return null;
         model._output._init_key = svd._key;
@@ -363,7 +363,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._pred_indicator = true;
 
         ModelCacheManager MCM = H2O.getMCM();
-        KMeansModel km = MCM.get(parms);
+        KMeansModel km = (KMeansModel)MCM.get(parms);
         if( km == null ) km = new KMeans(parms,_job).trainModelNested();
         if (_job.stop_requested()) return null;
         model._output._init_key = km._key;
