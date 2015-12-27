@@ -55,31 +55,38 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _parms = parms;
   }
 
-  /** Factory method to create a ModelBuilder instance for given the algo name. */
-  public static <B extends ModelBuilder> B make(Key<Model> result, String algo) {
-    int idx = ArrayUtils.find(ALGOBASE,algo);
-    assert idx != -1 : "Unregistered algorithm "+algo;
-    B mb = (B)TypeMap.newFreezable(ALGOFULL[idx]);
-    mb._result = result;
-    String prefix = ALGOFULL[idx].substring(ALGOFULL[idx].lastIndexOf('.')+1);
-    String smodel = ALGOFULL[idx]+"Model";
-    String pmodel = smodel+"$"+algo+"Parameters";
-    Model.Parameters parms = (Model.Parameters)TypeMap.newFreezable(pmodel);
-    mb._parms = parms;
-    return mb;
+  /** List of known ModelBuilders with all default args; endlessly cloned by
+   *  the GUI for new private instances, then the GUI overrides some of the
+   *  defaults with user args. */
+  private static String[] ALGOBASES = new String[0];
+  public static String[] algos() { return ALGOBASES; }
+  private static ModelBuilder[] BUILDERS = new ModelBuilder[0];
+
+  /** One-time start-up only ModelBuilder, endlessly cloned by the GUI for the
+   *  default settings. */
+  protected ModelBuilder(P parms, boolean startup_once) {
+    assert startup_once;
+    _job = null;
+    _result = null;
+    _parms = parms;
+    String base = getClass().getSimpleName();
+    if( ArrayUtils.find(ALGOBASES,base) != -1 )
+      throw H2O.fail("Only called once at startup per ModelBuilder, and "+base+" has already been called");
+    ALGOBASES = Arrays.copyOf(ALGOBASES,ALGOBASES.length+1);
+    BUILDERS  = Arrays.copyOf(BUILDERS ,BUILDERS .length+1);
+    ALGOBASES[ALGOBASES.length-1] = base;
+    BUILDERS [BUILDERS .length-1] = this;
   }
 
-  /** List of known ModelBuilders */
-  private static String[] ALGOFULL = new String[0];
-  private static String[] ALGOBASE = new String[0];
-  public static String[] algos() { return ALGOBASE; }
-  // Called once at startup
-  public static void registerModelBuilder( String clazz, String base ) { 
-    TypeMap.newFreezable(clazz); // Make on, to make sure we can... (early assert death)
-    ALGOFULL = Arrays.copyOf(ALGOFULL,ALGOFULL.length+1);
-    ALGOBASE = Arrays.copyOf(ALGOBASE,ALGOBASE.length+1);
-    ALGOFULL[ALGOFULL.length-1] = clazz;
-    ALGOBASE[ALGOBASE.length-1] = base;
+  /** Factory method to create a ModelBuilder instance for given the algo name.
+   *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
+  public static <B extends ModelBuilder> B make(Key<Model> result, String algo) {
+    int idx = ArrayUtils.find(ALGOBASES,algo);
+    assert idx != -1 : "Unregistered algorithm "+algo;
+    B mb = (B)BUILDERS[idx].clone();
+    mb._result = result;
+    mb._parms = BUILDERS[idx]._parms.clone();
+    return mb;
   }
 
 

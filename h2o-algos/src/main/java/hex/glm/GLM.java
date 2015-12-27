@@ -75,6 +75,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   public GLM(GLMModel.GLMParameters parms                   ) { super(parms    ); init(false); }
   public GLM(GLMModel.GLMParameters parms, Key<GLMModel> key) { super(parms,key); init(false); }
+  public GLM(boolean startup_once) { super(new GLMParameters(),startup_once); }
 
 
   static class TooManyPredictorsException extends RuntimeException {}

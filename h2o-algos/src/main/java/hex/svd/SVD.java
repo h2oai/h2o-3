@@ -55,6 +55,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // Called from an http request
   public SVD(SVDModel.SVDParameters parms         ) { super(parms    ); init(false); }
   public SVD(SVDModel.SVDParameters parms, Job job) { super(parms,job); init(false); }
+  public SVD(boolean startup_once) { super(new SVDParameters(),startup_once); }
 
   @Override
   protected void checkMemoryFootPrint() {

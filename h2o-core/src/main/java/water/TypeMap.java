@@ -63,7 +63,7 @@ public class TypeMap {
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
   // ID -> Class name mapping
   static String[] CLAZZES;
-  // ID -> pre-allocated Golden Instance of IcedImpl
+  // ID -> pre-allocated Golden Instance of Icer
   static private Icer[] GOLD;
   // Unique IDs
   static private int IDS;
@@ -85,7 +85,7 @@ public class TypeMap {
     VECGROUP     = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
     ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
     KEY          = (short)onIce("water.Key");           // Used in water.api
-    // Fill in some pre-cooked delegates so seralization has a base-case
+    // Fill in some pre-cooked delegates so serialization has a base-case
     GOLD[ICED ] = Icer.ICER;
   }
 
@@ -97,15 +97,15 @@ public class TypeMap {
   // (1) Type ID - 2 byte shortcut for an Iced type
   // (2) String clazz name - the class name for an Iced type
   // (3) Iced POJO - an instance of Iced, the distributable workhorse object
-  // (4) IcedImpl POJO - an instance of IcedImpl, the serializing delegate for Iced
+  // (4) Icer POJO - an instance of Icer, the serializing delegate for Iced
   //
   // Some sample code paths:
   // <clinit>: convert string -> ID (then set static globals)
   // new code: fetch remote string->ID mapping
   // new code: leader sets  string->ID mapping
   // printing: id -> string
-  // deserial: id -> string -> IcedImpl -> Iced (slow path)
-  // deserial: id           -> IcedImpl -> Iced (fath path)
+  // deserial: id -> string -> Icer -> Iced (slow path)
+  // deserial: id           -> Icer -> Iced (fath path)
   // lookup  : id -> string (on leader)
   //
 
@@ -135,10 +135,9 @@ public class TypeMap {
   // Reverse: convert an ID to a className possibly fetching it from leader.
   public static String className(int id) {
     if( id == PRIM_B ) return "[B";
-    Icer f = goForGold(id);
-    if( f != null ) return f.className();
-    if( id < CLAZZES.length ) { // Might be installed as a className mapping no Icer (yet)
-      String s = CLAZZES[id];
+    String clazs[] = CLAZZES;   // Read once, in case resizing
+    if( id < clazs.length ) { // Might be installed as a className mapping no Icer (yet)
+      String s = clazs[id];   // Racily read the CLAZZES array
       if( s != null ) return s; // Has the className already
     }
     assert H2O.CLOUD.leader() != H2O.SELF : "Leader has no mapping for id "+id; // Leaders always have the latest mapping already
@@ -172,7 +171,7 @@ public class TypeMap {
   // including during deserialization when a Node will be presented with a
   // fresh new ID with no idea what it stands for.  Does NOT resize the GOLD
   // array, since the id->className mapping has already happened.
-  static Icer getIcer( int id, Iced ice ) { return getIcer(id,ice.getClass()); }
+  static Icer getIcer( int id, Iced ice )      { return getIcer(id,ice.getClass()); }
   static Icer getIcer( int id, Freezable ice ) { return getIcer(id,ice.getClass()); }
   static Icer getIcer( int id, Class ice_clz ) {
     Icer f = goForGold(id);
@@ -190,7 +189,7 @@ public class TypeMap {
         Log.err("Weaver generally only throws if classfiles are not found, e.g. IDE setups running test code from a remote node that is not in the classpath on this node.");
         throw Log.throwErr(e);
       }
-      // Now install until the TypeMap class lock, so the GOLD array is not
+      // Now install under the TypeMap class lock, so the GOLD array is not
       // resized out from under the installation.
       synchronized( TypeMap.class ) {
         return GOLD[id]=f;

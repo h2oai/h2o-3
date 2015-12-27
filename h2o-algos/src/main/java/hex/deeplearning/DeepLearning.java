@@ -28,6 +28,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   /** Main constructor from Deep Learning parameters */
   public DeepLearning( DeepLearningParameters parms ) { super(parms); init(false); }
   public DeepLearning( DeepLearningParameters parms, Key<DeepLearningModel> key ) { super(parms,key); init(false); }
+  public DeepLearning( boolean startup_once ) { super(new DeepLearningParameters(),startup_once); }
 
   /** Types of models we can build with DeepLearning  */
   @Override public ModelCategory[] can_build() {

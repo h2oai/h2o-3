@@ -54,6 +54,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
 
   // Called from an http request
   public NaiveBayes(NaiveBayesModel.NaiveBayesParameters parms) { super(parms); init(false); }
+  public NaiveBayes(boolean startup_once) { super(new NaiveBayesParameters(),startup_once); }
 
   @Override
   public void init(boolean expensive) {

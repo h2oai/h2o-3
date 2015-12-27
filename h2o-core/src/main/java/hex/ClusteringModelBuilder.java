@@ -9,6 +9,7 @@ abstract public class ClusteringModelBuilder<M extends ClusteringModel<M,P,O>, P
   /** Constructor called from an http request; MUST override in subclasses. */
   public ClusteringModelBuilder(P parms         ) { super(parms    );  /*only call init in leaf classes*/ }
   public ClusteringModelBuilder(P parms, Job job) { super(parms,job);  /*only call init in leaf classes*/ }
+  public ClusteringModelBuilder(P parms, boolean startup_once) { super(parms,startup_once);  /*only call init in leaf classes*/ }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

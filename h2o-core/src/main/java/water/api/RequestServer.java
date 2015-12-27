@@ -13,7 +13,6 @@ import water.util.*;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,7 +59,6 @@ public class RequestServer extends NanoHTTPD {
 
   static public RequestServer SERVER;
   private RequestServer() {}
-  private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
 
   // Handlers ------------------------------------------------------------
@@ -295,26 +293,6 @@ public class RequestServer extends NanoHTTPD {
    * @return the Route for this request
    */
   public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String summary) {
-    return register(uri_pattern_raw, http_method, handler_class, handler_method, doc_method, summary, HandlerFactory.DEFAULT);
-  }
-
-  /**
-   * Register an HTTP request handler method for a given URL pattern, with parameters extracted from the URI.
-   * <p>
-   * URIs which match this pattern will have their parameters collected from the path and from the query params
-   *
-   * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
-   * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
-   * @param handler_class class which contains the handler method
-   * @param handler_method name of the handler method
-   * @param doc_method name of a method which returns GitHub Flavored Markdown documentation for the request
-   * @param summary short help string which summarizes the functionality of this endpoint
-   * @param handler_factory factory to create instance of handler
-   * @see Route
-   * @see water.api.RequestServer
-   * @return the Route for this request
-   */
-  public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String summary, HandlerFactory handler_factory) {
     assert uri_pattern_raw.startsWith("/");
 
     // Search handler_class and all its superclasses for the method.
@@ -375,7 +353,7 @@ public class RequestServer extends NanoHTTPD {
 
     assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
     Pattern uri_pattern = Pattern.compile(uri_pattern_raw);
-    Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, params_list.toArray(new String[params_list.size()]), handler_factory);
+    Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, params_list.toArray(new String[params_list.size()]));
     _routes.put(uri_pattern.pattern(), route);
     return route;
   }
@@ -420,7 +398,7 @@ public class RequestServer extends NanoHTTPD {
     for (int i = version; i > route_version && i >= Route.MIN_VERSION; i--) {
       String fallback_route_uri = "/" + i + "/" + route_m.group(2);
       Pattern fallback_route_pattern = Pattern.compile(fallback_route_uri);
-      Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params, fallback._handler_factory);
+      Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params);
       _fallbacks.put(fallback_route_pattern.pattern(), generated);
     }
 

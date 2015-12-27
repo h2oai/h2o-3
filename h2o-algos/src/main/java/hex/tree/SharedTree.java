@@ -30,6 +30,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   public SharedTree(P parms            ) { super(parms    ); /*only call init in leaf classes*/ }
   public SharedTree(P parms, Key<M> key) { super(parms,key); /*only call init in leaf classes*/ }
   public SharedTree(P parms, Job job   ) { super(parms,job); /*only call init in leaf classes*/ }
+  public SharedTree(P parms, boolean startup_once) { super(parms,startup_once); /*only call init in leaf classes*/ }
 
   // Number of trees requested, including prior trees from a checkpoint
   protected int _ntrees;

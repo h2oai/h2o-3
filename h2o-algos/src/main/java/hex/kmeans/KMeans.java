@@ -37,6 +37,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   // Called from an http request
   public KMeans( KMeansModel.KMeansParameters parms         ) { super(parms    ); init(false); }
   public KMeans( KMeansModel.KMeansParameters parms, Job job) { super(parms,job); init(false); }
+  public KMeans(boolean startup_once) { super(new KMeansModel.KMeansParameters(),startup_once); }
 
   @Override protected void checkMemoryFootPrint() {
     long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);

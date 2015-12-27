@@ -2,7 +2,6 @@ package water.api;
 
 import water.H2O;
 import water.Iced;
-import water.TypeMap;
 import water.util.MarkdownBuilder;
 
 import java.lang.reflect.Method;
@@ -27,7 +26,6 @@ final class Route extends Iced {
   public Method  _doc_method;
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
   public String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
-  /* package */ HandlerFactory _handler_factory;
   public Handler _handler;
 
   public Route() { }
@@ -39,10 +37,8 @@ final class Route extends Iced {
                Class<? extends Handler> handler_class,
                Method handler_method,
                Method doc_method,
-               String[] path_params,
-               HandlerFactory handler_factory) {
+               String[] path_params) {
     assert http_method != null && url_pattern != null && handler_class != null && handler_method != null && path_params != null;
-    assert handler_factory != null : "handler_factory should be not null, caller has to pass it!";
     _http_method = http_method;
     _url_pattern_raw = url_pattern_raw;
     _url_pattern = url_pattern;
@@ -51,8 +47,8 @@ final class Route extends Iced {
     _handler_method = handler_method;
     _doc_method = doc_method;
     _path_params = path_params;
-    _handler_factory = handler_factory;
-    _handler = (Handler)TypeMap.newFreezable(_handler_class.getName());
+    try { _handler = handler_class.newInstance(); }
+    catch( IllegalAccessException | InstantiationException ie ) { H2O.fail("failed to register handler "+handler_class.getSimpleName()+"."+handler_method.getName(),ie); }
   }
 
   /**

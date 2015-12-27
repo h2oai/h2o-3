@@ -54,6 +54,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   // Called from an http request
   public PCA(PCAParameters parms) { super(parms); init(false); }
+  public PCA(boolean startup_once) { super(new PCAParameters(),startup_once); }
 
   @Override
   public void init(boolean expensive) {

@@ -65,6 +65,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // Called from an http request
   public GLRM(GLRMParameters parms         ) { super(parms     ); init(false); }
   public GLRM(GLRMParameters parms, Job job) { super(parms, job); init(false); }
+  public GLRM(boolean startup_once) { super(new GLRMParameters(),startup_once); }
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
