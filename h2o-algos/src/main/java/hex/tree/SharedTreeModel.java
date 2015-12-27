@@ -193,6 +193,28 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
   }
 
+  /** Performs deep clone of given model.  */
+  protected M deepClone(Key<M> result) {
+    M newModel = (M)IcedUtils.deepCopy(this);
+    newModel._key = result;
+    // Do not clone model metrics
+    newModel._output.clearModelMetrics();
+    newModel._output._training_metrics = null;
+    newModel._output._validation_metrics = null;
+    // Clone trees
+    Key[][] treeKeys = newModel._output._treeKeys;
+    for (int i = 0; i < treeKeys.length; i++) {
+      for (int j = 0; j < treeKeys[i].length; j++) {
+        if (treeKeys[i][j] == null) continue;
+        CompressedTree ct = DKV.get(treeKeys[i][j]).get();
+        CompressedTree newCt = IcedUtils.deepCopy(ct);
+        newCt._key = CompressedTree.makeTreeKey(i, j);
+        DKV.put(treeKeys[i][j] = newCt._key,newCt);
+      }
+    }
+    return newModel;
+  }
+
   @Override protected Futures remove_impl( Futures fs ) {
     for( Key ks[] : _output._treeKeys)
       for( Key k : ks )

@@ -157,7 +157,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Create a New Model or continuing from a checkpoint
         if (_parms.hasCheckpoint()) {
           // Get the model to continue
-          _model = getModelDeepClone(DKV.get(_parms._checkpoint).<M>get());
+          _model = DKV.get(_parms._checkpoint).<M>get().deepClone(_result);
           // Override original parameters by new parameters
           _model._parms = _parms;
           // We create a new model
@@ -301,29 +301,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       // Final scoring (skip if job was cancelled)
       doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
-    }
-
-    /** Performs deep clone of given model.
-     *
-     * FIXME: fetch all data to the caller node
-     */
-    protected M getModelDeepClone(M model) {
-      M newModel = IcedUtils.clone(model, _job._result);
-      // Do not clone model metrics
-      newModel._output.clearModelMetrics();
-      newModel._output._training_metrics = null;
-      newModel._output._validation_metrics = null;
-      // Clone trees
-      Key[][] treeKeys = newModel._output._treeKeys;
-      for (int i = 0; i < treeKeys.length; i++) {
-        for (int j = 0; j < treeKeys[i].length; j++) {
-          if (treeKeys[i][j] == null) continue;
-          CompressedTree ct = DKV.get(treeKeys[i][j]).get();
-          CompressedTree newCt = IcedUtils.clone(ct, CompressedTree.makeTreeKey(i, j));
-          DKV.put(treeKeys[i][j] = newCt._key,newCt);
-        }
-      }
-      return newModel;
     }
   }
 

@@ -10,7 +10,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
 
@@ -24,9 +23,14 @@ import java.util.Map;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
-  public final Job<M> _job;     // Job controlling this build
-  /** Block till completion, and return the built model from the DKV */
-  public final M get() { return _job.get(); }
+  public final Job _job;     // Job controlling this build
+  /** Block till completion, and return the built model from the DKV.  Note the
+   *  funny assert: the Job does NOT have to be controlling this model build,
+   *  but might, e.g. be controlling a Grid search for which this is just one
+   *  of many results.  Calling 'get' means that we are blocking on the Job
+   *  which is controlling ONLY this ModelBuilder, and when the Job completes
+   *  we can return built Model. */
+  public final M get() { assert _job._result == _result; return (M)_job.get(); }
   public final boolean isStopped() { return _job.isStopped(); }
 
   // Key of the model being built; note that this is DIFFERENT from
@@ -38,13 +42,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Default easy constructor: Unique new job and unique new result key */
   protected ModelBuilder(P parms) {
     String algoName = parms.algoName();
-    _job = new Job(_result = Key.make(H2O.calcNextUniqueModelId(algoName)), algoName);
+    _job = new Job<>(_result = Key.make(H2O.calcNextUniqueModelId(algoName)), algoName);
     _parms = parms;
   }
 
   /** Unique new job and named result key */
   protected ModelBuilder(P parms, Key<M> key) {
-    _job = new Job(_result = key, parms.algoName());
+    _job = new Job<>(_result = key, parms.algoName());
     _parms = parms;
   }
 
@@ -69,6 +73,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _job = null;
     _result = null;
     _parms = parms;
+    init(false); // Default cheap init
     String base = getClass().getSimpleName();
     if( ArrayUtils.find(ALGOBASES,base) != -1 )
       throw H2O.fail("Only called once at startup per ModelBuilder, and "+base+" has already been called");
@@ -122,21 +127,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec response(){return _response;}
   /** Validation response vector. */
   public Vec vresponse(){return _vresponse;}
-
-  /**
-   * Compute the (weighted) mean of the response (subtracting possible offset terms)
-   * @return mean
-   */
-  protected double responseMean() {
-    if (hasWeightCol() || hasOffsetCol()) {
-      return new FrameUtils.WeightedMean().doAll(
-              _response,
-              hasWeightCol() ? _weights : _response.makeCon(1),
-              hasOffsetCol() ? _offset : _response.makeCon(0)
-      ).weightedMean();
-    }
-    return _response.mean();
-  }
 
 
   /**
@@ -377,7 +367,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _job.stop_requested() ) return;
     assert _job.isRunning();
 
-    M mainModel = _job._result.get();
+    M mainModel = (M)_job._result.get();
 
     // Compute and put the cross-validation metrics into the main model
     Log.info("Computing " + N + "-fold cross-validation metrics.");
