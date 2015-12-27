@@ -1,10 +1,6 @@
 package water;
 
 import java.util.Arrays;
-import water.UDPRebooted.ShutdownTsk;
-import water.api.CloudV3;
-import water.api.H2OErrorV3;
-import water.api.TypeaheadV3;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
@@ -12,7 +8,7 @@ import water.util.Log;
  *  Only public to expose a few constants to subpackages.  No exposed user
  *  calls. */
 public class TypeMap {
-  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP, KEY;
+  static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                               // 1 -
@@ -32,32 +28,32 @@ public class TypeMap {
     water.fvec.Vec.ESPC.class.getName(), // Used in TestUtil
 
     // Status pages looked at without locking the cloud
+    water.api.Schema.class.getName(),
+    water.api.Schema.Meta.class.getName(),
     water.api.RequestSchema.class.getName(),
-    CloudV3.class.getName(),
-    CloudV3.NodeV3.class.getName(),
-    water.H2OError.class.getName(),
-    H2OErrorV3.class.getName(),
+    water.api.CloudV3.class.getName(),
+    water.api.CloudV3.NodeV3.class.getName(),
+    water.api.AboutHandler.AboutV3.class.getName(),
+    water.api.AboutHandler.AboutEntryV3.class.getName(),
+    water.UDPRebooted.ShutdownTsk.class.getName(),
+
+    // Mistyped hack URLs
+    water.api.H2OErrorV3.class.getName(),
+
+    // Ask for ModelBuilders list
+    water.api.RouteBase.class.getName(),
+    water.api.ModelBuildersV3.class.getName(),  // So Flow can ask about possible Model Builders without locking
+    water.api.ModelBuildersBase.class.getName(),
+    water.util.IcedSortedHashMap.class.getName(), // Seems wildly not-needed
+    hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
+
+    // Beginning to hunt for files
     water.util.IcedHashMap.class.getName(),
-    water.util.IcedSortedHashMap.class.getName(),
     water.util.IcedHashMapBase.class.getName(),
     water.util.IcedHashMap.IcedHashMapStringString.class.getName(),
     water.util.IcedHashMap.IcedHashMapStringObject.class.getName(),
-    hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
-    water.api.Schema.class.getName(),
-    water.api.Schema.Meta.class.getName(),
-    TypeaheadV3.class.getName(),    // Allow typeahead without locking
-    water.Key.class.getName(),
-    water.api.AboutHandler.AboutV3.class.getName(),
-    water.api.AboutHandler.AboutEntryV3.class.getName(),
-    water.api.NodePersistentStorageV3.class.getName(),
-    water.api.NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
-    water.api.MetadataV3.class.getName(),
-    water.api.MetadataBase.class.getName(),
-    water.api.RouteV3.class.getName(),
-    water.api.RouteBase.class.getName(),
-    water.api.ModelBuildersV3.class.getName(),
-    water.api.ModelBuildersBase.class.getName(),
-    ShutdownTsk.class.getName(),
+    water.api.TypeaheadV3.class.getName(),    // Allow typeahead without locking
+
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
@@ -84,7 +80,6 @@ public class TypeMap {
     FRAME        = (short)onIce("water.fvec.Frame");    // Used in water.Value
     VECGROUP     = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
     ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
-    KEY          = (short)onIce("water.Key");           // Used in water.api
     // Fill in some pre-cooked delegates so serialization has a base-case
     GOLD[ICED ] = Icer.ICER;
   }

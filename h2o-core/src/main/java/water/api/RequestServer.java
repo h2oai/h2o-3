@@ -67,8 +67,8 @@ public class RequestServer extends NanoHTTPD {
   // The list is searched in-order, first match gets dispatched.
   private static final LinkedHashMap<java.util.regex.Pattern,Route> _routes = new LinkedHashMap<>();   // explicit routes registered below
   private static final LinkedHashMap<java.util.regex.Pattern,Route> _fallbacks= new LinkedHashMap<>(); // routes that are version fallbacks (e.g., we asked for v5 but v2 is the latest)
-  public static final int numRoutes() { return _routes.size(); }
-  public static final Collection<Route> routes() { return _routes.values(); }
+  public static int numRoutes() { return _routes.size(); }
+  public static Collection<Route> routes() { return _routes.values(); }
 
   private static Pattern version_pattern = null;
   private static Pattern getVersionPattern() {
@@ -103,7 +103,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       , null,"Report real-time profiling information for all nodes (sorted, aggregated stack traces).");
     register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       , null,"Report stack traces for all threads on all nodes.");
     register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       , null,"Run a network test to measure the performance of the cluster interconnect.");
-    register("/3/UnlockKeys", "POST", UnlockKeysHandler.class, "unlock", null, "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
+    register("/3/UnlockKeys" ,"POST",UnlockKeysHandler.class,"unlock"      , null, "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
     register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    , null,"Shut down the cluster");
 
     // REST only, no html:
