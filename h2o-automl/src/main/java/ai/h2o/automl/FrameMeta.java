@@ -78,8 +78,11 @@ public class FrameMeta extends Iced {
       long start = System.currentTimeMillis();
       HistTask t = new HistTask(_colMeta._histo, _mean).doAll(_colMeta._v);
       _elapsed = System.currentTimeMillis() - start;
-      _colMeta._thirdMoment = t._thirdMoment;
-      _colMeta._fourthMoment = t._fourthMoment;
+      _colMeta._thirdMoment = t._thirdMoment / (_colMeta._v.length()-1);
+      _colMeta._fourthMoment = t._fourthMoment / (_colMeta._v.length()-1);
+      _colMeta._MRTaskMillis = _elapsed;
+      _colMeta._skew = _colMeta._thirdMoment / Math.sqrt(_colMeta._variance*_colMeta._variance*_colMeta._variance);
+      _colMeta._kurtosis = _colMeta._fourthMoment / (_colMeta._variance * _colMeta._variance);
       tryComplete();
     }
 
@@ -101,8 +104,9 @@ public class FrameMeta extends Iced {
           if( colData < min ) min = colData;
           if( colData > max ) max = colData;
           bins[_h.bin(colData)]++;          double delta = colData - _mean;
-          _thirdMoment  += delta*delta*delta;
-          _fourthMoment += _thirdMoment*delta;
+          double threeDelta = delta*delta*delta;
+          _thirdMoment  += threeDelta;
+          _fourthMoment += threeDelta*delta;
         }
         _h.setMin(min); _h.setMax(max);
         for(int b=0; b<bins.length; ++b)

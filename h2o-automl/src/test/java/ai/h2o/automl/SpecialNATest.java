@@ -15,16 +15,17 @@ public class SpecialNATest {
     try {
       specialInts.add("hello");
     } catch( AssertionError e) {
-      Assert.that(e.getMessage().equals("expected int; type is String"), "expected assertion");
+      Assert.that(e.getMessage().equals("expected int; type was String"), "expected assertion");
     }
 
     // error to add double
     try {
       specialInts.add(5.34289);
     } catch( AssertionError e) {
-      Assert.that(e.getMessage().equals("expected int; type is double"), "expected assertion");
+      Assert.that(e.getMessage().equals("expected int; type was double"), "expected assertion");
     }
 
+    // check the auto-resizing
     for(int i=0;i<50;++i)
       specialInts.add(i);
   }
@@ -38,16 +39,17 @@ public class SpecialNATest {
     try {
       specialStrs.add(5);
     } catch( AssertionError e) {
-      Assert.that(e.getMessage().equals("expected String; type is int"), "expected assertion");
+      Assert.that(e.getMessage().equals("expected String; type was int"), "expected assertion");
     }
 
     // error to add double
     try {
       specialStrs.add(5.34289);
     } catch( AssertionError e) {
-      Assert.that(e.getMessage().equals("expected String; type is double"), "expected assertion");
+      Assert.that(e.getMessage().equals("expected String; type was double"), "expected assertion");
     }
 
+    // check the auto-resizing
     for(int i=0;i<50;++i)
       specialStrs.add("_"+i);
   }
@@ -61,16 +63,17 @@ public class SpecialNATest {
     try {
       specialDbls.add("hello");
     } catch( AssertionError e) {
-      Assert.that(e.getMessage().equals("expected double; type is String"), "expected assertion");
+      Assert.that(e.getMessage().equals("expected double; type was String"), "expected assertion");
     }
 
     // error to add int
     try {
       specialDbls.add(5);
     } catch( AssertionError e) {
-      Assert.that(e.getMessage().equals("expected double; type is int"), "expected assertion");
+      Assert.that(e.getMessage().equals("expected double; type was int"), "expected assertion");
     }
 
+    // check the auto-resizing
     for(int i=0;i<50;++i)
       specialDbls.add(i+.34324);
   }

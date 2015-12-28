@@ -24,7 +24,7 @@ public final class AutoML {
   private final boolean _ensemble;       // allow ensembles?
   private final models[] _modelEx;       // model types to exclude; e.g. don't allow DL whatsoever
   private final boolean _allowMutations; // allow for INPLACE mutations on input frame
-
+  FrameMeta _fm;                         // metadata for _fr
   private boolean _isClassification;
 
   enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
@@ -59,12 +59,12 @@ public final class AutoML {
   public void learn() {
 
     // step 1: gather initial frame metadata and guess the problem type
-    FrameMeta fm = new FrameMeta(_fr, _response).computeFrameMetaPass1();
-    _isClassification = fm.response().isClassification();
+    _fm = new FrameMeta(_fr, _response).computeFrameMetaPass1();
+    _isClassification = _fm.response().isClassification();
 
     // step 2: build a fast RF
-    ModelBuilder initModel = selectInitial(fm);
-    initModel._parms._ignored_columns = fm.ignoredCols();
+    ModelBuilder initModel = selectInitial(_fm);
+    initModel._parms._ignored_columns = _fm.ignoredCols();
 
     Model m = build(initModel); // need to track this...
     System.out.println("bink");
@@ -87,7 +87,16 @@ public final class AutoML {
     Key<Model>[] _models;
     ModelList() { super(MODELLIST); _models = new Key[0]; }
     private ModelList(Key<Model>[] models) { super(MODELLIST); _models = models; }
-    @Override protected long checksum_impl() { throw H2O.fail("ModelList checksum does not exist by definition"); }
+    @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelList"); }
+  }
+
+  public static final Key<Model> LEADER = Key.make(" AutoMLModelLeader ", (byte) 0, (byte) 2, false);
+  static class ModelLeader extends Keyed {
+    Key _leader;
+    ModelLeader() { super(LEADER); _leader = null; }
+    private ModelLeader(Key leader) { super(LEADER); _leader = leader; }
+    @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelLeader"); }
+
   }
 
   static Model[] models() {
@@ -111,7 +120,7 @@ public final class AutoML {
 
   // all model builds by AutoML call into this
   // expected to only ever have a single AutoML instance going at a time
-  static Model build(ModelBuilder mb) {
+  Model build(ModelBuilder mb) {
     Model m = (Model)mb.trainModel().get();
     final Key modelKey  = m._key;
     new TAtomic<ModelList>() {
@@ -125,4 +134,7 @@ public final class AutoML {
     }.invoke(MODELLIST);
     return m;
   }
+
+
+
 }
