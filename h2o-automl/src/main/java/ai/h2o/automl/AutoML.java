@@ -96,7 +96,6 @@ public final class AutoML {
     ModelLeader() { super(LEADER); _leader = null; }
     private ModelLeader(Key leader) { super(LEADER); _leader = leader; }
     @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelLeader"); }
-
   }
 
   static Model[] models() {
@@ -109,13 +108,17 @@ public final class AutoML {
       final Value model = DKV.get(ml._models[i]);
       if( model != null ) models[j++] = model.get();
     }
-    if( j==models.length ) return models; // All jobs still exist
-    models = Arrays.copyOf(models, j);     // Shrink out removed
-    Key keys[] = new Key[j];
-    for( int i=0; i<j; i++ ) keys[i] = models[i]._key;
-    // One-shot throw-away attempt at remove dead jobs from the jobs list
-    DKV.DputIfMatch(MODELLIST,new Value(MODELLIST,new ModelList(keys)),val,new Futures());
+    assert j==models.length; // All models still exist
     return models;
+  }
+
+  static Model leader() {
+    final Value val = DKV.get(LEADER);
+    if( val==null ) return null;
+    ModelLeader ml = val.get();
+    final Value model = DKV.get(ml._leader);
+    assert model!=null; // if the LEADER is in the DKV, then there better be a model!
+    return model.get();
   }
 
   // all model builds by AutoML call into this
@@ -132,9 +135,30 @@ public final class AutoML {
         return old;
       }
     }.invoke(MODELLIST);
+
+    updateLeader(m);
     return m;
   }
 
+  private void updateLeader(Model m) {
+    Model leader = leader();
+    final Key leaderKey;
+    if (leader == null) leaderKey = m._key;
+    else {
+      // compare leader to m and get the key
+      leaderKey = leader._key;
+    }
 
-
+    // update the leader if needed
+    if (leader == null || leaderKey.equals(leader._key) ) {
+      new TAtomic<ModelLeader>() {
+        @Override
+        public ModelLeader atomic(ModelLeader old) {
+          if (old == null) old = new ModelLeader();
+          old._leader = leaderKey;
+          return old;
+        }
+      }.invoke(LEADER);
+    }
+  }
 }

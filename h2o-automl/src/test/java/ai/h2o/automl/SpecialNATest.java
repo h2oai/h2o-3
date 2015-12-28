@@ -3,7 +3,7 @@ package ai.h2o.automl;
 import org.junit.Test;
 import sun.jvm.hotspot.utilities.Assert;
 
-
+// no H2O cloud needed for this test...
 public class SpecialNATest {
 
   @Test public void intsTest() {
