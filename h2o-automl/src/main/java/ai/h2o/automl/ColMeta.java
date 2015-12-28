@@ -14,13 +14,15 @@ import java.util.Arrays;
  * Holds usual rollup stats and additional interesting bits of information.
  */
 public class ColMeta extends Iced {
-  public final Vec _v;  // the column
+  public final Vec _v;          // the column
   public final byte _nameType;  // guessed at by ColNameScanner
-  public final String _name;
-  public final int _idx;
-  public boolean _ignored;  // should this column be ignored outright
-  public boolean _response; // is this a response column?
-  public double _percentNA;  // fraction of NAs in the column
+  public final String _name;    // column name
+  public final int _idx;        // index into the input frame from automl
+  public boolean _ignored;      // should this column be ignored outright
+  public boolean _response;     // is this a response column?
+  public double _percentNA;     // fraction of NAs in the column
+  public double _variance;      // variance of the column, pulled from the vec
+  public double _sigma;         // pulled from vec rollups
   private boolean _isClassification;
 
   /**
@@ -41,12 +43,12 @@ public class ColMeta extends Iced {
   // about data that doesn't fit the distribution that was trained. Will want to compare
   // histos from training and testing data to see if they "match". WTM
   public DHistogram _histo;
-  public long _timeToMRTask;
+  public long _MRTaskMillis;
   public SpecialNA _specialNAs; // found special NAs like 9999 or -1 or 0
-  public double _thirdMoment;     // used for skew/kurtosis; NaN if not numeric
-  public double _fourthMoment;    // used for skew/kurtosis; NaN if not numeric
-  public double _kurtosis;
-  public double _skew;
+  public double _thirdMoment;   // used for skew/kurtosis; NaN if not numeric
+  public double _fourthMoment;  // used for skew/kurtosis; NaN if not numeric
+  public double _kurtosis;      // the sharpness of the peak of a frequency-distribution curve
+  public double _skew;          // measure of the assymetry of a distribution; < 0 means shifted to the right; > 0 means shifted to the left
 
   // SECOND PASS
   // https://0xdata.atlassian.net/browse/STEAM-41 --column metadata to gather
@@ -83,6 +85,8 @@ public class ColMeta extends Iced {
     _ignored = v.isConst() || v.isString() || v.isBad() || v.isUUID(); // auto ignore from the outset
     if( _response )
       _isClassification = ProblemTypeGuesser.guess(v);
+    _sigma=v.sigma();
+    _variance=_sigma*_sigma;
   }
 
   public boolean isClassification() {
@@ -118,7 +122,7 @@ public class ColMeta extends Iced {
     }
 
     public void add(int val) {
-      assert _type==INT : "expected " + typeToString() + "; type is int";
+      assert _type==INT : "expected " + typeToString() + "; type was int";
       synchronized (this) {
         if( _idx==_ints.length-1 )
           _ints = Arrays.copyOf(_ints, _ints.length << 1);
@@ -126,7 +130,7 @@ public class ColMeta extends Iced {
       }
     }
     public void add(double val) {
-      assert _type==DBL : "expected " + typeToString() + "; type is double";
+      assert _type==DBL : "expected " + typeToString() + "; type was double";
       synchronized (this) {
         if( _idx==_dbls.length )
           _dbls = Arrays.copyOf(_dbls, _dbls.length << 1);
@@ -134,7 +138,7 @@ public class ColMeta extends Iced {
       }
     }
     public void add(String val) {
-      assert _type==STR : "expected " + typeToString() + "; type is String";
+      assert _type==STR : "expected " + typeToString() + "; type was String";
       synchronized (this) {
         if( _idx==_strs.length )
           _strs = Arrays.copyOf(_strs, _strs.length << 1);
