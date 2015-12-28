@@ -14,7 +14,9 @@ test {
     def accuracyTestingSuiteEnabled = rootProject.hasProperty("accuracyTestingSuite")
     enabled = accuracyTestingSuiteEnabled
 
-    //if () { jvmArgs('-ea',"-Xmx${testNGXmx}", "-Xms${testNGXmx}") }
+    if (rootProject.hasProperty("jvmXmx")) {
+        jvmArgs("-Xmx${jvmXmx}")
+    }
 
     useTestNG{
         useDefaultListeners = true
