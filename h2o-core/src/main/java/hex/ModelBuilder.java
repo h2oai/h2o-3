@@ -42,13 +42,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Default easy constructor: Unique new job and unique new result key */
   protected ModelBuilder(P parms) {
     String algoName = parms.algoName();
-    _job = new Job<>(_result = Key.make(H2O.calcNextUniqueModelId(algoName)), algoName);
+    _job = new Job<>(_result = Key.make(H2O.calcNextUniqueModelId(algoName)), parms.javaName(), algoName);
     _parms = parms;
   }
 
   /** Unique new job and named result key */
   protected ModelBuilder(P parms, Key<M> key) {
-    _job = new Job<>(_result = key, parms.algoName());
+    _job = new Job<>(_result = key, parms.javaName(), parms.algoName());
     _parms = parms;
   }
 

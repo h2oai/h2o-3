@@ -276,7 +276,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
     }
     InputStream is = (fr).toCSV(true, false);
-    Job job =  new Job(null,"Export dataset");
+    Job job =  new Job(null,null,"Export dataset");
     ExportTask t = new ExportTask(is, path, frameName, overwrite, job);
     return job.start(t, fr.anyVec().nChunks());
   }

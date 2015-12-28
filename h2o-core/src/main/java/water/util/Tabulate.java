@@ -56,7 +56,7 @@ public class Tabulate extends Keyed<Tabulate> {
   final private Stats[] _stats = new Stats[2];
 
   public Tabulate() {
-    _job = new Job(Key.<Tabulate>make(), "Tabulate job");
+    _job = new Job(Key.<Tabulate>make(), Tabulate.class.getName(), "Tabulate job");
   }
 
   private int bins(int v) {

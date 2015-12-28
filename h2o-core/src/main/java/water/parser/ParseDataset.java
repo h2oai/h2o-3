@@ -128,7 +128,7 @@ public final class ParseDataset {
 
   // Setup a private background parse job
   private ParseDataset(Key<Frame> dest) {
-    _job = new Job(dest,"Parse");
+    _job = new Job(dest,Frame.class.getName(), "Parse");
   }
 
   // -------------------------------

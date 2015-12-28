@@ -11,6 +11,7 @@ public class ExampleModel extends Model<ExampleModel,ExampleModel.ExampleParamet
   public static class ExampleParameters extends Model.Parameters {
     public String algoName() { return "Example"; }
     public String fullName() { return "Example"; }
+    public String javaName() { return ExampleModel.class.getName(); }
     public int _max_iterations = 1000; // Max iterations
   }
 

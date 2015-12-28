@@ -158,6 +158,7 @@ class BogusModel extends Model<BogusModel,BogusModel.BogusParameters,BogusModel.
   public static class BogusParameters extends Model.Parameters {
     public String algoName() { return "Bogus"; }
     public String fullName() { return "Bogus"; }
+    public String javaName() { return BogusModel.class.getName(); }
   }
   public static class BogusOutput extends Model.Output { }
   BogusModel( Key selfKey, BogusParameters parms, BogusOutput output) { super(selfKey,parms,output); }

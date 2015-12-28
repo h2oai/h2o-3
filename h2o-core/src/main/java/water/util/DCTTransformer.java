@@ -17,7 +17,7 @@ public class DCTTransformer extends Transformer<Frame> {
   final boolean _inverse = false;
 
   public DCTTransformer(Key<Frame> dest) {
-    super(dest, "DCTTransformer job");
+    super(dest, Frame.class.getName(), "DCTTransformer job");
   }
 
   @Override protected Job<Frame> execImpl() {

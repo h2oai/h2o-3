@@ -19,6 +19,7 @@ public class ModelAdaptTest extends TestUtil {
     static class AParms extends Model.Parameters {
       public String algoName() { return "A"; }
       public String fullName() { return "A"; }
+      public String javaName() { return AModel.class.getName(); }
     }
     static class AOutput extends Model.Output { }
   }

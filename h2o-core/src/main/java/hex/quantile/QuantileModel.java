@@ -16,6 +16,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
     protected boolean defaultDropConsCols() { return false; }
     public String algoName() { return "Quantiles"; }
     public String fullName() { return "Quantiles"; }
+    public String javaName() { return QuantileModel.class.getName(); }
   }
 
   public static class QuantileOutput extends Model.Output {

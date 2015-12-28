@@ -26,6 +26,7 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     public boolean _compute_metrics = true;   // Should a second pass be made through data to compute metrics?
     public String algoName() { return "NaiveBayes"; }
     public String fullName() { return "Naive Bayes"; }
+    public String javaName() { return NaiveBayesModel.class.getName(); }
   }
 
   public static class NaiveBayesOutput extends Model.Output {

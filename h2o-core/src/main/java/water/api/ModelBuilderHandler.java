@@ -73,7 +73,7 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     if (builder.error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
 
-    Job j = builder._job = new Job<>(builder.dest(),algoName);
+    Job j = builder._job = new Job<>(builder.dest(),builder._parms.javaName(),algoName);
     builder.trainModel();
     schema.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(j); // TODO: version
 

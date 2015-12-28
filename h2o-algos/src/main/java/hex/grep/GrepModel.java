@@ -11,6 +11,7 @@ public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepMode
   public static class GrepParameters extends Model.Parameters {
     public String algoName() { return "Grep"; }
     public String fullName() { return "Grep"; }
+    public String javaName() { return GrepModel.class.getName(); }
     public String _regex;       // The regex
   }
 

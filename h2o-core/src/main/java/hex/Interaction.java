@@ -24,7 +24,7 @@ public class Interaction extends Iced {
 
   transient public int[] _factors = new int[0];
 
-  public Interaction(Key<Frame> dest, String desc) { _job = new Job(dest, desc); }
+  public Interaction(Key<Frame> dest, String desc) { _job = new Job(dest, Frame.class.getName(), desc); }
   public Interaction() { this(Key.<Frame>make(), "CreateFrame"); }
 
   public Frame execImpl() {

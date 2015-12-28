@@ -1418,6 +1418,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public static class DeepLearningParameters extends Model.Parameters {
     public String algoName() { return "DeepLearning"; }
     public String fullName() { return "Deep Learning"; }
+    public String javaName() { return DeepLearningModel.class.getName(); }
     @Override protected double defaultStoppingTolerance() { return 0; }
     public DeepLearningParameters() {
       super();

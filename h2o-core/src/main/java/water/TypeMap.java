@@ -216,8 +216,9 @@ public class TypeMap {
   public static Freezable newFreezable(String className) {
     return (Freezable)theFreezable(onIce(className)).clone();
   }
-  // The single golden instance of an Iced, used for cloning and instanceof tests
-  static Freezable theFreezable(int id) {
+  /** The single golden instance of an Iced, used for cloning and instanceof
+   *  tests, do-not-modify since it's The Golden Instance and shared. */
+  public static Freezable theFreezable(int id) {
     try {
       Icer f = goForGold(id);
       return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();

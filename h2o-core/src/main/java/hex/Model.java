@@ -81,8 +81,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** The short name, used in making Keys.  e.g. "GBM" */
     abstract public String algoName();
 
-    /** The pretty algo name for this Model (e.g., Generalized Linear Model, rather than GLM).*/
+    /** The pretty algo name for this Model (e.g., Gradient Boosting Method, rather than GBM).*/
     abstract public String fullName();
+
+    /** The Java class name for this Model (e.g., hex.tree.gbm.GBM, rather than GBM).*/
+    abstract public String javaName();
 
     public Key<Frame> _train;               // User-Key of the Frame the Model is trained on
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
@@ -1233,4 +1236,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       toJava(os, preview, true);
     }
   }
+
+  @Override public Class<water.api.KeyV3.ModelKeyV3> makeSchema() { return water.api.KeyV3.ModelKeyV3.class; }
 }

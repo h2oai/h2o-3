@@ -79,22 +79,6 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     return make(KeyV3.class, key);
   }
 
-  /** Factory method which returns the correct KeyV1 for the given Keyed class (e.g., for Frame.class). */
-  public static KeyV3 forKeyedClass(Class<? extends Keyed> keyed_class, Key key) {
-    if (Job.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(JobKeyV3.class, key);
-    else if (Frame.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(FrameKeyV3.class, key);
-    else if (Model.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(ModelKeyV3.class, key);
-    else if (Vec.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(VecKeyV3.class, key);
-    else if (Grid.class.isAssignableFrom(keyed_class))
-      return KeyV3.make(GridKeyV3.class, key);
-    else
-      return KeyV3.make(KeyV3.class, key);
-  }
-
   public static class JobKeyV3 extends KeyV3<Iced, JobKeyV3, Job> {
     public JobKeyV3() {}
     public JobKeyV3(Key<Job> key) {

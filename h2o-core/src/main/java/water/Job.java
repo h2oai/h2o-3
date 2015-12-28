@@ -19,6 +19,7 @@ import water.H2O.H2OCountedCompleter;
 public final class Job<T extends Keyed> extends Keyed<Job> {
   /** Result Key */
   public final Key<T> _result;
+  public final int _typeid;
 
   /** User description */
   public final String _description;
@@ -26,9 +27,11 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   /** Create a Job
    *  @param key  Key of the final result
    *  @param desc String description   */
-  public Job(Key<T> key, String desc) { 
+  public Job(Key<T> key, String clz_of_T, String desc) {
     super(defaultJobKey());     // Passing in a brand new Job key
+    assert (key==null && clz_of_T==null) || (key!=null && clz_of_T!=null);
     _result = key;              // Result (destination?) key
+    _typeid = clz_of_T==null ? 0 : TypeMap.onIce(clz_of_T);
     _description = desc; 
   }
 
@@ -329,4 +332,5 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         _msg       = remote._msg       ;
       }
   }
+  @Override public Class<water.api.KeyV3.JobKeyV3> makeSchema() { return water.api.KeyV3.JobKeyV3.class; }
 }

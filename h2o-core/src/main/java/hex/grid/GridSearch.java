@@ -75,7 +75,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP> hyperSpaceWalker) {
     String algoName = hyperSpaceWalker.getParams().algoName();
-    _job = new Job<>(gkey, algoName + " Grid Search");
+    _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
     assert hyperSpaceWalker != null : "Grid search needs to know to how walk around hyper space!";
     _hyperSpaceWalker = hyperSpaceWalker;
     // Note: do not validate parameters of created model builders here!

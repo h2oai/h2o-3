@@ -69,4 +69,6 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     if( x==0 ) x=1;
     return (_checksum=x);
   }
+
+  public Class<? extends water.api.KeyV3> makeSchema() { throw H2O.fail("Override in subclasses which can be the result of a Job"); }
 }

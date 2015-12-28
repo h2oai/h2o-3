@@ -184,6 +184,7 @@ public class ModelSerializationTest extends TestUtil {
     static class BlahParameters extends Model.Parameters {
       public String algoName() { return "Blah"; }
       public String fullName() { return "Blah"; }
+      public String javaName() { return BlahModel.class.getName(); }
     }
     static class BlahOutput extends Model.Output {
       public BlahOutput(boolean hasWeights, boolean hasOffset, boolean hasFold) {

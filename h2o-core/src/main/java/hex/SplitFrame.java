@@ -27,7 +27,7 @@ public class SplitFrame extends Transformer<Frames> {
     _ratios = ratios;
     _destination_frames = destination_frames;
   }
-  public SplitFrame(Key dest) { super(dest, "SplitFrame"); }
+  public SplitFrame(Key dest) { super(dest, Frames.class.getName(), "SplitFrame"); }
 
   @Override public Job<Frames> execImpl() {
     if (_ratios.length < 0)      throw new IllegalArgumentException("No ratio specified!");

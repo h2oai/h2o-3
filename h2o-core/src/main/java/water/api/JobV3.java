@@ -2,10 +2,8 @@ package water.api;
 
 import water.*;
 import water.api.KeyV3.JobKeyV3;
-import water.exceptions.H2OFailException;
 import water.util.Log;
 import water.util.PojoUtils;
-import water.util.ReflectionUtils;
 
 /** Schema for a single Job. */
 public class JobV3 extends RequestSchema<Job, JobV3> {
@@ -56,7 +54,7 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
   }
 
   // Version&Schema-specific filling from the impl
-  @Override public JobV3 fillFromImpl(Job job) {
+  @Override public JobV3 fillFromImpl( Job job ) {
     if( job == null ) return this;
     // Handle fields in subclasses:
     PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
@@ -79,20 +77,9 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
     if( ex != null ) status = "FAILED";
     exception = ex == null ? null : ex.toString();
     msec = job.msec();
-    Key dest_key = job._result;
-    Iced ice = dest_key.get();
-    if( ice == null ) { dest = new KeyV3(dest_key); return this; }
-    Class<? extends Keyed> dest_class = ReflectionUtils.findActualClassParameter(ice.getClass(), 0); // What type do we expect for this Job?
-    try {
-      dest = KeyV3.forKeyedClass(dest_class, dest_key);
-    }
-    catch (H2OFailException e) {
-      throw e;
-    }
-    catch (Exception e) {
-      dest = null;
-      Log.warn("JobV3.fillFromImpl(): dest key for job: " + this + " is not the expected type: " + dest_class.getCanonicalName() + ": " + dest_key + ".  Returning null for the dest field.");
-    }
+
+    Keyed dest_type = (Keyed)TypeMap.theFreezable(job._typeid);
+    dest = KeyV3.make(dest_type.makeSchema(),job._result);
     return this;
   }
 

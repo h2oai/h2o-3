@@ -22,6 +22,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
     public String algoName() { return "GBM"; }
     public String fullName() { return "Gradient Boosting Method"; }
+    public String javaName() { return GBMModel.class.getName(); }
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {

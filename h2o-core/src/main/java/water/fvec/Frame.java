@@ -1414,4 +1414,5 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
+  @Override public Class<water.api.KeyV3.FrameKeyV3> makeSchema() { return water.api.KeyV3.FrameKeyV3.class; }
 }

@@ -160,7 +160,7 @@ public class FrameUtils {
     final long _seed;
 
     public MissingInserter(Key<Frame> frame, long seed, double frac){
-      _job = new Job(frame, "MissingValueInserter");
+      _job = new Job(frame, Frame.class.getName(), "MissingValueInserter");
       _dataset = frame; _seed = seed; _fraction = frac;
     }
 

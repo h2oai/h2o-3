@@ -338,5 +338,7 @@ public class Grid<MP extends Model.Parameters>
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { throw H2O.unimpl(); }
 
   @Override protected long checksum_impl() { throw H2O.unimpl(); }
+
+  @Override public Class<water.api.KeyV3.GridKeyV3> makeSchema() { return water.api.KeyV3.GridKeyV3.class; }
 }
 
