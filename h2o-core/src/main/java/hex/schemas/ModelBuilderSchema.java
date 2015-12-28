@@ -84,7 +84,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
 
   /** Create the corresponding impl object, as well as its parameters object. */
   @Override final public B createImpl() {
-    return ModelBuilder.make(null,get__meta().getSchema_type());
+    return ModelBuilder.make(get__meta().getSchema_type(), null, null);
   }
 
   @Override public B fillImpl(B impl) {

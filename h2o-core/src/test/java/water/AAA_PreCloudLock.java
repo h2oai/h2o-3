@@ -19,7 +19,6 @@ public class AAA_PreCloudLock extends TestUtil {
     stall_till_cloudsize(PARTIAL_CLOUD_SIZE);
     // Start Nano server; block for starting
     H2O.finalizeRegistration();
-    H2O.registerRestApis(System.getProperty("user.dir"));
   }
 
   // ---

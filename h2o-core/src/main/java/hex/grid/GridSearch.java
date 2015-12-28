@@ -10,6 +10,8 @@ import water.fvec.Frame;
 import water.util.Log;
 import water.util.PojoUtils;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 
 /**
@@ -159,7 +161,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           try {
             model = buildModel(params, grid, counter++, protoModelKey);
           } catch (RuntimeException e) { // Catch everything
-            Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
             grid.appendFailedModelParameters(params, e);
           }
         } catch (IllegalArgumentException e) {
@@ -212,7 +217,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Build a new model
     // THIS IS BLOCKING call since we do not have enough information about free resources
     // FIXME: we should allow here any launching strategy (not only sequential)
-    Model m = startBuildModel(result,params, grid).get();
+    Model m = (Model)startBuildModel(result,params, grid).dest().get();
     grid.putModel(checksum, result);
     return m;
   }
@@ -228,8 +233,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   private ModelBuilder startBuildModel(Key result, MP params, Grid<MP> grid) {
     if (grid.getModel(params) != null) return null;
-    ModelBuilder mb = ModelBuilder.make(result, params.algoName());
-    mb.trainModel();
+    ModelBuilder mb = ModelBuilder.make(params.algoName(), _job, result);
+    mb._parms = params;
+    mb.trainModelNested();
     return mb;
   }
 

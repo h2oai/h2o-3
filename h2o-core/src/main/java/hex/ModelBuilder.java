@@ -23,7 +23,7 @@ import java.util.Map;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
-  public final Job _job;     // Job controlling this build
+  public Job _job;     // Job controlling this build
   /** Block till completion, and return the built model from the DKV.  Note the
    *  funny assert: the Job does NOT have to be controlling this model build,
    *  but might, e.g. be controlling a Grid search for which this is just one
@@ -85,10 +85,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
-  public static <B extends ModelBuilder> B make(Key<Model> result, String algo) {
+  public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
     int idx = ArrayUtils.find(ALGOBASES,algo);
     assert idx != -1 : "Unregistered algorithm "+algo;
     B mb = (B)BUILDERS[idx].clone();
+    mb._job = job;
     mb._result = result;
     mb._parms = BUILDERS[idx]._parms.clone();
     return mb;
