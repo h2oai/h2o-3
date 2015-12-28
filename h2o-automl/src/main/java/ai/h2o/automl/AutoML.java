@@ -82,7 +82,7 @@ public final class AutoML {
 
 
   // track models built by automl
-  public static final Key<Model> MODELLIST = Key.make(" AutoMLModelList ", (byte) 0, (byte) 2 /*built-in key*/, false);  // public for the test
+  public static final Key<Model> MODELLIST = Key.make(" AutoMLModelList ", (byte) 0, (byte) 2 /*builtin key*/, false);  // public for the test
   static class ModelList extends Keyed {
     Key<Model>[] _models;
     ModelList() { super(MODELLIST); _models = new Key[0]; }
@@ -109,8 +109,10 @@ public final class AutoML {
     return models;
   }
 
+  // all model builds by AutoML call into this
+  // expected to only ever have a single AutoML instance going at a time
   static Model build(ModelBuilder mb) {
-    Model m = (Model)mb.trainModel().get(); // need to track this...
+    Model m = (Model)mb.trainModel().get();
     final Key modelKey  = m._key;
     new TAtomic<ModelList>() {
       @Override public ModelList atomic(ModelList old) {
