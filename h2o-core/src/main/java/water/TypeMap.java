@@ -47,6 +47,10 @@ public class TypeMap {
     water.util.IcedSortedHashMap.class.getName(), // Seems wildly not-needed
     hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
 
+    // Checking for Flow clips
+    water.api.NodePersistentStorageV3.class.getName(),
+    water.api.NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
+
     // Beginning to hunt for files
     water.util.IcedHashMap.class.getName(),
     water.util.IcedHashMapBase.class.getName(),

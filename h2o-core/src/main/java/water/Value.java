@@ -577,10 +577,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     Value val = H2O.STORE.get(key);
     if( val == null ) return null; // A true null
     if( !val.isNull() ) return val; // Not a special Null
-    if( val._rwlock.get()>0 ) return val; // Not yet invalidates all completed
     // One-shot throwaway attempt at upgrading the special Null to a true null
-    H2O.putIfMatch(key,null,val);
-    return null;
+    if( val._rwlock.get()==0 ) H2O.putIfMatch(key,null,val);
+    return null;                // Special null, but missing from callers point of view
   }
 
 
