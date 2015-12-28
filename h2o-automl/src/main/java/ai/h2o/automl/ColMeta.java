@@ -118,26 +118,26 @@ public class ColMeta extends Iced {
     }
 
     public void add(int val) {
-      assert _type==INT : "type was " + typeToString() + "; expected int";
+      assert _type==INT : "expected " + typeToString() + "; type is int";
       synchronized (this) {
-        if( _idx==_ints.length )
-          _ints = Arrays.copyOf(_ints, _idx >> 1);
+        if( _idx==_ints.length-1 )
+          _ints = Arrays.copyOf(_ints, _ints.length << 1);
         _ints[_idx++]=val;
       }
     }
     public void add(double val) {
-      assert _type==DBL : "type was " + typeToString() + "; expected double";
+      assert _type==DBL : "expected " + typeToString() + "; type is double";
       synchronized (this) {
-        if( _idx==_ints.length )
-          _dbls = Arrays.copyOf(_dbls, _idx >> 1);
+        if( _idx==_dbls.length )
+          _dbls = Arrays.copyOf(_dbls, _dbls.length << 1);
         _dbls[_idx++]=val;
       }
     }
     public void add(String val) {
-      assert _type==STR : "type was " + typeToString() + "; expected String";
+      assert _type==STR : "expected " + typeToString() + "; type is String";
       synchronized (this) {
-        if( _idx==_ints.length )
-          _strs = Arrays.copyOf(_strs, _idx >> 1);
+        if( _idx==_strs.length )
+          _strs = Arrays.copyOf(_strs, _strs.length << 1);
         _strs[_idx++]=val;
       }
     }
