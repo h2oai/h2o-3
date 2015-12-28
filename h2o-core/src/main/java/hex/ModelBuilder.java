@@ -74,13 +74,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _result = null;
     _parms = parms;
     init(false); // Default cheap init
-    String base = getClass().getSimpleName();
+    String base = getClass().getSimpleName().toLowerCase();
     if( ArrayUtils.find(ALGOBASES,base) != -1 )
       throw H2O.fail("Only called once at startup per ModelBuilder, and "+base+" has already been called");
     ALGOBASES = Arrays.copyOf(ALGOBASES,ALGOBASES.length+1);
     BUILDERS  = Arrays.copyOf(BUILDERS ,BUILDERS .length+1);
     ALGOBASES[ALGOBASES.length-1] = base;
     BUILDERS [BUILDERS .length-1] = this;
+  }
+
+  public static String algoJavaName(String algoURLName) {
+    int idx = ArrayUtils.find(ALGOBASES,algoURLName);
+    assert idx != -1 : "Unregistered algorithm "+algoURLName;
+    return BUILDERS[idx]._parms.algoName();
   }
 
   /** Factory method to create a ModelBuilder instance for given the algo name.

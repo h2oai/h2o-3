@@ -8,10 +8,7 @@ import water.H2O;
 import water.Job;
 import water.api.*;
 import water.api.ValidationMessageBase;
-import water.exceptions.H2OIllegalArgumentException;
 import water.util.*;
-
-import java.lang.reflect.Constructor;
 import java.util.Properties;
 
 public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends RequestSchema<B,S> implements SpecifiesHttpResponseCode {
