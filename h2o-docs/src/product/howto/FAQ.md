@@ -778,8 +778,7 @@ After creating and applying the desired node labels and associating them with sp
 To import from HDFS in R: 
 
 ```
-h2o.importHDFS(path, pattern = "", destination_frame = "", parse = TRUE,
-header = NA, sep = "", col.names = NULL, na.strings = NULL)
+h2o.importFolder(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings = NULL)
 ```
 
 Here is another example: 

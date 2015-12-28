@@ -374,6 +374,14 @@ Installation instructions can be found here [R installation](http://cran.r-proje
 
 To install the required packages, follow the [same instructions as for OS X above](#InstallRPackagesInUnix).
 
+>**Note**: If the process fails to install RStudio Server on Linux, run one of the following: 
+>
+>`sudo apt-get install libcurl4-openssl-dev`
+>
+>or
+> 
+>`sudo apt-get install libcurl4-gnutls-dev`
+
 ##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
 If you don't already have a Git client:

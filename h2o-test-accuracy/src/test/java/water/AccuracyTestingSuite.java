@@ -27,14 +27,14 @@ public class AccuracyTestingSuite {
 	@BeforeClass
 	@Parameters( {"logDir", "resultsDBTableConfig", "numH2ONodes", "dataSetsCSVPath", "testCasesCSVPath",
 		"testCasesFilterString" } )
-	private void accuracySuiteSetup(@Optional("h2o-test-accuracy") String logDir,
-																	@Optional("") String resultsDBTableConfig,
-																	@Optional("1") String numH2ONodes,
-																	@Optional("h2o-test-accuracy/src/test/resources/accuracyDataSets.csv")
+	private void accuracySuiteSetup(@org.testng.annotations.Optional("h2o-test-accuracy") String logDir,
+																	@org.testng.annotations.Optional("") String resultsDBTableConfig,
+																	@org.testng.annotations.Optional("1") String numH2ONodes,
+																	@org.testng.annotations.Optional("h2o-test-accuracy/src/test/resources/accuracyDataSets.csv")
 																	String dataSetsCSVPath,
-																	@Optional("h2o-test-accuracy/src/test/resources/accuracyTestCases.csv")
+																	@org.testng.annotations.Optional("h2o-test-accuracy/src/test/resources/accuracyTestCases.csv")
 																	String testCasesCSVPath,
-																	@Optional("") String testCasesFilterString)
+																	@org.testng.annotations.Optional("") String testCasesFilterString)
 	{
 		// Logging
 		this.logDir = logDir;
