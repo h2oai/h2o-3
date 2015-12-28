@@ -1,9 +1,7 @@
-package accuracy;
+package water;
 
-import water.AccuracyUtil;
-
+import java.net.InetAddress;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.HashMap;
 
@@ -18,38 +16,31 @@ public class TestCaseResult {
   private static final String[] metrics = new String[]{ "R2", "Logloss", "MeanResidualDeviance", "AUC", "AIC", "Gini",
     "MSE", "ResidualDeviance", "ResidualDegreesOfFreedom", "NullDeviance", "NullDegreesOfFreedom", "F1", "F2",
     "F0point5", "Accuracy", "Error", "Precision", "Recall", "MCC", "MaxPerClassError"};
+  private static final String resultsDBTableName = "AccuracyTestCaseResults"; //TODO: get this from the connection instead
 
   public TestCaseResult(int testCaseId, HashMap<String,Double> trainingMetrics, HashMap<String,Double> testingMetrics,
-                        double modelBuildTime, String ipAddr, int ncpu, String h2oVersion, String gitHash) {
+                        double modelBuildTime) throws Exception {
     this.testCaseId = testCaseId;
     this.trainingMetrics = trainingMetrics;
     this.testingMetrics = testingMetrics;
     this.modelBuildTime = modelBuildTime;
-    this.ipAddr = ipAddr;
-    this.ncpu = ncpu;
-    this.h2oVersion = h2oVersion;
-    this.gitHash = gitHash;
+
+    this.ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
+    this.ncpu = Runtime.getRuntime().availableProcessors();
+    this.h2oVersion = H2O.ABV.projectVersion();
+    this.gitHash = H2O.ABV.lastCommitHash();
   }
 
-  public void saveToAccuracyDB() throws Exception {
-    // Construct the sql command to be executed
+  public void saveToAccuracyTable(Connection conn) throws Exception {
     String sql = makeSQLCmd();
-
-    // Connect to the Accuracy database
-    Class.forName("com.mysql.jdbc.Driver");
-    String url = String.format("jdbc:mysql://%s:%s/%s", AccuracyUtil.getDBHost(), AccuracyUtil.getDBPort(),
-      AccuracyUtil.getDBName());
-    Connection connection = DriverManager.getConnection(url, AccuracyUtil.getDBUser(), AccuracyUtil.getDBPwd());
-
-    // Execute the SQL command
-    Statement statement = connection.createStatement();
+    Statement statement = conn.createStatement();
     statement.executeUpdate(sql);
-    connection.close();
-    AccuracyUtil.log("Successfully executed the following sql statement: " + sql);
+    AccuracyTestingSuite.summaryLog.println("Successfully executed the following sql statement: " + sql);
   }
 
   private String makeSQLCmd() {
-    String sql = String.format("insert into %s values(%s, ", AccuracyUtil.getDBTableName(), testCaseId);
+    AccuracyTestingSuite.summaryLog.println("Making the sql statement.");
+    String sql = String.format("insert into %s values(%s, ", resultsDBTableName, testCaseId);
     for (String m : metrics) {
       sql += (trainingMetrics.get(m) == null || Double.isNaN(trainingMetrics.get(m)) ? "NULL, " :
         Double.toString(trainingMetrics.get(m)) + ", ");

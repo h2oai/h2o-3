@@ -1,4 +1,4 @@
-package accuracy;
+package water;
 
 import hex.*;
 import hex.deeplearning.DeepLearning;
@@ -10,30 +10,26 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-public class TestCase extends TestUtil {
-  private static String testCasesPath = "h2o-test-accuracy/src/test/resources/accuracyTestCases.csv";
+public class TestCase {
 
-  public int testCaseId;
+  private int testCaseId;
   private String algo;
   private String algoParameters;
   private boolean tuned;
   private boolean regression;
   private int trainingDataSetId;
   private int testingDataSetId;
-  public static final int size = 7; // number of fields in a test case
 
-  private Model.Parameters params;	// the parameters object for the respective test case (algo)
+  private Model.Parameters params;
   private DataSet trainingDataSet;
   private DataSet testingDataSet;
 
@@ -47,37 +43,17 @@ public class TestCase extends TestUtil {
     this.trainingDataSetId = trainingDataSetId;
     this.testingDataSetId = testingDataSetId;
 
-    trainingDataSet = new DataSet(trainingDataSetId);
-    testingDataSet = new DataSet(testingDataSetId);
+    trainingDataSet = new DataSet(this.trainingDataSetId);
+    testingDataSet = new DataSet(this.testingDataSetId);
   }
 
-  public static String getTestCasesPath() { return testCasesPath; }
-
-  public void loadTestCaseDataSets() throws IOException{
-    trainingDataSet.load(regression);
-    testingDataSet.load(regression);
-  }
-
-  public void setModelParameters() throws Exception{
-    switch (algo) {
-      case "drf":
-        params = makeDrfModelParameters();
-        break;
-      case "glm":
-        params = makeGlmModelParameters();
-        break;
-      case "dl":
-        params = makeDlModelParameters();
-        break;
-      case "gbm":
-        params = makeGbmModelParameters();
-        break;
-      default:
-        throw new Exception("No algo: " + algo);
-    }
-  }
+  public int getTestCaseId() { return testCaseId; }
 
   public TestCaseResult execute() throws Exception, AssertionError {
+    loadTestCaseDataSets();
+
+    makeModelParameters();
+
     Model.Output modelOutput = null;
 
     DRF drfJob = null;
@@ -96,7 +72,7 @@ public class TestCase extends TestUtil {
       switch (algo) {
         case "drf":
           drfJob = new DRF((DRFModel.DRFParameters) params);
-          AccuracyUtil.log("Train DRF model:");
+          AccuracyTestingSuite.summaryLog.println("Training DRF model.");
           modelStartTime = System.currentTimeMillis();
           drfModel = drfJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -104,7 +80,7 @@ public class TestCase extends TestUtil {
           break;
         case "glm":
           glmJob = new GLM(Key.make("GLMModel"), "GLM Model", (GLMModel.GLMParameters) params);
-          AccuracyUtil.log("Train GLM model");
+          AccuracyTestingSuite.summaryLog.println("Training GLM model.");
           modelStartTime = System.currentTimeMillis();
           glmModel = glmJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -112,7 +88,7 @@ public class TestCase extends TestUtil {
           break;
         case "gbm":
           gbmJob = new GBM((GBMModel.GBMParameters) params);
-          AccuracyUtil.log("Train GBM model");
+          AccuracyTestingSuite.summaryLog.println("Training GBM model.");
           modelStartTime = System.currentTimeMillis();
           gbmModel = gbmJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -120,7 +96,7 @@ public class TestCase extends TestUtil {
           break;
         case "dl":
           dlJob = new DeepLearning((DeepLearningParameters) params);
-          AccuracyUtil.log("Train model");
+          AccuracyTestingSuite.summaryLog.println("Training DL model.");
           modelStartTime = System.currentTimeMillis();
           dlModel = dlJob.trainModel().get();
           modelStopTime = System.currentTimeMillis();
@@ -141,32 +117,39 @@ public class TestCase extends TestUtil {
       Scope.exit();
     }
 
-    // Gather some more information about the test case
-    // TODO: this information might be better gathered in the AccuracyTestingFramework class
-    String ipAddr = "NULL";
-    ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
-    int ncpu = Runtime.getRuntime().availableProcessors();
-    String h2oVersion = H2O.ABV.projectVersion();
-    String gitHash = H2O.ABV.lastCommitHash();
+    removeTestCaseDataSetFrames();
 
     return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-      getMetrics(modelOutput._validation_metrics), modelStopTime - modelStartTime, ipAddr, ncpu, h2oVersion, gitHash);
+      getMetrics(modelOutput._validation_metrics), modelStopTime - modelStartTime);
   }
 
-  public void cleanUp() {
-    //FIXME: This was just copied over from RemoveAllHandler.
-    AccuracyUtil.log("Removing all objects.");
-    trainingDataSet.closeFrame();
-    testingDataSet.closeFrame();
-    Futures fs = new Futures();
-    for( Job j : Job.jobs() ) { j.cancel(); j.remove(fs); }
-    fs.blockForPending();
-    new MRTask(){
-      @Override public byte priority() { return H2O.GUI_PRIORITY; }
-      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
-    }.doAllNodes();
-    H2O.getPM().getIce().cleanUp();
-    AccuracyUtil.log("Finished removing objects.");
+  private void loadTestCaseDataSets() throws IOException{
+    trainingDataSet.load(regression);
+    testingDataSet.load(regression);
+  }
+
+  private void removeTestCaseDataSetFrames() {
+    trainingDataSet.removeFrame();
+    testingDataSet.removeFrame();
+  }
+
+  private void makeModelParameters() throws Exception{
+    switch (algo) {
+      case "drf":
+        params = makeDrfModelParameters();
+        break;
+      case "glm":
+        params = makeGlmModelParameters();
+        break;
+      case "dl":
+        params = makeDlModelParameters();
+        break;
+      case "gbm":
+        params = makeGbmModelParameters();
+        break;
+      default:
+        throw new Exception("No algo: " + algo);
+    }
   }
 
   private HashMap<String,Double> getMetrics(ModelMetrics mm) {
@@ -212,6 +195,7 @@ public class TestCase extends TestUtil {
   }
 
   private GLMModel.GLMParameters makeGlmModelParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making GLM model parameters.");
     GLMModel.GLMParameters glmParams = new GLMModel.GLMParameters();
     String[] glmAlgoParamsMap = new String[]{
       "gaussian",
@@ -333,6 +317,7 @@ public class TestCase extends TestUtil {
   }
 
   private GBMModel.GBMParameters makeGbmModelParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making GBM model parameters.");
     GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
     String[] gbmAlgoParamsMap = new String[]{
       "auto",
@@ -429,6 +414,7 @@ public class TestCase extends TestUtil {
   }
 
   private DeepLearningModel.Parameters makeDlModelParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making DL model parameters.");
     DeepLearningParameters dlParams = new DeepLearningParameters();
     String[] dlAlgoParamsMap = new String[]{
       "auto",
@@ -616,6 +602,7 @@ public class TestCase extends TestUtil {
   }
 
   private DRFModel.DRFParameters makeDrfModelParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making DRF model parameters.");
     DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
     String[] drfAlgoParamsMap = new String[]{
       "auto",

@@ -1,4 +1,4 @@
-description = "H2O Accuracy Testing"
+import groovy.xml.MarkupBuilder
 
 dependencies {
 	compile 'net.sf.opencsv:opencsv:2.3'
@@ -11,27 +11,43 @@ dependencies {
 }
 
 test {
-    def singleNode = rootProject.hasProperty("testNGSingleNode")
-    def multipleNode = rootProject.hasProperty("testNGMultiNode")
-    enabled = singleNode || multipleNode
+    enabled = true
 
-    if (multipleNode) { jvmArgs('-ea',"-Xmx${testNGXmx}", "-Xms${testNGXmx}") }
+    //if () { jvmArgs('-ea',"-Xmx${testNGXmx}", "-Xms${testNGXmx}") }
 
     useTestNG{
         useDefaultListeners = true
 
-        if(rootProject.hasProperty("algorithm")){
-            systemProperty 'algorithm', "$algorithm"
+        def xmlWriter = new StringWriter()
+        def xmlMarkup = new MarkupBuilder(xmlWriter)
+        xmlMarkup.'suite'(name: "Accuracy Testing Suite", verbose: "5") {
+            'test'(name: "Accuracy Test Case") {
+                'classes'(name: "water.AccuracyTestingSuite") {
+                    if (rootProject.hasProperty("logDir")) {
+                        //'parameter'(name: "logDir", value: "$logDir")
+                    }
+                    if (rootProject.hasProperty("resultsDBTableConfig")) {
+                        'parameter'(name: "resultsDBTableConfig", value: "$resultsDBTableConfig")
+                    }
+                    if (rootProject.hasProperty("numH2ONodes")) {
+                        'parameter'(name: "numH2ONodes", value: "$numH2ONodes")
+                    }
+                    if (rootProject.hasProperty("dataSetsCSVPath")) {
+                        'parameter'(name: "dataSetsCSVPath", value: "$dataSetsCSVPath")
+                    }
+                    if (rootProject.hasProperty("testCasesCSVPath")) {
+                        'parameter'(name: "testCasesCSVPath", value: "$testCasesCSVPath")
+                    }
+                    if (rootProject.hasProperty("testCasesFilterString")) {
+                        'parameter'(name: "testCasesFilterString", value: "$testCasesFilterString")
+                    }
+                    'class'(name: "water.AccuracyTestingSuite")
+                }
+            }
         }
-        if(rootProject.hasProperty("testcaseId")){
-        	systemProperty 'testcaseId', "$testcaseId"
-        }
-	    if(rootProject.hasProperty("dbConfigFilePath")){
-	    	systemProperty 'dbConfigFilePath', "$dbConfigFilePath"
-	    }
-        
-        if (singleNode) { suites("src/test/resources/singleNode.xml") }
-        else { suites("src/test/resources/multipleNode.xml") }
+        new File("h2o-test-accuracy/testng.xml").write(xmlWriter.toString())
+
+        suites("testng.xml")
     }
     
     testLogging.setShowStandardStreams(true)

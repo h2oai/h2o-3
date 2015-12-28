@@ -1,8 +1,0 @@
-<suite name="Multiple Node" verbose="5">
-    <test name="Accuracy Test">
-        <classes>
-            <parameter name="numNodes" value="5"/>
-            <class name="water.AccuracyTesting" />
-        </classes>
-    </test>
-</suite>
