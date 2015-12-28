@@ -56,10 +56,10 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     return builder_schema;
   }
 
-  /** Create a model by launching a ModelBuilder algo.  If the model parameters
-   *  pass validation this returns a Job schema. */
+  /** Starts the model-build process by launching a ModelBuilder algo. 
+   *  Returns the ModelBuilder schema  */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public JobV3 train(int version, S schema) {
+  public S train(int version, S schema) {
     // Note: the create can detect errors through init(false), OR the
     // trainModel() call can throw an exception deep inside a ForkJoin task
     // (cf. DeepLearningDriver.compute2()).  Both are to be handled here, the
@@ -81,7 +81,7 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     // resulting in an H2OErrorVx to be returned.
     PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
     schema.setHttpStatus(HttpResponseStatus.OK.getCode());
-    return schema.job;
+    return schema;
   }
 
 }
