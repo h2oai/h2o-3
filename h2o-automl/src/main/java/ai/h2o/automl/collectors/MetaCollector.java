@@ -1,12 +1,13 @@
 package ai.h2o.automl.collectors;
 
 
-import ai.h2o.automl.ColMeta;
+import hex.tree.DHistogram;
 import water.H2O;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.AtomicUtils;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -50,56 +51,116 @@ public class MetaCollector {
   // TODO: add hiddenNAFinder https://0xdata.atlassian.net/browse/STEAM-76
 
 
-  public static class ParallelTasks<T extends MRTask<T>> extends H2O.H2OCountedCompleter {
-
-    // IN
+  public static class ParallelTasks<T extends H2O.H2OCountedCompleter<T>> extends H2O.H2OCountedCompleter {
     private final AtomicInteger _ctr; // Concurrency control
     private static int MAXP = 100;    // Max number of concurrent columns
-    private final Frame _fr;          // Frame to compute all the metadata on
-    private final T[] _tasks;         // task holder
+    private final T[] _tasks;         // task holder (will be 1 per column)
 
-    public ParallelTasks(Frame fr, T[] tasks) {
-      _fr = fr;
+    public ParallelTasks(T[] tasks) {
       _ctr = new AtomicInteger(MAXP-1);
       _tasks = tasks;
     }
 
     @Override protected void compute2() {
-      final int ncols = _fr.numCols();
-      addToPendingCount(ncols-1);
-      for (int i=0; i < Math.min(MAXP, ncols); ++i) asyncVecTask(i);
+      final int nTasks = _tasks.length;
+      addToPendingCount(nTasks-1);
+      for (int i=0; i < Math.min(MAXP, nTasks); ++i) asyncVecTask(i);
     }
 
-    // Compute ColMeta for each column
-    private void asyncVecTask(final int colnum) {
-      _tasks[colnum].setCompleter(new Callback());
-      _tasks[colnum].asyncExec(_fr.vec(colnum));
+    private void asyncVecTask(final int task) {
+      _tasks[task].setCompleter(new Callback());
+      _tasks[task].fork();
     }
 
     private class Callback extends H2O.H2OCallback {
       public Callback(){super(ParallelTasks.this);}
       @Override public void callback(H2O.H2OCountedCompleter cc) {
         int i = _ctr.incrementAndGet();
-        if( i < _fr.numCols() )
+        if( i < _tasks.length )
           asyncVecTask(i);
       }
     }
   }
 
-  public static class ColMetaTaskPass1 extends MRTask<ColMetaTaskPass1> {
+  /**
+   * A wrapper class around DHistogram.
+   *
+   * NB: _sums and _ssqs are not the same as those found in DHistogram instances.
+   *     The difference being that these are compounded over the column data, rather than
+   *     over the target column.
+   */
+  public static class DynamicHisto extends MRTask<DynamicHisto> {
+    public DHistogram _h;
+    public double[] _sums; // different from _h._sums
+    public double[] _ssqs; // different from _h._ssqs
+    public DynamicHisto(DHistogram h) { _h=h; }
+    DynamicHisto(String name, final int nbins, int nbins_cats, byte isInt,
+                        double min, double max) {
+      _h = makeDHistogram(name, nbins, nbins_cats, isInt, min, max);
+    }
+    public static DHistogram makeDHistogram(String name, int nbins, int nbins_cats, byte isInt,
+                                  double min, double max) {
+      final double minIn = Math.max(min,-Double.MAX_VALUE);   // inclusive vector min
+      final double maxIn = Math.min(max, Double.MAX_VALUE);   // inclusive vector max
+      final double maxEx = DHistogram.find_maxEx(maxIn,isInt==1?1:0); // smallest exclusive max
+      return DHistogram.make(name,nbins,nbins_cats,isInt,minIn,maxEx);
+    }
+    public double binAt(int b) { return _h.binAt(b); }
 
-    // IN
-    private final boolean _response;
-
-    // OUT
-    public final ColMeta _colMeta;
-
-    public ColMetaTaskPass1(boolean response, String colname, int idx) {
-      _colMeta = new ColMeta(_fr.anyVec(), colname, idx, _response=response);
+    public double mean(int b ) {
+      double n = _h._bins[b];
+      return n>0 ? _sums[b]/n : _h.binAt(b);
     }
 
-    @Override public void map( Chunk c ) {  // TODO: roll chunk type specific methods
+    public double var (int b) { // sample variance
+      double n = _h._bins[b];
+      if( n<=1 ) return 0;
+      return Math.max(0, (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1));
+    }
 
+    protected void init() {
+      _h._bins = MemoryManager.malloc8d(_h._nbin);
+      _sums = MemoryManager.malloc8d(_h._nbin);
+      _ssqs = MemoryManager.malloc8d(_h._nbin);
+    }
+    @Override public void setupLocal() { init(); }
+    @Override public void map(Chunk c) { accum(c); }
+    @Override public void reduce(DynamicHisto ht) {
+      merge(ht._h);
+      if( _sums!=ht._sums ) ArrayUtils.add(_sums, ht._sums);
+      if( _ssqs!=ht._ssqs ) ArrayUtils.add(_ssqs, ht._ssqs);
+    }
+
+    void accum(Chunk C) {
+      double min = _h.find_min();
+      double max = _h.find_maxIn();
+      double[] bins = new double[_h._nbin];
+      double[] sums = new double[_h._nbin];
+      double[] ssqs = new double[_h._nbin];
+
+      for(int r=0; r<C._len; ++r) {
+        double colData = C.atd(r);
+        if( colData < min ) min = colData;
+        if( colData > max ) max = colData;
+        int b = _h.bin(colData);
+        bins[b] += 1;
+        sums[b] += colData;
+        ssqs[b] += colData*colData;
+      }
+      _h.setMin(min); _h.setMax(max);
+      for(int b=0; b<bins.length; ++b)
+        if( bins[b]!=0 ) {
+          AtomicUtils.DoubleArray.add(_h._bins, b, bins[b]);
+          AtomicUtils.DoubleArray.add(_sums, b, sums[b]);
+          AtomicUtils.DoubleArray.add(_ssqs, b, ssqs[b]);
+        }
+    }
+
+    public void merge(DHistogram h) {
+      if( _h==h ) return;
+      if( _h==null ) _h=h;
+      else if( h!=null )
+        _h.add(h);
     }
   }
 }
