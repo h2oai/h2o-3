@@ -27,12 +27,12 @@ public class AccuracyTestingSuite {
 	@BeforeClass
 	@Parameters( {"logDir", "resultsDBTableConfig", "numH2ONodes", "dataSetsCSVPath", "testCasesCSVPath",
 		"testCasesFilterString" } )
-	private void accuracySuiteSetup(@Optional("h2o-3/h2o-test-accuracy") String logDir,
+	private void accuracySuiteSetup(@Optional("h2o-test-accuracy") String logDir,
 																	@Optional("") String resultsDBTableConfig,
 																	@Optional("1") String numH2ONodes,
-																	@Optional("h2o-3/h2o-test-accuracy/src/test/resources/accuracyDataSets.csv")
+																	@Optional("h2o-test-accuracy/src/test/resources/accuracyDataSets.csv")
 																	String dataSetsCSVPath,
-																	@Optional("h2o-3/h2o-test-accuracy/src/test/resources/accuracyTestCases.csv")
+																	@Optional("h2o-test-accuracy/src/test/resources/accuracyTestCases.csv")
 																	String testCasesCSVPath,
 																	@Optional("") String testCasesFilterString)
 	{
