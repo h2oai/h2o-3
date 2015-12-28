@@ -87,7 +87,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   @Override public B fillImpl(B impl) {
     super.fillImpl(impl);
     parameters.fillImpl(impl._parms);
-    impl.init(false);
+    impl.init(false); // validate parameters
     return impl;
   }
 
