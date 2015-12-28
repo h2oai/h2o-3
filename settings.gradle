@@ -38,5 +38,5 @@ if (System.getProperty("user.name").equals("jenkins")
 }
 
 include 'h2o-test-integ'
-include 'h2o-testng'
+include 'h2o-test-accuracy'
 

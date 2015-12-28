@@ -399,7 +399,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.Loss loss;
 
-    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, level = API.Level.secondary, gridable = true)
+    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "huber" }, level = API.Level.secondary, gridable = true)
     public Distribution.Family distribution;
 
     @API(help = "Tweedie Power", level = API.Level.secondary)
