@@ -11,7 +11,8 @@ dependencies {
 }
 
 test {
-    enabled = true
+    def accuracyTestingSuiteEnabled = rootProject.hasProperty("accuracyTestingSuite")
+    enabled = accuracyTestingSuiteEnabled
 
     //if () { jvmArgs('-ea',"-Xmx${testNGXmx}", "-Xms${testNGXmx}") }
 
