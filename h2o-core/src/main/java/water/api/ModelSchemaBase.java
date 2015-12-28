@@ -40,7 +40,7 @@ public class ModelSchemaBase<M extends Model, S extends Schema<M, S>> extends Sc
   public ModelSchemaBase(Model m) {
     super();
     this.model_id = new ModelKeyV3(m._key);
-    this.algo = m._parms.algoName();
+    this.algo = m._parms.algoName().toLowerCase();
     this.algo_full_name = m._parms.fullName();
     this.data_frame = new FrameKeyV3(m._parms._train);
     this.response_column_name = m._parms._response_column;

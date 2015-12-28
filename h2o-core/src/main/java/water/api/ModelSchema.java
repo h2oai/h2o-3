@@ -63,7 +63,7 @@ public abstract class ModelSchema<M extends Model<M, P, O>,
 
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {
-    this.algo = m._parms.algoName();
+    this.algo = m._parms.algoName().toLowerCase();
     this.algo_full_name = m._parms.fullName();
     // Key<? extends Model> k = m._key;
     this.model_id = new ModelKeyV3(m._key);
