@@ -55,7 +55,7 @@ public class TestUtil extends Iced {
       for( Key k : H2O.localKeySet() ) {
         water.Value value = Value.STORE_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST || k == AutoML.MODELLIST ||
+        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST || k == AutoML.MODELLIST || // FIXME: modified from the original in h2o-3 repo
                 // Also leave around all attempted Jobs for the Jobs list
                 (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
