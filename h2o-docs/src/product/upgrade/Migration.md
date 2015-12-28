@@ -214,13 +214,14 @@ H2O Classic  | H2O 3.0
 `data,` | `training_frame,`
 `key = "",` | `model_id,` 
 &nbsp; | `checkpoint`
-`distribution = 'multinomial',` | `distribution = c("AUTO",
-"gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),` 
+`distribution = 'multinomial',` | `distribution = c("AUTO", "gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),` 
 &nbsp; | `tweedie_power = 1.5,`
 `n.trees = 10,` | `ntrees = 50`
 `interaction.depth = 5,` | `max_depth = 5,` 
 `n.minobsinnode = 10,` | `min_rows = 10,` 
-`shrinkage = 0.1,` | `learn_rate = 0.1,` 
+`shrinkage = 0.1,` | `learn_rate = 0.1,`
+&nbsp; | `sample_rate = 1`
+&nbsp; | `col_sample_rate = 1` 
 `n.bins = 20,`| `nbins = 20,` 
 &nbsp; | `nbins_top_level,`
 &nbsp; | `nbins_cats = 1024,`
@@ -498,15 +499,16 @@ H2O Classic  | H2O 3.0
 `hidden,` | `hidden= c(200, 200),`
 `epochs,` | `epochs = 10.0,`
 `train_samples_per_iteration,` |`train_samples_per_iteration = -2,`
+&nbsp; | `target_ratio_comm_to_comp = 0.05`
 `seed,` | `_seed,` 
 `adaptive_rate,` | `adaptive_rate = true,` 
 `rho,` | `rho = 0.99,` 
-`epsilon,` | `epsilon = 1e-8,` 
+`epsilon,` | `epsilon = 1e-08,` 
 `rate,` | `rate = .005,` 
-`rate_annealing,` | `rate_annealing = 1e-6,` 
+`rate_annealing,` | `rate_annealing = 1e-06,` 
 `rate_decay,` | `rate_decay = 1.0,` 
 `momentum_start,` | `momentum_start = 0,`
-`momentum_ramp,` | `momentum_ramp = 1e6,`
+`momentum_ramp,` | `momentum_ramp = 1e+06,`
 `momentum_stable,` | `momentum_stable = 0,` 
 `nesterov_accelerated_gradient,` | `nesterov_accelerated_gradient = true,`
 `input_dropout_ratio,` | `input_dropout_ratio = 0.0,` 
@@ -517,9 +519,7 @@ H2O Classic  | H2O 3.0
 `initial_weight_distribution,` | `initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
 `initial_weight_scale,` | `initial_weight_scale = 1.0,`
 `loss,` | `loss = "Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"),`
-&nbsp; | ` distribution = c("AUTO",
-"gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
-"laplace", "huber"),`
+&nbsp; | `distribution = c("AUTO", "gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber"),`
 &nbsp; | `tweedie_power = 1.5,`
 `score_interval,` | `score_interval = 5,` 
 `score_training_samples,` | `score_training_samples = 10000l,` 
@@ -528,8 +528,7 @@ H2O Classic  | H2O 3.0
 `classification_stop,` | `classification_stop = 0`
 `regression_stop,` | `regression_stop = 1e-6,`
 &nbsp; | `stopping_rounds = 5,`
-&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2",
-"misclassification"),`
+&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),`
 &nbsp; | `stopping_tolerance = 0,`
 `quiet_mode,` | `quiet_mode = false,`
 `max_confusion_matrix_size,` | `max_confusion_matrix_size,`

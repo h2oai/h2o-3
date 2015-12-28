@@ -118,25 +118,38 @@ H2O Classic  | H2O 3.0
 `y,` |`y,` 
 `data,` | `training_frame,`
 `key = "",` | `model_id,` 
-`distribution = 'multinomial',` | `distribution = c("bernoulli", "multinomial", "gaussian"),` 
+&nbsp; | `checkpoint`
+`distribution = 'multinomial',` | `distribution = c("AUTO", "gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie"),` 
+&nbsp; | `tweedie_power = 1.5,`
 `n.trees = 10,` | `ntrees = 50`
 `interaction.depth = 5,` | `max_depth = 5,` 
 `n.minobsinnode = 10,` | `min_rows = 10,` 
-`shrinkage = 0.1,` | `learn_rate = 0.1,` 
+`shrinkage = 0.1,` | `learn_rate = 0.1,`
+&nbsp; | `sample_rate = 1`
+&nbsp; | `col_sample_rate = 1` 
 `n.bins = 20,`| `nbins = 20,` 
+&nbsp; | `nbins_top_level,`
+&nbsp; | `nbins_cats = 1024,`
 `validation,` | `validation_frame = NULL,` 
 `balance.classes = FALSE` | `balance_classes = FALSE,` 
 `max.after.balance.size = 5,` | `max_after_balance_size = 1,` 
  &nbsp; | `seed,` 
  &nbsp; | `build_tree_one_node = FALSE,`
- &nbsp; | `score_each_iteration)`
+ &nbsp; | `nfolds = 0,`
+ &nbsp; | `fold_column = NULL,`
+ &nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+ &nbsp; | `keep_cross_validation_predictions = FALSE,`
+ &nbsp; | `score_each_iteration = FALSE,`
+ &nbsp; | `stopping_rounds = 0,`
+ &nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),`
+ &nbsp; | `stopping_tolerance = 0.001,`
+ &nbsp; | `offset_column = NULL,`
+ &nbsp; | `weights_column = NULL,`
 `group_split = TRUE,` | 
 `importance = FALSE,` | 
-`nfolds = 0,` | 
 `holdout.fraction = 0,` | 
 `class.sampling.factors = NULL,` | 
 `grid.parallelism = 1)` | 
-
 
 ###Output
 
@@ -370,7 +383,7 @@ The following options for the `loss` parameter have been added:
 
 H2O Classic  | H2O 3.0 
 ------------- | -------------
-`h2o.deeplearning <- function(x,` | `h2o.deeplearning <- function(x, `
+`h2o.deeplearning <- function(x,` | `h2o.deeplearning (x, `
 `y,` | `y,`
 `data,` | `training_frame,` 
 `key = "",` | `model_id = "",`
@@ -386,15 +399,16 @@ H2O Classic  | H2O 3.0
 `hidden,` | `hidden= c(200, 200),`
 `epochs,` | `epochs = 10.0,`
 `train_samples_per_iteration,` |`train_samples_per_iteration = -2,`
+&nbsp; | `target_ratio_comm_to_comp = 0.05`
 `seed,` | `_seed,` 
 `adaptive_rate,` | `adaptive_rate = true,` 
 `rho,` | `rho = 0.99,` 
-`epsilon,` | `epsilon = 1e-8,` 
+`epsilon,` | `epsilon = 1e-08,` 
 `rate,` | `rate = .005,` 
-`rate_annealing,` | `rate_annealing = 1e-6,` 
+`rate_annealing,` | `rate_annealing = 1e-06,` 
 `rate_decay,` | `rate_decay = 1.0,` 
 `momentum_start,` | `momentum_start = 0,`
-`momentum_ramp,` | `momentum_ramp = 1e6,`
+`momentum_ramp,` | `momentum_ramp = 1e+06,`
 `momentum_stable,` | `momentum_stable = 0,` 
 `nesterov_accelerated_gradient,` | `nesterov_accelerated_gradient = true,`
 `input_dropout_ratio,` | `input_dropout_ratio = 0.0,` 
@@ -404,13 +418,18 @@ H2O Classic  | H2O 3.0
 `max_w2,` | `max_w2 = Inf,`
 `initial_weight_distribution,` | `initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
 `initial_weight_scale,` | `initial_weight_scale = 1.0,`
-`loss,` | `loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
+`loss,` | `loss = "Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"),`
+&nbsp; | `distribution = c("AUTO", "gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber"),`
+&nbsp; | `tweedie_power = 1.5,`
 `score_interval,` | `score_interval = 5,` 
 `score_training_samples,` | `score_training_samples = 10000l,` 
 `score_validation_samples,` | `score_validation_samples = 0l,`
 `score_duty_cycle,` | `score_duty_cycle = 0.1,` 
 `classification_stop,` | `classification_stop = 0`
 `regression_stop,` | `regression_stop = 1e-6,`
+&nbsp; | `stopping_rounds = 5,`
+&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),`
+&nbsp; | `stopping_tolerance = 0,`
 `quiet_mode,` | `quiet_mode = false,`
 `max_confusion_matrix_size,` | `max_confusion_matrix_size,`
 `max_hit_ratio_k,` | `max_hit_ratio_k,`
@@ -428,12 +447,19 @@ H2O Classic  | H2O 3.0
 `shuffle_training_data,` | `shuffle_training_data = false,`
 `sparse,` | `sparse = false,` 
 `col_major,` | `col_major = false,`
-`max_categorical_features,` | `max_categorical_features = Integer.MAX_VALUE,`
+`max_categorical_features,` | `max_categorical_features,`
 `reproducible)` | `reproducible=FALSE,` 
 `average_activation` | `average_activation = 0,`
  &nbsp; | `sparsity_beta = 0`
- &nbsp; | `export_weights_and_biases=FALSE)`
-
+ &nbsp; | `export_weights_and_biases=FALSE,`
+ &nbsp; | `offset_column = NULL,` 
+ &nbsp; | `weights_column = NULL,`
+ &nbsp; | `nfolds = 0,`
+ &nbsp; | `fold_column = NULL,`
+ &nbsp; | `fold_assignment = c("AUTO", "Random", "Modulo"),`
+ &nbsp; | `keep_cross_validation_predictions = FALSE)`
+ 
+ 
 ###Output
 
 
