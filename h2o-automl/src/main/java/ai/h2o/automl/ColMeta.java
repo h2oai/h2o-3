@@ -3,13 +3,9 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.guessers.ColNameScanner;
 import ai.h2o.automl.guessers.ProblemTypeGuesser;
-import sun.misc.Unsafe;
+import hex.tree.DHistogram;
 import water.Iced;
-import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.Vec;
-import water.nbhm.UtilUnsafe;
-import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -22,32 +18,44 @@ public class ColMeta extends Iced {
   public final byte _nameType;  // guessed at by ColNameScanner
   public final String _name;
   public final int _idx;
-
   public boolean _ignored;  // should this column be ignored outright
   public boolean _response; // is this a response column?
+  public double _percentNA;  // fraction of NAs in the column
+  private boolean _isClassification;
 
-  // FIRST PASS
+  /**
+   * Meta data collected on the first pass over this column.
+   *
+   * This is done by computing a very coarse histogram (~500 bins) for numeric vectors,
+   * and building a table of occurrences for enum/string vectors (see NB below).
+   *
+   * Additionally, the time it takes to MRTask over the column is collected and stored.
+   * This will be helpful in understanding the time it takes to build DTree instances in
+   * the tree-based models.
+   *
+   * NB: For any table'ing done on a vec, there's a limit of 10K uniques before a more
+   * efficient (i.e., MDowle-style radix sort) scheme should be engaged.
+   */
 
   // (discussion) need to have guardrails around data and possibly some warning or error
   // about data that doesn't fit the distribution that was trained. Will want to compare
   // histos from training and testing data to see if they "match". WTM
-  public DynamicHisto _histo;
+  public DHistogram _histo;
   public long _timeToMRTask;
-  public double _percentNA;  // fraction of NAs in the column
   public SpecialNA _specialNAs; // found special NAs like 9999 or -1 or 0
-  private boolean _isClassification;
-
+  public double _thirdMoment;     // used for skew/kurtosis; NaN if not numeric
+  public double _fourthMoment;    // used for skew/kurtosis; NaN if not numeric
+  public double _kurtosis;
+  public double _skew;
 
   // SECOND PASS
   // https://0xdata.atlassian.net/browse/STEAM-41 --column metadata to gather
   public long _numUniq;
-  public double _numUniqPerChunk;
+  public double _avgUniqPerChk;   // number of uniques per chunk divided by number of chunks
 
-  public boolean  _chunksMonotonicallyIncreasing;  //
+  public boolean  _chunksMonotonicallyIncreasing;  // indicates some week ordering in the dataset (by this column)
   public double[] _chkBndries;                     // boundary values for each chunk [c1.min, c1.max, c2.min, c2.max, ...]; only for numeric vecs
 
-  public double _kurtosis;
-  public double _skew;
   public double _median;
 
   // is this an ID?
@@ -91,9 +99,13 @@ public class ColMeta extends Iced {
 
     byte _type;
     int _idx;
-    private static final byte INT=0;
-    private static final byte DBL=1;
-    private static final byte STR=2;
+    public static final byte INT=0;
+    public static final byte DBL=1;
+    public static final byte STR=2;
+
+    String typeToString() {
+      return _type==INT ? "int" : (_type==DBL ? "double" : "String");
+    }
 
     SpecialNA(byte type) {
       _type=type;
@@ -106,6 +118,7 @@ public class ColMeta extends Iced {
     }
 
     public void add(int val) {
+      assert _type==INT : "type was " + typeToString() + "; expected int";
       synchronized (this) {
         if( _idx==_ints.length )
           _ints = Arrays.copyOf(_ints, _idx >> 1);
@@ -113,6 +126,7 @@ public class ColMeta extends Iced {
       }
     }
     public void add(double val) {
+      assert _type==DBL : "type was " + typeToString() + "; expected double";
       synchronized (this) {
         if( _idx==_ints.length )
           _dbls = Arrays.copyOf(_dbls, _idx >> 1);
@@ -120,91 +134,12 @@ public class ColMeta extends Iced {
       }
     }
     public void add(String val) {
+      assert _type==STR : "type was " + typeToString() + "; expected String";
       synchronized (this) {
         if( _idx==_ints.length )
           _strs = Arrays.copyOf(_strs, _idx >> 1);
         _strs[_idx++]=val;
       }
-    }
-  }
-
-  // folds together ideas from ASTHist and DHistogram
-  public static class DynamicHisto extends Iced {
-
-  }
-
-  private static class HistTask extends MRTask<HistTask> {
-    final private double _h;      // bin width
-    final private double _x0;     // far left bin edge
-    final private double[] _min;  // min for each bin, updated atomically
-    final private double[] _max;  // max for each bin, updated atomically
-    // unsafe crap for mins/maxs of bins
-    private static final Unsafe U = UtilUnsafe.getUnsafe();
-    // double[] offset and scale
-    private static final int _dB = U.arrayBaseOffset(double[].class);
-    private static final int _dS = U.arrayIndexScale(double[].class);
-    private static long doubleRawIdx(int i) { return _dB + _dS * i; }
-    // long[] offset and scale
-    private static final int _8B = U.arrayBaseOffset(long[].class);
-    private static final int _8S = U.arrayIndexScale(long[].class);
-    private static long longRawIdx(int i)   { return _8B + _8S * i; }
-
-    // out
-    private final double[] _breaks;
-    private final long  [] _counts;
-    private final double[] _mids;
-
-    HistTask(double[] cuts, double h, double x0) {
-      _breaks=cuts;
-      _min=new double[_breaks.length-1];
-      _max=new double[_breaks.length-1];
-      _counts=new long[_breaks.length-1];
-      _mids=new double[_breaks.length-1];
-      _h=h;
-      _x0=x0;
-    }
-    @Override public void map(Chunk c) {
-      // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
-      for( int i = 0; i < c._len; ++i ) {
-        int x=1;
-        if( c.isNA(i) ) continue;
-        double r = c.atd(i);
-        if( _h==-1 ) {
-          for(; x < _counts.length; x++)
-            if( r <= _breaks[x] ) break;
-          x--; // back into the bin where count should go
-        } else
-          x = Math.min( _counts.length-1, (int)Math.floor( (r-_x0) / _h ) );     // Pick the bin   floor( (x - x0) / h ) or ceil( (x-x0)/h - 1 ), choose the first since fewer ops
-        bumpCount(x);
-        setMinMax(Double.doubleToRawLongBits(r),x);
-      }
-    }
-    @Override public void reduce(HistTask t) {
-      if(_counts!=t._counts) ArrayUtils.add(_counts, t._counts);
-      for(int i=0;i<_mids.length;++i) {
-        _min[i] = t._min[i] < _min[i] ? t._min[i] : _min[i];
-        _max[i] = t._max[i] > _max[i] ? t._max[i] : _max[i];
-      }
-    }
-    @Override public void postGlobal() { for(int i=0;i<_mids.length;++i) _mids[i] = 0.5*(_max[i] + _min[i]); }
-
-    private void bumpCount(int x) {
-      long o = _counts[x];
-      while(!U.compareAndSwapLong(_counts,longRawIdx(x),o,o+1))
-        o=_counts[x];
-    }
-    private void setMinMax(long v, int x) {
-      double o = _min[x];
-      double vv = Double.longBitsToDouble(v);
-      while( vv < o && U.compareAndSwapLong(_min,doubleRawIdx(x),Double.doubleToRawLongBits(o),v))
-        o = _min[x];
-      setMax(v,x);
-    }
-    private void setMax(long v, int x) {
-      double o = _max[x];
-      double vv = Double.longBitsToDouble(v);
-      while( vv > o && U.compareAndSwapLong(_min,doubleRawIdx(x),Double.doubleToRawLongBits(o),v))
-        o = _max[x];
     }
   }
 }
