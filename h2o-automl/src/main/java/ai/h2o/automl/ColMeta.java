@@ -2,7 +2,6 @@ package ai.h2o.automl;
 
 
 import ai.h2o.automl.guessers.ColNameScanner;
-import ai.h2o.automl.guessers.ProblemTypeGuesser;
 import hex.tree.DHistogram;
 import water.Iced;
 import water.fvec.Vec;
@@ -23,7 +22,6 @@ public class ColMeta extends Iced {
   public double _percentNA;     // fraction of NAs in the column
   public double _variance;      // variance of the column, pulled from the vec
   public double _sigma;         // pulled from vec rollups
-  private boolean _isClassification;
 
   /**
    * Meta data collected on the first pass over this column.
@@ -83,15 +81,8 @@ public class ColMeta extends Iced {
     );
     _percentNA = (double)v.naCnt() / (double)v.length();
     _ignored = v.isConst() || v.isString() || v.isBad() || v.isUUID(); // auto ignore from the outset
-    if( _response )
-      _isClassification = ProblemTypeGuesser.guess(v);
     _sigma=v.sigma();
     _variance=_sigma*_sigma;
-  }
-
-  public boolean isClassification() {
-    if( !_response ) throw new UnsupportedOperationException("not a response column");
-    return _isClassification;
   }
 
   // stupid wrapper class for possibly special types of NAs; things like 999999 or -1 or 0

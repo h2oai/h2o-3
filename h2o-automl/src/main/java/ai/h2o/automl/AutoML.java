@@ -22,7 +22,7 @@ public final class AutoML {
   private final long _maxTime;           // maximum amount of time allotted to automl
   private final double _minAcc;          // minimum accuracy to achieve
   private final boolean _ensemble;       // allow ensembles?
-  private final models[] _modelEx;       // model types to exclude; e.g. don't allow DL whatsoever
+  private final models[] _modelEx;       // model types to exclude; e.g. don't allow DL
   private final boolean _allowMutations; // allow for INPLACE mutations on input frame
   FrameMeta _fm;                         // metadata for _fr
   private boolean _isClassification;
@@ -60,7 +60,7 @@ public final class AutoML {
 
     // step 1: gather initial frame metadata and guess the problem type
     _fm = new FrameMeta(_fr, _response).computeFrameMetaPass1();
-    _isClassification = _fm.response().isClassification();
+    _isClassification = _fm.isClassification();
 
     // step 2: build a fast RF
     ModelBuilder initModel = selectInitial(_fm);
@@ -86,16 +86,7 @@ public final class AutoML {
   static class ModelList extends Keyed {
     Key<Model>[] _models;
     ModelList() { super(MODELLIST); _models = new Key[0]; }
-    private ModelList(Key<Model>[] models) { super(MODELLIST); _models = models; }
     @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelList"); }
-  }
-
-  public static final Key<Model> LEADER = Key.make(" AutoMLModelLeader ", (byte) 0, (byte) 2, false);
-  static class ModelLeader extends Keyed {
-    Key _leader;
-    ModelLeader() { super(LEADER); _leader = null; }
-    private ModelLeader(Key leader) { super(LEADER); _leader = leader; }
-    @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelLeader"); }
   }
 
   static Model[] models() {
@@ -112,6 +103,13 @@ public final class AutoML {
     return models;
   }
 
+  public static final Key<Model> LEADER = Key.make(" AutoMLModelLeader ", (byte) 0, (byte) 2, false);
+  static class ModelLeader extends Keyed {
+    Key _leader;
+    ModelLeader() { super(LEADER); _leader = null; }
+    @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelLeader"); }
+  }
+
   static Model leader() {
     final Value val = DKV.get(LEADER);
     if( val==null ) return null;
@@ -119,6 +117,28 @@ public final class AutoML {
     final Value model = DKV.get(ml._leader);
     assert model!=null; // if the LEADER is in the DKV, then there better be a model!
     return model.get();
+  }
+
+  private void updateLeader(Model m) {
+    Model leader = leader();
+    final Key leaderKey;
+    if (leader == null) leaderKey = m._key;
+    else {
+      // compare leader to m; get the key that minimizes this._loss
+      leaderKey = leader._key;
+    }
+
+    // update the leader if needed
+    if (leader == null || leaderKey.equals(leader._key) ) {
+      new TAtomic<ModelLeader>() {
+        @Override
+        public ModelLeader atomic(ModelLeader old) {
+          if (old == null) old = new ModelLeader();
+          old._leader = leaderKey;
+          return old;
+        }
+      }.invoke(LEADER);
+    }
   }
 
   // all model builds by AutoML call into this
@@ -138,27 +158,5 @@ public final class AutoML {
 
     updateLeader(m);
     return m;
-  }
-
-  private void updateLeader(Model m) {
-    Model leader = leader();
-    final Key leaderKey;
-    if (leader == null) leaderKey = m._key;
-    else {
-      // compare leader to m and get the key
-      leaderKey = leader._key;
-    }
-
-    // update the leader if needed
-    if (leader == null || leaderKey.equals(leader._key) ) {
-      new TAtomic<ModelLeader>() {
-        @Override
-        public ModelLeader atomic(ModelLeader old) {
-          if (old == null) old = new ModelLeader();
-          old._leader = leaderKey;
-          return old;
-        }
-      }.invoke(LEADER);
-    }
   }
 }
