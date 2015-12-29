@@ -1284,6 +1284,20 @@ For an example of how to extract weights and biases from a model, refer to the f
 
 ---
 
+**How do I extract the run time of my model as output?**
+
+
+For the following example: 
+
+```
+out.h2o.rf = h2o.randomForest( x=c("x1", "x2", "x3", "w"), y="y", training_frame=h2o.df.train, seed=555, model_id= "my.model.1st.try.out.h2o.rf" )
+```
+
+Use `out.h2o.rf@model$run_time` to determine the value of the `run_time` variable. 
+
+
+---
+
 **I'm using CentOS and I want to run H2O in R - are there any dependencies I need to install?**
 
 Yes, make sure to install `libcurl`, which allows H2O to communicate with R. We also recommend disabling SElinux and any firewalls, at least initially until you have confirmed H2O can initialize. 
