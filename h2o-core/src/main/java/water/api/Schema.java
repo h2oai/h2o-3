@@ -140,7 +140,7 @@ import java.util.regex.Pattern;
  * @see water.api.API
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
-  private transient Class<I> _impl_class = getImplClass(); // see getImplClass()
+  private transient Class<I> _impl_class;
   private static final int HIGHEST_SUPPORTED_VERSION = 3;
   private static final int EXPERIMENTAL_VERSION = 99;
 
@@ -246,9 +246,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   public Schema() {
     String name = this.getClass().getSimpleName();
     int version = extractVersion(name);
-    String type = _impl_class.getSimpleName();
-
-    __meta = new Meta(version, name, type);
+    String type = getImplClass().getSimpleName();
+    init_meta();
 
     if (null == schema_to_iced.get(name)) {
       Log.debug("Registering schema: " + name + " schema_version: " + version + " with Iced class: " + _impl_class.toString());
@@ -267,6 +266,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         iced_to_schema.put(versioned, this.getClass());
       }
     }
+  }
+
+  void init_meta() {
+    if( __meta != null ) return;
+    String name = this.getClass().getSimpleName();
+    int version = extractVersion(name);
+    String type = getImplClass().getSimpleName();
+    __meta = new Meta(version, name, type);
   }
 
   private static Pattern _version_pattern = null;
@@ -452,15 +459,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return impl_class;
   }
 
-  /** Return the class of the implementation type parameter I for this Schema.  Used by generic code which deals with arbitrary schemas and their backing impl classes. */
+  /** Return the class of the implementation type parameter I for this Schema.
+   *  Used by generic code which deals with arbitrary schemas and their backing
+   *  impl classes.  Returns null if class is missing (generally a fatal error). */
   public Class<I> getImplClass() {
-    if (null == _impl_class)
-      _impl_class = (Class<I>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
-
-    if (null == _impl_class)
-      Log.warn("Failed to find an impl class for Schema: " + this.getClass());
-
-    return _impl_class;
+    return _impl_class != null ? _impl_class : (_impl_class = (Class<I>) ReflectionUtils.findActualClassParameter(this.getClass(), 0));
   }
 
   /**

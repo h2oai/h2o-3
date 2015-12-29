@@ -1,11 +1,9 @@
 package water.api;
 
 import hex.ModelBuilder;
-import water.H2O;
 import water.TypeMap;
 import water.util.MarkdownBuilder;
 
-import java.lang.reflect.Modifier;
 import java.util.Map;
 
 /*
@@ -66,14 +64,27 @@ public class MetadataHandler extends Handler {
       String algoJavaName = ModelBuilder.algoJavaName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
       String inputSchemaName = "hex.schemas."+algoJavaName+"V"+version;  // hex.schemas.GBMV3
       sinput = (Schema)TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
+      sinput.init_meta();
       // hex.schemas.GBMModelV3$GBMModelOutputV3
       String outputSchemaName = "hex.schemas."+algoJavaName+"ModelV"+version+"$"+algoJavaName+"ModelOutputV"+version;
       soutput= (Schema)TypeMap.theFreezable(TypeMap.onIce(outputSchemaName));
+      soutput.init_meta();
     } else {
       sinput  = Schema.newInstance(Handler.getHandlerMethodInputSchema (route._handler_method));
       soutput = Schema.newInstance(Handler.getHandlerMethodOutputSchema(route._handler_method));
     }
     docs.routes[0].markdown = route.markdown(sinput,soutput).toString();
+    return docs;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  @Deprecated
+  /** Fetch the metadata for a Schema by its full internal classname, e.g. "hex.schemas.DeepLearningV2.DeepLearningParametersV2".  TODO: Do we still need this? */
+  public MetadataV3 fetchSchemaMetadataByClass(int version, MetadataV3 docs) {
+    docs.schemas = new SchemaMetadataBase[1];
+    // NOTE: this will throw an exception if the classname isn't found:
+    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(SchemaMetadata.createSchemaMetadata(docs.classname));
+    docs.schemas[0] = meta;
     return docs;
   }
 

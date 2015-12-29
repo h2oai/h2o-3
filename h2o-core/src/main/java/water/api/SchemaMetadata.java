@@ -395,4 +395,17 @@ public final class SchemaMetadata extends Iced {
     }
     return fields;
   }
+
+  public static SchemaMetadata createSchemaMetadata(String classname) throws IllegalArgumentException {
+    try {
+      Class<? extends Schema> clz = (Class<? extends Schema>) Class.forName(classname);
+      Schema s = clz.newInstance();
+      return new SchemaMetadata(s);
+    }
+    catch (Exception e) {
+      String msg = "Caught exception fetching schema: " + classname + ": " + e;
+      Log.warn(msg);
+      throw new IllegalArgumentException(msg);
+    }
+  }
 }
