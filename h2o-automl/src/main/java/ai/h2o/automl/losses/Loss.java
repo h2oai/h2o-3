@@ -13,7 +13,7 @@ public abstract class Loss extends Iced {
       for( int row=0; row<cs[0]._len; ++row)
         _loss += perRow(cs[0 /*predicted*/], cs[1/*actual*/], row)*(cs.length>2 ? cs[2 /*weight*/].atd(row) : 1);
     }
-    @Override public void reduce(LossTask t) { _loss+=t._lo; }
+    @Override public void reduce(LossTask t) { _loss+=t._loss; }
   }
 
   // weighted thing is that you could "drop out" a loser prediction

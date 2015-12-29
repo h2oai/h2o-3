@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.collectors.MetaCollector;
+import ai.h2o.automl.guessers.ProblemTypeGuesser;
 import hex.tree.DHistogram;
 import water.H2O;
 import water.Iced;
@@ -19,7 +20,9 @@ import java.util.ArrayList;
 public class FrameMeta extends Iced {
   final Frame _fr;
   private final int _response;
-  ColMeta[] _cols;
+  private ColMeta[] _cols;
+
+  private boolean _isClassification;
 
   // cached things
   private String[] _ignoredCols;
@@ -29,6 +32,8 @@ public class FrameMeta extends Iced {
     _response=response;
     _cols = new ColMeta[_fr.numCols()];
   }
+
+  public boolean isClassification() { return _isClassification; }
 
   public String[] ignoredCols() {  // publishes private field
     if( _ignoredCols==null ) {
@@ -49,7 +54,7 @@ public class FrameMeta extends Iced {
     MetaPass1[] tasks = new MetaPass1[_fr.numCols()];
     for(int i=0; i<tasks.length; ++i)
       tasks[i] = new MetaPass1(i==_response, _fr.vec(i), _fr.name(i), i);
-
+    _isClassification = tasks[_response]._isClassification;
     MetaCollector.ParallelTasks metaCollector = new MetaCollector.ParallelTasks<>(tasks);
     H2O.submitTask(metaCollector).join();
     for(MetaPass1 cmt: tasks)
@@ -58,17 +63,20 @@ public class FrameMeta extends Iced {
   }
 
   private static class MetaPass1 extends H2O.H2OCountedCompleter<MetaPass1> {
-    private final boolean _response;  // compute class distribution & more granular histo
-    private final double _mean;       // mean of the column, passed
-    private final ColMeta _colMeta;   // result; also holds onto the DHistogram
-    private long _elapsed;            // time to mrtask
+    private final boolean _response;   // compute class distribution & more granular histo
+    private boolean _isClassification; // is this a classification problem?
+    private final double _mean;        // mean of the column, passed
+    private final ColMeta _colMeta;    // result; also holds onto the DHistogram
+    private long _elapsed;             // time to mrtask
 
     static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
     public MetaPass1(boolean response, Vec v, String colname, int idx) {
       _mean = v.mean();
       _colMeta = new ColMeta(v, colname, idx, _response=response);
-      int nbins = (int)Math.ceil( 1 + log2(v.length()));  // Sturges nbins
+      int nbins = (int)Math.ceil(1 + log2(v.length()));  // Sturges nbins
       _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
+      if( _response )
+        _isClassification = ProblemTypeGuesser.guess(v);
     }
 
     public ColMeta meta() { return _colMeta; }
