@@ -140,7 +140,7 @@ Then import the data with the S3 URL path:
 
   - To import the data from the Flow API:
 
-        importFiles [ "s3n://bucket/path/to/file.csv" ]
+        importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ] 
 
   - To import the data from the R API:
   

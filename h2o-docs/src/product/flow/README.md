@@ -220,6 +220,7 @@ There are multiple ways to import data in H2O flow:
  ![Flow - Import Files Auto-Suggest](images/Flow_Import_AutoSuggest.png)
  
 - In a blank cell, select the CS format, then enter `importFiles ["path/filename.format"]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
+  >**Note**: For S3 file locations, use the format `importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ]`
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
 ![Import Files](images/Flow_import.png)
