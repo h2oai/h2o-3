@@ -74,6 +74,7 @@ public final class AutoML {
   public void delete() {
     for(Model m: models()) m.delete();
     DKV.remove(MODELLIST);
+    DKV.remove(LEADER);
   }
 
   private ModelBuilder selectInitial(FrameMeta fm) {  // may use _isClassification so not static method
