@@ -526,6 +526,19 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     return fs;
   }
 
+  void blockTillNoReaders( ) {
+    assert _key.home(); // Only the HOME node for a key tracks replicas
+    // Write-Lock against further GETs
+    while( true ) {      // Repeat, in case racing GETs are bumping the counter
+      int old = _rwlock.get();
+      assert old >= 0 : _key+", rwlock="+old;  // Count does not go negative
+      assert old != -1; // Only the thread doing a PUT ever locks
+      if( old ==0 ) return;
+      // Active readers: need to block until the GETs (of this very Value!) all complete
+      try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
+    }
+  }
+
   /** Initialize the _replicas field for a PUT.  On the Home node (for remote
    *  PUTs), it is initialized to the one replica we know about, and not
    *  read-locked.  Used on a new Value about to be PUT on the Home node. */

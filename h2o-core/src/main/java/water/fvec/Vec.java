@@ -1272,15 +1272,14 @@ public class Vec extends Keyed<Vec> {
     //
     // Element-start per chunk.  Always zero for chunk 0.  One more entry than
     // chunks, so the last entry is the total number of rows.
-    public long[][] _espcs;
+    public final long[][] _espcs;
 
-    private ESPC(Key key) { this(key,new long[0][]); }
     private ESPC(Key key, long[][] espcs) { super(key); _espcs = espcs;}
     // Fetch from the local cache
     private static ESPC getLocal( Key kespc ) {
       ESPC local = ESPCS.get(kespc);
       if( local != null ) return local;
-      ESPCS.putIfAbsent(kespc,new ESPC(kespc)); // Racey, not sure if new or old is returned
+      ESPCS.putIfAbsent(kespc,new ESPC(kespc,new long[0][])); // Racey, not sure if new or old is returned
       return ESPCS.get(kespc);
     }
 
@@ -1311,20 +1310,27 @@ public class Vec extends Keyed<Vec> {
         // arrays, but the *local* copies are heavily shared.  All copies are
         // equal, but using the same shared copies cuts down on copies.
         System.arraycopy(local._espcs, 0, remote._espcs, 0, local._espcs.length);
+        // Here 'remote' is larger than 'local' (but with a shared common prefix).
+        // Attempt to update local cache with the larger value
         ESPC res = ESPCS.putIfMatch(kespc,remote,local);  // Update local copy with larger
+        // if res==local, then update succeeded, table has 'remote' (the larger object).
+        if( res == local ) return remote;
+        // if res!=local, then update failed, and returned 'res' is probably
+        // larger than either remote or local
         local = res;
-        local_espcs = local ._espcs;
-        remote_espcs= remote._espcs;
+        local_espcs = res._espcs;
+        assert remote_espcs== remote._espcs; // unchanging final field
       }
     }
 
     /** Get the ESPC for a Vec.  Called once per new construction or read_impl.  */
     public static long[] espc( Vec v ) {
+      final int r = v._rowLayout;
+      if( r == -1 ) return null; // Never was any row layout
       // Check the local cache
       final Key kespc = espcKey(v._key);
       ESPC local = getLocal(kespc);
-      final int r = v._rowLayout;
-      if( r < local._espcs.length ) return r==-1 ? null : local._espcs[r];
+      if( r < local._espcs.length ) return local._espcs[r];
       // Now try to refresh the local cache from the remote cache
       final ESPC remote = getRemote( local, kespc);
       if( r < remote._espcs.length ) return remote._espcs[r];
