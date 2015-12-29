@@ -856,7 +856,7 @@ class Test:
 
     def _javascript_cmd(self, test_name, ip, port):
         return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to), "--packs",
-               g_phantomjs_packs]
+                g_phantomjs_packs]
 
     def _scrape_output_for_seed(self):
         """
@@ -891,7 +891,8 @@ class TestRunner:
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
-                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf):
+                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf,
+                 feature, feature_filter):
         """
         Create a runner.
 
@@ -961,23 +962,29 @@ class TestRunner:
         self.perf = perf
         self.perf_file = None
         self.exclude_list = []
+        self.feature = feature
+        self.feature_filter = feature_filter
 
-        if (use_cloud):
-            node_num = 0
-            cloud = H2OUseCloud(node_num, use_ip, use_port)
+        if (self.feature):
+            cloud = H2OUseCloud(1, "127.0.0.1", 54321)
             self.clouds.append(cloud)
-        elif (use_cloud2):
-            clouds = TestRunner.read_config(cloud_config)
-            node_num = 0
-            for c in clouds:
-                cloud = H2OUseCloud(node_num, c[0], c[1])
-                self.clouds.append(cloud)
-                node_num += 1
         else:
-            for i in range(self.num_clouds):
-                cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
-                                 self.output_dir)
+            if (use_cloud):
+                node_num = 0
+                cloud = H2OUseCloud(node_num, use_ip, use_port)
                 self.clouds.append(cloud)
+            elif (use_cloud2):
+                clouds = TestRunner.read_config(cloud_config)
+                node_num = 0
+                for c in clouds:
+                    cloud = H2OUseCloud(node_num, c[0], c[1])
+                    self.clouds.append(cloud)
+                    node_num += 1
+            else:
+                for i in range(self.num_clouds):
+                    cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
+                                     self.output_dir)
+                    self.clouds.append(cloud)
 
     @staticmethod
     def find_test(test_to_run):
@@ -1070,6 +1077,14 @@ class TestRunner:
             print("       (errno {0}): {1}".format(e.errno, e.strerror))
             print("")
             sys.exit(1)
+
+    def build_feature_test_list(self):
+        """
+        Construct the list of feature tests to run based upon the feature_filter.
+
+        :return: None
+        """
+        if (self.terminated): return
 
     def build_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass, nointernal):
         """
@@ -1825,6 +1840,8 @@ g_build_id = None
 g_job_name= None
 g_py3 = False
 g_pycoverage = False
+g_feature = False
+g_feature_filter = ""
 
 # globals added to support better reporting in xml files
 g_use_xml2 = False  # by default, use the original xml file output
@@ -1845,6 +1862,10 @@ g_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 g_machine_ip = socket.gethostbyname(socket.gethostname())
 g_ncpu = multiprocessing.cpu_count()
 g_os = platform.system()
+g_feature_test_csv = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                   "../h2o-test-feature/featureTestCases.csv"))
+g_feature_test_driver = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                      "../h2o-test-feature/featureTestSuite.R"))
 
 
 def use(x):
@@ -2052,6 +2073,8 @@ def parse_args(argv):
     global g_py3
     global g_pycoverage
     global g_use_xml2
+    global g_feature
+    global g_feature_filter
 
     i = 1
     while (i < len(argv)):
@@ -2211,6 +2234,13 @@ def parse_args(argv):
             g_job_name = argv[i]
         elif (s == "--geterrs"):
             g_use_xml2 = True
+        elif (s == "--feature"):
+            g_feature = True
+        elif (s == "--featurefilter"):
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_feature_filter = argv[i]
         else:
             unknown_arg(s)
 
@@ -2344,13 +2374,16 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf)
+                          testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf, g_feature,
+                          g_feature_filter)
 
     # Build test list.
     if (g_exclude_list_file is not None):
         g_runner.read_exclude_list_file(g_exclude_list_file)
 
-    if (g_test_to_run is not None):
+    if (g_feature):
+        g_runner.build_feature_test_list()
+    elif (g_test_to_run is not None):
         g_runner.add_test(g_test_to_run)
     elif (g_test_list_file is not None):
         g_runner.read_test_list_file(g_test_list_file)

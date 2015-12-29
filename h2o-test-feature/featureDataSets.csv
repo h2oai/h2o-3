@@ -1,0 +1,2 @@
+data_set_id,uri
+1,s3://h2o-public-test-data/smalldata/feature/cosine.csv
