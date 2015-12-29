@@ -62,9 +62,9 @@ final class Route extends Iced {
     builder.paragraph(_summary);
     // parameters and output tables
     builder.heading1("Input schema: ");
-    builder.append(sinput.markdown(null, true, false));
+    builder.append(sinput .markdown(true ,false));
     builder.heading1("Output schema: ");
-    builder.append(soutput.markdown(null, false, true));
+    builder.append(soutput.markdown(false, true));
     return builder.stringBuffer();
   }
 

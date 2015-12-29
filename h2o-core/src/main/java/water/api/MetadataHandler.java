@@ -78,17 +78,6 @@ public class MetadataHandler extends Handler {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  @Deprecated
-  /** Fetch the metadata for a Schema by its full internal classname, e.g. "hex.schemas.DeepLearningV2.DeepLearningParametersV2".  TODO: Do we still need this? */
-  public MetadataV3 fetchSchemaMetadataByClass(int version, MetadataV3 docs) {
-    docs.schemas = new SchemaMetadataBase[1];
-    // NOTE: this will throw an exception if the classname isn't found:
-    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(SchemaMetadata.createSchemaMetadata(docs.classname));
-    docs.schemas[0] = meta;
-    return docs;
-  }
-
-  @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Fetch the metadata for a Schema by its simple Schema name (e.g., "DeepLearningParametersV2"). */
   public MetadataV3 fetchSchemaMetadata(int version, MetadataV3 docs) {
     if ("void".equals(docs.schemaname)) {

@@ -989,23 +989,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * Generate Markdown documentation for this Schema possibly including only the input or output fields.
    * @throws H2ONotFoundArgumentException if reflection on a field fails
    */
-  public StringBuffer markdown(StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
-    return markdown(new SchemaMetadata(this), appendToMe, include_input_fields, include_output_fields);
-  }
-
-  /**
-   * Append Markdown documentation for another Schema, given we already have the metadata constructed.
-   * @throws H2ONotFoundArgumentException if reflection on a field fails
-   */
-  public StringBuffer markdown(SchemaMetadata meta, StringBuffer appendToMe) {
-    return markdown(meta, appendToMe, true, true);
+  public StringBuffer markdown(boolean include_input_fields, boolean include_output_fields) {
+    return markdown(new SchemaMetadata(this), include_input_fields, include_output_fields);
   }
 
   /**
    * Generate Markdown documentation for this Schema, given we already have the metadata constructed.
    * @throws H2ONotFoundArgumentException if reflection on a field fails
    */
-  public StringBuffer markdown(SchemaMetadata meta , StringBuffer appendToMe, boolean include_input_fields, boolean include_output_fields) {
+  public StringBuffer markdown(SchemaMetadata meta, boolean include_input_fields, boolean include_output_fields) {
     MarkdownBuilder builder = new MarkdownBuilder();
 
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
@@ -1082,11 +1074,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                                             "Caught exception using reflection on schema: " + this + ": " + e,
                                             values);
     }
-
-    if (null != appendToMe)
-      appendToMe.append(builder.stringBuffer());
-
     return builder.stringBuffer();
-  } // markdown()
-
+  }
 }
