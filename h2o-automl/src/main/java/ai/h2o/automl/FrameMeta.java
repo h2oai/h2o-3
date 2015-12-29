@@ -20,7 +20,7 @@ import java.util.ArrayList;
 public class FrameMeta extends Iced {
   final Frame _fr;
   private final int _response;
-  private ColMeta[] _cols;
+  ColMeta[] _cols;
 
   private boolean _isClassification;
 
