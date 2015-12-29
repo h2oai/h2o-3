@@ -54,44 +54,17 @@ final class Route extends Iced {
   /**
    * Generate Markdown documentation for this Route.
    */
-  public StringBuffer markdown(StringBuffer appendToMe) {
+  public StringBuffer markdown(Schema sinput, Schema soutput) {
     MarkdownBuilder builder = new MarkdownBuilder();
-
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
     builder.heading1(_http_method, _url_pattern_raw.replace("(?<", "{").replace(">.*)", "}"));
     builder.hline();
     builder.paragraph(_summary);
-
     // parameters and output tables
-    try {
-      builder.heading1("Input schema: ");
-      {
-        Class<? extends Schema> clz = Handler.getHandlerMethodInputSchema(_handler_method);
-        Schema s = Schema.newInstance(clz);
-        builder.append(s.markdown(null, true, false));
-      }
-
-      builder.heading1("Output schema: ");
-      {
-        Class<? extends Schema> clz = Handler.getHandlerMethodOutputSchema(_handler_method);
-
-          Schema s = Schema.newInstance(clz);
-
-          if (null == s)
-            throw H2O.fail("Call to Schema.newInstance(clz) failed for class: " + clz);
-
-          builder.append(s.markdown(null, false, true));
-      }
-
-      // TODO: render examples and other stuff, if it's passed in
-    }
-    catch (Exception e) {
-      throw H2O.fail("Caught exception using reflection on handler method: " + _handler_method + ": " + e);
-    }
-
-    if (null != appendToMe)
-      appendToMe.append(builder.stringBuffer());
-
+    builder.heading1("Input schema: ");
+    builder.append(sinput.markdown(null, true, false));
+    builder.heading1("Output schema: ");
+    builder.append(soutput.markdown(null, false, true));
     return builder.stringBuffer();
   }
 

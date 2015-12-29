@@ -1,7 +1,11 @@
 package water.api;
 
+import hex.ModelBuilder;
+import water.H2O;
+import water.TypeMap;
 import water.util.MarkdownBuilder;
 
+import java.lang.reflect.Modifier;
 import java.util.Map;
 
 /*
@@ -41,26 +45,35 @@ public class MetadataHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return the metadata for a REST API Route, specified either by number or path. */
   public MetadataV3 fetchRoute(int version, MetadataV3 docs) {
-    // DocsPojo docsPojo = docs.createAndFillImpl();
-
     Route route = null;
     if (null != docs.path && null != docs.http_method) {
       route = RequestServer.lookup(docs.http_method, docs.path);
     } else {
+      // Linear scan for the route, plus each route is asked for in-order
+      // during doc-gen leading to an O(n^2) execution cost.
       int i = 0;
-      for (Route r : RequestServer.routes()) {
-        if (i++ == docs.num) {
-          route = r;
-          break;
-        }
-      }
-
-      docs.routes = new RouteBase[null == route ? 0 : 1];
-      if (null != route) {
-        docs.routes[0] = (RouteBase)Schema.schema(version, Route.class).fillFromImpl(route);
-      }
+      for (Route r : RequestServer.routes())
+        if (i++ == docs.num) { route = r; break; }
+      // Crash-n-burn if route not found (old code thru an AIOOBE), so we
+      // something similarly bad.
+      docs.routes = new RouteBase[]{(RouteBase)Schema.schema(version, Route.class).fillFromImpl(route)};
     }
-    docs.routes[0].markdown = route.markdown(null).toString();
+
+    Schema sinput, soutput;
+    if( route._handler_class.equals(water.api.ModelBuilderHandler.class) ) {
+      String ss[] = route._url_pattern_raw.split("/");
+      String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
+      String algoJavaName = ModelBuilder.algoJavaName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
+      String inputSchemaName = "hex.schemas."+algoJavaName+"V"+version;  // hex.schemas.GBMV3
+      sinput = (Schema)TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
+      // hex.schemas.GBMModelV3$GBMModelOutputV3
+      String outputSchemaName = "hex.schemas."+algoJavaName+"ModelV"+version+"$"+algoJavaName+"ModelOutputV"+version;
+      soutput= (Schema)TypeMap.theFreezable(TypeMap.onIce(outputSchemaName));
+    } else {
+      sinput  = Schema.newInstance(Handler.getHandlerMethodInputSchema (route._handler_method));
+      soutput = Schema.newInstance(Handler.getHandlerMethodOutputSchema(route._handler_method));
+    }
+    docs.routes[0].markdown = route.markdown(sinput,soutput).toString();
     return docs;
   }
 
