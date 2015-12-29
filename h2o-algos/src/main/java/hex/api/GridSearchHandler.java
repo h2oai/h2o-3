@@ -40,13 +40,8 @@ public class GridSearchHandler<G extends Grid<MP>,
     MP extends Model.Parameters,
     P extends ModelParametersSchema> extends Handler {
 
-@SuppressWarnings("unused") // called through reflection by RequestServer
-  public void train(int version, S schema) {
-    throw H2O.unimpl();
-  }
-
-  public S do_train(int version,
-                    S gridSearchSchema) { // just following convention of model builders
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public S train(int version, S gridSearchSchema) {
     // Extract input parameters
     P parametersSchema = gridSearchSchema.parameters;
     // TODO: Verify algorithm inputs, make sure to reject wrong training_frame

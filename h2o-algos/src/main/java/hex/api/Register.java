@@ -23,8 +23,11 @@ public class Register extends water.api.AbstractRegister {
       String base = algo.getClass().getSimpleName();
       String lbase = base.toLowerCase();
       Class bh_clz = water.api.ModelBuilderHandler.class;
-      H2O.registerPOST("/3/ModelBuilders/"+lbase              , bh_clz, "train"              , "Train a "          +base+" model.");
-      H2O.registerPOST("/3/ModelBuilders/"+lbase+"/parameters", bh_clz, "validate_parameters", "Validate a set of "+base+" model builder parameters.");
+      int version = 3;
+      if( base.equals("SVD") ) version = 99;
+
+      H2O.registerPOST("/"+version+"/ModelBuilders/"+lbase              , bh_clz, "train"              , "Train a "          +base+" model.");
+      H2O.registerPOST("/"+version+"/ModelBuilders/"+lbase+"/parameters", bh_clz, "validate_parameters", "Validate a set of "+base+" model builder parameters.");
       // Grid search is experimental feature
       H2O.registerPOST("/99/Grid/"+lbase, GridSearchHandler.class, "train", "Run grid search for "+base+" model.");
     }
