@@ -1,9 +1,9 @@
 package water.api;
 
+import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import water.Job;
-import water.TypeMap;
+import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.HttpResponseStatus;
 import water.util.PojoUtils;
@@ -17,33 +17,44 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     // Peek out the desired algo from the URL
     String ss[] = route._url_pattern_raw.split("/");
     String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
-    String algoJavaName = ModelBuilder.algoJavaName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
-    String schemaName = "hex.schemas."+algoJavaName+"V"+version;
+    String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
+    String schemaName = "hex.schemas."+algoName+"V"+version;
     ModelBuilderSchema schema = (ModelBuilderSchema) TypeMap.newFreezable(schemaName);
-    String parmName = "hex.schemas."+algoJavaName+"V"+version+"$"+algoJavaName+"ParametersV"+version;
+    schema.init_meta();
+    String parmName = "hex.schemas."+algoName+"V"+version+"$"+algoName+"ParametersV"+version;
     ModelParametersSchema parmSchema = (ModelParametersSchema)TypeMap.newFreezable(parmName);
     schema.parameters = parmSchema;
 
-    schema = schema.fillFromParms(parms);
+    // Only here for train or validate-parms
+    if( !route._handler_method.getName().equals("train") )
+      throw water.H2O.unimpl();
 
-    // Run the Handler in the GUI Thread (nano does not grok CPS!)
-    // NOTE! The handler method is free to modify the input schema and hand it back.
+    // User specified key, or make a default?
+    water.api.KeyV3.ModelKeyV3 mkey = schema.parameters.model_id;
+    Key<Model> key = (Key<Model>)(mkey==null ? ModelBuilder.defaultKey(algoName) : mkey.key());
+    // Default Job for just this training
+    Job job = new Job<>(key,ModelBuilder.javaName(algoURLName),algoName);
+    // ModelBuilder
+    B builder = ModelBuilder.make(algoURLName,job,key);
+    schema.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
+    schema.parameters.fillFromParms(parms);         // Overwrite with user parms
+    schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
+    builder.init(false);          // validate parameters
+    if (builder.error_count() > 0)// Check for any parameter errors and bail now
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
+
     _t_start = System.currentTimeMillis();
-    try {
-      route._handler_method.setAccessible(true);
-      return (Schema)route._handler_method.invoke(this, version, schema);
-    }
-    // Exception throws out of the invoked method turn into InvocationTargetException
-    // rather uselessly.  Peel out the original exception & throw it.
-    catch( InvocationTargetException ite ) {
-      Throwable t = ite.getCause();
-      if( t instanceof RuntimeException ) throw (RuntimeException)t;
-      if( t instanceof Error ) throw (Error)t;
-      throw new RuntimeException(t);
-    } finally {
-      _t_stop  = System.currentTimeMillis();
-    }
+    builder.trainModel();
+    _t_stop  = System.currentTimeMillis();
+
+    schema.fillFromImpl(builder); // Fill in the result Schema with the Job at least, plus any extra trainModel errors
+    PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
+    schema.setHttpStatus(HttpResponseStatus.OK.getCode());
+    return schema;
   }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public S train(int version, S schema) { throw H2O.fail(); }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public S validate_parameters(int version, S schema) {
@@ -54,34 +65,6 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     S builder_schema = (S) builder.schema().fillFromImpl(builder);
     builder_schema.setHttpStatus(HttpResponseStatus.OK.getCode());
     return builder_schema;
-  }
-
-  /** Starts the model-build process by launching a ModelBuilder algo. 
-   *  Returns the ModelBuilder schema  */
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public S train(int version, S schema) {
-    // Note: the create can detect errors through init(false), OR the
-    // trainModel() call can throw an exception deep inside a ForkJoin task
-    // (cf. DeepLearningDriver.compute2()).  Both are to be handled here, the
-    // first by throwing if there are errors from the fill, and the second if
-    // the model build throws.
-    String schemaName = schema.getClass().getSimpleName();
-    String algoName = schemaName.substring(0,schemaName.lastIndexOf('V'));
-    String algoURLName = algoName.toLowerCase();
-    B builder = ModelBuilder.make(algoURLName,null,schema.parameters.model_id.key());
-    schema.fillImpl(builder);
-    if (builder.error_count() > 0)
-      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
-
-    Job j = builder._job = new Job<>(builder.dest(),builder._parms.javaName(),algoName);
-    builder.trainModel();
-    schema.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(j); // TODO: version
-
-    // copy warnings and infos; errors will cause an H2OModelBuilderIllegalArgumentException to be thrown above,
-    // resulting in an H2OErrorVx to be returned.
-    PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
-    schema.setHttpStatus(HttpResponseStatus.OK.getCode());
-    return schema;
   }
 
 }

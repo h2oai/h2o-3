@@ -39,10 +39,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
+  /** Default model-builder key */
+  public static Key<? extends Model> defaultKey(String algoName) {
+    return Key.make(H2O.calcNextUniqueModelId(algoName));
+  }
+
   /** Default easy constructor: Unique new job and unique new result key */
   protected ModelBuilder(P parms) {
     String algoName = parms.algoName();
-    _job = new Job<>(_result = Key.make(H2O.calcNextUniqueModelId(algoName)), parms.javaName(), algoName);
+    _job = new Job<>(_result = (Key<M>)defaultKey(algoName), parms.javaName(), algoName);
     _parms = parms;
   }
 
@@ -55,7 +60,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Shared pre-existing Job and unique new result key */
   protected ModelBuilder(P parms, Job job) {
     _job = job;
-    _result = Key.make(H2O.calcNextUniqueModelId(parms.algoName()));
+    _result = (Key<M>)defaultKey(parms.algoName());
     _parms = parms;
   }
 
@@ -83,11 +88,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     BUILDERS [BUILDERS .length-1] = this;
   }
 
-  public static String algoJavaName(String algoURLName) {
-    int idx = ArrayUtils.find(ALGOBASES,algoURLName);
-    assert idx != -1 : "Unregistered algorithm "+algoURLName;
-    return BUILDERS[idx]._parms.algoName();
-  }
+  /** gbm -> GBM, deeplearning -> DeepLearning */
+  public static String algoName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.algoName(); }
+  /** gbm -> hex.tree.gbm.GBM, deeplearning -> hex.deeplearning.DeepLearning */
+  public static String javaName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.javaName(); }
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */

@@ -268,7 +268,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     }
   }
 
-  void init_meta() {
+  protected void init_meta() {
     if( __meta != null ) return;
     String name = this.getClass().getSimpleName();
     int version = extractVersion(name);
