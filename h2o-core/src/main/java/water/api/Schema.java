@@ -983,7 +983,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    */
   protected static Schema newInstance(String schema_name) {
     Class<? extends Schema> clz = schemas.get(schema_name);
-    if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name,
+    if (null == clz)
+      throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name,
                                                             "Failed to find schema for schema_name: " + schema_name);
     return Schema.newInstance(clz);
   }

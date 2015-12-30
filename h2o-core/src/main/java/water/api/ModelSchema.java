@@ -17,7 +17,7 @@ import water.util.PojoUtils;
  * </ul>
  *
  */
-public abstract class ModelSchema<M extends Model<M, P, O>,
+public class ModelSchema<M extends Model<M, P, O>,
                                   S extends ModelSchema<M, S, P, PS, O, OS>,
                                   P extends Model.Parameters,
                                   PS extends ModelParametersSchema<P, PS>,
