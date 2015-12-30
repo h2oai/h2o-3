@@ -61,12 +61,13 @@ public class MetadataHandler extends Handler {
     if( route._handler_class.equals(water.api.ModelBuilderHandler.class) ) {
       String ss[] = route._url_pattern_raw.split("/");
       String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
+      int version2 = Integer.valueOf(ss[1]);
       String algoJavaName = ModelBuilder.algoJavaName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
-      String inputSchemaName = "hex.schemas."+algoJavaName+"V"+version;  // hex.schemas.GBMV3
+      String inputSchemaName = "hex.schemas."+algoJavaName+"V"+version2;  // hex.schemas.GBMV3
       sinput = (Schema)TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
       sinput.init_meta();
       // hex.schemas.GBMModelV3$GBMModelOutputV3
-      String outputSchemaName = "hex.schemas."+algoJavaName+"ModelV"+version+"$"+algoJavaName+"ModelOutputV"+version;
+      String outputSchemaName = "hex.schemas."+algoJavaName+"ModelV"+version2+"$"+algoJavaName+"ModelOutputV"+version2;
       soutput= (Schema)TypeMap.theFreezable(TypeMap.onIce(outputSchemaName));
       soutput.init_meta();
     } else {

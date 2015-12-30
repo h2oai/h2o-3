@@ -174,7 +174,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
     # Walk across all the entities and generate a class with methods for all its endpoints:
     for entity in endpoints_by_entity:
         pojo = []
-        signatures = {}
+        #signatures = {}
 
         pojo.append("package water.bindings.proxies.retrofit;")
         pojo.append("")
@@ -224,11 +224,11 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     first_parm = False
 
             # check for conflicts:
-            signature = '{method}({parms});'.format(method = method, parms = parms)
-            if signature in signatures:
-                print 'ERROR: found a duplicate method signature in entity ' + entity + ': ' + signature
-            else:
-                signatures[signature] = True
+            #signature = '{method}({parms});'.format(method = method, parms = parms)
+            #if signature in signatures:
+            #    print 'ERROR: found a duplicate method signature in entity ' + entity + ': ' + signature
+            #else:
+            #    signatures[signature] = True
 
             if not first: pojo.append('')
             if http_method == 'POST':
