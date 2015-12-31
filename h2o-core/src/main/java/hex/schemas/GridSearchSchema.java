@@ -6,7 +6,6 @@ import water.H2O;
 import water.Key;
 import water.api.*;
 import water.util.IcedHashMap;
-import water.util.ReflectionUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -22,15 +21,10 @@ import java.util.Properties;
  * @param <MP> actual model parameters type
  * @param <P>  a specific model builder parameters schema, since we cannot derive it from P
  */
-public /* FIXME: abstract */ class GridSearchSchema<G extends Grid<MP>,
-    S extends GridSearchSchema<G, S, MP, P>,
+public class GridSearchSchema<G extends Grid<MP>,
+    S  extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
-    P extends ModelParametersSchema> extends Schema<G, S> {
-
-  // Hack from ModelBuilderSchema
-  public GridSearchSchema() {
-    this.parameters = createParametersSchema();
-  }
+    P  extends ModelParametersSchema> extends Schema<G, S> {
 
   //
   // Inputs
@@ -54,12 +48,16 @@ public /* FIXME: abstract */ class GridSearchSchema<G extends Grid<MP>,
   @API(help = "Job Key.", direction = API.Direction.OUTPUT)
   public JobV3 job;
 
-  @Override
-  public S fillFromParms(Properties parms) {
-    // FIXME: do this in generic way
-    if (parms.containsKey("hyper_parameters")) {
-      String parameters = parms.getProperty("hyper_parameters");
-      hyper_parameters = parseJsonMap(parameters, new IcedHashMap<String, Object[]>());
+  @Override public S fillFromParms(Properties parms) {
+    if( parms.containsKey("hyper_parameters") ) {
+      Map<String,Object> m = water.util.JSONUtils.parse(parms.getProperty("hyper_parameters"));
+      hyper_parameters = new IcedHashMap<>();
+      // Convert lists and singletons into arrays
+      for (Map.Entry<String, Object> e : m.entrySet()) {
+        Object o = e.getValue();
+        Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
+        hyper_parameters.put(e.getKey(),o2);
+      }
       parms.remove("hyper_parameters");
     }
 
@@ -68,7 +66,9 @@ public /* FIXME: abstract */ class GridSearchSchema<G extends Grid<MP>,
       parms.remove("grid_id");
     }
 
-    // Do not check validity of
+    // Do not check validity of parameters, GridSearch is tolerant of bad
+    // parameters (on purpose, many hyper-param points in the grid might be
+    // illegal for whatever reason).
     this.parameters.fillFromParms(parms, false);
 
     return (S) this;
@@ -87,42 +87,6 @@ public /* FIXME: abstract */ class GridSearchSchema<G extends Grid<MP>,
    */
   // FIXME: shared this code with ModelBuilderScheme
   final P createParametersSchema() {
-
-    P impl = null;
-
-    // special case, because GridSearchSchema is the top of the tree and is parameterized differently
-    if (GridSearchSchema.class == this.getClass()) {
-      return (P) new ModelParametersSchema();
-    }
-
-    try {
-      Class<? extends ModelParametersSchema>
-          parameters_class =
-          (Class<? extends ModelParametersSchema>) ReflectionUtils
-              .findActualClassParameter(this.getClass(), 3);
-      impl = (P) parameters_class.newInstance();
-    } catch (Exception e) {
-      throw H2O.fail(
-          "Caught exception trying to instantiate a builder instance for ModelBuilderSchema: "
-          + this + ": " + e, e);
-    }
-    return impl;
-  }
-
-  // this method right now using gson
-  // It parses given json, and produces Map<String, Object[]>
-  public static <T extends Map<String, Object[]>> T parseJsonMap(String json, T map) {
     throw H2O.unimpl();
-    //Gson gson = new Gson();
-    //Map<String, Object> m;
-    //m = gson.fromJson(json, map.getClass());
-    //for (Map.Entry<String, Object> e : m.entrySet()) {
-    //  if (e.getValue() instanceof List) {
-    //    map.put(e.getKey(), ((List) e.getValue()).toArray());
-    //  } else {
-    //    map.put(e.getKey(), new Object[]{e.getValue()});
-    //  }
-    //}
-    //return map;
   }
 }

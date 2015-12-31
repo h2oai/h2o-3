@@ -915,7 +915,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then FrameV2 will
    * be returned.  This compatibility lookup is cached.
    */
-  private static Class<? extends Schema> schemaClass(int version, String type) {
+  public static Class<? extends Schema> schemaClass(int version, String type) {
     if (version < 1) return null;
 
     Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));

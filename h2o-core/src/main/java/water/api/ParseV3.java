@@ -3,7 +3,6 @@ package water.api;
 import water.api.KeyV3.FrameKeyV3;
 import water.Iced;
 import water.Key;
-import water.api.KeyV3.VecKeyV3;
 import water.parser.ParserType;
 
 import java.util.Arrays;

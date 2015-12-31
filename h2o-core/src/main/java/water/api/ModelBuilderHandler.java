@@ -32,7 +32,7 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
       throw water.H2O.unimpl();
 
     // User specified key, or make a default?
-    String model_id = (String)parms.get("model_id");
+    String model_id = parms.getProperty("model_id");
     Key<Model> key = (Key<Model>)(model_id==null ? ModelBuilder.defaultKey(algoName) : Key.<Model>make(model_id));
     // Default Job for just this training
     Job job = new Job<>(key,ModelBuilder.javaName(algoURLName),algoName);

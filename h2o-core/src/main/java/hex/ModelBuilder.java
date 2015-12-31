@@ -92,6 +92,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public static String algoName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.algoName(); }
   /** gbm -> hex.tree.gbm.GBM, deeplearning -> hex.deeplearning.DeepLearning */
   public static String javaName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.javaName(); }
+  /** gbm -> GBMParameters */
+  public static String paramName(String urlName) { return algoName(urlName)+"Parameters"; }
+
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */

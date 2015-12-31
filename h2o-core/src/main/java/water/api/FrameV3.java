@@ -4,7 +4,6 @@ import water.Futures;
 import water.Key;
 import water.MemoryManager;
 import water.api.KeyV3.FrameKeyV3;
-import water.api.KeyV3.VecKeyV3;
 import water.fvec.*;
 import water.fvec.Frame.VecSpecifier;
 import water.parser.BufferedString;

@@ -51,21 +51,20 @@ public class GridSearchHandler<G extends Grid<MP>,
 
     // Peek out the desired algo from the URL
     String ss[] = route._url_pattern_raw.split("/");
-    String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
+    String algoURLName = ss[3]; // {}/{99}/{Grid}/{gbm}/
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
+    // Get the latest version of this algo: /99/Grid/gbm  ==> GBMV3
+    String algoSchemaName = Schema.schemaClass(version, algoName).getSimpleName(); // GBMV3
+    int algoVersion = Integer.valueOf(algoSchemaName.substring(algoSchemaName.lastIndexOf("V")+1)); // '3'
+    String paramSchemaName = "hex.schemas."+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;
 
-    // Build a Model Schema and a ModelParameters Schema
-    String schemaName = "hex.schemas.GridSchemaV"+version;
-    Schema schema = (Schema) TypeMap.newFreezable(schemaName);
-    schema.init_meta();
+    // Build the Grid Search schema, and fill it from the parameters
+    GridSearchSchema gss = new GridSearchSchema();
+    gss.init_meta();
+    gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
+    gss.fillFromParms(parms);
 
     throw H2O.unimpl();
-//    String grid_id = (String)parms.get("grid_id");
-//    Key<Grid> key = (Key<Grid>)(grid_id==null ? GridSearch.getKeyName(algoName,frame) : Key.<Grid>make(grid_id));
-//    G grid = ...;
-//    B builder = ModelBuilder.make(algoURLName,job,key);
-//    schema.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
-//    schema.parameters.fillFromParms(parms);         // Overwrite with user parms
 //    schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
 //    builder.init(false);          // validate parameters
 //    if (builder.error_count() > 0)// Check for any parameter errors and bail now
