@@ -15,6 +15,7 @@ from requests import exceptions
 import socket
 import multiprocessing
 import platform
+import csv
 
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
 
@@ -613,23 +614,15 @@ class Test:
         """
         return -9999999
 
-    def __init__(self, test_dir, test_short_dir, test_name, output_dir, hadoop_namenode, on_hadoop):
+    def __init__(self, output_dir):
         """
         Create a Test.
 
-        @param test_dir: Full absolute path to the test directory.
-        @param test_short_dir: Path from h2o/R/tests to the test directory.
-        @param test_name: Test filename with the directory removed.
         @param output_dir: The directory where we can create an output file for this process.
         @return: The test object.
         """
-        self.test_dir = test_dir
-        self.test_short_dir = test_short_dir
-        self.test_name = test_name
         self.output_dir = output_dir
         self.output_file_name = ""
-        self.hadoop_namenode = hadoop_namenode
-        self.on_hadoop = on_hadoop
 
         self.cancelled = False
         self.terminated = False
@@ -639,45 +632,6 @@ class Test:
         self.ip = None
         self.port = -1
         self.child = None
-
-    def start(self, ip, port):
-        """
-        Start the test in a non-blocking fashion.
-
-        @param ip: IP address of cloud to run on.
-        @param port: Port of cloud to run on.
-        @return: none
-        """
-
-        if (self.cancelled or self.terminated):
-            return
-
-        self.start_seconds = time.time()
-        self.ip = ip
-        self.port = port
-
-        if   (is_rdemo(self.test_name) or is_runit(self.test_name) or is_rbooklet(self.test_name)):
-            cmd = self._rtest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
-        elif (is_ipython_notebook(self.test_name) or is_pydemo(self.test_name) or is_pyunit(self.test_name) or
-                  is_pybooklet(self.test_name)):
-            cmd = self._pytest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
-        elif (is_gradle_build_python_test(self.test_name)):
-            cmd = ["python", self.test_name, "--usecloud", self.ip + ":" + str(self.port)]
-        elif (is_javascript_test_file(self.test_name)): cmd = self._javascript_cmd(self.test_name, self.ip, self.port)
-        else:
-            print("")
-            print("ERROR: Test runner failure with test: " + self.test_name)
-            print("")
-            sys.exit(1)
-
-        test_short_dir_with_no_slashes = re.sub(r'[\\/]', "_", self.test_short_dir)
-        if (len(test_short_dir_with_no_slashes) > 0): test_short_dir_with_no_slashes += "_"
-        self.output_file_name = \
-            os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
-        f = open(self.output_file_name, "w")
-
-        self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
-        self.pid = self.child.pid
 
     def is_completed(self):
         """
@@ -724,24 +678,11 @@ class Test:
         """
         self.terminated = True
         if (self.pid > 0):
-            print("Killing Test {} with PID {}".format(os.path.join(self.test_short_dir, self.test_name), self.pid))
             try:
                 self.child.terminate()
             except OSError:
                 pass
         self.pid = -1
-
-    def get_test_dir_file_name(self):
-        """
-        @return: The full absolute path of this test.
-        """
-        return os.path.join(self.test_dir, self.test_name)
-
-    def get_test_name(self):
-        """
-        @return: The file name (no directory) of this test.
-        """
-        return self.test_name
 
     def get_seed_used(self):
         """
@@ -773,6 +714,167 @@ class Test:
         """
         return (self.returncode == 42)
 
+    def get_completed(self):
+        """
+        @return: True if the test completed (pass or fail), False otherwise.
+        """
+        return (self.returncode > Test.test_did_not_complete())
+
+    def get_terminated(self):
+        """
+        For a test to be terminated it must have started and had a PID.
+
+        @return: True if the test was terminated, False otherwise.
+        """
+        return self.terminated
+
+    def get_output_dir_file_name(self):
+        """
+        @return: Full path to the output file which you can paste to a terminal window.
+        """
+        return (os.path.join(self.output_dir, self.output_file_name))
+
+    def _scrape_output_for_seed(self):
+        """
+        @return: The seed scraped from the output file.
+        """
+        res = ""
+        with open(self.get_output_dir_file_name(), "r") as f:
+            for line in f:
+                if "SEED used" in line:
+                    line = line.strip().split(' ')
+                    res = line[-1]
+                    break
+        return res
+
+
+class FeatureTest(Test):
+    def __init__(self, output_dir, id, feature):
+        """
+        Create a feature test
+
+        @param id: feature test id
+        """
+
+        Test.__init__(self, output_dir)
+        self.id = id
+        self.feature = feature
+        self.test_case_driver = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                              "../h2o-test-feature/featureTestSuite.R"))
+
+    def start(self, ip, port):
+        """
+        Start the test in a non-blocking fashion.
+
+        @param ip: IP address of cloud to run on.
+        @param port: Port of cloud to run on.
+        @return: none
+        """
+
+        if (self.cancelled or self.terminated):
+            return
+
+        self.start_seconds = time.time()
+        self.ip = ip
+        self.port = port
+
+        cmd = ["R", "-f", self.test_case_driver, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir",
+               self.output_dir, "--testCaseId", self.id]
+
+        self.output_file_name = os.path.join(self.output_dir, "feature_test_" + self.id + "_out.txt")
+        f = open(self.output_file_name, "w")
+
+        self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT,
+                                      cwd=os.path.dirname(self.test_case_driver))
+        self.pid = self.child.pid
+
+    def terminate(self):
+        print("Killing Test {} with PID {}".format(self.id, self.pid))
+        Test.terminate(self)
+
+    def __str__(self):
+        s = ""
+        s += "Test: {}\n".format(self.id)
+        return s
+
+    def get_test_id(self): return self.id
+
+class IntegrationTest(Test):
+    def __init__(self, output_dir, test_dir, test_short_dir, test_name, hadoop_namenode, on_hadoop):
+        """
+        Create an integration test
+
+        @param test_dir: Full absolute path to the test directory.
+        @param test_short_dir: Path from h2o/R/tests to the test directory.
+        @param test_name: Test filename with the directory removed.
+        """
+
+        Test.__init__(self, output_dir)
+        self.test_dir = test_dir
+        self.test_short_dir = test_short_dir
+        self.test_name = test_name
+        self.hadoop_namenode = hadoop_namenode
+        self.on_hadoop = on_hadoop
+        self.r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                          "../h2o-r/scripts/h2o-r-test-setup.R"))
+        self.py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                           "../h2o-py/scripts/h2o-py-test-setup.py"))
+
+    def start(self, ip, port):
+        """
+        Start the test in a non-blocking fashion.
+
+        @param ip: IP address of cloud to run on.
+        @param port: Port of cloud to run on.
+        @return: none
+        """
+
+        if (self.cancelled or self.terminated):
+            return
+
+        self.start_seconds = time.time()
+        self.ip = ip
+        self.port = port
+
+        if   (is_rdemo(self.test_name) or is_runit(self.test_name) or is_rbooklet(self.test_name)):
+            cmd = self._rtest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
+        elif (is_ipython_notebook(self.test_name) or is_pydemo(self.test_name) or is_pyunit(self.test_name) or
+                  is_pybooklet(self.test_name)):
+            cmd = self._pytest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
+        elif (is_gradle_build_python_test(self.test_name)):
+            cmd = ["python", self.test_name, "--usecloud", self.ip + ":" + str(self.port)]
+        elif (is_javascript_test_file(self.test_name)): cmd = self._javascript_cmd(self.test_name, self.ip, self.port)
+        else:
+            print("")
+            print("ERROR: Test runner failure with test: " + self.test_name)
+            print("")
+            sys.exit(1)
+
+        test_short_dir_with_no_slashes = re.sub(r'[\\/]', "_", self.test_short_dir)
+        if (len(test_short_dir_with_no_slashes) > 0): test_short_dir_with_no_slashes += "_"
+        self.output_file_name = \
+            os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
+        f = open(self.output_file_name, "w")
+
+        self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
+        self.pid = self.child.pid
+
+    def terminate(self):
+        print("Killing Test {} with PID {}".format(os.path.join(self.test_short_dir, self.test_name), self.pid))
+        Test.terminate(self)
+
+    def get_test_dir_file_name(self):
+        """
+        @return: The full absolute path of this test.
+        """
+        return os.path.join(self.test_dir, self.test_name)
+
+    def get_test_name(self):
+        """
+        @return: The file name (no directory) of this test.
+        """
+        return self.test_name
+
     def get_nopass(self, nopass):
         """
         Some tests are known not to fail and even if they don't pass we don't want
@@ -802,29 +904,9 @@ class Test:
         a = re.compile("INTERNAL")
         return a.search(self.test_name)
 
-    def get_completed(self):
-        """
-        @return: True if the test completed (pass or fail), False otherwise.
-        """
-        return (self.returncode > Test.test_did_not_complete())
-
-    def get_terminated(self):
-        """
-        For a test to be terminated it must have started and had a PID.
-
-        @return: True if the test was terminated, False otherwise.
-        """
-        return self.terminated
-
-    def get_output_dir_file_name(self):
-        """
-        @return: Full path to the output file which you can paste to a terminal window.
-        """
-        return (os.path.join(self.output_dir, self.output_file_name))
-
     def _rtest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
         if is_runit(test_name): r_test_driver = test_name
-        else: r_test_driver = g_r_test_setup
+        else: r_test_driver = self.r_test_setup
         cmd = ["R", "-f", r_test_driver, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
 
@@ -843,7 +925,7 @@ class Test:
                "--testName", test_name]
       else:
         pyver = "python3.5" if g_py3 else "python"
-        cmd = [pyver, g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
+        cmd = [pyver, self.py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
       if is_pyunit(test_name):
           if on_hadoop:         cmd = cmd + ["--onHadoop"]
@@ -857,19 +939,6 @@ class Test:
     def _javascript_cmd(self, test_name, ip, port):
         return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to), "--packs",
                 g_phantomjs_packs]
-
-    def _scrape_output_for_seed(self):
-        """
-        @return: The seed scraped from the output file.
-        """
-        res = ""
-        with open(self.get_output_dir_file_name(), "r") as f:
-            for line in f:
-                if "SEED used" in line:
-                    line = line.strip().split(' ')
-                    res = line[-1]
-                    break
-        return res
 
     def __str__(self):
         s = ""
@@ -964,6 +1033,8 @@ class TestRunner:
         self.exclude_list = []
         self.feature = feature
         self.feature_filter = feature_filter
+        self.test_cases_csv = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                            "../h2o-test-feature/featureTestCases.csv"))
 
         if (self.feature):
             cloud = H2OUseCloud(1, "127.0.0.1", 54321)
@@ -1039,7 +1110,7 @@ class TestRunner:
                     s = f.readline()
                     continue
                 found_stripped = TestRunner.find_test(stripped)
-                self.add_test(found_stripped)
+                self.add_integration_test(found_stripped)
                 s = f.readline()
             f.close()
         except IOError as e:
@@ -1086,7 +1157,35 @@ class TestRunner:
         """
         if (self.terminated): return
 
-    def build_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass, nointernal):
+        feature_list = self.get_features(self.feature_filter)
+        test_case_list = self.get_feature_test_cases(self.feature_filter)
+
+        with open(self.test_cases_csv, 'rb') as f:
+            test_case_rows = csv.reader(f)
+            next(test_case_rows, None)
+            for test_case_row in test_case_rows:
+                if (not (feature_list is None)):
+                    if (not (test_case_row[1] in feature_list)): continue
+                elif (not (test_case_list is None)):
+                    if (not (test_case_row[0] in test_case_list)): continue
+                self.add_feature_test(test_case_row)
+
+
+    @staticmethod
+    def get_features(ff):
+        if (ff == ''): return None
+        features = ff.split(';')[0]
+        if (features == ''): return None
+        else: return features
+
+    @staticmethod
+    def get_feature_test_cases(ff):
+        if (ff == ''): return None
+        cases = ff.split(';')[1]
+        if (cases == ''): return None
+        else: return cases
+
+    def build_integration_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass, nointernal):
         """
         Recursively find the list of tests to run and store them in the object.
         Fills in self.tests and self.tests_not_started.
@@ -1192,11 +1291,11 @@ class TestRunner:
                     # count all applicable INTERNAL tests
                     if nointernal: continue
                     self.h2o_internal_counter += 1
-                self.add_test(os.path.join(root, f))
+                self.add_integration_test(os.path.join(root, f))
 
-    def add_test(self, test_path):
+    def add_integration_test(self, test_path):
         """
-        Add one test to the list of tests to run.
+        Add one integration test to the list of tests to run.
 
         @param test_path: File system path to the test.
         @return: none
@@ -1213,12 +1312,22 @@ class TestRunner:
 
         test_short_dir = self._calc_test_short_dir(test_path)
 
-        test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.hadoop_namenode, self.on_hadoop)
-        if (test_path.split('/')[-1] in self.exclude_list):
-            print("INFO: Skipping {0} because it was placed on the exclude list.".format(test_path))
-        else:
-            self.tests.append(test)
-            self.tests_not_started.append(test)
+        test = IntegrationTest(abs_test_dir, test_short_dir, test_file, self.output_dir, self.hadoop_namenode,
+                               self.on_hadoop)
+        self.tests.append(test)
+        self.tests_not_started.append(test)
+
+    def add_feature_test(self, test_case):
+        """
+        Add one feature test to the list of tests to run.
+
+        @param test_case: A list with the fields of a feature test case.
+        @return: none
+        """
+
+        test = FeatureTest(self.output_dir, test_case[0], test_case[1])
+        self.tests.append(test)
+        self.tests_not_started.append(test)
 
     def start_clouds(self):
         """
@@ -1280,7 +1389,8 @@ class TestRunner:
             client_message = " (+ client mode)"
         else:
             client_message = ""
-        if (self.use_cloud):
+
+        if (self.use_cloud or self.feature):
             self._log("Starting {} tests...".format(num_tests))
         elif (self.use_cloud2):
             self._log("Starting {} tests on {} clouds...".format(num_tests, len(self.clouds)))
@@ -1372,31 +1482,32 @@ class TestRunner:
         true_fail_list = []
         terminated_list = []
         for test in self.tests:
-            if (test.get_passed()):
-                passed += 1
-            elif (test.get_skipped()):
-                skipped += 1
-                skipped_list += [test.test_name]
-            else:
-                if (test.get_h2o_internal()):
-                    h2o_internal_failed += 1
-
-                if (test.get_nopass(nopass)):
-                    nopass_but_tolerate += 1
-
-                if (test.get_nofeature(nopass)):
-                    nofeature_but_tolerate += 1
-
-                if (test.get_completed()):
-                    failed += 1
-                    if (not test.get_nopass(nopass) and not test.get_nofeature(nopass)):
-                        true_fail_list.append(test.get_test_name())
+            if isinstance(test, IntegrationTest):
+                if (test.get_passed()):
+                    passed += 1
+                elif (test.get_skipped()):
+                    skipped += 1
+                    skipped_list += [test.test_name]
                 else:
-                    notrun += 1
+                    if (test.get_h2o_internal()):
+                        h2o_internal_failed += 1
 
-                if (test.get_terminated()):
-                    terminated_list.append(test.get_test_name())
-            total += 1
+                    if (test.get_nopass(nopass)):
+                        nopass_but_tolerate += 1
+
+                    if (test.get_nofeature(nopass)):
+                        nofeature_but_tolerate += 1
+
+                    if (test.get_completed()):
+                        failed += 1
+                        if (not test.get_nopass(nopass) and not test.get_nofeature(nopass)):
+                            true_fail_list.append(test.get_test_name())
+                    else:
+                        notrun += 1
+
+                    if (test.get_terminated()):
+                        terminated_list.append(test.get_test_name())
+                total += 1
 
         if ((passed + nopass_but_tolerate + nofeature_but_tolerate) == total):
             self.regression_passed = True
@@ -1618,7 +1729,8 @@ class TestRunner:
         port = test.get_port()
         finish_seconds = time.time()
         duration = finish_seconds - test.start_seconds
-        test_name = test.get_test_name()
+        if   (isinstance(test, IntegrationTest)): test_name = test.get_test_name()
+        elif (isinstance(test, FeatureTest)):     test_name = test.get_test_id()
         if not test.get_skipped():
             if self.perf: self._report_perf(test, finish_seconds)
         if (test.get_passed()):
@@ -1632,21 +1744,22 @@ class TestRunner:
                 self._report_xunit_result("r_suite", test_name, duration, False)
         else:
             s = "     FAIL %d %4ds %-60s %s  %s" % \
-                (port, duration, test.get_test_name(), test.get_output_dir_file_name(), test.get_seed_used())
+                (port, duration, test_name, test.get_output_dir_file_name(), test.get_seed_used())
             self._log(s)
-            f = self._get_failed_filehandle_for_appending()
-            f.write(test.get_test_dir_file_name() + "\n")
-            f.close()
-            # Report junit
-            if self.produce_unit_reports:
-                if not test.get_nopass(nopass):
-                    self._report_xunit_result("r_suite", test_name, duration, False, "TestFailure", "Test failed",
-                                              "See {}".format(test.get_output_dir_file_name()))
-                else:
-                    self._report_xunit_result("r_suite", test_name, duration, True)
-            # Copy failed test output into directory failed
-            if not test.get_nopass(nopass) and not test.get_nofeature(nopass):
-                shutil.copy(test.get_output_dir_file_name(), self.failed_output_dir)
+            if (isinstance(test, IntegrationTest)):
+                f = self._get_failed_filehandle_for_appending()
+                f.write(test.get_test_dir_file_name() + "\n")
+                f.close()
+                # Report junit
+                if self.produce_unit_reports:
+                    if not test.get_nopass(nopass):
+                        self._report_xunit_result("r_suite", test_name, duration, False, "TestFailure", "Test failed",
+                                                  "See {}".format(test.get_output_dir_file_name()))
+                    else:
+                        self._report_xunit_result("r_suite", test_name, duration, True)
+                # Copy failed test output into directory failed
+                if not test.get_nopass(nopass) and not test.get_nofeature(nopass):
+                    shutil.copy(test.get_output_dir_file_name(), self.failed_output_dir)
 
     # XSD schema for xunit reports is here; http://windyroad.com.au/dl/Open%20Source/JUnit.xsd
     def _report_xunit_result(self, testsuite_name, testcase_name, testcase_runtime,
@@ -1862,10 +1975,6 @@ g_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 g_machine_ip = socket.gethostbyname(socket.gethostname())
 g_ncpu = multiprocessing.cpu_count()
 g_os = platform.system()
-g_feature_test_csv = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                   "../h2o-test-feature/featureTestCases.csv"))
-g_feature_test_driver = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                      "../h2o-test-feature/featureTestSuite.R"))
 
 
 def use(x):
@@ -2059,8 +2168,6 @@ def parse_args(argv):
     global g_r_pkg_ver_chk
     global g_on_hadoop
     global g_hadoop_namenode
-    global g_r_test_setup
-    global g_py_test_setup
     global g_perf
     global g_git_hash
     global g_git_branch
@@ -2384,13 +2491,13 @@ def main(argv):
     if (g_feature):
         g_runner.build_feature_test_list()
     elif (g_test_to_run is not None):
-        g_runner.add_test(g_test_to_run)
+        g_runner.add_integration_test(g_test_to_run)
     elif (g_test_list_file is not None):
         g_runner.read_test_list_file(g_test_list_file)
     else:
         # Test group can be None or not.
-        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_run_xlarge, g_nopass,
-                                 g_nointernal)
+        g_runner.build_integration_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_run_xlarge,
+                                             g_nopass, g_nointernal)
 
     # If no run is specified, then do an early exit here.
     if (g_no_run):
