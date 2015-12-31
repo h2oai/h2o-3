@@ -1312,7 +1312,7 @@ class TestRunner:
 
         test_short_dir = self._calc_test_short_dir(test_path)
 
-        test = IntegrationTest(abs_test_dir, test_short_dir, test_file, self.output_dir, self.hadoop_namenode,
+        test = IntegrationTest(self.output_dir, abs_test_dir, test_short_dir, test_file, self.hadoop_namenode,
                                self.on_hadoop)
         self.tests.append(test)
         self.tests_not_started.append(test)
