@@ -79,7 +79,7 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
     msec = job.msec();
 
     Keyed dest_type = (Keyed)TypeMap.theFreezable(job._typeid);
-    dest = KeyV3.make(dest_type.makeSchema(),job._result);
+    dest = job._result == null ? null : KeyV3.make(dest_type.makeSchema(),job._result);
     return this;
   }
 

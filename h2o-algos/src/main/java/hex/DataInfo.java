@@ -544,8 +544,18 @@ public class DataInfo extends Keyed {
     public final double innerProduct(double [] vec) {
       double res = 0;
       int numStart = numStart();
-      for(int i = 0; i < nBins; ++i)
-        res += vec[binIds[i]];
+      try {
+        for (int i = 0; i < nBins; ++i) {
+          int bids = binIds[i];
+          if( bids >= vec.length || bids < 0 ) {
+            try { Thread.sleep(1000); } catch( InterruptedException ie) { }
+            System.out.println("lying dog wont set breakpoint on AIOOBE");
+          }
+          res += vec[bids];
+        }
+      } catch( java.lang.ArrayIndexOutOfBoundsException aioobe ) {
+        throw aioobe;
+      }
       if(numIds == null || (vec.length == nBins + nNums + 1)) {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];

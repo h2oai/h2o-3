@@ -71,6 +71,7 @@ public class ModelSchema<M extends Model<M, P, O>,
 
     parameters = createParametersSchema();
     parameters.fillFromImpl(m._parms);
+    parameters.model_id = model_id;
 
     output = createOutputSchema();
     output.fillFromImpl(m._output);

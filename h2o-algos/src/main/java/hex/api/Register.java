@@ -2,6 +2,7 @@ package hex.api;
 
 import water.H2O;
 import hex.ModelBuilder;
+import water.api.GridSearchHandler;
 
 public class Register extends water.api.AbstractRegister {
   // Register the algorithms and their builder handlers:

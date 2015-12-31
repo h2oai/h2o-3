@@ -1,11 +1,13 @@
-package hex.api;
+package water.api;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import hex.Model;
+import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
@@ -13,6 +15,7 @@ import hex.schemas.GridSearchSchema;
 import water.H2O;
 import water.Job;
 import water.Key;
+import water.TypeMap;
 import water.api.API;
 import water.api.Handler;
 import water.api.JobV3;
@@ -39,6 +42,44 @@ public class GridSearchHandler<G extends Grid<MP>,
     S extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
     P extends ModelParametersSchema> extends Handler {
+
+  // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
+  @Override Schema handle(int version, water.api.Route route, Properties parms) throws Exception {
+    // Only here for train or validate-parms
+    if( !route._handler_method.getName().equals("train") )
+      throw water.H2O.unimpl();
+
+    // Peek out the desired algo from the URL
+    String ss[] = route._url_pattern_raw.split("/");
+    String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
+    String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
+
+    // Build a Model Schema and a ModelParameters Schema
+    String schemaName = "hex.schemas.GridSchemaV"+version;
+    Schema schema = (Schema) TypeMap.newFreezable(schemaName);
+    schema.init_meta();
+
+    throw H2O.unimpl();
+//    String grid_id = (String)parms.get("grid_id");
+//    Key<Grid> key = (Key<Grid>)(grid_id==null ? GridSearch.getKeyName(algoName,frame) : Key.<Grid>make(grid_id));
+//    G grid = ...;
+//    B builder = ModelBuilder.make(algoURLName,job,key);
+//    schema.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
+//    schema.parameters.fillFromParms(parms);         // Overwrite with user parms
+//    schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
+//    builder.init(false);          // validate parameters
+//    if (builder.error_count() > 0)// Check for any parameter errors and bail now
+//      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
+//
+//    _t_start = System.currentTimeMillis();
+//    builder.trainModel();
+//    _t_stop  = System.currentTimeMillis();
+//
+//    schema.fillFromImpl(builder); // Fill in the result Schema with the Job at least, plus any extra trainModel errors
+//    PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
+//    schema.setHttpStatus(HttpResponseStatus.OK.getCode());
+//    return schema;
+  }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public S train(int version, S gridSearchSchema) {
@@ -174,8 +215,3 @@ public class GridSearchHandler<G extends Grid<MP>,
     }
   }
 }
-
-
-
-
-

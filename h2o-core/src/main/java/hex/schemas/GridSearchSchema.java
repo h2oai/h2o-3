@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import com.google.gson.Gson;
 import hex.Model;
 import hex.grid.Grid;
 import water.H2O;
@@ -23,7 +22,7 @@ import java.util.Properties;
  * @param <MP> actual model parameters type
  * @param <P>  a specific model builder parameters schema, since we cannot derive it from P
  */
-public class GridSearchSchema<G extends Grid<MP>,
+public /* FIXME: abstract */ class GridSearchSchema<G extends Grid<MP>,
     S extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
     P extends ModelParametersSchema> extends Schema<G, S> {
@@ -113,16 +112,17 @@ public class GridSearchSchema<G extends Grid<MP>,
   // this method right now using gson
   // It parses given json, and produces Map<String, Object[]>
   public static <T extends Map<String, Object[]>> T parseJsonMap(String json, T map) {
-    Gson gson = new Gson();
-    Map<String, Object> m;
-    m = gson.fromJson(json, map.getClass());
-    for (Map.Entry<String, Object> e : m.entrySet()) {
-      if (e.getValue() instanceof List) {
-        map.put(e.getKey(), ((List) e.getValue()).toArray());
-      } else {
-        map.put(e.getKey(), new Object[]{e.getValue()});
-      }
-    }
-    return map;
+    throw H2O.unimpl();
+    //Gson gson = new Gson();
+    //Map<String, Object> m;
+    //m = gson.fromJson(json, map.getClass());
+    //for (Map.Entry<String, Object> e : m.entrySet()) {
+    //  if (e.getValue() instanceof List) {
+    //    map.put(e.getKey(), ((List) e.getValue()).toArray());
+    //  } else {
+    //    map.put(e.getKey(), new Object[]{e.getValue()});
+    //  }
+    //}
+    //return map;
   }
 }

@@ -63,15 +63,12 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   }
 
   public static KeyV3 make(Class<? extends KeyV3> clz, Key key) {
-    KeyV3 result = null;
     try {
       Constructor c = clz.getConstructor(Key.class);
-      result = (KeyV3)c.newInstance(key);
-    }
-    catch (Exception e) {
+      return (KeyV3)c.newInstance(key);
+    } catch (Exception e) {
       throw new H2OIllegalArgumentException("Caught exception trying to instantiate KeyV1 for class: " + clz.toString() + ": " + e + "; cause: " + e.getCause() + " " + Arrays.toString(e.getCause().getStackTrace()));
     }
-    return result;
   }
 
   /** TODO: figure out the right KeyV1 class from the Key, so the type is set properly. */
@@ -96,22 +93,9 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public ModelKeyV3(Key<? extends Model> key) { super(key); }
   }
 
-  public static class VecKeyV3 extends KeyV3<Iced, VecKeyV3, Vec> {
-    public VecKeyV3() {
-    }
-
-    public VecKeyV3(Key<Vec> key) {
-      super(key);
-    }
-  }
-
   public static class GridKeyV3 extends KeyV3<Iced, GridKeyV3, Grid> {
-    public GridKeyV3() {
-    }
-
-    public GridKeyV3(Key<Grid> key) {
-      super(key);
-    }
+    public GridKeyV3() { }
+    public GridKeyV3(Key<Grid> key) { super(key); }
   }
 
   public static class AssemblyKeyV3 extends KeyV3<Iced, AssemblyKeyV3, Assembly> {
@@ -119,8 +103,7 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public AssemblyKeyV3(Key<Assembly> key) { super(key); }
   }
 
-  @Override
-  public S fillFromImpl(Iced i) {
+  @Override public S fillFromImpl(Iced i) {
     if (! (i instanceof Key))
       throw new H2OIllegalArgumentException("fillFromImpl", "key", i);
 

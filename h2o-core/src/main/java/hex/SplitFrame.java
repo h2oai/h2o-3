@@ -1,6 +1,5 @@
 package hex;
 
-import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -13,7 +12,7 @@ import static water.util.FrameUtils.generateNumKeys;
  * If single number is given then it splits a given frame into two frames (FIXME: will throw exception)
  * if N ratios are given then then N-splits are produced.
  */
-public class SplitFrame extends Transformer<Frames> {
+public class SplitFrame extends Transformer<SplitFrame.Frames> {
   /** Input dataset to split */
   public Frame _dataset;
   /** Split ratios */
@@ -22,12 +21,12 @@ public class SplitFrame extends Transformer<Frames> {
   public Key<Frame>[] _destination_frames;
 
   public SplitFrame(Frame dataset, double[] ratios, Key<Frame>[] destination_frames) {
-    this(null);
+    this();
     _dataset = dataset;
     _ratios = ratios;
     _destination_frames = destination_frames;
   }
-  public SplitFrame(Key dest) { super(dest, null, "SplitFrame"); }
+  public SplitFrame() { super(null, "hex.SplitFrame$Frames", "SplitFrame"); }
 
   @Override public Job<Frames> execImpl() {
     if (_ratios.length < 0)      throw new IllegalArgumentException("No ratio specified!");
@@ -60,6 +59,6 @@ public class SplitFrame extends Transformer<Frames> {
     FrameSplitter fs = new FrameSplitter(_dataset, computedRatios, _destination_frames, _job._key);
     return _job.start(fs, computedRatios.length + 1);
   }
+  public static class Frames extends Keyed { public Key<Frame>[] _keys; }
 }
 
-class Frames extends Keyed { public Key<Frame>[] _keys; }

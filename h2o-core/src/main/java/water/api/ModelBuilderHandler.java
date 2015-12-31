@@ -18,6 +18,8 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     String ss[] = route._url_pattern_raw.split("/");
     String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
+
+    // Build a Model Schema and a ModelParameters Schema
     String schemaName = "hex.schemas."+algoName+"V"+version;
     ModelBuilderSchema schema = (ModelBuilderSchema) TypeMap.newFreezable(schemaName);
     schema.init_meta();
@@ -30,8 +32,8 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
       throw water.H2O.unimpl();
 
     // User specified key, or make a default?
-    water.api.KeyV3.ModelKeyV3 mkey = schema.parameters.model_id;
-    Key<Model> key = (Key<Model>)(mkey==null ? ModelBuilder.defaultKey(algoName) : mkey.key());
+    String model_id = (String)parms.get("model_id");
+    Key<Model> key = (Key<Model>)(model_id==null ? ModelBuilder.defaultKey(algoName) : Key.<Model>make(model_id));
     // Default Job for just this training
     Job job = new Job<>(key,ModelBuilder.javaName(algoURLName),algoName);
     // ModelBuilder

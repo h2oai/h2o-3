@@ -14,65 +14,43 @@ import water.util.PojoUtils;
 import water.util.PojoUtils.FieldNaming;
 import water.util.StringUtils;
 
-/**
- * A Grid of Models representing result of hyper-parameter space exploration.  Lazily filled in,
- * this object represents the potentially infinite variety of hyperparameters of a given model &
- * dataset.
+/** A Grid of Models representing result of hyper-parameter space exploration.
+ *  Lazily filled in, this object represents the potentially infinite variety
+ *  of hyperparameters of a given model & dataset.
  *
  * @param <MP> type of model build parameters
  */
-public class Grid<MP extends Model.Parameters>
-    extends Lockable<Grid<MP>> {
+public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
-  /**
-   * Publicly available Grid prototype - used by REST API.
-   *
-   * @see hex.schemas.GridSchemaV99
-   */
+  /** Publicly available Grid prototype - used by REST API.
+   *  @see hex.schemas.GridSchemaV99  */
   public static final Grid GRID_PROTO = new Grid(null, null, null, null);
 
-  /**
-   * A cache of double[] hyper-parameters mapping to Models.
-   */
+  // A cache of double[] hyper-parameters mapping to Models.
   private final IcedHashMap<IcedLong, Key<Model>> _cache = new IcedHashMap<>();
 
-  /**
-   * Used "based" model parameters for this grid search.
-   */
+  // Used "based" model parameters for this grid search.
   private final MP _params;
 
-  /**
-   * Failed model parameters - represents points in hyper space for which model generation failed.
-   * If the element is null, then look into
-   */
+  // Failed model parameters - represents points in hyper space for which model
+  // generation failed.  If the element is null, then look into
   private MP[] _failed_params;
 
-  /**
-   * Detailed messages about a failure for given failed model parameters in
-   * <code>_failed_params</code>.
-   */
+  // Detailed messages about a failure for given failed model parameters in
+  // <code>_failed_params</code>.
   private String[] _failure_details;
 
-  /**
-   * Collected stack trace for failure.
-   */
+  // Collected stack trace for failure.
   private String[] _failure_stack_traces;
 
-  /**
-   * Contains "raw" representation of parameters which fail The parameters are represented in
-   * textual form, since simple <code>java.lang.Object</code> cannot be serialized by H2O
-   * serialization.
-   */
+  // Contains "raw" representation of parameters which fail The parameters are
+  // represented in textual form, since simple <code>java.lang.Object</code>
+  // cannot be serialized by H2O serialization.
   private String[][] _failed_raw_params;
 
-  /**
-   * Names of used hyper parameters for this grid search.
-   */
+  // Names of used hyper parameters for this grid search.
   private final String[] _hyper_names;
 
-  /**
-   *
-   */
   private final FieldNaming _field_naming_strategy;
 
   /**
@@ -94,14 +72,10 @@ public class Grid<MP extends Model.Parameters>
     _field_naming_strategy = fieldNaming;
   }
 
-  /**
-   * Returns name of model included in this object.
-   *
-   * @return name of model (for example, "DRF", "GBM")
-   */
-  public String getModelName() {
-    return _params.algoName();
-  }
+  /** Returns name of model included in this object.  Note: only sensible for
+   *  Grids which search over a single class of Models.
+   *  @return name of model (for example, "DRF", "GBM") */
+  public String getModelName() { return _params.algoName(); }
 
   /**
    * Ask the Grid for a suggested next hyperparameter value, given an existing Model as a starting

@@ -113,7 +113,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     this.error_count = builder.error_count();
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);
-    // parameters.destination_key = new KeyV1.ModelKeyV1(builder._dest);
+    parameters.model_id = builder.dest() == null ? null : new KeyV3.ModelKeyV3(builder.dest());
     return (S)this;
   }
 

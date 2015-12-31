@@ -26,10 +26,11 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   /** Create a Job
    *  @param key  Key of the final result
+   *  @param clz_of_T String class of the Keyed result
    *  @param desc String description   */
   public Job(Key<T> key, String clz_of_T, String desc) {
     super(defaultJobKey());     // Passing in a brand new Job key
-    assert (key==null && clz_of_T==null) || (key!=null && clz_of_T!=null);
+    assert key==null || clz_of_T!=null;
     _result = key;              // Result (destination?) key
     _typeid = clz_of_T==null ? 0 : TypeMap.onIce(clz_of_T);
     _description = desc; 
