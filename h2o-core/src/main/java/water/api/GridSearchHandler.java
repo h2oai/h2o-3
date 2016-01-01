@@ -62,55 +62,36 @@ public class GridSearchHandler<G extends Grid<MP>,
     GridSearchSchema gss = new GridSearchSchema();
     gss.init_meta();
     gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
+    gss.parameters.init_meta();
     gss.fillFromParms(parms);
 
-    throw H2O.unimpl();
-//    schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
-//    builder.init(false);          // validate parameters
-//    if (builder.error_count() > 0)// Check for any parameter errors and bail now
-//      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
-//
-//    _t_start = System.currentTimeMillis();
-//    builder.trainModel();
-//    _t_stop  = System.currentTimeMillis();
-//
-//    schema.fillFromImpl(builder); // Fill in the result Schema with the Job at least, plus any extra trainModel errors
-//    PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
-//    schema.setHttpStatus(HttpResponseStatus.OK.getCode());
-//    return schema;
-  }
-
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public S train(int version, S gridSearchSchema) {
-    // Extract input parameters
-    P parametersSchema = gridSearchSchema.parameters;
-    // TODO: Verify algorithm inputs, make sure to reject wrong training_frame
-    // Extract hyper parameters
-    Map<String, Object[]> hyperParams = gridSearchSchema.hyper_parameters;
     // Verify list of hyper parameters
     // Right now only names, no types
-    validateHyperParams(parametersSchema, hyperParams);
+    validateHyperParams((P)gss.parameters, gss.hyper_parameters);
 
     // Get/create a grid for given frame
     // FIXME: Grid ID is not pass to grid search builder!
-    Key<Grid> destKey = gridSearchSchema.grid_id != null ? gridSearchSchema.grid_id.key() : null;
+    Key<Grid> destKey = gss.grid_id != null ? gss.grid_id.key() : null;
     // Get actual parameters
-    MP params = (MP) parametersSchema.createAndFillImpl();
+    MP params = (MP) gss.parameters.createAndFillImpl();
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
     Job<Grid> gsJob = GridSearch.startGridSearch(destKey,
                                                  params,
-                                                 hyperParams,
+                                                 gss.hyper_parameters,
                                                  new DefaultModelParametersBuilderFactory<MP, P>());
 
     // Fill schema with job parameters
     // FIXME: right now we have to remove grid parameters which we sent back
-    gridSearchSchema.hyper_parameters = null;
-    gridSearchSchema.total_models = gsJob._result.get().getModelCount();
-    gridSearchSchema.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(gsJob);
+    gss.hyper_parameters = null;
+    gss.total_models = gsJob._result.get().getModelCount();
+    gss.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(gsJob);
 
-    return gridSearchSchema;
+    return gss;
   }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public S train(int version, S gridSearchSchema) { throw H2O.fail(); }
 
   /**
    * Validate given hyper parameters with respect to type parameter P.
