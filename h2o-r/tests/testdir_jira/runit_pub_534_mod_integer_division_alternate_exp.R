@@ -18,4 +18,4 @@ test.ops<- function() {
   
 }
 
-doTest("test %/%, %%, **", test.ops)
+h2oTest.doTest("test %/%, %%, **", test.ops)

@@ -28,5 +28,5 @@ test <- function() {
   expect_true(exists('model'))
 }
 
-doTest("Remove objects from the client", test)
+h2oTest.doTest("Remove objects from the client", test)
 

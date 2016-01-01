@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdoc_table.golden <- function() {
 
-prosPath <- locate("smalldata/extdata/prostate.csv")
+prosPath <- h2oTest.locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 summary(prostate.hex)
 
@@ -20,4 +20,4 @@ h2o.table(prostate.hex[,c(3,4)])
 
 }
 
-doTest("R Doc Table", test.rdoc_table.golden)
+h2oTest.doTest("R Doc Table", test.rdoc_table.golden)

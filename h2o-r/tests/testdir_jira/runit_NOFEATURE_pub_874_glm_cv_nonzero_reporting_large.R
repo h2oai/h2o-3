@@ -14,7 +14,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test <- function() {
 
 	print("Reading in Mushroom data for binomial glm.")
-	mushroom.train <-  h2o.importFile(locate("smalldata/glm_test/Mushroom.gz"), destination_frame="mushroom.train")
+	mushroom.train <-  h2o.importFile(h2oTest.locate("smalldata/glm_test/Mushroom.gz"), destination_frame="mushroom.train")
 	mushroom.train$label <- ifelse(mushroom.train$"C1"=="e",1,0)
 	myX <- c(2:23)
 	myY <- "label"
@@ -24,7 +24,7 @@ test <- function() {
 	print(h2o.glm.CV)  #Confirm reported values accurate and match browser
 
 	print("Reading in Abalone data for gaussian glm.")
-	abalone.train <-  h2o.importFile(locate("smalldata/glm_test/Abalone.gz"), destination_frame="abalone.train")
+	abalone.train <-  h2o.importFile(h2oTest.locate("smalldata/glm_test/Abalone.gz"), destination_frame="abalone.train")
 	myX <- c(1:8)
 	myY <- "C9"
 	print("Creating model with CV")
@@ -35,4 +35,4 @@ test <- function() {
   
 }
 
-doTest("Testing R's glm model with cross validation on for Binomial and Gaussian distribution", test)
+h2oTest.doTest("Testing R's glm model with cross validation on for Binomial and Gaussian distribution", test)

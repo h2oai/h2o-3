@@ -82,7 +82,7 @@ test <- function() {
                          "smalldata/junit/australia.csv", "smalldata/airlines/AirlinesTrain.csv.zip",
                          "smalldata/arcene/arcene_train.data", "smalldata/chicago/chicagoCensus.csv",
                          "smalldata/covtype/covtype.20k.data" )
-    smalldata <- lapply(smalldata_paths, function (p) h2o.importFile(locate(p)))
+    smalldata <- lapply(smalldata_paths, function (p) h2o.importFile(h2oTest.locate(p)))
     for (data in smalldata) { h2o_datasets[[length(h2o_datasets)+1]] <- data }
 
     seed <- sample(1:10000,1)
@@ -123,5 +123,5 @@ test <- function() {
 
 }
 
-doTest("Rollup Stats", test)
+h2oTest.doTest("Rollup Stats", test)
 

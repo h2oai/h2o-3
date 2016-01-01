@@ -12,26 +12,26 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.hex_1908 <- function() {
 
-  temp_subdir1 = sandboxMakeSubDir(dirname="tmp")
+  temp_subdir1 = h2oTest.sandboxMakeSubDir(dirname="tmp")
   
   # Test saving and loading of GLM model
-  Log.info("Importing airlines.csv...")
-  airlines.hex = h2o.importFile(normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
+  h2oTest.logInfo("Importing airlines.csv...")
+  airlines.hex = h2o.importFile(normalizePath(h2oTest.locate('smalldata/airlines/AirlinesTrain.csv.zip')))
   
   # Set x and y variables
   myY = "IsDepDelayed"
   myX = c("fYear", "UniqueCarrier", "Origin", "Dest", "Distance")
   
   # Build GLM and GBM each with cross validation models
-  Log.info("Build GLM model")
+  h2oTest.logInfo("Build GLM model")
   airlines.glm = h2o.glm(y = myY, x = myX, training_frame = airlines.hex, family = "binomial", nfolds = 0, alpha = 0.5)
-  Log.info("Build GLM model with nfold = 5")
+  h2oTest.logInfo("Build GLM model with nfold = 5")
   airlines_xval.glm = h2o.glm(y = myY, x = myX, training_frame = airlines.hex, family = "binomial", nfolds = 5, alpha = 0.5)
-  Log.info("Build GBM model with nfold = 3")
+  h2oTest.logInfo("Build GBM model with nfold = 3")
   airlines_xval.gbm = h2o.gbm(y = myY, x = myX, training_frame = airlines.hex, nfolds = 3, loss = "multinomial")
   
   # Predict on models and save results in R
-  Log.info("Scoring on models and saving predictions to R")
+  h2oTest.logInfo("Scoring on models and saving predictions to R")
   
   pred_df <- function(object, newdata) {
     h2o_pred = predict(object, newdata)
@@ -43,24 +43,24 @@ test.hex_1908 <- function() {
   gbm_xval.pred = pred_df(object = airlines_xval.gbm, newdata = airlines.hex)
   
   # Save models to disk
-  Log.info("Saving models to disk")
+  h2oTest.logInfo("Saving models to disk")
   model_paths = h2o.saveAll(object = conn, dir = temp_subdir1, save_cv = TRUE, force = TRUE)
   
   # All keys removed to test that cross validation models are actually being loaded
   h2o.removeAll(object = conn)
 
   # Proving we can move files from one directory to another and not affect the load of the model
-  temp_subdir2 = sandboxRenameSubDir(temp_subdir1,"tmp2")
-  Log.info(paste("Moving models from", temp_subdir1, "to", temp_subdir2))
+  temp_subdir2 = h2oTest.sandboxRenameSubDir(temp_subdir1,"tmp2")
+  h2oTest.logInfo(paste("Moving models from", temp_subdir1, "to", temp_subdir2))
 
   # Check to make sure predictions made on loaded model is the same as glm.pred
-  airlines.hex = h2o.importFile(normalizePath(locate('smalldata/airlines/AirlinesTrain.csv.zip')))
+  airlines.hex = h2o.importFile(normalizePath(h2oTest.locate('smalldata/airlines/AirlinesTrain.csv.zip')))
   
   # Load model back into H2O
-  Log.info(paste("Model saved in", temp_subdir2))
+  h2oTest.logInfo(paste("Model saved in", temp_subdir2))
   reloaded_models = h2o.loadAll(object = conn, dir = temp_subdir2)
   
-  Log.info("Running Predictions for Loaded Models")
+  h2oTest.logInfo("Running Predictions for Loaded Models")
   new_keys = lapply(reloaded_models, function(model) model@key)
   
   gbm_xval2 = reloaded_models[[1]]
@@ -92,4 +92,4 @@ test.hex_1908 <- function() {
   
 }
 
-doTest("HEX-1908 Test: Save and Load All Models", test.hex_1908)
+h2oTest.doTest("HEX-1908 Test: Save and Load All Models", test.hex_1908)

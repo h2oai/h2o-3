@@ -9,15 +9,15 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 complexFilterTest_benign_37 <- function() {
-    Log.info("A munge-task R unit test on data <benign> testing the functional unit <['', '<=']> ")
-    Log.info("Uploading benign")
-    hex <- h2o.importFile(locate("smalldata/logreg/benign.csv"), "rbenign.hex")
-Log.info("Performing compound task ( ( hex[,c(\"WT\")] <= 277.042893399 ))  on dataset <benign>")
+    h2oTest.logInfo("A munge-task R unit test on data <benign> testing the functional unit <['', '<=']> ")
+    h2oTest.logInfo("Uploading benign")
+    hex <- h2o.importFile(h2oTest.locate("smalldata/logreg/benign.csv"), "rbenign.hex")
+h2oTest.logInfo("Performing compound task ( ( hex[,c(\"WT\")] <= 277.042893399 ))  on dataset <benign>")
          filterHex <- hex[( ( hex[,c("WT")] <= 277.042893399 )) ,]
-Log.info("Performing compound task ( ( hex[,c(\"MST\")] <= 2.04621771039 ))  on dataset benign, and also subsetting columns.")
+h2oTest.logInfo("Performing compound task ( ( hex[,c(\"MST\")] <= 2.04621771039 ))  on dataset benign, and also subsetting columns.")
          filterHex <- hex[( ( hex[,c("MST")] <= 2.04621771039 )) , c("MST","AGMT","AGP1","DEG","WT","AGLP","OBS","STR")]
-    Log.info("Now do the same filter & subset, but select complement of columns.")
+    h2oTest.logInfo("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[( ( hex[,c("MST")] <= 2.04621771039 )) , c("HIGD","FNDX","NLV","AGMN","CHK","LIV")]
 
 }
-doTest("compoundFilterTest_ on data benign unit= ['', '<=']", complexFilterTest_benign_37)
+h2oTest.doTest("compoundFilterTest_ on data benign unit= ['', '<=']", complexFilterTest_benign_37)

@@ -11,7 +11,7 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 # Single file cases.
 #----------------------------------------------------------------------
 
-heading("Testing single file importHDFS")
+h2oTest.heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 data.hex <- h2o.importFile(url)
 data1.hex <- data.hex
@@ -53,4 +53,4 @@ data3.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_f
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

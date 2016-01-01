@@ -8,15 +8,15 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 sliceTest_prostate_2_4 <- function() {
-    Log.info("A munge-task R unit test on data <prostate_2> testing the functional unit <[> ")
-    Log.info("Uploading prostate_2")
-    hex <- h2o.importFile(locate("smalldata/junit/parse_folder/prostate_2.csv"), "rprostate_2.hex")
-    Log.info("Performing a column slice of prostate_2 using these columns: c(1,3,2)")
+    h2oTest.logInfo("A munge-task R unit test on data <prostate_2> testing the functional unit <[> ")
+    h2oTest.logInfo("Uploading prostate_2")
+    hex <- h2o.importFile(h2oTest.locate("smalldata/junit/parse_folder/prostate_2.csv"), "rprostate_2.hex")
+    h2oTest.logInfo("Performing a column slice of prostate_2 using these columns: c(1,3,2)")
     slicedHex <- hex[,c(1,3,2)]
-        Log.info("Performing a row & column slice of prostate_2 using these rows & columns: c(3,2) & c(5)")
+        h2oTest.logInfo("Performing a row & column slice of prostate_2 using these rows & columns: c(3,2) & c(5)")
     slicedHex <- hex[c(5),c(3,2)]
-        Log.info("Performing a 1-by-1 column slice of prostate_2 using these columns: ")
-        Log.info("Performing a 1-by-1 row slice of prostate_2 using these rows: ")
+        h2oTest.logInfo("Performing a 1-by-1 column slice of prostate_2 using these columns: ")
+        h2oTest.logInfo("Performing a 1-by-1 row slice of prostate_2 using these rows: ")
 
 }
-doTest("sliceTest_ on data prostate_2 unit= [", sliceTest_prostate_2_4)
+h2oTest.doTest("sliceTest_ on data prostate_2 unit= [", sliceTest_prostate_2_4)

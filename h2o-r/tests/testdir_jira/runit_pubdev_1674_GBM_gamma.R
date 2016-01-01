@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function(h) {
 
-	cancar = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T) 
+	cancar = read.csv(file =h2oTest.locate("smalldata/glm_test/cancar_logIn.csv"),header = T) 
 
 	cancar$Merit = as.factor(cancar$Merit) 
 	cancar$Class = as.factor(cancar$Class) 
@@ -32,4 +32,4 @@ test <- function(h) {
 	
 	
 }
-doTest("GBM gamma Test: GBM test for gamma distribution", test)
+h2oTest.doTest("GBM gamma Test: GBM test for gamma distribution", test)

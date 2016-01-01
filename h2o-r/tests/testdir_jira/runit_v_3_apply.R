@@ -8,13 +8,13 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 applytest <- function(){
-  Log.info('uploading apply testing dataset')
-  df.h <- h2o.importFile(locate('smalldata/jira/v-3.csv'), "v3.hex")
+  h2oTest.logInfo('uploading apply testing dataset')
+  df.h <- h2o.importFile(h2oTest.locate('smalldata/jira/v-3.csv'), "v3.hex")
 
-  Log.info('printing from h2o')
-  Log.info( head(df.h) )
+  h2oTest.logInfo('printing from h2o')
+  h2oTest.logInfo( head(df.h) )
 
-  Log.info('applying over 1, 2, 1:2')
+  h2oTest.logInfo('applying over 1, 2, 1:2')
   df.h.1 <- apply(df.h, 1, function(x){ sum(x) })
   df.h.2 <- apply(df.h, 2, function(x){ sum(x) })
 # While the semantics of apply(,1:2,) are easy (same as map), the syntactic
@@ -22,7 +22,7 @@ applytest <- function(){
 # forms to get the same job done are easy & supported: df <- df+1
 #  df.h.3 <- apply(df.h, 1:2, function(x){ x + 1})
 
-  Log.info('pulling data locally')
+  h2oTest.logInfo('pulling data locally')
   df.1 <- as.data.frame( df.h.1 )
   df.2 <- as.data.frame( df.h.2 )
 #  df.3 <- as.data.frame( df.h.3 )
@@ -35,4 +35,4 @@ applytest <- function(){
   
 }
 
-doTest('apply', applytest)
+h2oTest.doTest('apply', applytest)

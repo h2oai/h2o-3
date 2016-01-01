@@ -9,7 +9,7 @@ test.pubdev.2031 <- function(conn){
   #seed <- 279825333
   #sid <- h2o.runif(cars.hex,seed=seed)
   #cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
-  cars.train <- h2o.uploadFile(locate("smalldata/jira/cars_train.csv"))
+  cars.train <- h2o.uploadFile(h2oTest.locate("smalldata/jira/cars_train.csv"))
   x <- c(4, 5, 6, 7)
   y <- 3
   distribution <- "gaussian"
@@ -22,4 +22,4 @@ test.pubdev.2031 <- function(conn){
   
 }
 
-doTest("PUBDEV-2031", test.pubdev.2031)
+h2oTest.doTest("PUBDEV-2031", test.pubdev.2031)

@@ -13,12 +13,12 @@ iris.r <- iris
 iris.h2o <- as.h2o(iris.r, destination_frame="iris.h2o")
 class<- class(iris.h2o)
 
-Log.info("Print class of iris.h2o")
-Log.info(paste("iris.h2o  :" ,class))
+h2oTest.logInfo("Print class of iris.h2o")
+h2oTest.logInfo(paste("iris.h2o  :" ,class))
 
 
 
 }
 
-doTest("R Doc as h2o", test.rdocash2o.golden)
+h2oTest.doTest("R Doc as h2o", test.rdocash2o.golden)
 

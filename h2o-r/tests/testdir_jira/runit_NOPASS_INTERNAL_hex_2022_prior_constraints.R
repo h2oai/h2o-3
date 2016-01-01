@@ -9,7 +9,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.Priors.BetaConstraints <- function() {
 
-  Log.info("Import modelStack data into H2O...")
+  h2oTest.logInfo("Import modelStack data into H2O...")
   pathToFile <- "/mnt/0xcustomer-datasets/c27/data.csv"
   pathToConstraints <- "/mnt/0xcustomer-datasets/c27/constraints_indices.csv"
 
@@ -26,18 +26,18 @@ test.Priors.BetaConstraints <- function() {
   family_type = "binomial"
 
   ## Take subset of data
-  Log.info("Subset dataset to only predictor and response variables...")
+  h2oTest.logInfo("Subset dataset to only predictor and response variables...")
   data.hex <- modelStack[,c(indVars, depVars)]
   summary(data.hex)
 
   ## Test/Train Split
-  Log.info("Split into test/train frame...")
+  h2oTest.logInfo("Split into test/train frame...")
   data.split <- h2o.splitFrame(data = data.hex, ratios = 0.9)
   data.train <- data.split[[1]]
   data.test <- data.split[[2]]
 
   ## Run full H2O GLM
-  Log.info("Run a logistic regression with no regularization and alpha = 0 and beta constraints without priors. ")
+  h2oTest.logInfo("Run a logistic regression with no regularization and alpha = 0 and beta constraints without priors. ")
   data.train$C3 <- as.factor(data.train$C3)
   data.test$C3 <- as.factor(data.test$C3)
   glm.h2o <- h2o.glm(x=indVars, y=depVars, training_frame=data.train, lambda=lambda, alpha=alpha, family=family_type,
@@ -46,7 +46,7 @@ test.Priors.BetaConstraints <- function() {
   perf <- h2o.performance(glm.h2o, data.test)
 
   ## Run full glmnet
-  Log.info("Run a logistic regression with alpha = 0 and beta constraints ")
+  h2oTest.logInfo("Run a logistic regression with alpha = 0 and beta constraints ")
   train.df <- as.data.frame(data.train)
   test.df <- as.data.frame(data.test)
   xMatrix <- data.matrix(train.df) # converts all values to numeric
@@ -118,17 +118,17 @@ test.Priors.BetaConstraints <- function() {
   gradient1 <- h2o_logistic_gradient(x,y,beta1, beta_given, rho=1, lambda)
   gradient2 <- h2o_logistic_gradient(x,y,beta2, beta_given, rho=0, lambda)
 
-  Log.info("Check gradient of beta constraints with priors or beta given...")
+  h2oTest.logInfo("Check gradient of beta constraints with priors or beta given...")
   threshold = 1E-1
   print(as.numeric(gradient1$beta_given)[-23])
   expect_true(all(as.numeric(gradient1$beta_given)[-23] < threshold))
 
-  Log.info("Check gradient of beta constraints without priors or beta given...")
+  h2oTest.logInfo("Check gradient of beta constraints without priors or beta given...")
   expect_false(all(as.numeric(gradient2$beta_given)[-23] < threshold))
   print(as.numeric(gradient2$beta_given)[-23])
 }
 
-doTest("GLM Test: Beta Constraints with Priors", test.Priors.BetaConstraints)
+h2oTest.doTest("GLM Test: Beta Constraints with Priors", test.Priors.BetaConstraints)
 
 
 

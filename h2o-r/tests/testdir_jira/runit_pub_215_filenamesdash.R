@@ -10,11 +10,11 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 dash_filename_test <- function(){
-  Log.info('uploading testing dataset')
-  df.h <- h2o.importFile(locate('smalldata/jira/pub-215.csv'))
+  h2oTest.logInfo('uploading testing dataset')
+  df.h <- h2o.importFile(h2oTest.locate('smalldata/jira/pub-215.csv'))
 
-  Log.info('printing from h2o')
-  Log.info( head(df.h) )
+  h2oTest.logInfo('printing from h2o')
+  h2oTest.logInfo( head(df.h) )
 
   res <- as.data.frame(h2o.table(df.h$l>0))
 
@@ -28,4 +28,4 @@ if(F){
 }
 
 
-doTest('dash_filename_test', dash_filename_test)
+h2oTest.doTest('dash_filename_test', dash_filename_test)

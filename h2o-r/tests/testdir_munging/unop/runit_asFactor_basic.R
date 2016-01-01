@@ -4,9 +4,9 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.as.factor.basic <- function() {
-  hex <- h2o.importFile(locate("smalldata/junit/cars.csv"), destination_frame = "cars.hex")
+  hex <- h2o.importFile(h2oTest.locate("smalldata/junit/cars.csv"), destination_frame = "cars.hex")
 
-  Log.info("Printing out the head of the cars datasets") 
+  h2oTest.logInfo("Printing out the head of the cars datasets") 
 
   print(hex)
 
@@ -26,7 +26,7 @@ test.as.factor.basic <- function() {
   print(hex)
 
 
-  Log.info("doing the Log.info")
+  h2oTest.logInfo("doing the Log.info")
 
 
   #print(is.factor(hex[,"cylinders"]))  
@@ -39,5 +39,5 @@ test.as.factor.basic <- function() {
   
 }
 
-doTest("Test the as.factor unary operator", test.as.factor.basic)
+h2oTest.doTest("Test the as.factor unary operator", test.as.factor.basic)
 

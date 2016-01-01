@@ -9,14 +9,14 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.GLM.offset <- function(){
 
-    Log.info("Importing prostate dataset...")
-    prostate.hex <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
+    h2oTest.logInfo("Importing prostate dataset...")
+    prostate.hex <- h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
 
 
-    Log.info("Run glm with offset specified")
+    h2oTest.logInfo("Run glm with offset specified")
     my_glm <- h2o.glm(x = 1:3, y = 4, training_frame = prostate.hex, family = "gaussian", offset_column = "GLEASON")
 
     
 }
 
-doTest("GLM offset implementation test", test.GLM.offset)
+h2oTest.doTest("GLM offset implementation test", test.GLM.offset)

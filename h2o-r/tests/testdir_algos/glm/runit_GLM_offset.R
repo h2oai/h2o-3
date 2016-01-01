@@ -59,4 +59,4 @@ test <- function() {
 }
 
 
-doTest("GLM offset Test: GLM w/ offset", test)
+h2oTest.doTest("GLM offset Test: GLM w/ offset", test)

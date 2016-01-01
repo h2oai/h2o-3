@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.GBM <- function() {
-  df <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"), destination_frame="prostate.hex")
+  df <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv"), destination_frame="prostate.hex")
 
   ## AGE Regression
   m1 <- h2o.gbm(x=4:8,y="AGE",training_frame=df, seed=123, nfold=5)
@@ -20,4 +20,4 @@ test.GBM <- function() {
   print(h2o.mse(m2, xval=T))
   expect_true(h2o.mse(m2, xval=T) < h2o.mse(m1, xval=T), "GBM with stochastic sampling should have lower cross-val MSE!")
 }
-doTest("GBM Test: offset", test.GBM)
+h2oTest.doTest("GBM Test: offset", test.GBM)

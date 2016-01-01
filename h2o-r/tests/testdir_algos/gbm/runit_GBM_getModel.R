@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.GBM.nfolds <- function() {
-  prostate.hex <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
+  prostate.hex <- h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
   print(summary(prostate.hex))
   prostate.hex[,2] = as.factor(prostate.hex[,2])
   prostate.nfolds <- h2o.gbm.cv(y = 2, x = 3:9, training_frame = prostate.hex, nfolds = 5, distribution = "bernoulli")
@@ -23,4 +23,4 @@ test.GBM.nfolds <- function() {
   
 }
 
-doTest("GBM Cross-Validation Test: Prostate", test.GBM.nfolds)
+h2oTest.doTest("GBM Cross-Validation Test: Prostate", test.GBM.nfolds)

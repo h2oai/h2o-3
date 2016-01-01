@@ -7,13 +7,13 @@ test.pubdev.1654 <- function() {
   k <- 5
   use_all_factor_levels <- FALSE
   
-  Log.info("Importing birds.csv data...")
-  birds.dat <- read.csv(locate("smalldata/pca_test/birds.csv"), header = TRUE)
-  birds.hex <- h2o.importFile(locate("smalldata/pca_test/birds.csv"))
+  h2oTest.logInfo("Importing birds.csv data...")
+  birds.dat <- read.csv(h2oTest.locate("smalldata/pca_test/birds.csv"), header = TRUE)
+  birds.hex <- h2o.importFile(h2oTest.locate("smalldata/pca_test/birds.csv"))
   print(summary(birds.hex))
   
-  Log.info("Reshuffling R data to match H2O and removing rows with NAs...")
-  birds.mm <- alignData(birds.dat, center = TRUE, scale = TRUE, use_all_factor_levels = TRUE)
+  h2oTest.logInfo("Reshuffling R data to match H2O and removing rows with NAs...")
+  birds.mm <- h2oTest.alignData(birds.dat, center = TRUE, scale = TRUE, use_all_factor_levels = TRUE)
   
   # Move Ref factors from patch column to front since H2O does same
   refs <- grepl("patch.Ref", colnames(birds.mm))
@@ -31,12 +31,12 @@ test.pubdev.1654 <- function() {
   birds.cmp <- birds.cmp[complete.cases(birds.cmp),]
   print(summary(birds.cmp))
   
-  Log.info("Building PCA model...")
+  h2oTest.logInfo("Building PCA model...")
   fitR <- prcomp(birds.cmp, center = FALSE, scale. = FALSE)
   fitH2O <- h2o.prcomp(birds.hex, k = k, transform = "STANDARDIZE", max_iterations = 1000, use_all_factor_levels = use_all_factor_levels)
-  checkPCAModel(fitH2O, fitR, tolerance = 1e-5, sort_rows = FALSE)
+  h2oTest.checkPCAModel(fitH2O, fitR, tolerance = 1e-5, sort_rows = FALSE)
   
   
 }
 
-doTest("PUBDEV-1654: PCA handling of Missing Values", test.pubdev.1654)
+h2oTest.doTest("PUBDEV-1654: PCA handling of Missing Values", test.pubdev.1654)

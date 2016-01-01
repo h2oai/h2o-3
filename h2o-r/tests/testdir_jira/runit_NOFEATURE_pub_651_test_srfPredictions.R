@@ -9,7 +9,7 @@ options(echo=TRUE)
 
 test.pub.651 <- function() {
   print("Parsing the adult income dataset")
-  adlt_income<-h2o.importFile(normalizePath(locate("smalldata/jira/adult.gz")),destination_frame="adlt_income")
+  adlt_income<-h2o.importFile(normalizePath(h2oTest.locate("smalldata/jira/adult.gz")),destination_frame="adlt_income")
   myX = 1:14
   myY = 15
 
@@ -42,4 +42,4 @@ test.pub.651 <- function() {
   
 }
 
-doTest("PUB-651: Test Predictions on SRF", test.pub.651)
+h2oTest.doTest("PUB-651: Test Predictions on SRF", test.pub.651)

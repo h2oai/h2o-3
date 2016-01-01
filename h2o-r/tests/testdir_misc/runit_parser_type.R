@@ -8,9 +8,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.parser_type <- function() {
 
-  hex <- h2o.uploadFile(locate("smalldata/synthetic/syn_binary_100x3000.svm"), "svm_data", parse_type = "SVMLight")
+  hex <- h2o.uploadFile(h2oTest.locate("smalldata/synthetic/syn_binary_100x3000.svm"), "svm_data", parse_type = "SVMLight")
 
-  hex.csv <- h2o.uploadFile(locate("smalldata/synthetic/syn_binary_100x3000.svm"), "svm_data_as_csv", parse_type = "CSV")
+  hex.csv <- h2o.uploadFile(h2oTest.locate("smalldata/synthetic/syn_binary_100x3000.svm"), "svm_data_as_csv", parse_type = "CSV")
 
   print(hex)
 
@@ -19,4 +19,4 @@ test.parser_type <- function() {
   
 }
 
-doTest("Test parser_type", test.parser_type)
+h2oTest.doTest("Test parser_type", test.parser_type)

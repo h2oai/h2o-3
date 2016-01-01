@@ -11,7 +11,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
 	print("Reading in data (tiny airline with UUIDs).")
-		airline.hex = h2o.importFile(locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
+		airline.hex = h2o.importFile(h2oTest.locate("smalldata/airlines/uuid_airline.csv"), destination_frame="airline.hex", header=TRUE)
 		#print("Summary of airline data: ") ; summary(airline.hex)
 		print("Head of airline data: ") ; print(head(airline.hex))
 
@@ -66,4 +66,4 @@ test <- function() {
   
 }
 
-doTest("Test parsing, splitting, modelling, and computation on data with UUID column", test)
+h2oTest.doTest("Test parsing, splitting, modelling, and computation on data with UUID column", test)

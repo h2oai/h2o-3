@@ -4,9 +4,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.hex.1613 <- function() {
-    heading("BEGIN TEST")
+    h2oTest.heading("BEGIN TEST")
 
-    path <- locate("smalldata/logreg/prostate.csv")
+    path <- h2oTest.locate("smalldata/logreg/prostate.csv")
     hex <- h2o.importFile(path, destination_frame="p.hex")
 
     m <- h2o.glm(x = 3:8, y = 2, family = "binomial", training_frame = hex)
@@ -18,4 +18,4 @@ test.hex.1613 <- function() {
     h2o.confusionMatrix(m, hex)
 }
 
-doTest("HEX-1613", test.hex.1613)
+h2oTest.doTest("HEX-1613", test.hex.1613)

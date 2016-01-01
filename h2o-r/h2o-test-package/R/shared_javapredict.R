@@ -1,4 +1,4 @@
-doJavapredictTest <- function(model,test_file,test_frame,params) {
+h2oTest.doJavapredictTest <- function(model,test_file,test_frame,params) {
   conn <- h2o.getConnection()
   myIP <- conn@ip
   myPort <- conn@port

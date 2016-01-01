@@ -9,15 +9,15 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 complexFilterTest_iris_test_numeric_missing_extra_40 <- function() {
-    Log.info("A munge-task R unit test on data <iris_test_numeric_missing_extra> testing the functional unit <['!', '!=', '&', '>=', '|', '>=']> ")
-    Log.info("Uploading iris_test_numeric_missing_extra")
-    hex <- h2o.importFile(locate("smalldata/iris/iris_test_numeric_missing_extra.csv"), "riris_test_numeric_missing_extra.hex")
-Log.info("Performing compound task !( ( hex[,c(\"species\")] != 1.2108297567 ) & ( hex[,c(\"petal_len\")] >= 5.18451212374 ) | ( ( hex[,c(\"petal_len\")] >= 3.39830058306 )) ) on dataset <iris_test_numeric_missing_extra>")
+    h2oTest.logInfo("A munge-task R unit test on data <iris_test_numeric_missing_extra> testing the functional unit <['!', '!=', '&', '>=', '|', '>=']> ")
+    h2oTest.logInfo("Uploading iris_test_numeric_missing_extra")
+    hex <- h2o.importFile(h2oTest.locate("smalldata/iris/iris_test_numeric_missing_extra.csv"), "riris_test_numeric_missing_extra.hex")
+h2oTest.logInfo("Performing compound task !( ( hex[,c(\"species\")] != 1.2108297567 ) & ( hex[,c(\"petal_len\")] >= 5.18451212374 ) | ( ( hex[,c(\"petal_len\")] >= 3.39830058306 )) ) on dataset <iris_test_numeric_missing_extra>")
          filterHex <- hex[!( ( hex[,c("species")] != 1.2108297567 ) & ( hex[,c("petal_len")] >= 5.18451212374 ) | ( ( hex[,c("petal_len")] >= 3.39830058306 )) ),]
-Log.info("Performing compound task !( ( hex[,c(\"petal_len\")] != 4.56344348577 ) & ( hex[,c(\"petal_len\")] >= 3.54674974992 ) | ( ( hex[,c(\"species\")] >= 2.26145385905 )) ) on dataset iris_test_numeric_missing_extra, and also subsetting columns.")
+h2oTest.logInfo("Performing compound task !( ( hex[,c(\"petal_len\")] != 4.56344348577 ) & ( hex[,c(\"petal_len\")] >= 3.54674974992 ) | ( ( hex[,c(\"species\")] >= 2.26145385905 )) ) on dataset iris_test_numeric_missing_extra, and also subsetting columns.")
          filterHex <- hex[!( ( hex[,c("petal_len")] != 4.56344348577 ) & ( hex[,c("petal_len")] >= 3.54674974992 ) | ( ( hex[,c("species")] >= 2.26145385905 )) ), c("petal_wid","petal_len","sepal_len","species")]
-    Log.info("Now do the same filter & subset, but select complement of columns.")
+    h2oTest.logInfo("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[!( ( hex[,c("petal_len")] != 4.56344348577 ) & ( hex[,c("petal_len")] >= 3.54674974992 ) | ( ( hex[,c("species")] >= 2.26145385905 )) ), c("sepal_wid")]
 
 }
-doTest("compoundFilterTest_ on data iris_test_numeric_missing_extra unit= ['!', '!=', '&', '>=', '|', '>=']", complexFilterTest_iris_test_numeric_missing_extra_40)
+h2oTest.doTest("compoundFilterTest_ on data iris_test_numeric_missing_extra unit= ['!', '!=', '&', '>=', '|', '>=']", complexFilterTest_iris_test_numeric_missing_extra_40)

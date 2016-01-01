@@ -14,4 +14,4 @@ test.pub.1371 <- function() {
   
 }
 
-doTest("PUBDEV-1371: Row handling must match between Gram and SVD tasks", test.pub.1371)
+h2oTest.doTest("PUBDEV-1371: Row handling must match between Gram and SVD tasks", test.pub.1371)

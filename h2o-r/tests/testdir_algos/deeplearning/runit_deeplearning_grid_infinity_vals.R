@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.grid.infinity.values <- function(conn){
-  prostate <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  prostate <- h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
   prostate[,5] <- as.factor(prostate[,5])
 
   grid_space <- list()
@@ -18,5 +18,5 @@ test.grid.infinity.values <- function(conn){
   
 }
 
-doTest("Grid infinity values", test.grid.infinity.values)
+h2oTest.doTest("Grid infinity values", test.grid.infinity.values)
 

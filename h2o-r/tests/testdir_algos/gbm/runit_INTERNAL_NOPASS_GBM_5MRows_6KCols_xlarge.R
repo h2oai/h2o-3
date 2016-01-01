@@ -32,4 +32,4 @@ perf <- h2o.performance(model.gbm, valid)
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

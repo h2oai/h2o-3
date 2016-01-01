@@ -6,34 +6,34 @@ source("../../../scripts/h2o-r-test-setup.R")
 test.plus.onH2OFrame <- function() {
   hex <- as.h2o( iris)
 
-  Log.info("Try adding scalar to frame: 5 + hex")
+  h2oTest.logInfo("Try adding scalar to frame: 5 + hex")
   # if(anyEnum) expect_warning(fivePlusHex <- 5 + hex)
   # else fivePlusHex <- 5 + hex
   fivePlusHex <- 5 + hex  
 
-  Log.info("Original frame: ")
+  h2oTest.logInfo("Original frame: ")
   print(head(hex))
 
-  Log.info("5+hex:")
+  h2oTest.logInfo("5+hex:")
   print(head(fivePlusHex))
   cat("\ndim(as.data.frame(fivePlusHex)) : ")
   cat(dim(fivePlusHex), "\n")
 
-  Log.info("fivePlusHex - 5: ")
+  h2oTest.logInfo("fivePlusHex - 5: ")
   fivePlusHexMinusFive <- fivePlusHex - 5
 
   print(head(fivePlusHexMinusFive))
 
   expect_that(dim(fivePlusHex), equals(dim(hex)))
 
-  Log.info("Checking left and right: ")
+  h2oTest.logInfo("Checking left and right: ")
   hexPlusFive <- hex + 5
   fivePlusHex <- 5 + hex
 
-  Log.info("hex + 5: ")
+  h2oTest.logInfo("hex + 5: ")
   print(head(hexPlusFive))
   
-  Log.info("5 + hex: ")
+  h2oTest.logInfo("5 + hex: ")
   print(head(fivePlusHex))
 
   hhpp <- data.frame(lapply(head(hexPlusFive), as.numeric) )
@@ -41,7 +41,7 @@ test.plus.onH2OFrame <- function() {
  
   expect_that(hhpp, equals(hfph))
 
-  Log.info("Try to add two frames: hex + hex")
+  h2oTest.logInfo("Try to add two frames: hex + hex")
   hd <- as.data.frame(head(hex))
   hexPlusHex <- hex + hex
   print(head(hexPlusHex))
@@ -51,14 +51,14 @@ test.plus.onH2OFrame <- function() {
   hd  <- data.frame(lapply(head(hdPlushd), as.numeric))
   hph <- data.frame(lapply(head(hexPlusHex), as.numeric))
 
-  Log.info("FINAL ONE:")
+  h2oTest.logInfo("FINAL ONE:")
   print(hd)
 
-  Log.info("HPH:")
+  h2oTest.logInfo("HPH:")
   print(hph)
 
   
 }
 
-doTest("BINOP2 EXEC2 TEST: '+' with H2OFrames", test.plus.onH2OFrame)
+h2oTest.doTest("BINOP2 EXEC2 TEST: '+' with H2OFrames", test.plus.onH2OFrame)
 

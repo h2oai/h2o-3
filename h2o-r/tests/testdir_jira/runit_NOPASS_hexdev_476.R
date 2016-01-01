@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.hexdev.476 <- function() {
 
-    cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
+    cars.hex <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars.csv"))
     cars.hex[,3] <- as.factor(cars.hex[,3])
     c.sid <- h2o.runif(cars.hex)
     cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
@@ -30,4 +30,4 @@ test.hexdev.476 <- function() {
 
 }
 
-doTest("HEXDEV-476", test.hexdev.476)
+h2oTest.doTest("HEXDEV-476", test.hexdev.476)

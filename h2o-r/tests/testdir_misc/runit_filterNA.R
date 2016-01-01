@@ -10,7 +10,7 @@ source("../../scripts/h2o-r-test-setup.R")
 # setupRandomSeed(1994831827)
 
 test <- function() {
-	fr <- h2o.importFile(locate("smalldata/airlines/allyears2k_headers.zip"), "hex")
+	fr <- h2o.importFile(h2oTest.locate("smalldata/airlines/allyears2k_headers.zip"), "hex")
   cols <- h2o.filterNACols(fr, frac=.02)
   print(cols)
   #[1]  1  2  3  4  6  8  9 10 11 13 17 18 19 22 24 30 31
@@ -19,5 +19,5 @@ test <- function() {
   
 }
 
-doTest("Try filtering 0.02 or more NAs", test)
+h2oTest.doTest("Try filtering 0.02 or more NAs", test)
 

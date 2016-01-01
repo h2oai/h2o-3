@@ -31,4 +31,4 @@ print(iris.dl)
 # iris.drf <- h2o.randomforest(myX, myY, training_frame = iris.hex)
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

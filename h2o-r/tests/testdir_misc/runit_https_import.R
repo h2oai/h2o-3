@@ -18,4 +18,4 @@ test.import.https <- function() {
   
 }
 
-doTest("Testing HTTPS File Import", test.import.https)
+h2oTest.doTest("Testing HTTPS File Import", test.import.https)

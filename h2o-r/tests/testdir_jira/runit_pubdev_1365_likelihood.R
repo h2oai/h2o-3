@@ -9,7 +9,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.likelihood.infinity <- function() {
-  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars.csv"))
   cars.hex[,3] <- as.factor(cars.hex[,3])
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
@@ -27,4 +27,4 @@ test.likelihood.infinity <- function() {
   
 }
 
-doTest("Likelihood Is Infinity and Fails in Comparison", test.likelihood.infinity)
+h2oTest.doTest("Likelihood Is Infinity and Fails in Comparison", test.likelihood.infinity)

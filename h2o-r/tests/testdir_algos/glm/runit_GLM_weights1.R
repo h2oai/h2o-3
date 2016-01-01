@@ -132,4 +132,4 @@ test_weights_vs_glmnet <- function() {
   
 }
 
-doTest("GLM weight Test: GLM w/ weights vs glmnet", test_weights_vs_glmnet)
+h2oTest.doTest("GLM weight Test: GLM w/ weights vs glmnet", test_weights_vs_glmnet)

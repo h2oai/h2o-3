@@ -1,11 +1,11 @@
 #'
 #'
-#' ----------------- Additional Runit Utilities -----------------
+#' ----------------- Additional H2O (R) Testing Utilities -----------------
 #'
 #'
 
 #' Hadoop helper
-hadoop.namenode.is.accessible <- function() {
+h2oTest.hadoopNamenodeIsAccessible <- function() {
     url <- sprintf("http://%s:50070", HADOOP.NAMENODE);
     internal <- url.exists(url, timeout = 5)
     return(internal)
@@ -13,7 +13,7 @@ hadoop.namenode.is.accessible <- function() {
 
 #' Locate a file given the pattern <bucket>/<path/to/file>
 #' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
-locate<-
+h2oTest.locate<-
 function(pathStub, root.parent = NULL) {
   if (ON.HADOOP) {
     # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
@@ -26,19 +26,19 @@ function(pathStub, root.parent = NULL) {
     if (!file.exists(path)) stop(paste("Could not find the dataset: ", path, sep = ""))
     return(path)
   }
-  pathStub <- clean(pathStub)
+  pathStub <- h2oTest.clean(pathStub)
   bucket <- pathStub[1]
   offset <- pathStub[-1]
   cur.dir <- getwd()
 
   #recursively ascend until `bucket` is found
-  bucket.abspath <- path.compute(cur.dir, bucket, root.parent)
+  bucket.abspath <- h2oTest.pathCompute(cur.dir, bucket, root.parent)
   if (length(offset) != 0) return(paste(c(bucket.abspath, offset), collapse = "/", sep = "/"))
   else return(bucket.abspath)
 }
 
 #' Clean a path up: change \ -> /; remove starting './'; split
-clean<-
+h2oTest.clean<-
 function(p) {
   if (.Platform$file.sep == "/") {
     p <- gsub("[\\]", .Platform$file.sep, p)
@@ -59,7 +59,7 @@ function(p) {
 #' @param root: the directory that is being searched for
 #' @param root.parent: if not null, then the `root` must have `root.parent` as immediate parent
 #' @return: Return the absolute path to the root.
-path.compute<-
+h2oTest.pathCompute<-
 function(cur.dir, root, root.parent = NULL) {
   parent.dir  <- dirname(cur.dir)
   parent.name <- basename(parent.dir)
@@ -93,17 +93,17 @@ function(cur.dir, root, root.parent = NULL) {
 
     # the root is the parent
     if (parent.name == root && basename(dirname(parent.dir)) == root.parent) {
-      return(path.compute(parent.dir, root, root.parent)) }
+      return(h2oTest.pathCompute(parent.dir, root, root.parent)) }
 
     # fail if reach h2o-dev
     if (parent.name == PROJECT.ROOT) {
         stop(paste0("Reached the root ", PROJECT.ROOT, ". Didn't find the bucket with the root.parent")) }
   }
-  return(path.compute(parent.dir, root, root.parent))
+  return(h2oTest.pathCompute(parent.dir, root, root.parent))
 }
 
 #' Load a handful of packages automatically. Runit tests that require additional packages must be loaded explicitly
-default.packages <-
+h2oTest.loadDefaultRPackages <-
 function() {
   to_require <- c("jsonlite", "RCurl", "RUnit", "R.utils", "testthat", "ade4", "glmnet", "gbm", "ROCR", "e1071",
                   "tools", "statmod", "fpc", "cluster")
@@ -112,7 +112,7 @@ function() {
   invisible(lapply(to_require,function(x){require(x,character.only=TRUE,quietly=TRUE,warn.conflicts=FALSE)}))
 }
 
-read.zip<-
+h2oTest.readZip<-
 function(zipfile, exdir,header=T) {
   zipdir <- exdir
   unzip(zipfile, exdir=zipdir)
@@ -122,29 +122,29 @@ function(zipfile, exdir,header=T) {
 }
 
 # returns the directory of the sandbox for the given test.
-sandbox<-
+h2oTest.sandbox<-
 function(create=FALSE) {
   Rsandbox <- paste0("./Rsandbox_", basename(TEST.NAME))
   if (create) { dir.create(Rsandbox, showWarnings=FALSE) }
   if (dir.exists(Rsandbox)) { return(normalizePath(Rsandbox))
-  } else { Log.err(paste0("Sandbox directory: ",Rsandbox," does not exists")) }
+  } else { h2oTest.logErr(paste0("Sandbox directory: ",Rsandbox," does not exists")) }
 }
 
 # makes a directory in sandbox, one level down
-sandboxMakeSubDir<-
+h2oTest.sandboxMakeSubDir<-
 function(dirname) {
-  if (!is.character(dirname)) Log.err("dirname argument must be of type character")
+  if (!is.character(dirname)) h2oTest.logErr("dirname argument must be of type character")
   subdir <- file.path(sandbox(),dirname,fsep = "\\")
   dir.create(subdir, showWarnings=FALSE)
   return(subdir)
 }
 
 # renames sandbox subdir
-sandboxRenameSubDir<-
+h2oTest.sandboxRenameSubDir<-
 function(oldSubDir,newSubDirName) {
-  if (!is.character(oldSubDir)) Log.err("oldSubDir argument must be of type character")
-  if (!is.character(newSubDirName)) Log.err("newSubDirName argument must be of type character")
-  newSubDir <- file.path(sandbox(),newSubDirName)
+  if (!is.character(oldSubDir)) h2oTest.logErr("oldSubDir argument must be of type character")
+  if (!is.character(newSubDirName)) h2oTest.logErr("newSubDirName argument must be of type character")
+  newSubDir <- file.path(h2oTest.sandbox(),newSubDirName)
   # Real trouble deleting a prior-existing newSubDir on Windows, that was filled with crap.
   # Calling system("rm -rf") seems to work, where calling unlink() would not.
   # Also renaming to an existing but empty directory does not work on windows.
@@ -154,31 +154,31 @@ function(oldSubDir,newSubDirName) {
   return(newSubDir)
 }
 
-Log.info<-
+h2oTest.logInfo<-
 function(m) {
   message <- paste("[INFO] : ",m,sep="")
-  logging(message)
+  h2oTest.logging(message)
 }
 
-Log.warn<-
+h2oTest.logWarn<-
 function(m) {
-  logging(paste("[WARN] : ",m,sep=""))
+  h2oTest.logging(paste("[WARN] : ",m,sep=""))
   traceback()
 }
 
-Log.err<-
+h2oTest.logErr<-
 function(m) {
-  logging(paste("[ERROR] : ",m,sep=""))
-  logging("[ERROR] : TEST FAILED")
+  h2oTest.logging(paste("[ERROR] : ",m,sep=""))
+  h2oTest.logging("[ERROR] : TEST FAILED")
   traceback()
 }
 
-logging<-
+h2oTest.logging<-
 function(m) {
   cat(sprintf("[%s] %s\n", Sys.time(),m))
 }
 
-PASS_BANNER<-
+h2oTest.PassBanner<-
 function() {
   cat("\n")
   cat("########     ###     ######   ###### \n")
@@ -191,7 +191,7 @@ function() {
   cat("\n")
 }
 
-FAIL_BANNER<-
+h2oTest.FailBanner<-
 function() {
   cat("\n")
   cat("########    ###    #### ##       \n")
@@ -204,27 +204,27 @@ function() {
   cat("\n")
 }
 
-PASS<-
+h2oTest.pass<-
 function() {
-  PASS_BANNER()
+  h2oTest.PassBanner()
   q("no",0,TRUE)
 }
 
-FAIL<-
+h2oTest.fail<-
 function(e) {
-  FAIL_BANNER()
-  Log.err(e)
+  h2oTest.FailBanner()
+  h2oTest.logErr(e)
   q("no",1,TRUE) #exit with nonzero exit code
 }
 
-SKIP<-
+h2oTest.skip<-
 function() {
   q("no",42,TRUE) #exit with nonzero exit code
 }
 
-WARN<-
+h2oTest.warn<-
 function(w) {
-  Log.warn(w)
+  h2oTest.logWarn(w)
 }
 
 #----------------------------------------------------------------------
@@ -235,16 +235,16 @@ function(w) {
 #
 # Returns:     none
 #----------------------------------------------------------------------
-heading <- function(x, n = -1) {
-  Log.info("")
-  Log.info("")
+h2oTest.heading <- function(x, n = -1) {
+  h2oTest.logInfo("")
+  h2oTest.logInfo("")
   if (n < 0) {
-    Log.info(sprintf("STEP: %s", x))
+    h2oTest.logInfo(sprintf("STEP: %s", x))
   } else {
-    Log.info(sprintf("STEP %2d: %s", n, x))
+    h2oTest.logInfo(sprintf("STEP %2d: %s", n, x))
   }
-  Log.info("")
-  Log.info("")
+  h2oTest.logInfo("")
+  h2oTest.logInfo("")
 }
 
 #----------------------------------------------------------------------
@@ -254,7 +254,7 @@ heading <- function(x, n = -1) {
 #
 # Returns:     none
 #----------------------------------------------------------------------
-safeSystem <- function(x) {
+h2oTest.safeSystem <- function(x) {
   print(sprintf("+ CMD: %s", x))
   res <- system(x)
   print(res)
@@ -264,7 +264,7 @@ safeSystem <- function(x) {
   }
 }
 
-withWarnings <- function(expr) {
+h2oTest.withWarnings <- function(expr) {
     myWarnings <- NULL
     wHandler <- function(w) {
         myWarnings <<- c(myWarnings, list(w))
@@ -272,10 +272,10 @@ withWarnings <- function(expr) {
     }
     val <- withCallingHandlers(expr, warning = wHandler)
     list(value = val, warnings = myWarnings)
-    for(w in myWarnings) WARN(w)
+    for(w in myWarnings) h2oTest.warn(w)
 }
 
-cleanSummary <- function(mysum, alphabetical = FALSE) {
+h2oTest.cleanSummary <- function(mysum, alphabetical = FALSE) {
   # Returns string without leading or trailing whitespace
   trim <- function(x) { gsub("^\\s+|\\s+$", "", x) }
   
@@ -302,9 +302,9 @@ cleanSummary <- function(mysum, alphabetical = FALSE) {
   })
 }
 
-checkSummary <- function(object, expected, tolerance = 1e-6) {
-  sumR <- cleanSummary(expected, alphabetical = TRUE)
-  sumH2O <- cleanSummary(object, alphabetical = TRUE)
+h2oTest.checkSummary <- function(object, expected, tolerance = 1e-6) {
+  sumR <- h2oTest.cleanSummary(expected, alphabetical = TRUE)
+  sumH2O <- h2oTest.cleanSummary(object, alphabetical = TRUE)
   
   expect_equal(length(sumH2O), length(sumR))
   lapply(1:length(sumR), function(i) {
@@ -316,7 +316,7 @@ checkSummary <- function(object, expected, tolerance = 1e-6) {
   })
 }
 
-genDummyCols <- function(df, use_all_factor_levels = TRUE) {
+h2oTest.genDummyCols <- function(df, use_all_factor_levels = TRUE) {
   NUM <- function(x) { x[,sapply(x, is.numeric)] }
   FAC <- function(x) { x[,sapply(x, is.factor)]  }
   FAC_LEVS <- function(x) { sapply(x, function(z) { length(levels(z)) })}
@@ -354,7 +354,7 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
   return(DF)
 }
 
-alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRUE, use_all_factor_levels = TRUE) {
+h2oTest.alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRUE, use_all_factor_levels = TRUE) {
   df.clone <- df
   is_num <- sapply(df.clone, is.numeric)
   if(any(is_num)) {
@@ -367,16 +367,16 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
     if(any(is_const))
       df.clone <- df.clone[,!is_const]
   }
-  genDummyCols(df.clone, use_all_factor_levels)
+  h2oTest.genDummyCols(df.clone, use_all_factor_levels)
 }
 
-doTest<-
+h2oTest.doTest<-
 function(testDesc, test) {
-    tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
-    PASS()
+    tryCatch(test_that(testDesc, h2oTest.withWarnings(test())), warning = function(w) h2oTest.warn(w), error =function(e) h2oTest.fail(e))
+    h2oTest.pass()
 }
 
-setupSeed<-
+h2oTest.setupSeed<-
 function(seed = NULL, master_seed = FALSE) {
     possible_seed_path <- paste("./Rsandbox_", TEST.NAME, "/seed", sep = "")
 
@@ -398,7 +398,7 @@ function(seed = NULL, master_seed = FALSE) {
         write.table(seed, possible_seed_path)
         cat("\n\n\n", paste("[INFO]: Generating new random SEED: ", seed), "\n\n\n\n")
     }
-    Log.info(paste("USING SEED: ", SEED))
+    h2oTest.logInfo(paste("USING SEED: ", SEED))
 }
 
 h2o_and_R_equal <- function(h2o_obj, r_obj, tolerance = 1e-6) {

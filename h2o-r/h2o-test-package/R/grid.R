@@ -1,5 +1,5 @@
 # Validate given models' parameters against expected values
-expect_model_param <- function(models, attribute_name, expected_values) {
+h2oTest.expectModelParam <- function(models, attribute_name, expected_values) {
   params <- unique(lapply(models, function(model) { model@allparameters[[attribute_name]] } ))
   expect_equal(length(params), length(expected_values))
   Log.info(paste0("params: ", paste(params, collapse=",")))
@@ -14,7 +14,7 @@ expect_model_param <- function(models, attribute_name, expected_values) {
 #' @param ncols Used for mtries selection or k (pca)
 #' @param nrows Used for k (pca)
 #' @return A named list of gridable parameters and their respective values
-makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
+h2oTest.makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
   grid_space <- list()
   if ( algo == "gbm" || algo == "drf" || algo == "randomForest") {
     if ( sample(0:1,1) ) { grid_space$ntrees <- sample(1:5, sample(2:3,1)) }

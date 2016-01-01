@@ -4,10 +4,10 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.deeplearning_multi <- function() {
-  Log.info("Test checks if Deep Learning works fine with a categorical dataset")
+  h2oTest.logInfo("Test checks if Deep Learning works fine with a categorical dataset")
   
-  print(locate("smalldata/logreg/prostate.csv"))
-  prostate <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), "prostate")
+  print(h2oTest.locate("smalldata/logreg/prostate.csv"))
+  prostate <- h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"), "prostate")
   prostate[,2] <- as.factor(prostate[,2]) #CAPSULE -> Factor (response)
   prostate[,3] <- as.factor(prostate[,3]) #AGE -> Factor
   prostate[,4] <- as.factor(prostate[,4]) #RACE -> Factor
@@ -21,5 +21,5 @@ check.deeplearning_multi <- function() {
   
 }
 
-doTest("Deep Learning MultiClass Test", check.deeplearning_multi)
+h2oTest.doTest("Deep Learning MultiClass Test", check.deeplearning_multi)
 

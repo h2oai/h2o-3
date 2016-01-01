@@ -4,8 +4,8 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.offset.comparison <- function() {
-  Log.info("Loading datasets...")
-  pros.dat <- read.csv(locate("smalldata/prostate/prostate.csv"))
+  h2oTest.logInfo("Loading datasets...")
+  pros.dat <- read.csv(h2oTest.locate("smalldata/prostate/prostate.csv"))
   pros.dat[,2] <- as.factor(pros.dat[,2])
   pros.dat[,4] <- as.factor(pros.dat[,4])
   pros.dat[,5] <- as.factor(pros.dat[,5])
@@ -13,7 +13,7 @@ test.offset.comparison <- function() {
   pros.dat[,9] <- as.factor(pros.dat[,9])
   pros.hex <- as.h2o(pros.dat)
 
-  cars.dat <- read.csv(locate("smalldata/junit/cars.csv"))
+  cars.dat <- read.csv(h2oTest.locate("smalldata/junit/cars.csv"))
   cars.dat[,1] <- as.factor(cars.dat[,1])
   cars.dat[,3] <- as.factor(cars.dat[,3])
   cars.hex <- as.h2o(cars.dat)
@@ -21,7 +21,7 @@ test.offset.comparison <- function() {
   family_type = c("gaussian", "poisson")
   solver = c("IRLSM", "L_BFGS")
 
-  Log.info("Running Binomial Comparison...")
+  h2oTest.logInfo("Running Binomial Comparison...")
   glm.bin.R <- glm(CAPSULE ~ . -ID -AGE, family = "binomial", data = pros.dat,
                    offset = pros.dat$AGE)
   glm.bin.h2o <- h2o.glm(x = 4:9, y = 2, training_frame = pros.hex, family = "binomial",
@@ -40,7 +40,7 @@ test.offset.comparison <- function() {
   if (glm.bin.R$aic != Inf)
     expect_equal(glm.bin.R$aic, h2o.aic(glm.bin.h2o), tolerance = 0.1)
 
-  Log.info("Running Regression Comparisons...")
+  h2oTest.logInfo("Running Regression Comparisons...")
   for(fam in family_type) {
     glm.R <- glm(economy..mpg. ~ . - name - year, family = fam, data = cars.dat, offset = cars.dat$year)
     glm.h2o <- h2o.glm(x = 3:7, y = 2, training_frame = cars.hex, family = fam,
@@ -68,4 +68,4 @@ test.offset.comparison <- function() {
   
 }
 
-doTest("Testing Offsets in GLM", test.offset.comparison)
+h2oTest.doTest("Testing Offsets in GLM", test.offset.comparison)

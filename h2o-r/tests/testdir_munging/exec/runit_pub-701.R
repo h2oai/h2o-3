@@ -27,5 +27,5 @@ test.null_tofrom <- function() {
     
 }
 
-doTest("Test null_tofrom.", test.null_tofrom)
+h2oTest.doTest("Test null_tofrom.", test.null_tofrom)
 

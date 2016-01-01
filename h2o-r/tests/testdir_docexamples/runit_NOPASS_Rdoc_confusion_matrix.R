@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdocclusterstatus.golden <- function() {
 
-    prosPath <- locate("smalldata/extdata/prostate.csv")
+    prosPath <- h2oTest.locate("smalldata/extdata/prostate.csv")
     hex <- h2o.uploadFile(prosPath)
     hex[,2] <- as.factor(hex[,2])
     model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
@@ -17,5 +17,5 @@ test.rdocclusterstatus.golden <- function() {
     
 }
 
-doTest("R Doc Cluster Status", test.rdocclusterstatus.golden)
+h2oTest.doTest("R Doc Cluster Status", test.rdocclusterstatus.golden)
 

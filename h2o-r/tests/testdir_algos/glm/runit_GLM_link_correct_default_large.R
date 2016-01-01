@@ -9,7 +9,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
     print("Reading in original prostate data.")
-        prostate.data = h2o.uploadFile(locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data", header=TRUE)
+        prostate.data = h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data", header=TRUE)
 
     print("Compare models with link unspecified and canonical link specified.")
     	print("GAUSSIAN: ") 
@@ -35,4 +35,4 @@ test <- function() {
     
 }
 
-doTest("Testing glm picks correct link when unspecified: default canonical link for family", test)
+h2oTest.doTest("Testing glm picks correct link when unspecified: default canonical link for family", test)

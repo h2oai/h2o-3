@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.na.strings <- function() {
-    path <- locate("smalldata/jira/hexdev_29.csv")
+    path <- h2oTest.locate("smalldata/jira/hexdev_29.csv")
 
     fhex <- h2o.importFile(path)
     expect_equal(sum(sapply(1:ncol(fhex), function (c) sum(is.na(fhex[,c])))), 0)
@@ -15,4 +15,4 @@ test.na.strings <- function() {
     
 }
 
-doTest("NA strings", test.na.strings)
+h2oTest.doTest("NA strings", test.na.strings)

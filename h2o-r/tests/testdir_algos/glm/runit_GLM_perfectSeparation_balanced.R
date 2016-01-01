@@ -15,7 +15,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 test <- function() {
 
     print("Read in synthetic balanced dataset")
-        data.b.hex <- h2o.uploadFile(locate("smalldata/synthetic_perfect_separation/balanced.csv"), destination_frame="data.b.hex")
+        data.b.hex <- h2o.uploadFile(h2oTest.locate("smalldata/synthetic_perfect_separation/balanced.csv"), destination_frame="data.b.hex")
 
     print("Fit model on dataset.")
         model.balanced <- h2o.glm(x=c("x1", "x2"), y="y", data.b.hex, family="binomial", lambda_search=TRUE, alpha=0, nfolds=0, lambda=1e-8)
@@ -29,4 +29,4 @@ test <- function() {
     
 }
 
-doTest("Testing glm performance on balanced synthetic dataset with perfect separation.", test)
+h2oTest.doTest("Testing glm performance on balanced synthetic dataset with perfect separation.", test)

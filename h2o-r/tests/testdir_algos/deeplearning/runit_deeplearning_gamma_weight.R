@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function(h) {
-	data = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T)
+	data = read.csv(file =h2oTest.locate("smalldata/glm_test/cancar_logIn.csv"),header = T)
 	data$Merit <- factor(data$Merit)
 	data$Class <- factor(data$Class)
 	data$C1M3 <-factor(data$Class == 1 & data$Merit == 3 )
@@ -72,5 +72,5 @@ test <- function(h) {
 
 	
 }
-doTest("Deeplearning weight Test: deeplearning w/ weights for gamma distribution", test)
+h2oTest.doTest("Deeplearning weight Test: deeplearning w/ weights for gamma distribution", test)
 

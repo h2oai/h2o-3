@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function(h) {
-    insurance_h2o <- h2o.importFile(locate("smalldata/glm_test/insurance.csv"))
+    insurance_h2o <- h2o.importFile(h2oTest.locate("smalldata/glm_test/insurance.csv"))
     insurance_h2o$logHolders <- log(insurance_h2o$Holders)
     insurance_h2o$District   <- as.factor(insurance_h2o$District)
     insurance_r   <- as.data.frame(insurance_h2o)
@@ -30,20 +30,20 @@ test <- function(h) {
 
     h2o.rd <- h2oglm.fitWithOffsets@model$training_metrics@metrics$residual_deviance
     r.rd <- glm.fitWithOffsets$deviance
-    Log.info(paste("H2O residual deviance: ", h2o.rd, ", and R residual deviance: ", r.rd))
+    h2oTest.logInfo(paste("H2O residual deviance: ", h2o.rd, ", and R residual deviance: ", r.rd))
     expect_equal(h2o.rd, r.rd, tolerance = 1e-4)
 
     h2o.rd.w <- h2oglm.fitWithOffsets@model$training_metrics@metrics$residual_deviance
     h2o.rd.wo <- h2oglm.fitWithoutOffsets@model$training_metrics@metrics$residual_deviance
-    Log.info(paste("H2O residual deviance (offsets): ", h2o.rd.w, ", and H2O residual deviance (no offsets): ", h2o.rd.wo))
+    h2oTest.logInfo(paste("H2O residual deviance (offsets): ", h2o.rd.w, ", and H2O residual deviance (no offsets): ", h2o.rd.wo))
     expect_less_than(h2o.rd.w, h2o.rd.wo)
 
     h2o.nd.w <- h2oglm.fitWithOffsets@model$training_metrics@metrics$null_deviance
     h2o.nd.wo <- h2oglm.fitWithoutOffsets@model$training_metrics@metrics$null_deviance
-    Log.info(paste("H2O null deviance (offsets): ", h2o.nd.w, ", and H2O null deviance (no offsets): ", h2o.nd.wo))
+    h2oTest.logInfo(paste("H2O null deviance (offsets): ", h2o.nd.w, ", and H2O null deviance (no offsets): ", h2o.nd.wo))
     expect_less_than(h2o.nd.w, h2o.nd.wo)
 
 	
 }
 
-doTest("GLM poisson offset comparision1: ", test)
+h2oTest.doTest("GLM poisson offset comparision1: ", test)

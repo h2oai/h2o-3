@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub_862_support_anonymous_functions_with_ddply <- function() {
 
-covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/covtype/covtype.20k.data")), "cov")
 
 covtype.local <- as.data.frame(covtype.hex)
 
@@ -23,5 +23,5 @@ h2o.ddply(covtype.hex, c(2), function(x) { mean( x[,2]) })
 
 }
 
-doTest("PUB-862 ddply should support anonymous functions.", test.pub_862_support_anonymous_functions_with_ddply)
+h2oTest.doTest("PUB-862 ddply should support anonymous functions.", test.pub_862_support_anonymous_functions_with_ddply)
 

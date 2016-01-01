@@ -19,8 +19,8 @@ TEST_ROOT_DIR <- ".."
 # Parameters for the test.
 #----------------------------------------------------------------------
 
-train <- locate("smalldata/iris/iris_train.csv")
-test <- locate("smalldata/iris/iris_test.csv")
+train <- h2oTest.locate("smalldata/iris/iris_train.csv")
+test <- h2oTest.locate("smalldata/iris/iris_test.csv")
 x = c("sepal_len","sepal_wid","petal_len","petal_wid");
 y = "species"
 activation = "Tanh"

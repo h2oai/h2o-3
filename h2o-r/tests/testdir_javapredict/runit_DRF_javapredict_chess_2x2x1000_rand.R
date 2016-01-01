@@ -16,8 +16,8 @@ function() {
     #----------------------------------------------------------------------
     # Parameters for the test.
     #----------------------------------------------------------------------
-    training_file <- locate("smalldata/chess/chess_2x2x1000/train.csv")
-    test_file <- locate("smalldata/chess/chess_2x2x1000/test.csv")
+    training_file <- h2oTest.locate("smalldata/chess/chess_2x2x1000/train.csv")
+    test_file <- h2oTest.locate("smalldata/chess/chess_2x2x1000/test.csv")
     training_frame <- h2o.importFile(training_file)
     test_frame <- h2o.importFile(test_file)
 
@@ -33,7 +33,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("randomForest",test_file,test_frame,params)
+    h2oTest.doJavapredictTest("randomForest",test_file,test_frame,params)
 }
 
-doTest("RF test", test.drf.javapredict.chess)
+h2oTest.doTest("RF test", test.drf.javapredict.chess)

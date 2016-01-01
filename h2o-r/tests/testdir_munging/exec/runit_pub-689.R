@@ -51,4 +51,4 @@ test.nonexistent_rhs_col <- function() {
     
 }
 
-doTest("Test nonexistent rhs col.", test.nonexistent_rhs_col)
+h2oTest.doTest("Test nonexistent rhs col.", test.nonexistent_rhs_col)

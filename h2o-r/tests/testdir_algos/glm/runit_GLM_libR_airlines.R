@@ -7,11 +7,11 @@ require(ROCR)
 
 test.LiblineaR.airlines <- function() {
   L1logistic <- function(train,trainLabels,test,testLabels,trainhex,testhex) {
-    Log.info("Using these parameters for LiblineaR: \n")
-    Log.info("   type =    0: Logistic Regression L1-Regularized\n")
-    Log.info("   cost = 100: Cost of constraints parameter\n")
-    Log.info("epsilon = 1E-4: Tolerance of termination criterion\n")
-    Log.info("  cross =    0: No kfold cross-validation\n")
+    h2oTest.logInfo("Using these parameters for LiblineaR: \n")
+    h2oTest.logInfo("   type =    0: Logistic Regression L1-Regularized\n")
+    h2oTest.logInfo("   cost = 100: Cost of constraints parameter\n")
+    h2oTest.logInfo("epsilon = 1E-4: Tolerance of termination criterion\n")
+    h2oTest.logInfo("  cross =    0: No kfold cross-validation\n")
     
     LibR.m        <- LiblineaR(train, trainLabels,type=0, epsilon=1E-4, cost=100)
     LibRpreds     <- predict(LibR.m, test, proba=1, decisionValues=TRUE)
@@ -21,12 +21,12 @@ test.LiblineaR.airlines <- function() {
     LibRF1        <- 2 * (LibRPrecision * LibRRecall) / (LibRPrecision + LibRRecall)
     LibRAUC       <- performance(prediction(as.numeric(LibRpreds$predictions), testLabels), measure = "auc")@y.values
     
-    Log.info("Using these parameters for H2O: \n")
-    Log.info(" family =          'binomial': Logistic Regression\n")
-    Log.info(" lambda = 1/ (cost * params) [3.8e-05]: Shrinkage Parameter\n")
-    Log.info("  alpha =                           0.0: Elastic Net Parameter\n")
-    Log.info("beta_epsilon=                     1E-04: Tolerance of termination criterion\n")
-    Log.info(" nfolds =                             1: No kfold cross-validation\n")
+    h2oTest.logInfo("Using these parameters for H2O: \n")
+    h2oTest.logInfo(" family =          'binomial': Logistic Regression\n")
+    h2oTest.logInfo(" lambda = 1/ (cost * params) [3.8e-05]: Shrinkage Parameter\n")
+    h2oTest.logInfo("  alpha =                           0.0: Elastic Net Parameter\n")
+    h2oTest.logInfo("beta_epsilon=                     1E-04: Tolerance of termination criterion\n")
+    h2oTest.logInfo(" nfolds =                             1: No kfold cross-validation\n")
     h2o.m <- h2o.glm(x            = c("DepTime", "ArrTime", "Distance"),
                                     #c("fYear","fMonth","fDayofMonth","fDayOfWeek","DepTime","ArrTime","UniqueCarrier","Origin","Dest","Distance"), 
                      y            = "IsDepDelayed_REC", 
@@ -47,21 +47,21 @@ test.LiblineaR.airlines <- function() {
     h2oF1        <- 2 * (h2oPrecision * h2oRecall) / (h2oPrecision + h2oRecall)
     h2oAUC       <- performance(prediction(h2opreds, testLabels), measure = "auc")@y.values
     
-    Log.info("                ============= H2O Performance =============\n")
-    Log.info(paste("H2O AUC (performance(prediction(predictions,actual))): ", h2oAUC[[1]], "\n", sep = ""))
-    Log.info(paste("                        H2O Precision (tp / (tp + fp): ", h2oPrecision, "\n", sep = ""))
-    Log.info(paste("                           H2O Recall (tp / (tp + fn): ", h2oRecall, "\n", sep = ""))
-    Log.info(paste("                                         H2O F1 Score: ", h2oF1, "\n", sep = ""))
-    Log.info(paste("                ========= LiblineaR Performance ===========\n", sep = ""))
-    Log.info(paste("LiblineaR AUC (performance(prediction(predictions,actual))): ", LibRAUC[[1]], "\n", sep = ""))
-    Log.info(paste("                        LiblineaR Precision (tp / (tp + fp): ", LibRPrecision, "\n", sep = ""))
-    Log.info(paste("                           LiblineaR Recall (tp / (tp + fn): ", LibRRecall, "\n", sep = ""))
-    Log.info(paste("                                         LiblineaR F1 Score: ", LibRF1, "\n", sep = ""))
+    h2oTest.logInfo("                ============= H2O Performance =============\n")
+    h2oTest.logInfo(paste("H2O AUC (performance(prediction(predictions,actual))): ", h2oAUC[[1]], "\n", sep = ""))
+    h2oTest.logInfo(paste("                        H2O Precision (tp / (tp + fp): ", h2oPrecision, "\n", sep = ""))
+    h2oTest.logInfo(paste("                           H2O Recall (tp / (tp + fn): ", h2oRecall, "\n", sep = ""))
+    h2oTest.logInfo(paste("                                         H2O F1 Score: ", h2oF1, "\n", sep = ""))
+    h2oTest.logInfo(paste("                ========= LiblineaR Performance ===========\n", sep = ""))
+    h2oTest.logInfo(paste("LiblineaR AUC (performance(prediction(predictions,actual))): ", LibRAUC[[1]], "\n", sep = ""))
+    h2oTest.logInfo(paste("                        LiblineaR Precision (tp / (tp + fp): ", LibRPrecision, "\n", sep = ""))
+    h2oTest.logInfo(paste("                           LiblineaR Recall (tp / (tp + fn): ", LibRRecall, "\n", sep = ""))
+    h2oTest.logInfo(paste("                                         LiblineaR F1 Score: ", LibRF1, "\n", sep = ""))
     return(list(h2o.m,LibR.m));
   }
 
   compareCoefs <- function(h2o, libR) {
-    Log.info("
+    h2oTest.logInfo("
             Comparing the L1-regularized LR coefficients (should be close in magnitude)
             Expect a sign flip because modeling against log(../(1-p)) vs log((1-p)/p).
             Note that this is not the issue of consistency of signs between odds ratios
@@ -73,25 +73,25 @@ test.LiblineaR.airlines <- function() {
     cat("\n LiblineaR betas: ", libR$W, "\n")
     cat("\n============================================== \n")
     rms_diff <- sqrt(sum(abs(h2o@model$coefficients_table$coefficients) - abs(libR$W))**2)
-    Log.info(paste("RMS of the absolute difference in the sets of coefficients is: ", rms_diff, "\n", sep = ""))
+    h2oTest.logInfo(paste("RMS of the absolute difference in the sets of coefficients is: ", rms_diff, "\n", sep = ""))
     #print(all.equal(abs(as.vector(h2o@model$coefficients)), abs(as.vector(libR$W))), "\n")
   }
   
-  Log.info("Importing Airlines test/train data...\n")
-  exdir         <- sandbox()
+  h2oTest.logInfo("Importing Airlines test/train data...\n")
+  exdir         <- h2oTest.sandbox()
 #  exdir <- "/Users/spencer/0xdata/h2o-3/h2o-r/tests/testdir_algos/glm/Rsandbox_runit_GLM_libR_airlines.R/"
-#  airlinesTrain <- "/Users/spencer/0xdata/h2o-3/smalldata/airlines/AirlinesTrain.csv.zip"   #locate("smalldata/airlines/AirlinesTrain.csv.zip")
-#  airlinesTest  <- "/Users/spencer/0xdata/h2o-3/smalldata/airlines/AirlinesTest.csv.zip"  #locate("smalldata/airlines/AirlinesTest.csv.zip")
-  airlinesTrain <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
-  airlinesTest  <- locate("smalldata/airlines/AirlinesTest.csv.zip")
-  aTrain        <- na.omit(read.zip(zipfile = airlinesTrain, exdir = exdir))
-  aTest         <- na.omit(read.zip(zipfile = airlinesTest,  exdir = exdir))
+#  airlinesTrain <- "/Users/spencer/0xdata/h2o-3/smalldata/airlines/AirlinesTrain.csv.zip"   #h2oTest.locate("smalldata/airlines/AirlinesTrain.csv.zip")
+#  airlinesTest  <- "/Users/spencer/0xdata/h2o-3/smalldata/airlines/AirlinesTest.csv.zip"  #h2oTest.locate("smalldata/airlines/AirlinesTest.csv.zip")
+  airlinesTrain <- h2oTest.locate("smalldata/airlines/AirlinesTrain.csv.zip")
+  airlinesTest  <- h2oTest.locate("smalldata/airlines/AirlinesTest.csv.zip")
+  aTrain        <- na.omit(h2oTest.readZip(zipfile = airlinesTrain, exdir = exdir))
+  aTest         <- na.omit(h2oTest.readZip(zipfile = airlinesTest,  exdir = exdir))
   trainhex      <- h2o.uploadFile(paste(exdir, "/AirlinesTrain.csv", sep = ""), "aTrain.hex")
   testhex       <- h2o.uploadFile(paste(exdir, "/AirlinesTest.csv",  sep=""), "aTest.hex")
   
   print(trainhex)
 
-  Log.info("Mapping column IsDepDelayed_REC from {-1,1} to {0,1}...\n")
+  h2oTest.logInfo("Mapping column IsDepDelayed_REC from {-1,1} to {0,1}...\n")
   aTrain$IsDepDelayed_REC   <- as.numeric(aTrain$IsDepDelayed_REC == 1)
   aTest$IsDepDelayed_REC    <- as.numeric(aTest$IsDepDelayed_REC == 1)
   trainhex$IsDepDelayed_REC <- trainhex$IsDepDelayed_REC == 1
@@ -115,5 +115,5 @@ test.LiblineaR.airlines <- function() {
   
 }
 
-doTest("LiblineaR Test: Airlines", test.LiblineaR.airlines)
+h2oTest.doTest("LiblineaR Test: Airlines", test.LiblineaR.airlines)
 

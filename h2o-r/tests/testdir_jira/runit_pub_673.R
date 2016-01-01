@@ -15,11 +15,11 @@ test.pubdev_673 <- function() {
   
   xr.sum <- summary(xr)
   xh2o.sum <- summary(xh2o)
-  Log.info("R Summary:"); print(xr.sum)
-  Log.info("H2O Summary:"); print(xh2o.sum)
+  h2oTest.logInfo("R Summary:"); print(xr.sum)
+  h2oTest.logInfo("H2O Summary:"); print(xh2o.sum)
   # expect_equal(xh2o.sum, xr.sum)
   
   
 }
 
-doTest("PUBDEV-673: H2O summary and quantile of all NA col", test.pubdev_673)
+h2oTest.doTest("PUBDEV-673: H2O summary and quantile of all NA col", test.pubdev_673)

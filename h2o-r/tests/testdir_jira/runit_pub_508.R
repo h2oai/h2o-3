@@ -5,14 +5,14 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub_508 <- function() {
 
-hex <- h2o.importFile(normalizePath(locate("smalldata/jira/pub_508.csv")), "p508")
+hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/jira/pub_508.csv")), "p508")
 
-rdat <- read.csv(normalizePath(locate("smalldata/jira/pub_508.csv")))
+rdat <- read.csv(normalizePath(h2oTest.locate("smalldata/jira/pub_508.csv")))
 
-Log.info("The data that R read in.")
+h2oTest.logInfo("The data that R read in.")
 print(rdat)
 
-Log.info("The data that H2O read in.")
+h2oTest.logInfo("The data that H2O read in.")
 print(hex)
 
 expect_equal(as.data.frame(hex[1,1])[1,1], rdat[1,1])
@@ -30,5 +30,5 @@ expect_equal(sum_h2o, sum_R)
 
 }
 
-doTest("PUB-508 H2O does not parse numbers correctly", test.pub_508)
+h2oTest.doTest("PUB-508 H2O does not parse numbers correctly", test.pub_508)
 

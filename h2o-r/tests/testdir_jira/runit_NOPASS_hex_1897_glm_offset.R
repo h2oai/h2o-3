@@ -24,15 +24,15 @@ test.GLM.offset <- function() {
     if (TRUE %in% (diff > 2)) stop ('difference between scores not in the prescribed bounds')
   }
 
-  Log.info ('Check binomial models for GLM with and without offset')
-  Log.info ('Import prostate dataset into H2O and R...')
-  prostate.hex <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
+  h2oTest.logInfo('Check binomial models for GLM with and without offset')
+  h2oTest.logInfo('Import prostate dataset into H2O and R...')
+  prostate.hex <- h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
   prostate.csv <- as.data.frame(prostate.hex)
 
   family_type <- c("binomial", "poisson")
 
   check_models <- function (family_type) {
-    Log.info (paste ("Checking", family_type, "models without offset..."))
+    h2oTest.logInfo(paste ("Checking", family_type, "models without offset..."))
     prostate.glm.r <- glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv)
     prostate.glm.h2o <- h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"),
       y = "CAPSULE", training_frame = prostate.hex, family = family_type, standardize = F)
@@ -42,7 +42,7 @@ test.GLM.offset <- function() {
       label = paste(family_type, "prostate.glm.h2o residual without offsets"))
     compare_scores(prostate.glm.h2o, prostate.glm.r, prostate.hex)
 
-    Log.info (paste ("Checking", family_type, "models with offset..."))
+    h2oTest.logInfo(paste ("Checking", family_type, "models with offset..."))
     options(warn=-1)
     prostate.glm.r <- glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv, offset = prostate.csv$AGE)
     prostate.glm.h2o <- h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"),
@@ -59,5 +59,5 @@ test.GLM.offset <- function() {
   
 }
 
-doTest("GLM Test: Offset", test.GLM.offset)
+h2oTest.doTest("GLM Test: Offset", test.GLM.offset)
 

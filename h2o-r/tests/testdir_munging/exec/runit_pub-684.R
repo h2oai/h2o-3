@@ -39,4 +39,4 @@ test.ifelse <- function() {
     
 }
 
-doTest("Test for ifelse.", test.ifelse)
+h2oTest.doTest("Test for ifelse.", test.ifelse)

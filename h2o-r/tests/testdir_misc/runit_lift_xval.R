@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.xval.lift <- function(conn){
 	
-	a= h2o.importFile(locate("smalldata/gbm_test/bank-full.csv.zip"),destination_frame = "bank")
+	a= h2o.importFile(h2oTest.locate("smalldata/gbm_test/bank-full.csv.zip"),destination_frame = "bank")
 	dim(a)
 	myX = 1:16
 	myY = 17
@@ -57,4 +57,4 @@ test.xval.lift <- function(conn){
 	expect_equal(h2o.gainsLift(cv2,tr),h2o.gainsLift(gg2,tr))
 	
 }
-doTest("Test lift-gain xval",test.xval.lift )
+h2oTest.doTest("Test lift-gain xval",test.xval.lift )

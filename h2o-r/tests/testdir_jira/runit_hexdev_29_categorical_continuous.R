@@ -24,7 +24,7 @@ test.continuous.or.categorical <- function() {
   expect_true(is.factor(df.hex$h2))
   expect_false(is.factor(df.hex$h3))
 
-  Log.info("Converting to categorical")
+  h2oTest.logInfo("Converting to categorical")
   df.hex$h1 <- as.factor(df.hex$h1)
   df.hex$h2 <- as.factor(df.hex$h2)
   df.hex$h3 <- as.factor(df.hex$h3)
@@ -36,7 +36,7 @@ test.continuous.or.categorical <- function() {
   expect_true(is.factor(df.hex$h2))
   expect_true(is.factor(df.hex$h3))
 
-  Log.info("Converting to continuous")
+  h2oTest.logInfo("Converting to continuous")
   df.hex$h1 <- as.numeric(df.hex$h1)
   df.hex$h2 <- as.numeric(df.hex$h2)
   df.hex$h3 <- as.numeric(df.hex$h3)
@@ -51,4 +51,4 @@ test.continuous.or.categorical <- function() {
   
 }
 
-doTest("Testing Conversions to Categorical and Continuous Values", test.continuous.or.categorical)
+h2oTest.doTest("Testing Conversions to Categorical and Continuous Values", test.continuous.or.categorical)

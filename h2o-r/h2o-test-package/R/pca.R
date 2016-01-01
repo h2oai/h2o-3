@@ -1,5 +1,5 @@
 # Check each principal component (eigenvector) equal up to a sign flip
-checkSignedCols <- function(object, expected, tolerance = 1e-6) {
+h2oTest.checkSignedCols <- function(object, expected, tolerance = 1e-6) {
   expect_equal(dim(object), dim(expected))
   
   is_flipped <- sapply(1:ncol(object), function(j) {
@@ -17,7 +17,7 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
   return(is_flipped)
 }
 
-checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
+h2oTest.checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
   k <- fitH2O@parameters$k
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$importance
@@ -54,5 +54,5 @@ checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
   Log.info("Compare Principal Components between R and H2O\n") 
   Log.info("R Principal Components:"); print(eigvecR)
   Log.info("H2O Principal Components:"); print(eigvecH2O)
-  checkSignedCols(as.matrix(eigvecH2O), eigvecR, tolerance = tolerance)
+  h2oTest.checkSignedCols(as.matrix(eigvecH2O), eigvecR, tolerance = tolerance)
 }

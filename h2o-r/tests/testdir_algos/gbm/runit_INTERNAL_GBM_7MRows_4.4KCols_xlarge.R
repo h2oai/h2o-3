@@ -30,5 +30,5 @@ print(gbm_time)
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)
 

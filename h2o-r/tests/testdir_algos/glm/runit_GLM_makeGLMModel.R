@@ -11,7 +11,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 # Null Deviance:	    512.3
 # Residual Deviance: 378.6 	AIC: 394.6
 test <- function(h) {
-    prostate_h2o <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
+    prostate_h2o <- h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
     x=c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
     model <- h2o.glm(x = x, y="CAPSULE", training_frame=prostate_h2o,family="binomial", alpha=.99,lambda=.2)
     new_beta <- c(-7.27968, -0.01213, -0.62424, 0.55661, 0.48375, 0.02739, -0.01124, 0.97632)
@@ -26,4 +26,4 @@ test <- function(h) {
     checkTrue(round(10*perfs@metrics$residual_deviance) == 3786, "residual deviance mismatch")
     h2o.removeAll()
 }
-doTest("GLM makeGLMModel", test)
+h2oTest.doTest("GLM makeGLMModel", test)

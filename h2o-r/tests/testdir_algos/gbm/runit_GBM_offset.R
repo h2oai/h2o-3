@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.GBM <- function() {
   library(gbm)
-  df <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"), destination_frame="prostate.hex")
+  df <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv"), destination_frame="prostate.hex")
 
   ## AGE Regression
   glm <- h2o.glm(x=4:8,y="AGE",training_frame=df)
@@ -44,4 +44,4 @@ test.GBM <- function() {
 
   
 }
-doTest("GBM Test: offset", test.GBM)
+h2oTest.doTest("GBM Test: offset", test.GBM)

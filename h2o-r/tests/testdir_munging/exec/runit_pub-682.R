@@ -48,4 +48,4 @@ test.head_empty <- function() {
     
 }
 
-doTest("Test for head_empty.", test.head_empty)
+h2oTest.doTest("Test for head_empty.", test.head_empty)

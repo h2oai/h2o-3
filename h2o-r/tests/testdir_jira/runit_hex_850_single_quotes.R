@@ -10,10 +10,10 @@ source("../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 
-heading("BEGIN TEST")
+h2oTest.heading("BEGIN TEST")
 check.hex_850 <- function() {
 
-  path = locate("smalldata/jira/850.csv")
+  path = h2oTest.locate("smalldata/jira/850.csv")
   j.fv = h2o.importFile(path, destination_frame="jira850.hex")
   h2o.ls()
 
@@ -41,4 +41,4 @@ check.hex_850 <- function() {
   
 }
 
-doTest("HEX-850 test", check.hex_850)
+h2oTest.doTest("HEX-850 test", check.hex_850)

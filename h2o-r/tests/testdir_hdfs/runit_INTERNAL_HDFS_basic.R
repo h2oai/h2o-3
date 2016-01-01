@@ -13,7 +13,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
+hadoop_namenode_is_accessible = h2oTest.hadoopNamenodeIsAccessible()
 
 if (hadoop_namenode_is_accessible) {
     hdfs_name_node = HADOOP.NAMENODE
@@ -26,14 +26,14 @@ if (hadoop_namenode_is_accessible) {
 #----------------------------------------------------------------------
 
 
-heading("BEGIN TEST")
+h2oTest.heading("BEGIN TEST")
 check.hdfs_basic <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.
   #----------------------------------------------------------------------
 
-  heading("Testing single file importHDFS")
+  h2oTest.heading("Testing single file importHDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
   iris.hex <- h2o.importFile(url)
   head(iris.hex)
@@ -52,7 +52,7 @@ check.hdfs_basic <- function() {
   # Directory file cases.
   #----------------------------------------------------------------------
 
-  heading("Testing directory importHDFS")
+  h2oTest.heading("Testing directory importHDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_dir)
   iris.dir.hex <- h2o.importFile(url)
   head(iris.dir.hex)
@@ -70,4 +70,4 @@ check.hdfs_basic <- function() {
   
 }
 
-doTest("HDFS operations", check.hdfs_basic)
+h2oTest.doTest("HDFS operations", check.hdfs_basic)

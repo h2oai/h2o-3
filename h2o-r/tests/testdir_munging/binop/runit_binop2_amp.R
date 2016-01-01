@@ -21,5 +21,5 @@ test.binop2.ampersand <- function() {
   
 }
 
-doTest("Binop2 EQ2 Test: & and &&", test.binop2.ampersand)
+h2oTest.doTest("Binop2 EQ2 Test: & and &&", test.binop2.ampersand)
 

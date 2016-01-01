@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.headers <- function() {
-    path <- locate("smalldata/jira/hexdev_29.csv")
+    path <- h2oTest.locate("smalldata/jira/hexdev_29.csv")
 
     fhex_header_true <- h2o.importFile(path, header=TRUE)
     fhex_header_false <- h2o.importFile(path, header=FALSE)
@@ -17,4 +17,4 @@ test.headers <- function() {
     
 }
 
-doTest("Header options", test.headers)
+h2oTest.doTest("Header options", test.headers)

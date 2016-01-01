@@ -9,7 +9,7 @@ test.string.manipulation <- function() {
   s3 <- as.character(as.h2o("this is a longer string"))
   s4 <- as.character(as.h2o("this is tall, this is taller"))
 
-  Log.info("Single and all substitutions...")
+  h2oTest.logInfo("Single and all substitutions...")
   s4 <- h2o.sub("this", "that", s4)
   print(s4)
   expect_identical(s4[1,1], "that is tall, this is taller")
@@ -17,7 +17,7 @@ test.string.manipulation <- function() {
   print(s4)
   expect_identical(s4[1,1], "that is fast, this is faster")
 
-  Log.info("Trimming...")
+  h2oTest.logInfo("Trimming...")
   print(s1[1,1])
   expect_identical(s1[1,1], " this is a string ")
   s1 <- h2o.trim(s1)
@@ -32,4 +32,4 @@ test.string.manipulation <- function() {
   
 }
 
-doTest("Testing Various String Manipulations", test.string.manipulation)
+h2oTest.doTest("Testing Various String Manipulations", test.string.manipulation)

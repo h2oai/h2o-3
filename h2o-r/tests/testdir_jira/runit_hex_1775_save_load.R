@@ -6,27 +6,27 @@ source("../../scripts/h2o-r-test-setup.R")
 test.hex_1775 <- function() {
 
   # Test saving and loading of GLM model
-  Log.info("Importing prostate.csv...")
-  prostate.hex = h2o.uploadFile(normalizePath(locate('smalldata/logreg/prostate.csv')))
+  h2oTest.logInfo("Importing prostate.csv...")
+  prostate.hex = h2o.uploadFile(normalizePath(h2oTest.locate('smalldata/logreg/prostate.csv')))
   prostate.hex[,2] = as.factor(prostate.hex[,2])
-  iris.hex = h2o.uploadFile(normalizePath(locate('smalldata/iris/iris.csv')))
+  iris.hex = h2o.uploadFile(normalizePath(h2oTest.locate('smalldata/iris/iris.csv')))
 
   # Build GLM, RandomForest, GBM, Naive Bayes, and Deep Learning models
-  Log.info("Build GLM model")
+  h2oTest.logInfo("Build GLM model")
   prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial", nfolds = 0, alpha = 0.5)
-  Log.info("Build GBM model")
+  h2oTest.logInfo("Build GBM model")
   prostate.gbm = h2o.gbm(y = 2, x = 3:9, training_frame = prostate.hex, nfolds = 5, distribution = "multinomial")
-  Log.info("Build Speedy Random Forest Model")
+  h2oTest.logInfo("Build Speedy Random Forest Model")
   iris.srf = h2o.randomForest(x = c(2,3,4), y = 5, training_frame = iris.hex, ntree = 10)
-  Log.info("Build BigData Random Forest Model")
+  h2oTest.logInfo("Build BigData Random Forest Model")
   iris.drf = h2o.randomForest(x = c(2,3,4), y = 5, training_frame = iris.hex, ntree = 10, nfolds = 5)
-  Log.info("Build Naive Bayes Model")
+  h2oTest.logInfo("Build Naive Bayes Model")
   iris.nb = h2o.naiveBayes(y = 5, x = 1:4, training_frame = iris.hex)
-  Log.info("Build Deep Learning model")
+  h2oTest.logInfo("Build Deep Learning model")
   iris.dl = h2o.deeplearning(y = 5, x= 1:4, training_frame = iris.hex)
 
   # Predict on models and save results in R
-  Log.info("Scoring on models and saving predictions to R")
+  h2oTest.logInfo("Scoring on models and saving predictions to R")
 
   pred_df <- function(object, newdata) {
     h2o_pred = h2o.predict(object, newdata)
@@ -40,8 +40,8 @@ test.hex_1775 <- function() {
    dl.pred = pred_df(object =      iris.dl, newdata = iris.hex)
 
   # Save models to disk
-  Log.info("Saving models to disk")
-  dir1 = sandboxMakeSubDir(dirname="tmp")
+  h2oTest.logInfo("Saving models to disk")
+  dir1 = h2oTest.sandboxMakeSubDir(dirname="tmp")
   prostate.glm.path = h2o.saveModel(object = prostate.glm, path = dir1, force = TRUE)
   prostate.gbm.path = h2o.saveModel(object = prostate.gbm, path = dir1, force = TRUE)
       iris.srf.path = h2o.saveModel(object =     iris.srf, path = dir1, force = TRUE)
@@ -53,8 +53,8 @@ test.hex_1775 <- function() {
   h2o.removeAll()
 
   # Proving we can move files from one directory to another and not affect the load of the model
-  dir2 = sandboxRenameSubDir(dir1,"tmp2")
-  Log.info(paste("Moving models from", dir1, "to", dir2))
+  dir2 = h2oTest.sandboxRenameSubDir(dir1,"tmp2")
+  h2oTest.logInfo(paste("Moving models from", dir1, "to", dir2))
 
   model_paths = c(prostate.glm.path, prostate.gbm.path, iris.srf.path, iris.drf.path, iris.nb.path, iris.dl.path)
   new_model_paths = {}
@@ -64,19 +64,19 @@ test.hex_1775 <- function() {
   }
 
   # Check to make sure predictions made on loaded model is the same as glm.pred
-  prostate.hex = h2o.importFile(normalizePath(locate('smalldata/logreg/prostate.csv')))
-      iris.hex = h2o.importFile(normalizePath(locate('smalldata/iris/iris.csv')))
+  prostate.hex = h2o.importFile(normalizePath(h2oTest.locate('smalldata/logreg/prostate.csv')))
+      iris.hex = h2o.importFile(normalizePath(h2oTest.locate('smalldata/iris/iris.csv')))
 
-  Log.info(paste("Model saved in", dir2))
+  h2oTest.logInfo(paste("Model saved in", dir2))
 
   reloaded_models = {}
   for(path in new_model_paths) {
-    Log.info(paste("Loading model from",path,sep=" "))
+    h2oTest.logInfo(paste("Loading model from",path,sep=" "))
     model_obj = h2o.loadModel(path)
     reloaded_models = append(x = reloaded_models, values = model_obj)
   }
 
-  Log.info("Running Predictions for Loaded Models")
+  h2oTest.logInfo("Running Predictions for Loaded Models")
   glm2 = reloaded_models[[1]]
   gbm2 = reloaded_models[[2]]
   srf2 = reloaded_models[[3]]
@@ -107,4 +107,4 @@ test.hex_1775 <- function() {
 
 }
 
-doTest("HEX-1775 Test: Save and Load GLM Model", test.hex_1775)
+h2oTest.doTest("HEX-1775 Test: Save and Load GLM Model", test.hex_1775)

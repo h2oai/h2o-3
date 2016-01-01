@@ -16,8 +16,8 @@ function() {
     #----------------------------------------------------------------------
     # Parameters for the test.
     #----------------------------------------------------------------------
-    training_file <- locate("smalldata/gbm_test/smtrees.csv")
-    test_file <- locate("smalldata/gbm_test/smtrees.csv")
+    training_file <- h2oTest.locate("smalldata/gbm_test/smtrees.csv")
+    test_file <- h2oTest.locate("smalldata/gbm_test/smtrees.csv")
     training_frame <- h2o.importFile(training_file)
     test_frame <- h2o.importFile(test_file)
 
@@ -33,7 +33,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("gbm",test_file,test_frame,params)
+    h2oTest.doJavapredictTest("gbm",test_file,test_frame,params)
 }
 
-doTest("GBM test", test.gbm.javapredict.smtrees)
+h2oTest.doTest("GBM test", test.gbm.javapredict.smtrees)

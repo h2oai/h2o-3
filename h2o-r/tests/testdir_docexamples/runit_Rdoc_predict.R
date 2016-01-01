@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.rdocpredict.golden <- function() {
 
 
-prostate.hex <- h2o.uploadFile(path = locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
+prostate.hex <- h2o.uploadFile(path = h2oTest.locate("smalldata/logreg/prostate.csv"), destination_frame = "prostate.hex")
 
 # nfolds is currently unsupported
 prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family="binomial", alpha = 0.5)
@@ -15,11 +15,11 @@ prostate.fit <- predict(object = prostate.glm, newdata = prostate.hex)
 prost <- summary(prostate.fit)
 
 
-Log.info("Print output from as.data.frame call")
-Log.info(paste("H2O Summary Prostate  :" ,prost))
+h2oTest.logInfo("Print output from as.data.frame call")
+h2oTest.logInfo(paste("H2O Summary Prostate  :" ,prost))
 
 
 }
 
-doTest("R Doc Predict Example", test.rdocpredict.golden)
+h2oTest.doTest("R Doc Predict Example", test.rdocpredict.golden)
 

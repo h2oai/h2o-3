@@ -5,8 +5,8 @@ source("../../scripts/h2o-r-test-setup.R")
 
 print_diff <- function(r, h2o) {
   if (!isTRUE(all.equal(r,h2o))) {
-    Log.info (paste("R :", r))
-    Log.info (paste("H2O :" , h2o))
+    h2oTest.logInfo(paste("R :", r))
+    h2oTest.logInfo(paste("H2O :" , h2o))
   }
 }
 
@@ -69,4 +69,4 @@ test.rdoc_settimezone.golden <- function() {
   
 }
 
-doTest("R Doc setTimezone", test.rdoc_settimezone.golden)
+h2oTest.doTest("R Doc setTimezone", test.rdoc_settimezone.golden)

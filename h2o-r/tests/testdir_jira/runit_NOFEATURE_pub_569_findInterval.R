@@ -8,7 +8,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 the_test <- function(){
-  df = h2o.importFile(locate('smalldata/jira/pub-569.csv'))
+  df = h2o.importFile(h2oTest.locate('smalldata/jira/pub-569.csv'))
 
   metric.quantilesScore <- function(valuesArray) {
     numberOfLevels <- 100
@@ -24,5 +24,5 @@ the_test <- function(){
   
 }
 
-doTest('the_test', the_test)
+h2oTest.doTest('the_test', the_test)
 

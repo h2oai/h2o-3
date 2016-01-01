@@ -30,10 +30,10 @@ print(paste(    "depth"     , depth))
 nodesize <- 10
 print(paste( "nodesize", nodesize))
 
-train <- locate("smalldata/gbm_test/30k_cattest.csv")
+train <- h2oTest.locate("smalldata/gbm_test/30k_cattest.csv")
 print(paste(    "train"     , train))
 
-test <- locate("smalldata/gbm_test/30k_cattest.csv")
+test <- h2oTest.locate("smalldata/gbm_test/30k_cattest.csv")
 print(paste(    "test"     , test))
 
 x = c("C1", "C2")

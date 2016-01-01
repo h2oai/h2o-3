@@ -4,8 +4,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.GBM.checkpoint_on_iris <- function() {
-  train.hex <- h2o.uploadFile(locate("smalldata/iris/iris_train.csv"), "train.hex")
-  test.hex <- h2o.uploadFile(locate("smalldata/iris/iris_test.csv"), "test.hex")
+  train.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris_train.csv"), "train.hex")
+  test.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris_test.csv"), "test.hex")
 
   # Number of trees for model building
   ntrees.initial <- 2
@@ -56,4 +56,4 @@ expect_mm_equal <- function(a, b, msg) {
   expect_equal(a@metrics$logloss, b@metrics$logloss)
 }
 
-doTest("GBM test checkpoint on iris", test.GBM.checkpoint_on_iris)
+h2oTest.doTest("GBM test checkpoint on iris", test.GBM.checkpoint_on_iris)

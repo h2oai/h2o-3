@@ -11,7 +11,7 @@ hdfs_airlines_file = "/datasets/airlines_all.csv"
 # Single file cases.
 #----------------------------------------------------------------------
 
-heading("Testing single file importHDFS")
+h2oTest.heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
 data.hex <- h2o.importFile(url)
 
@@ -68,4 +68,4 @@ expect_true(abs(auc_dl - 0.80) <= 0.02)
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

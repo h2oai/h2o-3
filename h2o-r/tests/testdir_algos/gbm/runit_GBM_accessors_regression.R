@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.gbm.regr.accessors <- function() {
-  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars.csv"))
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
@@ -12,7 +12,7 @@ test.gbm.regr.accessors <- function() {
   cars.gbm.valid <- h2o.gbm(x = 3:7, y = 2, training_frame = cars.train, validation_frame = cars.test)
   cars.gbm.valid.xval <- h2o.gbm(x = 3:7, y = 2, training_frame = cars.train, validation_frame = cars.test, nfolds=2)
 
-  Log.info("MSE...")
+  h2oTest.logInfo("MSE...")
   mse.basic <- h2o.mse(cars.gbm)
   print(mse.basic)
   expect_warning(h2o.mse(cars.gbm, valid = TRUE))
@@ -25,7 +25,7 @@ test.gbm.regr.accessors <- function() {
   expect_true(mse.valid.xval.T["train"]==mse.basic)
   expect_true(mse.valid.xval.T["valid"]==mse.valid.T)
 
-  Log.info("R^2...")
+  h2oTest.logInfo("R^2...")
   r2.basic <- h2o.r2(cars.gbm)
   print(r2.basic)
   expect_warning(h2o.r2(cars.gbm, valid = TRUE))
@@ -38,7 +38,7 @@ test.gbm.regr.accessors <- function() {
   expect_true(r2.valid.xval.T["train"]==r2.basic)
   expect_true(r2.valid.xval.T["valid"]==r2.valid.T)
 
-  Log.info("Mean Residual Deviance...")
+  h2oTest.logInfo("Mean Residual Deviance...")
   mean_residual_deviance.basic <- h2o.mean_residual_deviance(cars.gbm)
   print(mean_residual_deviance.basic)
   expect_warning(h2o.mean_residual_deviance(cars.gbm, valid = TRUE))
@@ -51,10 +51,10 @@ test.gbm.regr.accessors <- function() {
   expect_true(mean_residual_deviance.valid.xval.T["train"]==mean_residual_deviance.basic)
   expect_true(mean_residual_deviance.valid.xval.T["valid"]==mean_residual_deviance.valid.T)
 
-  Log.info("Variable Importance...")
+  h2oTest.logInfo("Variable Importance...")
   print(h2o.varimp(cars.gbm))
 
   
 }
 
-doTest("Testing model accessors for GBM", test.gbm.regr.accessors)
+h2oTest.doTest("Testing model accessors for GBM", test.gbm.regr.accessors)

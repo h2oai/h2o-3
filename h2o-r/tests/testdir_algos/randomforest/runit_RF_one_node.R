@@ -4,8 +4,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.one.node.drf <- function() {
-  Log.info("Loading data and building models...")
-  airs.hex <- h2o.importFile(locate("smalldata/airlines/allyears2k.zip"))
+  h2oTest.logInfo("Loading data and building models...")
+  airs.hex <- h2o.importFile(h2oTest.locate("smalldata/airlines/allyears2k.zip"))
 
   e = tryCatch({
     drf.sing <- h2o.randomForest(x = 1:30, y = 31, training_frame = airs.hex,
@@ -20,16 +20,16 @@ test.one.node.drf <- function() {
   if (!is.null(e[[1]])) {
     expect_match(e[[1]], "Cannot run on a single node in client mode")
   } else {
-    Log.info("Multi Node:")
+    h2oTest.logInfo("Multi Node:")
     print(paste("MSE:", h2o.mse(drf.mult)))
     print(paste("AUC:", h2o.auc(drf.mult)))
     print(paste("R^2:", h2o.r2(drf.mult)))
-    Log.info("Single Node:")
+    h2oTest.logInfo("Single Node:")
     print(paste("MSE:", h2o.mse(drf.sing)))
     print(paste("AUC:", h2o.auc(drf.sing)))
     print(paste("R^2:", h2o.r2(drf.sing)))
 
-    Log.info("MSE, AUC, and R2 should be the same...")
+    h2oTest.logInfo("MSE, AUC, and R2 should be the same...")
     print((h2o.mse(drf.sing)-h2o.mse(drf.mult))/h2o.mse(drf.mult))
     expect_equal(h2o.mse(drf.sing), h2o.mse(drf.mult), tolerance = 0.01)
     expect_equal(h2o.auc(drf.sing), h2o.auc(drf.mult), tolerance = 0.01)
@@ -39,4 +39,4 @@ test.one.node.drf <- function() {
   
 }
 
-doTest("Testing One Node vs Multi Node Random Forest", test.one.node.drf)
+h2oTest.doTest("Testing One Node vs Multi Node Random Forest", test.one.node.drf)

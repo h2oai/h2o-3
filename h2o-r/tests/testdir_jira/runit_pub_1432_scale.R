@@ -19,4 +19,4 @@ test <- function() {
   
 }
 
-doTest("testing scale", test)
+h2oTest.doTest("testing scale", test)

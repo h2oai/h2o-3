@@ -34,4 +34,4 @@ data1.gbm
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

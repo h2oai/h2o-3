@@ -15,4 +15,4 @@ test <- function(h) {
 	
 	
 }
-doTest("Subset dataframe test: row subset in h2o and compare results with R", test)
+h2oTest.doTest("Subset dataframe test: row subset in h2o and compare results with R", test)

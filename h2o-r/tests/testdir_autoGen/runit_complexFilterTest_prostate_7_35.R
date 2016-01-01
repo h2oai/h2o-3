@@ -9,15 +9,15 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 complexFilterTest_prostate_7_35 <- function() {
-    Log.info("A munge-task R unit test on data <prostate_7> testing the functional unit <['', '<=']> ")
-    Log.info("Uploading prostate_7")
-    hex <- h2o.importFile(locate("smalldata/junit/parse_folder/prostate_7.csv"), "rprostate_7.hex")
-Log.info("Performing compound task ( ( hex[,c(7)] <= 41.5892321342 ))  on dataset <prostate_7>")
+    h2oTest.logInfo("A munge-task R unit test on data <prostate_7> testing the functional unit <['', '<=']> ")
+    h2oTest.logInfo("Uploading prostate_7")
+    hex <- h2o.importFile(h2oTest.locate("smalldata/junit/parse_folder/prostate_7.csv"), "rprostate_7.hex")
+h2oTest.logInfo("Performing compound task ( ( hex[,c(7)] <= 41.5892321342 ))  on dataset <prostate_7>")
          filterHex <- hex[( ( hex[,c(7)] <= 41.5892321342 )) ,]
-Log.info("Performing compound task ( ( hex[,c(1)] <= 278.961631061 ))  on dataset prostate_7, and also subsetting columns.")
+h2oTest.logInfo("Performing compound task ( ( hex[,c(1)] <= 278.961631061 ))  on dataset prostate_7, and also subsetting columns.")
          filterHex <- hex[( ( hex[,c(1)] <= 278.961631061 )) , c(1,2,8,6)]
-    Log.info("Now do the same filter & subset, but select complement of columns.")
+    h2oTest.logInfo("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[( ( hex[,c(1)] <= 278.961631061 )) , c(3,5,4,7)]
 
 }
-doTest("compoundFilterTest_ on data prostate_7 unit= ['', '<=']", complexFilterTest_prostate_7_35)
+h2oTest.doTest("compoundFilterTest_ on data prostate_7 unit= ['', '<=']", complexFilterTest_prostate_7_35)

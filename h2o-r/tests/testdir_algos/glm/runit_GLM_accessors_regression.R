@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.glm.bin.accessors <- function() {
-  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars.csv"))
   cars.hex[,3] <- as.factor(cars.hex[,3])
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
@@ -12,7 +12,7 @@ test.glm.bin.accessors <- function() {
   cars.glm <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train)
   cars.glm.valid <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train, validation_frame = cars.test)
 
-  Log.info("MSE...")
+  h2oTest.logInfo("MSE...")
   mse.basic <- h2o.mse(cars.glm)
   print(mse.basic)
   expect_warning(h2o.mse(cars.glm, valid = TRUE))
@@ -22,7 +22,7 @@ test.glm.bin.accessors <- function() {
   expect_equal(mse.basic, mse.valid.F) # basic should equal valid with valid = FALSE
   expect_true(mse.basic != mse.valid.T)
 
-  Log.info("R^2...")
+  h2oTest.logInfo("R^2...")
   r2.basic <- h2o.r2(cars.glm)
   print(r2.basic)
   expect_warning(h2o.r2(cars.glm, valid = TRUE))
@@ -32,7 +32,7 @@ test.glm.bin.accessors <- function() {
   expect_equal(r2.basic, r2.valid.F) # basic should equal valid with valid = FALSE
   expect_true(r2.basic != r2.valid.T)
 
-#  Log.info("LogLoss...")
+#  h2oTest.logInfo("LogLoss...")
 #  ll.basic <- h2o.logloss(cars.glm)
 #  print(ll.basic)
 #  expect_warning(h2o.logloss(cars.glm, valid = TRUE))
@@ -42,7 +42,7 @@ test.glm.bin.accessors <- function() {
 #  expect_equal(ll.basic, ll.valid.F) # basic should equal valid with valid = FALSE
 #  expect_true(ll.basic != ll.valid.T)
 
-  Log.info("Null Deviance...")
+  h2oTest.logInfo("Null Deviance...")
   nuldev.basic <- h2o.null_deviance(cars.glm)
   print(nuldev.basic)
   expect_warning(h2o.null_deviance(cars.glm, valid = TRUE))
@@ -52,7 +52,7 @@ test.glm.bin.accessors <- function() {
   expect_equal(nuldev.basic, nuldev.valid.F) # basic should equal valid with valid = FALSE
   expect_true(nuldev.basic != nuldev.valid.T)
 
-  Log.info("Residual Deviance...")
+  h2oTest.logInfo("Residual Deviance...")
   resdev.basic <- h2o.residual_deviance(cars.glm)
   print(resdev.basic)
   expect_warning(h2o.residual_deviance(cars.glm, valid = TRUE))
@@ -62,7 +62,7 @@ test.glm.bin.accessors <- function() {
   expect_equal(resdev.basic, resdev.valid.F) # basic should equal valid with valid = FALSE
   expect_true(resdev.basic != resdev.valid.T)
 
-  Log.info("AIC...")
+  h2oTest.logInfo("AIC...")
   aic.basic <- h2o.aic(cars.glm)
   print(aic.basic)
   expect_warning(h2o.aic(cars.glm, valid = TRUE))
@@ -72,7 +72,7 @@ test.glm.bin.accessors <- function() {
   expect_equal(aic.basic, aic.valid.F) # basic should equal valid with valid = FALSE
   expect_true(aic.basic != aic.valid.T)
 
-  Log.info("Degrees of Freedom...")
+  h2oTest.logInfo("Degrees of Freedom...")
   dof.basic <- h2o.residual_dof(cars.glm)
   print(dof.basic)
   expect_warning(h2o.residual_dof(cars.glm, valid = TRUE))
@@ -82,7 +82,7 @@ test.glm.bin.accessors <- function() {
   expect_equal(dof.basic, dof.valid.F) # basic should equal valid with valid = FALSE
   expect_true(dof.basic != dof.valid.T)
 
-  Log.info("Null Degrees of Freedom...")
+  h2oTest.logInfo("Null Degrees of Freedom...")
   nulldof.basic <- h2o.null_dof(cars.glm)
   print(nulldof.basic)
   expect_warning(h2o.null_dof(cars.glm, valid = TRUE))
@@ -92,10 +92,10 @@ test.glm.bin.accessors <- function() {
   expect_equal(nulldof.basic, nulldof.valid.F) # basic should equal valid with valid = FALSE
   expect_true(nulldof.basic != nulldof.valid.T)
 
-  Log.info("Variable Importance...")
+  h2oTest.logInfo("Variable Importance...")
   print(h2o.varimp(cars.glm))
 
   
 }
 
-doTest("Testing model accessors for GLM", test.glm.bin.accessors)
+h2oTest.doTest("Testing model accessors for GLM", test.glm.bin.accessors)

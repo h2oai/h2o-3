@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 rmVecs <- function() {
-  prosPath <- locate("smalldata/logreg/prostate.csv")
+  prosPath <- h2oTest.locate("smalldata/logreg/prostate.csv")
 
   prostate.hex = h2o.importFile(path = prosPath)
 
@@ -20,4 +20,4 @@ rmVecs <- function() {
   
 }
 
-doTest("Column removal on prostate : ", rmVecs)
+h2oTest.doTest("Column removal on prostate : ", rmVecs)

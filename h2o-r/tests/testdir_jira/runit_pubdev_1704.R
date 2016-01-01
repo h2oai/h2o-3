@@ -38,4 +38,4 @@ test.pubdev_1704 <- function() {
   
 }
 
-doTest("PUBDEV-1704", test.pubdev_1704)
+h2oTest.doTest("PUBDEV-1704", test.pubdev_1704)

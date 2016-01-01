@@ -8,7 +8,7 @@ test.additional.parameters <- function() {
     c.names <- c("a", "b", "c")
     c.types <- c("enum", "enum", "enum")
 
-    fhex <- h2o.importFile(locate("smalldata/jira/hexdev_29.csv"), destination_frame=dest_frame, col.names=c.names,
+    fhex <- h2o.importFile(h2oTest.locate("smalldata/jira/hexdev_29.csv"), destination_frame=dest_frame, col.names=c.names,
                            col.types=c.types)
 
     expect_true(all(colnames(fhex) == c.names))
@@ -17,4 +17,4 @@ test.additional.parameters <- function() {
     
 }
 
-doTest("Additional parameters", test.additional.parameters)
+h2oTest.doTest("Additional parameters", test.additional.parameters)

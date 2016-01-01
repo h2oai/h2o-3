@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub_697_exec_bad_key_name <- function() {
 
-prostatePath = locate("smalldata/prostate/prostate.csv")
+prostatePath = h2oTest.locate("smalldata/prostate/prostate.csv")
 prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
 
 prostate.local = as.data.frame(prostate.hex)
@@ -24,5 +24,5 @@ expect_error(t(pub697$AGE) %*% prostate.hex$CAPSULE)
 
 }
 
-doTest("PUB-697 bad key should not cause crash", test.pub_697_exec_bad_key_name)
+h2oTest.doTest("PUB-697 bad key should not cause crash", test.pub_697_exec_bad_key_name)
 

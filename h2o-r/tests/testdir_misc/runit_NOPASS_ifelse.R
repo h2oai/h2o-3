@@ -9,11 +9,11 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.ifelse <- function() {
   
-  Log.info("Importing heart dataset into H2O...")
+  h2oTest.logInfo("Importing heart dataset into H2O...")
   heart.hex <- as.h2o(object = heart, "heart.hex")
-  Log.info("Change Surgery Column in R using bases' ifelse...")
+  h2oTest.logInfo("Change Surgery Column in R using bases' ifelse...")
   heart$surgery <- ifelse(heart$surgery == 0, "N", "Y")
-  Log.info("Change Surgery Column in H2O using H2O's ifelse...")
+  h2oTest.logInfo("Change Surgery Column in H2O using H2O's ifelse...")
   heart.hex$surgery <- ifelse(heart.hex$surgery == 0, "N", "Y")
   
   if(!all(heart$surgery == as.data.frame(heart.hex$surgery))) stop("Conversion of column different between h2o and base ifelse function!")
@@ -21,5 +21,5 @@ test.ifelse <- function() {
   
 }
 
-doTest("R and H2O ifelse Function", test.ifelse)
+h2oTest.doTest("R and H2O ifelse Function", test.ifelse)
 

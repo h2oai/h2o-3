@@ -7,7 +7,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
 	print("parse data")
-	dh = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame="dh")
+	dh = h2o.uploadFile(h2oTest.locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame="dh")
 	colnames(dh)
 	
 	print("build models w/ and w/o weights")
@@ -67,4 +67,4 @@ test <- function() {
 }
 
 
-doTest("GLM tweedie Test: GLM w/ offset and weights", test)
+h2oTest.doTest("GLM tweedie Test: GLM w/ offset and weights", test)

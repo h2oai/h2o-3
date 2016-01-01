@@ -4,18 +4,18 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.summary.factor <- function() {
-  Log.info("Importing prostate.csv data...\n")
-  prostate.dat <- read.csv(normalizePath(locate("smalldata/logreg/prostate.csv")), header = TRUE)
-  prostate.hex <- h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")))
+  h2oTest.logInfo("Importing prostate.csv data...\n")
+  prostate.dat <- read.csv(normalizePath(h2oTest.locate("smalldata/logreg/prostate.csv")), header = TRUE)
+  prostate.hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/logreg/prostate.csv")))
   
-  Log.info("Comparing R and H2O summaries...\n")
+  h2oTest.logInfo("Comparing R and H2O summaries...\n")
   sumR <- summary(prostate.dat)
   sumH2O <- summary(prostate.hex)
-  Log.info("R Summary:"); print(sumR)
-  Log.info("H2O Summary:"); print(sumH2O)
-  checkSummary(sumH2O, sumR)
+  h2oTest.logInfo("R Summary:"); print(sumR)
+  h2oTest.logInfo("H2O Summary:"); print(sumH2O)
+  h2oTest.checkSummary(sumH2O, sumR)
   
-  Log.info("Convert CAPSULE, RACE, DCAPS, and DPROS columns to factors")
+  h2oTest.logInfo("Convert CAPSULE, RACE, DCAPS, and DPROS columns to factors")
   myFac <- c("CAPSULE", "RACE", "DCAPS", "DPROS")
   for(col in myFac) {
     prostate.dat[,col] <- as.factor(prostate.dat[,col])
@@ -24,10 +24,10 @@ test.summary.factor <- function() {
   
   sumR.fac <- summary(prostate.dat)
   sumH2O.fac <- summary(prostate.hex)
-  Log.info("R Summary:"); print(sumR.fac)
-  Log.info("H2O Summary:"); print(sumH2O.fac)
-  checkSummary(sumH2O.fac, sumR.fac)
+  h2oTest.logInfo("R Summary:"); print(sumR.fac)
+  h2oTest.logInfo("H2O Summary:"); print(sumH2O.fac)
+  h2oTest.checkSummary(sumH2O.fac, sumR.fac)
   
 }
 
-doTest("Summary Test: Prostate with Conversion of Cols to Factors", test.summary.factor)
+h2oTest.doTest("Summary Test: Prostate with Conversion of Cols to Factors", test.summary.factor)

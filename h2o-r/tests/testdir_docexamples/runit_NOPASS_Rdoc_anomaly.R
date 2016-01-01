@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdocanomaly.golden <- function() {
 
-    prosPath = locate("smalldata/extdata/prostate.csv")
+    prosPath = h2oTest.locate("smalldata/extdata/prostate.csv")
     prostate.hex = h2o.importFile(path = prosPath)
     prostate.dl = h2o.deeplearning(x = 3:9, training_frame = prostate.hex, autoencoder = TRUE,
                                 hidden = c(10, 10), epochs = 5)
@@ -17,5 +17,5 @@ test.rdocanomaly.golden <- function() {
     
 }
 
-doTest("R Doc Anomaly", test.rdocanomaly.golden)
+h2oTest.doTest("R Doc Anomaly", test.rdocanomaly.golden)
 

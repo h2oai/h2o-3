@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.gbm.grid <- function() {
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
+  iris.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
   print(summary(iris.hex))
 
   pretty.list <- function(ll) {
@@ -16,7 +16,7 @@ check.gbm.grid <- function() {
   size_of_hyper_space = length(ntrees_opts) * length(learn_rate_opts)
 
   hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
-  Log.info(paste("GBM grid with the following hyper_parameters:", pretty.list(hyper_parameters)))
+  h2oTest.logInfo(paste("GBM grid with the following hyper_parameters:", pretty.list(hyper_parameters)))
   gg <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex, hyper_params = hyper_parameters)
   expect_equal(length(gg@model_ids), size_of_hyper_space)
 
@@ -29,10 +29,10 @@ check.gbm.grid <- function() {
 
   # Check parameters coverage
   # ntrees
-  expect_model_param(gg_models, "ntrees", ntrees_opts)
+  h2oTest.expectModelParam(gg_models, "ntrees", ntrees_opts)
 
   # Learn rate
-  expect_model_param(gg_models, "learn_rate", learn_rate_opts)
+  h2oTest.expectModelParam(gg_models, "learn_rate", learn_rate_opts)
 
   cat("\n\n Grid search results:")
   print(gg)
@@ -53,5 +53,5 @@ check.gbm.grid <- function() {
   expect_equal(rev(ascending_model_ids), descending_model_ids)
 }
 
-doTest("GBM Grid Search: iteration over parameters", check.gbm.grid)
+h2oTest.doTest("GBM Grid Search: iteration over parameters", check.gbm.grid)
 

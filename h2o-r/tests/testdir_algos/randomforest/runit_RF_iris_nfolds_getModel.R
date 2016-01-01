@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.RF.nfolds <- function() {
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"),
+  iris.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris.csv"),
                              "iris.hex")
   iris.nfolds <- h2o.randomForest(y = 5, x = 1:4, training_frame = iris.hex,
                                   ntrees = 50, nfolds = 5)
@@ -22,4 +22,4 @@ test.RF.nfolds <- function() {
   
 }
 
-doTest("RF Cross-Validation Test: Iris", test.RF.nfolds)
+h2oTest.doTest("RF Cross-Validation Test: Iris", test.RF.nfolds)

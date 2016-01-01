@@ -27,32 +27,32 @@ test.round_prec <- function() {
     s1_t <- trunc(a); s1_r <- round(a); s1_s <- signif(a)
     s2_t <- trunc(b); s2_r <- round(b,3); s2_s <- signif(b,3)
     
-    Log.info(paste("A =", paste(a, collapse <- ", ")))
-    Log.info("Check trunc(A) matches R")
+    h2oTest.logInfo(paste("A =", paste(a, collapse <- ", ")))
+    h2oTest.logInfo("Check trunc(A) matches R")
     S1_t <- as.data.frame(trunc(A))
     expect_true(all(S1_t == s1_t))
     
-    Log.info("Check round(A, 0) matches R")
+    h2oTest.logInfo("Check round(A, 0) matches R")
     S1_r <- as.data.frame(round(A, 0))
     expect_true(all(S1_r == s1_r))
     
-    Log.info("Check signif(A, 6) matches R")
+    h2oTest.logInfo("Check signif(A, 6) matches R")
     S1_s <- as.data.frame(signif(A, 6))
     expect_true(all(S1_s == s1_s))
     
-    Log.info(paste("B =", paste(b, collapse <- ", ")))
-    Log.info("Check trunc(B) matches R")
+    h2oTest.logInfo(paste("B =", paste(b, collapse <- ", ")))
+    h2oTest.logInfo("Check trunc(B) matches R")
     S2_t <- as.data.frame(trunc(B))
     expect_true(all(S2_t == s2_t))
     
-    Log.info("Check round(B, 3) matches R")
+    h2oTest.logInfo("Check round(B, 3) matches R")
     S2_r <- as.data.frame(round(B, 3))
     expect_true(all(S2_r == s2_r))
     
-    Log.info("Check signif(B, 3) matches R")
+    h2oTest.logInfo("Check signif(B, 3) matches R")
     S2_s <- as.data.frame(signif(B, 3))
     expect_true(all(S2_s == s2_s))
     
 }
 
-doTest("Test trunc, round and signif", test.round_prec)
+h2oTest.doTest("Test trunc, round and signif", test.round_prec)

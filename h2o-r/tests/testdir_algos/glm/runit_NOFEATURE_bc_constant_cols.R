@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
 
-    mnist <- h2o.importFile(locate("bigdata/laptop/mnist/train.csv.gz"))
+    mnist <- h2o.importFile(h2oTest.locate("bigdata/laptop/mnist/train.csv.gz"))
     indVars <-  names(mnist[,-785])
     depVars <- "C785"
     alpha <- 0.5
@@ -21,4 +21,4 @@ test <- function() {
     
 }
 
-doTest("GLM Test: GLM w/ Beta Constraints with constant predictor columns", test)
+h2oTest.doTest("GLM Test: GLM w/ Beta Constraints with constant predictor columns", test)

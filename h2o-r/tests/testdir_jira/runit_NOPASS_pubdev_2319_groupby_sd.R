@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 test.pub.2319 <- function() {
-  heading("BEGIN TEST")
+  h2oTest.heading("BEGIN TEST")
   
   hex <- as.h2o(iris)
 
@@ -16,4 +16,4 @@ test.pub.2319 <- function() {
   expect_equal(gp[ gp[,1] == "virginica", 2], s3)
 }
 
-doTest("PUBDEV-2319", test.pub.2319)
+h2oTest.doTest("PUBDEV-2319", test.pub.2319)

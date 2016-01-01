@@ -4,9 +4,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.pubdev_1844 <- function() {
-  cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+  cars <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
   seed <- sample(1:1000000, 1)
-  Log.info(paste0("runif seed: ",seed))
+  h2oTest.logInfo(paste0("runif seed: ",seed))
   r <- h2o.runif(cars,seed=seed)
   train <- cars[r > 0.2,]
   valid <- cars[r <= 0.2,]
@@ -15,17 +15,17 @@ test.pubdev_1844 <- function() {
   grid_space$min_rows <- c(2,4)
   grid_space$nbins_cats <- c(269, 74)
   grid_space$distribution <- "poisson"
-  Log.info(lapply(names(grid_space), function(n) paste0("The ",n," search space: ", grid_space[n])))
+  h2oTest.logInfo(lapply(names(grid_space), function(n) paste0("The ",n," search space: ", grid_space[n])))
 
   predictors <- c("displacement","power","weight","acceleration","year")
   response_col <- "cylinders"
-  Log.info(paste0("Predictors: ", paste(predictors, collapse=',')))
-  Log.info(paste0("Response: ", response_col))
+  h2oTest.logInfo(paste0("Predictors: ", paste(predictors, collapse=',')))
+  h2oTest.logInfo(paste0("Response: ", response_col))
 
-  Log.info("Constructing the grid of gbm models...")
+  h2oTest.logInfo("Constructing the grid of gbm models...")
   cars_gbm_grid = h2o.grid("gbm", grid_id="gbm_grid_cars_test", x=predictors, y=response_col, training_frame=train,
                            validation_frame=valid, hyper_params=grid_space)
   
 }
 
-doTest("PUBDEV-1844", test.pubdev_1844)
+h2oTest.doTest("PUBDEV-1844", test.pubdev_1844)

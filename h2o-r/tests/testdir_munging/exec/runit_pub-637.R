@@ -68,6 +68,6 @@ test.frame_add <- function() {
     
 }
 
-doTest("Test frame add.", test.frame_add)
+h2oTest.doTest("Test frame add.", test.frame_add)
 
 

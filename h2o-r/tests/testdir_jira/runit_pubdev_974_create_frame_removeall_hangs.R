@@ -13,4 +13,4 @@ myframe <- h2o.createFrame(rows = 100, cols = 10,
                            missing_fraction = 0, response_factors = 1, has_response = TRUE)
 }
 
-doTest("PUBDEV-974", test.pubdev_974)
+h2oTest.doTest("PUBDEV-974", test.pubdev_974)

@@ -6,11 +6,11 @@ source("../../scripts/h2o-r-test-setup.R")
 test.rdocls.golden <- function() {
 
 
-prosPath <- locate("smalldata/extdata/prostate.csv")
+prosPath <- h2oTest.locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath)
 h2o.ls()
 
 
 }
 
-doTest("R Doc ls", test.rdocls.golden)
+h2oTest.doTest("R Doc ls", test.rdocls.golden)

@@ -12,10 +12,10 @@ check.merge_no_shared_cols <- function() {
   l.hex <- as.h2o(left)
   r.hex <- as.h2o(rite)
 
-  Log.info("H2O will only merge if data sets have at least one shared column")
+  h2oTest.logInfo("H2O will only merge if data sets have at least one shared column")
   expect_error(head(h2o.merge(l.hex, r.hex, T)))
 
   
 }
 
-doTest("Datasets Require Shared Columns to Merge", check.merge_no_shared_cols)
+h2oTest.doTest("Datasets Require Shared Columns to Merge", check.merge_no_shared_cols)

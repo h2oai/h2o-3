@@ -12,4 +12,4 @@ test.ifce<- function() {
   
 }
 
-doTest("test ifce", test.ifce)
+h2oTest.doTest("test ifce", test.ifce)

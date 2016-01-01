@@ -13,9 +13,9 @@ test.km.iris <- function() {
   iris.km.h2o <- h2o.kmeans(iris.hex[,1:4], init=start, standardize=FALSE)
   iris.km.h2o2 <- h2o.kmeans(iris.hex[,1:4], init=start.hex, standardize=FALSE)
 
-  Log.info("Cluster centers from R:")
+  h2oTest.logInfo("Cluster centers from R:")
   print(iris.km.r$centers)
-  Log.info("Cluster centers from H2O:")
+  h2oTest.logInfo("Cluster centers from H2O:")
   print(getCenters(iris.km.h2o))
 
   centersH2O <- getCenters(iris.km.h2o)
@@ -31,4 +31,4 @@ test.km.iris <- function() {
   
 }
 
-doTest("KMeans Test: Iris Data (H2O vs. R)", test.km.iris)
+h2oTest.doTest("KMeans Test: Iris Data (H2O vs. R)", test.km.iris)

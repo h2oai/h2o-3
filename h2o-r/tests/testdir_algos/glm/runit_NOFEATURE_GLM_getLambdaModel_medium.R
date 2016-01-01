@@ -10,7 +10,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.GLM.getLambdaModel <- function() {
 print("Read data")
-pros.hex = h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")), destination_key="pros.hex")
+pros.hex = h2o.importFile(normalizePath(h2oTest.locate("smalldata/logreg/prostate.csv")), destination_key="pros.hex")
 
 myX = c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
 myY = "CAPSULE"
@@ -40,6 +40,6 @@ for(i in 1:10){
 
 }
 
-doTest("GLM get Model for each Lambda Test: Prostate", test.GLM.getLambdaModel)
+h2oTest.doTest("GLM get Model for each Lambda Test: Prostate", test.GLM.getLambdaModel)
 
 

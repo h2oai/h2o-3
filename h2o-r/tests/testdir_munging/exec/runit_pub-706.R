@@ -46,4 +46,4 @@ test.quoted_comma <- function() {
     
 }
 
-doTest("Test for quoted_comma.", test.quoted_comma)
+h2oTest.doTest("Test for quoted_comma.", test.quoted_comma)

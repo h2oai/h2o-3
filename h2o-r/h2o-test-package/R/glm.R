@@ -1,4 +1,4 @@
-checkGLMModel <- function(myGLM.h2o, myGLM.r) {
+h2oTest.checkGLMModel <- function(myGLM.h2o, myGLM.r) {
   coeff.mat = as.matrix(myGLM.r$beta)
   numcol = ncol(coeff.mat)
   coeff.R = c(coeff.mat[,numcol], Intercept = as.numeric(myGLM.r$a0[numcol]))
@@ -22,15 +22,15 @@ penalty <- function(alpha, beta){
   (1-alpha) * l2norm(beta) + alpha * l1norm(beta)
 }
 
-gaussian_obj <- function(deviance, nobs, lambda, alpha, beta) {
+h2oTest.gaussianObj <- function(deviance, nobs, lambda, alpha, beta) {
   deviance * (1/(2*nobs)) + lambda * penalty(alpha, beta)
 }
 
-binomial_obj <- function(deviance, nobs, lambda, alpha, beta) {
+h2oTest.binomialObj <- function(deviance, nobs, lambda, alpha, beta) {
   deviance * (1/(2*nobs)) + lambda * penalty(alpha, beta)
 }
 
-checkGLMModel2 <- function(myGLM.h2o,myGLM.r){
+h2oTest.checkGLMModel2 <- function(myGLM.h2o,myGLM.r){
   if(inherits(myGLM.h2o, "H2OModel")){
     f = myGLM.h2o@allparameters$family
     dev = myGLM.h2o@model$training_metrics@metrics$null_deviance
@@ -47,11 +47,11 @@ checkGLMModel2 <- function(myGLM.h2o,myGLM.r){
   }
 
   if(f == "gaussian"){
-    res_h2o = gaussian_obj(dev, nobs, lambda, alpha, beta)
-    res_r = gaussian_obj(r_dev, nobs, lambda, alpha, r_beta)
+    res_h2o = h2oTest.gaussianObj(dev, nobs, lambda, alpha, beta)
+    res_r = h2oTest.gaussianObj(r_dev, nobs, lambda, alpha, r_beta)
   } else {
-    res_h2o = binomial_obj(dev, nobs, lambda, alpha, beta)
-    res_r = binomial_obj(r_dev, nobs, lambda, alpha, r_beta)
+    res_h2o = h2oTest.binomialObj(dev, nobs, lambda, alpha, beta)
+    res_r = h2oTest.binomialObj(r_dev, nobs, lambda, alpha, r_beta)
   }
   print(paste0("GLMNET OBJECTIVE VALUE : ", res_r))
   print(paste0("H2O OBJECTIVE VALUE : ", res_h2o))

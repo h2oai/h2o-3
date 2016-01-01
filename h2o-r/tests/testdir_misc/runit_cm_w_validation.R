@@ -4,8 +4,8 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.cm.valid <- function() {
-  Log.info("Creating a binomial GBM model...")
-  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv.zip"))
+  h2oTest.logInfo("Creating a binomial GBM model...")
+  pros.hex <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -15,14 +15,14 @@ test.cm.valid <- function() {
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
   pros.gbm <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test)
-  Log.info("Creating a multinomial GBM model...")
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
+  h2oTest.logInfo("Creating a multinomial GBM model...")
+  iris.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
   iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test)
 
-  Log.info("Basic Implementations...")
+  h2oTest.logInfo("Basic Implementations...")
   cm_bin_basic <- h2o.confusionMatrix(pros.gbm)
   cm_mul_basic <- h2o.confusionMatrix(iris.gbm)
   print(cm_bin_basic)
@@ -35,13 +35,13 @@ test.cm.valid <- function() {
   expect_equal(cm_false_pros, cm_bin_basic)
   expect_equal(cm_false_iris, cm_mul_basic)
 
-  Log.info("Using valid = TRUE...")
+  h2oTest.logInfo("Using valid = TRUE...")
   cm_bin_valid <- h2o.confusionMatrix(pros.gbm, valid = TRUE)
   cm_mul_valid <- h2o.confusionMatrix(iris.gbm, valid = TRUE)
   print(cm_bin_valid)
   print(cm_mul_valid)
 
-  Log.info("Using newdata...")
+  h2oTest.logInfo("Using newdata...")
   cm_bin_newdat <- h2o.confusionMatrix(pros.gbm, newdata = pros.test)
   cm_mul_newdat <- h2o.confusionMatrix(iris.gbm, newdata = iris.test)
   print(cm_bin_newdat)
@@ -50,14 +50,14 @@ test.cm.valid <- function() {
   expect_equal(cm_bin_valid, cm_bin_newdat)
   expect_equal(cm_mul_valid, cm_mul_newdat)
 
-  Log.info("Thresholds by various max criteria thresholds...")
+  h2oTest.logInfo("Thresholds by various max criteria thresholds...")
   maxes <- pros.gbm@model$training_metrics@metrics$max_criteria_and_metric_scores$threshold[1:7]
   multiple_cm <- h2o.confusionMatrix(pros.gbm, thresholds = maxes)
 
-  Log.info("Negative testcases...")
+  h2oTest.logInfo("Negative testcases...")
   expect_error(h2o.confusionMatrix(pros.gbm, valid = TRUE, newdata = pros.test))
   expect_error(h2o.confusionMatrix(iris.glm, thresholds = 0.5))
   
 }
 
-doTest("Testing h2o.confusionMatrix on a model with validation frame", test.cm.valid)
+h2oTest.doTest("Testing h2o.confusionMatrix on a model with validation frame", test.cm.valid)

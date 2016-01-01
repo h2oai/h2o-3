@@ -30,22 +30,22 @@ test.frame_add <- function() {
     a.h2o <- as.h2o(a_initial, destination_frame="cA_0")
     b.h2o <- as.h2o(a_initial, destination_frame="cA_1")
 
-    Log.info("Try a.h2o[1,] + b.h2o[1,]")
+    h2oTest.logInfo("Try a.h2o[1,] + b.h2o[1,]")
     res <- a.h2o[1,] + b.h2o[1,]
 
-    Log.info("Try a.h2o[,1] + b.h2o[,1]")
+    h2oTest.logInfo("Try a.h2o[,1] + b.h2o[,1]")
     res2 <- a.h2o[,1] + b.h2o[,1]
   
-    Log.info("Try a.h2o + b.h2o")
+    h2oTest.logInfo("Try a.h2o + b.h2o")
     res3 <- a.h2o + b.h2o
 
-    Log.info("Try a.h2o == b.h2o")
+    h2oTest.logInfo("Try a.h2o == b.h2o")
     res4 <- a.h2o == b.h2o
       
   
     
 }
 
-doTest("Test frame add.", test.frame_add)
+h2oTest.doTest("Test frame add.", test.frame_add)
 
 

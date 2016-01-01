@@ -21,7 +21,7 @@ function() {
     # The objective of the test is to verify java code generation
     # for big models containing huge amount of trees.
     # This case verify multi-classifiers.
-    training_file <- test_file <- locate("smalldata/junit/cars_nice_header.csv")
+    training_file <- test_file <- h2oTest.locate("smalldata/junit/cars_nice_header.csv")
     training_frame <- h2o.importFile(training_file)
     test_frame <- h2o.importFile(test_file)
 
@@ -35,7 +35,7 @@ function() {
     params$training_frame  <- training_frame
     params$seed            <- 42
 
-    doJavapredictTest("randomForest",test_file,test_frame,params)
+    h2oTest.doJavapredictTest("randomForest",test_file,test_frame,params)
 }
 
-doTest("RF test", test.drf.javapredict.cars.rand)
+h2oTest.doTest("RF test", test.drf.javapredict.cars.rand)

@@ -20,4 +20,4 @@ test.nested_ifelse <- function() {
   
 }
 
-doTest("Test frame add.", test.nested_ifelse )
+h2oTest.doTest("Test frame add.", test.nested_ifelse )

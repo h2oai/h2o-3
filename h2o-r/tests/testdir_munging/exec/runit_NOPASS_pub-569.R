@@ -46,5 +46,5 @@ test.apply_w_quantile <- function() {
     
 }
 
-doTest("Test for apply with quantile.", test.apply_w_quantile)
+h2oTest.doTest("Test for apply with quantile.", test.apply_w_quantile)
 

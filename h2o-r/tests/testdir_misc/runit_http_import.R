@@ -17,4 +17,4 @@ test.import.http <- function() {
   
 }
 
-doTest("Testing HTTP File Import", test.import.http)
+h2oTest.doTest("Testing HTTP File Import", test.import.http)

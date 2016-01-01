@@ -10,11 +10,11 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 na_comparisons <- function(){
-  Log.info('uploading testing dataset')
-  df.h <- h2o.importFile(locate('smalldata/jira/pub_213.csv'))
+  h2oTest.logInfo('uploading testing dataset')
+  df.h <- h2o.importFile(h2oTest.locate('smalldata/jira/pub_213.csv'))
 
-  Log.info('printing from h2o')
-  Log.info( head(df.h) )
+  h2oTest.logInfo('printing from h2o')
+  h2oTest.logInfo( head(df.h) )
 
   df.h[, ncol(df.h)+1] <- df.h[,1] > 0
   res <- as.data.frame(h2o.table(df.h$l>0))
@@ -22,7 +22,7 @@ na_comparisons <- function(){
   loc <- as.data.frame(df.h)
 
 
-  Log.info('testing table')
+  h2oTest.logInfo('testing table')
   print(loc)
 
   print(c(1,1,1,NA,1,NA,1))
@@ -40,4 +40,4 @@ if(F){
 }
 
 
-doTest('na_comparisons', na_comparisons)
+h2oTest.doTest('na_comparisons', na_comparisons)

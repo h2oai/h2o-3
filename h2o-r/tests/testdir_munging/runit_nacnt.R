@@ -3,7 +3,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.nacnt <- function() {
-  fr <- h2o.importFile(locate("smalldata/logreg/prostate.csv"))
+  fr <- h2o.importFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
   nacnts1 <- h2o.nacnt(fr)
   expect_true(all(nacnts1==0))
   h2o.insertMissingValues(fr)
@@ -11,4 +11,4 @@ test.nacnt <- function() {
   expect_true(all(nacnts2>0))
 }
 
-doTest("Test nacnt", test.nacnt)
+h2oTest.doTest("Test nacnt", test.nacnt)

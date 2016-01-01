@@ -16,7 +16,7 @@ function() {
     #----------------------------------------------------------------------
     # Parameters for the test.
     #----------------------------------------------------------------------
-    training_file <- test_file <- locate("smalldata/junit/cars_nice_header.csv")
+    training_file <- test_file <- h2oTest.locate("smalldata/junit/cars_nice_header.csv")
     training_frame <- h2o.importFile(training_file)
     test_frame <- h2o.importFile(test_file)
 
@@ -33,7 +33,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("gbm",test_file,test_frame,params)
+    h2oTest.doJavapredictTest("gbm",test_file,test_frame,params)
 }
 
-doTest("GBM test", test.gbm.javapredict.cars)
+h2oTest.doTest("GBM test", test.gbm.javapredict.cars)

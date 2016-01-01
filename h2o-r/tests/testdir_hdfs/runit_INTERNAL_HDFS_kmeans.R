@@ -13,7 +13,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
+hadoop_namenode_is_accessible = h2oTest.hadoopNamenodeIsAccessible()
 
 if (hadoop_namenode_is_accessible) {
     hdfs_name_node = HADOOP.NAMENODE
@@ -25,14 +25,14 @@ if (hadoop_namenode_is_accessible) {
 
 #----------------------------------------------------------------------
 
-heading("BEGIN TEST")
+h2oTest.heading("BEGIN TEST")
 check.kmeans <- function() {
 
   #----------------------------------------------------------------------
   # Single file cases.
   #----------------------------------------------------------------------
 
-  heading("Import iris_wheader.csv from HDFS")
+  h2oTest.heading("Import iris_wheader.csv from HDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
   iris.hex <- h2o.importFile(url)
   n <- nrow(iris.hex)
@@ -41,13 +41,13 @@ check.kmeans <- function() {
       stop("nrows is wrong")
   }
 
-  heading("Running KMeans on iris")
+  h2oTest.heading("Running KMeans on iris")
   iris.km <- h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iterations = 10)
   print(iris.km)
 
 
 
-  heading("Importing covtype.data from HDFS")
+  h2oTest.heading("Importing covtype.data from HDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_covtype_file)
   covtype.hex <- h2o.importFile(url)
   n <- nrow(covtype.hex)
@@ -56,7 +56,7 @@ check.kmeans <- function() {
       stop("nrows is wrong")
   }
 
-  heading("Running KMeans on covtype")
+  h2oTest.heading("Running KMeans on covtype")
   covtype.km <- h2o.kmeans(training_frame = covtype.hex, k = 8, max_iterations = 10)
   print(covtype.km)
 
@@ -64,4 +64,4 @@ check.kmeans <- function() {
   
 }
 
-doTest("K-means", check.kmeans)
+h2oTest.doTest("K-means", check.kmeans)

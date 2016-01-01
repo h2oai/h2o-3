@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 test.predict.withoutresponse <- function(h) {
 
-	ir = h2o.uploadFile(normalizePath(locate("smalldata/iris/iris.csv")),destination_frame="ir")
+	ir = h2o.uploadFile(normalizePath(h2oTest.locate("smalldata/iris/iris.csv")),destination_frame="ir")
 	ss = h2o.splitFrame(data=ir, ratios=.2, seed = 0)
 
 	train = ss[[2]] 
@@ -16,4 +16,4 @@ test.predict.withoutresponse <- function(h) {
 
 }
 
-doTest("Test predicts on data without response for multiclass", test.predict.withoutresponse)
+h2oTest.doTest("Test predicts on data without response for multiclass", test.predict.withoutresponse)

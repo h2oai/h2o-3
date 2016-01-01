@@ -17,4 +17,4 @@ data.hex <- h2o.uploadFile("/mnt/0xcustomer-datasets/c27/data.csv", header = F)
 model <- h2o.glm(x=4:ncol(data.hex), y=3, training_frame=data.hex, family="binomial", standardize=T)
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

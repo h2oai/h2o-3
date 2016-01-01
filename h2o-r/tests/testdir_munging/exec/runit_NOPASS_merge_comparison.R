@@ -4,20 +4,20 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.merge_comparison <- function() {
-  Log.info("Verify accuracy of merge")
+  h2oTest.logInfo("Verify accuracy of merge")
 
   left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
     color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
   right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'),
     citrus = c(F, T, F, T, F, F))
 
-  Log.info("Change datasets into H2O H2OFrames")
+  h2oTest.logInfo("Change datasets into H2O H2OFrames")
   l.hex <- as.h2o(left)
   r.hex <- as.h2o(right)
 
 
   # H2O doesn't sort
-  Log.info("Default parameters")
+  h2oTest.logInfo("Default parameters")
   dflt.hex <- h2o.merge(l.hex, r.hex)
   dflt.r <- merge(left, right)
   dflt.h2o <- as.data.frame(dflt.hex)
@@ -27,7 +27,7 @@ check.merge_comparison <- function() {
   row.names(dflt.sorted) <- 1:6
   expect_equal(dflt.sorted, dflt.r)
 
-  Log.info("Left Outer")
+  h2oTest.logInfo("Left Outer")
   left.hex <- h2o.merge(l.hex, r.hex, T, F)
   left.r <- merge(left, right, all.x = T, all.y = F)
   left.h2o <- as.data.frame(left.hex)
@@ -37,7 +37,7 @@ check.merge_comparison <- function() {
   row.names(left.sorted) <- 1:6
   expect_equal(left.sorted, left.r)
 
-  Log.info("Right Outer")
+  h2oTest.logInfo("Right Outer")
   rite.hex <- h2o.merge(l.hex, r.hex, F, T)
   rite.r <- merge(left, right, all.x = F, all.y = T)
   rite.h2o <- as.data.frame(rite.hex)
@@ -60,4 +60,4 @@ check.merge_comparison <- function() {
   
 }
 
-doTest("Verifying h2o.merge With R's Impelementation", check.merge_comparison)
+h2oTest.doTest("Verifying h2o.merge With R's Impelementation", check.merge_comparison)

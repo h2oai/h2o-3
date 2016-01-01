@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.h2o.assign.golden <- function() {
 
 
-prosPath <- locate("smalldata/extdata/prostate.csv")
+prosPath <- h2oTest.locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath)
 prostate.qs <- quantile(prostate.hex$PSA)
 PSA.outliers <- prostate.hex[prostate.hex$PSA <= prostate.qs[2] | prostate.hex$PSA >= prostate.qs[10],]
@@ -17,4 +17,4 @@ head(PSA.outliers)
 
 }
 
-doTest("R Doc h2o.assign", test.h2o.assign.golden)
+h2oTest.doTest("R Doc h2o.assign", test.h2o.assign.golden)

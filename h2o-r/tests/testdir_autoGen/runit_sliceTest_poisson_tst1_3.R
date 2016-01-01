@@ -8,15 +8,15 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 sliceTest_poisson_tst1_3 <- function() {
-    Log.info("A munge-task R unit test on data <poisson_tst1> testing the functional unit <[> ")
-    Log.info("Uploading poisson_tst1")
-    hex <- h2o.importFile(locate("smalldata/glm_test/poisson_tst1.csv"), "rpoisson_tst1.hex")
-    Log.info("Performing a column slice of poisson_tst1 using these columns: c(1)")
+    h2oTest.logInfo("A munge-task R unit test on data <poisson_tst1> testing the functional unit <[> ")
+    h2oTest.logInfo("Uploading poisson_tst1")
+    hex <- h2o.importFile(h2oTest.locate("smalldata/glm_test/poisson_tst1.csv"), "rpoisson_tst1.hex")
+    h2oTest.logInfo("Performing a column slice of poisson_tst1 using these columns: c(1)")
     slicedHex <- hex[,c(1)]
-        Log.info("Performing a row & column slice of poisson_tst1 using these rows & columns: c(\"math\",\"num_awards\") & c(133,91,131,137,135,138,25,26,27,22,23,160,28,29,161,4,8,125,126,55,54,56,51,53,52,198,194,196,191,193,115,114,117,116,111,110,112,82,80,118,3,102,100,106,107,38,31,37,35,34,176,62,65,66,67,177,69,175,172,171,182,180,167,185,188,99,168,164,92,95,94,162,163,11,10,13,12,17,16,19,18,151,153,152,154,157,156,159,48,49,46,44,45,87,1,5,9,147,144,145,143,148,149,75,74,73,72,71,70,79,78)")
+        h2oTest.logInfo("Performing a row & column slice of poisson_tst1 using these rows & columns: c(\"math\",\"num_awards\") & c(133,91,131,137,135,138,25,26,27,22,23,160,28,29,161,4,8,125,126,55,54,56,51,53,52,198,194,196,191,193,115,114,117,116,111,110,112,82,80,118,3,102,100,106,107,38,31,37,35,34,176,62,65,66,67,177,69,175,172,171,182,180,167,185,188,99,168,164,92,95,94,162,163,11,10,13,12,17,16,19,18,151,153,152,154,157,156,159,48,49,46,44,45,87,1,5,9,147,144,145,143,148,149,75,74,73,72,71,70,79,78)")
     slicedHex <- hex[c(133,91,131,137,135,138,25,26,27,22,23,160,28,29,161,4,8,125,126,55,54,56,51,53,52,198,194,196,191,193,115,114,117,116,111,110,112,82,80,118,3,102,100,106,107,38,31,37,35,34,176,62,65,66,67,177,69,175,172,171,182,180,167,185,188,99,168,164,92,95,94,162,163,11,10,13,12,17,16,19,18,151,153,152,154,157,156,159,48,49,46,44,45,87,1,5,9,147,144,145,143,148,149,75,74,73,72,71,70,79,78),c("math","num_awards")]
-        Log.info("Performing a 1-by-1 column slice of poisson_tst1 using these columns: ")
-        Log.info("Performing a 1-by-1 row slice of poisson_tst1 using these rows: ")
+        h2oTest.logInfo("Performing a 1-by-1 column slice of poisson_tst1 using these columns: ")
+        h2oTest.logInfo("Performing a 1-by-1 row slice of poisson_tst1 using these rows: ")
 
 }
-doTest("sliceTest_ on data poisson_tst1 unit= [", sliceTest_poisson_tst1_3)
+h2oTest.doTest("sliceTest_ on data poisson_tst1 unit= [", sliceTest_poisson_tst1_3)

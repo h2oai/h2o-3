@@ -14,7 +14,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test <- function() {
 
   print("Read prostate data into R.")
-  prostate.data <-  h2o.importFile(locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
+  prostate.data <-  h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
 
   print("Set variables for h2o.")
   myY = "DPROS"
@@ -35,4 +35,4 @@ test <- function() {
   
 }
 
-doTest("Testing AIC value for GLM families gamma and tweedie", test)
+h2oTest.doTest("Testing AIC value for GLM families gamma and tweedie", test)

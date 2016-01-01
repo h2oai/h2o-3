@@ -23,7 +23,7 @@ TEST_ROOT_DIR <- ".."
 # - verify handling of NAs in generated model which has to be consistent with  interpreted version
 # - verify correct escaping of strings which are part of domain: eg. "The name" -> \"The name \"
 
-heading("Choose random parameters")
+h2oTest.heading("Choose random parameters")
 
 n.trees <- sample(1000, 1)
 print(paste("n.trees", n.trees))
@@ -37,10 +37,10 @@ print(paste("n.minobsinnode", n.minobsinnode))
 shrinkage <- sample(c(0.001, 0.002, 0.01, 0.02, 0.1, 0.2), 1)
 print(paste("shrinkage", shrinkage))
 
-train <- locate("smalldata/gbm_test/titanic.csv")
+train <- h2oTest.locate("smalldata/gbm_test/titanic.csv")
 print(paste("train", train))
 
-test <- locate("smalldata/gbm_test/titanic.csv")
+test <- h2oTest.locate("smalldata/gbm_test/titanic.csv")
 print(paste("test", test))
 
 x = c("pclass","name","sex","age","sibsp","parch","ticket","fare","cabin","embarked","boat","body","home.dest")

@@ -16,8 +16,8 @@ function() {
     #----------------------------------------------------------------------
     # Parameters for the test.
     #----------------------------------------------------------------------
-    training_file <- locate("smalldata/logreg/prostate.csv")
-    test_file <- locate("smalldata/logreg/prostate.csv")
+    training_file <- h2oTest.locate("smalldata/logreg/prostate.csv")
+    test_file <- h2oTest.locate("smalldata/logreg/prostate.csv")
     training_frame <- h2o.importFile(training_file)
     test_frame <- h2o.importFile(test_file)
 
@@ -33,7 +33,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("gbm",test_file,test_frame,params)
+    h2oTest.doJavapredictTest("gbm",test_file,test_frame,params)
 }
 
-doTest("GBM test", test.gbm.javapredict.prostate)
+h2oTest.doTest("GBM test", test.gbm.javapredict.prostate)

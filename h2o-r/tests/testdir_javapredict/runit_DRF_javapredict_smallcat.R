@@ -18,7 +18,7 @@ function() {
     #----------------------------------------------------------------------
     # Parameters for the test.
     #----------------------------------------------------------------------
-    training_file <- test_file <- locate("smalldata/gbm_test/alphabet_cattest.csv")
+    training_file <- test_file <- h2oTest.locate("smalldata/gbm_test/alphabet_cattest.csv")
     training_frame <- h2o.importFile(training_file)
     test_frame <- h2o.importFile(test_file)
 
@@ -33,7 +33,7 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("randomForest",test_file,test_frame,params)
+    h2oTest.doJavapredictTest("randomForest",test_file,test_frame,params)
 }
 
-doTest("RF test", test.drf.javapredict.smallcat)
+h2oTest.doTest("RF test", test.drf.javapredict.smallcat)

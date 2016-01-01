@@ -11,4 +11,4 @@ test.pub.456 <- function() {
   
 }
 
-doTest("Test pub 456", test.pub.456)
+h2oTest.doTest("Test pub 456", test.pub.456)

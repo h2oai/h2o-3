@@ -24,12 +24,12 @@ test.splitframe <- function() {
 
   for(data in names(datasets)) {
     # create list of explicit directory of files
-    Log.info(paste("Import and split for", data))
+    h2oTest.logInfo(paste("Import and split for", data))
     dirs <- unlist(lapply(datasets[[data]], locate))
     parse.time <- system.time(hex <- h2o.importFile(dirs))
     split.time <- system.time(spl <- h2o.splitFrame(hex, 0.75))
 
-    Log.info(paste("Timings for", data))
+    h2oTest.logInfo(paste("Timings for", data))
     print(parse.time)
     print(split.time)
 
@@ -42,4 +42,4 @@ test.splitframe <- function() {
 
 }
 
-doTest("Splitframe Testing with Timings vs Parsing", test.splitframe)
+h2oTest.doTest("Splitframe Testing with Timings vs Parsing", test.splitframe)

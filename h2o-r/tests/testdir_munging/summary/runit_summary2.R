@@ -4,17 +4,17 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.summary2 <- function() {
-  Log.info("Importing iris.csv data...\n")
-  # iris.hex <- h2o.importFile(locate("smalldata/iris/iris_wheader.csv", schema="local"))
-  iris.hex <- h2o.importFile(normalizePath(locate("smalldata/iris/iris_wheader.csv")))  
+  h2oTest.logInfo("Importing iris.csv data...\n")
+  # iris.hex <- h2o.importFile(h2oTest.locate("smalldata/iris/iris_wheader.csv", schema="local"))
+  iris.hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/iris/iris_wheader.csv")))  
 
-  Log.info("Check that summary works...")
+  h2oTest.logInfo("Check that summary works...")
   print(summary(iris.hex)) 
 
-  Log.info("Summary from R's iris data: ")
+  h2oTest.logInfo("Summary from R's iris data: ")
   summary(iris)
   
 }
 
-doTest("Summary2 Test", test.summary2)
+h2oTest.doTest("Summary2 Test", test.summary2)
 

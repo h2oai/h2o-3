@@ -10,17 +10,17 @@ options(echo=TRUE)
 
 
 test.pub.767 <- function() {
-  Log.info('Importing the altered prostatetype data from smalldata.')
-  prostate <- h2o.importFile(normalizePath(locate('smalldata/logreg/prostate.csv')), 'prostate')
+  h2oTest.logInfo('Importing the altered prostatetype data from smalldata.')
+  prostate <- h2o.importFile(normalizePath(h2oTest.locate('smalldata/logreg/prostate.csv')), 'prostate')
 
-  Log.info('Print head of dataset')
-  Log.info(head(prostate))
+  h2oTest.logInfo('Print head of dataset')
+  h2oTest.logInfo(head(prostate))
   prostate[,2] <- as.factor(prostate[,2]) # convert to Enum for classification
 
   m <- h2o.randomForest(x = 3:8, y = 2, training_frame = prostate, ntrees = 500,
                         max_depth = 100)
 
-  Log.info("Number of rows in the confusion matrix for AUC:")
+  h2oTest.logInfo("Number of rows in the confusion matrix for AUC:")
   p <- h2o.performance(m)
   print(h2o.confusionMatrix(p))
 
@@ -32,4 +32,4 @@ test.pub.767 <- function() {
   
 }
 
-doTest("PUB-767: randomForest on discontinuous integer classes.", test.pub.767)
+h2oTest.doTest("PUB-767: randomForest on discontinuous integer classes.", test.pub.767)

@@ -4,15 +4,15 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.deeplearning_MNIST <- function() {
-  Log.info("Deep Learning MNIST Classification)")
+  h2oTest.logInfo("Deep Learning MNIST Classification)")
   
   TRAIN <- "bigdata/laptop/mnist/train.csv.gz"
   TEST <- "bigdata/laptop/mnist/test.csv.gz"
   
   # set to FALSE for stand-alone demo
   if (T) {
-    train_hex <- h2o.uploadFile(locate(TRAIN))
-    test_hex  <- h2o.uploadFile(locate(TEST ))
+    train_hex <- h2o.uploadFile(h2oTest.locate(TRAIN))
+    test_hex  <- h2o.uploadFile(h2oTest.locate(TEST ))
   } else {
     library(h2o)
     homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
@@ -44,5 +44,5 @@ check.deeplearning_MNIST <- function() {
   
 }
 
-doTest("Deep Learning MNIST", check.deeplearning_MNIST)
+h2oTest.doTest("Deep Learning MNIST", check.deeplearning_MNIST)
 

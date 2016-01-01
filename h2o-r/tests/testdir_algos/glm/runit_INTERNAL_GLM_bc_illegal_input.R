@@ -24,24 +24,24 @@ test <- function() {
             lambda = lambda, alpha = alpha, beta_constraints = bc)
   }
 
-  Log.info("Illegal input case: Duplicate beta constraint entries.")
+  h2oTest.logInfo("Illegal input case: Duplicate beta constraint entries.")
   a <- rbind(bc[1,],bc)
   checkException(run_glm(a), "Did not catch duplicate constraint.")
 
-  Log.info("Illegal input case: No such predictor.")
+  h2oTest.logInfo("Illegal input case: No such predictor.")
   b <- data.frame(names = "fakeFeature", lower_bounds = -10000, upper_bounds = 10000, beta_given = 1, rho =1)
   b <-  rbind(bc, b)
   checkException(run_glm(b), "Did not catch nonexist feature named fakeFeature in the beta constraints data.frame.")
 
   #CNC - Tomas comments that an empty frame is fine, and should not throw an exception
-  #Log.info("Illegal input case: Empty beta constraints frame.")
+  #h2oTest.logInfo("Illegal input case: Empty beta constraints frame.")
   #empty <- betaConstraints[betaConstraints$lower_bounds == 22,]
   #checkException(run_glm(empty), "Did not reject empty frame.", silent = T)
 
-  Log.info("Illegal input case: Typo in beta constraint column name.")
+  h2oTest.logInfo("Illegal input case: Typo in beta constraint column name.")
   c <- bc
   names(c) <- gsub("lower_bounds", replacement = "lowerbounds", x = names(bc))
   checkException(run_glm(c), "Did not detect beta constraint column name typo.", silent = T)
 }
 
-doTest("GLM Test: Beta Constraints Illegal Argument Exceptions", test)
+h2oTest.doTest("GLM Test: Beta Constraints Illegal Argument Exceptions", test)

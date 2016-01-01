@@ -21,4 +21,4 @@ data.gbm <- h2o.gbm(myX, myY, training_frame = data.hex, distribution = 'gaussia
 print(data.gbm)
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

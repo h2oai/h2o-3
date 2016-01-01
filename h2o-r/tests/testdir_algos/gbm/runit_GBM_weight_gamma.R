@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
 	
-	htable  = h2o.uploadFile(locate("smalldata/gbm_test/moppe.csv"))
+	htable  = h2o.uploadFile(h2oTest.locate("smalldata/gbm_test/moppe.csv"))
 	htable$premiekl = as.factor(htable$premiekl)
 	htable$moptva = as.factor(htable$moptva)
 	htable$zon = as.factor(htable$zon)
@@ -29,4 +29,4 @@ test <- function() {
 	
 	
 }
-doTest("GBM weight Test: GBM w/ weight for gamma distribution", test)
+h2oTest.doTest("GBM weight Test: GBM w/ weight for gamma distribution", test)

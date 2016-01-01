@@ -5,12 +5,12 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdocasdataframe.golden <- function() {
 
-    prosPath <- locate("smalldata/extdata/prostate.csv")
+    prosPath <- h2oTest.locate("smalldata/extdata/prostate.csv")
     prostate.hex <- h2o.uploadFile(path = prosPath)
     as.data.frame.H2OFrame(prostate.hex)
 
     
 }
 
-doTest("R Doc as.data.frame", test.rdocasdataframe.golden)
+h2oTest.doTest("R Doc as.data.frame", test.rdocasdataframe.golden)
 

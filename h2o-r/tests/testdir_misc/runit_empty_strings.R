@@ -13,4 +13,4 @@ test.empty.strings <- function() {
   
 }
 
-doTest("Testing Empty Strings", test.empty.strings)
+h2oTest.doTest("Testing Empty Strings", test.empty.strings)

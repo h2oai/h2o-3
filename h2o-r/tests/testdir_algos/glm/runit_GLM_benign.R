@@ -5,29 +5,29 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 glm2Benign <- function() {
 
-  bhexFV <- h2o.uploadFile(locate("smalldata/logreg/benign.csv"), destination_frame="benignFV.hex")
+  bhexFV <- h2o.uploadFile(h2oTest.locate("smalldata/logreg/benign.csv"), destination_frame="benignFV.hex")
   maxX <- 11
   Y <- 4
   X   <- 3:maxX
   X   <- X[ X != Y ] 
   
-  Log.info("Build the model")
+  h2oTest.logInfo("Build the model")
   mFV <- h2o.glm(y = Y, x = colnames(bhexFV)[X], training_frame = bhexFV, family = "binomial", nfolds = 5, alpha = 0, lambda = 1e-5)
   
-  Log.info("Check that the columns used in the model are the ones we passed in.")
+  h2oTest.logInfo("Check that the columns used in the model are the ones we passed in.")
   
-  Log.info("===================Columns passed in: ================")
-  Log.info(paste("index ", X ," ", names(bhexFV)[X], "\n", sep=""))
-  Log.info("======================================================")
+  h2oTest.logInfo("===================Columns passed in: ================")
+  h2oTest.logInfo(paste("index ", X ," ", names(bhexFV)[X], "\n", sep=""))
+  h2oTest.logInfo("======================================================")
   preds <- mFV@model$coefficients_table$names
   preds <- preds[2:length(preds)]
-  Log.info("===================Columns Used in Model: =========================")
-  Log.info(paste(preds, "\n", sep=""))
-  Log.info("================================================================")
+  h2oTest.logInfo("===================Columns Used in Model: =========================")
+  h2oTest.logInfo(paste(preds, "\n", sep=""))
+  h2oTest.logInfo("================================================================")
 
   expect_that(preds, equals(colnames(bhexFV)[X]))
   
 }
 
-doTest("GLM: Benign Data", glm2Benign)
+h2oTest.doTest("GLM: Benign Data", glm2Benign)
 

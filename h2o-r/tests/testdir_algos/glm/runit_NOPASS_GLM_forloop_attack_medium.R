@@ -97,17 +97,17 @@ randomParams <- function(family, train, test, x, y) {
       val <- do.call(paste0("set_", parm), list(...))
       if (!is.null(val))
         if (identical(val, "weights")) {
-          Log.info(paste0(sub("_", " ", parm), ":"))
+          h2oTest.logInfo(paste0(sub("_", " ", parm), ":"))
           print(weights.train)
         } else if (is.vector(val)) {
-          Log.info(paste0(sub("_", " ", parm), ": ",val))
+          h2oTest.logInfo(paste0(sub("_", " ", parm), ": ",val))
         } else if (class(val) == "H2OFrame") {
-          Log.info(paste0(sub("_", " ", parm), ": "))
+          h2oTest.logInfo(paste0(sub("_", " ", parm), ": "))
         } else if (inherits(val, "data.frame")) {
-          Log.info(paste0(sub("_", " ", parm), ": "))
+          h2oTest.logInfo(paste0(sub("_", " ", parm), ": "))
           print(val)
         } else {
-          Log.info(paste0(sub("_", " ", parm), ": ",val)) }
+          h2oTest.logInfo(paste0(sub("_", " ", parm), ": ",val)) }
       return(val)
     }
     return(NULL)
@@ -152,8 +152,8 @@ randomParams <- function(family, train, test, x, y) {
 
 test.glm.rand_attk_forloop <- function() {
 
-  Log.info("Import and data munging...")
-  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
+  h2oTest.logInfo("Import and data munging...")
+  pros.hex <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -163,25 +163,25 @@ test.glm.rand_attk_forloop <- function() {
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
 
-  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars.csv"))
   cars.hex[,3] <- as.factor(cars.hex[,3])
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
 
-  Log.info("### Binomial ###")
+  h2oTest.logInfo("### Binomial ###")
   for(i in 1:10)
     randomParams("binomial", pros.train, pros.test, 3:9, 2)
-  Log.info("### Gaussian ###")
+  h2oTest.logInfo("### Gaussian ###")
   for(i in 1:10)
     randomParams("gaussian", cars.train, cars.test, 3:7, 2)
-  Log.info("### Poisson ###")
+  h2oTest.logInfo("### Poisson ###")
   for(i in 1:10)
     randomParams("poisson", cars.train, cars.test, 3:7, 2)
-  Log.info("### Gamma ###")
+  h2oTest.logInfo("### Gamma ###")
   for(i in 1:10)
     randomParams("gamma", cars.train, cars.test, 3:7, 2)
 
 }
 
-doTest("Checking GLM in Random Attack For Loops", test.glm.rand_attk_forloop)
+h2oTest.doTest("Checking GLM in Random Attack For Loops", test.glm.rand_attk_forloop)

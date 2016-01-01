@@ -29,4 +29,4 @@ print(data.dl)
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

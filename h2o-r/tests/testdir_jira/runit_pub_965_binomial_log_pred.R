@@ -13,7 +13,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.linkFunctions <- function() {
 
 	print("Read in prostate data.")
-	prostate.data = h2o.importFile(locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
+	prostate.data = h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data")
 
 	print("Run test/train split at 20/80.")
 	prostate.data$split <- ifelse(h2o.runif(prostate.data)>0.8, yes=1, no=0)
@@ -40,6 +40,6 @@ test.linkFunctions <- function() {
 
 }
 
-doTest("Testing GLM on prostate dataset with BINOMIAL family and log link", test.linkFunctions)
+h2oTest.doTest("Testing GLM on prostate dataset with BINOMIAL family and log link", test.linkFunctions)
 
 

@@ -4,8 +4,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.deeplearning_anomaly_mse <- function(conn) {
-  Log.info("Deep Learning Anomaly Detection on ECG Data)")
-  TRAIN <- locate("smalldata/anomaly/ecg_discord_train.csv")
+  h2oTest.logInfo("Deep Learning Anomaly Detection on ECG Data)")
+  TRAIN <- h2oTest.locate("smalldata/anomaly/ecg_discord_train.csv")
   
   ecg_original <- h2o.uploadFile(path = TRAIN, destination_frame = "ecg_original.hex")
   
@@ -41,7 +41,7 @@ check.deeplearning_anomaly_mse <- function(conn) {
   
   
   
-  Log.info("Deep Learning Anomaly Detection on Iris Data with Categoricals)")
+  h2oTest.logInfo("Deep Learning Anomaly Detection on Iris Data with Categoricals)")
   
   iris_original <- as.h2o(iris)
   
@@ -84,5 +84,5 @@ check.deeplearning_anomaly_mse <- function(conn) {
   
 }
 
-doTest("Deep Learning Anomaly Detection Per Feature Error", check.deeplearning_anomaly_mse)
+h2oTest.doTest("Deep Learning Anomaly Detection Per Feature Error", check.deeplearning_anomaly_mse)
 

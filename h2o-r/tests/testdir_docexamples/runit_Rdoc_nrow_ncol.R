@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdoc_nrow_ncol.golden <- function() {
 
-irisPath <- locate("smalldata/extdata/iris.csv")
+irisPath <- h2oTest.locate("smalldata/extdata/iris.csv")
 iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 nrow(iris.hex)
 ncol(iris.hex)
@@ -13,4 +13,4 @@ ncol(iris.hex)
 
 }
 
-doTest("R Doc nrow and ncol", test.rdoc_nrow_ncol.golden)
+h2oTest.doTest("R Doc nrow and ncol", test.rdoc_nrow_ncol.golden)

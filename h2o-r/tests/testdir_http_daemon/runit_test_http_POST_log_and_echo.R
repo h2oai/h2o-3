@@ -43,4 +43,4 @@ check.log_and_echo <- function() {
   
 }
 
-doTest("POST log and echo tests", check.log_and_echo)
+h2oTest.doTest("POST log and echo tests", check.log_and_echo)

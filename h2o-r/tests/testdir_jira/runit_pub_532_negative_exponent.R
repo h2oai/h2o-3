@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.runit_NOPASS_pub_532_negative_exponent <- function() {
 
-covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/covtype/covtype.20k.data")), "cov")
 
 # Are we in the right universe?
 expect_equal(20000, dim(covtype.hex)[1])
@@ -41,5 +41,5 @@ print(tail(val))
 
 }
 
-doTest("PUB-532 expresison parser fails on negative exponents.", test.runit_NOPASS_pub_532_negative_exponent)
+h2oTest.doTest("PUB-532 expresison parser fails on negative exponents.", test.runit_NOPASS_pub_532_negative_exponent)
 

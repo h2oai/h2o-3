@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdocrunif.golden <- function() {
 
-prosPath <- locate("smalldata/extdata/prostate.csv")
+prosPath <- h2oTest.locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
 s <- h2o.runif(prostate.hex)
 summary(s)
@@ -19,5 +19,5 @@ sum <- summary(prostate.test)
 
 }
 
-doTest("R Doc Runif", test.rdocrunif.golden)
+h2oTest.doTest("R Doc Runif", test.rdocrunif.golden)
 

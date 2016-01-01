@@ -7,7 +7,7 @@ library(gains)
 
 test.h2o.gains <- function() {
   tolerance <- 3e-2
-  hex <- h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")))
+  hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/logreg/prostate.csv")))
   hex.df <- as.data.frame(hex)
   m <- h2o.gbm(x = 3:9, y = 2, training_frame = hex)
   preds <- h2o.predict(m, hex)
@@ -15,7 +15,7 @@ test.h2o.gains <- function() {
   # first create the lift/gains w/ h2o.gains
   g <- h2o.gains(actual = hex[,2], predicted = preds[,3])  # 3rd column is class 1 probs
 
-  Log.info("H2O's Gains Table")
+  h2oTest.logInfo("H2O's Gains Table")
   print(g)
 
   preds.df <- as.data.frame(preds)
@@ -28,7 +28,7 @@ test.h2o.gains <- function() {
   mean.resp.df <- g.df$mean.resp
 
   if( any(abs(mean.resp - mean.resp.df) > tolerance)) {
-    Log.info("Got bad mean response rates")
+    h2oTest.logInfo("Got bad mean response rates")
     print("H2O's: ")
     print(mean.resp)
     print("R's: ")
@@ -44,8 +44,8 @@ test.h2o.gains <- function() {
   cume.df <- g.df$cume.pct.of.total
 
   if (any(abs(cume.df - cume) > 0.01)) {
-    Log.info("Got bad cume response")
-    Log.info("Got bad mean response rates")
+    h2oTest.logInfo("Got bad cume response")
+    h2oTest.logInfo("Got bad mean response rates")
     print("H2O's: ")
     print(cume)
     print("R's: ")
@@ -63,4 +63,4 @@ test.h2o.gains <- function() {
   
 }
 
-doTest("Test H2O Gains", test.h2o.gains)
+h2oTest.doTest("Test H2O Gains", test.h2o.gains)

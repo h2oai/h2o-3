@@ -42,8 +42,8 @@ check.deeplearning_stacked_autoencoder <- function() {
   # set to T for RUnit
   # set to F for stand-alone demo
   if (T) {
-    train_hex <- h2o.importFile(locate(TRAIN))
-    test_hex  <- h2o.importFile(locate(TEST ))
+    train_hex <- h2o.importFile(h2oTest.locate(TRAIN))
+    test_hex  <- h2o.importFile(h2oTest.locate(TEST ))
   } else {
     library(h2o)
     h2o.init(nthreads=-1)
@@ -83,4 +83,4 @@ check.deeplearning_stacked_autoencoder <- function() {
   
 }
 
-doTest("Deep Learning Stacked Autoencoder", check.deeplearning_stacked_autoencoder)
+h2oTest.doTest("Deep Learning Stacked Autoencoder", check.deeplearning_stacked_autoencoder)

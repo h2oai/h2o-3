@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pubdev.2075 <- function(conn){
 
-  cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+  cars <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
   seed <- 691895
   r <- h2o.runif(cars,seed=seed)
   train <- cars[r > 0.2,]
@@ -22,11 +22,11 @@ test.pubdev.2075 <- function(conn){
   cars_drf_grid <- h2o.grid("randomForest", grid_id="drf_grid_cars_test", x=predictors, y=response_col,
                             training_frame=train, hyper_params=grid_space)
 
-  Log.info("Expect 486 models to be constructed")
+  h2oTest.logInfo("Expect 486 models to be constructed")
   num_models <- length(cars_drf_grid@model_ids)
-  Log.info(paste0(num_models," models were constructed"))
+  h2oTest.logInfo(paste0(num_models," models were constructed"))
   expect_equal(486, num_models)
 
 }
 
-doTest("PUBDEV-2075", test.pubdev.2075)
+h2oTest.doTest("PUBDEV-2075", test.pubdev.2075)

@@ -11,13 +11,13 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 factorfilter <- function(){
-  Log.info('uploading ddply testing dataset')
-  df.h <- h2o.importFile(normalizePath(locate('smalldata/jira/pub-180.csv')))
+  h2oTest.logInfo('uploading ddply testing dataset')
+  df.h <- h2o.importFile(normalizePath(h2oTest.locate('smalldata/jira/pub-180.csv')))
 
-  Log.info('printing from h2o')
-  Log.info( head(df.h) )
+  h2oTest.logInfo('printing from h2o')
+  h2oTest.logInfo( head(df.h) )
 
-  Log.info('subsetting via factor')
+  h2oTest.logInfo('subsetting via factor')
   df.h.1 <- df.h[ df.h$colgroup == 'a', ]
   expect_that( dim(df.h.1), equals(c(3,4) ))
 
@@ -28,13 +28,13 @@ factorfilter <- function(){
   df.h.3 <- df.h[ df.h[,2] == 'group1' & df.h$colgroup == 'c', ]
   expect_that( dim(df.h.3), equals( c(1,4) ))
 
-  Log.info('localizing')
+  h2oTest.logInfo('localizing')
   df.1 <- as.data.frame(df.h.1)
   df.2 <- as.data.frame(df.h.2)
   df.3 <- as.data.frame(df.h.3)
 
 
-  Log.info('testing')
+  h2oTest.logInfo('testing')
   expect_that( dim(df.1), equals(c(3, 4) ))
   checkTrue( unique( df.1[,1] ) == 'a' && unique(df.1[,2]) == 'group1')
   checkTrue(all( df.1[,3] == c(1,2,1) ))
@@ -59,7 +59,7 @@ factorfilter <- function(){
 
 if(F){
   # R code that does the same as above
-  data <- read.csv(locate('smalldata/jira/pub-180.csv'), header=T)
+  data <- read.csv(h2oTest.locate('smalldata/jira/pub-180.csv'), header=T)
 
   data[ data$colgroup == 'a', ]
   data[ data[,2] == 'group2', ]
@@ -67,4 +67,4 @@ if(F){
 }
 
 
-doTest('factor filtering', factorfilter)
+h2oTest.doTest('factor filtering', factorfilter)

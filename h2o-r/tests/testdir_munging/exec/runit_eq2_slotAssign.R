@@ -33,11 +33,11 @@ test.column.assignment <- function() {
   print("")
 
   hexOriginal <- data.frame(col = as.data.frame(hex)[rowsToReplace,col])
-  #Log.info(paste("Original Column: ", col, sep = ""))
+  #h2oTest.logInfo(paste("Original Column: ", col, sep = ""))
   print(head(hexOriginal))
 
   replacement <- rnorm(numToReplace)
-  Log.info("Replacing rows for column selected")
+  h2oTest.logInfo("Replacing rows for column selected")
 
   replacement <- as.h2o(replacement)
 
@@ -64,5 +64,5 @@ test.column.assignment <- function() {
 
 }
 
-doTest("EQ2 Tests: [<-", test.column.assignment)
+h2oTest.doTest("EQ2 Tests: [<-", test.column.assignment)
 

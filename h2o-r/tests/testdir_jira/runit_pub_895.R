@@ -10,10 +10,10 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub.895 <- function() {
 print("Parse header file")
-spect_header = h2o.importFile(normalizePath(locate("smalldata/jira/SPECT_header.txt")),destination_frame = "spect_header")
+spect_header = h2o.importFile(normalizePath(h2oTest.locate("smalldata/jira/SPECT_header.txt")),destination_frame = "spect_header")
 print("Parse train and test files")
-spect_train = h2o.importFile(normalizePath(locate("smalldata/jira/SPECT_train.txt")),destination_frame = "spect_train",col.names=spect_header)
-spect_test = h2o.importFile(normalizePath(locate("smalldata/jira/SPECT_test.txt")),destination_frame = "spect_test", col.names=spect_header)
+spect_train = h2o.importFile(normalizePath(h2oTest.locate("smalldata/jira/SPECT_train.txt")),destination_frame = "spect_train",col.names=spect_header)
+spect_test = h2o.importFile(normalizePath(h2oTest.locate("smalldata/jira/SPECT_test.txt")),destination_frame = "spect_test", col.names=spect_header)
 
 print("Summary of the train set")
 #print(summary(spect_train))
@@ -31,4 +31,4 @@ for(i in 1:length(colnames(spect_train))){
 
 }
 
-doTest("Test pub 895", test.pub.895)
+h2oTest.doTest("Test pub 895", test.pub.895)

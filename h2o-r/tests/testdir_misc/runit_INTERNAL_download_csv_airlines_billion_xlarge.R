@@ -21,7 +21,7 @@ rtest <- function() {
 
     print("Downloading predictions as csv...")
     library(R.utils)
-    myFile <- paste(sandbox(), "delete_this_file.csv", sep = .Platform$file.sep)
+    myFile <- paste(h2oTest.sandbox(), "delete_this_file.csv", sep = .Platform$file.sep)
     h2o.downloadCSV(predictions1, myFile)
 
     #predictions2 <- h2o.uploadFile(myFile)
@@ -47,4 +47,4 @@ rtest <- function() {
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

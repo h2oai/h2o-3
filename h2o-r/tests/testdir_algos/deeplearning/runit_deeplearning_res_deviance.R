@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-	Hexpend =  read.csv(locate("smalldata/glm_test/HealthExpend.csv"))
+	Hexpend =  read.csv(h2oTest.locate("smalldata/glm_test/HealthExpend.csv"))
 	MEPS=subset(Hexpend,EXPENDIP>0)
 	hdata = as.h2o(MEPS,destination_frame = "MEPS")
 	hdata$RACE = as.factor(hdata$RACE)
@@ -54,7 +54,7 @@ test <- function() {
 	
 
 	print("poisson")
-	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
+	fre = h2o.uploadFile(h2oTest.locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	hh = h2o.deeplearning(x = 4:12,y = "ClaimNb",training_frame = fre,hidden = c(5,5),epochs = 1,
                        train_samples_per_iteration = -1,validation_frame = fre,activation = "Tanh",distribution = "poisson", score_training_samples=0)
@@ -73,4 +73,4 @@ test <- function() {
 	
 	
 }
-doTest("DL residual deviance Test: DL deviance for poisson/gamma/tweedie distributions", test)
+h2oTest.doTest("DL residual deviance Test: DL deviance for poisson/gamma/tweedie distributions", test)

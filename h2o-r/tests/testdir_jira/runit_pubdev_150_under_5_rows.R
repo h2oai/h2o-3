@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test_one_file <- function(fnam, mins, maxs) {
-  DF <- h2o.importFile(locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
+  DF <- h2o.importFile(h2oTest.locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
   raw_payload = .h2o.doSafeREST(urlSuffix = paste0("Frames.json/",fnam,".hex/columns/B/summary"), method = "GET")
   # print(raw_payload)
   json = .h2o.fromJSON(jsonlite::fromJSON(raw_payload,simplifyDataFrame=FALSE))
@@ -23,5 +23,5 @@ mytest = function() {
   test_one_file("test6", mins=c(2L,5L,8L,11L,14L), maxs=c(17L,14L,11L,8L,5L))
 }
 
-doTest("PUBDEV-150: summary mins and maxs on files of 0 to 6 rows", mytest)
+h2oTest.doTest("PUBDEV-150: summary mins and maxs on files of 0 to 6 rows", mytest)
 

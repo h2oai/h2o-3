@@ -19,19 +19,19 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 pub35gbm <- function(){
-  Log.info('uploading gbm training dataset')
-  dataset_path = normalizePath(locate('smalldata/jira/pub-35_train.csv'))
+  h2oTest.logInfo('uploading gbm training dataset')
+  dataset_path = normalizePath(h2oTest.locate('smalldata/jira/pub-35_train.csv'))
   df.h <- h2o.importFile(dataset_path)
 
-  Log.info('printing from h2o')
-  Log.info( head(df.h) )
+  h2oTest.logInfo('printing from h2o')
+  h2oTest.logInfo( head(df.h) )
 
-  Log.info("uploading gbm testing dataset")
-  dataset_path <- normalizePath(locate('smalldata/jira/pub-35_test.csv'))
+  h2oTest.logInfo("uploading gbm testing dataset")
+  dataset_path <- normalizePath(h2oTest.locate('smalldata/jira/pub-35_test.csv'))
   df.h2 <- h2o.importFile(dataset_path)
-  Log.info( head(df.h2) )
+  h2oTest.logInfo( head(df.h2) )
 
-  Log.info("Training a GBM model")
+  h2oTest.logInfo("Training a GBM model")
   m <- h2o.gbm(x = 1:3,
                y = 4,
                training_frame = df.h,
@@ -50,4 +50,4 @@ pub35gbm <- function(){
   
 }
 
-doTest('pub-35-gbm_superset_factors', pub35gbm)
+h2oTest.doTest('pub-35-gbm_superset_factors', pub35gbm)

@@ -6,41 +6,41 @@ source("../../../scripts/h2o-r-test-setup.R")
 test.minus <- function() {
   hex <- as.h2o( iris)
 
-  Log.info("Try adding scalar to a numeric column: 5 - hex[,col]")
+  h2oTest.logInfo("Try adding scalar to a numeric column: 5 - hex[,col]")
 
 
 
   df <- head(hex)
   col <- sample(ncol(hex), 1)
-  Log.info(paste("Using column: ", col))
+  h2oTest.logInfo(paste("Using column: ", col))
  
   sliced <- hex[,col]
-  Log.info("Placing key \"sliced.hex\" into User Store")
+  h2oTest.logInfo("Placing key \"sliced.hex\" into User Store")
 
-  Log.info("Minisuing 5 from sliced.hex")
+  h2oTest.logInfo("Minisuing 5 from sliced.hex")
   slicedMinusFive <- sliced - 5
 
-  Log.info("Original sliced: ")
+  h2oTest.logInfo("Original sliced: ")
   print(head((sliced)))
 
-  Log.info("Sliced - 5: ")
+  h2oTest.logInfo("Sliced - 5: ")
   print(head((slicedMinusFive)))
 
-  Log.info("Checking left and right: ")
+  h2oTest.logInfo("Checking left and right: ")
   fiveMinusSliced <- 5 - sliced
 
-  Log.info("5 - sliced: ")
+  h2oTest.logInfo("5 - sliced: ")
   print(head(fiveMinusSliced))
 
-  Log.info("Checking the variation of H2OH2OFrame - H2OH2OFrame")
+  h2oTest.logInfo("Checking the variation of H2OH2OFrame - H2OH2OFrame")
 
   hexMinusHex <- fiveMinusSliced - slicedMinusFive
 
-  Log.info("fiveMinusSliced - slicedMinusFive: ")
+  h2oTest.logInfo("fiveMinusSliced - slicedMinusFive: ")
   print(head(hexMinusHex))
 
   
 }
 
-doTest("BINOP2 EXEC2 TEST: '-'", test.minus)
+h2oTest.doTest("BINOP2 EXEC2 TEST: '-'", test.minus)
 

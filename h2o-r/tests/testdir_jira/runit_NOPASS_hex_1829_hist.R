@@ -11,12 +11,12 @@ options(echo=TRUE)
 
 test.hex_1829 <- function(){
 
-  heading("BEGIN TEST")
-  Log.info("Import small prostate dataset")
-  path <- locate("smalldata/logreg/prostate.csv")
+  h2oTest.heading("BEGIN TEST")
+  h2oTest.logInfo("Import small prostate dataset")
+  path <- h2oTest.locate("smalldata/logreg/prostate.csv")
   hex <- h2o.importFile(path, destination_frame="p.hex")
 
-  Log.info("Create small numeric vectors")
+  h2oTest.logInfo("Create small numeric vectors")
   age <- hex$AGE
   age.R <- as.data.frame(age)
   vol <- hex$VOL
@@ -25,7 +25,7 @@ test.hex_1829 <- function(){
   
   run_check_hist <- function(col.h2o, col.R, colname, breaks){
     ## Create histograms in R and H2O
-    Log.info(paste("Create histograms in R and H2O for", colname ,"column"))
+    h2oTest.logInfo(paste("Create histograms in R and H2O for", colname ,"column"))
     
     if(missing(breaks)) {
       h2o_hist <- h2o.hist(col.h2o[,colname])
@@ -35,7 +35,7 @@ test.hex_1829 <- function(){
       r_hist   <- hist(col.R[,colname], breaks = breaks)
     }    
     
-    Log.info("Check histogram components")
+    h2oTest.logInfo("Check histogram components")
     expect_equal(h2o_hist$breaks, r_hist$breaks)
     expect_equal(h2o_hist$counts, r_hist$counts)
     expect_equal(h2o_hist$density, r_hist$density)
@@ -50,4 +50,4 @@ test.hex_1829 <- function(){
   
 }
 
-doTest("HEX-1829 Test: Create histograms in R from H2OH2OFrame objects", test.hex_1829)
+h2oTest.doTest("HEX-1829 Test: Create histograms in R from H2OH2OFrame objects", test.hex_1829)

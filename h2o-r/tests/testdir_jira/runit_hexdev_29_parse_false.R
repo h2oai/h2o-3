@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.parse.false <- function() {
-    path <- locate("smalldata/jira/hexdev_29.csv")
+    path <- h2oTest.locate("smalldata/jira/hexdev_29.csv")
 
     fr <- h2o.importFile(path)
     fraw <- h2o.importFile(path, parse=FALSE)
@@ -15,4 +15,4 @@ test.parse.false <- function() {
     
 }
 
-doTest("Parse false", test.parse.false)
+h2oTest.doTest("Parse false", test.parse.false)

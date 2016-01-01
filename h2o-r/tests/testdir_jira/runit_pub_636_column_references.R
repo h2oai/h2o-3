@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub_636_column_references <- function() {
 
-prostatePath <- locate("smalldata/prostate/prostate.csv")
+prostatePath <- h2oTest.locate("smalldata/prostate/prostate.csv")
 prostate.hex <- h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
 
 prostate.local <- as.data.frame(prostate.hex)
@@ -62,5 +62,5 @@ expect_equal(as.data.frame(prostate.hex$GLEASON[100])[[1]], as.data.frame(prosta
 
 }
 
-doTest("PUB-636 we don't support certain kinds of column references for assignments, both creating and setting.", test.pub_636_column_references)
+h2oTest.doTest("PUB-636 we don't support certain kinds of column references for assignments, both creating and setting.", test.pub_636_column_references)
 

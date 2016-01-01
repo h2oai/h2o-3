@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.gbm.imbalanced <- function() {
-  covtype <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
+  covtype <- h2o.uploadFile(h2oTest.locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
 
   hh_imbalanced<-h2o.gbm(x=c(1:54),y=55,ntrees=10,min_rows=5,learn_rate=0.2,training_frame=covtype,distribution="multinomial",balance_classes=F)
@@ -27,4 +27,4 @@ test.gbm.imbalanced <- function() {
   
 }
 
-doTest("GBM imbalanced", test.gbm.imbalanced)
+h2oTest.doTest("GBM imbalanced", test.gbm.imbalanced)

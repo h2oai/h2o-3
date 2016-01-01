@@ -13,7 +13,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 test.linkFunctions <- function() {
 
 	print("Read in prostate data.")
-	h2o.data = h2o.uploadFile(locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")    
+	h2o.data = h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate_complete.csv.zip"), destination_frame="h2o.data")    
 	R.data = as.data.frame(as.matrix(h2o.data))
 	
 	print("Testing for family: POISSON")
@@ -54,6 +54,6 @@ test.linkFunctions <- function() {
 
 }
 
-doTest("Comparison of H2O to R with varying link functions for the POISSON family", test.linkFunctions)
+h2oTest.doTest("Comparison of H2O to R with varying link functions for the POISSON family", test.linkFunctions)
 
 

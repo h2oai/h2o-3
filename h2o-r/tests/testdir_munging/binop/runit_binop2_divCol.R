@@ -7,44 +7,44 @@ test.slice.div <- function() {
   hex <- as.h2o(iris)
 
   #hex <- as.h2o(iris)
-  Log.info("Try /ing a scalar to a numeric column: 5 / hex[,col]")
+  h2oTest.logInfo("Try /ing a scalar to a numeric column: 5 / hex[,col]")
   col <- sample(ncol(hex)-1, 1)
 
   sliced <- hex[,col]
   print(sliced)
   print(head(sliced))
-  Log.info("Placing key \"sliced.hex\" into User Store")
+  h2oTest.logInfo("Placing key \"sliced.hex\" into User Store")
 #  sliced <- h2o.assign(sliced, "sliced.hex")
 
-  Log.info("/ing 5 to sliced.hex")
+  h2oTest.logInfo("/ing 5 to sliced.hex")
   slicedDivFive <- sliced / 5
 
 #  slicedDivFive <- h2o.assign(slicedDivFive, "slicedDivFive.hex")
 
-  Log.info("Orignal sliced: ")
+  h2oTest.logInfo("Orignal sliced: ")
   print(head(as.data.frame(sliced)))
 
-  Log.info("Sliced / 5: ")
+  h2oTest.logInfo("Sliced / 5: ")
   print(head(as.data.frame(slicedDivFive)))
   expect_that(as.data.frame(slicedDivFive), equals(as.data.frame(sliced) / 5))
 
-  Log.info("Checking left and right: ")
+  h2oTest.logInfo("Checking left and right: ")
   slicedDivFive <- sliced / 5
 
   fiveDivSliced <- 5 / sliced
 
-  Log.info("sliced / 5: ")
+  h2oTest.logInfo("sliced / 5: ")
   print(head(slicedDivFive))
 
-  Log.info("5 / sliced: ")
+  h2oTest.logInfo("5 / sliced: ")
   print(head(fiveDivSliced))
 
-  Log.info("Checking the variation of H2OH2OFrame / H2OH2OFrame")
+  h2oTest.logInfo("Checking the variation of H2OH2OFrame / H2OH2OFrame")
   hexDivHex <- fiveDivSliced / slicedDivFive
 
-  Log.info("FiveDivSliced / slicedDivFive: ")
+  h2oTest.logInfo("FiveDivSliced / slicedDivFive: ")
   print(head(hexDivHex))
-  Log.info("head(as.data.frame(fiveDivSliced)/as.data.frame(slicedDivFive))")
+  h2oTest.logInfo("head(as.data.frame(fiveDivSliced)/as.data.frame(slicedDivFive))")
   print(head(as.data.frame(fiveDivSliced)/as.data.frame(slicedDivFive)))
   A <- na.omit(data.frame(na.omit(as.data.frame(hexDivHex))))
   B <- na.omit(data.frame(na.omit(as.data.frame(fiveDivSliced)) / na.omit(as.data.frame(slicedDivFive) ) ))
@@ -73,5 +73,5 @@ test.slice.div <- function() {
 
 }
 
-doTest("BINOP2 EXEC2 TEST: /", test.slice.div)
+h2oTest.doTest("BINOP2 EXEC2 TEST: /", test.slice.div)
 

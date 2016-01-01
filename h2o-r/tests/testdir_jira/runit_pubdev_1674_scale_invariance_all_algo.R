@@ -11,12 +11,12 @@ test <- function() {
 	print("GBM")
 	
 	for( i in 1:length(s)){
-	x = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+	x = h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
 	gg = h2o.gbm(x = myX,y = myY,training_frame = x,ntrees = 50,max_depth = 3,learn_rate = 1,min_rows = 1)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
-	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+	y =  h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale
@@ -33,12 +33,12 @@ test <- function() {
 	print("DRF")
 	
 	for( i in 1:length(s)){
-	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+	x =  h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
 	gg = h2o.randomForest(x=myX,y = myY,training_frame = x,max_depth = 10,seed = 12345)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
-	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+	y =  h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale
@@ -56,12 +56,12 @@ test <- function() {
 	print("GLM")
 
 	for( i in 1:length(s)){
-	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+	x =  h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
 	gg = h2o.glm(x = myX,y = myY,training_frame = x,lambda=0)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
-	y = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+	y = h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale
@@ -78,12 +78,12 @@ test <- function() {
 	print("DL")
 
 	for( i in 1:length(s)){
-	x =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+	x =  h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
 	myX = 2:8
 	myY = "GLEASON"
 	gg = h2o.deeplearning(x = myX,y = myY,training_frame = x,hidden = c(10,10),epochs = 100,activation = "Tanh",seed = 12345,reproducible = T)
 	pr = as.data.frame(h2o.predict(gg,newdata = x))
-	y =  h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+	y =  h2o.uploadFile(h2oTest.locate("smalldata/logreg/prostate.csv"))
 	scale = s[i]
 	print(scale)
 	y$GLEASON = y$GLEASON/scale
@@ -99,7 +99,7 @@ test <- function() {
 	
 	
 }
-doTest("Scale Invariance Test: for all algos", test)
+h2oTest.doTest("Scale Invariance Test: for all algos", test)
 
 
 

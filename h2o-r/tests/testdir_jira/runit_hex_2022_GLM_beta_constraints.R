@@ -10,21 +10,21 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.GLM.betaConstraints <- function(){
 
-    Log.info("Importing prostate dataset...")
-    prostate.hex <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
+    h2oTest.logInfo("Importing prostate dataset...")
+    prostate.hex <- h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
 
-    Log.info("Run gaussian model once to grab starting values for betas...")
+    h2oTest.logInfo("Run gaussian model once to grab starting values for betas...")
     myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
     myY <- "CAPSULE"
     my_glm <- h2o.glm(x = myX, y = myY, training_frame = prostate.hex, family = "gaussian")
 
-    Log.info("Create default beta constraints frame...")
+    h2oTest.logInfo("Create default beta constraints frame...")
     lowerbound <- rep(-1, times = length(myX))
     upperbound <- rep(1, times = length(myX))
     colnames <- my_glm@model$coefficients_table$names[my_glm@model$coefficients_table$names != "Intercept"]
     betaConstraints <- data.frame(names = colnames, lower_bounds = lowerbound, upper_bounds = upperbound)
     betaConstraints.hex <- as.h2o(betaConstraints, destination_frame = "betaConstraints.hex")
-    Log.info("Pull data frame into R to run GLMnet...")
+    h2oTest.logInfo("Pull data frame into R to run GLMnet...")
     prostate.r <- as.data.frame(prostate.hex)
 
     ########### run_glm function to run glm over different parameters
@@ -33,11 +33,11 @@ test.GLM.betaConstraints <- function(){
                         alpha = 0.5,
                         standardization = T
                         ) {
-        prostate.hex <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
-        Log.info(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ",
+        prostate.hex <- h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
+        h2oTest.logInfo(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ",
                        standardization =", standardization, "..."))
         if(family_type == "binomial"){
-            Log.info("family binomial chosen, so converting CAPSULE to factor")
+            h2oTest.logInfo("family binomial chosen, so converting CAPSULE to factor")
             prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
         }
 
@@ -45,7 +45,7 @@ test.GLM.betaConstraints <- function(){
                                    family = family_type, alpha = alpha , beta_constraint = betaConstraints.hex,
                                    lambda = 1e-05)
 
-        Log.info("Run GLMnet with the same parameters, using lambda = 1e-05")
+        h2oTest.logInfo("Run GLMnet with the same parameters, using lambda = 1e-05")
         glm_constraints.r <- glmnet(x = as.matrix(prostate.r[,myX]), alpha = alpha, lambda = 1e-05,
                                     standardize = standardization, y = prostate.r[,myY], family = family_type,
                                     lower.limits = lowerbound, upper.limits = upperbound, intercept=TRUE)
@@ -112,5 +112,5 @@ test.GLM.betaConstraints <- function(){
     
 }
 
-doTest("GLM Test: GLM w/ Beta Constraints", test.GLM.betaConstraints)
+h2oTest.doTest("GLM Test: GLM w/ Beta Constraints", test.GLM.betaConstraints)
 

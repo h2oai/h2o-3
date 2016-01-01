@@ -32,4 +32,4 @@ if(nrow(airlines.hex)!=nrow(airlines_hdfs.hex)) stop("# rows are not equal!")
 if(ncol(airlines.hex)!=ncol(airlines_hdfs.hex)) stop("# columns not equal!")
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

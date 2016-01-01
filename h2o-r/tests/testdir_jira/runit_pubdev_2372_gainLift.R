@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 # dataset - http://mlr.cs.umass.edu/ml/datasets/Bank+Marketing
 
 test.pubdev.2372 <- function(conn){
-	a= h2o.importFile(locate("smalldata/gbm_test/bank-full.csv.zip"),destination_frame = "bank_UCI")
+	a= h2o.importFile(h2oTest.locate("smalldata/gbm_test/bank-full.csv.zip"),destination_frame = "bank_UCI")
 	frm = h2o.splitFrame(data = a,ratios = .7,destination_frames = c("train","test"),seed = 123)
 	train = frm[[1]]
 	test = frm[[2]]
@@ -77,4 +77,4 @@ test.pubdev.2372 <- function(conn){
 	}
 
 }
-doTest("Test lift-gain chart PUBDEV-2372", test.pubdev.2372)
+h2oTest.doTest("Test lift-gain chart PUBDEV-2372", test.pubdev.2372)

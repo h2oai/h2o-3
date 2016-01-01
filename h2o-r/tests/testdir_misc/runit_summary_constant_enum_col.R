@@ -30,4 +30,4 @@ test.summary <- function() {
   
 }
 
-doTest("Summary on frame with constant enum columns", test.summary)
+h2oTest.doTest("Summary on frame with constant enum columns", test.summary)

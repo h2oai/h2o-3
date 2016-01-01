@@ -8,7 +8,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.hanging.offset <- function() {
-  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
+  pros.hex <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -20,4 +20,4 @@ test.hanging.offset <- function() {
   
 }
 
-doTest("Testing GLM Offsets that Hang", test.hanging.offset)
+h2oTest.doTest("Testing GLM Offsets that Hang", test.hanging.offset)

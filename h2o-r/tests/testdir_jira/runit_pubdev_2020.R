@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 # Check for 2 parts
 test1 <- function() {
-  df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
+  df <- h2o.uploadFile(h2oTest.locate("smalldata/jira/pubdev_2020.csv"))
   splits = h2o.splitFrame(data = df, ratios = 0.75)
   stopifnot(nrow(df) == (nrow(splits[[1]]) + nrow(splits[[2]])))
   
@@ -32,7 +32,7 @@ test1 <- function() {
 
 # Check for 3 parts
 test2 <- function() {
-  df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
+  df <- h2o.uploadFile(h2oTest.locate("smalldata/jira/pubdev_2020.csv"))
   splits = h2o.splitFrame(data = df, ratios = c(0.5, 0.25))
   stopifnot(nrow(df) == (nrow(splits[[1]]) + nrow(splits[[2]]) + nrow(splits[[3]])))
   if (nrow(splits[[1]]) == 0) stop("Part 1 has no rows")
@@ -42,7 +42,7 @@ test2 <- function() {
 
 # Check that runif can be seeded for reproducibility
 test3 <- function() {
-  df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
+  df <- h2o.uploadFile(h2oTest.locate("smalldata/jira/pubdev_2020.csv"))
   splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
@@ -52,13 +52,13 @@ test3 <- function() {
   value = part2[3,"C3"]
   stopifnot(value == 22)
   
-  df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
+  df <- h2o.uploadFile(h2oTest.locate("smalldata/jira/pubdev_2020.csv"))
   splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
   stopifnot(value == 4)
   
-  df <- h2o.uploadFile(locate("smalldata/jira/pubdev_2020.csv"))
+  df <- h2o.uploadFile(h2oTest.locate("smalldata/jira/pubdev_2020.csv"))
   splits = h2o.splitFrame(data = df, ratios = c(0.8), seed = 0)
   part2 = splits[[2]]
   value = part2[1,"C1"]
@@ -71,5 +71,5 @@ test.pubdev_2020 <- function() {
   test3()
 }
 
-doTest("PUBDEV-2020", test.pubdev_2020)
+h2oTest.doTest("PUBDEV-2020", test.pubdev_2020)
 

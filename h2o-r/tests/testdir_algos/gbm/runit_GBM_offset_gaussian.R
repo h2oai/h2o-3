@@ -28,4 +28,4 @@ test <- function(h) {
 	expect_equal(max(pr), max(ph[,1]) ,tolerance=1e-3)
 	
 }
-doTest("GBM offset Test: GBM w/ offset insurance data", test)
+h2oTest.doTest("GBM offset Test: GBM w/ offset insurance data", test)

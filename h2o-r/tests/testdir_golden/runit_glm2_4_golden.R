@@ -21,8 +21,8 @@ coef
 }
 
 #Import data: 
-Log.info("Importing HANDMADE data...") 
-hmR<- read.csv(locate("smalldata/glm_test/handmade.csv"), header=T)
+h2oTest.logInfo("Importing HANDMADE data...") 
+hmR<- read.csv(h2oTest.locate("smalldata/glm_test/handmade.csv"), header=T)
 
 
 #fit R model in glmnet and RT's solver
@@ -53,7 +53,7 @@ print(H2Ocoeffs)
 
 RTcoeffs<- sort(as.matrix(RT1)) 
 
-#Log.info(paste("H2O Coeffs  : ", H2Ocoeffs,  "\t\t\t", "R GLMNET Coeffs  :", Rcoeffsglmnet))
+#h2oTest.logInfo(paste("H2O Coeffs  : ", H2Ocoeffs,  "\t\t\t", "R GLMNET Coeffs  :", Rcoeffsglmnet))
 
 expect_equal(H2Ocoeffs[1,1], Rcoeffsglmnet[1], tolerance = 0.1)
 expect_equal(H2Ocoeffs[2,1], Rcoeffsglmnet[2], tolerance = 0.1)
@@ -70,9 +70,9 @@ expect_equal(H2Ocoeffs[6,1], RTcoeffs[6], tolerance = 0.1)
 
 
 H2Oratio<- 1-(fitH2O@model$training_metrics@metrics$residual_deviance/fitH2O@model$training_metrics@metrics$null_deviance)
-Log.info(paste("H2O Deviance  : ", fitH2O@model$training_metrics@metrics$residual_deviance,      "\t\t\t", "R Deviance   : ", fitRglmnet$deviance))
-Log.info(paste("H2O Null Dev  : ", fitH2O@model$training_metrics@metrics$null_deviance, "\t\t", "R Null Dev   : ", fitRglmnet$nulldev))
-Log.info(paste("H2O Dev Ratio  : ", H2Oratio, "\t\t", "R Dev Ratio   : ", fitRglmnet$dev.ratio))
+h2oTest.logInfo(paste("H2O Deviance  : ", fitH2O@model$training_metrics@metrics$residual_deviance,      "\t\t\t", "R Deviance   : ", fitRglmnet$deviance))
+h2oTest.logInfo(paste("H2O Null Dev  : ", fitH2O@model$training_metrics@metrics$null_deviance, "\t\t", "R Null Dev   : ", fitRglmnet$nulldev))
+h2oTest.logInfo(paste("H2O Dev Ratio  : ", H2Oratio, "\t\t", "R Dev Ratio   : ", fitRglmnet$dev.ratio))
 expect_equal(fitH2O@model$training_metrics@metrics$null_deviance, fitRglmnet$nulldev, tolerance = 0.01)
 expect_equal(H2Oratio, fitRglmnet$dev.ratio, tolerance = 0.01)
 
@@ -80,4 +80,4 @@ expect_equal(H2Oratio, fitRglmnet$dev.ratio, tolerance = 0.01)
    
 }
 
-doTest("GLM2 SimpleRidge", test.glm2Ridge.golden)
+h2oTest.doTest("GLM2 SimpleRidge", test.glm2Ridge.golden)

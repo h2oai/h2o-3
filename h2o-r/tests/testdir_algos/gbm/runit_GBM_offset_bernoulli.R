@@ -27,4 +27,4 @@ test <- function() {
 	
 	
 }
-doTest("GBM offset Test: GBM w/ offset for bernoulli distribution", test)
+h2oTest.doTest("GBM offset Test: GBM w/ offset for bernoulli distribution", test)

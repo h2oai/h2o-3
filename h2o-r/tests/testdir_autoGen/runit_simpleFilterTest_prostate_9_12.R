@@ -8,32 +8,32 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 simpleFilterTest_prostate_9_12 <- function() {
-    Log.info("A munge-task R unit test on data <prostate_9> testing the functional unit <<=> ")
-    Log.info("Uploading prostate_9")
-    hex <- h2o.importFile(locate("smalldata/junit/parse_folder/prostate_9.csv"), "rprostate_9.hex")
-    Log.info("Filtering out rows by <= from dataset prostate_9 and column \"2\" using value 56.0114571468")
+    h2oTest.logInfo("A munge-task R unit test on data <prostate_9> testing the functional unit <<=> ")
+    h2oTest.logInfo("Uploading prostate_9")
+    hex <- h2o.importFile(h2oTest.locate("smalldata/junit/parse_folder/prostate_9.csv"), "rprostate_9.hex")
+    h2oTest.logInfo("Filtering out rows by <= from dataset prostate_9 and column \"2\" using value 56.0114571468")
          filterHex <- hex[hex[,c(2)] <= 56.0114571468,]
-        Log.info("Perform filtering with the '$' sign also")
+        h2oTest.logInfo("Perform filtering with the '$' sign also")
         filterHex <- hex[hex$"C2" <= 56.0114571468,]
-    Log.info("Filtering out rows by <= from dataset prostate_9 and column \"2\" using value 69.546804632")
+    h2oTest.logInfo("Filtering out rows by <= from dataset prostate_9 and column \"2\" using value 69.546804632")
          filterHex <- hex[hex[,c(2)] <= 69.546804632,]
-        Log.info("Perform filtering with the '$' sign also")
+        h2oTest.logInfo("Perform filtering with the '$' sign also")
         filterHex <- hex[hex$"C2" <= 69.546804632,]
-    Log.info("Filtering out rows by <= from dataset prostate_9 and column \"0\" using value 367.175558983")
+    h2oTest.logInfo("Filtering out rows by <= from dataset prostate_9 and column \"0\" using value 367.175558983")
          filterHex <- hex[hex[,c(1)] <= 367.175558983,]
-        Log.info("Perform filtering with the '$' sign also")
-        Log.info("Filtering out rows by <= from dataset prostate_9 and column \"2\" using value 66.7755540008, and also subsetting columns.")
+        h2oTest.logInfo("Perform filtering with the '$' sign also")
+        h2oTest.logInfo("Filtering out rows by <= from dataset prostate_9 and column \"2\" using value 66.7755540008, and also subsetting columns.")
          filterHex <- hex[hex[,c(2)] <= 66.7755540008, c(2)]
-        Log.info("Now do the same filter & subset, but select complement of columns.")
+        h2oTest.logInfo("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[hex[,c(2)] <= 66.7755540008, c(1,3,2,5,4,7,6,8)]
-        Log.info("Filtering out rows by <= from dataset prostate_9 and column \"6\" using value 53.6374985948, and also subsetting columns.")
+        h2oTest.logInfo("Filtering out rows by <= from dataset prostate_9 and column \"6\" using value 53.6374985948, and also subsetting columns.")
          filterHex <- hex[hex[,c(6)] <= 53.6374985948, c(6)]
-        Log.info("Now do the same filter & subset, but select complement of columns.")
+        h2oTest.logInfo("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[hex[,c(6)] <= 53.6374985948, c(1,3,2,5,4,7,6,8)]
-        Log.info("Filtering out rows by <= from dataset prostate_9 and column \"7\" using value 0.978904532523, and also subsetting columns.")
+        h2oTest.logInfo("Filtering out rows by <= from dataset prostate_9 and column \"7\" using value 0.978904532523, and also subsetting columns.")
          filterHex <- hex[hex[,c(7)] <= 0.978904532523, c(7)]
-        Log.info("Now do the same filter & subset, but select complement of columns.")
+        h2oTest.logInfo("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[hex[,c(7)] <= 0.978904532523, c(1,3,2,5,4,7,6,8)]
 
 }
-doTest("simpleFilterTest_ on data prostate_9 unit= <=", simpleFilterTest_prostate_9_12)
+h2oTest.doTest("simpleFilterTest_ on data prostate_9 unit= <=", simpleFilterTest_prostate_9_12)

@@ -5,9 +5,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub_208 <- function() {
 
-rdat <- read.csv(normalizePath(locate("smalldata/jira/pub_208.csv")))
+rdat <- read.csv(normalizePath(h2oTest.locate("smalldata/jira/pub_208.csv")))
 
-Log.info("The data that R read in.")
+h2oTest.logInfo("The data that R read in.")
 print(rdat)
 
 rdat$col1 <- as.factor(rdat$col1)
@@ -30,5 +30,5 @@ expect_true(is.factor(hex$col5))
 
 }
 
-doTest("PUB-208 as.h2o should retain which columns were factors", test.pub_208)
+h2oTest.doTest("PUB-208 as.h2o should retain which columns were factors", test.pub_208)
 

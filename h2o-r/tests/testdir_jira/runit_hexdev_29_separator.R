@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.separator <- function() {
-    path <- locate("smalldata/jira/hexdev_29.csv")
+    path <- h2oTest.locate("smalldata/jira/hexdev_29.csv")
 
     fhex = h2o.importFile(path, sep=",")
     expect_equal(sum(sapply(1:ncol(fhex), function (c) sum(is.na(fhex[,c])))), 0)
@@ -18,4 +18,4 @@ test.separator <- function() {
     
 }
 
-doTest("Separator", test.separator)
+h2oTest.doTest("Separator", test.separator)

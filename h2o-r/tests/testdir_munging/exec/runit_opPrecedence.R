@@ -17,7 +17,7 @@ test.op.precedence <- function() {
     s5 = a == b + c
     s6 = a | b & c
 
-    Log.info("Check A + B * C.")
+    h2oTest.logInfo("Check A + B * C.")
     S1 <- as.data.frame(A + B * C)
 
     print(S1)
@@ -25,27 +25,27 @@ test.op.precedence <- function() {
 
     expect_that(all(S1 == s1), equals(T))
 
-    Log.info("Check A - B - C.")
+    h2oTest.logInfo("Check A - B - C.")
     S2 <- as.data.frame(A - B - C)
     expect_that(all(S2 == s2), equals(T))
 
-    Log.info("Check A ^ 2 ^ 3.")
+    h2oTest.logInfo("Check A ^ 2 ^ 3.")
     S3 <- as.data.frame(A ^ 2 ^ 3)
     expect_that(all(S3 == s3), equals(T))
 
-    Log.info("Check A == B & C.")
+    h2oTest.logInfo("Check A == B & C.")
     S4 <- as.data.frame(A == B & C)
     expect_that(all(S4 == s4), equals(T))
 
-    Log.info("Check A == B + C.")
+    h2oTest.logInfo("Check A == B + C.")
     S5 <- as.data.frame(A == B + C)
     expect_that(all(S5 == s5), equals(T))
 
-    Log.info("Check A | B & C.")
+    h2oTest.logInfo("Check A | B & C.")
     S6 <- as.data.frame(A | B & C)
     expect_that(all(S6 == s6), equals(T))
 
     
 }
 
-doTest("Test operator precedence.", test.op.precedence)
+h2oTest.doTest("Test operator precedence.", test.op.precedence)

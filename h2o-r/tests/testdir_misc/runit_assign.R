@@ -14,5 +14,5 @@ test <- function() {
   
 }
 
-doTest("Count assigned NAs", test)
+h2oTest.doTest("Count assigned NAs", test)
 

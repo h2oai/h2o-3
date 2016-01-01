@@ -5,9 +5,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub.1484 <- function() {
 
-    heading("BEGIN TEST")
+    h2oTest.heading("BEGIN TEST")
 
-    path = locate("smalldata/logreg/prostate.csv")
+    path = h2oTest.locate("smalldata/logreg/prostate.csv")
     prostate.hex = h2o.importFile(path, destination_frame="prostate.hex")
     h2o.ls()
 
@@ -16,4 +16,4 @@ test.pub.1484 <- function() {
 
 }
 
-doTest("PUB-1484", test.pub.1484)
+h2oTest.doTest("PUB-1484", test.pub.1484)

@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.grid.empty.hyper.parameter.space <- function(conn) {
 
-  iris <- h2o.importFile(locate("smalldata/iris/iris.csv"))
+  iris <- h2o.importFile(h2oTest.locate("smalldata/iris/iris.csv"))
 
   # gbm
   g <- h2o.grid("gbm",training_frame=iris, x=1:4, y=5)
@@ -52,4 +52,4 @@ test.grid.empty.hyper.parameter.space <- function(conn) {
   
 }
 
-doTest("All grid algos with empty hyper parameter space", test.grid.empty.hyper.parameter.space)
+h2oTest.doTest("All grid algos with empty hyper parameter space", test.grid.empty.hyper.parameter.space)

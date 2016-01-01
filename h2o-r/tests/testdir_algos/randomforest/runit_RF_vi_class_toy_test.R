@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 rf.vi.test<- function() {
-    data.hex <- h2o.uploadFile(locate("smalldata/gbm_test/toy_data_RF.csv"), destination_frame="data.hex")
+    data.hex <- h2o.uploadFile(h2oTest.locate("smalldata/gbm_test/toy_data_RF.csv"), destination_frame="data.hex")
     print(summary(data.hex))
     x <- 1:6
     y <- 7
@@ -16,4 +16,4 @@ rf.vi.test<- function() {
     expect_equal(o, c(3,2,1,6,4,5))
     
 }
-doTest("Variable Importance RF Test: Weston toy data Smalldata", rf.vi.test)
+h2oTest.doTest("Variable Importance RF Test: Weston toy data Smalldata", rf.vi.test)

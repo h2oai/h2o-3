@@ -22,7 +22,7 @@ test <- function() {
   family_type <- "binomial"
 
   ## Take subset of data
-  Log.info("Subset dataset to only predictor and response variables...")
+  h2oTest.logInfo("Subset dataset to only predictor and response variables...")
   h2oData <- h2oData[,c(indVars, depVars)]
 
   ## Run GLM
@@ -30,13 +30,13 @@ test <- function() {
     h2o.glm(x = indVars, y = depVars, training_frame = data, family = family_type, prior = totRealProb, lambda = lambda, alpha = alpha, beta_constraints = beta_constraints)
   }
 
-  Log.info("Run GLM with original data and original constraints.")
+  h2oTest.logInfo("Run GLM with original data and original constraints.")
   a <- run_glm(data = h2oData, beta_constraints = bc)
 
-  Log.info("Run GLM with reordered data and original constraints.")
+  h2oTest.logInfo("Run GLM with reordered data and original constraints.")
   b <- run_glm(data = h2oData, beta_constraints = bc)
 
-  Log.info("Run GLM with reordered data and reordered beta constraints ")
+  h2oTest.logInfo("Run GLM with reordered data and reordered beta constraints ")
   bc2 <- rbind(bc[6:nrow(bc),], bc[1:5,])
   c <- run_glm(data = h2oData, beta_constraints = bc2)
 
@@ -44,4 +44,4 @@ test <- function() {
   checkEqualsNumeric(h2o.coef(b), h2o.coef(c))
 }
 
-doTest("GLM Test: Beta Constraints with Priors", test)
+h2oTest.doTest("GLM Test: Beta Constraints with Priors", test)

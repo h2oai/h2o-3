@@ -11,5 +11,5 @@ h2o.clusterInfo()
 
 }
 
-doTest("R Doc Cluster Info", test.rdocclusterinfo.golden)
+h2oTest.doTest("R Doc Cluster Info", test.rdocclusterinfo.golden)
 

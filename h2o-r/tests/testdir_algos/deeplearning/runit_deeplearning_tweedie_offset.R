@@ -65,6 +65,6 @@ test <- function() {
 	
 	
 }
-doTest("Deeplearning offset Test: deeplearning w/ offset for tweedie distribution", test)
+h2oTest.doTest("Deeplearning offset Test: deeplearning w/ offset for tweedie distribution", test)
 
 	

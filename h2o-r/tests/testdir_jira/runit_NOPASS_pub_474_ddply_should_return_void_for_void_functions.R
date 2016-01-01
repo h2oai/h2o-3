@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub_474_h2o.ddply_should_return_void_for_void_functions <- function() {
 
-covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/covtype/covtype.20k.data")), "cov")
 covtype.local <- as.data.frame(covtype.hex)
 
 # Are we in the right universe?
@@ -27,5 +27,5 @@ expect_equal(0, dim(d)[2])
 
 }
 
-doTest("PUB-474 h2o.ddply should return void for void functions.", test.pub_474_h2o.ddply_should_return_void_for_void_functions)
+h2oTest.doTest("PUB-474 h2o.ddply should return void for void functions.", test.pub_474_h2o.ddply_should_return_void_for_void_functions)
 

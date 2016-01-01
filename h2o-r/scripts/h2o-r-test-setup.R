@@ -133,11 +133,11 @@ function() {
         require(h2o)
         if (IS.RDEMO) {
             # source h2o-r/demos/rdemoUtils
-            invisible(source(paste(h2oRDir,"demos","rdemoUtils","utilsR.R",sep=.Platform$file.sep)))
+            invisible(source(paste(h2oRDir,"demos","rdemoUtils","utils.R",sep=.Platform$file.sep)))
             TEST.NAME <<- removeH2OInit(TEST.NAME)
         } else {
             # source h2o-r/demos/rbookletUtils
-            invisible(source(paste(h2oDocsDir,"src","booklets","v2_2015","source","rbookletUtils","utilsR.R",sep=.Platform$file.sep)))
+            invisible(source(paste(h2oDocsDir,"src","booklets","v2_2015","source","rbookletUtils","utils.R",sep=.Platform$file.sep)))
         }
         strict_version_check <- TRUE
     } else if (IS.RUNIT) {
@@ -149,23 +149,23 @@ function() {
         src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
-        # source h2o-r/tests/runitUtils
-        to_src <- c("utilsR.R", "pcaR.R", "deeplearningR.R", "glmR.R", "glrmR.R", "gbmR.R", "kmeansR.R",
-                    "naivebayesR.R", "gridR.R", "shared_javapredict.R")
-        src_path <- paste(h2oRDir,"tests","runitUtils",sep=.Platform$file.sep)
+        # source h2o-r/h2o-test-package/R
+        to_src <- c("utils.R", "pca.R", "deeplearning.R", "glm.R", "glrm.R", "gbm.R", "kmeans.R",
+                    "naivebayes.R", "grid.R", "shared_javapredict.R")
+        src_path <- paste(h2oRDir,"h2o-test-package","R",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
-        default.packages()
-        Log.info("Loaded default packages. Additional required packages must be loaded explicitly.")
+        h2oTest.loadDefaultRPackages()
+        h2oTest.logInfo("Loaded default packages. Additional required packages must be loaded explicitly.")
 
-        sb <- sandbox(create=TRUE)
-        Log.info(paste0("Created sandbox for runit test ",TEST.NAME," in directory ",sb,".\n"))
+        sb <- h2oTest.sandbox(create=TRUE)
+        h2oTest.logInfo(paste0("Created sandbox for runit test ",TEST.NAME," in directory ",sb,".\n"))
 
         # setup the runit test seed
         seed <- NULL
         masterSeedFile <- paste(getwd(), "/master_seed", sep = "")
         if (file.exists(masterSeedFile)) seed <- read.table(masterSeedFile)[[1]]
-        setupSeed(seed)
+        h2oTest.setupSeed(seed)
         h2o.logIt("[SEED] :", SEED)
 
         strict_version_check = FALSE

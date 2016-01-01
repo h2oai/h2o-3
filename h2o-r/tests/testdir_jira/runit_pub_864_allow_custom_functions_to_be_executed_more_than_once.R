@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub_864_allow_custom_functions_to_be_executed_more_than_once <- function() {
 
-covtype.hex <- h2o.importFile(normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
+covtype.hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/covtype/covtype.20k.data")), "cov")
 
 covtype.local = as.data.frame(covtype.hex)
 
@@ -26,4 +26,4 @@ h2o.ddply(covtype.hex, c(2), fun)
 
 }
 
-doTest("PUB-864 allow custom functions to be executed more than once.", test.pub_864_allow_custom_functions_to_be_executed_more_than_once)
+h2oTest.doTest("PUB-864 allow custom functions to be executed more than once.", test.pub_864_allow_custom_functions_to_be_executed_more_than_once)

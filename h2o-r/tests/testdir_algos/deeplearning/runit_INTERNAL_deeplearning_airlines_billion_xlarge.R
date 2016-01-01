@@ -11,7 +11,7 @@ hdfs_data_file = "/datasets/airlinesbillion.csv"
 # Single file cases.
 #----------------------------------------------------------------------
 
-heading("Testing single file importHDFS")
+h2oTest.heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 parse_time <- system.time(data.hex <- h2o.importFile(url))
 print("Time it took to parse")
@@ -43,4 +43,4 @@ print(dl_time)
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

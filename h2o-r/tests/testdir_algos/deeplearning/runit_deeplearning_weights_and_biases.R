@@ -4,9 +4,9 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.deeplearning_imbalanced <- function() {
-  Log.info("Test checks if Deep Learning weights and biases are accessible from R")
+  h2oTest.logInfo("Test checks if Deep Learning weights and biases are accessible from R")
   
-  census <- h2o.uploadFile(locate("smalldata/chicago/chicagoCensus.csv"))
+  census <- h2o.uploadFile(h2oTest.locate("smalldata/chicago/chicagoCensus.csv"))
   census[,1] <- as.factor(census[,1])
   dlmodel<-h2o.deeplearning(x=c(1:3),y=4,hidden=c(17,191),epochs=1,
                             training_frame=census,balance_classes=F,
@@ -43,4 +43,4 @@ check.deeplearning_imbalanced <- function() {
   
 }
 
-doTest("Deep Learning Weights/Biases Test", check.deeplearning_imbalanced)
+h2oTest.doTest("Deep Learning Weights/Biases Test", check.deeplearning_imbalanced)

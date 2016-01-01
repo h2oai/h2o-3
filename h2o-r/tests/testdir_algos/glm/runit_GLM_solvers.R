@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.GLM.solvers <- function() {
 
-  training_data <- h2o.importFile(locate("smalldata/junit/cars_20mpg.csv"))
+  training_data <- h2o.importFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
   predictors <- c("displacement","power","weight","acceleration","year")
 
   for (solver in c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT")) {
@@ -25,5 +25,5 @@ test.GLM.solvers <- function() {
   }
 }
 
-doTest("GLM Solvers", test.GLM.solvers)
+h2oTest.doTest("GLM Solvers", test.GLM.solvers)
 

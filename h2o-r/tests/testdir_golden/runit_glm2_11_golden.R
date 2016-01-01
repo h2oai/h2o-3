@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 glm.objectiveFun.test<-
 function() {
 	
-    filepath = locate("smalldata/glm_test/marketing_naRemoved.csv")
+    filepath = h2oTest.locate("smalldata/glm_test/marketing_naRemoved.csv")
     
     rr=read.csv(filepath)
     str(rr)
@@ -61,5 +61,5 @@ function() {
 	expect_true(objective < objective_R + 1e-5*gg$nulldev)
     
 }
-doTest("Comapares objective function results from H2O-glm and glmnet: marketing data with no NAs Smalldata", glm.objectiveFun.test)
+h2oTest.doTest("Comapares objective function results from H2O-glm and glmnet: marketing data with no NAs Smalldata", glm.objectiveFun.test)
 

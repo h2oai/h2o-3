@@ -1,4 +1,4 @@
-checkGBMModel <- function(myGBM.h2o, myGBM.r, h2oTest, RTest) {
+h2oTest.checkGBMModel <- function(myGBM.h2o, myGBM.r, h2oTest, RTest) {
   #Check GBM model against R
   Log.info("MSE by tree in H2O:")
 

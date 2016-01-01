@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.bad.headers <- function() {
-  citibikePath <- locate("smalldata/jira/citibike_head.csv")
+  citibikePath <- h2oTest.locate("smalldata/jira/citibike_head.csv")
   # summary use to fail on datasets that had spaces in the headers during import.
   f <- h2o.importFile(citibikePath , destination_frame = "citibike.hex")  
   f.df <- read.csv(citibikePath)
@@ -25,4 +25,4 @@ test.bad.headers <- function() {
   
 }
 
-doTest("Run summary on dataset with spaces : ", test.bad.headers)
+h2oTest.doTest("Run summary on dataset with spaces : ", test.bad.headers)

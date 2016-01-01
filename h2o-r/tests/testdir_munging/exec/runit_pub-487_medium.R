@@ -63,6 +63,6 @@ test.frame_add_equal <- function() {
 }
 
 # doesn't include issues with NAs! 
-doTest("Test frame add and equals.", test.frame_add_equal)
+h2oTest.doTest("Test frame add and equals.", test.frame_add_equal)
 
 

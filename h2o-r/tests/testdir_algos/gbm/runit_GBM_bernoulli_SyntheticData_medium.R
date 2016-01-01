@@ -91,4 +91,4 @@ test.GBM.bernoulli.SyntheticData <- function() {
     }
     
 }
-doTest("GBM Grid Test: Synthetic dataset with Bernoulli distribution H2O vs R", test.GBM.bernoulli.SyntheticData)
+h2oTest.doTest("GBM Grid Test: Synthetic dataset with Bernoulli distribution H2O vs R", test.GBM.bernoulli.SyntheticData)

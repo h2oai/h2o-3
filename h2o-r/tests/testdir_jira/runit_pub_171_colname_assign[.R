@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.pub_171_colname_assign_with_square_brackets <- function() {
-  air <- h2o.importFile(normalizePath(locate("smalldata/airlines/allyears2k_headers.zip")), "air")
+  air <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/airlines/allyears2k_headers.zip")), "air")
   print(colnames(air))
   parsed_names <- colnames(air)
   colnames(air)[ncol(air)] <- 'earl'
@@ -20,5 +20,5 @@ test.pub_171_colname_assign_with_square_brackets <- function() {
   
 }
 
-doTest("PUB-171: Perform colname assign wihth [] and <-", test.pub_171_colname_assign_with_square_brackets)
+h2oTest.doTest("PUB-171: Perform colname assign wihth [] and <-", test.pub_171_colname_assign_with_square_brackets)
 

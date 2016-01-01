@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.gbm.colsamplepertree <- function() {
-  covtype <- h2o.importFile(locate("smalldata/covtype/covtype.20k.data"))
+  covtype <- h2o.importFile(h2oTest.locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
   splits <- h2o.splitFrame(covtype, 0.8, seed=1234)
   train <- splits[[1]]
@@ -29,4 +29,4 @@ test.gbm.colsamplepertree <- function() {
   expect_true(err_regular >= 0.9*err_colsample, "col sampling made validation error worse!")
 }
 
-doTest("gbm colSamplePerTree", test.gbm.colsamplepertree)
+h2oTest.doTest("gbm colSamplePerTree", test.gbm.colsamplepertree)

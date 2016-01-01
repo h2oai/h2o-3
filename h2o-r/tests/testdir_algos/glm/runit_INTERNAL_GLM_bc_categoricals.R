@@ -23,9 +23,9 @@ test <- function() {
   a <- h2oData[,c(indVars,depVars)]
   a[,cat_col] <- as.factor(a[,cat_col])
 
-  Log.info("Pull data frame into R to run GLMnet...")
+  h2oTest.logInfo("Pull data frame into R to run GLMnet...")
   data <- as.data.frame(a)
-  Log.info("Prep Data H2OFrame for run in GLMnet, includes categorical expansions...")
+  h2oTest.logInfo("Prep Data H2OFrame for run in GLMnet, includes categorical expansions...")
   x_1 <- data[,setdiff(indVars, cat_col)]
   x_2 <- data.frame(C217.1 <- ifelse(data[,cat_col] == 1, 1, 0),
                     C217.2 <- ifelse(data[,cat_col] == 2, 1, 0),
@@ -74,7 +74,7 @@ test <- function() {
   print(paste0("H2O'S AUC : ", model.h2o@model$AUC))
   print(paste0("GLMNET'S AUC : ", glmnet_auc))
 
-  checkGLMModel2(model.h2o, model.r)
+  h2oTest.checkGLMModel2(model.h2o, model.r)
 }
 
-doTest("GLM Test: GLM w/ Beta Constraints", test)
+h2oTest.doTest("GLM Test: GLM w/ Beta Constraints", test)

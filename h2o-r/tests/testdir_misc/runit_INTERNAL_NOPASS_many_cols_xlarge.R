@@ -25,4 +25,4 @@ mdl.gbm
   
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

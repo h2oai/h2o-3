@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.RdocGBM.golden <- function() {
 
 
-ausPath <- locate("smalldata/extdata/australia.csv")
+ausPath <- h2oTest.locate("smalldata/extdata/australia.csv")
 australia.hex <- h2o.uploadFile(path = ausPath)
 independent<- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst", "maxsoilmoist", "Max_czcs")
 dependent<- "runoffnew"
@@ -21,5 +21,5 @@ h2o.gbm(y = dependent, x = independent, training_frame = australia.hex, ntrees =
 
 }
 
-doTest("R Doc GBM", test.RdocGBM.golden)
+h2oTest.doTest("R Doc GBM", test.RdocGBM.golden)
 

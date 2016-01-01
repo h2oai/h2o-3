@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-    cars = h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+    cars = h2o.uploadFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
     cars = cars[!is.na(cars$economy_20mpg),]
     cars$economy_20mpg = as.factor(cars$economy_20mpg)
     offset = as.h2o(data.frame(rep(.5,398)))
@@ -31,4 +31,4 @@ test <- function() {
 
 	
 }
-doTest("GBM offset Test: GBM w/ offset for bernoulli distribution", test)
+h2oTest.doTest("GBM offset Test: GBM w/ offset for bernoulli distribution", test)

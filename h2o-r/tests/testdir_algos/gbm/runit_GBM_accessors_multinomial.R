@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.gbm.mult.accessors <- function() {
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
@@ -12,7 +12,7 @@ test.gbm.mult.accessors <- function() {
   iris.gbm.valid <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test)
   iris.gbm.valid.xval <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test, nfolds=2)
 
-  Log.info("MSE...")
+  h2oTest.logInfo("MSE...")
   mse.basic <- h2o.mse(iris.gbm)
   print(mse.basic)
   expect_warning(h2o.mse(iris.gbm, valid = TRUE))
@@ -25,7 +25,7 @@ test.gbm.mult.accessors <- function() {
   expect_true(mse.valid.xval.T["train"]==mse.basic)
   expect_true(mse.valid.xval.T["valid"]==mse.valid.T)
 
-  Log.info("R^2...")
+  h2oTest.logInfo("R^2...")
   r2.basic <- h2o.r2(iris.gbm)
   print(r2.basic)
   expect_warning(h2o.r2(iris.gbm, valid = TRUE))
@@ -38,7 +38,7 @@ test.gbm.mult.accessors <- function() {
   expect_true(r2.valid.xval.T["train"]==r2.basic)
   expect_true(r2.valid.xval.T["valid"]==r2.valid.T)
 
-  Log.info("LogLoss...")
+  h2oTest.logInfo("LogLoss...")
   ll.basic <- h2o.logloss(iris.gbm)
   print(ll.basic)
   expect_warning(h2o.logloss(iris.gbm, valid = TRUE))
@@ -51,7 +51,7 @@ test.gbm.mult.accessors <- function() {
   expect_true(logloss.valid.xval.T["train"]==ll.basic)
   expect_true(logloss.valid.xval.T["valid"]==ll.valid.T)
 
-  Log.info("Hit Ratio...")
+  h2oTest.logInfo("Hit Ratio...")
   hrt.basic <- h2o.hit_ratio_table(iris.gbm)
   print(hrt.basic)
   expect_warning(h2o.hit_ratio_table(iris.gbm, valid = TRUE))
@@ -64,10 +64,10 @@ test.gbm.mult.accessors <- function() {
   expect_equal(hit_ratio_table.valid.xval.T[["train"]],hrt.basic)
   expect_equal(hit_ratio_table.valid.xval.T[["valid"]],hrt.valid.T)
 
-  Log.info("Variable Importance...")
+  h2oTest.logInfo("Variable Importance...")
   print(h2o.varimp(iris.gbm))
 
   
 }
 
-doTest("Testing model accessors for GBM", test.gbm.mult.accessors)
+h2oTest.doTest("Testing model accessors for GBM", test.gbm.mult.accessors)

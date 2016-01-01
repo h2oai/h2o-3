@@ -8,8 +8,8 @@ test.upload.import.small <- function() {
                             "smalldata/prostate/prostate_woheader.csv.gz")
 
     for(dataset in various_datasets){
-        uploaded_frame <- h2o.uploadFile(locate(dataset))
-        imported_frame <- h2o.importFile(locate(dataset))
+        uploaded_frame <- h2o.uploadFile(h2oTest.locate(dataset))
+        imported_frame <- h2o.importFile(h2oTest.locate(dataset))
 
         rows_u <- nrow(uploaded_frame)
         rows_i <- nrow(imported_frame)
@@ -25,4 +25,4 @@ test.upload.import.small <- function() {
     
 }
 
-doTest("Test upload import", test.upload.import.small)
+h2oTest.doTest("Test upload import", test.upload.import.small)

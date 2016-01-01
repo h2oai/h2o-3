@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
     fPath = tryCatch({
-      locate("bigdata/laptop/text8.gz")
+      h2oTest.locate("bigdata/laptop/text8.gz")
     }, warning= function(w) {
       print("File bigdata/laptop/text8.gz could not be found.  Please run ./gradlew syncBigdataLaptop (or gradlew.bat syncBigdataLaptop for Windows) to retrieve the file.")
     }, error= function(e) {
@@ -28,4 +28,4 @@ test <- function() {
     
 }
 
-doTest("Run all four word2vec algos on 17M word training set.", test)
+h2oTest.doTest("Run all four word2vec algos on 17M word training set.", test)

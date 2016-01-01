@@ -10,4 +10,4 @@ test.pubdev_1750 <- function() {
     expect_equal(prod(foo[1:2,1]), prod(iris[1:2,1]))
 }
 
-doTest("PUBDEV-1750", test.pubdev_1750)
+h2oTest.doTest("PUBDEV-1750", test.pubdev_1750)

@@ -10,11 +10,11 @@ options(echo=TRUE)
 
 
 test.pub.826 <- function() {
-  Log.info('Importing the airlines data from smalldata.')
-  flights <- h2o.importFile(normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')), 'air')
+  h2oTest.logInfo('Importing the airlines data from smalldata.')
+  flights <- h2o.importFile(normalizePath(h2oTest.locate('smalldata/airlines/allyears2k_headers.zip')), 'air')
 
-  Log.info('Print head of dataset')
-  Log.info(head(flights))
+  h2oTest.logInfo('Print head of dataset')
+  h2oTest.logInfo(head(flights))
 
   vars <- colnames(flights)
 
@@ -32,4 +32,4 @@ test.pub.826 <- function() {
   
 }
 
-doTest("PUB-826: nfold cross validation doesn't work correctly", test.pub.826)
+h2oTest.doTest("PUB-826: nfold cross validation doesn't work correctly", test.pub.826)

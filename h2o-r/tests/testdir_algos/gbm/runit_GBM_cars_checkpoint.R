@@ -4,9 +4,9 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.checkpointing <- function() {
-  cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+  cars <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
   seed <- sample(1:1000000, 1)
-  Log.info(paste0("runif seed: ",seed))
+  h2oTest.logInfo(paste0("runif seed: ",seed))
   s <- h2o.runif(cars, seed=seed)
   train <- cars[s > .2,]
   valid <- cars[s <= .2,]
@@ -98,4 +98,4 @@ expect_mm_multinomial_equal <- function(a, b, msg) {
   expect_equal(a@metrics$hit_ratio_table$hit_ratio,b@metrics$hit_ratio_table$hit_ratio) ##not sure how to quickly add relative tolerance
 }
 
-doTest("Test GBM checkpointing", test.checkpointing)
+h2oTest.doTest("Test GBM checkpointing", test.checkpointing)

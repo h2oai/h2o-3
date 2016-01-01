@@ -42,4 +42,4 @@ test.cbind <- function() {
     
 }
 
-doTest("Test cbind.", test.cbind)
+h2oTest.doTest("Test cbind.", test.cbind)

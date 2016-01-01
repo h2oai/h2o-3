@@ -7,7 +7,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
 
-	fre = h2o.importFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
+	fre = h2o.importFile(h2oTest.locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	fre = h2o.assign(fre[1:6000,],key = "fre")
 	#fren = as.data.frame(fre)
@@ -36,5 +36,5 @@ test <- function() {
 		
 	
 }
-doTest("Deeplearning weight Test: deeplearning w/ weights for poisson distribution", test)
+h2oTest.doTest("Deeplearning weight Test: deeplearning w/ weights for poisson distribution", test)
 

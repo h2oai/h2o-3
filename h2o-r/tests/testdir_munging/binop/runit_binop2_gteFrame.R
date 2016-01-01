@@ -6,22 +6,22 @@ source("../../../scripts/h2o-r-test-setup.R")
 test.gte.frame <- function() {
  hex <- as.h2o(iris)
  
-  Log.info("Expectation is a frame of booleans")
+  h2oTest.logInfo("Expectation is a frame of booleans")
   
-  Log.info("Try hex >= 5 : ")
+  h2oTest.logInfo("Try hex >= 5 : ")
   hexGTEFive <- hex >= 5
   print(head(hexGTEFive))
   
-  Log.info("Don't expect commutativity, but expect operation to work when operands switched: 5 >= hex ")
+  h2oTest.logInfo("Don't expect commutativity, but expect operation to work when operands switched: 5 >= hex ")
   fiveGTEHex <- 5 >= hex
   print(head(fiveGTEHex))
   
-  Log.info("Try >= the frame by itself: hex >= hex")
+  h2oTest.logInfo("Try >= the frame by itself: hex >= hex")
   hexGTEHex <- hex >= hex
   print(hexGTEHex)
 
   
 }
 
-doTest("EXEC2 TEST: BINOP2 test of '>=' on frames", test.gte.frame)
+h2oTest.doTest("EXEC2 TEST: BINOP2 test of '>=' on frames", test.gte.frame)
 

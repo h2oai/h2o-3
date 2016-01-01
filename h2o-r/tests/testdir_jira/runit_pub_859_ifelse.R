@@ -28,4 +28,4 @@ test.pub.859 <- function() {
   
 }
 
-doTest("Test pub 859", test.pub.859)
+h2oTest.doTest("Test pub 859", test.pub.859)

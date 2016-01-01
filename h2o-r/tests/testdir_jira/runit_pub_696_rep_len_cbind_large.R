@@ -19,4 +19,4 @@ test.pub.696 <- function() {
   
 }
 
-doTest("cbind of something created by rep_len", test.pub.696 )
+h2oTest.doTest("cbind of something created by rep_len", test.pub.696 )

@@ -12,8 +12,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
     print("Reading in Arcene training data for binomial modeling.")
-        arcene.train.full = h2o.uploadFile(locate("smalldata/arcene/shuffle_test_version/arcene.csv"), destination_frame="arcene.train.full", header=FALSE)
-        arcene.train.full_shuffled = h2o.uploadFile(locate("smalldata/arcene/shuffle_test_version/arcene_shuffled.csv"), destination_frame="arcene.train.full_shuffled", header=FALSE)
+        arcene.train.full = h2o.uploadFile(h2oTest.locate("smalldata/arcene/shuffle_test_version/arcene.csv"), destination_frame="arcene.train.full", header=FALSE)
+        arcene.train.full_shuffled = h2o.uploadFile(h2oTest.locate("smalldata/arcene/shuffle_test_version/arcene_shuffled.csv"), destination_frame="arcene.train.full_shuffled", header=FALSE)
     
     #print("Shuffle rows of dataset.")
     #    arcene.train.full_shuffled = h2o.assign(arcene.train.full[sample(nrow(arcene.train.full),replace=F),],"arcene.train.full_shuffled")
@@ -38,4 +38,4 @@ test <- function() {
     
 }
 
-doTest("Testing glm consistency on 1 chunk dataset with and without shuffling rows.", test)
+h2oTest.doTest("Testing glm consistency on 1 chunk dataset with and without shuffling rows.", test)

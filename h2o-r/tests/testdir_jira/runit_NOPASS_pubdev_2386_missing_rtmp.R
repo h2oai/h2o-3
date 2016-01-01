@@ -18,4 +18,4 @@ test.pubdev.2386 <- function(conn){
   if(!all(dim(iris.hex) == c(150,5))) stop("H2OFrame is no longer there!")
   
 }
-doTest("Test for Missing RTMPs PUBDEV-2386", test.pubdev.2386)
+h2oTest.doTest("Test for Missing RTMPs PUBDEV-2386", test.pubdev.2386)

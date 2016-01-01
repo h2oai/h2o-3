@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdocRM.golden <- function() {
 
-prosPath <- locate("smalldata/extdata/prostate.csv")
+prosPath <- h2oTest.locate("smalldata/extdata/prostate.csv")
 prostate.hex <- h2o.uploadFile(path = prosPath)
 s <- as.h2o(runif(nrow(prostate.hex)))
 prostate.hex <- prostate.hex[s <= 0.8,]
@@ -19,5 +19,5 @@ h2o.ls()
 
 }
 
-doTest("R Doc RM", test.rdocRM.golden)
+h2oTest.doTest("R Doc RM", test.rdocRM.golden)
 

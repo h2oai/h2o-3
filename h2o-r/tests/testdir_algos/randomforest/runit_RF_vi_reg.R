@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 rfReg.vi.test<- function() {
-    data2.hex <- h2o.uploadFile(locate("smalldata/gbm_test/BostonHousing.csv"), destination_frame="data2.hex")
+    data2.hex <- h2o.uploadFile(h2oTest.locate("smalldata/gbm_test/BostonHousing.csv"), destination_frame="data2.hex")
     x=1:13
     y=14
     rf <- h2o.randomForest(x, y, data2.hex, ntrees=100, max_depth=20, 
@@ -14,4 +14,4 @@ rfReg.vi.test<- function() {
     expect_equal(vi[1:2], c(13,6))
     
 }
-doTest("Variable Importance RF Test: Boston Housing Smalldata", rfReg.vi.test)
+h2oTest.doTest("Variable Importance RF Test: Boston Housing Smalldata", rfReg.vi.test)

@@ -15,4 +15,4 @@ test.head_empty_frame <- function() {
   
 }
 
-doTest("Test frame add.", test.head_empty_frame)
+h2oTest.doTest("Test frame add.", test.head_empty_frame)

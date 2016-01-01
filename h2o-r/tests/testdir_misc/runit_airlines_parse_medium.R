@@ -10,11 +10,11 @@ source("../../scripts/h2o-r-test-setup.R")
 # setupRandomSeed(1994831827)
 
 test <- function() {
-	hex = h2o.importFile(locate("bigdata/laptop/airlines_all.05p.csv"), "hex")
-  print(hex)
+	hex = h2o.importFile(h2oTest.locate("bigdata/server/airlines_all.csv"), "hex")
+	print(hex)
       
     
 }
 
-doTest("Parse 2008 airlines dataset from NAS", test)
+h2oTest.doTest("Parse 2008 airlines dataset from NAS", test)
 

@@ -45,5 +45,5 @@ test.apply <- function() {
     
 }
 
-doTest("Test for apply.", test.apply)
+h2oTest.doTest("Test for apply.", test.apply)
 

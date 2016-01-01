@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 gbm.grid.test <- function() {
-    air.hex <- h2o.uploadFile(locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="air.hex")
+    air.hex <- h2o.uploadFile(h2oTest.locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="air.hex")
     print(summary(air.hex))
     myX <- c("DayofMonth", "DayOfWeek")
     # Specify grid hyper parameters
@@ -27,9 +27,9 @@ gbm.grid.test <- function() {
     # Check expected number of models
     expect_equal(length(grid_models), size_of_hyper_space)
 
-    expect_model_param(grid_models, "ntrees", ntrees_opts)
-    expect_model_param(grid_models, "max_depth", max_depth_opts)
-    expect_model_param(grid_models, "learn_rate", learn_rate_opts)
+    h2oTest.expectModelParam(grid_models, "ntrees", ntrees_opts)
+    h2oTest.expectModelParam(grid_models, "max_depth", max_depth_opts)
+    h2oTest.expectModelParam(grid_models, "learn_rate", learn_rate_opts)
 
     #
     # test random/max_models search criterion
@@ -44,4 +44,4 @@ gbm.grid.test <- function() {
     expect_equal(length(air.grid@model_ids), size_of_hyper_space)
 }
 
-doTest("GBM Grid Test: Airlines Smalldata", gbm.grid.test)
+h2oTest.doTest("GBM Grid Test: Airlines Smalldata", gbm.grid.test)

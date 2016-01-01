@@ -11,4 +11,4 @@ test.pubdev.is.numeric <- function(h) {
   	
 }
 
-doTest("Test pubdev-1711", test.pubdev.is.numeric )
+h2oTest.doTest("Test pubdev-1711", test.pubdev.is.numeric )

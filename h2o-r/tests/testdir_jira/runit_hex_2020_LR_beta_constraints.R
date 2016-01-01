@@ -10,10 +10,10 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.LR.betaConstraints <- function(){
 
-  #Log.info("Importing prostate dataset...")
-  prostate_h2o <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
+  #h2oTest.logInfo("Importing prostate dataset...")
+  prostate_h2o <- h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
 
-  #Log.info("Create beta constraints frame...")
+  #h2oTest.logInfo("Create beta constraints frame...")
   myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
   lowerbound <- rep(-1, times = length(myX))
   upperbound <- rep(1, times = length(myX))
@@ -22,7 +22,7 @@ test.LR.betaConstraints <- function(){
 
   ######## Single variable CAPSULE ~ AGE in H2O and then R
   ## actual coeff for Age without constraints = -.00823
-  #Log.info("Run a Linear Regression with CAPSULE ~ AGE with bound beta->[0,1] in H2O...")
+  #h2oTest.logInfo("Run a Linear Regression with CAPSULE ~ AGE with bound beta->[0,1] in H2O...")
   beta_age <- betaConstraints[betaConstraints$names == "AGE",]
   beta_age$lower_bounds <- 0
   beta_age$upper_bounds <- 1
@@ -30,17 +30,17 @@ test.LR.betaConstraints <- function(){
                     beta_constraints = beta_age)
   lambda <- lr.h2o@allparameters$lambda
 
-  #Log.info("Run a Linear Regression with CAPSULE ~ AGE with bound beta->[0,1] in R...")
+  #h2oTest.logInfo("Run a Linear Regression with CAPSULE ~ AGE with bound beta->[0,1] in R...")
   intercept <- rep(0, times = nrow(prostate_h2o))
   xDataH2OFrame <- data.frame(AGE = prostate_r[,"AGE"], Intercept = intercept)
   xMatrix_age <- as.matrix(xDataH2OFrame)
   lr.R <- glmnet(x = xMatrix_age, alpha = 0., lambda = lr.h2o@model$lambda, standardize = T,
                  y = prostate_r[,"CAPSULE"], family = "gaussian", lower.limits = 0, upper.limits = 1)
-  checkGLMModel2(lr.h2o, lr.R)
+  h2oTest.checkGLMModel2(lr.h2o, lr.R)
 
   #### shift AGE coefficient by 0.002
   run_glm <- function(family_type) {
-    #Log.info("Test Beta Constraints with negative upper bound in H2O...")
+    #h2oTest.logInfo("Test Beta Constraints with negative upper bound in H2O...")
     beta_age$lower_bounds <- -0.008
     beta_age$upper_bounds <- -0.002
     nrow_prior <- nrow(prostate_h2o)
@@ -49,13 +49,13 @@ test.LR.betaConstraints <- function(){
     nrow_after <- nrow(prostate_h2o)
     if(!nrow_prior == nrow_after) stop("H2OParsedData object is being overwritten.")
 
-    #Log.info("Shift AGE column to reflect negative upperbound...")
+    #h2oTest.logInfo("Shift AGE column to reflect negative upperbound...")
     xDataH2OFrame <- data.frame(AGE = prostate_r[,"AGE"]*(1+-0.002), Intercept = intercept)
     xMatrix_age <- as.matrix(xDataH2OFrame)
     lr_negativeUpper.R <- glmnet(x = xMatrix_age, alpha = 0., lambda = lr.h2o@model$lambda, standardize = T,
                                  y = prostate_r[,"CAPSULE"], family = family_type, lower.limits = -0.008,
                                  upper.limits = 0.0)
-    checkGLMModel2(lr_negativeUpper.h2o, lr_negativeUpper.R)
+    h2oTest.checkGLMModel2(lr_negativeUpper.h2o, lr_negativeUpper.R)
   }
 
   full_test <- sapply(c("binomial", "gaussian"), run_glm)
@@ -63,5 +63,5 @@ test.LR.betaConstraints <- function(){
   
 }
 
-doTest("GLM Test: LR w/ Beta Constraints", test.LR.betaConstraints)
+h2oTest.doTest("GLM Test: LR w/ Beta Constraints", test.LR.betaConstraints)
 

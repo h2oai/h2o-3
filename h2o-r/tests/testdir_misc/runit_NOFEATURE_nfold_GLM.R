@@ -7,7 +7,7 @@ test.h2o.nfold_GLM <- function() {
   tolerance <- 1e-4
 
   conn = h2o.init()
-  hex <- h2o.importFile(normalizePath(locate("smalldata/logreg/prostate.csv")))
+  hex <- h2o.importFile(normalizePath(h2oTest.locate("smalldata/logreg/prostate.csv")))
   predictors = c(3:9)
   response = 2
   NFOLDS = 4
@@ -52,4 +52,4 @@ test.h2o.nfold_GLM <- function() {
   
 }
 
-doTest("Test H2O N-Fold CV for GLM", test.h2o.nfold_GLM)
+h2oTest.doTest("Test H2O N-Fold CV for GLM", test.h2o.nfold_GLM)

@@ -10,21 +10,21 @@ test.quantile.golden <- function() {
   vec <- rnorm(1000)
   vec.hex <- as.h2o(vec)
   
-  Log.info("Check errors generated for probabilities outside [0,1]")
+  h2oTest.logInfo("Check errors generated for probabilities outside [0,1]")
   expect_error(quantile(vec.hex, probs = -0.2))
   expect_error(quantile(vec.hex, probs = 1.2))
   expect_error(quantile(vec.hex, probs = c(0.1, -0.5, 0.2, 1.5)))
   
-  Log.info("Check min/max equal to 0% and 100% quantiles")
+  h2oTest.logInfo("Check min/max equal to 0% and 100% quantiles")
   expect_equal(as.data.frame(quantile(vec.hex, probs = 0))[1,1], min(vec.hex))
   expect_equal(as.data.frame(quantile(vec.hex, probs = 1))[1,1], max(vec.hex))
   
-  Log.info("Check constant vector returns constant for all quantiles")
+  h2oTest.logInfo("Check constant vector returns constant for all quantiles")
   vec.cons <- rep(5,1000)
   vec.cons.hex <- as.h2o(vec.cons)
   expect_true(all(as.data.frame(quantile(vec.cons.hex, probs = probs)) == 5))
   
-  Log.info("Check quantiles are identical to R with type = 7")
+  h2oTest.logInfo("Check quantiles are identical to R with type = 7")
   quant.r <- as.vector(quantile(vec, probs = probs, type = 7))
   quant.h2o <- as.data.frame(quantile(vec.hex, probs = probs))[,1]
   expect_equal(quant.h2o, quant.r)
@@ -33,7 +33,7 @@ test.quantile.golden <- function() {
   quant.rand.h2o <- as.data.frame(quantile(vec.hex, probs = probs.rand))[,1]
   expect_equal(quant.rand.h2o, quant.rand.r)
   
-  Log.info("Check missing values are ignored in calculation")
+  h2oTest.logInfo("Check missing values are ignored in calculation")
   vecNA <- vec; vecNA[sample(1000,100)] <- NA
   vecNA.hex <- as.h2o(vecNA)
   
@@ -45,7 +45,7 @@ test.quantile.golden <- function() {
   quantNA.rand.h2o <- as.data.frame(quantile(vecNA.hex, probs = probs.rand))[,1]
   expect_equal(quantNA.rand.h2o, quantNA.rand.r)
 
-  Log.info("Check interpolation matches R with type=7 (pubdev-671)")
+  h2oTest.logInfo("Check interpolation matches R with type=7 (pubdev-671)")
   getNumbers = function(s)as.numeric(lapply(strsplit(s[,1], ":"), '[', 2))   # even in base R, summary.data.frame returns formatted text
   probs = seq(0,1,by=0.01)
   for (vec in list(
@@ -66,4 +66,4 @@ test.quantile.golden <- function() {
   
 }
 
-doTest("Quantile Test: Golden Quantile Test", test.quantile.golden)
+h2oTest.doTest("Quantile Test: Golden Quantile Test", test.quantile.golden)

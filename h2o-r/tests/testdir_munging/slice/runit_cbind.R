@@ -4,10 +4,10 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.h2o.cbind <- function() {
-  Log.info('test h2o.cbind')
+  h2oTest.logInfo('test h2o.cbind')
 
-  hdf <- h2o.importFile(locate('smalldata/jira/pub-180.csv'))
-  otherhdf <- h2o.importFile(locate('smalldata/jira/v-11.csv'))
+  hdf <- h2o.importFile(h2oTest.locate('smalldata/jira/pub-180.csv'))
+  otherhdf <- h2o.importFile(h2oTest.locate('smalldata/jira/v-11.csv'))
 
   ##### WORKS #####
   # h2o.cbind self to self
@@ -40,5 +40,5 @@ test.h2o.cbind <- function() {
   
 }
 
-doTest("test h2o.cbind", test.h2o.cbind)
+h2oTest.doTest("test h2o.cbind", test.h2o.cbind)
 

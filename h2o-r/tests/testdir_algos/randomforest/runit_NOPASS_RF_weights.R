@@ -78,4 +78,4 @@ test_weights_by_row_duplication <- function() {
 }
 
 
-doTest("RF weight Test for bernoulli: RF w/ weights test by row duplication", test_weights_by_row_duplication)
+h2oTest.doTest("RF weight Test for bernoulli: RF w/ weights test by row duplication", test_weights_by_row_duplication)

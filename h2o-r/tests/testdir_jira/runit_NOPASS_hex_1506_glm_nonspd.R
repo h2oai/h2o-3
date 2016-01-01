@@ -11,10 +11,10 @@ source("../../scripts/h2o-r-test-setup.R")
 options(echo=TRUE)
 
 
-heading("BEGIN TEST")
+h2oTest.heading("BEGIN TEST")
 check.hex_1506 <- function() {
 
-  path = locate("smalldata/iris/iris_wheader.nonspd.csv")
+  path = h2oTest.locate("smalldata/iris/iris_wheader.nonspd.csv")
   iris.hex = h2o.importFile(path, destination_frame="iris.hex")
 
   expect_warning(h2o.glm(x = c(1:4,6:8), y = "class_REC", training_frame = iris.hex, family = "binomial", lambda = 0))
@@ -23,4 +23,4 @@ check.hex_1506 <- function() {
   
 }
 
-doTest("HEX-1506", check.hex_1506)
+h2oTest.doTest("HEX-1506", check.hex_1506)

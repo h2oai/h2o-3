@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pubdev.1829 <- function(conn){
 
-  cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+  cars <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
   predictors <- c("displacement","power","weight","acceleration","year")
   response_col <- "economy_20mpg"
   distribution <- "bernoulli"
@@ -52,4 +52,4 @@ test.pubdev.1829 <- function(conn){
   
 }
 
-doTest("PUBDEV-1829", test.pubdev.1829)
+h2oTest.doTest("PUBDEV-1829", test.pubdev.1829)

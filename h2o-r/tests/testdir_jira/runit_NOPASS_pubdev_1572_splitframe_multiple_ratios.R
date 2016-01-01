@@ -14,7 +14,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.splitFrame.multiple.ratios <- function() {
   hex <- as.h2o(iris)
 
-  Log.info("Splits using c(0.1, 0.2), c(0.2, 0.4), c(0.3, 0.6).")
+  h2oTest.logInfo("Splits using c(0.1, 0.2), c(0.2, 0.4), c(0.3, 0.6).")
   split_1 <- h2o.splitFrame(hex, c(0.1, 0.2))
   split_2 <- h2o.splitFrame(hex, c(0.2, 0.4))
   split_3 <- h2o.splitFrame(hex, c(0.3, 0.6))
@@ -34,4 +34,4 @@ test.splitFrame.multiple.ratios <- function() {
   
 }
 
-doTest("Using Splitframe on Multiple Ratios", test.splitFrame.multiple.ratios)
+h2oTest.doTest("Using Splitframe on Multiple Ratios", test.splitFrame.multiple.ratios)

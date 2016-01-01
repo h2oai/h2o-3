@@ -19,11 +19,11 @@ options(echo = TRUE)
 # Parameters for the test.
 #----------------------------------------------------------------------
 
-training_file          <- h2o:::.h2o.locate("smalldata/prostate/prostate.csv")
+training_file          <- h2o:::.h2o.h2oTest.locate("smalldata/prostate/prostate.csv")
 training_frame         <- h2o.importFile(training_file)
 training_frame$CAPSULE <- as.factor(training_frame$CAPSULE)
 
-test_file              <- h2o:::.h2o.locate("smalldata/prostate/prostate.csv")
+test_file              <- h2o:::.h2o.h2oTest.locate("smalldata/prostate/prostate.csv")
 test_frame             <- h2o.importFile(test_file)
 test_frame$CAPSULE     <- as.factor(test_frame$CAPSULE)
 
@@ -33,9 +33,9 @@ x <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
 #----------------------------------------------------------------------
 # Run the test
 #----------------------------------------------------------------------
-doJavapredictTest(model = "glm", training_frame = training_frame, test_file = test_file, test_frame = test_frame,
+h2oTest.doJavapredictTest(model = "glm", training_frame = training_frame, test_file = test_file, test_frame = test_frame,
                   y = y,
                   x = x,
                   family = "binomial")
 
-PASS()
+h2oTest.pass()

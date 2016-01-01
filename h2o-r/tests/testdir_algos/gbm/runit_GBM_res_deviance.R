@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
 	
-	Hexpend =  read.csv(locate("smalldata/glm_test/HealthExpend.csv"))
+	Hexpend =  read.csv(h2oTest.locate("smalldata/glm_test/HealthExpend.csv"))
 	MEPS=subset(Hexpend,EXPENDIP>0)
 	#MEPSgamma = gbm(formula = EXPENDIP~COUNTIP+AGE+GENDER+factor(RACE)+factor(REGION)+factor(EDUC)+
     #          factor(PHSTAT)+MNHPOOR+ANYLIMIT+factor(INCOME)+insure,distribution =  "gamma",verbose=T,
@@ -40,7 +40,7 @@ test <- function() {
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,149.4331681)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
 	
-	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
+	fre = h2o.uploadFile(h2oTest.locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	#fren = as.data.frame(fre)
 	#fren$VehPower = as.factor(fren$VehPower)
@@ -59,4 +59,4 @@ test <- function() {
 
 	
 }
-doTest("GBM residual deviance Test: GBM deviance for poisson/gamma/tweedie distributions", test)
+h2oTest.doTest("GBM residual deviance Test: GBM deviance for poisson/gamma/tweedie distributions", test)

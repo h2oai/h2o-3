@@ -21,7 +21,7 @@ test.cbind <- function() {
     h.h2o.R <- as.data.frame(h.h2o)
     expect_that(all(h == h.h2o.R), equals(T))
 
-    Log.info("Cannot cbind h2o objects with R objects")
+    h2oTest.logInfo("Cannot cbind h2o objects with R objects")
     expect_error(h2o.cbind(a.h2o,b))
 
 
@@ -53,6 +53,6 @@ test.cbind <- function() {
     
 }
 
-doTest("Test cbind.", test.cbind)
+h2oTest.doTest("Test cbind.", test.cbind)
 
 

@@ -39,5 +39,5 @@ test <- function(h) {
 
 	
 }
-doTest("Deeplearning offset Test: deeplearning w/ offset for gamma distribution", test)
+h2oTest.doTest("Deeplearning offset Test: deeplearning w/ offset for gamma distribution", test)
 

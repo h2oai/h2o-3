@@ -35,4 +35,4 @@ test <- function(h) {
 	
 	
 }
-doTest("GBM offset Test: GBM w/ offset for gamma distribution", test)
+h2oTest.doTest("GBM offset Test: GBM w/ offset for gamma distribution", test)

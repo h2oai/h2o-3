@@ -4,15 +4,15 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.deeplearning_anomaly <- function() {
-  Log.info("Deep Learning Anomaly Detection MNIST)")
+  h2oTest.logInfo("Deep Learning Anomaly Detection MNIST)")
   
   TRAIN <- "bigdata/laptop/mnist/train.csv.gz"
   TEST <- "bigdata/laptop/mnist/test.csv.gz"
   
   # set to FALSE for stand-alone demo
   if (TRUE) {
-    train_hex <- h2o.uploadFile(locate(TRAIN), destination_frame = "train")
-    test_hex  <- h2o.uploadFile(locate(TEST))
+    train_hex <- h2o.uploadFile(h2oTest.locate(TRAIN), destination_frame = "train")
+    test_hex  <- h2o.uploadFile(h2oTest.locate(TEST))
     print(train_hex)
   } else {
     library(h2o)
@@ -94,5 +94,5 @@ check.deeplearning_anomaly <- function() {
   
 }
 
-doTest("Deep Learning Anomaly Detection MNIST", check.deeplearning_anomaly)
+h2oTest.doTest("Deep Learning Anomaly Detection MNIST", check.deeplearning_anomaly)
 

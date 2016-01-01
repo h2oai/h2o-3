@@ -75,4 +75,4 @@ test_weights_by_row_duplication <- function() {
 }
 
 
-doTest("DL weight Test for bernoulli: DL w/ weights test by row duplication", test_weights_by_row_duplication)
+h2oTest.doTest("DL weight Test for bernoulli: DL w/ weights test by row duplication", test_weights_by_row_duplication)

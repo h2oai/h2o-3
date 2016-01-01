@@ -11,13 +11,13 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 functiontest <- function(){
-  Log.info('uploading function testing dataset')
-  df.h <- h2o.importFile(locate('smalldata/jira/v-3.csv'))
+  h2oTest.logInfo('uploading function testing dataset')
+  df.h <- h2o.importFile(h2oTest.locate('smalldata/jira/v-3.csv'))
 
-  Log.info('printing from h2o')
-  Log.info( head(df.h) )
+  h2oTest.logInfo('printing from h2o')
+  h2oTest.logInfo( head(df.h) )
 
-  Log.info('applying over 1, 2, 1:2')
+  h2oTest.logInfo('applying over 1, 2, 1:2')
   fn1 <- function(x){ sum(x) }
   # h2o.addFunction(fn1)
   fn2 <- function(x){ x + 1 }
@@ -27,7 +27,7 @@ functiontest <- function(){
   df.h.2 <- apply(df.h, 2, fn1)
   # df.h.3 <- apply(df.h, 1:2, fn2)
 
-  Log.info('pulling data locally')
+  h2oTest.logInfo('pulling data locally')
   df.1 <- as.data.frame( df.h.1 )
   df.2 <- as.data.frame( df.h.2 )
   # df.3 <- as.data.frame( df.h.3 )
@@ -44,4 +44,4 @@ functiontest <- function(){
 
 
 
-doTest('function', functiontest)
+h2oTest.doTest('function', functiontest)

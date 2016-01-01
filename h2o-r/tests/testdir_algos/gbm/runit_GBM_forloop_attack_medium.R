@@ -49,11 +49,11 @@ randomParams <- function(distribution, train, test, x, y) {
       val <- do.call(paste0("set_", parm), list(...))
       if (!is.null(val))
         if (is.vector(val))
-          Log.info(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
+          h2oTest.logInfo(paste0(sub("_", " ", parm), ": ", paste(val, collapse = ", ")))
         else if (class(val) == "H2OFrame")
-          Log.info(paste("H2OFrame: ", head(val)))
+          h2oTest.logInfo(paste("H2OFrame: ", head(val)))
         else
-          Log.info(paste0(sub("_", " ", parm), ": ", val))
+          h2oTest.logInfo(paste0(sub("_", " ", parm), ": ", val))
       return(val)
     }
     return(NULL)
@@ -88,8 +88,8 @@ randomParams <- function(distribution, train, test, x, y) {
 }
 
 test.GBM.rand_attk_forloop <- function() {
-  Log.info("Import and data munging...")
-  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
+  h2oTest.logInfo("Import and data munging...")
+  pros.hex <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
   seed <- as.integer(runif(1,1,.Machine$integer.max))
   print("SEED: ")
   print(seed)
@@ -102,27 +102,27 @@ test.GBM.rand_attk_forloop <- function() {
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
 
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex,seed=seed)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
 
-  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars.csv"))
   c.sid <- h2o.runif(cars.hex,seed=seed)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
 
-  Log.info("### Binomial ###")
+  h2oTest.logInfo("### Binomial ###")
   for(i in 1:10)
     randomParams("bernoulli", pros.train, pros.test, 3:9, 2)
-  Log.info("### Multinomial ###")
+  h2oTest.logInfo("### Multinomial ###")
   for(i in 1:10)
     randomParams("multinomial", iris.train, iris.test, 1:4, 5)
-  Log.info("### Regression ###")
+  h2oTest.logInfo("### Regression ###")
   for(i in 1:10)
     randomParams("gaussian", cars.train, cars.test, 4:7, 3)
 
   
 }
 
-doTest("Checking GBM in Random Attack For Loops", test.GBM.rand_attk_forloop)
+h2oTest.doTest("Checking GBM in Random Attack For Loops", test.GBM.rand_attk_forloop)

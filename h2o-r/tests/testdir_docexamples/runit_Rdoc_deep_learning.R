@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdoc_deep_learning.golden <- function() {
 
-irisPath = locate("smalldata/extdata/iris.csv")
+irisPath = h2oTest.locate("smalldata/extdata/iris.csv")
 iris.hex = h2o.uploadFile(path = irisPath)
 indep <- names(iris.hex)[1:4]
 dep <- names(iris.hex)[5]
@@ -15,5 +15,5 @@ h2o.deeplearning(x = indep, y = dep, training_frame = iris.hex, activation = "Ta
 
 }
 
-doTest("R Doc Deep Learning", test.rdoc_deep_learning.golden)
+h2oTest.doTest("R Doc Deep Learning", test.rdoc_deep_learning.golden)
 

@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pubdev.1846.deeplearning <- function(conn){
 
-  cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+  cars <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
   grid_space <- list()
   grid_space$activation <- c("Rectifier", "Tanh", "Foo")
   grid_space$distribution <- 'bernoulli'
@@ -25,4 +25,4 @@ test.pubdev.1846.deeplearning <- function(conn){
   
 }
 
-doTest("PUBDEV-1846", test.pubdev.1846.deeplearning)
+h2oTest.doTest("PUBDEV-1846", test.pubdev.1846.deeplearning)

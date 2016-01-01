@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-	ca = read.csv(file =locate("smalldata/glm_test/cancar_logIn.csv"),header = T)
+	ca = read.csv(file =h2oTest.locate("smalldata/glm_test/cancar_logIn.csv"),header = T)
 	cc = as.h2o(ca,destination_frame = "cc")
 	cc$Merit = as.factor(cc$Merit)
 	cc$Class = as.factor(cc$Class)
@@ -64,6 +64,6 @@ test <- function() {
 
 	
 }
-doTest("Deeplearning offset Test: deeplearning w/ offset for poisson distribution", test)
+h2oTest.doTest("Deeplearning offset Test: deeplearning w/ offset for poisson distribution", test)
 
 

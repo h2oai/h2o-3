@@ -4,10 +4,10 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.columndereference <- function() {
-  Log.info('test column dereference')
+  h2oTest.logInfo('test column dereference')
 
-  hdf <- h2o.importFile(locate('smalldata/jira/pub-180.csv'))
-  otherhdf <- h2o.importFile(locate('smalldata/jira/v-11.csv'))
+  hdf <- h2o.importFile(h2oTest.locate('smalldata/jira/pub-180.csv'))
+  otherhdf <- h2o.importFile(h2oTest.locate('smalldata/jira/v-11.csv'))
 
   column <- 'colgroup2'
 
@@ -26,4 +26,4 @@ test.columndereference <- function() {
   
 }
 
-doTest("test column dereference and assignment", test.columndereference)
+h2oTest.doTest("test column dereference and assignment", test.columndereference)

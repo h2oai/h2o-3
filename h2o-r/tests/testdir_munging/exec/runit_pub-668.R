@@ -75,5 +75,5 @@ test.pub.668 <- function() {
     
 }
 
-doTest("Test for pub-668.", test.pub.668)
+h2oTest.doTest("Test for pub-668.", test.pub.668)
 

@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.rf.imbalanced <- function() {
-  covtype <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
+  covtype <- h2o.uploadFile(h2oTest.locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
 
   hh_imbalanced<-h2o.randomForest(x=1:54,y=55,ntrees=50,training_frame=covtype, balance_classes=F)
@@ -31,4 +31,4 @@ test.rf.imbalanced <- function() {
   
 }
 
-doTest("rf imbalanced", test.rf.imbalanced)
+h2oTest.doTest("rf imbalanced", test.rf.imbalanced)

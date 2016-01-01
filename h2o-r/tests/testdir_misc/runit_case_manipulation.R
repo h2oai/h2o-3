@@ -4,14 +4,14 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.string.case.manipulation <- function() {
-  Log.info("Importing letters...")
+  h2oTest.logInfo("Importing letters...")
   hex <- as.character(as.h2o(letters))
   print(hex)
-  Log.info("Changing to upper case...")
+  h2oTest.logInfo("Changing to upper case...")
   hex <- h2o.toupper(hex)
   print(hex)
   upper.r <- as.data.frame(hex)[1:26,]
-  Log.info("Changing to lower case...")
+  h2oTest.logInfo("Changing to lower case...")
   hex <- h2o.tolower(hex)
   lower.r <- as.data.frame(hex)[1:26,]
   print(hex)
@@ -22,4 +22,4 @@ test.string.case.manipulation <- function() {
   
 }
 
-doTest("Testing toupper and tolower.", test.string.case.manipulation)
+h2oTest.doTest("Testing toupper and tolower.", test.string.case.manipulation)

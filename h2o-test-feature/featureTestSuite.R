@@ -110,7 +110,7 @@ function() {
 loadH2ORTestPackage <-
 function() {
     # load appropriate h2o-r/h2o-test-package/R/ functionality. overrides h2o-test package load
-    to_src <- c("utilsR.R")
+    to_src <- c("utils.R")
     src_path <- paste(H2O.R.DIR,"h2o-test-package","R",sep=.Platform$file.sep)
     invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 }

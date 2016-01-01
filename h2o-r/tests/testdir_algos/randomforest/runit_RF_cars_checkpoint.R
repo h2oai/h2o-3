@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.checkpointing <- function() {
-  cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+  cars <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
   s <- h2o.runif(cars)
   train <- cars[s > .2,]
   valid <- cars[s <= .2,]
@@ -91,4 +91,4 @@ expect_mm_multinomial_equal <- function(a, b, msg) {
   expect_equal(a@metrics$logloss, b@metrics$logloss)
 }
 
-doTest("Test DRF checkpointing", test.checkpointing)
+h2oTest.doTest("Test DRF checkpointing", test.checkpointing)

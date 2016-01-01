@@ -17,4 +17,4 @@ check.merge_col_types <- function() {
   
 }
 
-doTest("Matching Column Names Must Have Same Data Types", check.merge_col_types)
+h2oTest.doTest("Matching Column Names Must Have Same Data Types", check.merge_col_types)

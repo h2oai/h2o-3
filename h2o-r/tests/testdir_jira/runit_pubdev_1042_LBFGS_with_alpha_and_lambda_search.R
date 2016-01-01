@@ -9,7 +9,7 @@ source("../../scripts/h2o-r-test-setup.R")
 ## ---------------------------------------------------- ##
 
 test.pubdev1042 <- function(){
-  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv.zip"))
+  pros.hex <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -25,4 +25,4 @@ test.pubdev1042 <- function(){
   
 }
 
-doTest("Testing LBFGS with alpha and lambda search", test.pubdev1042)
+h2oTest.doTest("Testing LBFGS with alpha and lambda search", test.pubdev1042)

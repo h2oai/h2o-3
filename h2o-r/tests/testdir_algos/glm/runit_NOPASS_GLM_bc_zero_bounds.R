@@ -9,18 +9,18 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-  Log.info("Importing prostate dataset...")
-  h2o_data <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
+  h2oTest.logInfo("Importing prostate dataset...")
+  h2o_data <- h2o.importFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
 
   myX <-  c("AGE","RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
   myY <- "CAPSULE"
-  Log.info("Create default beta constraints frame...")
+  h2oTest.logInfo("Create default beta constraints frame...")
   lowerbound <- rep(-1, times = length(myX))
   upperbound <- rep(1, times = length(myX))
   r_bc <- data.frame(names = myX, lower_bounds = lowerbound, upper_bounds = upperbound)
   h2o_bc <- as.h2o(r_bc)
 
-  Log.info("Pull data frame into R to run GLMnet...")
+  h2oTest.logInfo("Pull data frame into R to run GLMnet...")
   r_data <- as.data.frame(h2o_data)
 
   ########### run_glm function to run glm over different parameters
@@ -31,21 +31,21 @@ test <- function() {
                         lower_bound,
                         upper_bound
                         ) {
-    Log.info(paste("Set Beta Constraints :", "lower bound =", lower_bound,"and upper bound =", upper_bound, "..."))
+    h2oTest.logInfo(paste("Set Beta Constraints :", "lower bound =", lower_bound,"and upper bound =", upper_bound, "..."))
     h2o_bc <- as.h2o(r_bc)
     h2o_bc$upper_bounds <- upper_bound
     h2o_bc$lower_bounds <- lower_bound
 
-    Log.info(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ", standardization =",
+    h2oTest.logInfo(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ", standardization =",
                    standardization, "..."))
     h2o_glm <- h2o.glm(x = myX, y = myY, training_frame = h2o_data, standardize = standardization,
                        family = family_type, alpha = alpha , beta_constraints = h2o_bc)
     lambda <- h2o_glm@allparameters$lambda
 
-    Log.info(paste("Run GLMnet with the same parameters, using lambda =", lambda))
+    h2oTest.logInfo(paste("Run GLMnet with the same parameters, using lambda =", lambda))
     r_glm <- glmnet(x = as.matrix(r_data[,myX]), alpha = alpha, lambda = lambda, standardize = standardization,
                     y = r_data[,myY], family = family_type, lower.limits = lower_bound, upper.limits = upper_bound)
-    checkGLMModel2(h2o_glm, r_glm)
+    h2oTest.checkGLMModel2(h2o_glm, r_glm)
   }
 
   families <- c("gaussian")
@@ -73,4 +73,4 @@ test <- function() {
   
 }
 
-doTest("GLM Test: GLM w/ Beta Constraints", test)
+h2oTest.doTest("GLM Test: GLM w/ Beta Constraints", test)

@@ -36,5 +36,5 @@ gc()
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)
 

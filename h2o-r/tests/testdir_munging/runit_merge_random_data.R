@@ -168,7 +168,7 @@ test.merge <- function() {
                                                              ", duplicates.in.y=", d[2],
                                                              " ###########")); print("")
                         xy = makeXY(base=fr, num.common.cols=nc, all.match=am, duplicates.in.x=d[1], duplicates.in.y=d[2])
-                        resultsDir = locate("results")
+                        resultsDir = h2oTest.locate("results")
                         h2o.downloadCSV(xy[[1]],paste(resultsDir,paste0("x",".",nc,".",ax,".",ay,".",am,".",d[1],".",d[2],".csv"),sep=.Platform$file.sep))
                         h2o.downloadCSV(xy[[2]],paste(resultsDir,paste0("y",".",nc,".",ax,".",ay,".",am,".",d[1],".",d[2],".csv"),sep=.Platform$file.sep))
                         checkMerge(x=xy[[1]], y=xy[[2]], by.x=1:nc, by.y=1:nc, all.x=ax, all.y=ay)
@@ -179,6 +179,4 @@ test.merge <- function() {
     }
 }
 
-doTest("Test merge", test.merge)
-
-
+h2oTest.doTest("Test merge", test.merge)

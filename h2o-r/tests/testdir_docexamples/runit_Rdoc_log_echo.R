@@ -11,5 +11,5 @@ test.rdoc_log_echo.golden <- function() {
 
 }
 
-doTest("R Doc Log and Echo", test.rdoc_log_echo.golden)
+h2oTest.doTest("R Doc Log and Echo", test.rdoc_log_echo.golden)
 

@@ -37,7 +37,7 @@ combine_ratio = 0.2
 # Initialize H2O.
 #----------------------------------------------------------------------
 
-heading("BEGIN TEST")
+h2oTest.heading("BEGIN TEST")
 conn <- new("H2OConnection", ip=myIP, port=myPort)
 
 
@@ -45,7 +45,7 @@ conn <- new("H2OConnection", ip=myIP, port=myPort)
 # Generate dataset.
 #----------------------------------------------------------------------
 
-heading("Generating the dataset...")
+h2oTest.heading("Generating the dataset...")
 
 df.gen <- function() {
     lst = list()
@@ -91,7 +91,7 @@ df = as.h2o(df, key = "orig.hex")
 # since R doesn't allow side-effects).
 #----------------------------------------------------------------------
 
-heading("Generating the slices table...")
+h2oTest.heading("Generating the slices table...")
 
 slices.gen = function() {
     lst = list()
@@ -143,7 +143,7 @@ slices = slices.gen()
 # Do slices and calculate quantile.
 #----------------------------------------------------------------------
 
-heading("Doing each slice and calculating the quantile...")
+h2oTest.heading("Doing each slice and calculating the quantile...")
 
 h2o.removeLastValues <- function() {
     df <- h2o.ls()
@@ -206,7 +206,7 @@ print(slices)
 # Clean up.
 #----------------------------------------------------------------------
 
-PASS_BANNER()
+h2oTest.PassBanner()
 
 
 # library(debug)

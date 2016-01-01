@@ -16,12 +16,12 @@ function() {
     #----------------------------------------------------------------------
     # Parameters for the test.
     #----------------------------------------------------------------------
-    air <- h2o.importFile(locate("smalldata/airlines/allyears2k_headers.zip"))
+    air <- h2o.importFile(h2oTest.locate("smalldata/airlines/allyears2k_headers.zip"))
     s <- h2o.runif(air, seed = 1234)
     training_frame <- air[s <= 0.8,]
     test_frame <- air[s > 0.8,]
 
-    test_file <- paste(sandbox(), "airtest.csv", sep=.Platform$file.sep)
+    test_file <- paste(h2oTest.sandbox(), "airtest.csv", sep=.Platform$file.sep)
     print("")
     print(paste("WRITING TEST FILE:", test_file))
     print("")
@@ -37,8 +37,8 @@ function() {
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    doJavapredictTest("glm",test_file,test_frame,params)
+    h2oTest.doJavapredictTest("glm",test_file,test_frame,params)
 
 }
 
-doTest("GLM test", test.glm.javapredict.airlines)
+h2oTest.doTest("GLM test", test.glm.javapredict.airlines)

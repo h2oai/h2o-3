@@ -8,8 +8,8 @@ CAT_LOSS <- c("Categorical", "Ordinal")
 BOOL_LOSS <- c("Hinge", "Logistic")
 
 test.glrm.loss_by_col <- function() {
-  Log.info("Importing prostate_cat.csv data...")
-  prostate.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
+  h2oTest.logInfo("Importing prostate_cat.csv data...")
+  prostate.hex <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
   print(summary(prostate.hex))
   ncols <- ncol(prostate.hex)
   CAT_COLS <- c(1, 3, 4, 5)
@@ -19,7 +19,7 @@ test.glrm.loss_by_col <- function() {
   loss_all <- rep(NA, ncols)
   loss_all[CAT_COLS] <- sample(CAT_LOSS, size = length(CAT_COLS), replace = TRUE)
   loss_all[NUM_COLS] <- sample(NUM_LOSS, size = length(NUM_COLS), replace = TRUE)
-  Log.info(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", ")))
+  h2oTest.logInfo(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", ")))
   h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = loss_all)
   
   # Randomly set columns and loss functions
@@ -37,23 +37,23 @@ test.glrm.loss_by_col <- function() {
   loss_idx_all <- loss_idx_all[perm_idx]
   loss_all <- loss_all[perm_idx]
   
-  Log.info("Error if number of loss functions not equal to number of column indices to set")
+  h2oTest.logInfo("Error if number of loss functions not equal to number of column indices to set")
   if(length(loss_all) < ncols)
     expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = loss_all))
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col_idx = loss_idx_all))
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = c("Absolute", "Ordinal", "Huber"), loss_by_col_idx = c(1,2)))
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = c("Absolute", "Ordinal"), loss_by_col_idx = c(1,2,5)))
   
-  Log.info("Error if column index out of bounds (check zero indexing)")
+  h2oTest.logInfo("Error if column index out of bounds (check zero indexing)")
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = "Absolute", loss_by_col_idx = ncols))
   
-  Log.info("Error if incorrect loss function for numeric/categorical column")
+  h2oTest.logInfo("Error if incorrect loss function for numeric/categorical column")
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = sample(NUM_LOSS, 1), loss_by_col_idx = sample(CAT_COLS-1, 1)))
   expect_error(h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = sample(CAT_LOSS, 1), loss_by_col_idx = sample(NUM_COLS-1, 1)))
   
-  Log.info(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", "), "and loss_by_col_idx =", paste(loss_idx_all, collapse = ", ")))
+  h2oTest.logInfo(paste("Run GLRM with loss_by_col =", paste(loss_all, collapse = ", "), "and loss_by_col_idx =", paste(loss_idx_all, collapse = ", ")))
   h2o.glrm(training_frame = prostate.hex, k = 5, loss_by_col = loss_all, loss_by_col_idx = loss_idx_all)
   
 }
 
-doTest("GLRM Test: Set loss function by column", test.glrm.loss_by_col)
+h2oTest.doTest("GLRM Test: Set loss function by column", test.glrm.loss_by_col)

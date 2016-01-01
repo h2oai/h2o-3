@@ -4,8 +4,8 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.upload.import <- function() {
-    uploaded_frame <- h2o.uploadFile(locate("bigdata/laptop/mnist/train.csv.gz"))
-    imported_frame <- h2o.importFile(locate("bigdata/laptop/mnist/train.csv.gz"))
+    uploaded_frame <- h2o.uploadFile(h2oTest.locate("bigdata/laptop/mnist/train.csv.gz"))
+    imported_frame <- h2o.importFile(h2oTest.locate("bigdata/laptop/mnist/train.csv.gz"))
 
     rows_u <- nrow(uploaded_frame)
     rows_i <- nrow(imported_frame)
@@ -20,4 +20,4 @@ test.upload.import <- function() {
     
 }
 
-doTest("Test upload import", test.upload.import)
+h2oTest.doTest("Test upload import", test.upload.import)

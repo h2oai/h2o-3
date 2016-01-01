@@ -32,5 +32,5 @@ print(paste("Time it took to build model:", algo_run_time))
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)
 

@@ -78,8 +78,8 @@ test.merge <- function() {
                                                   ", y dataset=", xy[[2]],
                                                   " ###########")); print("")
 
-                x = h2o.importFile(locate(xy[[1]]), header=TRUE)
-                y = h2o.importFile(locate(xy[[2]]), header=TRUE)
+                x = h2o.importFile(h2oTest.locate(xy[[1]]), header=TRUE)
+                y = h2o.importFile(h2oTest.locate(xy[[2]]), header=TRUE)
 
                 # HACK: convert (common) string columns to factors
                 # TODO: should be allowed to merge on string columns
@@ -97,5 +97,4 @@ test.merge <- function() {
     }
 }
 
-doTest("Test merge", test.merge)
-
+h2oTest.doTest("Test merge", test.merge)

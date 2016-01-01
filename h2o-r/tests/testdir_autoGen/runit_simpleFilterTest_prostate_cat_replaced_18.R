@@ -8,25 +8,25 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 simpleFilterTest_prostate_cat_replaced_18 <- function() {
-    Log.info("A munge-task R unit test on data <prostate_cat_replaced> testing the functional unit <>> ")
-    Log.info("Uploading prostate_cat_replaced")
-    hex <- h2o.importFile(locate("smalldata/glm_test/prostate_cat_replaced.csv"), "rprostate_cat_replaced.hex")
-    Log.info("Filtering out rows by > from dataset prostate_cat_replaced and column \"GLEASON\" using value 2.72019140324")
+    h2oTest.logInfo("A munge-task R unit test on data <prostate_cat_replaced> testing the functional unit <>> ")
+    h2oTest.logInfo("Uploading prostate_cat_replaced")
+    hex <- h2o.importFile(h2oTest.locate("smalldata/glm_test/prostate_cat_replaced.csv"), "rprostate_cat_replaced.hex")
+    h2oTest.logInfo("Filtering out rows by > from dataset prostate_cat_replaced and column \"GLEASON\" using value 2.72019140324")
          filterHex <- hex[hex[,c("GLEASON")] > 2.72019140324,]
-        Log.info("Perform filtering with the '$' sign also")
+        h2oTest.logInfo("Perform filtering with the '$' sign also")
         filterHex <- hex[hex$"GLEASON" > 2.72019140324,]
-    Log.info("Filtering out rows by > from dataset prostate_cat_replaced and column \"CAPSULE\" using value 0.0394317103449")
+    h2oTest.logInfo("Filtering out rows by > from dataset prostate_cat_replaced and column \"CAPSULE\" using value 0.0394317103449")
          filterHex <- hex[hex[,c("CAPSULE")] > 0.0394317103449,]
-        Log.info("Perform filtering with the '$' sign also")
+        h2oTest.logInfo("Perform filtering with the '$' sign also")
         filterHex <- hex[hex$"CAPSULE" > 0.0394317103449,]
-        Log.info("Filtering out rows by > from dataset prostate_cat_replaced and column \"PSA\" using value 133.301413636, and also subsetting columns.")
+        h2oTest.logInfo("Filtering out rows by > from dataset prostate_cat_replaced and column \"PSA\" using value 133.301413636, and also subsetting columns.")
          filterHex <- hex[hex[,c("PSA")] > 133.301413636, c("PSA")]
-        Log.info("Now do the same filter & subset, but select complement of columns.")
+        h2oTest.logInfo("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[hex[,c("PSA")] > 133.301413636, c("GLEASON","DPROS","PSA","DCAPS","VOL","CAPSULE","RACE","ID","AGE")]
-        Log.info("Filtering out rows by > from dataset prostate_cat_replaced and column \"DCAPS\" using value 1.61381138188, and also subsetting columns.")
+        h2oTest.logInfo("Filtering out rows by > from dataset prostate_cat_replaced and column \"DCAPS\" using value 1.61381138188, and also subsetting columns.")
          filterHex <- hex[hex[,c("DCAPS")] > 1.61381138188, c("DCAPS")]
-        Log.info("Now do the same filter & subset, but select complement of columns.")
+        h2oTest.logInfo("Now do the same filter & subset, but select complement of columns.")
          filterHex <- hex[hex[,c("DCAPS")] > 1.61381138188, c("GLEASON","DPROS","PSA","DCAPS","VOL","CAPSULE","RACE","ID","AGE")]
 
 }
-doTest("simpleFilterTest_ on data prostate_cat_replaced unit= >", simpleFilterTest_prostate_cat_replaced_18)
+h2oTest.doTest("simpleFilterTest_ on data prostate_cat_replaced unit= >", simpleFilterTest_prostate_cat_replaced_18)

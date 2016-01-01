@@ -5,8 +5,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.GBM <- function() {
 
-  train.hex <- h2o.uploadFile(locate("bigdata/laptop/usecases/cup98LRN_z.csv"), destination_frame="cup98LRN_z.hex")
-  test.hex  <- h2o.uploadFile(locate("bigdata/laptop/usecases/cup98VAL_z.csv"), destination_frame="cup98VAL_z.hex")
+  train.hex <- h2o.uploadFile(h2oTest.locate("bigdata/laptop/usecases/cup98LRN_z.csv"), destination_frame="cup98LRN_z.hex")
+  test.hex  <- h2o.uploadFile(h2oTest.locate("bigdata/laptop/usecases/cup98VAL_z.csv"), destination_frame="cup98VAL_z.hex")
 
   # Train H2O GBM Model:
   train.hex$TARGET_B <- as.factor(train.hex$TARGET_B)
@@ -19,4 +19,4 @@ test.GBM <- function() {
   
 }
 
-doTest("GBM Test: KDD cup 98, test 01", test.GBM)
+h2oTest.doTest("GBM Test: KDD cup 98, test 01", test.GBM)

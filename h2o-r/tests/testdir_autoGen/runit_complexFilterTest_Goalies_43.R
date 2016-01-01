@@ -8,13 +8,13 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 complexFilterTest_Goalies_43 <- function() {
-    Log.info("A munge-task R unit test on data <Goalies> testing the functional unit <['!', '!=', '&', '>=', '|', '>=']> ")
-    Log.info("Uploading Goalies")
-    hex <- h2o.importFile(locate("smalldata/poisson/Goalies.csv"), "rGoalies.hex")
+    h2oTest.logInfo("A munge-task R unit test on data <Goalies> testing the functional unit <['!', '!=', '&', '>=', '|', '>=']> ")
+    h2oTest.logInfo("Uploading Goalies")
+    hex <- h2o.importFile(h2oTest.locate("smalldata/poisson/Goalies.csv"), "rGoalies.hex")
     print(hex)
     filterHex <- hex[!( ( hex[,c("PostSHO")] != 5.86538292444 ) & ( hex[,c("W")] >= 5.12738355475 ) | ( ( hex[,c("PostGA")] >= 31.6363447616 )) ),]
     filterHex <- hex[!( ( hex[,c("ENG")] != 9.78570671214 ) & ( hex[,c("PostENG")] >= 0.175569994546 ) | ( ( hex[,c("GA")] >= 8.04089068384 )) ), c("GA","PostT","L","PostMin","PostW","PostENG","ENG","PostSHO","PostL","GP","PostGA","year")]
     filterHex <- hex[!( ( hex[,c("ENG")] != 9.78570671214 ) & ( hex[,c("PostENG")] >= 0.175569994546 ) | ( ( hex[,c("GA")] >= 8.04089068384 )) ), c("tmID","lgID","T/OL","Min","stint","PostSA","PostGP","W","SHO","playerID","SA")]
 
 }
-doTest("compoundFilterTest_ on data Goalies unit= ['!', '!=', '&', '>=', '|', '>=']", complexFilterTest_Goalies_43)
+h2oTest.doTest("compoundFilterTest_ on data Goalies unit= ['!', '!=', '&', '>=', '|', '>=']", complexFilterTest_Goalies_43)

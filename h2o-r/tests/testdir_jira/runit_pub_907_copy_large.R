@@ -13,7 +13,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
     print("Reading in arcene dataset")
-        dataset = h2o.importFile(locate("smalldata/arcene/arcene_train.data"), destination_frame="dataset", header=FALSE)
+        dataset = h2o.importFile(h2oTest.locate("smalldata/arcene/arcene_train.data"), destination_frame="dataset", header=FALSE)
 
     print("Time copying of entire datatset")
         startTime = proc.time()
@@ -29,4 +29,4 @@ test <- function() {
   
 }
 
-doTest("Test logging time for copy", test)
+h2oTest.doTest("Test logging time for copy", test)

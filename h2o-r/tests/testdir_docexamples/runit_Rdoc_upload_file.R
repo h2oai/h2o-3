@@ -5,11 +5,11 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.rdocuploadfile.golden <- function() {
 	
-prostate.hex <- h2o.uploadFile(path = locate("smalldata/extdata/prostate.csv"), destination_frame = "prostate.hex")
+prostate.hex <- h2o.uploadFile(path = h2oTest.locate("smalldata/extdata/prostate.csv"), destination_frame = "prostate.hex")
 summary(prostate.hex)
 
 
 }
 
-doTest("R Doc upload file", test.rdocuploadfile.golden)
+h2oTest.doTest("R Doc upload file", test.rdocuploadfile.golden)
 

@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-  data <- h2o.uploadFile(locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
+  data <- h2o.uploadFile(h2oTest.locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
   dim(data)
   split = h2o.splitFrame(data=data,ratios=.8)
   train = h2o.assign(split[[1]],key="train")
@@ -22,4 +22,4 @@ test <- function() {
   
 }
 
-doTest("PUBDEV-784", test)
+h2oTest.doTest("PUBDEV-784", test)

@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.deeplearning_basic <- function() {
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), "iris.hex")
+  iris.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris.csv"), "iris.hex")
   hh <- h2o.deeplearning(x=c(1,2,3,4),y=5,training_frame=iris.hex,loss="CrossEntropy")
   print(hh)
 
@@ -14,5 +14,5 @@ check.deeplearning_basic <- function() {
   
 }
 
-doTest("Deep Learning Test: Iris", check.deeplearning_basic)
+h2oTest.doTest("Deep Learning Test: Iris", check.deeplearning_basic)
 

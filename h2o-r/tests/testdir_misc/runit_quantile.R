@@ -39,4 +39,4 @@ h_q = h2o.quantile(aa,probs = seq(0,1,.05),weights_column = "h_wts")
 expect_true(max(abs((r_q-h_q)/r_q)) < 1e-5)
 
 }
-doTest("Test quantile",test.quantile )
+h2oTest.doTest("Test quantile",test.quantile )

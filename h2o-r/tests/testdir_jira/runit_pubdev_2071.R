@@ -21,5 +21,5 @@ detach()
 
 }
 
-doTest("PUBDEV-2071 H2O does not parse long numbers correctly", test.pubdev_2071)
+h2oTest.doTest("PUBDEV-2071 H2O does not parse long numbers correctly", test.pubdev_2071)
 

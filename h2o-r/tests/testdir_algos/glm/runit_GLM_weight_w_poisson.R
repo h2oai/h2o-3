@@ -8,7 +8,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 test <- function() {
 	#read in data
 	print("read in data")
-	fre = h2o.importFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
+	fre = h2o.importFile(h2oTest.locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre = fre[1:5000,]
 	fre$VehPower = as.factor(fre$VehPower)
 	fren = as.data.frame(fre)
@@ -30,7 +30,7 @@ test <- function() {
 }
 
 
-doTest("GLM weight Test: GLM w/ weights", test)
+h2oTest.doTest("GLM weight Test: GLM w/ weights", test)
 
 
 

@@ -5,11 +5,11 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-  json_file <- locate("smalldata/jira/hex-1833.json")
+  json_file <- h2oTest.locate("smalldata/jira/hex-1833.json")
 
   print(jsonlite::fromJSON(json_file))
  
   
 }
 
-doTest("testing JSON parse", test)
+h2oTest.doTest("testing JSON parse", test)

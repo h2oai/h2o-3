@@ -41,22 +41,22 @@ test <- function(){
   family_type <- "binomial"
 
   ## Take subset of data
-  Log.info("Subset dataset to only predictor and response variables...")
+  h2oTest.logInfo("Subset dataset to only predictor and response variables...")
   h2oData <- h2oData[,c(indVars, depVars)]
   summary(h2oData)
 
   ## Run full H2O GLM with Bayesian priors vs no priors
-  Log.info("Run a logistic regression with no regularization and alpha = 0 and beta constraints with priors. ")
+  h2oTest.logInfo("Run a logistic regression with no regularization and alpha = 0 and beta constraints with priors. ")
   glm_bayesianp <- h2o.glm(x = indVars, y = depVars, training_frame = h2oData, family = family_type, lambda = lambda,
                            alpha = alpha, beta_constraints = betaConstraints)
 
-  Log.info("Run a logistic regression with no regularization and alpha = 0 and beta constraints without priors. ")
+  h2oTest.logInfo("Run a logistic regression with no regularization and alpha = 0 and beta constraints without priors. ")
   glm_nopriors <- h2o.glm(x = indVars, y = depVars, training_frame = h2oData, family = family_type, lambda = lambda,
                           alpha = alpha, beta_constraints = betaConstraints[c("names","lower_bounds","upper_bounds")])
 
 
   ## Standardize Data Set
-  Log.info("Standardize Data in R: ")
+  h2oTest.logInfo("Standardize Data in R: ")
   data.df <- as.data.frame(h2oData)
   data.standardize <- standardizeH2OFrame(data.df)
   ## check standardization is done correctly
@@ -66,7 +66,7 @@ test <- function(){
   y <- as.matrix(data.standardize[,depVars])
   x <- cbind(as.matrix(data.standardize[,indVars]),1)
 
-  Log.info("Calculate the gradient: ")
+  h2oTest.logInfo("Calculate the gradient: ")
   beta1 <- glm_bayesianp@model$coefficients_table[,3]
   beta2 <- glm_nopriors@model$coefficients_table[,3]
   ## Standardize beta given
@@ -79,13 +79,13 @@ test <- function(){
   gradient1 <- h2o_logistic_gradient(x,y,beta = beta1, beta_given = beta, rho= rho, lambda)
   gradient2 <- h2o_logistic_gradient(x,y,beta = beta2, beta_given = beta, rho= 0, lambda)
 
-  Log.info("Check gradient of beta constraints with priors or beta given...")
+  h2oTest.logInfo("Check gradient of beta constraints with priors or beta given...")
   print(gradient1)
   if(!all(gradient1 < 1E-8)) stop(paste0("Gradient from model output > ", 1E-8))
 
-  Log.info("Check gradient of beta constraints without priors or beta given...")
+  h2oTest.logInfo("Check gradient of beta constraints without priors or beta given...")
   print(gradient2)
   if(!all(gradient2 < 1E-4)) stop(paste0("Gradient from model output > ", 1E-4))
 }
 
-doTest("GLM Test: Bayesian Priors with Standardization = F: ", test)
+h2oTest.doTest("GLM Test: Bayesian Priors with Standardization = F: ", test)

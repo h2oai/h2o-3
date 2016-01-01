@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 gbm.grid.test <- function() {
-    wine.hex <- h2o.uploadFile(locate("smalldata/gbm_test/wine.data"), destination_frame="wine.hex")
+    wine.hex <- h2o.uploadFile(h2oTest.locate("smalldata/gbm_test/wine.data"), destination_frame="wine.hex")
     print(summary(wine.hex))
     # Specify grid hyper parameters
     ntrees_opts <- c(5, 10, 15)
@@ -26,11 +26,11 @@ gbm.grid.test <- function() {
     # Check expected number of models
     expect_equal(length(grid_models), size_of_hyper_space)
 
-    expect_model_param(grid_models, "ntrees", ntrees_opts)
-    expect_model_param(grid_models, "max_depth", max_depth_opts)
-    expect_model_param(grid_models, "learn_rate", learn_rate_opts)
+    h2oTest.expectModelParam(grid_models, "ntrees", ntrees_opts)
+    h2oTest.expectModelParam(grid_models, "max_depth", max_depth_opts)
+    h2oTest.expectModelParam(grid_models, "learn_rate", learn_rate_opts)
 
     
 }
 
-doTest("GBM Grid Test: wine.data from smalldata", gbm.grid.test)
+h2oTest.doTest("GBM Grid Test: wine.data from smalldata", gbm.grid.test)

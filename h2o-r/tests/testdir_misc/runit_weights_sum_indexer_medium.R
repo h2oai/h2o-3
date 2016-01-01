@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
   sampleSize <- 75553
-  hex <- h2o.importFile(locate("bigdata/laptop/covtype/covtype.data"), "hex")
+  hex <- h2o.importFile(h2oTest.locate("bigdata/laptop/covtype/covtype.data"), "hex")
   hex[,"weights"] <- 0
   indexes <- sample(nrow(hex), sampleSize)
   hex[indexes, "weights"] <- 1
@@ -14,4 +14,4 @@ test <- function() {
   expect_true(round(weightsSum) == sampleSize)
 }
 
-doTest("sum of weights should be == sampleSize", test)
+h2oTest.doTest("sum of weights should be == sampleSize", test)

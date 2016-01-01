@@ -1,4 +1,4 @@
-checkKMeansModel <- function(myKM.h2o, myKM.r, tol = 0.01) {
+h2oTest.checkKMeansModel <- function(myKM.h2o, myKM.r, tol = 0.01) {
   Log.info("R Final Clusters:"); print(myKM.r$centers)
   Log.info("H2O Final Clusters:"); print(getCenters(myKM.h2o))
   expect_equivalent(as.matrix(getCenters(myKM.h2o)), myKM.r$centers)

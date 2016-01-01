@@ -6,9 +6,9 @@ source("../../scripts/h2o-r-test-setup.R")
 test.glm2RidgeObjective.golden <- function() {
 	
 #IMPORT DATA:
-Log.info("Importing handmade data...") 
-handmadeH2O<- h2o.uploadFile(locate("smalldata/glm_test/handmade.csv"), destination_frame="handmade")
-handmadeR<- read.csv(locate("smalldata/glm_test/handmade.csv"))
+h2oTest.logInfo("Importing handmade data...") 
+handmadeH2O<- h2o.uploadFile(h2oTest.locate("smalldata/glm_test/handmade.csv"), destination_frame="handmade")
+handmadeR<- read.csv(h2oTest.locate("smalldata/glm_test/handmade.csv"))
 
 Xvars<- as.matrix(cbind(handmadeR$a, handmadeR$b, handmadeR$c, handmadeR$d, handmadeR$e))
 Xvars.sc<- scale(Xvars)
@@ -124,7 +124,7 @@ ridge2<- ridgeObjective(ridgelinBeta, X=Xvars.sc, y=Yvar, lambda=10)
 h2o2<- ridgeObjective(ridgeH2Obeta,X=Xvars.sc, y=Yvar, lambda=10)
 
 
- #Log.info("Compare model statistics in R to model statistics in H2O")
+ #h2oTest.logInfo("Compare model statistics in R to model statistics in H2O")
     expect_equal(h2oO, ridgeO, tolerance = 0.1)
     expect_equal(h2o1, ridge1, tolerance = 0.1)
     expect_equal(h2o2, ridge2, tolerance = 0.1)
@@ -133,4 +133,4 @@ h2o2<- ridgeObjective(ridgeH2Obeta,X=Xvars.sc, y=Yvar, lambda=10)
     
 }
 
-doTest("GLM Test: GLM2 - RidgeObjective", test.glm2RidgeObjective.golden)
+h2oTest.doTest("GLM Test: GLM2 - RidgeObjective", test.glm2RidgeObjective.golden)

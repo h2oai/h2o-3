@@ -134,4 +134,4 @@ test_weights_by_row_duplication <- function() {
   
 }
 
-doTest("GLM weight Test: GLM w/ weights test by row duplication", test_weights_by_row_duplication)
+h2oTest.doTest("GLM weight Test: GLM w/ weights test by row duplication", test_weights_by_row_duplication)

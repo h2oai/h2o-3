@@ -38,4 +38,4 @@ test.pvalue.syn <- function(conn){
 	diff = abs(h_pval - r_pval)
 	checkTrue(max(diff) < 1e-4, "p-values do not match")
 }
-doTest("Test p-values with offset on synthetic data", test.pvalue.syn)
+h2oTest.doTest("Test p-values with offset on synthetic data", test.pvalue.syn)

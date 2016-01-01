@@ -13,7 +13,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
+hadoop_namenode_is_accessible = h2oTest.hadoopNamenodeIsAccessible()
 
 if (hadoop_namenode_is_accessible) {
     hdfs_name_node = HADOOP.NAMENODE
@@ -26,7 +26,7 @@ if (hadoop_namenode_is_accessible) {
 #----------------------------------------------------------------------
 
 
-heading("BEGIN TEST")
+h2oTest.heading("BEGIN TEST")
 check.hdfs_model_export <- function(conn) {
 
   #----------------------------------------------------------------------
@@ -36,7 +36,7 @@ check.hdfs_model_export <- function(conn) {
   dl_model <- h2o.deeplearning(x=1:4, y=5, training_frame=iris.hex)
   #hdfs_name_node <- "mr-0x6"
   path <- sprintf("hdfs://%s/tmp/dl_model", hdfs_name_node)
-  exportedModelPath <- h2o.saveModel(dl_model, path = sandbox())
+  exportedModelPath <- h2o.saveModel(dl_model, path = h2oTest.sandbox())
   print ("Model exported")
 
   #----------------------------------------------------------------------
@@ -48,4 +48,4 @@ check.hdfs_model_export <- function(conn) {
 
 }
 
-doTest("HDFS operations", check.hdfs_model_export)
+h2oTest.doTest("HDFS operations", check.hdfs_model_export)

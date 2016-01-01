@@ -11,13 +11,13 @@ source("../../../scripts/h2o-r-test-setup.R")
 #setupRandomSeed(1689636624)
 
 test.basic.slot.assignment <- function() {
-  Log.info("Uploading iris data...")
-  hex <- h2o.importFile(locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
+  h2oTest.logInfo("Uploading iris data...")
+  hex <- h2o.importFile(h2oTest.locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
   oldVal <- hex[1,1]
 
-  Log.info("Changing the first element in the first column of iris")
-  Log.info("Initial value is: ")
-  Log.info(head(oldVal))
+  h2oTest.logInfo("Changing the first element in the first column of iris")
+  h2oTest.logInfo("Initial value is: ")
+  h2oTest.logInfo(head(oldVal))
 
   hex[1,1] <- 48
   print(head(hex))
@@ -27,5 +27,5 @@ test.basic.slot.assignment <- function() {
   
 }
 
-doTest("EQ2 Tests: [<- and $<-", test.basic.slot.assignment)
+h2oTest.doTest("EQ2 Tests: [<- and $<-", test.basic.slot.assignment)
 

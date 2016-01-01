@@ -4,8 +4,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.gbm.bin.accessors <- function() {
-  Log.info("Making gbm with and without validation_frame...")
-  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv.zip"))
+  h2oTest.logInfo("Making gbm with and without validation_frame...")
+  pros.hex <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv.zip"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
 #  pros.hex[,4] <- as.factor(pros.hex[,4])
 #  pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -18,7 +18,7 @@ test.gbm.bin.accessors <- function() {
   pros.gbm.valid <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test)
   pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds=2)
 
-  Log.info("MSE...")
+  h2oTest.logInfo("MSE...")
   mse.basic <- h2o.mse(pros.gbm)
   print(mse.basic)
   expect_warning(h2o.mse(pros.gbm, valid = TRUE))
@@ -32,7 +32,7 @@ test.gbm.bin.accessors <- function() {
   expect_true(mse.valid.xval.T["train"]==mse.basic)
   expect_true(mse.valid.xval.T["valid"]==mse.valid.T)
 
-  Log.info("R^2...")
+  h2oTest.logInfo("R^2...")
   r2.basic <- h2o.r2(pros.gbm)
   print(r2.basic)
   expect_warning(h2o.r2(pros.gbm, valid = TRUE))
@@ -46,7 +46,7 @@ test.gbm.bin.accessors <- function() {
   expect_true(r2.valid.xval.T["train"]==r2.basic)
   expect_true(r2.valid.xval.T["valid"]==r2.valid.T)
 
-  Log.info("LogLoss...")
+  h2oTest.logInfo("LogLoss...")
   ll.basic <- h2o.logloss(pros.gbm)
   print(ll.basic)
   expect_warning(h2o.logloss(pros.gbm, valid = TRUE))
@@ -60,7 +60,7 @@ test.gbm.bin.accessors <- function() {
   expect_true(logloss.valid.xval.T["train"]==ll.basic)
   expect_true(logloss.valid.xval.T["valid"]==ll.valid.T)
 
-  Log.info("AUC...")
+  h2oTest.logInfo("AUC...")
   auc.basic <- h2o.auc(pros.gbm)
   print(auc.basic)
   expect_warning(h2o.auc(pros.gbm, valid = TRUE))
@@ -74,7 +74,7 @@ test.gbm.bin.accessors <- function() {
   expect_true(auc.valid.xval.T["train"]==auc.basic)
   expect_true(auc.valid.xval.T["valid"]==auc.valid.T)
 
-  Log.info("Gini...")
+  h2oTest.logInfo("Gini...")
   gini.basic <- h2o.giniCoef(pros.gbm)
   print(gini.basic)
   expect_warning(h2o.giniCoef(pros.gbm, valid = TRUE))
@@ -88,10 +88,10 @@ test.gbm.bin.accessors <- function() {
   expect_true(giniCoef.valid.xval.T["train"]==gini.basic)
   expect_true(giniCoef.valid.xval.T["valid"]==gini.valid.T)
 
-  Log.info("Variable Importance...")
+  h2oTest.logInfo("Variable Importance...")
   print(h2o.varimp(pros.gbm))
 
   
 }
 
-doTest("Testing model accessors for GBM", test.gbm.bin.accessors)
+h2oTest.doTest("Testing model accessors for GBM", test.gbm.bin.accessors)

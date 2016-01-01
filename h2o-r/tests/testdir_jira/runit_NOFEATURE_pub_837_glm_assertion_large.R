@@ -12,7 +12,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
   print("Reading in original adult data.")
-  adult.train <-  h2o.importFile(locate("smalldata/glm_test/adult.gz"), destination_frame="adult.train")
+  adult.train <-  h2o.importFile(h2oTest.locate("smalldata/glm_test/adult.gz"), destination_frame="adult.train")
 
   print("Make labels 1/0 for binomial glm")
   adult.train$label <- ifelse(adult.train$"C15"==">50K",1,0)
@@ -39,4 +39,4 @@ test <- function() {
   
 }
 
-doTest("Testing glm cross validation performance with adult dataset", test)
+h2oTest.doTest("Testing glm cross validation performance with adult dataset", test)

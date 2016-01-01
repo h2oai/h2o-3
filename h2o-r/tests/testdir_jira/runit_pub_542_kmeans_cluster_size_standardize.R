@@ -4,23 +4,23 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.pub_542_kmeans_mismatched_size <- function() {
-  Log.info("Importing iris_wheader.csv data...\n")
-  iris.dat <- read.csv(locate("smalldata/iris/iris_wheader.csv"), header = TRUE)
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
+  h2oTest.logInfo("Importing iris_wheader.csv data...\n")
+  iris.dat <- read.csv(h2oTest.locate("smalldata/iris/iris_wheader.csv"), header = TRUE)
+  iris.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris_wheader.csv"))
   iris.sum <- summary(iris.hex)
   print(iris.sum)
   
-  Log.info("Run k-means on all columns except 'class' and predict on training set")
+  h2oTest.logInfo("Run k-means on all columns except 'class' and predict on training set")
   myCols <- setdiff(names(iris.hex), "class")
   km <- h2o.kmeans(iris.hex, x = myCols, k = 3, max_iterations = 20, standardize = TRUE)
   pred_km <- predict(km, iris.hex)
   
-  Log.info("Compare cluster sizes with assignments from prediction")
+  h2oTest.logInfo("Compare cluster sizes with assignments from prediction")
   pred_km.df <- as.data.frame(pred_km)
   pred_size <- table(pred_km.df)
   expect_equal(getClusterSizes(km), as.numeric(pred_size))
   
-  Log.info("Compare H2O's predictions with R's assignments using l2 norm")
+  h2oTest.logInfo("Compare H2O's predictions with R's assignments using l2 norm")
   closest <- function(row, centers) {
     l2norm = rep(0, nrow(centers))
     for(i in 1:nrow(centers)) {
@@ -35,4 +35,4 @@ test.pub_542_kmeans_mismatched_size <- function() {
   
 }
 
-doTest("PUBDEV-542: K-means cluster sizes differ from labels generated during prediction", test.pub_542_kmeans_mismatched_size)
+h2oTest.doTest("PUBDEV-542: K-means cluster sizes differ from labels generated during prediction", test.pub_542_kmeans_mismatched_size)

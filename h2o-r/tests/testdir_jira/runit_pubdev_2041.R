@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.pubdev.2041 <- function(conn) {
-  iris = h2o.importFile(locate("smalldata/iris/iris.csv"))
+  iris = h2o.importFile(h2oTest.locate("smalldata/iris/iris.csv"))
 
   s = h2o.runif(iris,seed=12345)
   train1 = iris[s >= 0.5,]
@@ -18,4 +18,4 @@ test.pubdev.2041 <- function(conn) {
   
 }
 
-doTest("PUBDEV-2041", test.pubdev.2041)
+h2oTest.doTest("PUBDEV-2041", test.pubdev.2041)

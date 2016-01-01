@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pub_860_no_auto_transpose <- function() {
 
-prostatePath <- locate("smalldata/prostate/prostate.csv")
+prostatePath <- h2oTest.locate("smalldata/prostate/prostate.csv")
 prostate.hex <- h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
 
 prostate.local <- as.data.frame(prostate.hex)
@@ -34,5 +34,5 @@ expect_equal(1, dim(remote)[2])
 
 }
 
-doTest("PUB-860 we don't autotranspose vectors", test.pub_860_no_auto_transpose)
+h2oTest.doTest("PUB-860 we don't autotranspose vectors", test.pub_860_no_auto_transpose)
 

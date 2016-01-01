@@ -162,4 +162,4 @@ test.pvalue.syn <- function(conn){
 	
 	
  }
-doTest("Test p-vlaues on synthetic data", test.pvalue.syn)
+h2oTest.doTest("Test p-vlaues on synthetic data", test.pvalue.syn)

@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.glm.nonspdmatrix.exception <- function()
 {
-  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+  cars.hex <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars_20mpg.csv"))
   cars.hex[,9] <- as.factor(cars.hex[,9])
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
@@ -15,4 +15,4 @@ test.glm.nonspdmatrix.exception <- function()
 
 }
 
-doTest("Testing GLM NonSPDMatrix Exception", test.glm.nonspdmatrix.exception)
+h2oTest.doTest("Testing GLM NonSPDMatrix Exception", test.glm.nonspdmatrix.exception)

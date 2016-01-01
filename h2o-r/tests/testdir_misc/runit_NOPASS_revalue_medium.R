@@ -24,4 +24,4 @@ check.revalue <- function() {
   
 }
 
-doTest("Slice using != factor_level test", check.revalue)
+h2oTest.doTest("Slice using != factor_level test", check.revalue)

@@ -5,9 +5,9 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 checkpoint.new.category.in.predictor <- function() {
 
-  sv1 <- h2o.uploadFile(locate("smalldata/iris/setosa_versicolor.csv"))
-  sv2 <- h2o.uploadFile(locate("smalldata/iris/setosa_versicolor.csv"))
-  vir <- h2o.uploadFile(locate("smalldata/iris/virginica.csv"))
+  sv1 <- h2o.uploadFile(h2oTest.locate("smalldata/iris/setosa_versicolor.csv"))
+  sv2 <- h2o.uploadFile(h2oTest.locate("smalldata/iris/setosa_versicolor.csv"))
+  vir <- h2o.uploadFile(h2oTest.locate("smalldata/iris/virginica.csv"))
 
   m1 <- h2o.deeplearning(x=c(1,2,3,5),y=4,training_frame=sv1,epochs=100)
 
@@ -20,5 +20,5 @@ checkpoint.new.category.in.predictor <- function() {
   
 }
 
-doTest("Deep Learning checkpoint with new categoricals", checkpoint.new.category.in.predictor )
+h2oTest.doTest("Deep Learning checkpoint with new categoricals", checkpoint.new.category.in.predictor )
 

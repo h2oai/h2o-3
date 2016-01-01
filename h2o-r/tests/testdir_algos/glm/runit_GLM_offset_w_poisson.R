@@ -8,7 +8,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 test <- function() {
 	#read in data
 	print("read in data")
-	swed = read.table(locate("smalldata/glm_test/Motor_insurance_sweden.txt"),header = T)
+	swed = read.table(h2oTest.locate("smalldata/glm_test/Motor_insurance_sweden.txt"),header = T)
 	log_insured =log(swed$Insured)
 	dd  = data.frame(swed,log_insured)
 	dd$Kilometres = as.factor(dd$Kilometres)
@@ -34,4 +34,4 @@ test <- function() {
 }
 
 
-doTest("GLM offset Test: GLM w/ offset", test)
+h2oTest.doTest("GLM offset Test: GLM w/ offset", test)

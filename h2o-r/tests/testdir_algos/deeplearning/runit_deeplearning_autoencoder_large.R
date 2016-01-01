@@ -4,10 +4,10 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 check.deeplearning_autoencoder <- function() {
-     Log.info("Deep Learning Autoencoder MNIST)")
+     h2oTest.logInfo("Deep Learning Autoencoder MNIST)")
 
-     train_hex = h2o.uploadFile(locate("bigdata/laptop/mnist/train.csv.gz"))
-     test_hex  = h2o.uploadFile(locate("bigdata/laptop/mnist/test.csv.gz" ))
+     train_hex = h2o.uploadFile(h2oTest.locate("bigdata/laptop/mnist/train.csv.gz"))
+     test_hex  = h2o.uploadFile(h2oTest.locate("bigdata/laptop/mnist/test.csv.gz" ))
 
      predictors = c(1:784)
      resp = 785
@@ -61,4 +61,4 @@ check.deeplearning_autoencoder <- function() {
      
 }
 
-doTest("Deep Learning AutoEncoder MNIST", check.deeplearning_autoencoder)
+h2oTest.doTest("Deep Learning AutoEncoder MNIST", check.deeplearning_autoencoder)

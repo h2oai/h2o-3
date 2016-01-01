@@ -17,24 +17,24 @@ test.rh2o_logging <- function() {
   cmd_path <- h2o.getLogPath("Command")
   err_path <- h2o.getLogPath("Error")
 
-  Log.info(cat("Command logs saved to", cmd_path, "\n"))
-  Log.info(cat("Error logs saved to", err_path, "\n"))
+  h2oTest.logInfo(cat("Command logs saved to", cmd_path, "\n"))
+  h2oTest.logInfo(cat("Error logs saved to", err_path, "\n"))
 
-  Log.info("Begin logging..."); h2o.startLogging()
-  Log.info("Import iris dataset, then run summary and GBM")
-  iris.hex <- h2o.uploadFile(path = locate("smalldata/iris/iris_wheader.csv"), key = "iris.hex")
+  h2oTest.logInfo("Begin logging..."); h2o.startLogging()
+  h2oTest.logInfo("Import iris dataset, then run summary and GBM")
+  iris.hex <- h2o.uploadFile(path = h2oTest.locate("smalldata/iris/iris_wheader.csv"), key = "iris.hex")
   print(summary(iris.hex))
   iris.gbm <- h2o.gbm(x = 1:4, y = 5, data = iris.hex)
   print(iris.gbm)
-  Log.info("Stop logging..."); h2o.stopLogging()
+  h2oTest.logInfo("Stop logging..."); h2o.stopLogging()
 
   print(file.info(cmd_path))
   print(file.info(err_path))
 
-  Log.info("Deleting all logs..."); h2o.clearLogs()
+  h2oTest.logInfo("Deleting all logs..."); h2o.clearLogs()
   expect_false(file.exists(cmd_path))
   expect_false(file.exists(err_path))
 
 }
 
-doTest("Logging Tests: h2o.startLogging, h2o.stopLogging", test.rh2o_logging)
+h2oTest.doTest("Logging Tests: h2o.startLogging, h2o.stopLogging", test.rh2o_logging)

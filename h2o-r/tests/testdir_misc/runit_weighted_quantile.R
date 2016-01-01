@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 # dataset - http://mlr.cs.umass.edu/ml/datasets/Bank+Marketing
 
 test.wtd.quantile <- function(conn){
-  a= h2o.importFile(locate("smalldata/gbm_test/bank-full.csv.zip"),destination_frame = "bank_UCI")
+  a= h2o.importFile(h2oTest.locate("smalldata/gbm_test/bank-full.csv.zip"),destination_frame = "bank_UCI")
   dim(a)
   myX = 1:16
   myY = 17
@@ -55,5 +55,5 @@ test.wtd.quantile <- function(conn){
   expect_true(max(abs((wq-qq)/wq))< 1e-3)
   expect_true(max(abs((hq-qq)/wq))< 1e-3)
 }
-doTest("Test weighted quantile",test.wtd.quantile )
+h2oTest.doTest("Test weighted quantile",test.wtd.quantile )
 

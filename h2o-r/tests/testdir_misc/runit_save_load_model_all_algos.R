@@ -11,7 +11,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.save.all.algos <- function() {
 
-  pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
+  pros.hex <- h2o.uploadFile(h2oTest.locate("smalldata/prostate/prostate.csv"))
   pros.hex[,2] <- as.factor(pros.hex[,2])
   pros.hex[,4] <- as.factor(pros.hex[,4])
   pros.hex[,5] <- as.factor(pros.hex[,5])
@@ -21,21 +21,21 @@ test.save.all.algos <- function() {
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
 
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"))
+  iris.hex <- h2o.uploadFile(h2oTest.locate("smalldata/iris/iris_wheader.csv"))
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
 
-  cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
+  cars.hex <- h2o.uploadFile(h2oTest.locate("smalldata/junit/cars.csv"))
   c.sid <- h2o.runif(cars.hex)
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
 
-  tmp_dir <- sandbox()
+  tmp_dir <- h2oTest.sandbox()
 
-  Log.info("Order is Multinmoal (w val, w/o val) Regression (w val, w/o val) Bin (w val, w/o val)")
+  h2oTest.logInfo("Order is Multinmoal (w val, w/o val) Regression (w val, w/o val) Bin (w val, w/o val)")
 
-  Log.info("Saving gbm models...")
+  h2oTest.logInfo("Saving gbm models...")
   iris.no_val.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train)
   iris.nv.path.gbm <- h2o.saveModel(iris.no_val.gbm, tmp_dir)
   iris.val.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train,
@@ -52,7 +52,7 @@ test.save.all.algos <- function() {
                           validation_frame = pros.test)
   pros.v.path.gbm <- h2o.saveModel(pros.val.gbm, tmp_dir)
 
-  Log.info("Saving deeplearning models...")
+  h2oTest.logInfo("Saving deeplearning models...")
   iris.no_val.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.train)
   iris.nv.path.dl <- h2o.saveModel(iris.no_val.dl, tmp_dir)
   iris.val.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.train,
@@ -69,7 +69,7 @@ test.save.all.algos <- function() {
                                   validation_frame = pros.test)
   pros.v.path.dl <- h2o.saveModel(pros.val.dl, tmp_dir)
 
-  Log.info("Saving glm models...")
+  h2oTest.logInfo("Saving glm models...")
   cars.no_val.glm <- h2o.getModel(h2o.glm(x = 3:8, y = 2, training_frame = cars.train)@"model_id")
   cars.nv.path.glm <- h2o.saveModel(cars.no_val.glm, tmp_dir)
   cars.val.glm <- h2o.getModel(h2o.glm(x = 3:8, y = 2, training_frame = cars.train, validation_frame = cars.test)@"model_id")
@@ -80,7 +80,7 @@ test.save.all.algos <- function() {
   pros.v.path.glm <- h2o.saveModel(pros.val.glm, tmp_dir)
 
 
-  Log.info("Saving random forest models...")
+  h2oTest.logInfo("Saving random forest models...")
   iris.no_val.drf <- h2o.randomForest(x = 1:4, y = 5, training_frame = iris.train)
   iris.nv.path.drf <- h2o.saveModel(iris.no_val.drf, tmp_dir)
   iris.val.drf <- h2o.randomForest(x = 1:4, y = 5, training_frame = iris.train,
@@ -97,26 +97,26 @@ test.save.all.algos <- function() {
                                   validation_frame = pros.test)
   pros.v.path.drf <- h2o.saveModel(pros.val.drf, tmp_dir)
 
-  Log.info("Loading gbm models...")
+  h2oTest.logInfo("Loading gbm models...")
   iris.nv.gbm  <- h2o.loadModel(iris.nv.path.gbm)
   iris.v.gbm  <- h2o.loadModel(iris.v.path.gbm)
   cars.nv.gbm  <- h2o.loadModel(cars.nv.path.gbm)
   cars.v.gbm  <- h2o.loadModel(cars.v.path.gbm)
   pros.nv.gbm  <- h2o.loadModel(pros.nv.path.gbm)
   pros.v.gbm  <- h2o.loadModel(pros.v.path.gbm)
-  Log.info("Loading deeplearning models...")
+  h2oTest.logInfo("Loading deeplearning models...")
   iris.nv.dl  <- h2o.loadModel(iris.nv.path.dl)
   iris.v.dl  <- h2o.loadModel(iris.v.path.dl)
   cars.nv.dl  <- h2o.loadModel(cars.nv.path.dl)
   cars.v.dl  <- h2o.loadModel(cars.v.path.dl)
   pros.nv.dl  <- h2o.loadModel(pros.nv.path.dl)
   pros.v.dl  <- h2o.loadModel(pros.v.path.dl)
-  Log.info("Loading glm models...")
+  h2oTest.logInfo("Loading glm models...")
   cars.nv.glm  <- h2o.loadModel(cars.nv.path.glm)
   cars.v.glm  <- h2o.loadModel(cars.v.path.glm)
   pros.nv.glm  <- h2o.loadModel(pros.nv.path.glm)
   pros.v.glm  <- h2o.loadModel(pros.v.path.glm)
-  Log.info("Loading random forest models...")
+  h2oTest.logInfo("Loading random forest models...")
   iris.nv.drf  <- h2o.loadModel(iris.nv.path.drf)
   iris.v.drf  <- h2o.loadModel(iris.v.path.drf)
   cars.nv.drf  <- h2o.loadModel(cars.nv.path.drf)
@@ -153,4 +153,4 @@ test.save.all.algos <- function() {
 
 }
 
-doTest("Saving Models of All Algos with/without Validation", test.save.all.algos)
+h2oTest.doTest("Saving Models of All Algos with/without Validation", test.save.all.algos)

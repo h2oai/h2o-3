@@ -15,4 +15,4 @@ h2o.download_pojo(rf)
 
 }
 
-doTest("Test",rtest)
+h2oTest.doTest("Test",rtest)

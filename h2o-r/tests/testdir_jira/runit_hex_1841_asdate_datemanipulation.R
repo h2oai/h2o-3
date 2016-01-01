@@ -10,8 +10,8 @@ source("../../scripts/h2o-r-test-setup.R")
 
 print_diff <- function(r, h2o) {
   if (!isTRUE(all.equal(r,h2o))) {
-    Log.info (paste("R :", r))
-    Log.info (paste("H2O :" , h2o))
+    h2oTest.logInfo(paste("R :", r))
+    h2oTest.logInfo(paste("H2O :" , h2o))
   }
 }
 
@@ -34,21 +34,21 @@ print_diff <- function(r, h2o) {
 # rdf - dataframe created using only R native methods
 #
 datetest <- function(){
-  Log.info('Test 1')
+  h2oTest.logInfo('Test 1')
   print(h2o.getTimezone())
-  Log.info('uploading date testing dataset')
+  h2oTest.logInfo('uploading date testing dataset')
   # Data file is 10 columns of dates, each column in a different format
-  hdf <- h2o.importFile(normalizePath(locate('smalldata/jira/v-11.csv')))
+  hdf <- h2o.importFile(normalizePath(h2oTest.locate('smalldata/jira/v-11.csv')))
 
-  Log.info('data as loaded into h2o:')
-  Log.info(head(hdf))
+  h2oTest.logInfo('data as loaded into h2o:')
+  h2oTest.logInfo(head(hdf))
 
   # Columns 1,5-10 are not automatically interpreted by H2O as dates
   # column 1 is integer days since epoch (or since any other date);
   # column 5-10 are dates formatted as %d/%m/%y (in strptime format strings)
   summary(hdf)
 
-  Log.info('Converting columns 5-10 to date columns')
+  h2oTest.logInfo('Converting columns 5-10 to date columns')
   # h2o automagically recognizes and if it doesn't recognize,
   # you need to call as.Date to convert the values to dates
   hdf$ds5 <- as.Date(hdf$ds5, "%d/%m/%y %H:%M")
@@ -58,7 +58,7 @@ datetest <- function(){
   hdf$ds9 <- as.Date(as.factor(hdf$ds9), "%Y%m%d")
   hdf$ds10 <- as.Date(hdf$ds10, "%Y_%m_%d")
 
-  Log.info('extracting year and month from posix date objects')
+  h2oTest.logInfo('extracting year and month from posix date objects')
   # extract year from each date and put in its own column (on server)
   for( i in 2:10) {
     hdf[[paste("year",i,sep="")]] <- year(hdf[[paste("ds",i,sep="")]])
@@ -81,11 +81,11 @@ datetest <- function(){
   cc[ (length(cc) - length(nn) + 1):length(cc) ] <- nn
   colnames(hdf) <- cc
 
-  Log.info('Creating a local dataframe from H2O frame')
+  h2oTest.logInfo('Creating a local dataframe from H2O frame')
   ldf <- as.data.frame( hdf )
 
   # build the truth using R internal date fns
-  rdf <- read.csv(locate('smalldata/jira/v-11.csv'))
+  rdf <- read.csv(h2oTest.locate('smalldata/jira/v-11.csv'))
   rdf$ds1 <- as.Date(rdf$ds1, origin='1970-01-01')
   rdf$ds2 <- as.Date(rdf$ds2, format='%Y-%m-%d')
   rdf$ds3 <- as.Date(rdf$ds3, format='%d-%b-%y')
@@ -111,7 +111,7 @@ datetest <- function(){
   rdf <- cbind(rdf, years, months, idx)
 
   #Compare the results imported from H2O (ldf) to R's results (rdf)
-  Log.info('testing correctness')
+  h2oTest.logInfo('testing correctness')
   for (i in 2:10) {
     print_diff(rdf[[paste("year",i,sep="")]], ldf[[paste("year",i,sep="")]])
     expect_that(ldf[[paste("year",i,sep="")]], equals(rdf[[paste("year",i,sep="")]]))
@@ -122,7 +122,7 @@ datetest <- function(){
   }
   
   
-  Log.info('Test 2')
+  h2oTest.logInfo('Test 2')
   origTZ = h2o.getTimezone()
   #test 1
   h2o.setTimezone("America/Los_Angeles")
@@ -162,4 +162,4 @@ datetest <- function(){
 }
 
 
-doTest('date testing', datetest)
+h2oTest.doTest('date testing', datetest)

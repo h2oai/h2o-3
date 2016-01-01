@@ -4,14 +4,14 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.pub_174_cut <- function() {
-  Log.info('Uploading allyears2k_header.csv to H2O...')
-  air.hex <- h2o.importFile(normalizePath(locate('smalldata/airlines/allyears2k_headers.zip')))
+  h2oTest.logInfo('Uploading allyears2k_header.csv to H2O...')
+  air.hex <- h2o.importFile(normalizePath(h2oTest.locate('smalldata/airlines/allyears2k_headers.zip')))
   
-  Log.info("Cut ArrDelay column with user-specified breaks")
+  h2oTest.logInfo("Cut ArrDelay column with user-specified breaks")
   air.cut <- cut(air.hex$ArrDelay, breaks = c(-1000, -20, 0, 5, 15, 60, 120, 160, 1500))
   expect_equal(nrow(air.cut), nrow(air.hex))
   
-  Log.info("Save results to new column in dataset and run h2o.table on it")
+  h2oTest.logInfo("Save results to new column in dataset and run h2o.table on it")
   air.hex[,ncol(air.hex)+1] <- air.cut
   # air.table <- h2o.table(air.hex$C32, return.in.R = TRUE)
   air.table <- h2o.table(air.hex$C32)
@@ -21,5 +21,5 @@ test.pub_174_cut <- function() {
   
 }
 
-doTest("PUB-174 h2o.cut on airlines data with NAs", test.pub_174_cut)
+h2oTest.doTest("PUB-174 h2o.cut on airlines data with NAs", test.pub_174_cut)
 

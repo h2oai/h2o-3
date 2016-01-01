@@ -85,7 +85,7 @@ test_tweedie <- function() {
   
 }
 
-doTest("Comparison of H2O to R with varying link functions for the TWEEDIE family", test_tweedie)
+h2oTest.doTest("Comparison of H2O to R with varying link functions for the TWEEDIE family", test_tweedie)
 
 
 

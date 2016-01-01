@@ -20,16 +20,16 @@ test <- function(){
   family_type <- "binomial"
 
   ## Take subset of data
-  Log.info("Subset dataset to only predictor and response variables...")
+  h2oTest.logInfo("Subset dataset to only predictor and response variables...")
   h2oData <- h2oData[,c(depVars,indVars)]
   summary(h2oData)
 
   ## Run full H2O GLM with and without priors
-  Log.info("Run a logistic regression with no regularization and alpha = 0 and beta constraints without priors.")
+  h2oTest.logInfo("Run a logistic regression with no regularization and alpha = 0 and beta constraints without priors.")
   glm_nopriors <- h2o.glm(x = indVars, y = depVars, training_frame = h2oData, family = family_type,
                           standardize = T, lambda = lambda, alpha = alpha,
                           beta_constraints = betaConstraints)
-  Log.info("Run a logistic regression with no regularization and alpha = 0 and beta constraints with prior =
+  h2oTest.logInfo("Run a logistic regression with no regularization and alpha = 0 and beta constraints with prior =
             total real probability.")
   glm_priors <- h2o.glm(x = indVars, y = depVars, training_frame = h2oData, family = family_type, prior = totRealProb,
                         standardize = T, lambda = lambda, alpha = alpha, beta_constraints = betaConstraints)
@@ -51,4 +51,4 @@ test <- function(){
   checkEqualsNumeric(intercept2, intercept2adj, tolerance = 1E-10)
 }
 
-doTest("GLM Test: Beta Constraints with Priors", test)
+h2oTest.doTest("GLM Test: Beta Constraints with Priors", test)

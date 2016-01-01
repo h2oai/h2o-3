@@ -76,4 +76,4 @@ test_weights_by_row_duplication <- function() {
 }
 
 
-doTest("GBM weight Test: GBM w/ weights test by row duplication", test_weights_by_row_duplication)
+h2oTest.doTest("GBM weight Test: GBM w/ weights test by row duplication", test_weights_by_row_duplication)

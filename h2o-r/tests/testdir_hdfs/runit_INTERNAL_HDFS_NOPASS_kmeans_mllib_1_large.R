@@ -13,7 +13,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 # Check if we are running inside the H2O network by seeing if we can touch
 # the namenode.
-hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
+hadoop_namenode_is_accessible = h2oTest.hadoopNamenodeIsAccessible()
 
 if (hadoop_namenode_is_accessible) {
     hdfs_name_node = HADOOP.NAMENODE
@@ -24,16 +24,16 @@ if (hadoop_namenode_is_accessible) {
 
 #----------------------------------------------------------------------
 
-heading("BEGIN TEST")
+h2oTest.heading("BEGIN TEST")
 check.kmeans_mllib <- function() {
-  local_err_bench = locate("smalldata/mllib_bench/bigcross_wcsse.csv")
-  # local_err_bench = locate("smalldata/mllib_bench/ozone_wcsse.csv")
+  local_err_bench = h2oTest.locate("smalldata/mllib_bench/bigcross_wcsse.csv")
+  # local_err_bench = h2oTest.locate("smalldata/mllib_bench/ozone_wcsse.csv")
 
   #----------------------------------------------------------------------
   # Single file cases.
   #----------------------------------------------------------------------
 
-  heading("Import BigCross.data from HDFS")
+  h2oTest.heading("Import BigCross.data from HDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_cross_file)
   cross.hex <- h2o.importFile(url)
   n <- nrow(cross.hex)
@@ -43,11 +43,11 @@ check.kmeans_mllib <- function() {
   ncent <- err.mllib[,1]
 
   for(k in ncent) {
-    heading(paste("Run k-means++ with k =", k, "and max_iterations = 10"))
+    h2oTest.heading(paste("Run k-means++ with k =", k, "and max_iterations = 10"))
     cross.km <- h2o.kmeans(training_frame = cross.hex, k = k, init = "PlusPlus", max_iterations = 10, standardize = FALSE)
 
     path <- paste("smalldata/mllib_bench/bigcross_centers_", k, ".csv", sep = "")
-    clust.mllib <- read.csv(locate(path), header = FALSE)
+    clust.mllib <- read.csv(h2oTest.locate(path), header = FALSE)
     clust.h2o <- getCenters(cross.km)
   
     # Sort in ascending order by first dimension for comparison purposes
@@ -55,7 +55,7 @@ check.kmeans_mllib <- function() {
     cidx <- which(ulen == nrow(clust.mllib))
     cidx <- ifelse(length(cidx) == 0, 1, cidx[1])
   
-    Log.info(paste("Sorting clusters in ascending order by column", cidx))
+    h2oTest.logInfo(paste("Sorting clusters in ascending order by column", cidx))
     clust.mllib <- clust.mllib[order(clust.mllib[,cidx]),]
     clust.h2o <- clust.h2o[order(clust.h2o[,cidx]),]
     colnames(clust.mllib) <- colnames(clust.h2o)
@@ -76,4 +76,4 @@ check.kmeans_mllib <- function() {
   
 }
 
-doTest("K-means comparison", check.kmeans_mllib)
+h2oTest.doTest("K-means comparison", check.kmeans_mllib)

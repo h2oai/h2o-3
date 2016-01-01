@@ -70,4 +70,4 @@ test <- function() {
 }
 
 
-doTest("GLM prior Test: GLM w/ prior offset and weights", test)
+h2oTest.doTest("GLM prior Test: GLM w/ prior offset and weights", test)

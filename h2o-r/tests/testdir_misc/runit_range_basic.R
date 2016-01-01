@@ -8,5 +8,5 @@ test.range.basic <- function() {
 	expect_true(all(range(trunc(iris[,4])) == range(trunc(hex[,4]))))
 }
 
-doTest("Test the range function", test.range.basic)
+h2oTest.doTest("Test the range function", test.range.basic)
 
