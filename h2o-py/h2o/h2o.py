@@ -666,7 +666,8 @@ def cluster_status():
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True, proxies=None):
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, 
+         strict_version_check=True, proxies=None, nthreads=-1):
   """Initiate an H2O connection to the specified ip and port.
 
   Parameters
@@ -681,7 +682,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
     A boolean dictating whether this module should start the H2O jvm. An attempt is made
     anyways if _connect fails.
   enable_assertions : bool
-    If start_h2o, pass `-ea` as a VM option.s
+    If start_h2o, pass `-ea` as a VM option.
   license : str
     If not None, is a path to a license file.
   max_mem_size_GB : int
@@ -691,9 +692,14 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   ice_root : str
     A temporary directory (default location is determined by tempfile.mkdtemp()) to hold
     H2O log files.
+  strict_version_check : bool 
+    Setting this to False is unsupported and should only be done when advised by technical support.
   proxies : dict
-    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy
-    path.
+    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
+  nthreads : int
+    Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
+    -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. 
+    This value is only used when Python starts H2O.
 
   Examples
   --------
@@ -706,7 +712,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   Starting H2O JVM and connecting: ............... Connection successful!
 
   """
-  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies)
+  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies, nthreads=nthreads)
   return None
 
 
