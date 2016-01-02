@@ -51,24 +51,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   public boolean isSupervised(){return true;}
 
-  Key _response_key;
-  Key _vresponse_key;
-
-  @Override
-  public Vec response() {
-    return _response == null ? (_response = DKV.getGet(_response_key)) : _response;
-  }
-
-  @Override
-  public Vec vresponse() {
-    if(_vresponse_key == null) return response();
-    return _vresponse != null ? _vresponse:(_vresponse = DKV.getGet(_vresponse_key));
-  }
-
   @Override public long progressUnits() { return _parms._ntrees; }
 
-  @Override
-  protected boolean computePriorClassDistribution(){ return true;}
+  @Override protected boolean computePriorClassDistribution(){ return true;}
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -82,10 +67,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     super.init(expensive);
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode");
-    if(_vresponse != null)
-      _vresponse_key = _vresponse._key;
-    if(_response != null)
-      _response_key = _response._key;
 
     if( _parms._min_rows < 0 )
       error("_min_rows", "Requested min_rows must be greater than 0");

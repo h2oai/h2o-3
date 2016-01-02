@@ -63,17 +63,19 @@ public class GridSearchHandler<G extends Grid<MP>,
     gss.init_meta();
     gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
     gss.parameters.init_meta();
-    gss.fillFromParms(parms);
-
+    ModelBuilder builder = ModelBuilder.make(algoURLName,null,null); // Default parameter settings
+    gss.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
+    gss.fillFromParms(parms);   // Override defaults from user parms
     // Verify list of hyper parameters
     // Right now only names, no types
     validateHyperParams((P)gss.parameters, gss.hyper_parameters);
 
+    // Get actual parameters
+    MP params = (MP) gss.parameters.createAndFillImpl();
+
     // Get/create a grid for given frame
     // FIXME: Grid ID is not pass to grid search builder!
     Key<Grid> destKey = gss.grid_id != null ? gss.grid_id.key() : null;
-    // Get actual parameters
-    MP params = (MP) gss.parameters.createAndFillImpl();
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
     Job<Grid> gsJob = GridSearch.startGridSearch(destKey,

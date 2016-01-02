@@ -153,10 +153,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public float[] _class_sampling_factors;
 
-    /** The maximum number (top K) of predictions to use for hit ratio
-     *  computation (for multi-class only, 0 to disable) */
-    public int _max_hit_ratio_k = 10;
-
     /** For classification models, the maximum size (in terms of classes) of
      *  the confusion matrix for it to be printed. This option is meant to
      *  avoid printing extremely large confusion matrices.  */
@@ -173,10 +169,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
-    public final Frame train() { return _train==null ? null : _train.<Frame>get(); }
+    public final Frame train() { return _train==null ? null : _train.get(); }
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
-    public final Frame valid() { return _valid==null ? null : _valid.<Frame>get(); }
+    public final Frame valid() { return _valid==null ? null : _valid.get(); }
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
@@ -184,7 +180,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (tr != null)
         tr.read_lock(job._key);
       if (_valid != null && !_train.equals(_valid))
-        valid().read_lock(job._key);
+        _valid.get().read_lock(job._key);
     }
 
     /** Read-UnLock both training and validation User frames.  This method is
@@ -198,7 +194,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     // Override in subclasses to change the default; e.g. true in GLM
-    protected boolean defaultDropNA20Cols() { return false; }
     protected boolean defaultDropConsCols() { return true; }
 
     /** Type of missing columns during adaptation between train/test datasets

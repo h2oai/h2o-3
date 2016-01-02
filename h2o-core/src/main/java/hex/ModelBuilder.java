@@ -140,7 +140,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Train response vector. */
   public Vec response(){return _response;}
   /** Validation response vector. */
-  public Vec vresponse(){return _vresponse;}
+  public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
 
   /**
@@ -661,11 +661,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public void init(boolean expensive) {
     // Log parameters
-    if (expensive) {
-      if (logMe()) {
-        Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
-        Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
-      }
+    if( expensive && logMe() ) {
+      Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
+      Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
     }
     // NOTE: allow re-init:
     clearInitState();
@@ -712,9 +710,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._tweedie_power <= 1 || _parms._tweedie_power >= 2) {
       error("_tweedie_power", "Tweedie power must be between 1 and 2 (exclusive).");
     }
-    if (expensive) {
-      checkDistributions();
-    }
 
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
@@ -733,6 +728,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if(isSupervised()) {
       if(_response != null) {
+        if (expensive) checkDistributions();
         _nclass = _response.isCategorical() ? _response.cardinality() : 1;
         if (_response.isConst())
           error("_response","Response cannot be constant.");

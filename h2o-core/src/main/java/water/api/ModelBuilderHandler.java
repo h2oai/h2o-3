@@ -7,8 +7,6 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.HttpResponseStatus;
 import water.util.PojoUtils;
-
-import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
 public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
@@ -28,14 +26,15 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     schema.parameters = parmSchema;
 
     // Only here for train or validate-parms
-    if( !route._handler_method.getName().equals("train") )
-      throw water.H2O.unimpl();
+    String handlerName = route._handler_method.getName();
+    boolean doTrain = handlerName.equals("train");
+    assert doTrain || handlerName.equals("validate_parameters");
 
     // User specified key, or make a default?
     String model_id = parms.getProperty("model_id");
-    Key<Model> key = (Key<Model>)(model_id==null ? ModelBuilder.defaultKey(algoName) : Key.<Model>make(model_id));
+    Key<Model> key = doTrain ? (Key<Model>)(model_id==null ? ModelBuilder.defaultKey(algoName) : Key.<Model>make(model_id)) : null;
     // Default Job for just this training
-    Job job = new Job<>(key,ModelBuilder.javaName(algoURLName),algoName);
+    Job job = doTrain ? new Job<>(key,ModelBuilder.javaName(algoURLName),algoName) : null;
     // ModelBuilder
     B builder = ModelBuilder.make(algoURLName,job,key);
     schema.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
@@ -46,7 +45,7 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
 
     _t_start = System.currentTimeMillis();
-    builder.trainModel();
+    if( doTrain ) builder.trainModel();
     _t_stop  = System.currentTimeMillis();
 
     schema.fillFromImpl(builder); // Fill in the result Schema with the Job at least, plus any extra trainModel errors
@@ -59,14 +58,5 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
   public S train(int version, S schema) { throw H2O.fail(); }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public S validate_parameters(int version, S schema) {
-    String schemaName = schema.getClass().getSimpleName();
-    String algoURLName = schemaName.substring(0,schemaName.lastIndexOf('V')).toLowerCase();
-    B builder = ModelBuilder.make(algoURLName,null,null);
-    schema.fillImpl(builder);
-    S builder_schema = (S) builder.schema().fillFromImpl(builder);
-    builder_schema.setHttpStatus(HttpResponseStatus.OK.getCode());
-    return builder_schema;
-  }
-
+  public S validate_parameters(int version, S schema) { throw H2O.fail(); }
 }

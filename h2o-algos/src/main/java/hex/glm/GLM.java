@@ -199,7 +199,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // always need weights for row filtering (e.g. NAs), make new one or copy the existing ones so that we can modify them
       Vec wc = _weights == null?_dinfo._adaptedFrame.anyVec().makeCon(1):_weights.makeCopy();
       Vec wr = _dinfo.setWeights(_generatedWeights = "__glm_gen_weights",wc);
-      _garbage.add(wc);
       DKV.put(_dinfo._key, _dinfo);
       // handle BetaConstraints if I got them
       double[] betaStart = null;
@@ -437,9 +436,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         } else
           _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
       }
-      _model = _parms._family == Family.multinomial
-        ?new GLMModel(_result, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol())
-        :new GLMModel(_result, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol());
+      _model = new GLMModel(_result, _parms, GLM.this, _tInfos[0]._ymu, _dinfo._adaptedFrame.lastVec().sigma(),_tInfos[0]._lambdaMax, _tInfos[0]._nobs, hasWeightCol(), hasOffsetCol());
       String [] warns = _model.adaptTestForTrain(_valid, true, true);
       for(String s:warns) warn("_validation_frame",s);
 
@@ -846,7 +843,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private final double lmax(double [] grad) {
     return Math.max(ArrayUtils.maxValue(grad),-ArrayUtils.minValue(grad))/Math.max(1e-3,_parms._alpha[0]);
   }
-  transient ArrayList<Vec> _garbage = new ArrayList<>();
+
   /**
    * Contains implementation of the glm algo.
    * It's a DTask so it can be computed on other nodes (to distributed single node part of the computation).
@@ -862,15 +859,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
 
     private void doCleanup(){
-      try {
-        for(Vec v:_garbage) {
-          v.remove();
-        }
-        _parms.read_unlock_frames(_job);
-      }
-      catch (Throwable t) {
-        // nada
-      }
       _parms.read_unlock_frames(_job);
       if( _adapt_keys != null ) // Extra vector keys made during dataset adaptation
         for( Key k : _adapt_keys ) Keyed.remove(k);

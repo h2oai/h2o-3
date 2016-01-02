@@ -42,16 +42,7 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
 
   // Version&Schema-specific filling into the impl
   @SuppressWarnings("unchecked")
-  @Override public Job createImpl( ) {
-    try {
-      Key k = key == null?Key.make():key.key();
-      return this.getImplClass().getConstructor(new Class[]{Key.class,String.class}).newInstance(k,description);
-    }catch (Exception e) {
-      String msg = "Exception instantiating implementation object of class: " + this.getImplClass().toString() + " for schema class: " + this.getClass();
-      Log.err(msg + ": " + e);
-      throw H2O.fail(msg, e);
-    }
-  }
+  @Override public Job createImpl( ) { throw H2O.fail(); } // Cannot make a new Job directly via REST
 
   // Version&Schema-specific filling from the impl
   @Override public JobV3 fillFromImpl( Job job ) {

@@ -66,6 +66,7 @@ import java.util.Map;
  * @see #startGridSearch(Key, HyperSpaceWalker)
  */
 public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSearch> {
+  public final Key<Grid> _result;
   public final Job<Grid> _job;
 
   /** Walks hyper space and for each point produces model parameters. It is
@@ -74,6 +75,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP> hyperSpaceWalker) {
+    _result = gkey;
     String algoName = hyperSpaceWalker.getParams().algoName();
     _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
     assert hyperSpaceWalker != null : "Grid search needs to know to how walk around hyper space!";
@@ -88,8 +90,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
     // this function the grid object is in DKV and accessible.
-    Grid<MP> grid;
-    Keyed keyed = DKV.getGet(_job._result);
+    final Grid<MP> grid;
+    Keyed keyed = DKV.getGet(_result);
     if (keyed != null) {
       if (! (keyed instanceof Grid))
         throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + _job._result + "; it is a: " + keyed.getClass());
@@ -102,18 +104,16 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       grid.write_lock(_job);
     } else {
       grid =
-          new Grid<>(_job._result,
+          new Grid<>(_result,
                      _hyperSpaceWalker.getParams(),
                      _hyperSpaceWalker.getHyperParamNames(),
                      _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(_job);
     }
-    // Final for closure
-    final Grid<MP> gridToExpose = grid;
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
       @Override public void compute2() {
-        gridSearch(gridToExpose);
+        gridSearch(grid);
         tryComplete();
       }
     }, gridSize);

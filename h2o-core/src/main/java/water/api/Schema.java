@@ -947,14 +947,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   // FIXME: can be parameterized by type: public static <T extends Schema> T newInstance(Class<T> clz)
   public static <T extends Schema> T newInstance(Class<T> clz) {
-    T s = null;
-    try {
-      s = clz.newInstance();
-    }
-    catch (Exception e) {
-      throw new H2OIllegalArgumentException("Failed to instantiate schema of class: " + clz.getCanonicalName() + ", cause: " + e);
-    }
-    return s;
+    try { return clz.newInstance(); }
+    catch (Exception e) { throw H2O.fail("Failed to instantiate schema of class: " + clz.getCanonicalName(),e); }
   }
 
   /**

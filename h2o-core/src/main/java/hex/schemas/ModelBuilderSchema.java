@@ -100,7 +100,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
-    job = (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder._job);
+    job = builder._job == null ? null : (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder._job);
     if( builder._messages != null ) {
       this.messages = new ValidationMessageBase[builder._messages.length];
       int i = 0;

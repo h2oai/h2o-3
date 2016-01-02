@@ -25,7 +25,7 @@ public class Register extends water.api.AbstractRegister {
       String lbase = base.toLowerCase();
       Class bh_clz = water.api.ModelBuilderHandler.class;
       int version = 3;
-      if( base.equals("SVD") ) version = 99;
+      if( base.equals("SVD") ) version = 99;  // SVD is experimental still
 
       H2O.registerPOST("/"+version+"/ModelBuilders/"+lbase              , bh_clz, "train"              , "Train a "          +base+" model.");
       H2O.registerPOST("/"+version+"/ModelBuilders/"+lbase+"/parameters", bh_clz, "validate_parameters", "Validate a set of "+base+" model builder parameters.");
