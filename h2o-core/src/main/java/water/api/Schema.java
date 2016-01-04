@@ -550,8 +550,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       } catch( IllegalAccessException iae ) {
         // Come here if field is final or private
         throw H2O.fail("Broken internal schema; field cannot be private nor final: " + key);
-      } catch( Exception e) {
-        throw new H2OIllegalArgumentException(key, this.getClass().getSimpleName() + ".fillFromParms", parms.getProperty(key));
       }
     }
     // Here every thing in 'parms' was set into some field - so we have already
