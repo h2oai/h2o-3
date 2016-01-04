@@ -116,7 +116,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     super(H2OGeneralizedLowRankEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
-    self._parms['_rest_version']=99
+    self._parms['_rest_version']=3
 
   @property
   def max_iterations(self):
