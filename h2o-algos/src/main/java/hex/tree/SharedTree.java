@@ -65,7 +65,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    *  the number of classes to predict on; validate a checkpoint.  */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._seed==-1 ) _parms._seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
+    if( expensive && _parms._seed==-1 ) _parms._seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode");
 
