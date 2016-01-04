@@ -495,7 +495,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score on training data
       _job.update(0,"Scoring the model.");
-      Score sc = new Score(this,true,oob,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
+      Score sc = new Score(this,true,oob,response()._key,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;
       training_r2 = ((ModelMetricsSupervised)mm).r2();
@@ -504,7 +504,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score again on validation data
       if( _parms._valid != null ) {
-        Score scv = new Score(this,false,false,_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
+        Score scv = new Score(this,false,false,vresponse()._key,_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
