@@ -2,6 +2,8 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 
+#The below function will test if the exporting of a file in H2O is NOT asynchronous. Meaning the h2o.export_file()
+#waits for the entire process to finish before exiting.
 
 test.export.time <- function() {
 

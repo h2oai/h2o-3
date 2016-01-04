@@ -2,6 +2,8 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 
+#Export file with h2o.export_file and compare with R counterpart when re importing file to check for parity.
+
 
 test.export.file <- function() {
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))

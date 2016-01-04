@@ -10,6 +10,9 @@ import random
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
+'''
+Export file with h2o.export_file and compare with Python counterpart when re importing file to check for parity.
+'''
 
 def export_file():
     pros_hex = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
