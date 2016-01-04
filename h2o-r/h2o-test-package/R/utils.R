@@ -4,22 +4,15 @@
 #'
 #'
 
-#' Hadoop helper
-h2oTest.hadoopNamenodeIsAccessible <- function() {
-    url <- sprintf("http://%s:50070", HADOOP.NAMENODE);
-    internal <- url.exists(url, timeout = 5)
-    return(internal)
-}
-
 #' Locate a file given the pattern <bucket>/<path/to/file>
 #' e.g. locate( "smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
 h2oTest.locate<-
-function(pathStub, root.parent = NULL) {
-  if (ON.HADOOP) {
+function(pathStub, root.parent = NULL, on.hadoop = FALSE) {
+  if (on.hadoop) {
     # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
     # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
     # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
-    # machines store smalldata and bigdata in /home/0xdiag/. If ON.HADOOP is set by the run.py, the pathStub arg MUST
+    # machines store smalldata and bigdata in /home/0xdiag/. If on.hadoop is TRUE, the pathStub arg MUST
     # be an immediate subdirectory of /home/0xdiag/. Moreover, the only guaranteed subdirectories of /home/0xdiag/ are
     # smalldata and bigdata.
     path <- normalizePath(paste0("/home/0xdiag/",pathStub))
@@ -77,7 +70,7 @@ function(cur.dir, root, root.parent = NULL) {
     if (parent.name == root) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
 
     # the root is h2o-dev, check the children here (and fail if `root` not found)
-    if (parent.name == PROJECT.ROOT || parent.name == "workspace") {
+    if (parent.name == "h2o-3" || parent.name == "workspace") {
       if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
       else stop(paste("Could not find the dataset bucket: ", root, sep = "" ))
     }
@@ -96,8 +89,8 @@ function(cur.dir, root, root.parent = NULL) {
       return(h2oTest.pathCompute(parent.dir, root, root.parent)) }
 
     # fail if reach h2o-dev
-    if (parent.name == PROJECT.ROOT) {
-        stop(paste0("Reached the root ", PROJECT.ROOT, ". Didn't find the bucket with the root.parent")) }
+    if (parent.name == "h2o-3") {
+        stop(paste0("Reached the root ", "h2o-3", ". Didn't find the bucket with the root.parent")) }
   }
   return(h2oTest.pathCompute(parent.dir, root, root.parent))
 }
@@ -123,11 +116,22 @@ function(zipfile, exdir,header=T) {
 
 # returns the directory of the sandbox for the given test.
 h2oTest.sandbox<-
-function(create=FALSE) {
-  Rsandbox <- paste0("./Rsandbox_", basename(TEST.NAME))
-  if (create) { dir.create(Rsandbox, showWarnings=FALSE) }
-  if (dir.exists(Rsandbox)) { return(normalizePath(Rsandbox))
-  } else { h2oTest.logErr(paste0("Sandbox directory: ",Rsandbox," does not exists")) }
+function(create, sandboxName) {
+  if (!(length(sandboxName)==0)) {
+    Rsandbox <- paste0("./Rsandbox_", basename(sandboxName))
+  } else {
+    Rsandbox <- paste0("./Rsandbox_", gsub(' ', '',Sys.time()))
+  }
+
+  if (create) {
+    dir.create(Rsandbox, showWarnings=FALSE)
+  }
+
+  if (dir.exists(Rsandbox)) {
+    return(normalizePath(Rsandbox))
+  } else {
+    h2oTest.logErr(paste0("Sandbox directory: ",Rsandbox," does not exists"))
+  }
 }
 
 # makes a directory in sandbox, one level down
@@ -377,28 +381,26 @@ function(testDesc, test) {
 }
 
 h2oTest.setupSeed<-
-function(seed = NULL, master_seed = FALSE) {
-    possible_seed_path <- paste("./Rsandbox_", TEST.NAME, "/seed", sep = "")
+function(Rsandbox) {
+    possibleSeedFile <- paste(Rsandbox, "seed", sep=.Platform$file.sep)
+    possibleMasterSeedFile <- paste(getwd(), "master_seed", sep=.Platform$file.sep)
 
-    if (!is.null(seed)) {
-        SEED <<- seed
-        set.seed(seed)
-        write.table(seed, possible_seed_path)
-        cat("\n\n\n", paste("[INFO]: Using master SEED: ", seed), "\n\n\n\n")
-    } else if (file.exists(possible_seed_path)) {
-        fileseed <- read.table(possible_seed_path)[[1]]
-        SEED <<- fileseed
-        set.seed(fileseed)
-        cat("\n\n\n", paste("[INFO]: Reusing seed for this test from test's Rsandbox", fileseed), "\n\n\n\n")
-    } else {
-        maxInt <- .Machine$integer.max
-        seed <- sample(maxInt, 1)
-        SEED <<- seed
-        set.seed(seed)
-        write.table(seed, possible_seed_path)
-        cat("\n\n\n", paste("[INFO]: Generating new random SEED: ", seed), "\n\n\n\n")
+    if (file.exists(possibleMasterSeedFile)) { #If master seed exists, use it
+      seed <- read.table(possibleMasterSeedFile)[[1]]
+      write.table(seed, possibleSeedFile)
+      h2oTest.logInfo(paste0("Using master seed: ", seed))
+      return(seed)
+    } else if (file.exists(possibleSeedFile)) { #Else, if previously leftover seed exists, use it
+      seed <- read.table(possibleSeedFile)[[1]]
+      h2oTest.logInfo(paste0("Reusing seed for this test from test's Rsandbox: ", seed))
+      return(seed)
+    } else { #Else, generate a random seed to use
+      maxInt <- .Machine$integer.max
+      seed <- sample(maxInt, 1)
+      write.table(seed, possibleSeedFile)
+      h2oTest.logInfo(paste0("Generating new random seed: ", seed))
+      return(seed)
     }
-    h2oTest.logInfo(paste("USING SEED: ", SEED))
 }
 
 h2o_and_R_equal <- function(h2o_obj, r_obj, tolerance = 1e-6) {
@@ -420,4 +422,11 @@ h2o_and_R_equal <- function(h2o_obj, r_obj, tolerance = 1e-6) {
   if (length(df_r_na_free) > 0)
     expect_true(all(abs(df_h2o_obj_free - df_r_na_free) < tolerance))
   
+}
+
+#' Hadoop helper
+h2oTest.hadoopNamenodeIsAccessible <- function() {
+    url <- sprintf("http://%s:50070", HADOOP.NAMENODE);
+    internal <- url.exists(url, timeout = 5)
+    return(internal)
 }

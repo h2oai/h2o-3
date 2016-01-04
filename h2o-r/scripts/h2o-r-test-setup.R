@@ -17,7 +17,6 @@ IS.RUNIT                    <<- FALSE
 IS.RBOOKLET                 <<- FALSE
 RESULTS.DIR                 <<- NULL
 TEST.NAME                   <<- "RTest"
-SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
 
 #'
@@ -158,15 +157,12 @@ function() {
         h2oTest.loadDefaultRPackages()
         h2oTest.logInfo("Loaded default packages. Additional required packages must be loaded explicitly.")
 
-        sb <- h2oTest.sandbox(create=TRUE)
+        sb <- h2oTest.sandbox(create=TRUE,sandboxName=TEST.NAME)
         h2oTest.logInfo(paste0("Created sandbox for runit test ",TEST.NAME," in directory ",sb,".\n"))
 
-        # setup the runit test seed
-        seed <- NULL
-        masterSeedFile <- paste(getwd(), "/master_seed", sep = "")
-        if (file.exists(masterSeedFile)) seed <- read.table(masterSeedFile)[[1]]
-        h2oTest.setupSeed(seed)
-        h2o.logIt("[SEED] :", SEED)
+        seed <- h2oTest.setupSeed(sb)
+        set.seed(seed)
+        h2o.logIt("[SEED] :", seed)
 
         strict_version_check = FALSE
     } else {
