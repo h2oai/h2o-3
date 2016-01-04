@@ -28,7 +28,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
-    public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
+    public long _seed = -1;
 
     public int _nbins_top_level = 1<<10; //hardcoded maximum top-level number of bins for real-valued columns
 
