@@ -101,11 +101,16 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
     job = builder._job == null ? null : (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder._job);
-    if( builder._messages != null ) {
-      this.messages = new ValidationMessageBase[builder._messages.length];
+    // In general, you can ask about a builder in-progress, and the error
+    // message list can be growing - so you have to be prepared to read it
+    // racily.  Common for Grid searches exploring with broken parameter
+    // choices.
+    final ModelBuilder.ValidationMessage[] msgs = builder._messages; // Racily growing; read only once
+    if( msgs != null ) {
+      this.messages = new ValidationMessageBase[msgs.length];
       int i = 0;
-      for (ModelBuilder.ValidationMessage vm : builder._messages) {
-        this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+      for (ModelBuilder.ValidationMessage vm : msgs) {
+        if( vm != null ) this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
       }
       // default fieldname hacks
       ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
