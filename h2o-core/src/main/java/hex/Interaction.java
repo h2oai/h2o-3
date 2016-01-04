@@ -15,7 +15,7 @@ import java.util.Arrays;
  * Create new factors that represent interactions of the given factors
  */
 public class Interaction extends Iced {
-  public final Job<Frame> _job;
+  public Job<Frame> _job;
   public Key<Frame> _source_frame;
   public String[] _factor_columns;
   public boolean _pairwise = false;
@@ -24,10 +24,8 @@ public class Interaction extends Iced {
 
   transient public int[] _factors = new int[0];
 
-  public Interaction(Key<Frame> dest, String desc) { _job = new Job(dest, Frame.class.getName(), desc); }
-  public Interaction() { this(Key.<Frame>make(), "CreateFrame"); }
-
-  public Frame execImpl() {
+  public Job<Frame> execImpl(Key<Frame> dest ) {
+    _job = new Job(dest == null ? Key.make() : dest, Frame.class.getName(), "CreateFrame");
     Frame source_frame = DKV.getGet(_source_frame);
     assert(source_frame != null);
     if (_factor_columns == null || _factor_columns.length == 0) throw new IllegalArgumentException("factor_columns must be specified.");
@@ -46,7 +44,7 @@ public class Interaction extends Iced {
       }
     }
     CreateInteractions in = new CreateInteractions(this);
-    return _job.start(in, in.work()).get();
+    return _job.start(in, in.work());
   }
 
   @Override public String toString() {

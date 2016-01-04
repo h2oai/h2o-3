@@ -5,6 +5,9 @@ import hex.Interaction;
 class InteractionV3 extends RequestSchema<Interaction, InteractionV3> {
   static public String[] own_fields = new String[] { "source_frame", "factor_columns", "pairwise", "max_factors", "min_occurrence" };
 
+  @API(help="destination key", direction=API.Direction.INOUT)
+  public KeyV3.FrameKeyV3 dest;
+
   @API(help = "Input data frame", direction = API.Direction.INOUT)
   public KeyV3.FrameKeyV3 source_frame;
 
