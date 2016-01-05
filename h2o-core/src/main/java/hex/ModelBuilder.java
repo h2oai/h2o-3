@@ -286,7 +286,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for( int i=0; i<N; i++ ) {
-      String identifier = origDest + "_cv_" + i;
+      String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
       Frame cvTrain = new Frame(Key.make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
       cvTrain.add(weightName, weights[2*i]);
@@ -404,7 +404,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
       // Keep or toss predictions
       for (Key<Frame> k : predKeys) {
-        Frame fr = ((Frame)DKV.getGet(k));
+        Frame fr = DKV.getGet(k);
         if( _parms._keep_cross_validation_predictions ) Scope.untrack(fr.keys());
         else fr.remove();
       }
