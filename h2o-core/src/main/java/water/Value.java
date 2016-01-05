@@ -531,9 +531,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // Write-Lock against further GETs
     while( true ) {      // Repeat, in case racing GETs are bumping the counter
       int old = _rwlock.get();
-      assert old >= 0 : _key+", rwlock="+old;  // Count does not go negative
-      assert old != -1; // Only the thread doing a PUT ever locks
-      if( old ==0 ) return;
+      if( old <= 0) return; // No readers, or this Value already replaced with a later value
       // Active readers: need to block until the GETs (of this very Value!) all complete
       try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
     }
@@ -600,8 +598,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   @Override public boolean isReleasable() {
     int r = _rwlock.get();
     if( _key.home() ) {         // Called from lock_and_invalidate
-      // Home-key blocking: wait for active-GET count to fall to zero
-      return r == 0;
+      // Home-key blocking: wait for active-GET count to fall to zero, or blocking on deleted object
+      return r <= 0;
     } else {                    // Called from start_put
       // Remote-key blocking: wait for active-PUT lock to hit -1
       assert r == 2 || r == -1; // Either waiting (2) or done (-1) but not started(1)
