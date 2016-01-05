@@ -467,9 +467,17 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         if (f==0) { resultLoc++; continue; } // no match so just one row (NA for right table) to advance over
         assert l > 0;
         if (prevf == f && prevl == l) {
-          // ** TODO ** just copy from previous batch in the result. Contiguous easy in-cache copy.
-          // ** For now we can leave as NA, just to test
-          resultLoc += l;
+          // ** just copy from previous batch in the result (populated by for() below). Contiguous easy in-cache copy (other than batches).
+          for (int r=0; r<l; r++) {
+            int toChunk = (int) (resultLoc / batchSize);  // TODO: loop into batches to save / and % for each repeat and still cater for crossing multiple batch boundaries
+            int toOffset = (int) (resultLoc % batchSize);
+            int fromChunk = (int) ((resultLoc - l) / batchSize);
+            int fromOffset = (int) ((resultLoc - l) % batchSize);
+            for (int col=0; col<_numColsInResult-_numLeftCols; col++) {
+              frameLikeChunks[_numLeftCols + col][toChunk][toOffset] = frameLikeChunks[_numLeftCols + col][fromChunk][fromOffset];
+            }
+            resultLoc++;
+          }
           continue;
         }
         prevf = f;
@@ -477,7 +485,6 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         for (int r=0; r<l; r++) {
           int whichChunk = (int) (resultLoc / batchSize);  // TODO: loop into batches to save / and % for each repeat and still cater for crossing multiple batch boundaries
           int offset = (int) (resultLoc % batchSize);
-
           long loc = f+r-1;  // -1 because these are 0-based where 0 means no-match and 1 refers to the first row
           row = _rightOrder[(int)(loc / _rightBatchSize)][(int)(loc % _rightBatchSize)];   // TODO: could take / and % outside loop in cases where it doesn't span a batch boundary
           // find the owning node for the row, using local operations here
