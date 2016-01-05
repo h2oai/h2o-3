@@ -11,7 +11,7 @@ To set up your R environment to run these examples the user will need to downloa
 
   * [`Predict Airlines Delays`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.airlines.delay.large.R) - Uses historical airlines flight data to build multiple classification models to label any flight as either delayed or not delayed.
 
-  * [`Predict Airlines Delays with Weather`](large/airlines_delay_w_weather.R) - Uses historical airlines flight and weather data and joins the two datasets into one large table, then builds multiple classification models to label any flight as either delayed or not delayed.
+  * [`Predict Airlines Delays with Weather`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.airlines.delay.weather.large.R) - Uses historical airlines flight and weather data and joins the two datasets into one large table, then builds multiple classification models to label any flight as either delayed or not delayed.
   
   * [`NYC Citibike Demand with Weather`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.citi.bike.small.R) - Uses monthly bike ride data for the past two years to predict bike demand at each bike share station. Weather data is also incorporated to better predict bike usage.
   
