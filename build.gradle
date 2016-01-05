@@ -171,6 +171,9 @@ subprojects {
         if (project.hasProperty("doAnimalSniffer") && project.doAnimalSniffer == "true") {
             apply from: "$rootDir/gradle/animalSniffer.gradle"
         }
+        if (project.hasProperty("jacocoCoverage")) {		
+            apply from: "$rootDir/gradle/jacoco.gradle"		
+        }
     }
 
     // Configure Scala projects
@@ -271,3 +274,4 @@ clean.dependsOn cleanTarget
 // Import project development profiles
 //
 apply from: "gradle/profiles.gradle"
+
