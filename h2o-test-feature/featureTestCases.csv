@@ -4,3 +4,5 @@ id,feature,feature_params,data_set_ids,validation_method,validation_data_set_id
 3,all,,1,R,
 4,asFactor,,2,O,
 5,cbind,,3;4;3,R,
+6,colNames,TRUE;,5,R,
+7,colNames,FALSE;foo,5,R,

@@ -28,32 +28,22 @@ function(testCase) {
     } else if (testCase@feature == "and")       { op <- "binaryMath"
     } else if (testCase@feature == "asFactor")  { op <- "asFactor"
     } else if (testCase@feature == "cbind")     { op <- "cbind"
+    } else if (testCase@feature == "colNames")  { op <- "colNames"
     }
 
-    numDataSets <- length(testCase@dataSets)
-    if (op == "unaryMath" || op == "reducer" || op == "asFactor") {
-        if (numDataSets != 1) { stop(paste0("This test case requires 1 data set. Got: ", numDataSets)) }
-        dataSet <- .loadDataSets(testCase@dataSets)[[1]]
-    } else if (op == "binaryMath") {
-        if (numDataSets != 2) { stop(paste0("This test case requires 2 data sets. Got: ", numDataSets)) }
-        dataSets <- .loadDataSets(testCase@dataSets)
-        left <- dataSets[[1]]
-        right<- dataSets[[2]]
-    } else if (op == "cbind") {
-        if (numDataSets < 1) { stop(paste0("For `cbind`, must provide 1 or more data sets. Got: ", numDataSets)) }
-        dataSets <- .loadDataSets(testCase@dataSets)
-    }
+    dataSets <- .loadDataSets(testCase@dataSets)
 
     h2oEnv <- new.env() # new environment for do.call, that has the h2o args defined
 
-    if (op == "unaryMath" || op == "reducer" || op == "asFactor") {
-        argsH2O <- .getH2OArgsUnMathOrRedOp(dataSet, h2oEnv)
-    } else if (op == "binaryMath") {
-        argsH2O <- .getH2OArgsBinMathOp(left, right, h2oEnv)
-    } else if (op == "cbind") {
-        argsH2O <- .getH2OArgsCbindOp(dataSets, h2oEnv)
-    }
+    h2oArgSchema  <- .getArgSchema(op)
+    print("The h2o parameter schema")
+    print(h2oArgSchema)
 
+    h2oFeatureParamsList <- .makeFeatureParamsList(testCase@featureParams, h2oArgSchema)
+    print("The h2o feature params list")
+    print(h2oFeatureParamsList)
+
+    argsH2O <- .makeArgList(h2oArgSchema, h2oFeatureParamsList, dataSets, h2oEnv, FALSE)
     print("checking argsH2O")
     print(argsH2O)
 
@@ -66,13 +56,17 @@ function(testCase) {
     if (testCase@validationMethod == "R") {
         rEnv <- new.env()
 
-        if (op == "unaryMath" || op == "reducer") {
-            argsR <- .getRArgsUnMathOrReducerOp(dataSet, rEnv)
-        } else if (op == "binaryMath") {
-            argsR <- .getRArgsBinMathOp(left, right, rEnv)
-        } else if (op == "cbind") {
-            argsR <- .getRArgsCbindOp(dataSets, rEnv)
-        }
+        rArgSchema  <- .getArgSchema(op)
+        print("The R arg schema")
+        print(rArgSchema)
+
+        rFeatureParamsList <- .makeFeatureParamsList(testCase@featureParams, rArgSchema)
+        print("The r feature params list")
+        print(rFeatureParamsList)
+
+        argsR <- .makeArgList(rArgSchema, rFeatureParamsList, dataSets, rEnv, TRUE)
+        print("checking argsR")
+        print(argsR)
 
         whatR <- .whatR(testCase@feature)
 
@@ -84,6 +78,8 @@ function(testCase) {
             .compareH2OToRUnOrBinMathOp(h2oRes, rRes)
         } else if (op == "reducer") {
             .compareH2OToRRedOp(h2oRes, rRes)
+        } else if (op == "colNames") {
+            .compareH2OToRVector(h2oRes, rRes)
         }
     } else if (testCase@validationMethod == "H") {
         validationDataSet <- .loadDataSets(testCase@dataSets,1)[[1]]
@@ -116,95 +112,101 @@ function(dataSets) {
 
 
 #'
+#' --------------- return the argument schema for the given operation ---------------
+#'
+.getArgSchema<-
+function(op, r=FALSE) {
+    if(op == "unaryMath" || op == "reducer" || op == "asFactor") {
+        return(list(list(type="dataset", cardinality=1)))
+    } else if (op == "binaryMath") {
+        return(list(list(type="dataset", cardinality=2)))
+    } else if (op == "cbind") {
+        return(list(list(type="dataset", cardinality=-1)))
+    } else if (op == "colNames") {
+        return(list(list(type="dataset", cardinality=1),
+                    list(type="logical", cardinality=1),
+                    list(type="character", cardinality=1)))
+    }
+}
+
+
+#'
+#' --------------- parse the semi-colon-seperated feature parameters string into a list of params, which have been
+#'                 casted to their correct type ---------------
+#'
+.makeFeatureParamsList<-
+function(featureParamsString, pSchema) {
+    # get all of the non dataset parameter schemas
+    newPSchema <- list()
+    c <- 1
+    for(p in pSchema) {
+        if (p$type != "dataset") {
+            newPSchema[[c]] <- p
+            c <- c + 1
+        }
+    }
+
+    featureParamsList <- list()
+
+    # make a list of all the parameters in their string format
+    numArgs <- length(newPSchema) #TODO: this needs to take into account non dataset parameters with cardinality > 1
+    if (numArgs == 0) { return(featureParamsList) }
+    print(paste0("numArgs: ",numArgs))
+
+    strList <- as.list(strsplit(featureParamsString,";")[[1]])
+    print(paste0("strList: ",strList))
+
+    numStrs <- length(strList)
+    print(paste0("numStrs: ",numStrs))
+
+    if (numStrs != 0) { for (i in 1:numStrs) { featureParamsList[[i]] <- strList[[i]] } }
+    if (numArgs > numStrs) { featureParamsList[[numArgs]] <- "" }
+    print(paste0("featureParamsList: ",featureParamsList))
+
+    # cast the non-empty parameters to their proper type
+    for (i in 1:numArgs) {
+        if (featureParamsList[[i]] == "")      { next }
+        if (newPSchema[[i]]$type == "logical") { featureParamsList[[i]] <- as.logical(featureParamsList[[i]]) }
+        if (newPSchema[[i]]$type == "integer") { featureParamsList[[i]] <- as.integer(featureParamsList[[i]]) }
+    }
+    return(featureParamsList)
+}
+
+
+#'
 #' --------------- get args for subsequent do.call ---------------
 #'
-# modifies h2oEnv
-.getH2OArgsUnMathOrRedOp<-
-function(dataSet, h2oEnv) {
-    fr <- h2o.getFrame(dataSet@key)
-    print("In .getH2OArgsUnMathOrRedOp")
-    print(fr)
-    assign("fr", fr, envir=h2oEnv)
-    return(list(as.name("fr")))
-}
 
-# modifies h2oEnv
-.getH2OArgsBinMathOp<-
-function(left, right, h2oEnv) {
-    left <- h2o.getFrame(left@key)
-    right <- h2o.getFrame(right@key)
-    print("In .getH2OArgsBinMathOp")
-    print(left)
-    print(right)
-    assign("left", left, envir=h2oEnv)
-    assign("right", right, envir=h2oEnv)
-    return(list(as.name("left"), as.name("right")))
-}
+# modifies env
+.makeArgList<-
+function(pSchema, featureParamsList, dataSets, env, r=FALSE) {
+    parameterNameSpace <- LETTERS
+    symbolCount <- 0
+    dataSetCount <- 0
+    featureParamCount <- 0
 
-# modifies h2oEnv
-.getH2OArgsCbindOp<-
-function(dataSets, h2oEnv) {
-    numDataSets <- length(dataSets)
-    symbols <- LETTERS[1:numDataSets]
-    for(i in 1:numDataSets) { assign(symbols[i], h2o.getFrame(dataSets[[i]]@key), envir=h2oEnv) }
-    lapply(symbols, function (s) { as.name(s) })
-}
-
-# modifies rEnv
-.getRArgsUnMathOrReducerOp<-
-function(dataSet, rEnv) {
-    h2oFr <- h2o.getFrame(dataSet@key)
-    fr <- as.data.frame(h2oFr)
-    print("In .getRArgsUnMathOrReducerOp")
-    print(fr)
-    assign("fr", fr, envir=rEnv)
-    return(list(as.name("fr")))
-}
-
-# modifies rEnv
-.getRArgsBinMathOp<-
-function(left, right, rEnv) {
-    leftH2O <- h2o.getFrame(left@key)
-    left <- as.data.frame(leftH2O)
-    rightH2O <- h2o.getFrame(right@key)
-    right <- as.data.frame(rightH2O)
-    print("In .getRArgsBinMathOp")
-    print(left)
-    print(right)
-    assign("left", left, envir=rEnv)
-    assign("right", right, envir=rEnv)
-    return(list(as.name("left"), as.name("right")))
-}
-
-# modifies rEnv
-.getRArgsCbindOp<-
-function(dataSets, rEnv) {
-    numDataSets <- length(dataSets)
-    symbols <- LETTERS[1:numDataSets]
-    for(i in 1:numDataSets) { assign(symbols[i], as.data.frame(h2o.getFrame(dataSets[[i]]@key)), envir=rEnv) }
-    lapply(symbols, function (s) { as.name(s) })
-}
-
-
-#'
-#' --------------- get what for subsequent do.call ---------------
-#'
-.whatH2O<-
-function(op) {
-    if (op == "cosine")   { return("cos") }
-    if (op == "and")      { return("&") }
-    if (op == "all")      { return("all") }
-    if (op == "asFactor") { return("as.factor") }
-    if (op == "cbind")    { return("h2o.cbind") }
-}
-
-.whatR<-
-function(op) {
-    if (op == "cosine")   { return("cos") }
-    if (op == "and")      { return("&") }
-    if (op == "all")      { return("all") }
-    if (op == "asFactor") { return("as.factor") }
-    if (op == "cbind")    { return("cbind") }
+    argList <- list()
+    for (p in pSchema) {
+        if (p$type == "dataset") { # parameter is one or more data sets
+            if (p$cardinality == -1) { # -1 means get all of the data sets in dataSets
+                numDataSets <- length(dataSets)
+            } else {
+                numDataSets <- p$cardinality
+            }
+            for(i in 1:numDataSets) {
+                fr <- h2o.getFrame(dataSets[[dataSetCount+1]]@key)
+                if (r) { fr <- as.data.frame(fr) }
+                assign(parameterNameSpace[symbolCount+1], fr, envir=env)
+                dataSetCount <- dataSetCount + 1
+                symbolCount <- symbolCount + 1
+            }
+        } else { # parameter is a non-dataset parameter
+            assign(parameterNameSpace[symbolCount+1], featureParamsList[[featureParamCount+1]], envir=env)
+            featureParamCount <- featureParamCount + 1
+            symbolCount <- symbolCount + 1
+        }
+    }
+    return(lapply(LETTERS[1:symbolCount], function(s) { as.name(s) }))
 }
 
 
@@ -242,3 +244,35 @@ function(h2oRes) {
     }
 }
 
+.compareH2OToRVector<-
+function(h2oRes, rRes) {
+    if (!all(h2oRes == rRes)) {
+        stop("Expected h2o vector to be the same as R vector, but they're not.")
+        print(paste0("h2o: ", h2oRes))
+        print(paste0("r: ", rRes))
+    }
+}
+
+
+#'
+#' --------------- get what for subsequent do.call ---------------
+#'
+.whatH2O<-
+function(op) {
+    if (op == "cosine")   { return("cos") }
+    if (op == "and")      { return("&") }
+    if (op == "all")      { return("all") }
+    if (op == "asFactor") { return("as.factor") }
+    if (op == "cbind")    { return("h2o.cbind") }
+    if (op == "colNames") { return("colnames") }
+}
+
+.whatR<-
+function(op) {
+    if (op == "cosine")   { return("cos") }
+    if (op == "and")      { return("&") }
+    if (op == "all")      { return("all") }
+    if (op == "asFactor") { return("as.factor") }
+    if (op == "cbind")    { return("cbind") }
+    if (op == "colNames") { return("colnames") }
+}
