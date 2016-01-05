@@ -41,9 +41,6 @@ public class Handler extends H2OCountedCompleter {
     Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);
     Schema schema = Schema.newInstance(handler_schema_class);
 
-    if (null == schema)
-      throw H2O.fail("Failed to instantiate Schema of class: " + handler_schema_class + " for route: " + route);
-
     // If the schema has a real backing class fill from it to get the default field values:
     Class<? extends Iced> iced_class = schema.getImplClass();
     if (iced_class != Iced.class) {
