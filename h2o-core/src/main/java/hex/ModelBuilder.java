@@ -13,10 +13,7 @@ import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -405,8 +402,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Frame p1combined = new HoldoutPredictionCombiner().doAll(1,Vec.T_NUM,new Frame(p1s)).outputFrame(new String[]{"p1"},null);
       Vec p1 = p1combined.anyVec();
       preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
-      if (!_parms._keep_cross_validation_predictions)
-        for (Key<Frame> k : predKeys) ((Frame)DKV.getGet(k)).remove();
+      // Keep or toss predictions
+      for (Key<Frame> k : predKeys) {
+        Frame fr = ((Frame)DKV.getGet(k));
+        if( _parms._keep_cross_validation_predictions ) Scope.untrack(fr.keys());
+        else fr.remove();
+      }
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
     if (preds!=null) preds.remove();
