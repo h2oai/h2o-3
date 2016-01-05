@@ -1490,12 +1490,17 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
   }
 
   # Row arg is missing, means "all the rows"
-  if(allRow) rows <- paste0("[]") # Shortcut for "all rows"
-  else       rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
+  if(allRow) rows <- paste0("[]")  # Shortcut for "all rows"
+  else {
+    if( !is.H2OFrame(row) )    # Generic R expression
+      rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
+    browser()
+    rows <- .newExpr("rows",data,row)  # Row selector
+  }
 
   name <- NA
   if( allCol ) {   # Col arg is missing, means "all the cols"
-    cols <- paste0("[]") # Shortcut for "all cols"
+    cols <- paste0("[]")  # Shortcut for "all cols"
   } else {
     if( base::is.character(col) ) {
       idx <- match(col, colnames(data))
