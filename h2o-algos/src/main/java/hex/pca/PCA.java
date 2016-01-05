@@ -271,7 +271,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._init = GLRM.Initialization.PlusPlus;
 
           // Build an SVD model
-          GLRMModel glrm = new GLRM(parms, _job).trainModel().get();
+          GLRMModel glrm = new GLRM(parms, _job).trainModelNested();
           if (_job.stop_requested()) return;
           glrm._output._representation_key.get().delete();
           glrm.remove(); // Remove from DKV

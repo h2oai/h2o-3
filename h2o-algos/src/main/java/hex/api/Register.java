@@ -32,5 +32,6 @@ public class Register extends water.api.AbstractRegister {
       // Grid search is experimental feature
       H2O.registerPOST("/99/Grid/"+lbase, GridSearchHandler.class, "train", "Run grid search for "+base+" model.");
     }
+    H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make a new GLM model based on existing one");
   }
 }
