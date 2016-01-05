@@ -1,2 +1,5 @@
 data_set_id,uri
 1,s3://h2o-public-test-data/smalldata/feature/cosine.csv
+2,s3://h2o-public-test-data/smalldata/feature/asFactor.integerColumn.csv
+3,s3://h2o-public-test-data/smalldata/feature/cbind1.csv
+4,s3://h2o-public-test-data/smalldata/feature/cbind2.csv

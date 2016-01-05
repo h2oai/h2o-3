@@ -95,7 +95,7 @@ function() {
   print("")
   print("    --dataSetIds           the id of the test case data sets.")
   print("")
-  print("    --validationMethod     the validation method (R, H, N) of the test case.")
+  print("    --validationMethod     the validation method (R, H, O) of the test case.")
   print("")
   print("    --validationDataSetId  the id of the test case validation data sets (H option).")
   print("")

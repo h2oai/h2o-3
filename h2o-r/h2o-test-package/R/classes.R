@@ -79,8 +79,8 @@ function(id, feature, featureParams, dataSets, validationMethod, validationDataS
         stop("Missing `validationMethod`, which is required for proper FeatureTestCase object construction.")
     } else {
         if (!is.character(validationMethod) || !(validationMethod == "R" || validationMethod == "H" ||
-                                                 validationMethod == "N")) {
-            stop("FeatureTestCase slot `validationMethod` must be a 'R', 'H', or 'N'.")
+                                                 validationMethod == "O")) {
+            stop("FeatureTestCase slot `validationMethod` must be a 'R', 'H', or 'O'.")
 
             if (validationMethod == "R") {
                 if (missing(validationDataSet)) {
@@ -90,9 +90,9 @@ function(id, feature, featureParams, dataSets, validationMethod, validationDataS
                 if (!typeof(validationDataSet) == "FeatureDataSet") {
                     stop("FeatureTestCase slot `validationDataSet` must be a FeatureDataSet for validationMethod 'R'.")
                 }
-            } else {
-                if (!typeof(validationDataSet) == "NULL") {
-                    stop("FeatureTestCase slot `validationDataSet` must be NULL for validationMethod 'H' and 'N'.")
+            } else if (validationMethod == "O") {
+                if (!(typeof(validationDataSet) == "NULL")) {
+                    stop("FeatureTestCase slot `validationDataSet` must be NULL for validationMethod 'O'.")
                 }
             }
         }
