@@ -194,6 +194,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void computeCrossValidation() {
     assert _job.isRunning();    // main Job is still running
     final Integer N = nFoldWork();
+    init(false);
     try {
       Scope.enter();
 
@@ -375,7 +376,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _job.stop_requested() ) return;
     assert _job.isRunning();
 
-    M mainModel = (M)_job._result.get();
+    M mainModel = _result.get();
 
     // Compute and put the cross-validation metrics into the main model
     Log.info("Computing " + N + "-fold cross-validation metrics.");
