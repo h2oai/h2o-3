@@ -6,8 +6,9 @@ Each cv-model produces a prediction frame pertaining to its fold. It can be save
 
 These holdout predictions have some interesting properties. First they have names like:
 
-  `prediction_GBM_model_1452035702801_1_cv_1`
-
+```
+  prediction_GBM_model_1452035702801_1_cv_1
+```
 and they contain, unsurprisingly, predictions for the data held out in the fold. They also have the same number of rows as the entire input training frame with `0`s filled in for all rows that are not in the hold out. 
 
 Let's look at an example. 
@@ -30,16 +31,16 @@ Here is a snippet of a three-class classification dataset (last column is the re
 
 Each cross-validated model produces a prediction frame
 
-  `prediction_GBM_model_1452035702801_1_cv_1`
-  
-  `prediction_GBM_model_1452035702801_1_cv_2`
-  
-  `prediction_GBM_model_1452035702801_1_cv_3`
+```
+  prediction_GBM_model_1452035702801_1_cv_1
+  prediction_GBM_model_1452035702801_1_cv_2 
+  prediction_GBM_model_1452035702801_1_cv_3
+```
 
 and each one has the following shape (for example the first one):
 
 ```
-prediction_GBM_model_1452035702801_1_cv_1
+  prediction_GBM_model_1452035702801_1_cv_1
 ``` 
 
 | prediction | setosa | versicolor | virginica |
@@ -83,8 +84,8 @@ fit@model$cross_validation_predictions$name
 
 nfolds <- fit@parameters$nfolds
 predlist <- sapply(1:nfolds, function(v) h2o.getFrame(fit@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
-cvpred_sparse <- h2o.cbind(predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
-pred <- apply(cvpred_sparse, 1, sum)  #These are the cross-validated predicted cluster IDs for each of the 1:N observations
+cvpred_sparse <- h2o.cbind(predlist)  # N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
+pred <- apply(cvpred_sparse, 1, sum)  # These are the cross-validated predicted cluster IDs for each of the 1:N observations
 ```
 
 This can be extended to other family types as well (multinomial, binomial, regression):
@@ -99,10 +100,10 @@ This can be extended to other family types as well (multinomial, binomial, regre
   } else {
     predlist <- sapply(1:V, function(v) h2o.getFrame(h2omodel@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
   }
-  cvpred_sparse <- h2o.cbind(predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
+  cvpred_sparse <- h2o.cbind(predlist)  # N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
   cvpred_col <- apply(cvpred_sparse, 1, sum)
   return(cvpred_col)
-} 
+}
 
 
 # Extract cross-validated predicted values (in order of original rows)
