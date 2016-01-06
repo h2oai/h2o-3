@@ -1,6 +1,5 @@
 package hex;
 
-import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.fvec.NewChunk;
 import water.rapids.ASTKFold;
