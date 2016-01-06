@@ -21,7 +21,7 @@ def deeplearning_autoencoder():
   test_hex[resp] = test_hex[resp].asfactor()
 
   # split data into two parts
-  sid = train_hex[0].runif(1234)
+  sid = train_hex[0].runif(0)
 
   # unsupervised data for autoencoder
   train_unsupervised = train_hex[sid >= 0.5]
@@ -62,7 +62,8 @@ def deeplearning_autoencoder():
   cm.show()
 
   # 8.8% error +/- 0.001
-  assert abs(cm.cell_values[10][10] - 0.0882) < 0.001, "Error. Expected 0.0847, but got {0}".format(cm.cell_values[10][10])
+  #compare to runit_deeplearning_autoencoder_large.py
+  assert abs(cm.cell_values[10][10] - 0.0880) < 0.001, "Error. Expected 0.0880, but got {0}".format(cm.cell_values[10][10])
 
 
 if __name__ == "__main__":

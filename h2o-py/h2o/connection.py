@@ -36,19 +36,25 @@ class H2OConnection(object):
   GET, POST, and DELETE.
   """
 
+  __ENCODING__ = "utf-8"
+  __ENCODING_ERROR__ = "replace"
+
   def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True, proxies=None):
+               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True, proxies=None, nthreads=-1):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
     :param port: A port, default is 54321
-    :param size: THe expected number of h2o instances (ignored if start_h2o is True)
+    :param size: The expected number of h2o instances (ignored if start_h2o is True)
     :param start_h2o: A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
-    :param enable_assertions: If start_h2o, pass `-ea` as a VM option.s
+    :param enable_assertions: If start_h2o, pass `-ea` as a VM option.
     :param license: If not None, is a path to a license file.
     :param max_mem_size_GB: Maximum heap size (jvm option Xmx) in gigabytes.
     :param min_mem_size_GB: Minimum heap size (jvm option Xms) in gigabytes.
     :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
+    :param strict_version_check: Setting this to False is unsupported and should only be done when advised by technical support.
+    :param proxies: A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
+    :param nthreads: Number of threads in the thread pool. This relates very closely to the number of CPUs used. -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. This value is only used when Python starts H2O.
     :return: None
     """
 
@@ -74,7 +80,7 @@ class H2OConnection(object):
     if start_h2o:
       if not ice_root:
         ice_root = tempfile.mkdtemp()
-      cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root,jar_path)
+      cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path, nthreads)
     else:
       try:
         cld = self._connect(size)
@@ -89,7 +95,7 @@ class H2OConnection(object):
         if path_to_jar:
           if not ice_root:
             ice_root = tempfile.mkdtemp()
-          cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path)
+          cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path, nthreads)
         else:
           print("No jar file found. Could not start local instance.")
           print("Jar Paths searched: ")
@@ -133,6 +139,11 @@ class H2OConnection(object):
 
     self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()
+
+  @staticmethod
+  def default():
+    H2OConnection.__ENCODING__ = "utf-8"
+    H2OConnection.__ENCODING_ERROR__ = "replace"
 
   @staticmethod
   def jar_paths():
@@ -206,7 +217,7 @@ class H2OConnection(object):
     sys.stdout.write("\rStarting H2O JVM and connecting: {}".format("." * retries))
     sys.stdout.flush()
 
-  def _start_local_h2o_jar(self, mmax, mmin, ea, license, ice, jar_path):
+  def _start_local_h2o_jar(self, mmax, mmin, ea, license, ice, jar_path, nthreads):
     command = H2OConnection._check_java()
     if license:
       if not os.path.exists(license):
@@ -222,6 +233,7 @@ class H2OConnection(object):
     print()
 
     jver = subprocess.check_output([command, "-version"], stderr=subprocess.STDOUT)
+    if PY3: jver = str(jver, H2OConnection.__ENCODING__)
 
     print()
     print("Java Version: " + jver)
@@ -253,8 +265,9 @@ class H2OConnection(object):
                 "-port", "54321",
                 "-ice_root", ice,
                 ]
-    if license:
-      h2o_opts += ["-license", license]
+    
+    if nthreads > 0: h2o_opts +=  ["-nthreads", str(nthreads)]
+    if license: h2o_opts += ["-license", license]
 
     cmd = [command] + vm_opts + h2o_opts
 
@@ -366,8 +379,9 @@ class H2OConnection(object):
       __H2OCONN__= None
       raise ValueError("The H2O instance running at {0}:{1} has already been shutdown.".format(ip, port))
     if not isinstance(prompt, bool): raise ValueError("`prompt` must be TRUE or FALSE")
-    if prompt: response = input("Are you sure you want to shutdown the H2O instance running at {0}:{1} "
-                                    "(Y/N)? ".format(conn.ip(), conn.port()))
+    if prompt:
+      question = "Are you sure you want to shutdown the H2O instance running at {0}:{1} (Y/N)? ".format(conn.ip(), conn.port())
+      response = input(question) if PY3 else raw_input(question)
     else: response = "Y"
     if response == "Y" or response == "y": 
       conn.post(url_suffix="Shutdown")
@@ -485,17 +499,17 @@ class H2OConnection(object):
         for l in v:
           if isinstance(l,list):
             x += '['
-            x += ','.join([str(e) if PY3 else str(e).encode("utf-8") for e in l])
+            x += ','.join([str(e) if PY3 else str(e).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__) for e in l])
             x += ']'
           else:
-            x += str(l) if PY3 else str(l).encode("utf-8")
+            x += str(l) if PY3 else str(l).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__)
           x += ','
         x = x[:-1]
         x += ']'
       else:
-        x = str(v) if PY3 else str(v).encode("utf-8")
+        x = str(v) if PY3 else str(v).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__)
       query_string += k+"="+x+"&"
-    query_string = query_string[:-1] # Remove trailing extra &
+    query_string = query_string[:-1]  # Remove trailing extra &
 
     post_body = ""
     if not file_upload_info:

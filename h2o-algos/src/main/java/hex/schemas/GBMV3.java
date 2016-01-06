@@ -53,7 +53,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
     @API(help="Learning rate (from 0.0 to 1.0)", gridable = true)
     public float learn_rate;
 
-    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, gridable = true)
+    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace" }, gridable = true)
     public Distribution.Family distribution;
 
     @API(help = "Tweedie Power (between 1 and 2)", level = API.Level.secondary, gridable = true)
@@ -61,5 +61,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help="Column sample rate (from 0.0 to 1.0)", gridable = true)
     public float col_sample_rate;
+
+//    @API(help = "Quantile for quantile regression (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
+//    public double quantile;
   }
 }

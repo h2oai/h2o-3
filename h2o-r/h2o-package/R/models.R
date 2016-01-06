@@ -1954,6 +1954,9 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     }
     if (validation_metric %in% names(df)) {  #Training and Validation scoring history
       ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
+      if (sum(is.na(ylim))>1) {
+        ylim <- c(0.0, 1.0)
+      }  
       graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
                      main = "Scoring History", col = "blue", ylim = ylim)
       graphics::par(new = TRUE)
@@ -1961,6 +1964,9 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
     } else {  #Training scoring history only
       ylim <- range(c(df[,c(training_metric)]))
+      if (sum(is.na(ylim))>1) {
+        ylim <- c(0.0, 1.0)
+      }
       graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = timestep, ylab = training_metric,
                      main = "Training Scoring History", col = "blue", ylim = ylim)
 

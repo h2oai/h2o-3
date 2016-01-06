@@ -4,7 +4,9 @@
 
 ## Downloading
 
-We don't yet have a downloadable R artifact for the latest version of H2O. You will need to build it yourself or install the package from [CRAN](https://cran.r-project.org/web/packages/h2o/index.html).
+You can always download the latest stable version of the **h2o** R package from the following page: [http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html](http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html) 
+
+Alternatively, you can build the h2o R package from source (see below), or install the package from [CRAN](https://cran.r-project.org/web/packages/h2o/index.html).
 
 
 ## Building it yourself

@@ -17,7 +17,7 @@ check.deeplearning_autoencoder <- function() {
      test_hex[,resp] <- as.factor(test_hex[,resp])
 
      # split data into two parts (first part for unsupervised training, second part for supervised training)
-     sid <- h2o.runif(train_hex, 1234)
+     sid <- h2o.runif(train_hex, seed=0)
      # split <- h2o.splitFrame(train_hex, 0.5)
 
 
@@ -55,7 +55,8 @@ check.deeplearning_autoencoder <- function() {
      cm <- h2o.confusionMatrix(drf_model, test_features)
      print(cm)
 
-     expect_equal(cm$Error[11], 0.0882, tolerance = 0.005, scale = 1) # absolute difference: scale = 1
+     # compare to pyunit_autoencoderDeepLearning_large.py
+     expect_equal(cm$Error[11], 0.0880, tolerance = 0.001, scale = 1) # absolute difference: scale = 1
 
      
 }

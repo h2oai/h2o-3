@@ -15,7 +15,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     automatically be generated.
   distribution : str
      The distribution function of the response. Must be "AUTO", "bernoulli",
-     "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+     "multinomial", "poisson", "gamma", "tweedie", "laplace" or "gaussian"
   tweedie_power : float
     Tweedie power (only for Tweedie distribution, must be between 1 and 2)
   ntrees : int

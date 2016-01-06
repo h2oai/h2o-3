@@ -63,7 +63,7 @@ To set up your Python environment to run these examples, download and install H2
 ###Available Demos
 
 - [Predict Airline Delays](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/airlines_demo_small.ipynb) - Uses historical airlines flight data to build multiple classification models to label any flight as either delayed or not delayed.
-- [Chicago Crime Rate](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/chicago_crimes.ipynb) - Uses weather and city statistics to compare arrest rates with the total crimes for each category. 
+- [Chicago Crime Rate](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_chicago_crimes.ipynb) - Uses weather and city statistics to compare arrest rates with the total crimes for each category. 
 - [NYC Citibike Demand with Weather](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/citi_bike_large.ipynb) - Takes monthly bike ride data (~10 million rows) for the past two years to predict bike demand at each bike share station. Weather data is also incorporated to better predict bike usage.
 - [NYC Citibike Demand with Weather - smaller dataset](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/citi_bike_small.ipynb) - Takes monthly bike ride data (~1 million rows) for the past two years to predict bike demand at each bike share station. Weather data is also incorporated to better predict bike usage.
 - [Confusion Matrix & ROC](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/cm_roc.ipynb) - Creates a GBM and GLM model using the airlines dataset, including confusion matrices, ROCs, and scoring histories. 

@@ -706,9 +706,9 @@ public class GLMBasicTestRegression extends TestUtil {
       if(job != null) job.remove();
     }
 
-    // Airlines (has co-linear columns)
+    // Airlines (has collinear columns)
     params._standardize = false;
-    params._remove_colinear_columns = true;
+    params._remove_collinear_columns = true;
     params._train = _airlines._key;
     params._response_column = "IsDepDelayed";
     params._ignored_columns = new String[]{"IsDepDelayed_REC"};

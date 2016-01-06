@@ -309,7 +309,7 @@ final public class DeepLearningModelInfo extends Iced {
     long byte_size = new AutoBuffer().put(this).buf().length;
     TwoDimTable table = new TwoDimTable(
             "Status of Neuron Layers",
-            (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
+            (!get_params()._autoencoder ? ("predicting " + data_info._adaptedFrame.lastVecName() + ", ") : "") +
                     (get_params()._autoencoder ? "auto-encoder" :
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
                     + ", " + get_params()._distribution + " distribution, " + get_params()._loss + " loss, "

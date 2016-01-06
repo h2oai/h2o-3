@@ -567,9 +567,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
       }
+      out._model_summary = createModelSummaryTable(out);
+      out._scoring_history = createScoringHistoryTable(out);
       if( out._ntrees > 0 ) {    // Compute variable importances
-        out._model_summary = createModelSummaryTable(out);
-        out._scoring_history = createScoringHistoryTable(out);
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
@@ -660,8 +660,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     int rows = 0;
-    for( int i = 1; i<_output._scored_train.length; i++ ) {
-      if (!Double.isNaN(_output._scored_train[i]._mse)) ++rows;
+    for( int i = 0; i<_output._scored_train.length; i++ ) {
+      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse)) continue;
+      rows++;
     }
     TwoDimTable table = new TwoDimTable(
             "Scoring History", null,
@@ -671,11 +672,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             colFormat.toArray(new String[0]),
             "");
     int row = 0;
-    for( int i = 1; i<_output._scored_train.length; i++ ) {
-      if (Double.isNaN(_output._scored_train[i]._mse)) continue;
+    for( int i = 0; i<_output._scored_train.length; i++ ) {
+      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse)) continue;
       int col = 0;
-      assert(row < table.getRowDim());
-      assert(col < table.getColDim());
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(_output._training_time_ms[i]));
       table.set(row, col++, PrettyPrint.msecs(_output._training_time_ms[i] - _start_time, true));

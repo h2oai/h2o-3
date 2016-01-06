@@ -37,7 +37,7 @@
 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fourth Edition 
+\monthname \hspace{1pt}  \the\year: Fifth Edition 
 
 \bigskip
 \end{center}
@@ -72,7 +72,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fourth Edition 
+\monthname \hspace{1pt}  \the\year: Fifth Edition 
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -119,7 +119,7 @@ Topics include:
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
-\input{generated_buildinfo.tex}
+%\input{generated_buildinfo.tex}
 
 \input{common/installation.tex}
 
@@ -454,6 +454,9 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of at least the specified number of bins, then split at the best point The default is 20.
 \item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024. \label{nbins_cats}
 \item {\texttt{seed}}: Seed containing random numbers that affects sampling.
+\item{\texttt{mtries}}: Number of variables randomly sampled as candidates at each split. If {\texttt{-1}}, the square root of $p$ is used for classification,or $p/3$ for regression (where $p$ is the number of predictors). 
+\item{\texttt{sample\_rate}}: Row sample rate (from 0.0 to 1.0). 
+\item{\texttt{col\_sample\_rate\_per\_tree}}: Column sample rate per tree (from 0.0 to 1.0). 
 \item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0.
 \item {\texttt{distribution}}: The distribution function options: {\texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma}} or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
 \item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  The default is  {\texttt{FALSE}}.
@@ -469,7 +472,9 @@ This section describes the functions of the parameters for GBM.
 \item \texttt{stopping\_rounds}: Early stopping based on convergence of \\\texttt{stopping\_metric}. Stop if simple moving average of length k of the \texttt{stopping\_metric} does not improve for k:=\texttt{stopping\_rounds} scoring events. Can only trigger after at least 2k scoring events. To disable, specify \texttt{0}.
 \item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO, deviance, logloss, MSE, AUC, r2, misclassification}.
 \item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
-\item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network overhead but fewer CPUs used. Suitable for small datasets.  The default is {\texttt{FALSE}}.
+\item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network 
+overhead but fewer CPUs used. Suitable for small datasets.  The default is {\texttt{FALSE}}.
+\item {\texttt{binomial\_double\_trees}}: For binary classification: Builds twice as many trees (one per class), which can result in better accuracy. 
 \item {\texttt{tweedie\_power}}: A numeric specifying the power for the Tweedie function when \texttt{distribution = "tweedie"}.  The default is 1.5.
 \item {\texttt{checkpoint}}: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 \item {\texttt{keep\_cross\_validation\_predictions}}: Specify whether to keep the predictions of the cross-validation models.   The default is {\texttt{FALSE}}.

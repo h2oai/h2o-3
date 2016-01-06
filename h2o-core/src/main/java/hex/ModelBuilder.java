@@ -8,12 +8,10 @@ import water.rapids.ASTKFold;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
+import water.fvec.RebalanceDataSet;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.MRUtils;
-import water.util.ReflectionUtils;
+import water.util.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
@@ -245,8 +243,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Work for each requested fold
   private int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
-    Vec fc = train().vec(_parms._fold_column);
-    return ((int)fc.max()-(int)fc.min()) + 1;
+    Vec f = train().vec(_parms._fold_column);
+    Vec fc = VecUtils.toCategoricalVec(f);
+    int N = fc.domain().length;
+    fc.remove();
+    return N;
   }
   // Temp zero'd vector, same size as train()
   private Vec zTmp() { return train().anyVec().makeZero(); }
@@ -291,8 +292,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // TODO: Implement better splitting algo (with Strata if response is categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
     final Integer N = nFoldWork();
     final Vec foldAssignment;
+    final Vec foldCol = origTrainFrame.vec(_parms._fold_column);
     if (_parms._fold_column != null) {
-      foldAssignment = origTrainFrame.vec(_parms._fold_column);
+      foldAssignment = makeFoldAssignment(foldCol);
     } else {
       final long seed = _parms.nFoldSeed();
       Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
@@ -363,7 +365,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // clean up memory (mostly small helper vectors and Frame headers)
-    if (_parms._fold_column == null) foldAssignment.remove();
+    foldAssignment.remove();
     if (origWeightsName == null) origWeight.remove();
 
     // adapt main Job's progress bar to build N+1 models
@@ -521,6 +523,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return this;
   }
 
+  /**
+   * Create a fold assignment column from the fold_column
+   * If the fold_column is contiguous integers, then use that.
+   * @param foldCol
+   * @return
+   */
+  private Vec makeFoldAssignment(Vec foldCol){
+    Vec foldAssignment;
+    int numRange = foldCol.isNumeric() ? (int)(foldCol.max()-foldCol.min()+1) : 0;
+    Vec foldCat = VecUtils.toCategoricalVec(foldCol);
+    if (numRange == foldCat.domain().length) {
+      foldCat.remove();
+      foldAssignment = VecUtils.toNumericVec(foldCol);
+      Log.info(foldCat.domain().length + "-fold cross-validation holdout fold assignment:");
+      for (int i=(int)foldAssignment.min();i<=(int)foldAssignment.max();++i)
+        Log.info("(numeric) fold_column value: " + i + " -> fold " + ((i%numRange)+1));
+    } else {
+      foldAssignment = foldCat;
+      Log.info(foldCat.domain().length + "-fold cross-validation holdout fold assignment:");
+      for (int i=0;i<foldAssignment.domain().length;++i)
+        Log.info("(categorical) fold_column value: " + foldAssignment.domain()[i] + " -> fold " + (i+1));
+    }
+    return foldAssignment;
+  }
+
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
   private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
     @Override
@@ -656,8 +683,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if(f == null)
         error("_fold_column","Fold column '" + _parms._fold_column  + "' not found in the training frame");
       else {
-        if(!f.isInt())
-          error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be integer");
+        if(!f.isInt() && !f.isCategorical())
+          error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be integer or categorical");
         if(f.min() < 0)
           error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be non-negative");
         if(f.isConst())
@@ -857,7 +884,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _train.remove(_parms._ignored_columns);
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
-
+    // Rebalance train and valid datasets
+    if (expensive && error_count() == 0) {
+      _train = rebalance(_train, false, _key + ".temporary.train");
+      _valid = rebalance(_valid, false, _key + ".temporary.valid");
+    }
+    
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
     // can use them, and otherwise all algos will then be forced to remove
     // them.  Text algos (grep, word2vec) take raw text columns - which are
@@ -989,6 +1021,40 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
     }
+  }
+  
+  /**
+   * Rebalance a frame for load balancing
+   * @param original_fr Input frame
+   * @param local Whether to only create enough chunks to max out all cores on one node only
+   * @param name Name of rebalanced frame
+   * @return Frame that has potentially more chunks
+   */
+  
+  protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
+    if (original_fr == null) return null;
+    int chunks = desiredChunks(original_fr, local);
+    if (original_fr.anyVec().nChunks() >= chunks) {
+      if (chunks>1)
+        Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() +
+              " chunks. No need to rebalance.");
+      return original_fr;
+    }
+    Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
+    Key newKey = Key.make(name + ".chunks" + chunks);
+    RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
+    H2O.submitTask(rb).join();
+    Frame rebalanced_fr = DKV.get(newKey).get();
+    Scope.track(rebalanced_fr);
+    return rebalanced_fr;
+  }
+  
+  /**
+   * Find desired number of chunks. If fewer, dataset will be rebalanced.
+   * @return Lower bound on number of chunks after rebalancing.
+   */
+  protected int desiredChunks(final Frame original_fr, boolean local) {
+    return Math.min((int) Math.ceil(original_fr.numRows() / 1e3), H2O.NUMCPUS);
   }
 
   public void checkDistributions() {

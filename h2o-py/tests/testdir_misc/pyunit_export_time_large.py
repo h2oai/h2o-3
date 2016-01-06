@@ -7,7 +7,10 @@ from tests import pyunit_utils
 import string
 import random
 import time
-
+'''
+The below function will test if the exporting of a file in H2O is NOT asynchronous. Meaning the h2o.export_file()
+waits for the entire process to finish before exiting.
+'''
 def export_time():
     pros_hex = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/citibike-nyc/2013-07.csv"))
 

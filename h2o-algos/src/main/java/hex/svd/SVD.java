@@ -21,7 +21,9 @@ import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Singular Value Decomposition
@@ -362,6 +364,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       Vec[] uvecs = null;
 
       try {
+        Scope.enter();
         init(true);   // Initialize parameters
         _parms.read_lock_frames(SVD.this); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
@@ -533,6 +536,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if( u != null & !_parms._keep_u ) u.delete();
         if( qfrm != null ) qfrm.delete();
         _parms.read_unlock_frames(SVD.this);
+        List<Key> keep = new ArrayList<>();
+        Frame uFrm = DKV.getGet(model._output._u_key);
+        if (uFrm != null) for (Vec vec : uFrm.vecs()) keep.add(vec._key);
+        Frame vFrm = DKV.getGet(model._output._v_key);
+        if (vFrm != null) for (Vec vec : vFrm.vecs()) keep.add(vec._key);
+        Scope.exit(keep.toArray(new Key[0]));
       }
 
       // Job thisJob = DKV.getGet(_key);

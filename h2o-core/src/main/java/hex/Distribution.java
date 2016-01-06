@@ -66,7 +66,7 @@ public class Distribution extends Iced {
    * Deviance of given distribution function at predicted value f
    * @param w observation weight
    * @param y (actual) response
-   * @param f (predicted) response in original response space
+   * @param f (predicted) response in original response space (including offset)
    * @return value of gradient
    */
   public double deviance(double w, double y, double f) {
@@ -74,7 +74,7 @@ public class Distribution extends Iced {
     switch (distribution) {
       case AUTO:
       case gaussian:
-        return w * (y - f) * (y - f);
+        return w * (y - f) * (y - f); // 2x as big as what the gradient (y-f) would suggest: we want the full squared error
       case huber:
         if (Math.abs(y-f) < 1) {
           return w * (y - f) * (y - f);
@@ -82,7 +82,7 @@ public class Distribution extends Iced {
           return 2 * w * Math.abs(y-f) - 1;
         }
       case laplace:
-        return 2 * w * Math.abs(y-f);
+        return w * Math.abs(y-f); // weighted absolute deviance == weighted absolute error
       case bernoulli:
         return -2 * w * (y * f - log(1 + exp(f)));
       case poisson:
@@ -98,7 +98,7 @@ public class Distribution extends Iced {
   }
 
   /**
-   * Gradient of given distribution function at predicted value f
+   * Gradient of deviance function at predicted value f, for actual response y
    * @param y (actual) response
    * @param f (predicted) response in link space (including offset)
    * @return value of gradient
@@ -293,7 +293,7 @@ public class Distribution extends Iced {
         double absz = Math.abs(z);
         return w * (absz*(1-absz));
       case poisson:
-        return w * (y-z);
+        return w * (y-z); //y-z == exp(f)
       case tweedie:
         return w * exp(f*(2- tweediePower));
       default:
