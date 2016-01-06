@@ -1,4 +1,5 @@
-
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source("../../../scripts/h2o-r-test-setup.R")
 
 test.glrm.stream <- function() {
   m <- 1000; n <- 100; k <- 10; f <- 0.8
