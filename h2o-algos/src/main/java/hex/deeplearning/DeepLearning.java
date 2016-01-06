@@ -2,8 +2,6 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.schemas.DeepLearningV3;
-import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -136,10 +134,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     }
   }
 
-  public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {
-    protected DeepLearningDriver() { super(true); } // bump priority of drivers
-    @Override
-    public void compute2() {
+  public class DeepLearningDriver extends Driver {
+    @Override public void compute2() {
       try {
         long cs = _parms.checksum();
         init(true);

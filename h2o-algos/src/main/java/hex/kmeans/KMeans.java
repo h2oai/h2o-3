@@ -1,12 +1,9 @@
 package hex.kmeans;
 
 import hex.*;
-import hex.schemas.KMeansV3;
-import hex.schemas.ModelBuilderSchema;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
-import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -71,8 +68,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   }
 
   // ----------------------
-  private final class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
-    private KMeansDriver() { super(true); } // bump priority of drivers
+  private final class KMeansDriver extends Driver {
     private String[][] _isCats;  // Categorical columns
 
     // Initialize cluster centers

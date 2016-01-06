@@ -1,8 +1,6 @@
 package hex.naivebayes;
 
 import hex.*;
-import hex.schemas.ModelBuilderSchema;
-import hex.schemas.NaiveBayesV3;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesOutput;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import water.*;
@@ -72,8 +70,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     hide("_max_after_balance_size", "Max after balance size is not applicable to NaiveBayes.");
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
-  class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
-    protected NaiveBayesDriver() { super(true); } // bump driver priority
+  class NaiveBayesDriver extends Driver {
 
     public boolean computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
       model._output._levels = _response.domain();

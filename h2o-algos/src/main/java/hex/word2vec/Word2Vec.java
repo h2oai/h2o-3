@@ -1,13 +1,9 @@
 package hex.word2vec;
 
 import hex.ModelCategory;
-import water.H2O;
 import water.fvec.Vec;
 import water.util.Log;
-
 import hex.ModelBuilder;
-import hex.schemas.Word2VecV3;
-import hex.schemas.ModelBuilderSchema;
 import hex.word2vec.Word2VecModel.*;
 
 public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecParameters,Word2VecModel.Word2VecOutput> {
@@ -41,10 +37,8 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
     if (_parms._epochs < 1) error("_epochs", "Negative epoch count not allowed for Word2Vec.  Expected value > 0, received " + _parms._epochs);
   }
 
-  private class Word2VecDriver extends H2O.H2OCountedCompleter<Word2VecDriver> {
-    protected Word2VecDriver() { super(true); } // bump driver priority
-    @Override
-    public void compute2() {
+  private class Word2VecDriver extends Driver {
+    @Override public void compute2() {
       Word2VecModel model = null;
       long start, stop, lastCnt=0;
       long tstart, tstop;

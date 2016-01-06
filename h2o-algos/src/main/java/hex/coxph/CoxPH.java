@@ -4,7 +4,6 @@ import Jama.Matrix;
 import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
-import hex.schemas.ModelBuilderSchema;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
@@ -56,7 +55,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       error("stop_column", "number of distinct stop times is " + n_time + "; maximum number allowed is " + MAX_TIME_BINS);
   }
 
-  public class CoxPHDriver extends H2O.H2OCountedCompleter<CoxPHDriver> {
+  public class CoxPHDriver extends Driver {
     private Frame _modelBuilderTrain = null;
 
     private void applyScoringFrameSideEffects() {

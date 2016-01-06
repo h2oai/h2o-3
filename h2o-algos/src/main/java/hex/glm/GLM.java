@@ -20,8 +20,6 @@ import hex.optimization.L_BFGS.*;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
 import hex.optimization.OptimizationUtils.MoreThuente;
-import hex.schemas.GLMV3;
-import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -841,15 +839,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    * Contains implementation of the glm algo.
    * It's a DTask so it can be computed on other nodes (to distributed single node part of the computation).
    */
-  public final class GLMDriver extends DTask<GLMDriver> {
+  public final class GLMDriver extends Driver {
     transient AtomicBoolean _gotException = new AtomicBoolean();
     final byte _priority = nextThrPriority();
     @Override protected byte priority() { return _priority; }
 
     Key[] _adapt_keys;          // List of Vec keys generated during dataset adaptation
 
-    public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
-
+    public GLMDriver(H2OCountedCompleter cmp){ super(cmp); }
 
     private void doCleanup(){
       _parms.read_unlock_frames(_job);
@@ -886,7 +883,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       try {
         if( !(ex instanceof IllegalArgumentException) ) // e.g. Illegal beta constraints file, got duplicate constraint for predictor
           doCleanup();
-        new RemoveCall(null, _job._result).invokeTask();
+        new water.DTask.RemoveCall(null, _job._result).invokeTask();
       } catch(Throwable t) {Log.err(t);} // Log and ignore exceptions from the cleanup
       return true;                       // Rethrow the original exception in the final Job.Barrier code
     }

@@ -2,12 +2,10 @@ package hex.tree.drf;
 
 import hex.Distribution;
 import hex.ModelCategory;
-import hex.schemas.DRFV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
-import water.H2O;
 import water.Job;
 import water.Key;
 import water.MRTask;
@@ -40,7 +38,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   public DRF(boolean startup_once) { super(new hex.tree.drf.DRFModel.DRFParameters(),startup_once); }
 
   /** Start the DRF training Job on an F/J thread. */
-  @Override protected H2O.H2OCountedCompleter<Driver> trainModelImpl() { return new DRFDriver(); }
+  @Override protected Driver trainModelImpl() { return new DRFDriver(); }
 
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -82,7 +80,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     public transient TreeMeasuresCollector.TreeMeasures _treeMeasuresOnOOB;
     // Tree votes/SSE per individual features on permutated OOB rows
     public transient TreeMeasuresCollector.TreeMeasures[/*features*/] _treeMeasuresOnSOOB;
-    // Variable importance beased on tree split decisions
+    // Variable importance based on tree split decisions
     private transient float[/*nfeatures*/] _improvPerVar;
 
     private void initTreeMeasurements() {

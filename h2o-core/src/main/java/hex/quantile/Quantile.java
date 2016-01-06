@@ -2,9 +2,6 @@ package hex.quantile;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.schemas.ModelBuilderSchema;
-import hex.schemas.QuantileV3;
-import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.Scope;
 import water.fvec.C0DChunk;
@@ -25,7 +22,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   // Called from Nano thread; start the Quantile Job on a F/J thread
   public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }
-  @Override public H2OCountedCompleter<QuantileDriver> trainModelImpl() { return new QuantileDriver(); }
+  @Override public Driver trainModelImpl() { return new QuantileDriver(); }
   @Override public long progressUnits() { return train().numCols()*_parms._probs.length; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
 
@@ -49,7 +46,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   }
 
   // ----------------------
-  private class QuantileDriver extends H2OCountedCompleter<QuantileDriver> {
+  private class QuantileDriver extends Driver {
 
     private class SumWeights extends MRTask<SumWeights> {
       double sum;

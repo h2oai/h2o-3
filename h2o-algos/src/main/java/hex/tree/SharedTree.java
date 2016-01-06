@@ -121,11 +121,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   // Top-level tree-algo driver
-  abstract protected class Driver extends H2OCountedCompleter<Driver> {
-    protected Driver() { super(true); } // bump priority of model drivers
+  abstract protected class Driver extends ModelBuilder<M,P,O>.Driver {
 
-    @Override
-    public void compute2() {
+    @Override public void compute2() {
       _model = null;            // Resulting model!
       try {
         Scope.enter();          // Cleanup temp keys

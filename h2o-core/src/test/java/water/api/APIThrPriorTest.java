@@ -6,7 +6,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.H2O.H2OCountedCompleter;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -177,14 +176,12 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   @Override public ModelCategory[] can_build() { return null; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public Bogus( BogusModel.BogusParameters parms ) { super(parms); init(false); }
-  @Override protected H2OCountedCompleter<BogusDriver> trainModelImpl() { return new BogusDriver(); }
+  @Override protected Driver trainModelImpl() { return new BogusDriver(); }
   @Override public long progressUnits() { return 0; }
   @Override public void init(boolean expensive) { super.init(expensive); }
 
-  private class BogusDriver extends H2OCountedCompleter<BogusDriver> {
-    protected BogusDriver() { super(true); } // bump priority of drivers
-    @Override
-    public void compute2() {
+  private class BogusDriver extends Driver {
+    @Override public void compute2() {
       _driver_priority = _priority; // Get H2OCountedCompleter priority
       synchronized(Bogus.this) {
         if( _state == 0 ) _state = 1;

@@ -139,7 +139,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Validation response vector. */
   public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
-
+  abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
+    protected Driver() { super(true); } // bump priority of model drivers
+    protected Driver(H2O.H2OCountedCompleter completer){ super(completer,true); }
+  }
+  
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
     if (error_count() > 0)
@@ -170,7 +174,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Model-specific implementation of model training
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
-  abstract protected H2O.H2OCountedCompleter trainModelImpl();
+  abstract protected Driver trainModelImpl();
   abstract protected long progressUnits();
 
   // Work for each requested fold

@@ -2,7 +2,6 @@ package hex.tree.gbm;
 
 import hex.Distribution;
 import hex.ModelCategory;
-import hex.schemas.GBMV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -36,7 +35,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
 
   /** Start the GBM training Job on an F/J thread. */
-  @Override protected H2O.H2OCountedCompleter<Driver> trainModelImpl() {
+  @Override protected GBMDriver trainModelImpl() {
     return new GBMDriver();
   }
 

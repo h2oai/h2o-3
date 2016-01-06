@@ -11,8 +11,6 @@ import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
-import hex.schemas.ModelBuilderSchema;
-import hex.schemas.PCAV3;
 
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
@@ -74,8 +72,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     if (_parms._pca_method != PCAParameters.Method.GLRM && expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
-  class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
-    protected PCADriver() { super(true); } // bump driver priority
+  class PCADriver extends Driver {
 
     protected void buildTables(PCAModel pca, String[] rowNames) {
       // Eigenvectors are just the V matrix

@@ -6,8 +6,6 @@ import Jama.SingularValueDecomposition;
 import hex.*;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
-import hex.schemas.ModelBuilderSchema;
-import hex.schemas.SVDV99;
 import hex.svd.SVDModel.SVDParameters;
 import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.*;
@@ -99,8 +97,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return ivv_sum;
   }
 
-  class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
-    protected SVDDriver() { super(true); } // bump driver priority
+  class SVDDriver extends Driver {
     SVDModel _model;
 
     // private double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }

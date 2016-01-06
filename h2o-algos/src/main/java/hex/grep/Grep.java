@@ -2,10 +2,7 @@ package hex.grep;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.schemas.GrepV3;
-import hex.schemas.ModelBuilderSchema;
 import water.*;
-import water.H2O.H2OCountedCompleter;
 import water.fvec.ByteVec;
 import water.fvec.Chunk;
 import water.fvec.Vec;
@@ -50,11 +47,9 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
   }
 
   // ----------------------
-  private class GrepDriver extends H2OCountedCompleter<GrepDriver> {
-    protected GrepDriver() { super(true); } // bump driver priority
+  private class GrepDriver extends Driver {
 
-    @Override
-    public void compute2() {
+    @Override public void compute2() {
       GrepModel model = null;
       try {
         Scope.enter();

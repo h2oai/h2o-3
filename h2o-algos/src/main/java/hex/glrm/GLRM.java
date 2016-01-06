@@ -11,8 +11,6 @@ import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import hex.schemas.GLRMV3;
-import hex.schemas.ModelBuilderSchema;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import hex.svd.SVDModel.SVDParameters;
@@ -247,9 +245,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return cexp;
   }
 
-  class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
-
-    protected GLRMDriver() { super(true); } // bump driver priority
+  class GLRMDriver extends Driver {
     // Initialize Y and X matrices
     // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
     private double[][] initialXY(DataInfo tinfo, Frame dfrm, GLRMModel model, long na_cnt) {

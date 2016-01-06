@@ -4,9 +4,6 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.example.ExampleModel.ExampleOutput;
 import hex.example.ExampleModel.ExampleParameters;
-import hex.schemas.ExampleV3;
-import hex.schemas.ModelBuilderSchema;
-import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
@@ -22,7 +19,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms ) { super(parms); init(false); }
-  @Override protected H2OCountedCompleter<ExampleDriver> trainModelImpl() { return new ExampleDriver(); }
+  @Override protected ExampleDriver trainModelImpl() { return new ExampleDriver(); }
   @Override public long progressUnits() { return _parms._max_iterations; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -39,11 +36,8 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
   }
 
   // ----------------------
-  private class ExampleDriver extends H2OCountedCompleter<ExampleDriver> {
-
-    protected ExampleDriver() { super(true); } // bump priority of drivers
-    @Override
-    public void compute2() {
+  private class ExampleDriver extends Driver {
+    @Override public void compute2() {
       ExampleModel model = null;
       try {
         Scope.enter();
