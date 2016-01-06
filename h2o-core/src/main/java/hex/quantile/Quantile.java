@@ -25,22 +25,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   // Called from Nano thread; start the Quantile Job on a F/J thread
   public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }
-
-  public ModelBuilderSchema schema() { return new QuantileV3(); }
-
-  @Override public H2OCountedCompleter<QuantileDriver> trainModelImpl() {
-    return new QuantileDriver();
-  }
-
-  @Override
-  public long progressUnits() {
-    return train().numCols()*_parms._probs.length;
-  }
-
-
-  @Override public ModelCategory[] can_build() {
-    return new ModelCategory[]{ModelCategory.Unknown};
-  }
+  @Override public H2OCountedCompleter<QuantileDriver> trainModelImpl() { return new QuantileDriver(); }
+  @Override public long progressUnits() { return train().numCols()*_parms._probs.length; }
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

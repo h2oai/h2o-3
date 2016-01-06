@@ -16,7 +16,6 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   public enum WordModel { SkipGram, CBOW }
   public enum NormModel { HSM, NegSampling }
   public Word2Vec(Word2VecModel.Word2VecParameters parms) { super(parms); }
-  public ModelBuilderSchema schema() { return new Word2VecV3(); }
   @Override protected Word2VecDriver trainModelImpl() { return new Word2VecDriver(); }
   @Override public long progressUnits() { return _parms._epochs; }
 

@@ -20,10 +20,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.Unknown, }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super(parms); init(false); }
-
-  public ModelBuilderSchema schema() {
-    throw H2O.unimpl();
-  }
   @Override protected CoxPHDriver trainModelImpl() { return new CoxPHDriver(); }
   @Override public long progressUnits() { return _parms.iter_max; }
 

@@ -177,10 +177,7 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   @Override public ModelCategory[] can_build() { return null; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public Bogus( BogusModel.BogusParameters parms ) { super(parms); init(false); }
-  public ModelBuilderSchema schema() { return null; }
-  @Override protected H2OCountedCompleter<BogusDriver> trainModelImpl() {
-    return new BogusDriver();
-  }
+  @Override protected H2OCountedCompleter<BogusDriver> trainModelImpl() { return new BogusDriver(); }
   @Override public long progressUnits() { return 0; }
   @Override public void init(boolean expensive) { super.init(expensive); }
 

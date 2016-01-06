@@ -39,7 +39,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             ModelCategory.AutoEncoder
     };
   }
-  public ModelBuilderSchema schema() { return new DeepLearningV3(); }
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
   @Override protected DeepLearningDriver trainModelImpl() { return new DeepLearningDriver(); }

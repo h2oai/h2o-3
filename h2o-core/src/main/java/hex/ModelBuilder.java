@@ -118,7 +118,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
-  public final Frame valid() { return _valid; }
+  protected final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
   // TODO: tighten up the type
@@ -139,13 +139,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Validation response vector. */
   public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
-
-  /**
-   * Externally visible default schema
-   * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
-   * This puts a reverse edge into the dependency graph.
-   */
-  public abstract ModelBuilderSchema schema();
 
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {

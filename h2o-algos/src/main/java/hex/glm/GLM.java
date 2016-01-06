@@ -666,19 +666,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
   }
-  @Override
-  public ModelBuilderSchema schema() {
-    return new GLMV3();
-  }
 
 
   private static final long WORK_TOTAL = 1000000;
   @Override protected GLMDriver trainModelImpl() { return new GLMDriver(null); }
 
-  @Override
-  public long progressUnits() {
-    return WORK_TOTAL;
-  }
+  @Override public long progressUnits() { return WORK_TOTAL; }
 
   static double GLM_GRAD_EPS = 1e-4; // done (converged) if subgrad < this value.
 

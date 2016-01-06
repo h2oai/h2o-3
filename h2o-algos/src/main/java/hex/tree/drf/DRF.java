@@ -39,8 +39,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   public DRF( hex.tree.drf.DRFModel.DRFParameters parms, Job job          ) { super(parms, job); init(false); }
   public DRF(boolean startup_once) { super(new hex.tree.drf.DRFModel.DRFParameters(),startup_once); }
 
-  @Override public DRFV3 schema() { return new DRFV3(); }
-
   /** Start the DRF training Job on an F/J thread. */
   @Override protected H2O.H2OCountedCompleter<Driver> trainModelImpl() { return new DRFDriver(); }
 

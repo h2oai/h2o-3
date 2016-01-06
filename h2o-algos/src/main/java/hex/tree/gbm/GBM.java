@@ -35,8 +35,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   public GBM( GBMModel.GBMParameters parms, Key<GBMModel> key) { super(parms, key); init(false); }
   public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
 
-  @Override public GBMV3 schema() { return new GBMV3(); }
-
   /** Start the GBM training Job on an F/J thread. */
   @Override protected H2O.H2OCountedCompleter<Driver> trainModelImpl() {
     return new GBMDriver();

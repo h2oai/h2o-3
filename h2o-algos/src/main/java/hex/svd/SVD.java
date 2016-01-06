@@ -39,7 +39,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // Number of columns in training set (p)
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
-  @Override public ModelBuilderSchema schema() { return new SVDV99(); }
   @Override protected SVDDriver trainModelImpl() { return new SVDDriver(); }
   @Override public long progressUnits() {
     switch(_parms._svd_method) {

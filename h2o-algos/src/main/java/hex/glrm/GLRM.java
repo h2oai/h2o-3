@@ -55,7 +55,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // Loss function for each column
   private transient GLRMParameters.Loss[] _lossFunc;
 
-  @Override public ModelBuilderSchema schema() { return new GLRMV3(); }
   @Override protected GLRMDriver trainModelImpl() { return new GLRMDriver(); }
   @Override public long progressUnits() { return 2 + _parms._max_iterations; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Clustering}; }

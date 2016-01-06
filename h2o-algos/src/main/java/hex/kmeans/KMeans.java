@@ -29,7 +29,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
   public enum Initialization { Random, PlusPlus, Furthest, User }
-  public ModelBuilderSchema schema() { return new KMeansV3(); }
   /** Start the KMeans training Job on an F/J thread. */
   @Override protected KMeansDriver trainModelImpl() { return new KMeansDriver();  }
   @Override public long progressUnits() { return _parms._max_iterations; }

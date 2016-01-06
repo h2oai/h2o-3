@@ -26,7 +26,6 @@ import java.util.List;
  *
  */
 public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameters,NaiveBayesOutput> {
-  @Override public ModelBuilderSchema schema() { return new NaiveBayesV3(); }
   public boolean isSupervised(){return true;}
   @Override protected NaiveBayesDriver trainModelImpl() { return new NaiveBayesDriver(); }
   @Override public long progressUnits() { return 6; }
