@@ -1494,7 +1494,8 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
   else {
     if( !is.H2OFrame(row) )    # Generic R expression
       rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
-    rows <- .newExpr("rows",data,row)  # Row selector
+    else
+      rows <- .newExpr("rows",data,row)  # Row selector
   }
 
   name <- NA
