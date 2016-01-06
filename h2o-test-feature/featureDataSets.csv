@@ -4,3 +4,7 @@ data_set_id,uri
 3,s3://h2o-public-test-data/smalldata/feature/cbind1.csv
 4,s3://h2o-public-test-data/smalldata/feature/cbind2.csv
 5,s3://h2o-public-test-data/smalldata/iris/iris_wheader.csv
+6,s3://h2o-public-test-data/smalldata/feature/histogram1.csv
+7,s3://h2o-public-test-data/smalldata/feature/impute1.csv
+8,s3://h2o-public-test-data/smalldata/feature/impute1.Answer.csv
+

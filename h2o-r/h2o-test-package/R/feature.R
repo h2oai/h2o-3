@@ -6,7 +6,7 @@ function(testCaseId) {
     featureTestCasesCSVPath <- h2oTest.locate(testCase@featureTestCasesCSV)
     print(featureTestCasesCSVPath)
     if (file.exists(featureTestCasesCSVPath)) {
-        featureTestCasesCSVTable <- read.table(featureTestCasesCSVPath,header=TRUE)
+        featureTestCasesCSVTable <- read.table(featureTestCasesCSVPath,header=TRUE,sep="|")
     } else {
         h2oTest.fail(paste0("Couldn't find featureTestCases.csv which should be located in: ",featureTestCasesCSVPath))
     }
@@ -29,6 +29,9 @@ function(testCase) {
     } else if (testCase@feature == "asFactor")  { op <- "asFactor"
     } else if (testCase@feature == "cbind")     { op <- "cbind"
     } else if (testCase@feature == "colNames")  { op <- "colNames"
+    } else if (testCase@feature == "slice")     { op <- "slice"
+    } else if (testCase@feature == "histogram") { op <- "histogram"
+    } else if (testCase@feature == "impute")    { op <- "impute"
     }
 
     dataSets <- .loadDataSets(testCase@dataSets)
@@ -74,7 +77,7 @@ function(testCase) {
         print("checking r res")
         print(rRes)
 
-        if (op == "unaryMath" || op == "binaryMath" || op == "cbind") {
+        if (op == "unaryMath" || op == "binaryMath" || op == "cbind" || op == "slice") {
             .compareH2OToRUnOrBinMathOp(h2oRes, rRes)
         } else if (op == "reducer") {
             .compareH2OToRRedOp(h2oRes, rRes)
@@ -82,10 +85,12 @@ function(testCase) {
             .compareH2OToRVector(h2oRes, rRes)
         }
     } else if (testCase@validationMethod == "H") {
-        validationDataSet <- .loadDataSets(testCase@dataSets,1)[[1]]
+        validationDataSet <- .loadDataSets(list(testCase@validationDataSet))[[1]]
         print("checking validationDataSet")
-
-        .compareH2OToHard(h2oRes, validationDataSet)
+        print(validationDataSet)
+        vFr <- h2o.getFrame(validationDataSet@key)
+        print(vFr)
+        .compareH2OToRUnOrBinMathOp(h2oRes, vFr)
     } else if (testCase@validationMethod == "O") {
         if (op == "asFactor") { .asFactorValidation(h2oRes) }
     }
@@ -126,6 +131,20 @@ function(op, r=FALSE) {
         return(list(list(type="dataset", cardinality=1),
                     list(type="logical", cardinality=1),
                     list(type="character", cardinality=1)))
+    } else if (op == "slice") {
+        return(list(list(type="dataset", cardinality=1),
+                    list(type="integer", cardinality=1),
+                    list(type="integer", cardinality=1)))
+    } else if (op == "histogram") {
+        return(list(list(type="dataset", cardinality=1),
+                    list(type="character", cardinality=1)))
+    } else if (op == "impute") {
+        return(list(list(type="dataset", cardinality=1),
+                    list(type="integer", cardinality=1),
+                    list(type="character", cardinality=1),
+                    list(type="character", cardinality=1),
+                    list(type="integer", cardinality=1),
+                    list(type="logical", cardinality=1)))
     }
 }
 
@@ -165,9 +184,10 @@ function(featureParamsString, pSchema) {
 
     # cast the non-empty parameters to their proper type
     for (i in 1:numArgs) {
-        if (featureParamsList[[i]] == "")      { next }
-        if (newPSchema[[i]]$type == "logical") { featureParamsList[[i]] <- as.logical(featureParamsList[[i]]) }
-        if (newPSchema[[i]]$type == "integer") { featureParamsList[[i]] <- as.integer(featureParamsList[[i]]) }
+        if (featureParamsList[[i]] == "NULL")  {          featureParamsList[i] <- list(NULL)
+        } else if (newPSchema[[i]]$type == "logical") { featureParamsList[[i]] <- as.logical(featureParamsList[[i]])
+        } else if (newPSchema[[i]]$type == "integer") { featureParamsList[[i]] <- eval(parse(text=featureParamsList[[i]]))
+        }
     }
     return(featureParamsList)
 }
@@ -216,6 +236,8 @@ function(pSchema, featureParamsList, dataSets, env, r=FALSE) {
 .compareH2OToRUnOrBinMathOp<-
 function(h2oRes, rRes) {
     #dimensions
+    h2oRes <- as.data.frame(h2oRes)
+    rRes   <- as.data.frame(rRes)
     nRowH <- nrow(h2oRes)
     nColH <- ncol(h2oRes)
     nRowR <- nrow(rRes)
@@ -259,20 +281,24 @@ function(h2oRes, rRes) {
 #'
 .whatH2O<-
 function(op) {
-    if (op == "cosine")   { return("cos") }
-    if (op == "and")      { return("&") }
-    if (op == "all")      { return("all") }
-    if (op == "asFactor") { return("as.factor") }
-    if (op == "cbind")    { return("h2o.cbind") }
-    if (op == "colNames") { return("colnames") }
+    if (op == "cosine")    { return("cos") }
+    if (op == "and")       { return("&") }
+    if (op == "all")       { return("all") }
+    if (op == "asFactor")  { return("as.factor") }
+    if (op == "cbind")     { return("h2o.cbind") }
+    if (op == "colNames")  { return("colnames") }
+    if (op == "slice")     { return("[") }
+    if (op == "histogram") { return("h2o.hist") }
+    if (op == "impute")    { return("h2o.impute") }
 }
 
 .whatR<-
 function(op) {
-    if (op == "cosine")   { return("cos") }
-    if (op == "and")      { return("&") }
-    if (op == "all")      { return("all") }
-    if (op == "asFactor") { return("as.factor") }
-    if (op == "cbind")    { return("cbind") }
-    if (op == "colNames") { return("colnames") }
+    if (op == "cosine")    { return("cos") }
+    if (op == "and")       { return("&") }
+    if (op == "all")       { return("all") }
+    if (op == "asFactor")  { return("as.factor") }
+    if (op == "cbind")     { return("cbind") }
+    if (op == "colNames")  { return("colnames") }
+    if (op == "slice")     { return("[") }
 }

@@ -1170,7 +1170,7 @@ class TestRunner:
         test_case_list = self.get_feature_test_cases(self.feature_filter)
 
         with open(self.feature_test_cases_csv, 'rb') as f:
-            test_case_rows = csv.reader(f)
+            test_case_rows = csv.reader(f,delimiter="|")
             next(test_case_rows, None)
             for test_case_row in test_case_rows:
                 if (not (feature_list is None)):
