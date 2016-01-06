@@ -432,13 +432,16 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
-      } else if(s.matches("useUDP")) {
+      } 
+      else if(s.matches("useUDP")) {
         i = s.incrementAndCheck(i, args);
         ARGS.useUDP = true;
-      } else if(s.matches("cleaner")) {
+      } 
+      else if(s.matches("cleaner")) {
         i = s.incrementAndCheck(i, args);
         ARGS.cleaner = true;
-      } else {
+      } 
+      else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
