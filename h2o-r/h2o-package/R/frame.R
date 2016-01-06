@@ -1494,7 +1494,6 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
   else {
     if( !is.H2OFrame(row) )    # Generic R expression
       rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
-    browser()
     rows <- .newExpr("rows",data,row)  # Row selector
   }
 
