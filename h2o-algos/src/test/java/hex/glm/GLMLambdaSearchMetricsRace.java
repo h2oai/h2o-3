@@ -1,7 +1,5 @@
-package hex;
+package hex.glm;
 
-import hex.glm.GLM;
-import hex.glm.GLMModel;
 import org.junit.BeforeClass;
 import water.DKV;
 import water.Scope;
