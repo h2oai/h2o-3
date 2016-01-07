@@ -232,7 +232,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec cv_AssignFold(int N) {
     Vec fold = train().vec(_parms._fold_column);
     if( fold != null ) {
-      if( !fold.isInt() || fold.min() != 0 || fold.max() >= N )
+      if( !fold.isInt() ||
+          (!(fold.min() == 0 && fold.max() == N-1) &&
+           !(fold.min() == 1 && fold.max() == N  ) )) // Allow 0 to N-1, or 1 to N
         throw new H2OIllegalArgumentException("Fold column must be integers from 0 to number of folds, and all folds must be non-empty");
       return fold;
     }
