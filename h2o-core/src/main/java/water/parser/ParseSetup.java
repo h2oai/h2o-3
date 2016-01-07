@@ -1,17 +1,13 @@
 package water.parser;
 
-import water.DKV;
-import water.Iced;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.api.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.UploadFileVec;
-import water.fvec.FileVec;
-import water.fvec.ByteVec;
+import water.fvec.*;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -215,7 +211,8 @@ public final class ParseSetup extends Iced {
     if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
       t._gblSetup._chunk_size = FileVec.DFLT_CHUNK_SIZE;
     } else {
-      t._gblSetup._chunk_size = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns);
+      t._gblSetup._chunk_size = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
+              Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false /*use new heuristic*/);
     }
 
     return t._gblSetup;
@@ -233,6 +230,7 @@ public final class ParseSetup extends Iced {
     // Output
     public ParseSetup _gblSetup;
     public long _totalParseSize;
+    public long _maxLineLength;
 
     /**
      *
@@ -277,6 +275,10 @@ public final class ParseSetup extends Iced {
 
         // Check for supported encodings
         checkEncoding(bits);
+
+        // Compute the max line length (to help estimate the number of bytes to read per Parse map)
+        _maxLineLength = maxLineLength(bits);
+        if (_maxLineLength==-1) throw new H2OIllegalArgumentException("The first 4MB of the data don't contain any line breaks. Cannot parse.");
 
         // only preview 1 DFLT_CHUNK_SIZE for ByteVecs, UploadFileVecs, compressed, and small files
 /*        if (ice instanceof ByteVec
@@ -347,6 +349,7 @@ public final class ParseSetup extends Iced {
 
       _gblSetup = mergeSetups(_gblSetup, other._gblSetup);
       _totalParseSize += other._totalParseSize;
+      _maxLineLength = Math.max(_maxLineLength, other._maxLineLength);
     }
 
     @Override public void postGlobal() {
@@ -524,6 +527,32 @@ public final class ParseSetup extends Iced {
         throw new H2OParseException("UTF16 encoding detected, but is not supported.");
       }
     }
+  }
+
+  /**
+   * Compute the longest line length in an array of bytes
+   * @param bytes Array of bytes (containing 0 or more newlines)
+   * @return The longest line length in the given bytes
+   */
+  private static final long maxLineLength(byte[] bytes) {
+    if (bytes.length >= 2) {
+      String st = new String(bytes);
+      StringReader sr = new StringReader(st);
+      BufferedReader br = new BufferedReader(sr);
+      String line;
+      long maxLineLength=0;
+      try {
+        while(true) {
+          line = br.readLine();
+          if (line == null) break;
+          maxLineLength = Math.max(line.length(), maxLineLength);
+        }
+      } catch (IOException e) {
+        return -1;
+      }
+      return maxLineLength;
+    }
+    return -1;
   }
 
   public ParseSetup setParseType(ParserType parse_type) {

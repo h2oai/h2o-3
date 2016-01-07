@@ -10,13 +10,22 @@ from past.builtins import basestring
 install_aliases()
 import re
 from six import PY3
-from io import StringIO
 from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key, quote, urlopen
 from .connection import H2OConnection
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
 from .estimators.estimator_base import H2OEstimator
+from .estimators.deeplearning import H2OAutoEncoderEstimator
+from .estimators.deeplearning import H2ODeepLearningEstimator
+from .estimators.gbm import H2OGradientBoostingEstimator
+from .estimators.glm import H2OGeneralizedLinearEstimator
+from .estimators.glrm import H2OGeneralizedLowRankEstimator
+from .estimators.kmeans import H2OKMeansEstimator
+from .estimators.naive_bayes import H2ONaiveBayesEstimator
+from .estimators.random_forest import H2ORandomForestEstimator
+from .transforms.decomposition import H2OPCA
+from .transforms.decomposition import H2OSVD
 from .h2o_model_builder import supervised, unsupervised, _resolve_model
 
 
@@ -342,11 +351,23 @@ def get_model(model_id):
 
   Returns
   -------
-    H2OEstimator
+    Subclass of H2OEstimator
   """
-  m = H2OEstimator()
   model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
-  m._resolve_model(model_id,model_json)
+  algo = model_json["algo"]
+  if   algo == "svd":          m = H2OSVD()
+  elif algo == "pca":          m = H2OPCA()
+  elif algo == "drf":          m = H2ORandomForestEstimator()
+  elif algo == "naivebayes":   m = H2ONaiveBayesEstimator()
+  elif algo == "kmeans":       m = H2OKMeansEstimator()
+  elif algo == "glrm":         m = H2OGeneralizedLowRankEstimator()
+  elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
+  elif algo == "gbm":          m = H2OGradientBoostingEstimator()
+  elif algo == "deeplearning" and model_json["output"]["model_category"]=="AutoEncoder": m = H2OAutoEncoderEstimator()
+  elif algo == "deeplearning":  m = H2ODeepLearningEstimator()
+  else:
+    raise ValueError("Unknown algo type: " + algo)
+  m._resolve_model(model_id, model_json)
   return m
 
 
@@ -645,7 +666,8 @@ def cluster_status():
 
 
 def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True, proxies=None):
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, 
+         strict_version_check=True, proxies=None, nthreads=-1):
   """Initiate an H2O connection to the specified ip and port.
 
   Parameters
@@ -660,7 +682,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
     A boolean dictating whether this module should start the H2O jvm. An attempt is made
     anyways if _connect fails.
   enable_assertions : bool
-    If start_h2o, pass `-ea` as a VM option.s
+    If start_h2o, pass `-ea` as a VM option.
   license : str
     If not None, is a path to a license file.
   max_mem_size_GB : int
@@ -670,9 +692,14 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   ice_root : str
     A temporary directory (default location is determined by tempfile.mkdtemp()) to hold
     H2O log files.
+  strict_version_check : bool 
+    Setting this to False is unsupported and should only be done when advised by technical support.
   proxies : dict
-    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy
-    path.
+    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
+  nthreads : int
+    Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
+    -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. 
+    This value is only used when Python starts H2O.
 
   Examples
   --------
@@ -685,7 +712,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
   Starting H2O JVM and connecting: ............... Connection successful!
 
   """
-  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies)
+  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies, nthreads=nthreads)
   return None
 
 
@@ -1084,7 +1111,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
 def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,
         distribution=None,tweedie_power=None,ntrees=None,max_depth=None,min_rows=None,
-        learn_rate=None,sample_rate=None,col_sample_rate=None,nbins=None,
+        learn_rate=None,sample_rate=None,col_sample_rate=None,col_sample_rate_per_tree=None,nbins=None,
         nbins_top_level=None,nbins_cats=None,validation_frame=None,
         balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
@@ -1107,7 +1134,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   model_id : str
     (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
   distribution : str
-     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace" or "gaussian"
   tweedie_power : float
     Tweedie power (only for Tweedie distribution, must be between 1 and 2)
   ntrees : int
@@ -1122,6 +1149,8 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
     Row sample rate (from 0.0 to 1.0)
   col_sample_rate : float
     Column sample rate (from 0.0 to 1.0)
+  col_sample_rate_per_tree : float
+    Column sample rate per tree (from 0.0 to 1.0)
   nbins : int
     For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
   nbins_top_level : int
@@ -1335,8 +1364,8 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
 
 
 def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,mtries=None,sample_rate=None,
-                  build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_top_level=None,
-                  nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
+                  col_sample_rate_per_tree=None,build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,
+                  nbins_top_level=None,nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
                   max_after_balance_size=None,seed=None,offset_column=None,weights_column=None,nfolds=None,
                   fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
                   score_each_iteration=None,checkpoint=None,
@@ -1361,7 +1390,9 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
     Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
     where p is the number of predictors.
   sample_rate : float
-    Sample rate, from 0 to 1.0.
+    Row sample rate (from 0.0 to 1.0)
+  col_sample_rate_per_tree : float
+    Column sample rate per tree (from 0.0 to 1.0)
   build_tree_one_node : bool
     Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
   ntrees : int

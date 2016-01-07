@@ -97,7 +97,7 @@ Build a cluster of EC2 instances by running the following commands on the host t
   - To stop H2O: `./h2o-cluster-stop-h2o.sh`
   - To shut down the cluster, use your [Amazon AWS console](http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html) to shut down the cluster manually. 
 
-
+ >**Note**: To successfully import data, the data must reside in the same location on all nodes. 
 
 ---
 

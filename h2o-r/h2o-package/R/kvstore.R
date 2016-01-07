@@ -13,12 +13,13 @@
 
 .key.make <- function(prefix = "rapids") {
   conn <- h2o.getConnection()
+  session_id <- conn@mutable$session_id
   if (conn@mutable$key_count == .Machine$integer.max) {
-    conn@mutable$session_id <- .init.session_id()
+    session_id <- conn@mutable$session_id <- .init.session_id()
     conn@mutable$key_count  <- 0L
   }
   conn@mutable$key_count <- conn@mutable$key_count + 1L
-  sprintf("%s_%d", prefix, conn@mutable$key_count)  # removed session_id
+  sprintf("%s%s_%d", prefix, session_id, conn@mutable$key_count)  # removed session_id
 }
 
 
@@ -86,7 +87,7 @@ h2o.rm <- function(ids) {
     if( is.H2OFrame(xi) ) {
       xi_id <- attr(xi, "id")       # String or None
       if( is.null(xi_id) ) return() # Lazy frame, never evaluated, nothing in cluster
-      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",xi_id[[1]],")"), method = "POST")
+      .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",xi_id[[1]],")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
     } else if( is(xi, "H2OModel") ) {
       .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi@model_id), method = "DELETE")
     } else if( is.character(xi) ) {

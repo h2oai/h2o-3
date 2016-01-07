@@ -48,7 +48,7 @@ class RadixCount extends MRTask<RadixCount> {
     // TO DO: assert chk instanceof integer or enum;  -- but how?  // alternatively: chk.getClass().equals(C8Chunk.class)
     for (int r=0; r<chk._len; r++) {
       tmp[(int) (chk.at8(r) >> shift & 0xFFL)]++;  // forget the L => wrong answer with no type warning from IntelliJ
-      // TO DO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
+      // TODO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
     }
   }
 
@@ -165,7 +165,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     long myCounts[] = _counts[chk[0].cidx()]; //cumulative offsets into o and x
     if (myCounts == null) {
       System.out.println("myCounts empty for chunk " + chk[0].cidx());
-      return;  // TODO delete ... || _o==null || _x==null) return;
+      return;
     }
 
     //int leftAlign = (8-(_biggestBit % 8)) % 8;   // only the first column is left aligned, currently. But they all could be for better splitting.
@@ -290,20 +290,23 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     //@Override public byte priority() { return _priority; }
     //private byte _priority;
 
-    @Override
-    public void compute2() {
-      int numChunks = 0;  // how many of the chunks on this node had some rows with this MSB
+    @Override public void compute2() {
+      int numChunks = 0;  // how many of the chunks are on this node
       for (int c=0; c<_counts.length; c++) {
-        if (_counts[c] != null && _counts[c][_msb] > 0)
-          numChunks++;
+        if (_counts[c] != null)  // the map() allocated the 256 vector in the spine slots for this node's chunks
+          numChunks++;           // even if _counts[c][_msb]==0 (no _msb for this chunk) we'll store that because needed by line marked LINE_ANCHOR_1 below.
       }
       int MSBnodeChunkCounts[] = new int[numChunks];   // make dense.  And by construction (i.e. cumulative counts) these chunks contributed in order
       int j=0;
       long lastCount = 0; // _counts are cumulative at this stage so need to diff
       for (int c=0; c<_counts.length; c++) {
-        if (_counts[c] != null && _counts[c][_msb] > 0) {
-          MSBnodeChunkCounts[j] = (int)(_counts[c][_msb] - lastCount);  // _counts is long so it can be accumulated in-place iirc.  TODO: check
-          lastCount = _counts[c][_msb];
+        if (_counts[c] != null) {
+          if (_counts[c][_msb] == 0) {  // robust in case we skipped zeros when accumulating
+            MSBnodeChunkCounts[j] = 0;
+          } else {
+            MSBnodeChunkCounts[j] = (int)(_counts[c][_msb] - lastCount);  // _counts is long so it can be accumulated in-place iirc.  TODO: check
+            lastCount = _counts[c][_msb];
+          }
           j++;
         }
       }
@@ -442,7 +445,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // with the A's from the other nodes in chunk order in order to maintain the original order of the A's within the global table. "
       // TODO: We could process these in node order and or/in parallel if we cumulated the counts first to know the offsets - should be doable and high value
       if (MSBnodeHeader[fromNode] == null) continue;
-      int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[oxChunkIdx[fromNode]++];   // magically this works, given the outer for loop through global chunk
+      int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[oxChunkIdx[fromNode]++];   // magically this works, given the outer for loop through global chunk. Relies on LINE_ANCHOR_1 above.
       // _MSBnodeChunkCounts is a vector of the number of contributions from each Vec chunk.  Since each chunk is length int, this must less than that, so int
       // The set of data corresponding to the Vec chunk contributions is stored packed in batched vectors _o and _x.
       int sourceBatchRemaining = _batchSize - oxOffset[fromNode];    // at most batchSize remaining.  No need to actually put the number of rows left in here

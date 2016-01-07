@@ -175,6 +175,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       DataInfo dinfo = null;
 
       try {
+        Scope.enter();
         init(true);   // Initialize parameters
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
@@ -194,6 +195,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         if (model != null) model.unlock(_job);
         if (dinfo != null) dinfo.remove();
         _parms.read_unlock_frames(_job);
+        Scope.exit();
       }
       tryComplete();
     }

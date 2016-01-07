@@ -1,6 +1,9 @@
 package water.api;
 
-import water.*;
+import water.Futures;
+import water.H2O;
+import water.Job;
+import water.MRTask;
 import water.util.Log;
 
 // Best-effort cluster brain-wipe and reset.
@@ -13,9 +16,10 @@ public class RemoveAllHandler extends Handler {
     // Cancel and remove leftover running jobs
     for( Job j : Job.jobs() ) { j.stop_requested(); j.remove(fs); }
     // Wipe out any and all session info
-    if( InitIDHandler.SESSION != null ) {
-      InitIDHandler.SESSION.endQuietly(null);
-      InitIDHandler.SESSION = null;
+    if( InitIDHandler.SESSIONS != null ) {
+      for(String k: InitIDHandler.SESSIONS.keySet() )
+        (InitIDHandler.SESSIONS.get(k)).endQuietly(null);
+      InitIDHandler.SESSIONS.clear();
     }
     fs.blockForPending();
     // Bulk brainless key removal.  Completely wipes all Keys without regard.

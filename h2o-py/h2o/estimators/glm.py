@@ -9,7 +9,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                fold_assignment=None, keep_cross_validation_predictions=None,
                intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
                objective_epsilon=None, gradient_epsilon=None, non_negative=False,
-               compute_p_values=False, remove_colinear_columns=False):
+               compute_p_values=False, remove_collinear_columns=False):
     """Build a Generalized Linear Model
     Fit a generalized linear model, specified by a response variable, a set of predictors,
     and a description of the error distribution.
@@ -311,9 +311,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     self._parms["compute_p_values"] = value
 
   @property
-  def remove_colinear_columns(self):
-    return self._parms["remove_colinear_columns"]
+  def remove_collinear_columns(self):
+    return self._parms["remove_collinear_columns"]
 
-  @remove_colinear_columns.setter
-  def remove_colinear_columns(self, value):
-    self._parms["remove_colinear_columns"] = value
+  @remove_collinear_columns.setter
+  def remove_collinear_columns(self, value):
+    self._parms["remove_collinear_columns"] = value

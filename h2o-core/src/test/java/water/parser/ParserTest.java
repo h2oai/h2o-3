@@ -785,14 +785,4 @@ public class ParserTest extends TestUtil {
       }
     }
   }
-
-  @Ignore //PUBDEV-1384 fails for cloudsize > 1
-  @Test public void parseMNIST() {
-    File train = find_test_file("bigdata/laptop/mnist/train.csv.gz");
-    if (train != null) {
-      NFSFileVec trainfv = NFSFileVec.make(train);
-      Frame frame = ParseDataset.parse(Key.make(), trainfv._key);
-      frame.delete();
-    }
-  }
 }

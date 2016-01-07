@@ -1,0 +1,69 @@
+import groovy.xml.MarkupBuilder
+
+dependencies {
+	compile 'net.sf.opencsv:opencsv:2.3'
+	compile 'mysql:mysql-connector-java:5.1.16'
+    testCompile 'org.testng:testng:6.8'
+    compile project(":h2o-core")
+    compile project(":h2o-algos")
+    testCompile project(path: ":h2o-core", configuration: "testArchives")
+    testCompile project(path: ":h2o-algos", configuration: "testArchives")
+}
+
+test {
+    def accuracyTestingSuiteEnabled = rootProject.hasProperty("accuracyTestingSuite")
+    enabled = accuracyTestingSuiteEnabled
+
+    if (rootProject.hasProperty("jvmXmx")) {
+        jvmArgs("-Xmx${jvmXmx}")
+    }
+
+    useTestNG{
+        useDefaultListeners = true
+
+        def xmlWriter = new StringWriter()
+        def xmlMarkup = new MarkupBuilder(xmlWriter)
+        xmlMarkup.'suite'(name: "Accuracy Testing Suite", verbose: "5") {
+            'test'(name: "Accuracy Test Case") {
+                'classes'(name: "water.AccuracyTestingSuite") {
+                    if (rootProject.hasProperty("logDir")) {
+                        //'parameter'(name: "logDir", value: "$logDir")
+                    }
+                    if (rootProject.hasProperty("resultsDBTableConfig")) {
+                        'parameter'(name: "resultsDBTableConfig", value: "$resultsDBTableConfig")
+                    }
+                    if (rootProject.hasProperty("numH2ONodes")) {
+                        'parameter'(name: "numH2ONodes", value: "$numH2ONodes")
+                    }
+                    if (rootProject.hasProperty("dataSetsCSVPath")) {
+                        'parameter'(name: "dataSetsCSVPath", value: "$dataSetsCSVPath")
+                    }
+                    if (rootProject.hasProperty("testCasesCSVPath")) {
+                        'parameter'(name: "testCasesCSVPath", value: "$testCasesCSVPath")
+                    }
+                    if (rootProject.hasProperty("testCasesFilterString")) {
+                        'parameter'(name: "testCasesFilterString", value: "$testCasesFilterString")
+                    }
+                    'class'(name: "water.AccuracyTestingSuite")
+                }
+            }
+        }
+        new File("h2o-test-accuracy/testng.xml").write(xmlWriter.toString())
+
+        suites("testng.xml")
+    }
+    
+    testLogging.setShowStandardStreams(true)
+
+    reports {
+        html.enabled = false
+        junitXml.outputPerTestCase = true
+    }
+}
+
+// Example of how one might do some scraping after executing the tests
+//task accuracySuiteSummary(type: Exec) {
+//    commandLine 'python', 'scripts/update_testng_report.py', '-d', 'results/'
+//}
+
+//test.finalizedBy(accuracySuiteSummary)

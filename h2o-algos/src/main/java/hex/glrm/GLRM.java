@@ -515,6 +515,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       boolean overwriteX = false;
 
       try {
+        Scope.enter();
         init(true);   // Initialize parameters
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
@@ -690,6 +691,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).remove();
           }
         }
+        List<Key> keep = new ArrayList<>();
+        Frame loadingFrm = DKV.getGet(model._output._representation_key);
+        if (loadingFrm != null) for (Vec vec: loadingFrm.vecs()) keep.add(vec._key);
+        Scope.exit(keep.toArray(new Key[0]));
       }
       tryComplete();
     }

@@ -778,8 +778,7 @@ After creating and applying the desired node labels and associating them with sp
 To import from HDFS in R: 
 
 ```
-h2o.importHDFS(path, pattern = "", destination_frame = "", parse = TRUE,
-header = NA, sep = "", col.names = NULL, na.strings = NULL)
+h2o.importFolder(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings = NULL)
 ```
 
 Here is another example: 
@@ -1097,7 +1096,11 @@ model_grid.train(x=x, y=y, distribution="multinomial", epochs=1000, training_fra
    validation_frame=test, score_interval=2, stopping_rounds=3, stopping_tolerance=0.05, stopping_metric="misclassification")
 ```
 
+---
 
+**Do you have a tutorial for grid search in Python?**
+
+Yes, a notebook is available [here](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb) that demonstrates the use of grid search in Python. 
 
 
 
@@ -1278,6 +1281,40 @@ Remove the `h2o.shim(enable=TRUE)` line and try running the code again. Note tha
 **How do I extract the model weights from a model I've creating using H2O in R? I've enabled `extract_model_weights_and_biases`, but the output refers to a file I can't open in R.**
 
 For an example of how to extract weights and biases from a model, refer to the following repo location on [GitHub](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_weights_and_biases.R). 
+
+---
+
+**How do I extract the run time of my model as output?**
+
+
+For the following example: 
+
+```
+out.h2o.rf = h2o.randomForest( x=c("x1", "x2", "x3", "w"), y="y", training_frame=h2o.df.train, seed=555, model_id= "my.model.1st.try.out.h2o.rf" )
+```
+
+Use `out.h2o.rf@model$run_time` to determine the value of the `run_time` variable. 
+
+
+---
+
+**What is the best way to do group summarizations? For example, getting sums of specific columns grouped by a categorical column.**
+
+We strongly recommend using `h2o.group_by` for this function instead of `h2o.ddply`, as shown in the following example:
+
+```
+newframe <- h2o.group_by(h2oframe, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"), sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+```
+
+Using `gb.control` is optional; here it is included so the column names are user-configurable. 
+
+The `by` option can take a list of columns if you want to group by more than one column to compute the summary as shown in the following example: 
+
+```
+newframe <- h2o.group_by(h2oframe, by=c("footwear_category","age_group"), nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"), sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+```
+
+
 
 ---
 

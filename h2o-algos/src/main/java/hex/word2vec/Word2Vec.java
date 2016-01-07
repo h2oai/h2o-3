@@ -1,10 +1,10 @@
 package hex.word2vec;
 
+import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.word2vec.Word2VecModel.*;
 import water.fvec.Vec;
 import water.util.Log;
-import hex.ModelBuilder;
-import hex.word2vec.Word2VecModel.*;
 
 public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecParameters,Word2VecModel.Word2VecOutput> {
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Unknown, }; }
@@ -45,6 +45,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       float tDiff;
 
       try {
+        Scope.enter();
         _parms.read_lock_frames(_job);
         init(true);
 
@@ -73,6 +74,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       } finally {
         if( model != null ) model.unlock(_job);
         _parms.read_unlock_frames(_job);
+        Scope.exit();
       }
       tryComplete();
     }

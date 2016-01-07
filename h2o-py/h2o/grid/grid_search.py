@@ -7,7 +7,8 @@ from builtins import zip
 from builtins import str
 from builtins import range
 from builtins import object
-from .. import H2OConnection, H2OJob, H2OFrame, H2OEstimator
+from .. import H2OConnection, H2OJob, H2OFrame
+from ..estimators import H2OEstimator
 from ..two_dim_table import H2OTwoDimTable
 from ..display import H2ODisplay
 import h2o
@@ -64,7 +65,9 @@ class H2OGridSearch(object):
   @property
   def grid_id(self):
     """
-    :return: Retrieve this grid identifier
+    Returns
+    -------
+      A key that identifies this grid search object in H2O.
     """
     return self._id
 
@@ -144,7 +147,7 @@ class H2OGridSearch(object):
     parms = self._parms.copy()
     parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
     parms["hyper_parameters"] = self.hyper_params  # unique to grid search
-    parms.update({k:v for k,v in list(self.model._parms.items()) if v})  # unique to grid search
+    parms.update({k:v for k,v in list(self.model._parms.items()) if v is not None})  # unique to grid search
     if '__class__' in parms:  # FIXME: hackt for PY3
       del parms['__class__']
     y = algo_params["y"]
@@ -204,14 +207,14 @@ class H2OGridSearch(object):
     self._resolve_grid(grid.dest_key, grid_json, first_model_json)
 
   def _resolve_grid(self, grid_id, grid_json, first_model_json):
-      model_class = H2OGridSearch._metrics_class(first_model_json)
-      m = model_class()
-      m._id = grid_id
-      m._grid_json = grid_json
-      # m._metrics_class = metrics_class
-      m._parms = self._parms
-      H2OEstimator.mixin(self,model_class)
-      self.__dict__.update(m.__dict__.copy())
+    model_class = H2OGridSearch._metrics_class(first_model_json)
+    m = model_class()
+    m._id = grid_id
+    m._grid_json = grid_json
+    # m._metrics_class = metrics_class
+    m._parms = self._parms
+    H2OEstimator.mixin(self,model_class)
+    self.__dict__.update(m.__dict__.copy())
 
   def __getitem__(self, item):
     return self.models[item]
@@ -228,49 +231,71 @@ class H2OGridSearch(object):
     return ""
 
   def predict(self, test_data):
-    """
-    Predict on a dataset.
+    """Predict on a dataset.
 
-    :param test_data: Data to be predicted on.
-    :return: A new H2OFrame filled with predictions.
+    Parameters
+    ----------
+    test_data : H2OFrame
+      Data to be predicted on.
+
+    Returns
+    -------
+      H2OFrame filled with predictions.
     """
     return {model.model_id:model.predict(test_data) for model in self.models}
 
   def is_cross_validated(self):
     """
-    :return:  True if the model was cross-validated.
+    Returns
+    -------
+      True if the model was cross-validated.
     """
     return {model.model_id:model.is_cross_validated() for model in self.models}
 
   def xval_keys(self):
     """
-    :return: The model keys for the cross-validated model.
+    Returns
+    -------
+      The model keys for the cross-validated model.
     """
-    return {model.model_id:model.xval_keys() for model in self.models}
+    return {model.model_id: model.xval_keys() for model in self.models}
 
   def get_xval_models(self,key=None):
-    """
-    Return a Model object.
+    """Return a Model object.
 
-    :param key: If None, return all cross-validated models; otherwise return the model that key points to.
-    :return: A model or list of models.
+    Parameters
+    ----------
+      key : str
+        If None, return all cross-validated models; otherwise return the model that key
+        points.
+
+    Returns
+    -------
+      A model or list of models.
     """
-    return {model.model_id:model.get_xval_models(key) for model in self.models}
+    return {model.model_id: model.get_xval_models(key) for model in self.models}
 
   def xvals(self):
     """
-    Return a list of the cross-validated models.
-
-    :return: A list of models
+    Returns
+    -------
+      A list of cross-validated models.
     """
     return {model.model_id:model.xvals for model in self.models}
 
   def deepfeatures(self, test_data, layer):
-    """
-    Return hidden layer details
+    """Obtain a hidden layer's details on a dataset.
 
-    :param test_data: Data to create a feature space on
-    :param layer: 0 index hidden layer
+    Parameters
+    ----------
+    test_data: H2OFrame
+      Data to create a feature space on
+    layer: int
+      index of the hidden layer
+
+    Returns
+    -------
+      A dictionary of hidden layer details for each model.
     """
     return {model.model_id:model.deepfeatures(test_data, layer) for model in self.models}
 
@@ -673,4 +698,3 @@ class H2OGridSearch(object):
     H2OEstimator.mixin(grid,model_class)
     grid.__dict__.update(m.__dict__.copy())
     return grid
-    

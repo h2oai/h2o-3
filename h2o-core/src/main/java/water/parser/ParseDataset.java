@@ -1,5 +1,6 @@
 package water.parser;
 
+import com.google.common.base.Charsets;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
@@ -24,10 +25,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import com.google.common.base.Charsets;
-
-public final class ParseDataset {
-  public Job<Frame> _job;
+public final class ParseDataset extends Job<Frame> {
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
@@ -367,14 +365,15 @@ public final class ParseDataset {
           for( int j = 0; j < chk._len; ++j){
             if( chk.isNA(j) )continue;
             final int old = (int) chk.at8(j);
-            if (old < 0 || old >= _parse2GlobalCatMaps[i].length)
+            if (old < 0 || (_parse2GlobalCatMaps[i] != null && old >= _parse2GlobalCatMaps[i].length))
               chk.reportBrokenCategorical(i, j, old, _parse2GlobalCatMaps[i], _fr.vec(i).domain().length);
-            if(_parse2GlobalCatMaps[i][old] < 0)
+            if(_parse2GlobalCatMaps[i] != null && _parse2GlobalCatMaps[i][old] < 0)
               throw new H2OParseException("Error in unifying categorical values. This is typically "
                   +"caused by unrecognized characters in the data.\n The problem categorical value "
                   +"occurred in the " + PrettyPrint.withOrdinalIndicator(i+1)+ " categorical col, "
                   +PrettyPrint.withOrdinalIndicator(chk.start() + j) +" row.");
-            chk.set(j, _parse2GlobalCatMaps[i][old]);
+            if (_parse2GlobalCatMaps[i] != null)
+              chk.set(j, _parse2GlobalCatMaps[i][old]);
           }
           Log.trace("Updated domains for "+PrettyPrint.withOrdinalIndicator(i+1)+ " categorical column.");
         }

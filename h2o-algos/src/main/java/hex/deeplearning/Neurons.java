@@ -8,7 +8,7 @@ import water.util.ArrayUtils;
 import water.util.MathUtils;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Arrays;
 
 /**
  * This class implements the concept of a Neuron layer in a Neural Network
@@ -142,7 +142,7 @@ public abstract class Neurons {
       _origa = new Storage.DenseVector(units);
     }
     if (training && (this instanceof MaxoutDropout || this instanceof TanhDropout
-            || this instanceof RectifierDropout || this instanceof Input) ) {
+            || this instanceof RectifierDropout || this instanceof ExpRectifierDropout || this instanceof Input) ) {
       _dropout = this instanceof Input ?
               (params._input_dropout_ratio==0 ? null : new Dropout(units, params._input_dropout_ratio)) //input dropout
               : new Dropout(units, params._hidden_dropout_ratios[_index]); //hidden dropout
@@ -740,6 +740,51 @@ public abstract class Neurons {
     @Override protected void fprop(long seed, boolean training) {
       if (training) {
         seed += params._seed + 0x3C71F1ED;
+        _dropout.fillBytes(seed);
+        super.fprop(seed, true);
+      }
+      else {
+        super.fprop(seed, false);
+        ArrayUtils.mult(_a.raw(), 1-params._hidden_dropout_ratios[_index]);
+      }
+    }
+  }
+
+  public static class ExpRectifier extends Neurons {
+    public ExpRectifier(int units) { super(units); }
+    @Override protected void fprop(long seed, boolean training) {
+      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
+      final int rows = _a.size();
+      for( int row = 0; row < rows; row++ ) {
+        double x = _a.get(row);
+        double val = x >= 0 ? x : Math.exp(x)-1;
+        _a.set(row, val);
+      }
+      compute_sparsity();
+    }
+    // Computing partial derivative g = dE/dnet = dE/dy * dy/dnet, where dE/dy is the backpropagated error
+    @Override protected void bprop() {
+      assert (_index < _minfo.get_params()._hidden.length);
+      float m = _minfo.adaDelta() ? 0 : momentum();
+      float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
+      final int rows = _a.size();
+      for (int row = 0; row < rows; row++) {
+        double x = _a.get(row);
+        double val = x >= 0 ? 1 : Math.exp(x);
+        double g = _e.get(row) * val;
+        bprop(row, g, r, m);
+      }
+    }
+  }
+
+  /**
+   * Tanh neurons with dropout
+   */
+  public static class ExpRectifierDropout extends ExpRectifier {
+    public ExpRectifierDropout(int units) { super(units); }
+    @Override protected void fprop(long seed, boolean training) {
+      if (training) {
+        seed += params._seed + 0xDA7A6000;
         _dropout.fillBytes(seed);
         super.fprop(seed, true);
       }

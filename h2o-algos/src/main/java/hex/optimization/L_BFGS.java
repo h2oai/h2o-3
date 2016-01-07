@@ -174,10 +174,10 @@ public final class L_BFGS extends Iced {
    * @return Optimal solution (coefficients) + ginfo info returned by the user ginfo
    * function evaluated at the found optmimum.
    */
+//  public final Result solve(GradientSolver gslvr, double [] beta, GradientInfo ginfo, ProgressMonitor pm) {return solve(gslvr,beta,beta.clone(),ginfo,pm);}
   public final Result solve(GradientSolver gslvr, double [] beta, GradientInfo ginfo, ProgressMonitor pm) {
     if(_hist == null)
       _hist = new History(_historySz, beta.length);
-    beta = beta.clone();
     int iter = 0;
     double rel_improvement = 1;
     final double [] pk = new double[beta.length];
@@ -188,7 +188,7 @@ public final class L_BFGS extends Iced {
       ++iter;
       _hist.getSearchDirection(ginfo._gradient,pk);
       if(!_lineSearch.evaluate(gslvr,ginfo,beta,pk,minStep,maxStep,20)) {
-        return new Result(false,iter,beta, ginfo,rel_improvement);
+        break;
       }
       _lineSearch.setInitialStep(Math.max(10 * minStep, _lineSearch.step()));
       ArrayUtils.add(beta,ArrayUtils.mult(pk,_lineSearch.step()));

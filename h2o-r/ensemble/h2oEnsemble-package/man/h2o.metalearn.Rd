@@ -23,7 +23,7 @@ A string specifying the prediction algorithm used to learn the optimal combinati
 A random seed to be set (integer); defaults to 1. If \code{NULL}, then a random seed will not be set.  The seed is set prior to creating the CV folds and prior to model training for base learning and metalearning.
 }
 \item{keep_levelone_data}{
-  Logical, defaults to \code{TRUE}.  Keep the \code{levelone} H2O H2OFrame of cross-validated predicted values (Z matrix) and original response vector, y (cbind to Z).
+  Logical, defaults to \code{TRUE}.  Keep the \code{levelone} H2OFrame of cross-validated predicted values (Z matrix) and original response vector, y (cbind to Z).
 }
 }
 
@@ -60,7 +60,7 @@ A list of H2O models, each of which are trained using the \code{data} object.  T
 The predictive model which is learned by regressing \code{y} on \code{Z} (see description of \code{Z} below).  The type of model is specified using the \code{metalearner} argument.
 }
 \item{levelone}{
-An H2O H2OFrame object.  The levelone H2OFrame includes the Z matrix (the cross-validated predicted values for each base learner), fold id column and original response vector, y.  In the stacking ensemble literature, the Z matrix is the design matrix used to train the metalearner.
+An H2OFrame object.  The levelone H2OFrame includes the Z matrix (the cross-validated predicted values for each base learner), fold id column and original response vector, y.  In the stacking ensemble literature, the Z matrix is the design matrix used to train the metalearner.
 }
 \item{runtime}{
 A list of runtimes for various steps of the algorithm.  The list contains \code{cv}, \code{metalearning}, \code{baselearning} and \code{total} elements.  The \code{cv} element is the time it takes to create the \code{Z} matrix (see above).  The \code{metalearning} element is the training time for the metalearning step.  The \code{baselearning} element is a list of training times for each of the models in the ensemble.  The time to run the entire \code{h2o.ensemble} function is given in \code{total}.

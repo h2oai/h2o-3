@@ -80,6 +80,9 @@
       opts = curlOptions(ssl.verifypeer = 0L, .opts = opts)
     }
   }
+  if (!is.na(conn@proxy)) {
+    opts = curlOptions(proxy = conn@proxy, .opts = opts)
+  } 
 
   queryString = ""
   i = 1L
@@ -575,10 +578,12 @@ h2o.killMinus3 <- function() {
 h2o.clusterInfo <- function() {
   conn = h2o.getConnection()
   if(! h2o.clusterIsUp(conn)) {
-    ip = conn@ip
-    port = conn@port
     stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
+
+  ip = conn@ip
+  port = conn@port
+  proxy = conn@proxy
 
   res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   nodeInfo <- res$nodes
@@ -616,7 +621,11 @@ h2o.clusterInfo <- function() {
   cat("    H2O cluster total cores:   ", numCPU, "\n")
   cat("    H2O cluster allowed cores: ", allowedCPU, "\n")
   cat("    H2O cluster healthy:       ", clusterHealth, "\n")
-
+  cat("    H2O Connection ip:         ", ip, "\n")
+  cat("    H2O Connection port:       ", port, "\n")
+  cat("    H2O Connection proxy:      ", proxy, "\n")
+  cat("    R Version:                 ", R.version.string, "\n")
+  
   cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
   if(any(cpusLimited))
     warning("Number of CPU cores allowed is limited to 1 on some nodes.\n",
@@ -756,6 +765,16 @@ h2o.getBaseURL <- function(conn) {
 h2o.getVersion <- function() {
   res = .h2o.__remoteSend(.h2o.__CLOUD)
   res$version
+}
+
+h2o.getBuildNumber <- function() {
+  res = .h2o.__remoteSend(.h2o.__CLOUD)
+  res$build_number
+}
+
+h2o.getBranchName <- function() {
+  res = .h2o.__remoteSend(.h2o.__CLOUD)
+  res$branch_name
 }
 
 .readableTime <- function(epochTimeMillis) {

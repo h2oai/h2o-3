@@ -24,9 +24,9 @@ def continuous_or_categorical():
   df_hex.show()
   df_hex.summary()
 
-  assert (not df_hex['h1'].isfactor())
-  assert (df_hex['h2'].isfactor())
-  assert (not df_hex['h3'].isfactor())
+  assert (not df_hex['h1'].isfactor()[0])
+  assert (df_hex['h2'].isfactor()[0])
+  assert (not df_hex['h3'].isfactor()[0])
 
   df_hex['h1'] = df_hex['h1'].asfactor()
   df_hex['h2'] = df_hex['h2'].asfactor()
@@ -35,9 +35,9 @@ def continuous_or_categorical():
   df_hex.show()
   df_hex.summary()
 
-  assert (df_hex['h1'].isfactor())
-  assert (df_hex['h2'].isfactor())
-  assert (df_hex['h3'].isfactor())
+  assert (df_hex['h1'].isfactor()[0])
+  assert (df_hex['h2'].isfactor()[0])
+  assert (df_hex['h3'].isfactor()[0])
 
   df_hex['h1'] = df_hex['h1'].asnumeric()
   df_hex['h2'] = df_hex['h2'].asnumeric()
@@ -46,9 +46,9 @@ def continuous_or_categorical():
   df_hex.show()
   df_hex.summary()
 
-  assert (not df_hex['h1'].isfactor())
-  assert (not df_hex['h2'].isfactor())
-  assert (not df_hex['h3'].isfactor())
+  assert (not df_hex['h1'].isfactor()[0])
+  assert (not df_hex['h2'].isfactor()[0])
+  assert (not df_hex['h3'].isfactor()[0])
 
 
 

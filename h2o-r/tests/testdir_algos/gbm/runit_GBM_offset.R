@@ -18,7 +18,7 @@ test.GBM <- function() {
   expect_true(abs((h2o.mse(m1) - h2o.mse(m2))/h2o.mse(m1)) < 5e-2, "MSE with and without offset are too different for gaussian")
 
   model <- gbm(AGE~.-AGE-ID-CAPSULE + offset(offset), data=as.data.frame(df), distribution="gaussian")
-  expect_true(abs((m2@model$init_f - model$initF)/model$initF) < 1e-6, "initF mismatch with offset for gaussian")
+  expect_true(abs((m2@model$init_f - model$initF)/model$initF) < 5e-2, "initF mismatch with offset for gaussian")
 
 
 

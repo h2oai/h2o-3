@@ -759,8 +759,8 @@ class H2OFrame(object):
       True if the column is numeric, otherwise return False
     """
     if self._ex._cache.types_valid():
-      return str(list(itervalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]
-    return bool(ExprNode("is.numeric",self)._eager_scalar())
+      return [str(list(itervalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]]
+    return [bool(o) for o in ExprNode("is.numeric",self)._eager_scalar()]
 
   def isstring(self):
     """
@@ -768,7 +768,7 @@ class H2OFrame(object):
     -------
       True if the column is a string column, otherwise False (same as ischaracter)
     """
-    return  bool(ExprNode("is.character",self)._eager_scalar())
+    return  [bool(o) for o in ExprNode("is.character",self)._eager_scalar()]
 
   def ischaracter(self):
     """
@@ -1246,7 +1246,7 @@ class H2OFrame(object):
     """
     if not isinstance(data, H2OFrame): raise ValueError("`data` must be an H2OFrame, but got {0}".format(type(data)))
     fr = H2OFrame._expr(expr=ExprNode("rbind", self, data), cache=self._ex._cache)
-    fr._ex._cache.nrows=self.nrow + data.nrow
+    fr._ex._cache.nrows = self.nrow + data.nrow
     return fr
 
   def split_frame(self, ratios=None, destination_frames=None, seed=None):
@@ -1341,7 +1341,7 @@ class H2OFrame(object):
     """
     return GroupBy(self,by)
 
-  def impute(self,column,method="mean",combine_method="interpolate",by=None):
+  def impute(self, column, method="mean", combine_method="interpolate", by=None):
     """Impute a column in this H2OFrame
 
     Parameters
@@ -1365,7 +1365,7 @@ class H2OFrame(object):
     if isinstance(by, basestring):     by     = self.names.index(by)
     return H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
 
-  def merge(self, other, all_x = False, all_y = False, by_x = None, by_y = None, method="auto"):
+  def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
     """Merge two datasets based on common column names
 
     Parameters
@@ -1460,6 +1460,15 @@ class H2OFrame(object):
     """
     return ExprNode("mean", self, na_rm)._eager_scalar()
 
+  def nacnt(self):
+    """Count of NAs for each column in this H2OFrame.
+
+      Returns
+      -------
+        A list of the na cnts (one entry per column).
+    """
+    return ExprNode("naCnt",self)._eager_scalar()
+
   def median(self, na_rm=False):
     """Compute the median.
 
@@ -1531,8 +1540,8 @@ class H2OFrame(object):
       False.
     """
     if self._ex._cache.types_valid():
-      return str(list(itervalues(self._ex._cache.types))[0]) == "enum"
-    return bool(ExprNode("is.factor", self)._eager_scalar())
+      return [str(list(itervalues(self._ex._cache.types))[0]) == "enum"]
+    return [bool(o) for o in ExprNode("is.factor", self)._eager_scalar()]
 
   def anyfactor(self):
     """Test if H2OFrame has any factor columns.

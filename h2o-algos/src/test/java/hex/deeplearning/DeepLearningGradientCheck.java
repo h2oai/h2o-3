@@ -24,7 +24,7 @@ public class DeepLearningGradientCheck extends TestUtil {
   static final float SAMPLE_RATE = 0.1f;
 
   @Test
-  public void cancar() {
+  public void gradientCheck() {
     Frame tfr = null;
     DeepLearningModel dl = null;
 
@@ -54,6 +54,7 @@ public class DeepLearningGradientCheck extends TestUtil {
               Distribution.Family.multinomial,
       }) {
         for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
+//            DeepLearningParameters.Activation.ExpRectifier,
                 DeepLearningParameters.Activation.Tanh,
                 DeepLearningParameters.Activation.Rectifier,
 //                DeepLearningParameters.Activation.Maxout,
@@ -78,7 +79,8 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._epochs = 100; //converge to a reasonable model to avoid too large gradients
 //            parms._l1 = 1e-3; //FIXME
 //            parms._l2 = 1e-3; //FIXME
-                parms._reproducible = true;
+//            parms._reproducible = true;
+                parms._force_load_balance = false;
                 parms._hidden = new int[]{10, 10, 10};
                 parms._fast_mode = false; //otherwise we introduce small bprop errors
                 parms._response_column = response;

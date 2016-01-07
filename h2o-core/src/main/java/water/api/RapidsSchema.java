@@ -7,6 +7,7 @@ class RapidsSchema<I extends Iced,R extends RapidsSchema<I,R>> extends Schema<I,
   // Input fields
   @API(help="An Abstract Syntax Tree.", direction=API.Direction.INPUT) String ast;
   @API(help="Key name to assign Frame results", direction=API.Direction.INPUT) String id;
+  @API(help="Session key", direction=API.Direction.INPUT) String session_id;
 }
 
 class RapidsNumberV3 extends RapidsSchema<Iced,RapidsNumberV3> {

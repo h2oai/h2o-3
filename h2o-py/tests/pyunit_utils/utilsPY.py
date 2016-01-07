@@ -338,7 +338,7 @@ def locate(path):
 def hadoop_namenode_is_accessible():
     url = "http://{0}:50070".format(hadoop_namenode())
     try:
-        urllib.request.urlopen(urllib.request.Request(url))
+        urllib.urlopen(url)
         internal = True
     except:
         internal = False
@@ -350,7 +350,9 @@ def test_is_on_hadoop():
     return False
 
 def hadoop_namenode():
-    if hasattr(sys.modules["tests.pyunit_utils"], '__hadoop_namenode__'):
+    if os.getenv("NAME_NODE"):
+        return os.getenv("NAME_NODE").split(".")[0]
+    elif hasattr(sys.modules["tests.pyunit_utils"], '__hadoop_namenode__'):
         return sys.modules["tests.pyunit_utils"].__hadoop_namenode__
     return None
 

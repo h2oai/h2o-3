@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from collections import namedtuple
 import uuid
 from .utils.shared_utils import urlopen
-from .h2o import H2OConnection, _quoted, get_frame, H2OFrame
+from .h2o import H2OConnection, _quoted, H2OFrame
 
 
 class H2OAssembly:
@@ -54,7 +54,7 @@ class H2OAssembly:
     if path == "": print(java.text)
     else:
       with open(file_path, 'wb') as f:
-        f.write(java.text.encode("utf-8"))
+        f.write(java.text.encode("utf-8"))   # this had better be utf-8 ?
     if get_jar and path!="":
       url = H2OConnection.make_url("h2o-genmodel.jar")
       filename = path + "/" + "h2o-genmodel.jar"
@@ -80,7 +80,7 @@ class H2OAssembly:
     res = "[" + ",".join([_quoted(r.replace('"',"'")) for r in res]) + "]"
     j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr.frame_id, _rest_version=99)
     self.id = j["assembly"]["name"]
-    return get_frame(j["result"]["name"])
+    return H2OFrame.get_frame(j["result"]["name"])
 
 
 class H2OCol:

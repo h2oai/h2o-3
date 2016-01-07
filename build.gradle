@@ -25,10 +25,10 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.1'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
-        classpath 'de.undercouch:gradle-download-task:1.1'
+        classpath 'de.undercouch:gradle-download-task:2.1.0'
         classpath 'joda-time:joda-time:2.3'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
@@ -60,7 +60,7 @@ ext {
       project(':h2o-app'),
       project(':h2o-persist-hdfs'),
       project(':h2o-test-integ'),
-      project(':h2o-testng'),
+      project(':h2o-test-accuracy'),
       project(':h2o-genmodel'),
       project(':h2o-java-rest-bindings'),
     ]
@@ -189,7 +189,7 @@ subprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.3'
+  gradleVersion = '2.9'
 }
 
 //

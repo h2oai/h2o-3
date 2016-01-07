@@ -37,6 +37,9 @@ def kmeans_grid_iris():
   assert actual_size == actual_size2, "Expected duplicates to be ignored. Without dups grid size: {0}. With dups " \
                                       "size: {1}".format(actual_size, actual_size2)
 
+  for model in iris_grid2:
+    assert isinstance(model, H2OKMeansEstimator)
+
   print("Check that the hyper_params that were passed to grid, were used to construct the models...")
   for name in list(grid_space.keys()):
       print(name)

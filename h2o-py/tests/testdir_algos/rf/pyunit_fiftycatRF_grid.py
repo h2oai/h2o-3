@@ -22,6 +22,9 @@ def fiftycatRF():
   model.show()
   model.summary()
 
+  for m in model:
+    assert isinstance(m, H2ORandomForestEstimator)
+
 
 
 

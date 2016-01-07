@@ -9,6 +9,7 @@ import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 
@@ -25,6 +26,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   @Override public Driver trainModelImpl() { return new QuantileDriver(); }
   @Override public long progressUnits() { return train().numCols()*_parms._probs.length; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
+  // any number of chunks is fine - don't rebalance - it's not worth it for a few passes over the data (at most)
+  @Override protected int desiredChunks(final Frame original_fr, boolean local) { return 1;  }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -45,24 +48,23 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     if ( numSpecialCols() >1 ) throw new IllegalArgumentException("Cannot handle more than 1 special vec (weights)");
   }
 
+  private static class SumWeights extends MRTask<SumWeights> {
+    double sum;
+    @Override public void map(Chunk c, Chunk w) { for (int i=0;i<c.len();++i)
+      if (!c.isNA(i)) {
+        double wt = w.atd(i);
+//          For now: let the user give small weights, results are probably not very good (same as for wtd.quantile in R)
+//          if (wt > 0 && wt < 1) throw new H2OIllegalArgumentException("Quantiles only accepts weights that are either 0 or >= 1.");
+        sum += wt;
+      }
+    }
+    @Override public void reduce(SumWeights mrt) { sum+=mrt.sum; }
+  }
+
   // ----------------------
   private class QuantileDriver extends Driver {
 
-    private class SumWeights extends MRTask<SumWeights> {
-      double sum;
-      @Override public void map(Chunk c, Chunk w) { for (int i=0;i<c.len();++i)
-        if (!c.isNA(i)) {
-          double wt = w.atd(i);
-//          For now: let the user give small weights, results are probably not very good (same as for wtd.quantile in R)
-//          if (wt > 0 && wt < 1) throw new H2OIllegalArgumentException("Quantiles only accepts weights that are either 0 or >= 1.");
-          sum += wt;
-        }
-      }
-      @Override public void reduce(SumWeights mrt) { sum+=mrt.sum; }
-    }
-
-    @Override
-    public void compute2() {
+    @Override public void compute2() {
       QuantileModel model = null;
       try {
         Scope.enter();
@@ -118,6 +120,60 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         Scope.exit(model == null ? null : model._key);
       }
       tryComplete();
+    }
+  }
+
+  public static class StratifiedQuantilesTask extends H2OCountedCompleter<StratifiedQuantilesTask> {
+    // INPUT
+    final double _prob;
+    final Vec _response; //vec to compute quantile for
+    final Vec _weights; //obs weights
+    final Vec _strata; //continuous integer range mapping into the _quantiles[id][]
+    final QuantileModel.CombineMethod _combine_method;
+
+    // OUTPUT
+    public double[/*strata*/] _quantiles;
+
+    public StratifiedQuantilesTask(H2OCountedCompleter cc,
+                                   double prob,
+                                   Vec response, // response
+                                   Vec weights,  // obs weights
+                                   Vec strata,   // stratification (can be null)
+                                   QuantileModel.CombineMethod combine_method) {
+      super(cc); _response = response; _prob=prob; _combine_method=combine_method; _weights=weights; _strata=strata;
+    }
+
+    @Override public void compute2() {
+      int nstrata = _strata == null ? 1 : (int) (_strata.max() - _strata.min() + 1);
+      Log.info("Computing quantiles for " + nstrata + " different strata.");
+      _quantiles = new double[nstrata];
+      Vec weights = _weights != null ? _weights : _response.makeCon(1);
+      for (int i=0;i<nstrata;++i) { //loop over nodes
+        Vec newWeights = weights.makeCopy();
+        //only keep weights for this stratum (node), set rest to 0
+        if (_strata!=null) new ZeroOutWeights((int) (_strata.min() + i)).doAll(_strata, newWeights);
+        double sumRows = new SumWeights().doAll(_response, newWeights).sum;
+        Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
+        h.doAll(_response, newWeights);
+        while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method))) {
+          h = h.refinePass(_prob).doAll(_response, newWeights);
+        }
+        newWeights.remove();
+      }
+      if (_weights != weights) weights.remove();
+      tryComplete();
+    }
+
+    private static class ZeroOutWeights extends MRTask<ZeroOutWeights> {
+      ZeroOutWeights(int stratumToKeep) { this.stratumToKeep = stratumToKeep; }
+      int stratumToKeep;
+      @Override public void map(Chunk strata, Chunk newW) {
+        for (int i=0; i<strata._len; ++i) {
+//          Log.info("NID:" + ((int) strata.at8(i)));
+          if ((int) strata.at8(i) != stratumToKeep)
+            newW.set(i, 0);
+        }
+      }
     }
   }
 

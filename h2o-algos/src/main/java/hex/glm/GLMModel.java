@@ -114,7 +114,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _gradient_epsilon = 1e-4;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
-    public boolean _remove_colinear_columns = false;
+    public boolean _remove_collinear_columns = false;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
@@ -624,9 +624,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public void pickBestModel() {
-      int i = _submodels.length - 1;
-      while(i > 0 && _submodels[i-1].devianceTest <= _submodels[i].devianceTest)--i;
-      setSubmodelIdx(_best_lambda_idx = i);
+
+      double bestDev = Double.POSITIVE_INFINITY;
+      int bestId = 0;
+      if(!Double.isNaN(_submodels[_submodels.length-1].devianceTest)) {
+        for(int i =1; i < _submodels.length; ++i)
+          if(_submodels[i] != null && _submodels[i].devianceTest < bestDev) {
+            bestId = i;
+            bestDev = _submodels[i].devianceTest;
+          }
+      } else {
+        for(int i =1; i < _submodels.length; ++i)
+          if(_submodels[i] != null && _submodels[i].devianceTrain < bestDev) {
+            bestId = i;
+            bestDev = _submodels[i].devianceTrain;
+          }
+      }
+      setSubmodelIdx(_best_lambda_idx = bestId);
     }
 
     public double[] getNormBeta() {

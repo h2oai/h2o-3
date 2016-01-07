@@ -17,16 +17,16 @@ def deeplearning_autoencoder():
     test_hex[resp] = test_hex[resp].asfactor()
 
     # split data into two parts
-    sid = train_hex[0].runif(1234)
+    sid = train_hex[0].runif(0)
 
     # unsupervised data for autoencoder
     train_unsupervised = train_hex[sid >= 0.5]
-    train_unsupervised.drop(resp)
-    train_unsupervised.describe()
+    train_unsupervised.pop(resp)
+    #train_unsupervised.describe()
 
     # supervised data for drf
     train_supervised = train_hex[sid < 0.5]
-    train_supervised.describe()
+    #train_supervised.describe()
 
     # train autoencoder
     ae_model = h2o.deeplearning(x=train_unsupervised[0:resp],
@@ -37,14 +37,15 @@ def deeplearning_autoencoder():
                                 reproducible=True, #slow, turn off for real problems
                                 seed=1234)
 
-    # conver train_supervised with autoencoder to lower-dimensional space
+    # convert train_supervised with autoencoder to lower-dimensional space
     train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp], 0)
 
     assert train_supervised_features.ncol == nfeatures, "Dimensionality of reconstruction is wrong!"
 
+    train_supervised_features = train_supervised_features.cbind(train_supervised[resp])
     # Train DRF on extracted feature space
-    drf_model = h2o.random_forest(x=train_supervised_features[0:20],
-                                  y=train_supervised[resp],
+    drf_model = h2o.random_forest(x=train_supervised_features[0:nfeatures],
+                                  y=train_supervised_features[train_supervised_features.ncol-1],
                                   ntrees=10,
                                   min_rows=10,
                                   seed=1234)
@@ -58,7 +59,7 @@ def deeplearning_autoencoder():
     cm.show()
 
     # 10% error +/- 0.001
-    assert abs(cm.cell_values[10][10] - 0.086) < 0.001, "Error. Expected 0.086, but got {0}".format(cm.cell_values[10][10])
+    assert abs(cm.cell_values[10][10] - 0.0882) < 0.001, "Error. Expected 0.0882, but got {0}".format(cm.cell_values[10][10])
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(deeplearning_autoencoder)

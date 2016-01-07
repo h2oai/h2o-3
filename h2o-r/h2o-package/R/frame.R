@@ -65,7 +65,7 @@ h2o.getTypes <- function(x) attr( .eval.frame(x), "types")
   eval <- attr(x, "eval")
   if( is.logical(eval) && eval ) {
     #cat("=== Finalizer on ",attr(x, "id"),"\n")
-    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), method = "POST")
+    .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0("(rm ",attr(x, "id"),")"), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
   }
 }
 
@@ -191,7 +191,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
   exec_str <- .eval.impl(x)
   # Execute the AST on H2O
   #print(paste0("EXPR: ",exec_str))
-  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, method = "POST")
+  res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=exec_str, session_id=h2o.getConnection()@mutable$session_id, method = "POST")
   if( !is.null(res$error) ) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
   if( !is.null(res$scalar) ) { # Fetch out a scalar answer
     y <- res$scalar
@@ -1190,6 +1190,41 @@ trunc <- function(x, ...) {
   else .newExpr("x",x,y)
 }
 
+#' Which indices are TRUE?
+#'
+#' Give the TRUE indices of a logical object, allowing for array indices.
+#'
+#' @param x An H2O H2OFrame object.
+#' @seealso \code{\link[base]{which}} for the base R method.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' h2o.which(iris.hex[,1]==4.4)
+#' }
+#' @export
+h2o.which <- function(x) {
+  if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
+  else .newExpr("which",x)
+}
+
+#' Count of NAs per column
+#'
+#' Gives the count of NAs per column.
+#'
+#' @param x An H2O H2OFrame object.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' h2o.nacnt(iris.hex)  # should return all 0s
+#' h2o.insertMissingValues(iris.hex)
+#' h2o.nacnt(iris.hex)
+#' }
+#' @export
+h2o.nacnt <- function(x)
+  .eval.scalar(.newExpr("naCnt", x))
+
 #' Returns the Dimensions of an H2O H2OFrame
 #'
 #' Returns the number of rows and columns for a H2OFrame object.
@@ -1330,10 +1365,10 @@ tail.H2OFrame <- h2o.tail
 is.factor <- function(x) {
   # Eager evaluate and use the cached result to return a scalar
   if( is.H2OFrame(x) ) {
-    x <- .fetch.data(x,1L)
-    if( ncol(x)==1L ) x <- x[,1]
+    sapply(.eval.scalar(.newExpr("is.factor", x)), as.logical)
+  } else {
+    base::is.factor(x)
   }
-  base::is.factor(x)
 }
 
 #' Check if numeric
@@ -1343,7 +1378,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.H2OFrame(x) ) .Primitive("is.numeric")(x)
-  else as.logical(.eval.scalar(.newExpr("is.numeric",x)))
+  else sapply(.eval.scalar(.newExpr("is.numeric", x)), as.logical)
 }
 
 #' Check if character
@@ -1353,7 +1388,7 @@ is.numeric <- function(x) {
 #' @export
 is.character <- function(x) {
   if( !is.H2OFrame(x) ) .Primitive("is.character")(x)
-  else as.logical(.eval.scalar(.newExpr("is.character",x)))
+  else sapply(.eval.scalar(.newExpr("is.character", x)), as.logical)
 }
 
 #' Print An H2O H2OFrame

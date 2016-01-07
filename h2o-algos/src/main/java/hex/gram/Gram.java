@@ -176,8 +176,8 @@ public final class Gram extends Iced<Gram> {
    * Compute Cholesky decompostion by computing partial QR decomposition (R == LU).
    *
    * The advantage of this method over the standard solve is that it can deal with Non-SPD matrices.
-   * Gram matrix comes out as Non-SPD if we have co-linear columns.
-   * QR decomposition can identify co-linear (redundant) columns and remove them from the dataset.
+   * Gram matrix comes out as Non-SPD if we have collinear columns.
+   * QR decomposition can identify collinear (redundant) columns and remove them from the dataset.
    *
    * QR computation:
    * QR is computed using Gram-Schmidt elimination, using Gram matrix instead of the underlying dataset.
@@ -188,7 +188,7 @@ public final class Gram extends Iced<Gram> {
    *      for l = 1:j-1
    *        gamma_jl = dot(x_l,x_j)/dot(x_l,x_l)
    *      zj = xj - sum(gamma_j[l]*x_l)
-   *      if(zj ~= 0) xj was redundant (co-linear)
+   *      if(zj ~= 0) xj was redundant (collinear)
    * Zjs are orthogonal projections of xk and form base of the X space. (dot(z_i,z_j) == 0 for i != j)
    * In the end, gammas contain (Scaled) R from the QR decomp which is == LU from cholesky decomp.
    *
@@ -214,7 +214,7 @@ public final class Gram extends Iced<Gram> {
    *       compute gamma_jl
    *     update gram by replacing xk with zk = xk- sum(gamma_jl*s*xl);
    *
-   * @param dropped_cols - empty list which will be filled with co-linear columns removed during computation
+   * @param dropped_cols - empty list which will be filled with collinear columns removed during computation
    * @return Cholesky - cholesky decomposition fo the gram
    */
   public Cholesky qrCholesky(ArrayList<Integer> dropped_cols) {
@@ -242,7 +242,7 @@ public final class Gram extends Iced<Gram> {
       for(int k = 0; k < j; ++k) // only need the diagonal, the rest is 0 (dot product of orthogonal vectors)
         zjj += gamma[k] * (gamma[k] * Z[k][k] - 2*Z[j][k]);
       ZdiagInv[j] = 1./zjj;
-      if(-f_eps < zjj && zjj < f_eps) { // co-linear column, drop it!
+      if(-f_eps < zjj && zjj < f_eps) { // collinear column, drop it!
         zjj = 0;
         dropped_cols.add(j);
         ZdiagInv[j] = 0;
@@ -298,20 +298,24 @@ public final class Gram extends Iced<Gram> {
     // drop the ignored cols
     if(dropped_cols.isEmpty()) return new Cholesky(R,new double[0], true);
     double [][] Rnew = new double[R.length-dropped_cols.size()][];
+    for(int i = 0; i < Rnew.length; ++i)
+      Rnew[i] = new double[i+1];
     int j = 0;
     for(int i = 0; i < R.length; ++i) {
       if(Z[i][i] == 0) continue;
       int k = 0;
-      for(;k < dropped_cols.size(); ++k)
-        if(dropped_cols.get(k) > i) break;
-      double [] newRow = Rnew[j++] = new double[i+1-k];
-      k = 0;
       for(int l = 0; l <= i; ++l) {
         if(k < dropped_cols.size() && l == dropped_cols.get(k)) {
-          ++k; continue;
+          ++k;
+          continue;
         }
-        newRow[l-k] = R[i][l];
+        Rnew[j][l - k] = R[i][l];
       }
+      ++j;
+    }
+    if((dropped_cols.get(dropped_cols.size()-1)) == ZdiagInv.length-1){
+      dropped_cols.remove(dropped_cols.size()-1);
+      dropped_cols.add(0,0); // first and last columns are switched so that the intercept is the first drugin the QR decomp
     }
     return new Cholesky(Rnew,new double[0], true);
   }
@@ -1034,22 +1038,38 @@ public final class Gram extends Iced<Gram> {
     mul(x,res);
     return res;
   }
+  private double [][] XX = null;
 
   public void mul(double [] x, double [] res){
     Arrays.fill(res,0);
-    for(int i = 0; i < _diagN; ++i)
-      res[i] = x[i] * _diag[i];
-    for(int ii = 0; ii < _xx.length; ++ii){
-      final int n = _xx[ii].length-1;
-      final int i = _diagN + ii;
-      for(int j = 0; j < n; ++j) {
-        double e = _xx[ii][j];  // we store only lower diagonal, so we have two updates:
-        res[i] += x[j]*e;       // standard matrix mul, row * vec, except short (only up to diag)
-        res[j] += x[i]*e;       // symmetric matrix => each non-diag element adds to 2 places
-      }
-      res[i] += _xx[ii][n]*x[n]; // diagonal element
+    if(XX == null) XX = getXX(false);
+    for(int i = 0; i < XX.length; ++i){
+      double d  = 0;
+      double [] xi = XX[i];
+      for(int j = 0; j < XX.length; ++j)
+        d += xi[j]*x[j];
+      res[i] = d;
     }
   }
+//  public void mul(double [] x, double [] res){
+//    Arrays.fill(res,0);
+//    for(int i = 0; i < _diagN; ++i)
+//      res[i] = x[i] * _diag[i];
+//    for(int ii = 0; ii < _xx.length; ++ii){
+//      final int n = _xx[ii].length-1;
+//      double [] xi = _xx[ii];
+//      int i = ii + _diagN;
+//      double d = res[i];
+//      for(int j = 0; j < n; ++j) {
+//        double e = xi[j];
+//        d += x[j] * e;  // standard matrix mul, row * vec, except short (only up to diag)
+//        x[i] += x[i]*e;
+//      }
+//      d += _xx[ii][n]*x[n]; // diagonal element
+//      res[i] = d;
+//    }
+//  }
+
   /**
    * Task to compute gram matrix normalized by the number of observations (not counting rows with NAs).
    * in R's notation g = t(X)%*%X/nobs, nobs = number of rows of X with no NA.

@@ -45,7 +45,7 @@ public class Score extends MRTask<Score> {
     final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
-    final double[] tmp = _is_train ? null : new double[_bldr._ncols];
+    final double[] tmp = _is_train && _bldr._ntrees > 0 ? null : new double[_bldr._ncols];
 
     // Score all Rows
     float [] val= new float[1];
@@ -60,6 +60,12 @@ public class Score extends MRTask<Score> {
         _bldr.score2(chks, weight, offset, cdists, row); // Use the training data directly (per-row predictions already made)
       else            // Must score "the hard way"
         m.score0(chks, weight, offset, row, tmp, cdists);
+
+      // fill tmp with training data for null model - to have proper tie breaking
+      if (_is_train && _bldr._ntrees == 0)
+        for( int i=0; i< tmp.length; i++ )
+          tmp[i] = chks[i].atd(row);
+
       if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, m._output._priorClassDist, tmp, m.defaultThreshold()); // Fill in prediction
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);

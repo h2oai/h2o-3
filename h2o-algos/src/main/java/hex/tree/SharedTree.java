@@ -24,6 +24,7 @@ import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
   protected int _mtry;
+  protected int _mtry_per_tree;
 
   public static final int MAX_NTREES = 100000;
 
@@ -109,6 +110,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
       error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate);
+    if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
+      error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval ]0,1] but it is " + _parms._col_sample_rate_per_tree);
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
@@ -216,7 +219,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
-        _rand = createRNG(_parms._seed);
+        _rand = RandomUtils.getRNG(_parms._seed);
 
         initializeModelSpecifics();
         resumeFromCheckpoint();
@@ -364,7 +367,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _subset, _family).dfork(null,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _family).dfork(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
@@ -508,9 +511,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._validation_metrics = mmv;
         out._scored_valid[out._ntrees].fillFrom(mmv);
       }
+      out._model_summary = createModelSummaryTable(out);
+      out._scoring_history = createScoringHistoryTable(out);
       if( out._ntrees > 0 ) {    // Compute variable importances
-        out._model_summary = createModelSummaryTable(out);
-        out._scoring_history = createScoringHistoryTable(out);
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
@@ -561,12 +564,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
   }
 
-  // Helper to unify use of M-T RNG
-  public static Random createRNG(long seed) {
-    return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
-//    return RandomUtils.getRNG((int)(seed>>32L),(int)seed ); //for later
-  }
-
   private TwoDimTable createScoringHistoryTable(SharedTreeModel.SharedTreeOutput _output) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
@@ -607,8 +604,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     int rows = 0;
-    for( int i = 1; i<_output._scored_train.length; i++ ) {
-      if (!Double.isNaN(_output._scored_train[i]._mse)) ++rows;
+    for( int i = 0; i<_output._scored_train.length; i++ ) {
+      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse)) continue;
+      rows++;
     }
     TwoDimTable table = new TwoDimTable(
             "Scoring History", null,
@@ -618,11 +616,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             colFormat.toArray(new String[0]),
             "");
     int row = 0;
-    for( int i = 1; i<_output._scored_train.length; i++ ) {
-      if (Double.isNaN(_output._scored_train[i]._mse)) continue;
+    for( int i = 0; i<_output._scored_train.length; i++ ) {
+      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse)) continue;
       int col = 0;
-      assert(row < table.getRowDim());
-      assert(col < table.getColDim());
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(_output._training_time_ms[i]));
       table.set(row, col++, PrettyPrint.msecs(_output._training_time_ms[i] - _job.start_time(), true));

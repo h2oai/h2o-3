@@ -1,9 +1,5 @@
 package hex.tree;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import hex.*;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -11,6 +7,10 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
 import water.util.*;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
@@ -43,6 +43,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     @Override protected long nFoldSeed() { 
       return _seed == -1 ? (_seed = RandomUtils.getRNG(System.nanoTime()).nextLong()) : _seed;
     }
+
+    public float _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree
 
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation

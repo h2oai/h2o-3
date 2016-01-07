@@ -83,17 +83,17 @@ class ASTHist extends ASTPrim {
     return new ValFrame(fr2);
   }
 
-  private static int sturges(Vec v) { return (int)Math.ceil( 1 + log2(v.length()) ); }
-  private static int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
-  private static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
-  private static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
-  private static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / h); }
-  private static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / h); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
-  private static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826)*Math.pow(v.length(),-1./3.); }
-  private static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVariance.getVar(v)) / (Math.pow(v.length(),1./3.)); }
-  private static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
-  private static double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
-  private static double third_moment(Vec v) {
+  public static int sturges(Vec v) { return (int)Math.ceil( 1 + log2(v.length()) ); }
+  public static int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
+  public static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
+  public static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
+  public static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / h); }
+  public static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / h); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
+  public static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826)*Math.pow(v.length(),-1./3.); }
+  public static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVariance.getVar(v)) / (Math.pow(v.length(),1./3.)); }
+  public static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
+  public static double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
+  public static double third_moment(Vec v) {
     final double mean = v.mean();
     ThirdMomTask t = new ThirdMomTask(mean).doAll(v);
     double m2 = t._ss / v.length();
@@ -101,7 +101,7 @@ class ASTHist extends ASTPrim {
     return m3 / Math.pow(m2, 1.5);
   }
 
-  private static class ThirdMomTask extends MRTask<ThirdMomTask> {
+  public static class ThirdMomTask extends MRTask<ThirdMomTask> {
     double _ss;
     double _sc;
     final double _mean;
@@ -120,7 +120,7 @@ class ASTHist extends ASTPrim {
     @Override public void reduce(ThirdMomTask t) { _ss+=t._ss; _sc+=t._sc; }
   }
 
-  private double[] computeCuts(Vec v, int numBreaks) {
+  public double[] computeCuts(Vec v, int numBreaks) {
     if( numBreaks <= 0 ) throw new IllegalArgumentException("breaks must be a positive number");
     // just make numBreaks cuts equidistant from each other spanning range of [v.min, v.max]
     double min;
@@ -130,7 +130,7 @@ class ASTHist extends ASTPrim {
     return res;
   }
 
-  private static class HistTask extends MRTask<HistTask> {
+  public static class HistTask extends MRTask<HistTask> {
     final private double _h;      // bin width
     final private double _x0;     // far left bin edge
     final private double[] _min;  // min for each bin, updated atomically
