@@ -3,13 +3,11 @@ package hex.quantile;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.MRTask;
+import water.H2O;
 import water.Scope;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.VecUtils;
 
 import java.util.Arrays;
 
@@ -123,7 +121,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     }
   }
 
-  public static class StratifiedQuantilesTask extends H2OCountedCompleter<StratifiedQuantilesTask> {
+  public static class StratifiedQuantilesTask extends H2O.H2OCountedCompleter<StratifiedQuantilesTask> {
     // INPUT
     final double _prob;
     final Vec _response; //vec to compute quantile for
@@ -134,7 +132,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     // OUTPUT
     public double[/*strata*/] _quantiles;
 
-    public StratifiedQuantilesTask(H2OCountedCompleter cc,
+    public StratifiedQuantilesTask(H2O.H2OCountedCompleter cc,
                                    double prob,
                                    Vec response, // response
                                    Vec weights,  // obs weights
