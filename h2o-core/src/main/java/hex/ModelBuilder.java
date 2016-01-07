@@ -230,7 +230,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // TODO: Implement better splitting algo (with Strata if response is
   // categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
   public Vec cv_AssignFold(int N) {
-    if (_parms._fold_column != null) return train().vec(_parms._fold_column);
+    Vec fold = train().vec(_parms._fold_column);
+    if( fold != null ) {
+      if( !fold.isInt() || fold.min() != 0 || fold.max() >= N )
+        throw new H2OIllegalArgumentException("Fold column must be integers from 0 to number of folds, and all folds must be non-empty");
+      return fold;
+    }
     final long seed = _parms.nFoldSeed();
     Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
     switch( _parms._fold_assignment ) {
@@ -413,31 +418,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
-  }
-
-  /**
-   * Create a fold assignment column from the fold_column
-   * If the fold_column is contiguous integers, then use that.
-   * @param foldCol
-   * @return
-   */
-  private Vec makeFoldAssignment(Vec foldCol){
-    Vec foldAssignment;
-    int numRange = foldCol.isNumeric() ? (int)(foldCol.max()-foldCol.min()+1) : 0;
-    Vec foldCat = VecUtils.toCategoricalVec(foldCol);
-    if (numRange == foldCat.domain().length) {
-      foldCat.remove();
-      foldAssignment = VecUtils.toNumericVec(foldCol);
-      Log.info(foldCat.domain().length + "-fold cross-validation holdout fold assignment:");
-      for (int i=(int)foldAssignment.min();i<=(int)foldAssignment.max();++i)
-        Log.info("(numeric) fold_column value: " + i + " -> fold " + ((i%numRange)+1));
-    } else {
-      foldAssignment = foldCat;
-      Log.info(foldCat.domain().length + "-fold cross-validation holdout fold assignment:");
-      for (int i=0;i<foldAssignment.domain().length;++i)
-        Log.info("(categorical) fold_column value: " + foldAssignment.domain()[i] + " -> fold " + (i+1));
-    }
-    return foldAssignment;
   }
 
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
