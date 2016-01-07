@@ -1,0 +1,78 @@
+@startuml
+
+actor R_user
+
+box "R" #LightBlue
+    participant R_script
+    participant R_h2o_glm
+    participant RCurl
+end box
+
+box "H2O" #LightBlue
+    participant h2o_webserver
+    participant h2o_glm_endpoint
+    participant h2o_glm_model_endpoint
+    participant h2o_jobs_endpoint
+    participant h2o_glm_job
+    participant h2o_glm_task
+    participant h2o_jobmanager
+    participant h2o_forkjoin
+    participant h2o_dkv
+end box
+
+autonumber
+
+
+== R starts GLM Job ==
+
+R_user           -> R_script : User starts R script
+R_script         -> R_h2o_glm : R script calls h2o.glm\n(input params)
+R_h2o_glm        -> RCurl : POST\n/3/ModelBuilders/glm\n(input params)
+RCurl            -> h2o_webserver : HTTP query\nTCP/IP
+h2o_webserver    -> h2o_glm_endpoint : Dispatch request
+h2o_glm_endpoint -> h2o_glm_job : Create GLM job\n(input params)
+h2o_glm_job      -> h2o_jobmanager : Start job
+h2o_jobmanager   -> h2o_jobmanager : New job_id created
+h2o_glm_job      <- h2o_jobmanager : Return job_id
+h2o_glm_endpoint <- h2o_glm_job : Return job_id
+h2o_webserver    <- h2o_glm_endpoint : Prepare JSON response\nwith job_id
+RCurl            <- h2o_webserver : JSON response\nHTTP response\nTCP/IP
+R_h2o_glm        <- RCurl : Return job_id
+
+
+== H2O runs GLM Job ==
+
+h2o_glm_job      -> h2o_glm_task : Create tasks
+h2o_glm_task     -> h2o_forkjoin : Submit tasks to the\nexecution framework
+h2o_forkjoin     -> h2o_forkjoin : Execute task
+h2o_glm_task     <- h2o_forkjoin : Task complete
+h2o_glm_job      <- h2o_glm_task : Task complete
+h2o_glm_job      -> h2o_dkv      : Write model to K/V store (under model_id)
+h2o_glm_job      -> h2o_jobmanager : Job complete
+
+
+== R polls for GLM Job completion ==
+
+R_h2o_glm         -> RCurl : GET\n/3/Jobs/job_id
+RCurl             -> h2o_webserver : HTTP query\nTCP/IP
+h2o_webserver     -> h2o_jobs_endpoint : Dispatch request
+h2o_jobs_endpoint -> h2o_jobmanager : Query job_id
+h2o_jobs_endpoint <- h2o_jobmanager : Return job_info
+h2o_webserver     <- h2o_jobs_endpoint : Prepare JSON response\nwith job_info
+RCurl             <- h2o_webserver : JSON response\nHTTP response\nTCP/IP
+R_h2o_glm         <- RCurl : Return job_info
+
+
+== R queries GLM Model info ==
+
+R_h2o_glm              -> RCurl : GET\n/3/Models/model_id
+RCurl                  -> h2o_webserver : HTTP query\nTCP/IP
+h2o_webserver          -> h2o_glm_model_endpoint : Dispatch request
+h2o_glm_model_endpoint -> h2o_dkv : Query model_id
+h2o_glm_model_endpoint <- h2o_dkv : Return model_info
+h2o_webserver          <- h2o_glm_model_endpoint : Prepare JSON response\nwith model_info
+RCurl                  <- h2o_webserver : JSON response\nHTTP response\nTCP/IP
+R_h2o_glm              <- RCurl : Return model_info
+R_script               <- R_h2o_glm : Return model_info
+
+@enduml
