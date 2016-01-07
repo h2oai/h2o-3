@@ -512,9 +512,12 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 #' @export
 h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AUC )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$AUC )
+    if ( !train && !valid && !xval ) { 
+      metric <- model.parts$tm@metrics$AUC
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -522,25 +525,26 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$AUC)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$AUC)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No AUC for ", class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }      
+    }
   }
+  warning(paste0("No AUC for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -558,9 +562,12 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @export
 h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AIC )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$AIC )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$AIC
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -568,25 +575,26 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$AIC)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$AIC)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No AIC for ", class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No AIC for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -617,9 +625,12 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @export
 h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$r2 )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$r2 )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$r2
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -627,25 +638,26 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$r2)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$r2)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No R2 for ", class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No R2 for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -676,9 +688,12 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @export
 h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$mean_residual_deviance )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$mean_residual_deviance )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$mean_residual_deviance
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -686,25 +701,26 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisble(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$mean_residual_deviance)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$mean_residual_deviance)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No Mean Residual Deviance for ", class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No mean residual deviance for ", class(object)))
+  invisible(NULL)
 }
 
 #' Retrieve the GINI Coefficcient
@@ -740,9 +756,12 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
 #' @export
 h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if(is(object, "H2OModelMetrics")) return( object@metrics$Gini )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$Gini )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$Gini
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -750,26 +769,26 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$Gini)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$Gini)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
-  else{
-    warning(paste0("No Gini for ",class(object)))
-    invisible(NULL)
-  }
+  warning(paste0("No Gini for ",class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -833,10 +852,13 @@ h2o.coef_norm <- function(object) {
 #' @export
 h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$MSE )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     metrics <- NULL # break out special for clustering vs the rest
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$MSE )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$MSE
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -845,7 +867,7 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         if( is(object, "H2OClusteringModel") ) v <- model.parts$vm@metrics$centroid_stats$within_cluster_sum_of_squares
         else v <- c(v,model.parts$vm@metrics$MSE)
@@ -853,19 +875,20 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
         else v <- c(v,model.parts$xm@metrics$MSE)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No MSE for ",class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No MSE for ",class(object)))
+  invisible(NULL)
 }
 
 #' Retrieve the Log Loss Value
@@ -885,9 +908,12 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @export
 h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$logloss )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$logloss )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$logloss
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -895,25 +921,26 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$logloss)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$logloss)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else  {
-    warning(paste("No log loss for",class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste("No log loss for",class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -1010,9 +1037,12 @@ h2o.biases <- function(object, vector_id=1, ...){
 #' @export
 h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$hit_ratio_table )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$hit_ratio_table )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$hit_ratio_table
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- list()
     v_names <- c()
     if ( train ) {
@@ -1020,27 +1050,29 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ..
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v[[length(v)+1]] <- model.parts$vm@metrics$hit_ratio_table
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v[[length(v)+1]] <- model.parts$xm@metrics$hit_ratio_table
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
   # if o is a data.frame, then the hrt was passed in -- just for pretty printing
-  } else if( is(object, "data.frame") ) return(object)
+  if( is(object, "data.frame") ) return(object)
 
   # warn if we got something unexpected...
-  else warning( paste0("No hit ratio table for ", class(object)) )
+  warning( paste0("No hit ratio table for ", class(object)) )
   invisible(NULL)
 }
 
@@ -1481,9 +1513,12 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
 #' @export
 h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
-  else {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$null_deviance )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$null_deviance
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -1491,23 +1526,28 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$null_deviance)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$null_deviance)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No null deviance for ", class(object)))
+  invisible(NULL)
 }
+    
 
 #' Retrieve the residual deviance
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training residual deviance value is returned. If more
@@ -1522,9 +1562,12 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
 #' @export
 h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
-  else {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$residual_deviance )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$residual_deviance
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -1532,22 +1575,26 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, 
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$residual_deviance)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$residual_deviance)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No residual deviance for ", class(object)))
+  invisible(NULL)
 }
 
 
@@ -1564,9 +1611,12 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, 
 #' @export
 h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
-  else {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$residual_degrees_of_freedom )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$residual_degrees_of_freedom
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -1574,23 +1624,28 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$residual_degrees_of_freedom)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$residual_degrees_of_freedom)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
-}
+  warning(paste0("No residual dof for ", class(object)))
+  invisible(NULL)
+}  
+    
 
 #' Retrieve the null degrees of freedom
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training null degrees of freedom value is returned. If more
@@ -1605,9 +1660,12 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
 #' @export
 h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
-  else {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$null_degrees_of_freedom )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$null_degrees_of_freedom
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -1615,22 +1673,26 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$null_degrees_of_freedom)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$null_degrees_of_freedom)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No null dof for ", class(object)))
+  invisible(NULL)
 }
 
 #' Access H2O Gains/Lift Tables
