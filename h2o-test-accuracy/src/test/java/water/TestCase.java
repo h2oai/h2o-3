@@ -3,7 +3,6 @@ package water;
 import hex.*;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
-import hex.deeplearning.DeepLearningParameters;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
@@ -79,7 +78,7 @@ public class TestCase {
           modelOutput = drfModel._output;
           break;
         case "glm":
-          glmJob = new GLM(Key.make("GLMModel"), "GLM Model", (GLMModel.GLMParameters) params);
+          glmJob = new GLM((GLMModel.GLMParameters) params,Key.<GLMModel>make("GLMModel"));
           AccuracyTestingSuite.summaryLog.println("Training GLM model.");
           modelStartTime = System.currentTimeMillis();
           glmModel = glmJob.trainModel().get();
@@ -95,7 +94,7 @@ public class TestCase {
           modelOutput = gbmModel._output;
           break;
         case "dl":
-          dlJob = new DeepLearning((DeepLearningParameters) params);
+          dlJob = new DeepLearning((DeepLearningModel.DeepLearningParameters) params);
           AccuracyTestingSuite.summaryLog.println("Training DL model.");
           modelStartTime = System.currentTimeMillis();
           dlModel = dlJob.trainModel().get();
@@ -106,13 +105,9 @@ public class TestCase {
     } catch (Exception e) {
       throw new Exception(e);
     } finally {
-      if (drfJob != null)   { drfJob.remove(); }
       if (drfModel != null) { drfModel.delete(); }
-      if (glmJob != null)   { glmJob.remove(); }
       if (glmModel != null) { glmModel.delete(); }
-      if (gbmJob != null)   { gbmJob.remove(); }
       if (gbmModel != null) { gbmModel.delete(); }
-      if (dlJob != null)    { dlJob.remove(); }
       if (dlModel != null)  { dlModel.delete(); }
       Scope.exit();
     }
@@ -392,8 +387,6 @@ public class TestCase {
           break;
         case "_max_confusion_matrix_size": gbmParams._max_confusion_matrix_size = Integer.parseInt(tokens[i]);
           break;
-        case "_max_hit_ratio_k":           gbmParams._max_hit_ratio_k = Integer.parseInt(tokens[i]);
-          break;
         case "_r2_stopping":               gbmParams._r2_stopping = Double.parseDouble(tokens[i]);
           break;
         case "_build_tree_one_node":       gbmParams._build_tree_one_node = true;
@@ -415,7 +408,7 @@ public class TestCase {
 
   private DeepLearningModel.Parameters makeDlModelParameters() throws Exception {
     AccuracyTestingSuite.summaryLog.println("Making DL model parameters.");
-    DeepLearningParameters dlParams = new DeepLearningParameters();
+    DeepLearningModel.DeepLearningParameters dlParams = new DeepLearningModel.DeepLearningParameters();
     String[] dlAlgoParamsMap = new String[]{
       "auto",
       "bernoulli",
@@ -495,19 +488,19 @@ public class TestCase {
     else if (tokens[6].equals("x")) { dlParams._distribution = Distribution.Family.tweedie; }
 
     // _activation
-    if      (tokens[8].equals("x"))  { dlParams._activation = DeepLearningParameters.Activation.Tanh; }
-    else if (tokens[9].equals("x"))  { dlParams._activation = DeepLearningParameters.Activation.TanhWithDropout; }
-    else if (tokens[10].equals("x")) { dlParams._activation = DeepLearningParameters.Activation.Rectifier; }
-    else if (tokens[11].equals("x")) { dlParams._activation = DeepLearningParameters.Activation.RectifierWithDropout; }
-    else if (tokens[12].equals("x")) { dlParams._activation = DeepLearningParameters.Activation.Maxout; }
-    else if (tokens[13].equals("x")) { dlParams._activation = DeepLearningParameters.Activation.MaxoutWithDropout; }
+    if      (tokens[8].equals("x"))  { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh; }
+    else if (tokens[9].equals("x"))  { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout; }
+    else if (tokens[10].equals("x")) { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Rectifier; }
+    else if (tokens[11].equals("x")) { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout; }
+    else if (tokens[12].equals("x")) { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Maxout; }
+    else if (tokens[13].equals("x")) { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.MaxoutWithDropout; }
 
     // _loss
-    if      (tokens[30].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.Automatic; }
-    else if (tokens[31].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.CrossEntropy; }
-    else if (tokens[32].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.Quadratic; }
-    else if (tokens[33].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.Huber; }
-    else if (tokens[34].equals("x")) { dlParams._loss = DeepLearningParameters.Loss.Absolute; }
+    if      (tokens[30].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Automatic; }
+    else if (tokens[31].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.CrossEntropy; }
+    else if (tokens[32].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Quadratic; }
+    else if (tokens[33].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber; }
+    else if (tokens[34].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Absolute; }
 
     for (int i = 7; i < tokens.length; i++) {
       if (tokens[i].isEmpty() || i == 8 || i == 9 || i == 10 || i == 11 || i == 12 || i == 13 || i == 30 || i == 31
@@ -674,8 +667,6 @@ public class TestCase {
         case "_balance_classes":           drfParams._balance_classes = true;
           break;
         case "_max_confusion_matrix_size": drfParams._max_confusion_matrix_size = Integer.parseInt(tokens[i]);
-          break;
-        case "_max_hit_ratio_k":           drfParams._max_hit_ratio_k = Integer.parseInt(tokens[i]);
           break;
         case "_r2_stopping":               drfParams._r2_stopping = Double.parseDouble(tokens[i]);
           break;
