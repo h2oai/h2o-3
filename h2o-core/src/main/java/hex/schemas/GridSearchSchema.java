@@ -74,19 +74,10 @@ public class GridSearchSchema<G extends Grid<MP>,
     return (S) this;
   }
 
-  @Override
-  public S fillFromImpl(G impl) {
+  @Override public S fillFromImpl(G impl) {
     S s = super.fillFromImpl(impl);
     s.parameters = createParametersSchema();
     s.parameters.fillFromImpl((MP) parameters.createImpl());
     return s;
-  }
-
-  /**
-   * Factory method to create the model-specific parameters schema.
-   */
-  // FIXME: shared this code with ModelBuilderScheme
-  final P createParametersSchema() {
-    throw H2O.unimpl();
   }
 }
