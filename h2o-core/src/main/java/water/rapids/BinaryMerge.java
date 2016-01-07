@@ -373,8 +373,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
     // Create the chunks for the final frame from this MSB pair.
     batchSize = 256*1024*1024 / 16;  // number of rows per chunk to fit in 256GB DKV limit.   16 bytes for each UUID (biggest type). Enum will be long (8). TODO: How is non-Enum 'string' handled by H2O?
-    int nbatch = (int) (_numRowsInResult-1)/batchSize +1;  // TODO: wrap in class to avoid this boiler plate
-    int lastSize = (int)(_numRowsInResult - (nbatch-1)*batchSize);
+    int nbatch = (int) ((_numRowsInResult-1)/batchSize +1);  // TODO: wrap in class to avoid this boiler plate
+    int lastSize = (int) (_numRowsInResult - (nbatch-1)*batchSize);
     assert nbatch >= 1;
     assert lastSize > 0;
     _chunkSizes = new int[nbatch];

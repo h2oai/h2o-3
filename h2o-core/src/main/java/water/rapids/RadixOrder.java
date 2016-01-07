@@ -124,7 +124,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
     for (int msb = 0; msb < 256; msb++) {
       if (MSBhist[msb] == 0) continue;
-      int nbatch = (int) (MSBhist[msb]-1)/_batchSize +1;  // at least one batch
+      int nbatch = (int) ((MSBhist[msb]-1)/_batchSize +1);  // at least one batch
       int lastSize = (int) (MSBhist[msb] - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize)
       assert nbatch == 1;  // Prevent large testing for now.  TO DO: test nbatch>0 by reducing batchSize very small and comparing results with non-batched
       assert lastSize > 0;
@@ -405,8 +405,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     if (_numRows == 0) { tryComplete(); return; }
 
     // Allocate final _o and _x for this MSB which is gathered together on this node from the other nodes.
-    int nbatch = (int) (_numRows -1) / _batchSize +1;   // at least one batch.    TO DO:  as Arno suggested, wrap up into class for fixed width batching (to save espc overhead)
-    int lastSize = (int) (_numRows - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize, too if happens to be exact multiple of batchSize)
+    int nbatch = (int) ((_numRows-1) / _batchSize +1);   // at least one batch.    TO DO:  as Arno suggested, wrap up into class for fixed width batching (to save espc overhead)
+    int lastSize = (int) (_numRows - (nbatch-1)*_batchSize);   // the size of the last batch (could be batchSize, too if happens to be exact multiple of batchSize)
     _o = new long[nbatch][];
     _x = new byte[nbatch][];
     int b;
@@ -545,7 +545,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     don't be tempted to binsearch backwards here because have to shift anyway  */
   {
     int batch0 = (int) (start / _batchSize);
-    int batch1 = (int) (start+len-1) / _batchSize;
+    int batch1 = (int) ((start+len-1) / _batchSize);
     long origstart = start;   // just for when straddle batch boundaries
     int len0 = 0;             // same
     // _nGroup[_MSBvalue]++;  // TODO: reinstate.  This is at least 1 group (if all keys in this len items are equal)
@@ -608,7 +608,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       return;
     }
     int batch0 = (int) (start / _batchSize);
-    int batch1 = (int) (start+len-1) / _batchSize;
+    int batch1 = (int) ((start+len-1) / _batchSize);
     // could well span more than one boundary when very large number of rows.
     // assert batch0==0;
     // assert batch0==batch1;  // Count across batches of 2Bn is now done.  Wish we had 64bit indexing in Java.
