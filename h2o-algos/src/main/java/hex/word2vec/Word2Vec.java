@@ -3,6 +3,7 @@ package hex.word2vec;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.word2vec.Word2VecModel.*;
+import water.Scope;
 import water.fvec.Vec;
 import water.util.Log;
 

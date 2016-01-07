@@ -75,9 +75,10 @@ public class GridSearchSchema<G extends Grid<MP>,
   }
 
   @Override public S fillFromImpl(G impl) {
-    S s = super.fillFromImpl(impl);
-    s.parameters = createParametersSchema();
-    s.parameters.fillFromImpl((MP) parameters.createImpl());
-    return s;
+    throw H2O.unimpl();
+    //S s = super.fillFromImpl(impl);
+    //s.parameters = createParametersSchema();
+    //s.parameters.fillFromImpl((MP) parameters.createImpl());
+    //return s;
   }
 }

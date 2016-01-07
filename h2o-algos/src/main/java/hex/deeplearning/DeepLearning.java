@@ -139,7 +139,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     if (original_fr == null) return null;
     if (_parms._force_load_balance) {
       int original_chunks = original_fr.anyVec().nChunks();
-      new ProgressUpdate("Load balancing " + name.substring(name.length() - 5) + " data...").fork(_progressKey);
+      _job.update(0,"Load balancing " + name.substring(name.length() - 5) + " data...");
       int chunks = desiredChunks(original_fr, local);
       if (!_parms._reproducible)  {
         if (original_chunks >= chunks){
@@ -228,8 +228,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
-          cp._output._end_time = 0;
-          cp.write_lock(self());
+          cp.write_lock(_job);
 
           if (!Arrays.equals(cp._output._names, previous._output._names)) {
             throw new H2OIllegalArgumentException("The columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
@@ -375,7 +374,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         }
         // put the initial version of the model into DKV
         model.update(_job);
-        model.total_setup_time_ms += now - _start_time;
+        model.total_setup_time_ms += now - _job.start_time();
         Log.info("Total setup time: " + PrettyPrint.msecs(model.total_setup_time_ms, true));
         Log.info("Starting to train the Deep Learning model.");
         _job.update(0,"Training...");

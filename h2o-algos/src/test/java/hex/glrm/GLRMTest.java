@@ -131,7 +131,6 @@ public class GLRMTest extends TestUtil {
         t.printStackTrace();
         throw new RuntimeException(t);
       } finally {
-        job.remove();
         acs_zcta_fr.delete();
         Scope.exit();
       }

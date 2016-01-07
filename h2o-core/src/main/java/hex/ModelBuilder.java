@@ -8,6 +8,7 @@ import water.rapids.ASTKFold;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
+import water.util.VecUtils;
 
 import java.util.*;
 
@@ -740,8 +741,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // Rebalance train and valid datasets
     if (expensive && error_count() == 0) {
-      _train = rebalance(_train, false, _key + ".temporary.train");
-      _valid = rebalance(_valid, false, _key + ".temporary.valid");
+      _train = rebalance(_train, false, _result + ".temporary.train");
+      _valid = rebalance(_valid, false, _result + ".temporary.valid");
     }
     
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo

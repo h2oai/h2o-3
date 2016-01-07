@@ -484,13 +484,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     assert(total_checkpointed_run_time_ms >= 0);
     assert(total_training_time_ms >= 0);
     assert(total_scoring_time_ms >= 0);
-    assert(_output._start_time <= System.currentTimeMillis());
-    assert(_output._end_time == 0);
+    assert(_output._job.start_time() <= System.currentTimeMillis());
   }
 
-  void updateTiming(Key job_key) {
+  void updateTiming(Key<Job> job_key) {
     final long now = System.currentTimeMillis();
-    long start_time_current_model = ((Job) DKV.getGet(job_key))._start_time;
+    long start_time_current_model = job_key.get().start_time();
     total_training_time_ms = total_checkpointed_run_time_ms + (now - start_time_current_model);
     checkTimingConsistency();
   }
@@ -500,7 +499,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param fTrain potentially downsampled training data for scoring
    * @param fTest  potentially downsampled validation data for scoring
    * @param jobKey key of the owning job
-   * @param progressKey key of the progress
    * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */

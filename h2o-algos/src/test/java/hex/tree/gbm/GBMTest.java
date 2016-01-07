@@ -1286,7 +1286,6 @@ public class GBMTest extends TestUtil {
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
       Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
-      job1.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
@@ -1324,7 +1323,6 @@ public class GBMTest extends TestUtil {
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
       Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
-      job1.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
@@ -1367,7 +1365,6 @@ public class GBMTest extends TestUtil {
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
       Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
-      job1.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
@@ -1410,7 +1407,6 @@ public class GBMTest extends TestUtil {
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
       Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
-      job1.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
@@ -1444,7 +1440,6 @@ public class GBMTest extends TestUtil {
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
       Assert.assertTrue(gbm1._output._cross_validation_models.length == 5);
-      job1.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (old != null) old.remove();
@@ -1723,7 +1718,6 @@ public class GBMTest extends TestUtil {
       assertEquals(drf._output._ntrees, parms._ntrees);
 
       mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
-      job.remove();
       drf.delete();
       if (tfr != null) tfr.remove();
       Scope.exit();
@@ -1751,7 +1745,6 @@ public class GBMTest extends TestUtil {
 
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
-      job.remove();
 
       pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
       res = gbm.score(pred);

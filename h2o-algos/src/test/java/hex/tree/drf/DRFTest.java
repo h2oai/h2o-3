@@ -15,7 +15,6 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.Log;
-import water.util.Pair;
 import water.util.Triple;
 import water.util.VecUtils;
 
@@ -498,7 +497,6 @@ public class DRFTest extends TestUtil {
           // Build a first model; all remaining models should be equal
           DRF job = new DRF(parms);
           DRFModel drf = job.trainModel().get();
-          job.remove();
           drf.delete();
 
         } finally {
@@ -551,7 +549,6 @@ public class DRFTest extends TestUtil {
             ModelMetricsRegression mm = (ModelMetricsRegression) drf._output._training_metrics;
             R2[c] = (double) Math.round(mm.r2() * 10000d) / 10000d;
             int actualChunk = job.train().anyVec().nChunks();
-            job.remove();
             drf.delete();
 
             tfr.remove();
@@ -625,7 +622,6 @@ public class DRFTest extends TestUtil {
       assertEquals(drf._output._ntrees, parms._ntrees);
 
       mses[i] = drf._output._scored_train[drf._output._scored_train.length-1]._mse;
-      job.remove();
       drf.delete();
       if (tfr != null) tfr.remove();
       Scope.exit();
@@ -1404,13 +1400,10 @@ public class DRFTest extends TestUtil {
     Key[] ksplits = new Key[0];
     try{
       tfr=parse_test_file("./smalldata/gbm_test/ecology_model.csv");
-      SplitFrame sf = new SplitFrame();
-      sf.dataset = tfr;
-      sf.ratios = new double[] { 0.5, 0.5 };
-      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+      SplitFrame sf = new SplitFrame(tfr,new double[] { 0.5, 0.5 }, new Key[] { Key.make("train.hex"), Key.make("test.hex")});
       // Invoke the job
       sf.exec().get();
-      ksplits = sf.destination_frames;
+      ksplits = sf._destination_frames;
 
       DRFModel drf = null;
       float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
@@ -1448,7 +1441,6 @@ public class DRFTest extends TestUtil {
               ModelMetricsRegression mm = (ModelMetricsRegression)drf._output._validation_metrics;
               hm.put(mm.mse(), new Triple<>(sample_rate, col_sample_rate, col_sample_rate_per_tree));
 
-              job.remove();
             } finally {
               if (drf != null) drf.delete();
               Scope.exit();
