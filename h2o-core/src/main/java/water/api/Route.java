@@ -48,7 +48,7 @@ final class Route extends Iced {
     _doc_method = doc_method;
     _path_params = path_params;
     try { _handler = handler_class.newInstance(); }
-    catch( IllegalAccessException | InstantiationException ie ) { H2O.fail("failed to register handler "+handler_class.getSimpleName()+"."+handler_method.getName(),ie); }
+    catch( Exception ie ) { H2O.fail("failed to register handler "+handler_class.getSimpleName()+"."+handler_method.getName(),ie); }
   }
 
   /**
