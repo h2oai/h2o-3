@@ -46,7 +46,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
   public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks) { this(srcFrame, dstKey,nchunks,null,null);}
   public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks, H2O.H2OCountedCompleter cmp, Key jobKey) {
-    super(cmp);
+    super(cmp,true);
     _in = srcFrame;
     _nchunks = nchunks;
     _jobKey = jobKey;
