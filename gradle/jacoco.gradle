@@ -8,6 +8,7 @@ apply plugin: 'jacoco'
 // 
 jacoco {
     toolVersion = "0.7.4.201502262128"
+    reportsDir = file("${buildDir}/reports/jacoco/")
 }
 
 repositories {
@@ -29,7 +30,7 @@ jacocoTestReport {
     // String to help locate the directories of the source code
     String sourceDirEnd = "/src/main/java/"
 
-    // Collect .exec files
+    // Collect .exec file
     FileTree execLocation = fileTree(destination)
     executionData = execLocation
 
@@ -53,7 +54,7 @@ jacocoTestReport {
     reports {
         xml.enabled false
         csv.enabled false
-	html.enabled true
+	    html.enabled true
     }
 }
 

@@ -710,6 +710,8 @@ public class DeepLearningParameters extends Model.Parameters {
                 ) {
           if (f.getName().equals("_hidden")) continue;
           if (f.getName().equals("_ignored_columns")) continue;
+	  // If code coverage is enabled
+	  if (f.getName().equals("$jacocoData")) continue;
           throw H2O.unimpl("Please add " + f.getName() + " to either cp_modifiable or cp_not_modifiable");
         }
     }

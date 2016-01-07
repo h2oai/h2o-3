@@ -52,8 +52,17 @@ else
     JAVA_CMD="${JAVA_CMD} -Xmx2g"
   fi
 fi
+
+# Check if coverage should be run
+if [ "$1" = "jacoco" ]
+then
+    AGENT="../jacoco/jacocoagent.jar"
+    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-core_multi.exec"
+else
+    COVERAGE=""
+fi
 # Command to invoke test
-JVM="nice $JAVA_CMD -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests

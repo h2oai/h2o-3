@@ -23,7 +23,17 @@ trap cleanup SIGTERM SIGINT
 #   build/libs/h2o-core.jar      - Main h2o core classes
 #   build/libs/test-h2o-core.jar - Test h2o core classes
 #   build/resources/main         - Main resources (e.g. page.html)
-JVM="nice java -ea -Xmx2g -Xms2g -cp build/classes/main${SEP}build/classes/test${SEP}../lib/*${SEP}../h2o-algos/build/classes/main${SEP}../h2o-app/build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar"
+
+# Check if coverage should be run
+if [ "$1" = "jacoco" ]
+then
+    AGENT="../jacoco/jacocoagent.jar"
+    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-core_client.exec"
+else
+    COVERAGE=""
+fi
+
+JVM="nice java $COVERAGE -ea -Xmx2g -Xms2g -cp build/classes/main${SEP}build/classes/test${SEP}../lib/*${SEP}../h2o-algos/build/classes/main${SEP}../h2o-app/build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)

@@ -238,6 +238,20 @@ class H2OCloudNode:
                "-baseport", str(self.my_base_port),
 	       "-ga_opt_out"]
 
+
+        # If the jacoco flag was included, then modify cmd to generate coverage
+        # data using the jacoco agent
+        if g_include_jacoco:
+            root_dir = os.path.abspath(__file__ + "/../../")
+            agent_dir = root_dir + "/jacoco/jacocoagent.jar"
+            jresults_dir = self.output_dir + "/jacoco/"
+            if not os.path.exists(jresults_dir):
+                os.mkdir(jresults_dir)
+            jresults_dir += "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num)
+            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num)
+            cmd = cmd[:1] + [jacoco] + cmd[1:]
+
+
         # Add S3N credentials to cmd if they exist.
         # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
         # if (os.path.exists(ec2_hdfs_config_file_name)):
@@ -1666,6 +1680,7 @@ g_jvm_xmx = "1g"
 g_nopass = False
 g_nointernal = False
 g_convenient = False
+g_include_jacoco = False
 g_path_to_h2o_jar = None
 g_path_to_tar = None
 g_path_to_whl = None
@@ -1797,6 +1812,7 @@ def usage():
     print("                     pass, ncpus, os, and job name of each test to perf.csv in the results directory.")
     print("                     Takes three parameters: git hash, git branch, and build id, job name in that order.")
     print("")
+    print("    --jacoco         Generate code coverage data using JaCoCo")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -1879,6 +1895,7 @@ def parse_args(argv):
     global g_path_to_h2o_jar
     global g_path_to_tar
     global g_path_to_whl
+    global g_include_jacoco
     global g_produce_unit_reports
     global g_phantomjs_to
     global g_phantomjs_packs
@@ -2011,6 +2028,8 @@ def parse_args(argv):
             g_no_run = True
         elif (s == "--noxunit"):
             g_produce_unit_reports = False
+        elif (s == "--jacoco"):
+            g_include_jacoco = True
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         elif (s == "--rPkgVerChk"):

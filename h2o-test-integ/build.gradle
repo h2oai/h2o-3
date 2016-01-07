@@ -63,7 +63,7 @@ task cleanNodeJsSingleJVMTestsCoverageData(type: Delete) {
 // test.dependsOn runNodeJsSingleJVMTests
 clean.dependsOn cleanNodeJsSingleJVMTests
 
-task cleanCoverageData {
-    dependsOn cleanNodeJsSingleJVMTestsCoverageData, cleanPythonMultiJVMTestsCoverageData
-}
+//task cleanCoverageData {
+//    dependsOn cleanNodeJsSingleJVMTestsCoverageData, cleanPythonMultiJVMTestsCoverageData
+//}
 
