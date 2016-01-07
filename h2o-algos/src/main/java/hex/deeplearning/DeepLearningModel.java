@@ -484,7 +484,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     assert(total_checkpointed_run_time_ms >= 0);
     assert(total_training_time_ms >= 0);
     assert(total_scoring_time_ms >= 0);
-    assert(_output._job.start_time() <= System.currentTimeMillis());
   }
 
   void updateTiming(Key<Job> job_key) {
