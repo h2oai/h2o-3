@@ -54,7 +54,8 @@ class H2OConnection(object):
     :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
     :param strict_version_check: Setting this to False is unsupported and should only be done when advised by technical support.
     :param proxies: A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
-    :param nthreads: Number of threads in the thread pool. This relates very closely to the number of CPUs used. -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. This value is only used when Python starts H2O.
+    :param nthreads: Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
+    -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. This value is only used when Python starts H2O.
     :return: None
     """
 
@@ -70,6 +71,12 @@ class H2OConnection(object):
     self._rest_version = __H2O_REST_API_VERSION__
     self._child = getattr(__H2OCONN__, "_child") if hasattr(__H2OCONN__, "_child") else None
     __H2OCONN__ = self
+
+    #Give user warning if proxy environment variable is found. PUBDEV-2504
+    for name, value in os.environ.items():
+      if name.lower()[-6:] == '_proxy' and value:
+        warnings.warn("Proxy environment variable `" + name + "` with value `" + value + "` found. This may interfere with your H2O Connection.")
+
     jarpaths = H2OConnection.jar_paths()
     if os.path.exists(jarpaths[0]):   jar_path = jarpaths[0]
     elif os.path.exists(jarpaths[1]): jar_path = jarpaths[1]
