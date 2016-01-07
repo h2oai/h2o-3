@@ -772,17 +772,22 @@ class Test:
         return cmd
 
     def _pytest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
+      if g_pycoverage:
+        pyver = "coverage" if g_py3 else "coverage-3.5"
+        cmd = [pyver,"run", "-a", g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
+               "--testName", test_name]
+      else:
         pyver = "python3.5" if g_py3 else "python"
         cmd = [pyver, g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
-        if is_pyunit(test_name):
-            if on_hadoop:         cmd = cmd + ["--onHadoop"]
-            if hadoop_namenode:   cmd = cmd + ["--hadoopNamenode", hadoop_namenode]
-            cmd = cmd + ["--pyUnit"]
-        elif is_ipython_notebook(test_name): cmd = cmd + ["--ipynb"]
-        elif is_pydemo(test_name):           cmd = cmd + ["--pyDemo"]
-        else:                                cmd = cmd + ["--pyBooklet"]
-        return cmd
+      if is_pyunit(test_name):
+          if on_hadoop:         cmd = cmd + ["--onHadoop"]
+          if hadoop_namenode:   cmd = cmd + ["--hadoopNamenode", hadoop_namenode]
+          cmd = cmd + ["--pyUnit"]
+      elif is_ipython_notebook(test_name): cmd = cmd + ["--ipynb"]
+      elif is_pydemo(test_name):           cmd = cmd + ["--pyDemo"]
+      else:                                cmd = cmd + ["--pyBooklet"]
+      return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
         return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to), "--packs",
@@ -1682,6 +1687,7 @@ g_git_branch = None
 g_build_id = None
 g_job_name= None
 g_py3 = False
+g_pycoverage = False
 
 
 # Global variables that are set internally.
@@ -1897,6 +1903,7 @@ def parse_args(argv):
     global g_os
     global g_job_name
     global g_py3
+    global g_pycoverage
 
     i = 1
     while (i < len(argv)):
@@ -1912,6 +1919,11 @@ def parse_args(argv):
             if i > len(argv):
                 usage()
             g_py3 = True
+        elif s == "--coverage":
+            i += 1
+            if i > len(argv):
+              usage()
+            g_pycoverage = True
         elif (s == "--numclouds"):
             i += 1
             if (i > len(argv)):
