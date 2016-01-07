@@ -14,3 +14,6 @@ id|feature|feature_params|data_set_ids|validation_method|validation_data_set_id
 12|histogram|Sturges|6|O|
 13|histogram|Rice|6|O|
 14|impute|1;mean;interpolate;NULL;FALSE|7|H|8
+16|table||10|R|
+17|table||11|R|
+18|table||11;12|H|13

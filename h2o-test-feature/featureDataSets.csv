@@ -8,4 +8,7 @@ data_set_id,uri
 7,s3://h2o-public-test-data/smalldata/feature/impute1.csv
 8,s3://h2o-public-test-data/smalldata/feature/impute1.Answer.csv
 9,s3://h2o-public-test-data/smalldata/feature/cosine.OneValue.csv
-
+10,s3://h2o-public-test-data/smalldata/feature/table.2cols.csv
+11,s3://h2o-public-test-data/smalldata/feature/table.1col.1.csv
+12,s3://h2o-public-test-data/smalldata/feature/table.1col.2.csv
+13,s3://h2o-public-test-data/smalldata/feature/table.11And12.Result.csv

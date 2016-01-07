@@ -123,7 +123,7 @@ function(feature) {
         return("d1")
     } else if (feature %in% c("and")) {
         return("d2")
-    } else if (feature %in% c("cbind")) {
+    } else if (feature %in% c("cbind", "table")) {
         return("d-1")
     } else if (feature %in% c("colNames")) {
         return("d1l1c1")
@@ -267,7 +267,7 @@ function(feature) {
         return(c("H2OFrame", "numeric"))
     } else if (feature == "all") {
         return(c("logical"))
-    } else if (feature == "asFactor" || feature == "cbind" || feature == "impute") {
+    } else if (feature == "asFactor" || feature == "cbind" || feature == "impute" || feature == "table") {
         return(c("H2OFrame"))
     } else if (feature == "colNames") {
         return(c("character"))
@@ -280,6 +280,7 @@ function(feature) {
 function(h2oReturnClass, rReturnClass) {
     if        (h2oReturnClass == "H2OFrame"  && rReturnClass == "data.frame") {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "matrix")     {
+    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "table")     {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "factor")     {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "numeric")     {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "character")     {
@@ -300,6 +301,7 @@ function(h2oReturnClass, rReturnClass) {
 function(h2oRes, rRes, h2oReturnClass, rReturnClass) {
     if        (h2oReturnClass == "H2OFrame"  && rReturnClass == "data.frame") { .compare2Frames(h2oRes, rRes)
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "matrix")     { .compareFrameAndMatrix(h2oRes, rRes)
+    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "table")      { .compareFrameAndTable(h2oRes, rRes)
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "factor")     { .compareFrameAndFactor(h2oRes, rRes)
     } else if (h2oReturnClass == "factor"    && rReturnClass == "factor")     { .compare2Bases(h2oRes, rRes)
     } else if (h2oReturnClass == "numeric"   && is(rReturnClass,"numeric"))   { .compare2Bases(h2oRes, rRes)
@@ -331,6 +333,15 @@ function(h2oRes, rRes) {
 .compareFrameAndMatrix<-
 function(h2oRes, rRes) {
     .compare2Frames(h2oRes, as.data.frame(rRes))
+}
+
+.compareFrameAndTable<-
+function(h2oRes, rRes) {
+    if (ncol(h2oRes) > 2) { # case 2 dimensions
+        .compare2Frames(h2oRes[,2:ncol(h2oRes)], as.data.frame.matrix(rRes))
+    } else { # case 1 dimension
+        .compare2Frames(h2oRes[,2],as.data.frame(as.data.frame(rRes)[,2]))
+    }
 }
 
 .compareFrameAndFactor<-
@@ -378,6 +389,7 @@ function(op) {
     } else if (op == "slice")     { return("[")
     } else if (op == "histogram") { return("h2o.hist")
     } else if (op == "impute")    { return("h2o.impute")
+    } else if (op == "table")     { return("h2o.table")
     }
 }
 
@@ -390,5 +402,6 @@ function(op) {
     } else if (op == "cbind")     { return("cbind")
     } else if (op == "colNames")  { return("colnames")
     } else if (op == "slice")     { return("[")
+    } else if (op == "table")     { return("table")
     }
 }
