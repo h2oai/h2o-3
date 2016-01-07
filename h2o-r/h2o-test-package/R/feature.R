@@ -22,7 +22,7 @@ function(testCase) {
 
     dataSets <- .loadDataSets(testCase@dataSets)
 
-    h2oArgSchemaType <- .getArgSchemaType(testCase@feature)
+    h2oArgSchemaType <- .getArgSchemaType(testCase@feature,FALSE)
     print("The h2o arg schema type")
     print(h2oArgSchemaType)
 
@@ -51,7 +51,7 @@ function(testCase) {
 
     if (testCase@validationMethod == "R") {
 
-        rArgSchemaType <- .getArgSchemaType(testCase@feature)
+        rArgSchemaType <- .getArgSchemaType(testCase@feature,TRUE)
         print("The R arg schema type")
         print(rArgSchemaType)
 
@@ -118,21 +118,27 @@ function(dataSets) {
 #' --------------- return the argument schema type for the given feature ---------------
 #'
 .getArgSchemaType<-
-function(feature) {
+function(feature, r) {
     if (feature %in% c("asFactor", "cosine", "all")) {
-        return("d1")
+        return("df1")
     } else if (feature %in% c("and")) {
-        return("d2")
+        return("df2")
     } else if (feature %in% c("cbind", "table")) {
-        return("d-1")
+        return("df-1")
     } else if (feature %in% c("colNames")) {
-        return("d1l1c1")
+        return("df1l1c1")
     } else if (feature %in% c("slice")) {
-        return("d1i1i1")
+        return("df1i1i1")
     } else if (feature %in% c("histogram")) {
-        return("d1c1")
+        return("df1c1")
     } else if (feature %in% c("impute")) {
-        return("d1i1c1c1i1l1")
+        return("df1i1c1c1i1l1")
+    } else if (feature %in% c("quantile")) {
+        if (!r) {
+            return("df1n1c1n1")
+        } else {
+            return("dn1n1")
+        }
     }
 }
 
@@ -141,24 +147,30 @@ function(feature) {
 #' --------------- return the argument schema for the given schema type ---------------
 #'
 .getArgSchema<-
-function(schemaType, r=FALSE) {
-    if        (schemaType == "d1")           { return(list(list(type="dataset",   cardinality=1)))
-    } else if (schemaType == "d2")           { return(list(list(type="dataset",   cardinality=2)))
-    } else if (schemaType == "d-1")          { return(list(list(type="dataset",   cardinality=-1)))
-    } else if (schemaType == "d1l1c1")       { return(list(list(type="dataset",   cardinality=1),
-                                                           list(type="logical",   cardinality=1),
-                                                           list(type="character", cardinality=1)))
-    } else if (schemaType == "d1i1i1")       { return(list(list(type="dataset",   cardinality=1),
-                                                           list(type="integer",   cardinality=1),
-                                                           list(type="integer",   cardinality=1)))
-    } else if (schemaType == "d1c1")         { return(list(list(type="dataset",   cardinality=1),
-                                                           list(type="character", cardinality=1)))
-    } else if (schemaType == "d1i1c1c1i1l1") { return(list(list(type="dataset",   cardinality=1),
-                                                           list(type="integer",   cardinality=1),
-                                                           list(type="character", cardinality=1),
-                                                           list(type="character", cardinality=1),
-                                                           list(type="integer",   cardinality=1),
-                                                           list(type="logical",   cardinality=1)))
+function(schemaType) {
+    if        (schemaType == "df1")           { return(list(list(type="dataset",   cardinality=1,  dtype="frame")))
+    } else if (schemaType == "df2")           { return(list(list(type="dataset",   cardinality=2,  dtype="frame")))
+    } else if (schemaType == "df-1")          { return(list(list(type="dataset",   cardinality=-1, dtype="frame")))
+    } else if (schemaType == "df1l1c1")       { return(list(list(type="dataset",   cardinality=1,  dtype="frame"),
+                                                            list(type="logical",   cardinality=1),
+                                                            list(type="character", cardinality=1)))
+    } else if (schemaType == "df1i1i1")       { return(list(list(type="dataset",   cardinality=1,  dtype="frame"),
+                                                            list(type="integer",   cardinality=1),
+                                                            list(type="integer",   cardinality=1)))
+    } else if (schemaType == "df1c1")         { return(list(list(type="dataset",   cardinality=1,  dtype="frame"),
+                                                            list(type="character", cardinality=1)))
+    } else if (schemaType == "df1i1c1c1i1l1") { return(list(list(type="dataset",   cardinality=1,  dtype="frame"),
+                                                            list(type="integer",   cardinality=1),
+                                                            list(type="character", cardinality=1),
+                                                            list(type="character", cardinality=1),
+                                                            list(type="integer",   cardinality=1),
+                                                            list(type="logical",   cardinality=1)))
+    } else if (schemaType == "df1n1c1n1")     { return(list(list(type="dataset",   cardinality=1,  dtype="frame"),
+                                                            list(type="numeric",   cardinality=1),
+                                                            list(type="character", cardinality=1),
+                                                            list(type="numeric",   cardinality=1)))
+    } else if (schemaType == "dn1n1")         { return(list(list(type="dataset",   cardinality=1,  dtype="numeric"),
+                                                            list(type="numeric",   cardinality=1)))
     }
 }
 
@@ -198,10 +210,16 @@ function(featureParamsString, pSchema) {
 
     # cast the non-empty parameters to their proper type
     for (i in 1:numArgs) {
-        # empty parameters get parsed as ""
-        if (featureParamsList[[i]] == "NULL")  {          featureParamsList[i] <- list(NULL)
-        } else if (newPSchema[[i]]$type == "logical") { featureParamsList[[i]] <- as.logical(featureParamsList[[i]])
-        } else if (newPSchema[[i]]$type == "integer") { featureParamsList[[i]] <- eval(parse(text=featureParamsList[[i]]))
+        # TODO: doesn't allow empty parameters in parameter string. all parameters need to be specified (in order).
+        # allow optional parameters.
+        if (featureParamsList[[i]] == "") { stop("All parameters must be specified!")}
+        # parameters in the the parameter string should be valid R expressions
+        p <- eval(parse(text=featureParamsList[[i]]))
+        if (is.null(p))                                 { featureParamsList[i]   <- list(NULL)
+        } else if (newPSchema[[i]]$type == "character") { featureParamsList[[i]] <- as.character(p)
+        } else if (newPSchema[[i]]$type == "logical")   { featureParamsList[[i]] <- as.logical(p)
+        } else if (newPSchema[[i]]$type == "integer")   { featureParamsList[[i]] <- as.integer(p)
+        } else if (newPSchema[[i]]$type == "numeric")   { featureParamsList[[i]] <- as.numeric(p)
         }
     }
     return(featureParamsList)
@@ -229,9 +247,16 @@ function(pSchema, featureParamsList, dataSets, env, r=FALSE) {
                 numDataSets <- p$cardinality
             }
             for(i in 1:numDataSets) {
-                fr <- h2o.getFrame(dataSets[[dataSetCount+1]]@key)
-                if (r) { fr <- as.data.frame(fr) }
-                assign(parameterNameSpace[symbolCount+1], fr, envir=env)
+                if (p$dtype == "frame") {
+                    if (r) { d <- as.data.frame(h2o.getFrame(dataSets[[dataSetCount+1]]@key))
+                    } else { d <- h2o.getFrame(dataSets[[dataSetCount+1]]@key)
+                    }
+                } else if (p$dtype == "numeric") { # we only take the first column of the dataset source file
+                    d <- as.data.frame(h2o.getFrame(dataSets[[dataSetCount+1]]@key)[,1])[,1]
+                    print("dataset dtype numeric")
+                    print(d)
+                }
+                assign(parameterNameSpace[symbolCount+1], d, envir=env)
                 dataSetCount <- dataSetCount + 1
                 symbolCount <- symbolCount + 1
             }
@@ -273,6 +298,10 @@ function(feature) {
         return(c("character"))
     } else if (feature == "histogram") {
         return(c("histogram"))
+    } else if (feature == "quantile") {
+        return(c("numeric"))
+    } else {
+        stop("Haven't decided what allowable return type for this feature is.")
     }
 }
 
@@ -306,6 +335,7 @@ function(h2oRes, rRes, h2oReturnClass, rReturnClass) {
     } else if (h2oReturnClass == "factor"    && rReturnClass == "factor")     { .compare2Bases(h2oRes, rRes)
     } else if (h2oReturnClass == "numeric"   && is(rReturnClass,"numeric"))   { .compare2Bases(h2oRes, rRes)
     } else if (h2oReturnClass == "character" && rReturnClass == "character")  { .compare2Bases(h2oRes, rRes)
+    } else if (h2oReturnClass == "logical"   && rReturnClass == "logical")    { .compare2Bases(h2oRes, rRes)
     }
 }
 
@@ -361,7 +391,7 @@ function(h2oRes, rRes) {
 
 .compare2Bases<-
 function(h2oRes, rRes) {
-    if (h2oRes != rRes) {
+    if (!all(h2oRes == rRes)) {
         stop(paste0("Expected h2o's and R's results to be the same, but got: ", h2oRes, " and ", rRes,
                     ", respectively."))
     }
@@ -390,6 +420,7 @@ function(op) {
     } else if (op == "histogram") { return("h2o.hist")
     } else if (op == "impute")    { return("h2o.impute")
     } else if (op == "table")     { return("h2o.table")
+    } else if (op == "quantile")  { return("h2o.quantile")
     }
 }
 
@@ -403,5 +434,6 @@ function(op) {
     } else if (op == "colNames")  { return("colnames")
     } else if (op == "slice")     { return("[")
     } else if (op == "table")     { return("table")
+    } else if (op == "quantile")  { return("quantile")
     }
 }

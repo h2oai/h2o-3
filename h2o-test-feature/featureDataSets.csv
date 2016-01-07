@@ -12,3 +12,4 @@ data_set_id,uri
 11,s3://h2o-public-test-data/smalldata/feature/table.1col.1.csv
 12,s3://h2o-public-test-data/smalldata/feature/table.1col.2.csv
 13,s3://h2o-public-test-data/smalldata/feature/table.11And12.Result.csv
+14,s3://h2o-public-test-data/smalldata/feature/quantile1.csv
