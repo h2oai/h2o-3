@@ -3,9 +3,9 @@ options(echo=FALSE)
 #' Check that the required packages are installed and it's the correct version
 #'
 
-H2O.S3.R.PACKAGE.REPO.OSX <- "https://s3.amazonaws.com/h2o-r/osx"
-H2O.S3.R.PACKAGE.REPO.LIN <- "https://s3.amazonaws.com/h2o-r/linux"
-H2O.S3.R.PACKAGE.REPO.WIN <- "https://s3.amazonaws.com/h2o-r/windows"
+H2O.S3.R.PACKAGE.REPO.OSX <- "http://s3.amazonaws.com/h2o-r/osx"
+H2O.S3.R.PACKAGE.REPO.LIN <- "http://s3.amazonaws.com/h2o-r/linux"
+H2O.S3.R.PACKAGE.REPO.WIN <- "http://s3.amazonaws.com/h2o-r/windows"
 JENKINS.R.PKG.VER.REQS.OSX <- paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/package_version_requirements.osx")
 JENKINS.R.PKG.VER.REQS.LIN <- paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/package_version_requirements.linux")
 JENKINS.R.PKG.VER.REQS.WIN <- paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/package_version_requirements.windows")
