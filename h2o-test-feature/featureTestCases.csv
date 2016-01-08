@@ -17,4 +17,6 @@ id|feature|feature_params|data_set_ids|validation_method|validation_data_set_id
 16|table||10|R|
 17|table||11|R|
 18|table||11;12|H|13
-19|quantile|c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75,0.9, 0.99, 0.999);'interpolate';NULL|14|R|
+19|quantile|c(0.001,0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99,0.999);'interpolate';NULL|14|R|
+20|cut|c(4.2,4.8,5.8,6,8);c('a','b','c','d');FALSE;TRUE;3|15|R|
+21|match|c('setosa','versicolor');0;NULL|16|R|
