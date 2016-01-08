@@ -351,7 +351,8 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
 
   res <- .h2o.__remoteSend(.h2o.__CREATE_FRAME, method = "POST", .params = parms)
   .h2o.__waitOnJob(res$key$name)
-  fr <- h2o.getFrame(parms$dest)
+  fr <- .newH2OFrame("createFrame",parms$dest,-1,-1)
+  .fetch.data(fr,1L)
   .set(fr,"eval",TRUE)  # Declare the result a named tmp
   reg.finalizer(fr, .nodeFinalizer, onexit=TRUE)
   fr
@@ -786,7 +787,7 @@ h2o.dct <- function(data, destination_frame, dimensions, inverse=FALSE) {
   res <- .h2o.__remoteSend(method="POST", h2oRestApiVersion = 99, "DCTTransformer", .params = params)
   job_key <- res$key$name
   .h2o.__waitOnJob(job_key)
-  h2o.getFrame(res$destination_frame$name)
+  h2o.getFrame(res$dest$name)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------

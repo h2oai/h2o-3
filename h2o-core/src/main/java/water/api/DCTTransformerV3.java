@@ -19,6 +19,6 @@ public class DCTTransformerV3 extends RequestSchema<DCTTransformer, DCTTransform
   public boolean inverse;
 
   @Override public DCTTransformer createImpl() {
-    return new DCTTransformer(Key.<Frame>make());
+    return new DCTTransformer(destination_frame == null ? Key.<Frame>make() : destination_frame.key());
   }
 }
