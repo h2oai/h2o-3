@@ -224,7 +224,11 @@ class H2OCloudNode:
             main_class = "water.H2OClientApp"
         else:
             main_class = "water.H2OApp"
-        java = os.environ["JAVA_HOME"] + "/bin/java"
+
+        if "JAVA_HOME" in os.environ:
+            java = os.environ["JAVA_HOME"] + "/bin/java"
+        else:
+            java = "java"
         cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
@@ -233,7 +237,7 @@ class H2OCloudNode:
                main_class,
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port),
-	       "-ga_opt_out"]
+               "-ga_opt_out"]
 
         # Add S3N credentials to cmd if they exist.
         # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
