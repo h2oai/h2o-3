@@ -67,17 +67,13 @@
 
   opts = curlOptions()
   if (!is.na(conn@username)) {
-    if (is.na(conn@password)) {
-      stop("Password not specified")
-    }
-
     userpwd = sprintf("%s:%s", conn@username, conn@password)
     basicAuth = 1L
     opts = curlOptions(userpwd = userpwd, httpauth = basicAuth, .opts = opts)
   }
   if (conn@https) {
     if (conn@insecure) {
-      opts = curlOptions(ssl.verifypeer = 0L, .opts = opts)
+      opts = curlOptions(ssl.verifypeer = 0L, ssl.verifyhost=0L, .opts = opts)
     }
   }
   if (!is.na(conn@proxy)) {

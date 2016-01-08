@@ -665,9 +665,10 @@ def cluster_status():
     print()
 
 
-def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, 
-         strict_version_check=True, proxies=None, nthreads=-1):
+def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
+         license=None, nthreads=-1, max_mem_size=None, min_mem_size=None, ice_root=None, 
+         strict_version_check=True, proxy=None, https=False, insecure=False, username=None, 
+         password=None, max_mem_size_GB=None, min_mem_size_GB=None):
   """Initiate an H2O connection to the specified ip and port.
 
   Parameters
@@ -676,8 +677,6 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
     A string representing the hostname or IP address of the server where H2O is running.
   port : int
     A port, default is 54321
-  size : int
-    The expected number of h2o instances (ignored if start_h2o is True)
   start_h2o : bool
     A boolean dictating whether this module should start the H2O jvm. An attempt is made
     anyways if _connect fails.
@@ -685,34 +684,50 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
     If start_h2o, pass `-ea` as a VM option.
   license : str
     If not None, is a path to a license file.
-  max_mem_size_GB : int
+  nthreads : int
+    Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
+    -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. 
+    This value is only used when Python starts H2O.
+  max_mem_size : int
     Maximum heap size (jvm option Xmx) in gigabytes.
-  min_mem_size_GB : int
+  min_mem_size : int
     Minimum heap size (jvm option Xms) in gigabytes.
   ice_root : str
     A temporary directory (default location is determined by tempfile.mkdtemp()) to hold
     H2O log files.
   strict_version_check : bool 
     Setting this to False is unsupported and should only be done when advised by technical support.
-  proxies : dict
+  proxy : dict
     A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
-  nthreads : int
-    Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
-    -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. 
-    This value is only used when Python starts H2O.
+  https: bool
+    Set this to True to use https instead of http.
+  insecure: bool
+    Set this to True to disable SSL certificate checking.
+  username : str
+    Username to login with.
+  password : str
+    Password to login with.
+  max_mem_size_GB: DEPRECATED
+    Use max_mem_size instead.
+  min_mem_size_GB: DEPRECATED
+    Use min_mem_size instead.
+  
 
   Examples
   --------
-  Using the 'proxies' parameter
+  Using the 'proxy' parameter
 
   >>> import h2o
   >>> import urllib
   >>> proxy_dict = urllib.getproxies()
-  >>> h2o.init(proxies=proxy_dict)
+  >>> h2o.init(proxy=proxy_dict)
   Starting H2O JVM and connecting: ............... Connection successful!
 
   """
-  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies, nthreads=nthreads)
+  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,
+                nthreads=nthreads,max_mem_size=max_mem_size,min_mem_size=min_mem_size,ice_root=ice_root,
+                strict_version_check=strict_version_check,proxy=proxy,https=https,insecure=insecure,username=username,
+                password=password,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB)
   return None
 
 

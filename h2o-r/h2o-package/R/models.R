@@ -701,7 +701,7 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) return(invisble(.warn.no.validation()))
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$mean_residual_deviance)
         v_names <- c(v_names,"valid")
