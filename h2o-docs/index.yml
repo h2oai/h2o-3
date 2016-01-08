@@ -11,6 +11,8 @@ sources:
   - src/product/upgrade/Migration.md
   - src/product/howto/POJO_QuickStart.md
   - src/product/tutorials/GridSearch.md
+  - src/product/tutorials/NFoldPredictions.md
+  - src/product/architecture/Architecture.md
   - src/product/security/Security.md
   - src/product/howto/FAQ.md
   - src/product/tutorials/glossary.md
@@ -22,5 +24,8 @@ assets:
     target: images
   - 
     source: src/product/howto/images
+    target: images
+  -
+    source: src/product/architecture/images
     target: images
 

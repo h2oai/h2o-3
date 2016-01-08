@@ -246,6 +246,20 @@ public class RapidsTest extends TestUtil {
     }
   }
 
+  @Test public void testProstate_assign_frame_scalar() {
+    Frame fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
+    try {
+      Val val = Exec.exec("(tmp= py_1 (:= prostate.hex -1 1 (== (cols_py prostate.hex 1) 0)))");
+      if( val instanceof ValFrame ) {
+        Frame fr2= ((ValFrame)val)._fr;
+        System.out.println(fr2.vec(0));
+        fr2.remove();
+      }
+    } finally {
+      fr.delete();
+    }
+  }
+
   @Test public void testCombo() {
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
     String tree = "(tmp= py_2 (:= (tmp= py_1 (cbind a.hex (== (cols_py a.hex 4.0 ) \"Iris-setosa\" ) ) ) (as.factor (cols_py py_1 5.0 ) ) 5.0 [] ) )";

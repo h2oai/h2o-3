@@ -1,13 +1,13 @@
 package hex.tree;
 
 import sun.misc.Unsafe;
-import water.*;
+import water.H2O;
+import water.Iced;
+import water.MemoryManager;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.util.*;
-
-import java.util.Arrays;
 
 /** A Histogram, computed in parallel over a Vec.
  *
@@ -71,14 +71,14 @@ public final class DHistogram extends Iced {
     return cols;
   }
 
-  void setMin( double min ) {
+  public void setMin( double min ) {
     long imin = Double.doubleToRawLongBits(min);
     double old = _min2;
     while( min < old && !_unsafe.compareAndSwapLong(this, _min2Offset, Double.doubleToRawLongBits(old), imin ) )
       old = _min2;
   }
   // Find Inclusive _max2
-  void setMax( double max ) {
+  public void setMax( double max ) {
     long imax = Double.doubleToRawLongBits(max);
     double old = _maxIn;
     while( max > old && !_unsafe.compareAndSwapLong(this, _max2Offset, Double.doubleToRawLongBits(old), imax ) )
@@ -111,7 +111,7 @@ public final class DHistogram extends Iced {
   }
 
   // Interpolate d to find bin#
-  int bin( double col_data ) {
+  public int bin( double col_data ) {
     if( Double.isNaN(col_data) ) return 0; // Always NAs to bin 0
     if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
@@ -125,13 +125,13 @@ public final class DHistogram extends Iced {
     if( idx1 == _bins.length) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
     return idx1;
   }
-  double binAt( int b ) { return _min+b/_step; }
+  public double binAt( int b ) { return _min+b/_step; }
 
   public int nbins() { return _nbin; }
   public double bins(int b) { return _bins[b]; }
 
   // Big allocation of arrays
-  void init() {
+  public void init() {
     assert _bins == null;
     _bins = MemoryManager.malloc8d(_nbin);
     init0();
@@ -154,7 +154,7 @@ public final class DHistogram extends Iced {
 
   // Merge two equal histograms together.  Done in a F/J reduce, so no
   // synchronization needed.
-  void add( DHistogram dsh ) {
+  public void add( DHistogram dsh ) {
     assert _isInt == dsh._isInt && _nbin == dsh._nbin && _step == dsh._step &&
       _min == dsh._min && _maxEx == dsh._maxEx;
     assert (_bins == null && dsh._bins == null) || (_bins != null && dsh._bins != null);
@@ -166,11 +166,11 @@ public final class DHistogram extends Iced {
   }
 
   // Inclusive min & max
-  double find_min  () { return _min2 ; }
-  double find_maxIn() { return _maxIn; }
+  public double find_min  () { return _min2 ; }
+  public double find_maxIn() { return _maxIn; }
   // Exclusive max
-  double find_maxEx() { return find_maxEx(_maxIn,_isInt); }
-  static private double find_maxEx(double maxIn, int isInt ) {
+  public double find_maxEx() { return find_maxEx(_maxIn,_isInt); }
+  public static double find_maxEx(double maxIn, int isInt ) {
     double ulp = Math.ulp(maxIn);
     if( isInt > 0 && 1 > ulp ) ulp = 1;
     double res = maxIn+ulp;
@@ -178,7 +178,7 @@ public final class DHistogram extends Iced {
   }
 
   // The initial histogram bins are setup from the Vec rollups.
-  static public DHistogram[] initialHist(Frame fr, int ncols, int nbins, int nbins_cats, DHistogram hs[]) {
+  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, int nbins_cats, DHistogram hs[]) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
@@ -193,7 +193,7 @@ public final class DHistogram extends Iced {
     return hs;
   }
 
-  static public DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx) {
+  public static DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx) {
     return new DHistogram(name,nbins, nbins_cats, isInt, min, maxEx);
   }
 
@@ -240,7 +240,7 @@ public final class DHistogram extends Iced {
    * @param b bin id
    * @return sample variance (>= 0)
    */
-  double var (int b) {
+  public double var (int b) {
     double n = _bins[b];
     if( n<=1 ) return 0;
     return Math.max(0, (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
@@ -254,19 +254,19 @@ public final class DHistogram extends Iced {
   // Add one row to a bin found via simple linear interpolation.
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
-  void incr0( int b, double y, double w ) {
+  public void incr0( int b, double y, double w ) {
     AtomicUtils.DoubleArray.add(_sums,b,w*y); //See 'HistogramTest' JUnit for float-casting rationalization (not done right now)
     AtomicUtils.DoubleArray.add(_ssqs,b,w*y*y);
   }
   // Same, except square done by caller
-  void incr1( int b, double y, double yy) {
+  public void incr1( int b, double y, double yy) {
     AtomicUtils.DoubleArray.add(_sums,b,y); //See 'HistogramTest' JUnit for float-casting rationalization (not done right now)
     AtomicUtils.DoubleArray.add(_ssqs,b,yy);
   }
 
   // Merge two equal histograms together.
   // Done in a F/J reduce, so no synchronization needed.
-  void add0( DHistogram dsh ) {
+  public void add0( DHistogram dsh ) {
     ArrayUtils.add(_sums,dsh._sums);
     ArrayUtils.add(_ssqs,dsh._ssqs);
   }

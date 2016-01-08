@@ -1490,12 +1490,17 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
   }
 
   # Row arg is missing, means "all the rows"
-  if(allRow) rows <- paste0("[]") # Shortcut for "all rows"
-  else       rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
+  if(allRow) rows <- paste0("[]")  # Shortcut for "all rows"
+  else {
+    if( !is.H2OFrame(row) )    # Generic R expression
+      rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
+    else
+      rows <- row
+  }
 
   name <- NA
   if( allCol ) {   # Col arg is missing, means "all the cols"
-    cols <- paste0("[]") # Shortcut for "all cols"
+    cols <- paste0("[]")  # Shortcut for "all cols"
   } else {
     if( base::is.character(col) ) {
       idx <- match(col, colnames(data))
@@ -1741,6 +1746,43 @@ h2o.summary <- function(object, factors=6L, ...) {
   colnames(result) <- cnames
   rownames(result) <- rep("", nrow(result))
   result
+}
+
+#' H2O Description of A Dataset
+#'
+#' Reports the "Flow" style summary rollups on an instance of H2OFrame. Includes
+#' information about column types, mins/maxs/missing/zero counts/stds/number of levels
+#'
+#' @name h2o.describe
+#' @param frame An H2O H2OFrame object.
+#' @return A table with the Frame stats.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(path = prosPath)
+#' h2o.describe(prostate.hex)
+#' }
+#' @export
+h2o.describe <- function(frame) {
+  fr.sum <- .h2o.__remoteSend(paste0("Frames/", h2o.getId(frame), "/summary"), method = "GET", `_exclude_fields`="frames/columns/data,frames/columns/domain,frames/columns/histogram_bins,frames/columns/percentiles")$frames[[1]]
+  res <- data.frame(t(sapply(fr.sum$columns, function(col) {
+                                    c(col$label,
+                                      col$type,
+                                      col$missing_count,
+                                      col$zero_count,
+                                      col$positive_infinity_count,
+                                      col$negative_infinity_count,
+                                      col$mins[1],
+                                      col$maxs[1],
+                                      ifelse(col$mean=="NaN", NA, col$mean),
+                                      ifelse(col$sigma=="NaN",NA, col$sigma),
+                                      ifelse(col$type=="enum", col$domain_cardinality, NA)
+                                    )
+         })))
+  names(res) <- c("Label", "Type", "Missing", "Zeros", "PosInf", "NegInf", "Min", "Max", "Mean", "Sigma", "Cardinality")
+  res
 }
 
 #' @rdname h2o.summary
