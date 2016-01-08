@@ -133,8 +133,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == _leftN;
       } else {
         long tt = 0;
-        for (int i=0; i<_retFirst.length)    // i.e. sum(_retFirst>0) in R
-          for (int j=0; j<_retFirst[i].length)
+        for (int i=0; i<_retFirst.length; i++)    // i.e. sum(_retFirst>0) in R
+          for (int j=0; j<_retFirst[i].length; j++)
             tt += (_retFirst[i][j] > 0) ? 1 : 0;
         assert tt <= _leftN;  // TODO: change to tt.privateAssertMethod() containing the loop above to avoid that loop when asserts are off
         assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == tt;
