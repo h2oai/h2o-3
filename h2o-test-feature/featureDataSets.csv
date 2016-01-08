@@ -15,3 +15,4 @@ data_set_id,uri
 14,s3://h2o-public-test-data/smalldata/feature/quantile1.csv
 15,s3://h2o-public-test-data/smalldata/feature/cut1.csv
 16,s3://h2o-public-test-data/smalldata/feature/match1.csv
+17,s3://h2o-public-test-data/smalldata/feature/which1.csv

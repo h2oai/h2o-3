@@ -15,9 +15,7 @@ function(testCase) {
     print("checking argsH2O")
     print(argsH2O)
 
-    whatH2O <- .whatH2O(testCase@feature)
-
-    h2oRes <- do.call(what=whatH2O, args=argsH2O, envir=h2oEnv)
+    h2oRes <- do.call(what=testCase@feature, args=argsH2O, envir=h2oEnv)
     print("checking h2o res")
     print(h2oRes)
 
@@ -36,9 +34,7 @@ function(testCase) {
         print("checking argsR")
         print(argsR)
 
-        whatR <- .whatR(testCase@feature)
-
-        rRes  <- do.call(what=whatR, args=argsR, envir=rEnv)
+        rRes  <- do.call(what=.whatR(testCase@feature), args=argsR, envir=rEnv)
         print("checking r res")
         print(rRes)
 
@@ -109,10 +105,8 @@ function(featureParamsString) {
 #'
 .translateH2OFeatureParamsListToR<-
 function(h2oFeatureParamsList, feature) {
-    if (feature == "quantile") {
-        return(h2oFeatureParamsList[1])
-    } else {
-        return(h2oFeatureParamsList)
+    if (feature == "h2o.quantile") { return(h2oFeatureParamsList[1])
+    } else                         { return(h2oFeatureParamsList)
     }
 }
 
@@ -120,15 +114,15 @@ function(h2oFeatureParamsList, feature) {
 #'
 #' --------------- return the data sets type for the given h2o or r feature ---------------
 #'
-.getDataSetsType<-
-function(feature, r) {
-    if (feature %in% c("asFactor", "cosine", "all", "and", "cbind", "table", "colNames", "slice", "histogram",
-                       "impute")) {
-        return("H2OFrameOrdata.frame")
-    } else if (feature %in% c("quantile", "cut", "match")) {
-        if (!r) { return("H2OFrameOrdata.frame")
-        } else  { return("numeric")
-        }
+.getRDataSetsType<-
+function(feature) {
+    if (feature %in% c("as.factor", "cos", "all", "&", "h2o.cbind", "h2o.table", "colnames", "[", "h2o.hist",
+                       "h2o.impute")) {
+        return("data.frame")
+    } else if (feature %in% c("h2o.quantile", "cut", "h2o.match")) {
+        return("numeric")
+    } else if (feature %in% c("h2o.which")) {
+        return("logical")
     }
 }
 
@@ -142,17 +136,17 @@ function(featureParamsList, dataSets, feature, env, r) {
     parameterNameSpace <- LETTERS
     symbolCount <- 0
 
-    dataSetsType <- .getDataSetsType(feature, r)
+    if (r) { dataSetsType <- .getRDataSetsType(feature)
+    } else { dataSetsType <- "H2OFrame" }
 
     for (d in dataSets) {
-        if (dataSetsType == "H2OFrameOrdata.frame") {
-            if (r) { d <- as.data.frame(h2o.getFrame(d@key))
-            } else { d <- h2o.getFrame(d@key)
-            }
-        } else if (dataSetsType == "numeric") { # we only take the first column of the dataset source file
-            d <- as.data.frame(h2o.getFrame(d@key)[,1])[,1]
+        fr <- h2o.getFrame(d@key)
+        if        (dataSetsType == "H2OFrame")   { dArg <- fr
+        } else if (dataSetsType == "data.frame") { dArg <- as.data.frame(fr)
+        } else if (dataSetsType == "numeric")    { dArg <- as.numeric(as.data.frame(fr[,1])[,1]) # we only take the first column of the dataset source file
+        } else if (dataSetsType == "logical")    { dArg <- as.logical(as.data.frame(fr[,1])[,1])
         }
-        assign(parameterNameSpace[symbolCount+1], d, envir=env)
+        assign(parameterNameSpace[symbolCount+1], dArg, envir=env)
         symbolCount <- symbolCount + 1
     }
 
@@ -272,37 +266,20 @@ function(h2oRes) {
 #'
 #' --------------- get what for subsequent do.call ---------------
 #'
-.whatH2O<-
-function(op) {
-    if (op == "cosine")           { return("cos")
-    } else if (op == "and")       { return("&")
-    } else if (op == "all")       { return("all")
-    } else if (op == "asFactor")  { return("as.factor")
-    } else if (op == "cbind")     { return("h2o.cbind")
-    } else if (op == "colNames")  { return("colnames")
-    } else if (op == "slice")     { return("[")
-    } else if (op == "histogram") { return("h2o.hist")
-    } else if (op == "impute")    { return("h2o.impute")
-    } else if (op == "table")     { return("h2o.table")
-    } else if (op == "quantile")  { return("h2o.quantile")
-    } else if (op == "cut")       { return("cut")
-    } else if (op == "match")     { return("h2o.match")
-    }
-}
-
 .whatR<-
 function(op) {
-    if (op == "cosine")           { return("cos")
-    } else if (op == "and")       { return("&")
-    } else if (op == "all")       { return("all")
-    } else if (op == "asFactor")  { return("as.factor")
-    } else if (op == "cbind")     { return("cbind")
-    } else if (op == "colNames")  { return("colnames")
-    } else if (op == "slice")     { return("[")
-    } else if (op == "table")     { return("table")
-    } else if (op == "quantile")  { return("quantile")
-    } else if (op == "cut")       { return("cut")
-    } else if (op == "match")     { return("match")
+    if (op == "cos")                  { return("cos")
+    } else if (op == "&")             { return("&")
+    } else if (op == "all")           { return("all")
+    } else if (op == "as.factor")     { return("as.factor")
+    } else if (op == "h2o.cbind")     { return("cbind")
+    } else if (op == "colnames")      { return("colnames")
+    } else if (op == "[")             { return("[")
+    } else if (op == "h2o.table")     { return("table")
+    } else if (op == "h2o.quantile")  { return("quantile")
+    } else if (op == "cut")           { return("cut")
+    } else if (op == "h2o.match")     { return("match")
+    } else if (op == "h2o.which")     { return("which")
     }
 }
 
