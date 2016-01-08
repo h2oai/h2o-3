@@ -129,6 +129,17 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       bmerge_r(-1, _leftN, -1, _rightN);
       _timings[1] += (System.nanoTime() - t0) / 1e9;
 
+      if (_allLeft) {
+        assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == _leftN;
+      } else {
+        long tt = 0;
+        for (int i=0; i<_retFirst.length)    // i.e. sum(_retFirst>0) in R
+          for (int j=0; j<_retFirst[i].length)
+            tt += (_retFirst[i][j] > 0) ? 1 : 0;
+        assert tt <= _leftN;  // TODO: change to tt.privateAssertMethod() containing the loop above to avoid that loop when asserts are off
+        assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == tt;
+      }
+
       if (_numRowsInResult > 0) createChunksInDKV();
     }
 
@@ -253,9 +264,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     // TO DO: check assumption that retFirst and retLength are initialized to 0, for case of no match
     // Now branch (and TO DO in parallel) to merge below and merge above
-    if (lLow > lLowIn && rLow > rLowIn)
+    if (lLow > lLowIn && (rLow > rLowIn || _allLeft)) // '|| _allLeft' is needed here in H2O (but not data.table) for the _perNodeNumLeftRowsToFetch above to populate and pass the assert near the end of the compute2() above.
       bmerge_r(lLowIn, lLow + 1, rLowIn, rLow+1);
-    if (lUpp < lUppIn && rUpp < rUppIn)
+    if (lUpp < lUppIn && (rUpp < rUppIn || _allLeft))
       bmerge_r(lUpp-1, lUppIn, rUpp-1, rUppIn);
 
     // We don't feel tempted to reduce the global _ansN here and make a global frame,
@@ -339,6 +350,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         }
         { // new scope so 'row' can be declared in the for() loop below and registerized (otherwise 'already defined in this scope' in that scope)
           // Fetch the left rows and mark the contiguous from-ranges each left row should be recycled over
+          // TODO: when single node, not needed
           long row = _leftOrder[(int)(leftLoc / _leftBatchSize)][(int)(leftLoc % _leftBatchSize)];  // TODO could loop through batches rather than / and % wastefully
           int chkIdx = _leftVec.elem2ChunkIdx(row); //binary search in espc
           int ni = _leftChunkNode[chkIdx];
