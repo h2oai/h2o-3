@@ -410,8 +410,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Keep or toss predictions
     for (Key<Frame> k : predKeys) {
       Frame fr = DKV.getGet(k);
-      if( _parms._keep_cross_validation_predictions ) Scope.untrack(fr.keys());
-      else fr.remove();
+      if( fr != null ) {
+        if (_parms._keep_cross_validation_predictions) Scope.untrack(fr.keys());
+        else fr.remove();
+      }
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
     if (preds!=null) preds.remove();
