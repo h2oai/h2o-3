@@ -117,7 +117,7 @@ function(h2oFeatureParamsList, feature) {
 .getRDataSetsType<-
 function(feature) {
     if (feature %in% c("as.factor", "cos", "all", "&", "h2o.cbind", "h2o.table", "colnames", "[", "h2o.hist",
-                       "h2o.impute")) {
+                       "h2o.impute", "h2o.rep_len")) {
         return("data.frame")
     } else if (feature %in% c("h2o.quantile", "cut", "h2o.match")) {
         return("numeric")
@@ -170,6 +170,7 @@ function(h2oReturnClass, rReturnClass) {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "numeric")    {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "character")  {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "integer")    {
+    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "list")       {
     } else if (h2oReturnClass == "factor"    && rReturnClass == "factor")     {
     } else if (h2oReturnClass == "numeric"   && (rReturnClass %in% c("numeric", "integer", "double")))   {
     } else if (h2oReturnClass == "character" && rReturnClass == "character")  {
@@ -190,6 +191,7 @@ function(h2oRes, rRes, h2oReturnClass, rReturnClass) {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "table")      { .compareFrameAndTable(h2oRes, rRes)
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "factor")     { .compareFrameAndBase(h2oRes, rRes)
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "integer")    { .compareFrameAndBase(h2oRes, rRes)
+    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "list")       { .compareFrameAndBase(h2oRes, rRes)
     } else if (h2oReturnClass == "factor"    && rReturnClass == "factor")     { .compare2Bases(h2oRes, rRes)
     } else if (h2oReturnClass == "numeric"   && is(rReturnClass,"numeric"))   { .compare2Bases(h2oRes, rRes)
     } else if (h2oReturnClass == "character" && rReturnClass == "character")  { .compare2Bases(h2oRes, rRes)
@@ -235,16 +237,29 @@ function(h2oRes, rRes) {
 .compareFrameAndBase<-
 function(h2oRes, rRes) {
     numH2OCols <- ncol(h2oRes)
-    if (!(numH2OCols == 1)) {
-        stop(paste0("Expected the H2OFrame to have 1 column, but got: ", numH2OCols))
+    numH2ORows <- nrow(h2oRes)
+    if (class(rRes) == "list") {
+        numListElements <- length(rRes)
+        if (!(numH2OCols == numListElements)) {
+            stop(paste0("Expected the H2OFrame to have the same number of columns as the R result has list elements. ",
+                        "H2OFrame cols: ", numH2OCols, " . R result list elements: ", numListElements))
+        }
+        numREntries <- length(rRes[[1]])
+        if (!(numH2ORows == numREntries)) {
+            stop(paste0("Expected the same number of h2o rows as R list element length, but got: ", numH2ORows,
+                        " and ", numREntries, ", respectively."))
+        }
+    } else {
+        if (!(numH2OCols == 1)) {
+            stop(paste0("Expected the H2OFrame to have 1 column, but got: ", numH2OCols))
+        }
+        numREntries   <- length(rRes)
+        if (!(numH2ORows == numREntries)) {
+            stop(paste0("Expected the same number of h2o rows as R entries, but got: ", numH2ORows, " and ",
+                        numREntries, ", respectively."))
+        }
+        .compare2Frames(h2oRes, as.h2o(rRes))
     }
-    numH2OEntries <- nrow(h2oRes)
-    numREntries   <- length(rRes)
-    if (!(numH2OEntries == numREntries)) {
-        stop(paste0("Expected the same number of h2o entries as R entries, but got: ", numH2OEntries, " and ",
-                    numREntries, ", respectively."))
-    }
-    .compare2Frames(h2oRes, as.h2o(rRes))
 }
 
 .compare2Bases<-
@@ -280,6 +295,7 @@ function(op) {
     } else if (op == "cut")           { return("cut")
     } else if (op == "h2o.match")     { return("match")
     } else if (op == "h2o.which")     { return("which")
+    } else if (op == "h2o.rep_len")   { return("rep_len")
     }
 }
 
