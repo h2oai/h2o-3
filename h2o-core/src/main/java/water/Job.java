@@ -80,10 +80,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   public boolean stop_requested() { update_from_remote(); return _stop_requested; }
   public void stop() { 
     if( !_stop_requested )      // fast path cutout
-      new JAtomic(this) {
+      new JAtomic() {
         @Override boolean abort(Job job) { return job._stop_requested; }
         @Override void update(Job job) { job._stop_requested = true; }
-      };
+      }.apply(this);
   }
 
   /** Any exception thrown by this Job, or null if none.  Note that while
@@ -98,10 +98,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   public void setEx(Throwable ex, Class thrower_clz) {
     if( _ex == null ) {
       final DException dex = new DException(ex, thrower_clz);
-      new JAtomic(this) {
+      new JAtomic() {
         @Override boolean abort(Job job) { return job._ex != null; } // One-shot update; keep first exception
         @Override void update(Job job) { job._ex = dex.toEx(); job._stop_requested = true; }
-      };
+      }.apply(this);
     }
   }
 
@@ -120,10 +120,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   /** Report new work done for this job */
   public final void update( final long newworked, final String msg) {
     if( newworked > 0 || (msg != null && !msg.equals(_msg)) ) {
-      new JAtomic(this) {
+      new JAtomic() {
         @Override boolean abort(Job job) { return newworked==0 && ((msg==null && _msg==null) || (msg != null && msg.equals(job._msg))); }
         @Override void update(Job old) { old._worked += newworked; old._msg = msg; }
-      };
+      }.apply(this);
     }
   }
   public final  void update(final long newworked) { update(newworked,(String)null); }
@@ -248,12 +248,12 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     Barrier1(CountedCompleter cc) { super(cc,0); }
     @Override public void compute() { }
     @Override public void onCompletion(CountedCompleter caller) {
-      new Barrier1OnCom(Job.this);
+      new Barrier1OnCom().apply(Job.this);
       _barrier = null;          // Free for GC
     }
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       final DException dex = new DException(ex,caller.getClass());
-      new Barrier1OnExCom(Job.this,dex);
+      new Barrier1OnExCom(dex).apply(Job.this);
       if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
         System.err.println("barrier onExCompletion for "+caller.getClass());
         ex.printStackTrace();
@@ -263,7 +263,6 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     }
   }
   private static class Barrier1OnCom extends JAtomic {
-    Barrier1OnCom(water.Job job) { super(job); }
     @Override boolean abort(Job job) { return false; }
     @Override public void update(Job old) {
       assert old._end_time==0 : "onComp should be called once at most, and never if onExComp is called";
@@ -273,7 +272,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   }
   private static class Barrier1OnExCom extends JAtomic {
     final DException _dex;
-    Barrier1OnExCom(water.Job job, DException dex) { super(job); _dex = dex;}
+    Barrier1OnExCom(DException dex) { _dex = dex; }
     @Override boolean abort(Job job) { return job._ex != null && job._end_time!=0; } // Already stopped & exception'd
     @Override void update(Job job) {
       if( job._ex == null ) job._ex = _dex.toEx(); // Keep first exception ever
@@ -303,7 +302,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   // NO OTHER CHANGES HAPPEN TO JOB FIELDS.
 
   private abstract static class JAtomic extends TAtomic<Job> {
-    JAtomic(Job job) { invoke(job._key); job.update_from_remote(); }
+    void apply(Job job) { invoke(job._key); job.update_from_remote(); }
     abstract boolean abort(Job job);
     abstract void update(Job job);
     @Override public Job atomic(Job job) {
