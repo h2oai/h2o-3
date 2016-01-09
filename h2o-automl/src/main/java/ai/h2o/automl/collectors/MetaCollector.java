@@ -61,7 +61,7 @@ public class MetaCollector {
       _tasks = tasks;
     }
 
-    @Override protected void compute2() {
+    @Override public void compute2() {
       final int nTasks = _tasks.length;
       addToPendingCount(nTasks-1);
       for (int i=0; i < Math.min(MAXP, nTasks); ++i) asyncVecTask(i);
