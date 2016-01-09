@@ -82,7 +82,7 @@ public class FrameMeta extends Iced {
     public ColMeta meta() { return _colMeta; }
     public long elapsed() { return _elapsed; }
 
-    @Override protected void compute2() {
+    @Override public void compute2() {
       long start = System.currentTimeMillis();
       HistTask t = new HistTask(_colMeta._histo, _mean).doAll(_colMeta._v);
       _elapsed = System.currentTimeMillis() - start;

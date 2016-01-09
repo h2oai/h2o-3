@@ -45,7 +45,7 @@ public class InitModel {
     DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
     drf._train = training_frame._key;
     drf._response_column = response;
-    drf._model_id = Key.make(modelName);
+//    drf._model_id = Key.make(modelName);
     drf._ntrees = ntree;
     drf._max_depth = max_depth;
     drf._min_rows = min_rows;
