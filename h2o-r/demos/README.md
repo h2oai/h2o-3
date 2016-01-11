@@ -27,7 +27,7 @@ To set up your R environment to run these examples the user will need to downloa
   	* [5.8 Million Rows - 580MB](https://s3.amazonaws.com/h2o-airlines-unpacked/airlines_all.05p.csv)
   	* [152 Million Rows - 14.5GB](https://s3.amazonaws.com/h2o-airlines-unpacked/allyears.1987.2013.csv)
   	
-  *  **Chicago Weather Data** for [`Predict Airlines Delays with Weather`](large/airlines_delay_w_weather.R)
+  *  **Chicago Weather Data** for [`Predict Airlines Delays with Weather`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.airlines.delay.weather.large.R)
   
   	* [2005-2008 Weather Data Near Chicago Airport](https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/Chicago_Ohare_International_Airport.csv)
   
@@ -49,7 +49,7 @@ To set up your R environment to run these examples the user will need to downloa
   	* [2014-08 - 180MB](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/2014-08.csv)
   	
   
-  *  **NYC Weather Data** for [`NYC Citibike Demand with Weather`](large/citibike_nyc.R)
+  *  **NYC Weather Data** for [`NYC Citibike Demand with Weather`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.citi.bike.small.R)
   
     * [NYC Hourly Weather - 2013](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2013.csv)    
     * [NYC Hourly Weather - 2014](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2014.csv)
