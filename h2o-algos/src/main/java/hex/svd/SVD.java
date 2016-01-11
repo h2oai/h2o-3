@@ -59,7 +59,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   @Override
   protected void checkMemoryFootPrint() {
     HeartBeat hb = H2O.SELF._heartbeat;
-    double p = _train.degreesOfFreedom();
+    double p = LinearAlgebraUtils.numColsExp(_train,true);
     long mem_usage = (long)(hb._cpus_allowed * p*p * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)); //one gram per core
     long max_mem = hb.get_free_mem();
     if (mem_usage > max_mem) {
@@ -76,7 +76,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       error("_max_iterations", "max_iterations must be at least 1");
 
     if(_train == null) return;
-    _ncolExp = _train.numColsExp(_parms._use_all_factor_levels, false);
+    _ncolExp = LinearAlgebraUtils.numColsExp(_train,_parms._use_all_factor_levels);
     if (_ncolExp > MAX_COLS_EXPANDED)
       warn("_train", "_train has " + _ncolExp + " columns when categoricals are expanded. Algorithm may be slow.");
 
@@ -376,7 +376,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           // Output right singular vectors V
           double[][] v = svdJ.getV().getArray();
-          assert v.length == _ncolExp && dinfo._adaptedFrame.numColsExp(_parms._use_all_factor_levels, false) == _ncolExp;
+          assert v.length == _ncolExp && LinearAlgebraUtils.numColsExp(dinfo._adaptedFrame,_parms._use_all_factor_levels) == _ncolExp;
           model._output._v = new double[_ncolExp][_parms._nv];  // Only want rank = nv decomposition
           for(int i = 0; i < v.length; i++)
             System.arraycopy(v[i], 0, model._output._v[i], 0, _parms._nv);

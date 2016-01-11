@@ -11,6 +11,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 public class LinearAlgebraUtils {
@@ -35,9 +36,7 @@ public class LinearAlgebraUtils {
    * Impute missing values and transform numeric value x in col of dinfo._adaptedFrame
    */
   private static double modifyNumeric(double x, int col, DataInfo dinfo) {
-    double y = x;
-    if (Double.isNaN(x) && dinfo._imputeMissing)  // Impute missing value with mean
-      y = dinfo._numMeans[col];
+    double y = (Double.isNaN(x) && dinfo._imputeMissing) ? dinfo._numMeans[col] : x;  // Impute missing value with mean
     if (dinfo._normSub != null && dinfo._normMul != null)  // Transform x if requested
       y = (y - dinfo._normSub[col]) * dinfo._normMul[col];
     return y;
@@ -107,7 +106,7 @@ public class LinearAlgebraUtils {
     final int _ncolX;     // Number of cols in X
 
     public BMulInPlaceTask(DataInfo xinfo, double[][] yt) {
-      assert yt != null && yt[0].length == xinfo._adaptedFrame.numColsExp();
+      assert yt != null && yt[0].length == numColsExp(xinfo._adaptedFrame,true);
       _xinfo = xinfo;
       _ncolX = xinfo._adaptedFrame.numCols();
       _yt = yt;
@@ -155,7 +154,7 @@ public class LinearAlgebraUtils {
     public SMulTask(DataInfo ainfo, int ncolQ) {
       _ainfo = ainfo;
       _ncolA = ainfo._adaptedFrame.numCols();
-      _ncolExp = ainfo._adaptedFrame.numColsExp();
+      _ncolExp = numColsExp(ainfo._adaptedFrame,true);
       _ncolQ = ncolQ;
     }
 
@@ -341,5 +340,15 @@ public class LinearAlgebraUtils {
           cs[d].set(row, qrow[d]);
       }
     }
+  }
+
+  /** Number of columns with categoricals expanded.
+   *  @return Number of columns with categoricals expanded into indicator columns */
+  public static int numColsExp(Frame fr, boolean useAllFactorLevels) {
+    final int uAFL = useAllFactorLevels ? 0 : 1;
+    int cols = 0;
+    for( Vec vec : fr.vecs() )
+      cols += (vec.isCategorical() && vec.domain() != null) ? vec.domain().length - uAFL : 1;
+    return cols;
   }
 }
