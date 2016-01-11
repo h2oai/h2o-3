@@ -21,7 +21,7 @@ To set up your R environment to run these examples the user will need to downloa
   
 ### Corresponding Datasets
 
-  *  **Airlines Data** for [`Predict Airlines Delays`](large/airlines_delay.R) and [`Predict Airlines Delays with Weather`](large/airlines_delay_w_weather.R) - Any of the following datasets will work for the demo; choose an appropriate dataset size based on speed and scale.
+  *  **Airlines Data** for [`Predict Airlines Delays`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.airlines.delay.large.R) and [`Predict Airlines Delays with Weather`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.airlines.delay.weather.large.R) - Any of the following datasets will work for the demo; choose an appropriate dataset size based on speed and scale.
   
   	* [2 Thousand Rows - 4.3MB](https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv)
   	* [5.8 Million Rows - 580MB](https://s3.amazonaws.com/h2o-airlines-unpacked/airlines_all.05p.csv)
@@ -31,7 +31,7 @@ To set up your R environment to run these examples the user will need to downloa
   
   	* [2005-2008 Weather Data Near Chicago Airport](https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/Chicago_Ohare_International_Airport.csv)
   
-  *  **Citibike Data** for [`NYC Citibike Demand with Weather`](large/citibike_nyc.R) - Choose the amount of bike ride data you want for your analysis; the range is from a single month to all available months.
+  *  **Citibike Data** for [`NYC Citibike Demand with Weather`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.citi.bike.small.R) - Choose the amount of bike ride data you want for your analysis; the range is from a single month to all available months.
   
   	* [2013-07 - 157MB](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/2013-07.csv)
   	* [2013-08 - 186MB](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/2013-08.csv)
@@ -55,7 +55,7 @@ To set up your R environment to run these examples the user will need to downloa
     * [NYC Hourly Weather - 2014](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2014.csv)
     * [NYC Hourly Weather - 2015](https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/citibike-nyc/31081_New_York_City__Hourly_2015.csv)
     
-  *  **Lending Club Data** for [`Predict Bad Lending Club Loans`](large/lending_club_bad_loans.R) - Access the data on the [Lending Club site](https://www.lendingclub.com/info/download-data.action) and to access the secure dataset used in this demo you'll need a Lending Club account.
+  *  **Lending Club Data** for [`Predict Bad Lending Club Loans`](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.lending.club.large.R) - Access the data on the [Lending Club site](https://www.lendingclub.com/info/download-data.action) and to access the secure dataset used in this demo you'll need a Lending Club account.
 
 ###  Running Examples from Command Line
 
