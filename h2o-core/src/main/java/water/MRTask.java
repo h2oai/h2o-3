@@ -115,8 +115,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   *
   */
 
-  public MRTask() {}
-  protected MRTask(H2O.H2OCountedCompleter cmp) {super(cmp); }
+  public MRTask() { super(true); }
+  protected MRTask(H2O.H2OCountedCompleter cmp) {super(cmp,true); }
 
   /**
    * This Frame instance is the handle for computation over a set of Vec instances. Recall
