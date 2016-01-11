@@ -44,7 +44,7 @@ function(testCase) {
 
         .validateRAndH2OResultComparability(h2oReturnClass, rReturnClass)
 
-        .compareH2OToR(h2oRes, rRes, h2oReturnClass, rReturnClass)
+        .compareH2OToR(h2oRes, rRes, h2oReturnClass, rReturnClass, testCase@feature)
 
     } else if (testCase@validationMethod == "H") { #TODO: allow hard-coded frames, integers, expressions ... anything that h2o can return
         validationDataSet <- .loadDataSets(list(testCase@validationDataSet))[[1]]
@@ -112,18 +112,39 @@ function(h2oFeatureParamsList, feature) {
 
 
 #'
-#' --------------- return the data sets type for the given h2o or r feature ---------------
+#' --------------- return the data argument type for the given h2o or r feature ---------------
 #'
-.getRDataSetsType<-
-function(feature) {
-    if (feature %in% c("as.factor", "cos", "all", "&", "h2o.cbind", "h2o.table", "colnames", "[", "h2o.hist",
-                       "h2o.impute", "h2o.rep_len")) {
-        return("data.frame")
-    } else if (feature %in% c("h2o.quantile", "cut", "h2o.match")) {
-        return("numeric")
-    } else if (feature %in% c("h2o.which")) {
-        return("logical")
+.getDataArgsType<-
+function(feature, r) {
+    if (!r) {
+        return("H2OFrame")
+    } else {
+        if (feature %in% c("as.factor", "cos", "all", "&", "h2o.cbind", "h2o.table", "colnames", "[", "h2o.hist",
+                           "h2o.impute", "h2o.rep_len", "t", "h2o.var")) {
+            return("data.frame")
+        } else if (feature %in% c("h2o.quantile", "cut", "h2o.match")) {
+            return("numeric")
+        } else if (feature %in% c("h2o.which")) {
+            return("logical")
+        } else if (feature %in% c("h2o.strsplit", "h2o.toupper")) {
+            return("character")
+        } else if (feature %in% c("%*%")) {
+            return("matrix")
+        }
     }
+}
+
+.makeDataArg<-
+function(dataSet, dataArgsType) {
+    fr <- h2o.getFrame(dataSet@key)
+    if        (dataArgsType == "H2OFrame")   { dArg <- fr
+    } else if (dataArgsType == "data.frame") { dArg <- as.data.frame(fr)
+    } else if (dataArgsType == "matrix")     { dArg <- as.matrix(as.data.frame(fr))
+    } else if (dataArgsType == "numeric")    { dArg <- as.numeric(as.data.frame(fr[,1])[,1]) # we only take the first column of the dataset source file
+    } else if (dataArgsType == "logical")    { dArg <- as.logical(as.data.frame(fr[,1])[,1])
+    } else if (dataArgsType == "character")  { dArg <- as.character(as.data.frame(fr[,1])[,1])
+    }
+    return(dArg)
 }
 
 #'
@@ -136,16 +157,10 @@ function(featureParamsList, dataSets, feature, env, r) {
     parameterNameSpace <- LETTERS
     symbolCount <- 0
 
-    if (r) { dataSetsType <- .getRDataSetsType(feature)
-    } else { dataSetsType <- "H2OFrame" }
+    dataArgsType <- .getDataArgsType(feature, r)
 
     for (d in dataSets) {
-        fr <- h2o.getFrame(d@key)
-        if        (dataSetsType == "H2OFrame")   { dArg <- fr
-        } else if (dataSetsType == "data.frame") { dArg <- as.data.frame(fr)
-        } else if (dataSetsType == "numeric")    { dArg <- as.numeric(as.data.frame(fr[,1])[,1]) # we only take the first column of the dataset source file
-        } else if (dataSetsType == "logical")    { dArg <- as.logical(as.data.frame(fr[,1])[,1])
-        }
+        dArg <- .makeDataArg(d, dataArgsType)
         assign(parameterNameSpace[symbolCount+1], dArg, envir=env)
         symbolCount <- symbolCount + 1
     }
@@ -171,6 +186,7 @@ function(h2oReturnClass, rReturnClass) {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "character")  {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "integer")    {
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "list")       {
+    } else if (h2oReturnClass == "data.frame"&& rReturnClass == "matrix")     {
     } else if (h2oReturnClass == "factor"    && rReturnClass == "factor")     {
     } else if (h2oReturnClass == "numeric"   && (rReturnClass %in% c("numeric", "integer", "double")))   {
     } else if (h2oReturnClass == "character" && rReturnClass == "character")  {
@@ -185,14 +201,21 @@ function(h2oReturnClass, rReturnClass) {
 #' --------------- validation methods ---------------
 #'
 .compareH2OToR<-
-function(h2oRes, rRes, h2oReturnClass, rReturnClass) {
+function(h2oRes, rRes, h2oReturnClass, rReturnClass, feature) {
     if        (h2oReturnClass == "H2OFrame"  && rReturnClass == "data.frame") { .compare2Frames(h2oRes, rRes)
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "matrix")     { .compareFrameAndMatrix(h2oRes, rRes)
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "table")      { .compareFrameAndTable(h2oRes, rRes)
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "factor")     { .compareFrameAndBase(h2oRes, rRes)
     } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "integer")    { .compareFrameAndBase(h2oRes, rRes)
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "list")       { .compareFrameAndBase(h2oRes, rRes)
+    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "character")  { .compareFrameAndBase(h2oRes, rRes)
+    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "list")       {
+        if (feature == "h2o.strsplit") {
+            .compare2Frames(h2oRes, rbind.fill(lapply(rRes, function (r) { as.data.frame(t(r))})))
+        } else {
+            .compareFrameAndBase(h2oRes, rRes)
+        }
     } else if (h2oReturnClass == "factor"    && rReturnClass == "factor")     { .compare2Bases(h2oRes, rRes)
+    } else if (h2oReturnClass == "data.frame"&& rReturnClass == "matrix")     { .compareFrameAndMatrix(h2oRes, rRes)
     } else if (h2oReturnClass == "numeric"   && is(rReturnClass,"numeric"))   { .compare2Bases(h2oRes, rRes)
     } else if (h2oReturnClass == "character" && rReturnClass == "character")  { .compare2Bases(h2oRes, rRes)
     } else if (h2oReturnClass == "logical"   && rReturnClass == "logical")    { .compare2Bases(h2oRes, rRes)
@@ -283,7 +306,7 @@ function(h2oRes) {
 #'
 .whatR<-
 function(op) {
-    if (op == "cos")                  { return("cos")
+    if        (op == "cos")           { return("cos")
     } else if (op == "&")             { return("&")
     } else if (op == "all")           { return("all")
     } else if (op == "as.factor")     { return("as.factor")
@@ -296,6 +319,11 @@ function(op) {
     } else if (op == "h2o.match")     { return("match")
     } else if (op == "h2o.which")     { return("which")
     } else if (op == "h2o.rep_len")   { return("rep_len")
+    } else if (op == "h2o.strsplit")  { return("strsplit")
+    } else if (op == "h2o.toupper")   { return("toupper")
+    } else if (op == "t")             { return("t")
+    } else if (op == "%*%")           { return("%*%")
+    } else if (op == "h2o.var")       { return("var")
     }
 }
 

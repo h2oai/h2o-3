@@ -99,7 +99,7 @@ function(cur.dir, root, root.parent = NULL) {
 h2oTest.loadDefaultRPackages <-
 function() {
   to_require <- c("jsonlite", "RCurl", "RUnit", "R.utils", "testthat", "ade4", "glmnet", "gbm", "ROCR", "e1071",
-                  "tools", "statmod", "fpc", "cluster")
+                  "tools", "statmod", "fpc", "cluster", "plyr")
   if (Sys.info()['sysname'] == "Windows") {
     options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))) }
   invisible(lapply(to_require,function(x){require(x,character.only=TRUE,quietly=TRUE,warn.conflicts=FALSE)}))

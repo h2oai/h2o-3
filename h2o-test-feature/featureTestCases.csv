@@ -22,3 +22,9 @@ id|feature|feature_params|data_set_ids|validation_method|validation_data_set_id
 21|h2o.match|c('setosa','versicolor');0;NULL|16|R|
 22|h2o.which||17|R|
 23|h2o.rep_len|2|5|R|
+24|h2o.strsplit|'o'|18|R|
+25|h2o.toupper||19|R|
+26|t||20|R|
+27|%*%||21;22|R|
+28|h2o.var|NULL;FALSE|23|R|
+29|h2o.var|FALSE|23;23|R|

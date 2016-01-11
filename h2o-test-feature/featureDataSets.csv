@@ -16,3 +16,9 @@ data_set_id,uri
 15,s3://h2o-public-test-data/smalldata/feature/cut1.csv
 16,s3://h2o-public-test-data/smalldata/feature/match1.csv
 17,s3://h2o-public-test-data/smalldata/feature/which1.csv
+18,s3://h2o-public-test-data/smalldata/feature/strsplit1.csv
+19,s3://h2o-public-test-data/smalldata/feature/toupper1.csv
+20,s3://h2o-public-test-data/smalldata/feature/t1.csv
+21,s3://h2o-public-test-data/smalldata/feature/matrixMult1.csv
+22,s3://h2o-public-test-data/smalldata/feature/matrixMult2.csv
+23,s3://h2o-public-test-data/smalldata/feature/var1.csv

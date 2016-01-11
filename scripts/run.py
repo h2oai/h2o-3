@@ -1045,26 +1045,22 @@ class TestRunner:
         self.feature_test_cases_csv = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                             "../h2o-test-feature/featureTestCases.csv"))
 
-        if (self.feature):
-            cloud = H2OUseCloud(1, "127.0.0.1", 54321)
+        if (use_cloud):
+            node_num = 0
+            cloud = H2OUseCloud(node_num, use_ip, use_port)
             self.clouds.append(cloud)
-        else:
-            if (use_cloud):
-                node_num = 0
-                cloud = H2OUseCloud(node_num, use_ip, use_port)
+        elif (use_cloud2):
+            clouds = TestRunner.read_config(cloud_config)
+            node_num = 0
+            for c in clouds:
+                cloud = H2OUseCloud(node_num, c[0], c[1])
                 self.clouds.append(cloud)
-            elif (use_cloud2):
-                clouds = TestRunner.read_config(cloud_config)
-                node_num = 0
-                for c in clouds:
-                    cloud = H2OUseCloud(node_num, c[0], c[1])
-                    self.clouds.append(cloud)
-                    node_num += 1
-            else:
-                for i in range(self.num_clouds):
-                    cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
-                                     self.output_dir)
-                    self.clouds.append(cloud)
+                node_num += 1
+        else:
+            for i in range(self.num_clouds):
+                cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
+                                 self.output_dir)
+                self.clouds.append(cloud)
 
     @staticmethod
     def find_test(test_to_run):
@@ -1190,9 +1186,9 @@ class TestRunner:
     @staticmethod
     def get_feature_test_cases(ff):
         if (ff == ''): return None
-        cases = ff.split(';')[1]
-        if (cases == ''): return None
-        else: return cases
+        cases = ff.split(';')
+        if (len(cases) == 1 or cases[1] == ''): return None
+        else: return cases[1]
 
     def build_integration_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass, nointernal):
         """
@@ -1400,7 +1396,7 @@ class TestRunner:
         else:
             client_message = ""
 
-        if (self.use_cloud or self.feature):
+        if (self.use_cloud):
             self._log("Starting {} tests...".format(num_tests))
         elif (self.use_cloud2):
             self._log("Starting {} tests on {} clouds...".format(num_tests, len(self.clouds)))
@@ -1492,32 +1488,31 @@ class TestRunner:
         true_fail_list = []
         terminated_list = []
         for test in self.tests:
-            if isinstance(test, IntegrationTest):
-                if (test.get_passed()):
-                    passed += 1
-                elif (test.get_skipped()):
-                    skipped += 1
-                    skipped_list += [test.test_name]
+            if (test.get_passed()):
+                passed += 1
+            elif (isinstance(test, IntegrationTest) and test.get_skipped()):
+                skipped += 1
+                skipped_list += [test.test_name]
+            else:
+                if (isinstance(test, IntegrationTest) and test.get_h2o_internal()):
+                    h2o_internal_failed += 1
+
+                if (isinstance(test, IntegrationTest) and test.get_nopass(nopass)):
+                    nopass_but_tolerate += 1
+
+                if (isinstance(test, IntegrationTest) and test.get_nofeature(nopass)):
+                    nofeature_but_tolerate += 1
+
+                if (test.get_completed()):
+                    failed += 1
+                    if (not test.get_nopass(nopass) and not test.get_nofeature(nopass)):
+                        true_fail_list.append(test.get_test_name())
                 else:
-                    if (test.get_h2o_internal()):
-                        h2o_internal_failed += 1
+                    notrun += 1
 
-                    if (test.get_nopass(nopass)):
-                        nopass_but_tolerate += 1
-
-                    if (test.get_nofeature(nopass)):
-                        nofeature_but_tolerate += 1
-
-                    if (test.get_completed()):
-                        failed += 1
-                        if (not test.get_nopass(nopass) and not test.get_nofeature(nopass)):
-                            true_fail_list.append(test.get_test_name())
-                    else:
-                        notrun += 1
-
-                    if (test.get_terminated()):
-                        terminated_list.append(test.get_test_name())
-                total += 1
+                if (test.get_terminated()):
+                    terminated_list.append(test.get_test_name())
+            total += 1
 
         if ((passed + nopass_but_tolerate + nofeature_but_tolerate) == total):
             self.regression_passed = True
@@ -1540,13 +1535,14 @@ class TestRunner:
         self._log("Did not complete:          " + str(notrun))
         if (skipped > 0):
             self._log("SKIPPED tests:             " + str(skipped))
-        self._log("H2O INTERNAL tests:        " + str(self.h2o_internal_counter))
-        self._log("H2O INTERNAL failures:     " + str(h2o_internal_failed))
-        #self._log("Tolerated NOPASS:         " + str(nopass_but_tolerate))
-        #self._log("Tolerated NOFEATURE:      " + str(nofeature_but_tolerate))
-        self._log("NOPASS tests (not run):    " + str(self.nopass_counter))
-        self._log("NOFEATURE tests (not run): " + str(self.nofeature_counter))
-        self._log("")
+        if (isinstance(test, IntegrationTest)):
+            self._log("H2O INTERNAL tests:        " + str(self.h2o_internal_counter))
+            self._log("H2O INTERNAL failures:     " + str(h2o_internal_failed))
+            #self._log("Tolerated NOPASS:         " + str(nopass_but_tolerate))
+            #self._log("Tolerated NOFEATURE:      " + str(nofeature_but_tolerate))
+            self._log("NOPASS tests (not run):    " + str(self.nopass_counter))
+            self._log("NOFEATURE tests (not run): " + str(self.nofeature_counter))
+            self._log("")
         if (skipped > 0):
             self._log("SKIPPED list:          " + ", ".join([t for t in skipped_list]))
         self._log("Total time:              %.2f sec" % delta_seconds)

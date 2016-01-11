@@ -10,10 +10,11 @@ options(echo=FALSE)
 #'
 #'#####################################################
 
+
 #'
-#' ------------- Argument parsing -------------
+#' ------------- Command Arguments Parsing -------------
 #'
-parseFeatureTestCaseArgs<-
+parseCommandArgs<-
 function(args) {
   featureTestCaseArgs <- list()
   i <- 1
@@ -76,30 +77,39 @@ function() {
   print("")
   print("Usage for:  R -f featureTestCaseDriver.R --args [...options...]")
   print("")
-  print("    --usecloud             connect to h2o on specified ip and port, where ip and port are specified as follows:")
-  print("                           IP:PORT")
+  print("    --usecloud IP:PORT            (optional) connect to h2o on the specified IP and PORT.")
+  print("                                  If unspecified, then localhost:54321 is used.")
   print("")
-  print("    --onHadoop             Indication that tests will be run on h2o multinode hadoop clusters.")
-  print("                           `locate` and `sandbox` runit test utilities use this indication in order to")
-  print("                           behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
-  print("    --hadoopNamenode       Specifies that the runit tests have access to this hadoop namenode.")
-  print("                           `hadoop.namenode` runit test utility returns this value.")
+  print("    --onHadoop                    (optional) Indication that tests will be run on h2o multinode hadoop")
+  print("                                  clusters. `locate` and `sandbox` runit test utilities use this indication ")
+  print("                                  in order to behave properly. --hadoopNamenode must be specified if ")
+  print("                                  --onHadoop option is used.")
   print("")
-  print("    --resultsDir           the results directory.")
+  print("    --hadoopNamenode NN           (optional) Specifies that the feature tests have access to hadoop namenode,")
+  print("                                  NN, where NN is a valid hadoop namenode.")
   print("")
-  print("    --testId               the id of the test case.")
+  print("    --resultsDir DIR              (optional) if specified, then `h2o.startLogging` places the REST logs in ")
+  print("                                  this directory. if unspecified, then REST logging with not occur.")
   print("")
-  print("    --feature              the feature of the test case.")
+  print("    --testCaseId ID               (required) id of the test case.")
   print("")
-  print("    --featureParams        the parameters of the test case.")
+  print("    --feature F                   (optional) feature of the test case. If unspecified, then an attempt is")
+  print("                                  made to retrieve this value from the test case csv file.")
   print("")
-  print("    --dataSetIds           the id of the test case data sets.")
+  print("    --featureParams FP            (optional) parameters of the test case. If unspecified, then an attempt")
+  print("                                  is made to retrieve this value from the test case csv file.")
   print("")
-  print("    --validationMethod     the validation method (R, H, O) of the test case.")
+  print("    --dataSetIds IDS              (optional) data set ids of the test case. If unspecified, then an ")
+  print("                                  attempt is made to retrieve this value from the test case csv file.")
   print("")
-  print("    --validationDataSetId  the id of the test case validation data sets (H option).")
+  print("    --validationMethod M          (optional) validation method (R, H, O) of the test case. If unspecified,")
+  print("                                  then an attempt is made to retrieve this value from the test case csv file.")
   print("")
-  print("    --featureTestCasesCSV  the path of the feature test cases csv file.")
+  print("    --validationDataSetId ID      (optional) id of the test case validation data set. If unspecified, ")
+  print("                                  then an attempt is made to retrieve this value from the test case csv file.")
+  print("")
+  print("    --featureTestCasesCSV PATH    (optional) path of the feature test cases csv file. If unspecified, then")
+  print("                                  h2o-3/h2o-test-feature/featureTestCases.csv is used.")
   print("")
   q("no",1,FALSE) #exit with nonzero exit code
 }
@@ -111,6 +121,52 @@ function(arg) {
   print("")
   featureTestCaseDriverUsage()
 }
+
+getDriverArgs<-
+function() {
+    dArgs <- parseCommandArgs(commandArgs(trailingOnly=TRUE)) # provided by --args
+
+    if (is.null(dArgs$testCaseId))   {
+        stop("Must specify --testCaseId!")
+        featureTestCaseDriverUsage()
+    }
+    # defaults, if missing
+    if (is.null(dArgs$ip))   { dArgs$ip   <- "localhost" }
+    if (is.null(dArgs$port)) { dArgs$port <- 54321 }
+    if (is.null(dArgs$featureTestCasesCSV)) {
+        dArgs$featureTestCasesCSV <- h2oTest.locate("h2o-test-feature/featureTestCases.csv")
+    }
+
+    if (is.null(dArgs$feature) || is.null(dArgs$featureParams) || is.null(dArgs$dataSetIds) ||
+        is.null(dArgs$validationMethod) || is.null(dArgs$validationDataSetId)) {
+        if (file.exists(dArgs$featureTestCasesCSV)) {
+            testCases <- read.table(dArgs$featureTestCasesCSV,header=TRUE,sep="|")
+        } else {
+            h2oTest.fail(paste0("Couldn't find featureTestCases.csv which should be located in: ",
+                                dArgs$featureTestCasesCSV))
+        }
+
+        testCase <- testCases[testCases$id == dArgs$testCaseId,]
+        if (nrow(testCase) == 0) { stop(paste0("Couldn't find test case id ", dArgs$testCaseId, " in csv.")) }
+
+        if (is.null(dArgs[['feature']]))             {
+            dArgs$feature <- as.character(testCase$feature)
+        }
+        if (is.null(dArgs[['featureParams']]))       { dArgs$featureParams <- as.character(testCase$feature_params) }
+        if (is.null(dArgs[['dataSetIds']]))          { dArgs$dataSetIds <- as.character(testCase$data_set_ids) }
+        if (is.null(dArgs[['validationMethod']]))    { dArgs$validationMethod <- as.character(testCase$validation_method) }
+        if (is.null(dArgs[['validationDataSetId']])) {
+            if (is.na(testCase$validation_data_set_id)){
+                dArgs$validationDataSetId <- ""
+            } else {
+                dArgs$validationDataSetId <- as.character(testCase$validation_data_set_id)
+            }
+
+        }
+    }
+    return(dArgs)
+}
+
 
 #'
 #' ----------------- h2o and h2o-test R package loading -----------------
@@ -134,22 +190,12 @@ function(h2oRDir) {
     invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 }
 
-#'
-#' ----------------- helpers -----------------
-#'
-makeDataSets<-
-function(dataSetIds, featureDataSetsCSV) {
-    ids <- strsplit(dataSetIds,";")[[1]]
-    featureDataSets <- read.csv(featureDataSetsCSV, header=TRUE)
-    lapply(ids, function (id) {
-        uri <- featureDataSets[featureDataSets$data_set_id == as.integer(id),2]
-        FeatureDataSet(as.integer(id), as.character(uri))
-    })
-}
 
-makeValidationDataSet<-
-function(validationDataSetId, featureDataSetsCSV) {
-    id <- as.integer(validationDataSetId)
+#'
+#' ----------------- Data set helper -----------------
+#'
+makeDataSet<-
+function(id, featureDataSetsCSV) {
     if (!is.na(id)) {
         featureDataSets <- read.csv(featureDataSetsCSV, header=TRUE)
         uri <- featureDataSets[featureDataSets$data_set_id == id, 2]
@@ -158,38 +204,38 @@ function(validationDataSetId, featureDataSetsCSV) {
     return(NULL)
 }
 
+
 #'
-#' ----------------- main -----------------
+#' ----------------- Main -----------------
 #'
 featureTest <-
-function(h2oTestFeatureDir) {
+function() {
 
+    h2oTestFeatureDir <- normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f"))
     h2oRDir <- normalizePath(paste(h2oTestFeatureDir,"..","h2o-r",sep=.Platform$file.sep))
 
     loadH2ORPackage(h2oRDir)
 
     loadH2ORTestPackage(h2oRDir)
 
-    #featureTestCaseArgs <- defaultArgs() #set featureTestCasesCSV here too
-    featureTestCaseArgs <- parseFeatureTestCaseArgs(commandArgs(trailingOnly=TRUE)) # provided by --args
-    print(featureTestCaseArgs)
+    driverArgs <- getDriverArgs()
 
     h2oTest.logInfo("Loading default R packages. Additional packages must be loaded explicitly.")
     h2oTest.loadDefaultRPackages()
 
-    sb <- h2oTest.sandbox(create=TRUE, sandboxName=featureTestCaseArgs$testCaseId)
-    h2oTest.logInfo(paste0("Created sandbox for feature test case ", featureTestCaseArgs$testCaseId,
+    sb <- h2oTest.sandbox(create=TRUE, sandboxName=driverArgs$testCaseId)
+    h2oTest.logInfo(paste0("Created sandbox for feature test case ", driverArgs$testCaseId,
                            " in directory ",sb,".\n"))
 
     seed <- h2oTest.setupSeed(sb)
     set.seed(seed)
     h2o.logIt("[SEED] :", seed)
 
-    h2oTest.logInfo(paste0("Connecting to h2o on IP: ", featureTestCaseArgs$ip, ", PORT: ", featureTestCaseArgs$port))
-    h2o.init(ip=featureTestCaseArgs$ip, port=featureTestCaseArgs$port, startH2O=FALSE, strict_version_check = FALSE)
+    h2oTest.logInfo(paste0("Connecting to h2o on IP: ", driverArgs$ip, ", PORT: ", driverArgs$port))
+    h2o.init(ip=driverArgs$ip, port=driverArgs$port, startH2O=FALSE, strict_version_check = FALSE)
 
-    if (!is.null(featureTestCaseArgs$resultsDir)) {#you don't get the rest logs, unless you specify a results directory
-        restLog <- paste(featureTestCaseArgs$resultsDir, "rest.log", sep = .Platform$file.sep)
+    if (!is.null(driverArgs$resultsDir)) { # you don't get the rest logs, unless you specify a results directory
+        restLog <- paste(driverArgs$resultsDir, "rest.log", sep = .Platform$file.sep)
         h2o.startLogging(restLog)
         h2oTest.logInfo(paste0("Started rest logging in: ", restLog))
     }
@@ -199,31 +245,28 @@ function(h2oTestFeatureDir) {
 
     h2o.logAndEcho("------------------------------------------------------------")
     h2o.logAndEcho("")
-    h2o.logAndEcho(paste("STARTING TEST: ", featureTestCaseArgs$testCaseId))
+    h2o.logAndEcho(paste("STARTING TEST: ", driverArgs$testCaseId))
     h2o.logAndEcho("")
     h2o.logAndEcho("------------------------------------------------------------")
 
     featureDataSetsCSV <- normalizePath(paste(h2oTestFeatureDir,"featureDataSets.csv", sep=.Platform$file.sep))
-    print(featureDataSetsCSV)
-    dataSets <- makeDataSets(featureTestCaseArgs$dataSetIds, featureDataSetsCSV)
-    print(dataSets)
-    validationDataSet <- makeValidationDataSet(featureTestCaseArgs$validationDataSetId, featureDataSetsCSV)
-    print(validationDataSet)
+
+    ids <- strsplit(driverArgs$dataSetIds,";")[[1]]
+    dataSets <- lapply(ids, function (id) { makeDataSet(as.integer(id), featureDataSetsCSV) })
+    validationDataSet <- makeDataSet(as.integer(driverArgs$validationDataSetId), featureDataSetsCSV)
 
     featureTestCase <- FeatureTestCase(
-                       id = as.integer(featureTestCaseArgs$testCaseId),
-                       feature = featureTestCaseArgs$feature,
-                       featureParams = featureTestCaseArgs$featureParams,
+                       id = as.integer(driverArgs$testCaseId),
+                       feature = driverArgs$feature,
+                       featureParams = driverArgs$featureParams,
                        dataSets = dataSets,
-                       validationMethod = featureTestCaseArgs$validationMethod,
+                       validationMethod = driverArgs$validationMethod,
                        validationDataSet = validationDataSet)
-
-    print(featureTestCase)
 
     h2oTest.executeFeatureTestCase(featureTestCase)
 }
 
 HADOOP.NAMENODE <<- NULL # TODO: Does this need to be global?
-featureTest(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+featureTest()
 
 options(echo=.origEchoValue)
