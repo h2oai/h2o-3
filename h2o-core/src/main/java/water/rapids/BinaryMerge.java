@@ -10,7 +10,6 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
-import water.util.Log;
 
 import java.util.Arrays;
 
@@ -58,7 +57,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   }
 
   @Override
-  protected void compute2() {
+  public void compute2() {
     _timings = new double[20];
     long t0 = System.nanoTime();
     SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true, _leftMSB));
@@ -543,7 +542,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // Remember that this gets queried on both the caller and the sender, of course.
 
     @Override
-    protected void compute2() {
+    public void compute2() {
       assert(_rows!=null);
       assert(_chk ==null);
       long t0 = System.nanoTime();

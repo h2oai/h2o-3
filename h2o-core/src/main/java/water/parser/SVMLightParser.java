@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.Arrays;
 
 import water.Key;
-import water.exceptions.H2OParseSetupException;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
 
@@ -38,7 +37,7 @@ class SVMLightParser extends Parser {
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
       return new ParseSetup(ParserType.SVMLight, ParseSetup.GUESS_SEP,
             false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data);
-    else throw new H2OParseSetupException("Could not parse file as an SVMLight file.");
+    else throw new H2OParseException("Could not parse file as an SVMLight file.");
   }
 
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}

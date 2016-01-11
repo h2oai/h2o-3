@@ -327,7 +327,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       _retry = RETRY_MS >> 1; // half retry for sending nack
     }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       // First set self to be completed when this subtask completer
       assert _dt.getCompleter() == null;
       _dt.setCompleter(this);

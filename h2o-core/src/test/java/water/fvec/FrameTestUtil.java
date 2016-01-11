@@ -15,7 +15,7 @@ public class FrameTestUtil {
   public static Frame createFrame(String fname, long[] chunkLayout, String[][] data) {
     Frame f = new Frame(Key.make(fname));
     f.preparePartialFrame(new String[]{"C0"});
-    f.update(null);
+    f.update();
     // Create chunks
     byte[] types = new byte[] {Vec.T_STR};
     for (int i=0; i<chunkLayout.length; i++) {
@@ -41,7 +41,7 @@ public class FrameTestUtil {
     // Create a frame
     Frame f = new Frame(Key.make(fname));
     f.preparePartialFrame(new String[]{"C0"});
-    f.update(null);
+    f.update();
     byte[] types = new byte[] {Vec.T_NUM};
     // Create chunks
     for (int i=0; i<chunkLayout.length; i++) {

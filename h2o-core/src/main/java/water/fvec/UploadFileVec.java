@@ -65,7 +65,7 @@ public class UploadFileVec extends FileVec {
     Key newVecKey = Vec.newKey();
 
     try {
-      new Frame(key,new String[0],new Vec[0]).delete_and_lock(null);
+      new Frame(key,new String[0],new Vec[0]).delete_and_lock();
 
       UploadFileVec uv = new UploadFileVec(newVecKey);
       assert uv.writable();
@@ -108,7 +108,7 @@ public class UploadFileVec extends FileVec {
       DKV.put(newVecKey, uv, fs);
       fs.blockForPending();
       Frame f = new Frame(key,new String[]{"bytes"}, new Vec[]{uv});
-      f.unlock(null);
+      f.unlock();
 
       Log.info("    Success.");
     }

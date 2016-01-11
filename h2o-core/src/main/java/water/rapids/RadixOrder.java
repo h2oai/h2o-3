@@ -6,7 +6,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.Pair;
 import water.util.PrettyPrint;
 
 import java.util.Arrays;
@@ -291,7 +290,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     //@Override public byte priority() { return _priority; }
     //private byte _priority;
 
-    @Override protected void compute2() {
+    @Override public void compute2() {
       int numChunks = 0;  // how many of the chunks are on this node
       for (int c=0; c<_counts.length; c++) {
         if (_counts[c] != null)  // the map() allocated the 256 vector in the spine slots for this node's chunks
@@ -391,7 +390,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   @Override public byte priority() { return _priority; }
   private byte _priority;
 
-  @Override protected void compute2() {
+  @Override
+  public void compute2() {
     keytmp = new byte[_keySize];
     counts = new long[_keySize][256];
     Key k;
@@ -724,7 +724,8 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     _whichCols = whichCols;
   }
 
-  @Override protected void compute2() {
+  @Override
+  public void compute2() {
 
     //System.out.println("Calling RadixCount ...");
     long t0 = System.nanoTime();

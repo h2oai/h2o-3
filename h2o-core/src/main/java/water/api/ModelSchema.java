@@ -1,7 +1,6 @@
 package water.api;
 
 import hex.Model;
-import hex.ModelBuilder;
 import water.AutoBuffer;
 import water.H2O;
 import water.api.KeyV3.ModelKeyV3;
@@ -64,14 +63,15 @@ public class ModelSchema<M extends Model<M, P, O>,
 
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {
-    this.algo = ModelBuilder.getAlgo(m);
-    this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
+    this.algo = m._parms.algoName().toLowerCase();
+    this.algo_full_name = m._parms.fullName();
     // Key<? extends Model> k = m._key;
     this.model_id = new ModelKeyV3(m._key);
     this.checksum = m.checksum();
 
     parameters = createParametersSchema();
     parameters.fillFromImpl(m._parms);
+    parameters.model_id = model_id;
 
     output = createOutputSchema();
     output.fillFromImpl(m._output);

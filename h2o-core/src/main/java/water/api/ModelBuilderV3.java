@@ -2,7 +2,6 @@ package water.api;
 
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import water.Job;
 
 /**
  * Job which includes the standard validation error fields, to allow us to capture
@@ -10,7 +9,7 @@ import water.Job;
  * these will come from init(true); others may after the model build really begins.
  * @see H2OModelBuilderErrorV3
  */
-public class ModelBuilderJobV3<J extends ModelBuilder, S extends ModelBuilderJobV3<J, S>> extends JobV3<J, S> {
+public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, S>> extends Schema<J, S> {
   @API(help="Model builder parameters.", direction = API.Direction.OUTPUT)
   public ModelParametersSchema parameters;
   
@@ -21,8 +20,8 @@ public class ModelBuilderJobV3<J extends ModelBuilder, S extends ModelBuilderJob
   public int error_count;
 
   @Override
-  public S fillFromImpl(ModelBuilder builder) {
-    super.fillFromImpl((Job)builder);
+  public S fillFromImpl(J builder) {
+    super.fillFromImpl(builder);
 
     ModelBuilder.ValidationMessage[] vms = builder._messages;
     this.messages = new ValidationMessageBase[vms.length];

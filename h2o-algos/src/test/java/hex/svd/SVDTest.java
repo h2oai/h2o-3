@@ -45,20 +45,9 @@ public class SVDTest extends TestUtil {
       parms._svd_method = SVDParameters.Method.GramSVD;
       parms._save_v_frame = false;
 
-      SVD job = new SVD(parms);
-      try {
-        model = job.trainModel().get();
-        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
-        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      model = new SVD(parms).trainModel().get();
+      TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
+      Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
     } finally {
       if (train != null) train.delete();
       if (model != null) model.delete();
@@ -84,20 +73,9 @@ public class SVDTest extends TestUtil {
       parms._svd_method = SVDParameters.Method.Power;
       parms._save_v_frame = false;
 
-      SVD job = new SVD(parms);
-      try {
-        model = job.trainModel().get();
-        TestUtil.checkEigvec(svec, model._output._v, TOLERANCE);
-        assert model._output._d == null;
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      model = new SVD(parms).trainModel().get();
+      TestUtil.checkEigvec(svec, model._output._v, TOLERANCE);
+      assert model._output._d == null;
     } finally {
       if (train != null) train.delete();
       if (model != null) model.delete();
@@ -111,7 +89,6 @@ public class SVDTest extends TestUtil {
             ard(-0.30842767, -0.93845891, 0.15496743, 0.01234261),
             ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
 
-    SVD job = null;
     SVDModel model = null;
     Frame train = null, score = null, scoreR = null;
     try {
@@ -125,23 +102,12 @@ public class SVDTest extends TestUtil {
       parms._keep_u = false;
       parms._save_v_frame = false;
 
-      try {
-        job = new SVD(parms);
-        model = job.trainModel().get();
-        boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._v, TOLERANCE);
+      model = new SVD(parms).trainModel().get();
+      boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._v, TOLERANCE);
 
-        score = model.score(train);
-        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
-        TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        if (job != null) job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      score = model.score(train);
+      scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+      TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
@@ -167,8 +133,7 @@ public class SVDTest extends TestUtil {
           Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
           DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
           FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
-          j.execImpl();
-          j.get(); // MissingInserter is non-blocking, must block here explicitly
+          j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly
           DKV.remove(frtmp._key); // Delete the frame header (not the data)
         }
 
@@ -181,20 +146,9 @@ public class SVDTest extends TestUtil {
         parms._seed = seed;
         parms._save_v_frame = false;
 
-        SVD job = new SVD(parms);
-        try {
-          model = job.trainModel().get();
-          Log.info(100 * missing_fraction + "% missing values: Singular values = " + Arrays.toString(model._output._d));
-        } catch (Throwable t) {
-          t.printStackTrace();
-          throw new RuntimeException(t);
-        } finally {
-          job.remove();
-        }
+        model = new SVD(parms).trainModel().get();
+        Log.info(100 * missing_fraction + "% missing values: Singular values = " + Arrays.toString(model._output._d));
         Scope.exit();
-      } catch(Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
       } finally {
         if (train != null) train.delete();
         if (model != null) model.delete();
@@ -222,21 +176,10 @@ public class SVDTest extends TestUtil {
       parms._max_iterations = 4;
       parms._save_v_frame = false;
 
-      SVD job = new SVD(parms);
-      try {
-        model = job.trainModel().get();
-        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
-        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
-        score = model.score(train);
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      model = new SVD(parms).trainModel().get();
+      Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+      TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
+      score = model.score(train);
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
@@ -268,20 +211,9 @@ public class SVDTest extends TestUtil {
       parms._svd_method = SVDParameters.Method.GramSVD;
       parms._save_v_frame = false;
 
-      SVD job = new SVD(parms);
-      try {
-        model = job.trainModel().get();
-        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
-        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        job.remove();
-      }
-    } catch(Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      model = new SVD(parms).trainModel().get();
+      TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
+      Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
     } finally {
       if (train != null) train.delete();
       if (model != null) model.delete();
@@ -310,21 +242,10 @@ public class SVDTest extends TestUtil {
       parms._svd_method = SVDParameters.Method.Power;
       parms._save_v_frame = false;
 
-      SVD job = new SVD(parms);
-      try {
-        model = job.trainModel().get();
-        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
-        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
-        score = model.score(train);
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      model = new SVD(parms).trainModel().get();
+      TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
+      Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+      score = model.score(train);
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
@@ -333,21 +254,17 @@ public class SVDTest extends TestUtil {
   }
 
   @Test public void testIrisSplitScoring() throws InterruptedException, ExecutionException {
-    SVD job = null;
     SVDModel model = null;
     Frame fr = null, fr2= null;
     Frame tr = null, te= null;
 
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      SplitFrame sf = new SplitFrame();
-      sf.dataset = fr;
-      sf.ratios = new double[] { 0.5, 0.5 };
-      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+      SplitFrame sf = new SplitFrame(fr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
 
       // Invoke the job
       sf.exec().get();
-      Key[] ksplits = sf.destination_frames;
+      Key[] ksplits = sf._destination_frames;
       tr = DKV.get(ksplits[0]).get();
       te = DKV.get(ksplits[1]).get();
 
@@ -359,19 +276,11 @@ public class SVDTest extends TestUtil {
       parms._svd_method = SVDParameters.Method.Power;
       parms._save_v_frame = false;
 
-      try {
-        job = new SVD(parms);
-        model = job.trainModel().get();
-      } finally {
-        if (job != null) job.remove();
-      }
+      model = new SVD(parms).trainModel().get();
 
       // Done building model; produce a score column with cluster choices
       fr2 = model.score(te);
       Assert.assertTrue(model.testJavaScoring(te, fr2, 1e-5));
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
     } finally {
       if( fr  != null ) fr.delete();
       if( fr2 != null ) fr2.delete();
@@ -405,21 +314,10 @@ public class SVDTest extends TestUtil {
       parms._max_iterations = 7;
       parms._save_v_frame = false;
 
-      SVD job = new SVD(parms);
-      try {
-        model = job.trainModel().get();
-        TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
-        Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
-        score = model.score(train);
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      model = new SVD(parms).trainModel().get();
+      TestUtil.checkEigvec(v_expected, model._output._v, TOLERANCE);
+      Assert.assertArrayEquals(d_expected, model._output._d, TOLERANCE);
+      score = model.score(train);
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
@@ -445,20 +343,9 @@ public class SVDTest extends TestUtil {
       parms._max_iterations = 20;
       parms._save_v_frame = false;
 
-      SVD job = new SVD(parms);
-      try {
-        model = job.trainModel().get();
-        // Assert.assertArrayEquals(d_expected, model._output._d, 1e-4);
-        score = model.score(train);
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        job.remove();
-      }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      model = new SVD(parms).trainModel().get();
+      // Assert.assertArrayEquals(d_expected, model._output._d, 1e-4);
+      score = model.score(train);
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();
@@ -477,8 +364,7 @@ public class SVDTest extends TestUtil {
       Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
       DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
       FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, 0.25);
-      j.execImpl();
-      j.get(); // MissingInserter is non-blocking, must block here explicitly
+      j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly
       DKV.remove(frtmp._key); // Delete the frame header (not the data)
 
       SVDParameters parms = new SVDParameters();
@@ -491,19 +377,8 @@ public class SVDTest extends TestUtil {
       parms._max_iterations = 20;
       parms._save_v_frame = false;
 
-      SVD job = new SVD(parms);
-      try {
-        model = job.trainModel().get();
-        score = model.score(train);
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw new RuntimeException(t);
-      } finally {
-        job.remove();
-      }
-    } catch(Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
+      model = new SVD(parms).trainModel().get();
+      score = model.score(train);
     } finally {
       if (train != null) train.delete();
       if (score != null) score.delete();

@@ -8,7 +8,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.Log;
-
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import java.io.File;
 
 /**
@@ -61,7 +61,6 @@ public class DeepLearningMNIST extends TestUtil {
         DeepLearningParameters p = new DeepLearningParameters();
 
         // populate model parameters
-        p._model_id = Key.make("dl_mnist_model");
         p._train = frame._key;
 //        p._valid = vframe._key;
         p._response_column = "C785"; // last column is the response
@@ -97,27 +96,15 @@ public class DeepLearningMNIST extends TestUtil {
 //        p._score_interval = 5; //score and print progress report (only) every 20 seconds
         p._score_training_samples = 10000; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)
 
-        DeepLearning dl = new DeepLearning(p);
-        DeepLearningModel model = null;
-        try {
-          model = dl.trainModel().get();
-        } catch (Throwable t) {
-          t.printStackTrace();
-          throw new RuntimeException(t);
-        } finally {
-          dl.remove();
-          vframe.remove();
-          frame.remove();
-          if (model != null) {
-            model.delete();
-          }
-        }
+        DeepLearning dl = new DeepLearning(p,Key.<DeepLearningModel>make("dl_mnist_model"));
+        DeepLearningModel model = dl.trainModel().get();
+        vframe.remove();
+        frame.remove();
+        if (model != null)
+          model.delete();
       } else {
         Log.info("Please run ./gradlew syncBigDataLaptop in the top-level directory of h2o-3.");
       }
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
     } finally {
       Scope.exit();
     }

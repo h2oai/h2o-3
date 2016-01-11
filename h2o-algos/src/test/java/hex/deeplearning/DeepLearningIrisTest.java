@@ -1,8 +1,9 @@
 package hex.deeplearning;
 
-import hex.deeplearning.DeepLearningParameters.Activation;
-import hex.deeplearning.DeepLearningParameters.InitialWeightDistribution;
-import hex.deeplearning.DeepLearningParameters.Loss;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
 import hex.genmodel.GenModel;
 import org.junit.*;
 import water.*;
@@ -172,12 +173,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             p._single_node_mode = true;
                             p._epochs = 0;
                             p._elastic_averaging = false;
-                            DeepLearning dl = new DeepLearning(p);
-                            try {
-                              mymodel = dl.trainModel().get();
-                            } finally {
-                              dl.remove();
-                            }
+                            mymodel = new DeepLearning(p).trainModel().get();
                             p._epochs = epoch;
 
                             Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(mymodel.model_info());
@@ -207,12 +203,8 @@ public class DeepLearningIrisTest extends TestUtil {
 
                             // Train H2O
                             mymodel.delete();
-                            dl = new DeepLearning(p);
-                            try {
-                              mymodel = dl.trainModel().get();
-                            } finally {
-                              dl.remove();
-                            }
+                            DeepLearning dl = new DeepLearning(p);
+                            mymodel = dl.trainModel().get();
                             Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * dl.train().numRows());
 
                             /**

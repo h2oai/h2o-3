@@ -11,52 +11,10 @@
 (global-set-key [(f1)]          'javadoc-lookup)  ; F1 to lookup
 (global-set-key [(shift f1)]    'javadoc-help)    ; Shift-F1 to bring up menu
 
-;; CEDET 
-;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/"))
-;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/common"))
-;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/eieio"))
-(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/ede"))
-;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/speedbar"))
-(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/semantic"))
-;;(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/srecode"))
-(load-file (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/cedet-1.1/common/cedet.el"))
-
-;; JDEE.  For me: mostly the debugger
-(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/jdee-2.4.1/lisp"))
-(load "jde")
-
 ;;(global-ede-mode t) ;; Turn on EDE
 
-;; Pretty-print Java (ok, overkill pretty)
-;;(semantic-load-enable-excessive-code-helpers)
-(semantic-load-enable-gaudy-code-helpers)
-
-;; TAGs; symbol find and completion
-(require 'semantic-ia)
-
-;;Start inline completion
-;; M-x semantic-complete-analyze-inline
-;; This is a command that does completion inline (underlining the target symbol) and allows TAB to be used for completion purposes.
-
-;; Automatically starting inline completion in idle time
-;;   M-x global-semantic-idle-completions-mode
-;; This is a minor mode which runs semantic-complete-analyze-inline-idle during idle time. Instead of trying to complete the symbol immediately, it will just display the possible completions, and underline the current symbol the cursor is on.
-
-;; Starting for inline completion when "." is pressed
-;;  (define-key your-mode-map-here "." 'semantic-complete-self-insert)
-;; Binding semantic-complete-self-insert to a key will insert that key's text, as per self-insert-command, and then run the inline completion engine if there is appropriate context nearby.
-
-;; Speedbar completion mode
-;;   M-x semantic-speedbar-analysis
-;; This will start Speedbar in a special mode. In this mode it will analyze the cursor location, and provide intelligent references. Unlike inline completion, a raw list of options is provided and you just need to click on the one you want. Sometimes you need to press g to force an update. 
-
-;; Sets the basic indentation for Java source files to two spaces.
-(defun my-jde-mode-hook ()
-  (setq c-basic-offset 2))
-(add-hook 'jde-mode-hook 'my-jde-mode-hook)
-
 ;; Finally drag in all of JDEE
-(require 'jde)
+(require 'jdee)
 
 ;; eshell clear
 (defun eshell/clear ()

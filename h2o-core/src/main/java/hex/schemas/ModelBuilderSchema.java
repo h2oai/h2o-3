@@ -6,13 +6,9 @@ import hex.ModelCategory;
 import water.AutoBuffer;
 import water.H2O;
 import water.Job;
-import water.Key;
 import water.api.*;
 import water.api.ValidationMessageBase;
-import water.exceptions.H2OIllegalArgumentException;
 import water.util.*;
-
-import java.lang.reflect.Constructor;
 import java.util.Properties;
 
 public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends RequestSchema<B,S> implements SpecifiesHttpResponseCode {
@@ -64,8 +60,6 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   /** Factory method to create the model-specific parameters schema. */
   final public P createParametersSchema() {
-    P impl = null;
-
     // special case, because ModelBuilderSchema is the top of the tree and is parameterized differently
     if (ModelBuilderSchema.class == this.getClass()) {
       return (P)new ModelParametersSchema();
@@ -73,12 +67,11 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
     try {
       Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
-      impl = (P)parameters_class.newInstance();
+      return (P)parameters_class.newInstance();
     }
     catch (Exception e) {
       throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
     }
-    return impl;
   }
 
   public S fillFromParms(Properties parms) {
@@ -88,35 +81,13 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   /** Create the corresponding impl object, as well as its parameters object. */
   @Override final public B createImpl() {
-    B impl = null;
-
-      try {
-        Class<? extends ModelBuilder> builder_class = (Class<? extends ModelBuilder>) ReflectionUtils.findActualClassParameter(this.getClass(), 0);
-        Class<? extends Model.Parameters> parameters_class = (Class<? extends Model.Parameters>) this.parameters.getImplClass();
-
-        // NOTE: we want the parameters to be empty except for the destination_key, so that the builder gets created with any passed-in key name.
-        // We then wipe out the impl parameter's destination_key, so we get the correct default.
-        Model.Parameters _parameters = null;
-
-        if (null != parameters) {
-          _parameters = (Model.Parameters) parameters.createImpl();
-          if (null != parameters.model_id)
-            _parameters._model_id = Key.make(parameters.model_id.name);
-        }
-        Constructor builder_constructor = builder_class.getConstructor(new Class[]{parameters_class});
-        impl = (B) builder_constructor.newInstance(_parameters);
-        impl.clearInitState(); // clear out validation errors from default parameters
-        impl._parms._model_id = null;
-      } catch (Exception e) {
-        throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
-      }
-    return impl;
+    return ModelBuilder.make(get__meta().getSchema_type(), null, null);
   }
 
   @Override public B fillImpl(B impl) {
     super.fillImpl(impl);
     parameters.fillImpl(impl._parms);
-    impl.init(false);
+    impl.init(false); // validate parameters
     return impl;
   }
 
@@ -124,29 +95,30 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   @Override public S fillFromImpl(B builder) {
     // DO NOT, because it can already be running: builder.init(false); // check params
 
-    try {
-      this.algo = builder.getAlgo();
-      this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
-    }
-    catch (H2OIllegalArgumentException e) {
-      this.algo = builder.getClass().getSimpleName();
-      this.algo_full_name = this.algo;
-    }
+    this.algo = builder._parms.algoName().toLowerCase();
+    this.algo_full_name = builder._parms.fullName();
 
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
-    job = (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
-    this.messages = new ValidationMessageBase[builder._messages.length];
-    int i = 0;
-    for( ModelBuilder.ValidationMessage vm : builder._messages ) {
-      this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+    job = builder._job == null ? null : (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder._job);
+    // In general, you can ask about a builder in-progress, and the error
+    // message list can be growing - so you have to be prepared to read it
+    // racily.  Common for Grid searches exploring with broken parameter
+    // choices.
+    final ModelBuilder.ValidationMessage[] msgs = builder._messages; // Racily growing; read only once
+    if( msgs != null ) {
+      this.messages = new ValidationMessageBase[msgs.length];
+      int i = 0;
+      for (ModelBuilder.ValidationMessage vm : msgs) {
+        if( vm != null ) this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
+      }
+      // default fieldname hacks
+      ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
     }
-    // default fieldname hacks
-    ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
     this.error_count = builder.error_count();
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);
-    // parameters.destination_key = new KeyV1.ModelKeyV1(builder._dest);
+    parameters.model_id = builder.dest() == null ? null : new KeyV3.ModelKeyV3(builder.dest());
     return (S)this;
   }
 

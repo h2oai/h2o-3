@@ -1,16 +1,11 @@
 package water;
 
-import jsr166y.CountedCompleter;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.UDPRebooted.ShutdownTsk;
 import water.util.IcedInt;
 import water.util.IcedInt.AtomicIncrementAndGet;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertTrue;
 
@@ -34,7 +29,7 @@ public class DKVTest extends TestUtil {
     @Override public void setupLocal() {
       final H2OCountedCompleter barrier = (new H2OCountedCompleter() {
         @Override
-        protected void compute2() {
+        public void compute2() {
         }
       });
       barrier.addToPendingCount(_keys.length-1);
@@ -50,7 +45,7 @@ public class DKVTest extends TestUtil {
                 barrier.addToPendingCount(1);
                 new RPC(node,new DTask() {
                   @Override
-                  protected void compute2() {
+                  public void compute2() {
                     IcedInt val = DKV.getGet(fk);
                     if (val._val < lb)
                       throw new IllegalArgumentException("DKV seems to be in inconsistent state after TAtomic, value lower than expected, expected at least " + lb + ", got " + val._val);

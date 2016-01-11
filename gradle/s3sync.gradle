@@ -102,7 +102,7 @@ def syncData(subdir) {
 task syncRPackages {
     group = "RPackages"
     description = "Runs R script (h2o-r/scripts/package_verison_check_update.R), which installs R packages from " +
-            "https://s3.amazonaws.com/h2o-r. The purpose of this task is to ensure that the local system's R packages" +
+            "http://s3.amazonaws.com/h2o-r. The purpose of this task is to ensure that the local system's R packages" +
             "match those used by H2O's Jenkins jobs."
     doLast {
         doRSync();

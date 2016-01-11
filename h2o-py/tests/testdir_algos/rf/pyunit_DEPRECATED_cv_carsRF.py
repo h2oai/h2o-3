@@ -1,12 +1,8 @@
 from __future__ import print_function
-from builtins import range
 import sys
-sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
-
-
-
+from builtins import range
 import random
 
 

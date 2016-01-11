@@ -15,7 +15,7 @@ import static water.fvec.FrameTestUtil.createFrame;
 import static water.util.FrameUtils.generateNumKeys;
 
 public class FrameSplitterTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void splitTinyFrame() {
     Frame   dataset = null;
@@ -125,14 +125,11 @@ public class FrameSplitterTest extends TestUtil {
     Assert.assertEquals(150, numRows);
     // Perform frame split via API
     try {
-      SplitFrame sf = new SplitFrame();
-      sf.dataset = f;
-      sf.ratios = new double[] { 0.5, 0.5 };
-      sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+      SplitFrame sf = new SplitFrame(f,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
       // Invoke the job
       sf.exec().get();
-      Assert.assertTrue("The job is not in DONE state, but in " + sf._state, sf.isDone());
-      Key[] ksplits = sf.destination_frames;
+      Assert.assertTrue("The job is not in STOPPED state, but in ", sf._job.isStopped());
+      Key[] ksplits = sf._destination_frames;
       Frame[] fsplits = new Frame[ksplits.length];
       for (int i=0; i<ksplits.length; i++) fsplits[i] = DKV.get(ksplits[i]).get();
       Assert.assertEquals("Number of splits", 2, ksplits.length);

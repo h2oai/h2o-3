@@ -6,7 +6,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.H2O.H2OCountedCompleter;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -124,6 +123,7 @@ public class APIThrPriorTest extends TestUtil {
       H2O.LOW_PRIORITY_API_WORK = 0;
       H2O.LOW_PRIORITY_API_WORK_CLASS = null;
       // Allow the builder to complete.
+      DKV.put(job); // reinstate the JOB in the DKV, because JOB demands it.
       synchronized(blder) { blder._state = 2; blder.notify(); }
       job.get();                  // Block for builder to complete
     } finally {
@@ -147,14 +147,18 @@ public class APIThrPriorTest extends TestUtil {
     byte[] bs = new byte[n];
     r.data.read(bs,0,n);
     String ss = new String(bs); // Computed to help with debugging
-    Assert.assertEquals(status,(int)Integer.parseInt(r.status.split(" ")[0]));
+    Assert.assertEquals(status,Integer.parseInt(r.status.split(" ")[0]));
     Assert.assertNull("" + s, H2O.LOW_PRIORITY_API_WORK_CLASS);
   }
 }
 
 // Empty model
 class BogusModel extends Model<BogusModel,BogusModel.BogusParameters,BogusModel.BogusOutput> {
-  public static class BogusParameters extends Model.Parameters { }
+  public static class BogusParameters extends Model.Parameters {
+    public String algoName() { return "Bogus"; }
+    public String fullName() { return "Bogus"; }
+    public String javaName() { return BogusModel.class.getName(); }
+  }
   public static class BogusOutput extends Model.Output { }
   BogusModel( Key selfKey, BogusParameters parms, BogusOutput output) { super(selfKey,parms,output); }
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) { throw H2O.fail(); }
@@ -171,26 +175,19 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   int _driver_priority = -1;
   @Override public ModelCategory[] can_build() { return null; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
-  public Bogus( BogusModel.BogusParameters parms ) { super("Bogus",parms); init(false); }
-  public ModelBuilderSchema schema() { return null; }
-  @Override protected Bogus trainModelImpl(long work, boolean restartTimer) {
-    return (Bogus)start(new BogusDriver(), work, restartTimer);
-  }
+  public Bogus( BogusModel.BogusParameters parms ) { super(parms); init(false); }
+  @Override protected Driver trainModelImpl() { return new BogusDriver(); }
   @Override public long progressUnits() { return 0; }
   @Override public void init(boolean expensive) { super.init(expensive); }
 
-  private class BogusDriver extends H2OCountedCompleter<BogusDriver> {
-    protected BogusDriver() { super(true); } // bump priority of drivers
-    @Override protected void compute2() {
+  private class BogusDriver extends Driver {
+    @Override public void compute2() {
       _driver_priority = _priority; // Get H2OCountedCompleter priority
-
       synchronized(Bogus.this) {
         if( _state == 0 ) _state = 1;
         Bogus.this.notify();
         while( _state==1 ) try { Bogus.this.wait(); } catch( InterruptedException _ ) { }
       }
-
-      done();                 // Job done!
       tryComplete();
     }
   }

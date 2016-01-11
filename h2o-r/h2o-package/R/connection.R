@@ -21,6 +21,7 @@
 #' @param min_mem_size (Optional) A \code{character} string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param ice_root (Optional) A directory to handle object spillage. The defaul varies by OS.
 #' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
+#' @param proxy (Optional) A \code{character} string specifying the proxy path.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -48,7 +49,7 @@
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
                      beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = tempdir(), strict_version_check = TRUE) {
+                     ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -83,6 +84,8 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     stop("`ice_root` must be a non-empty character string")
   if(!is.logical(strict_version_check) || length(strict_version_check) != 1L || is.na(strict_version_check))
     stop("`strict_version_check` must be TRUE or FALSE")
+  if(!is.character(proxy) || !nzchar(proxy))
+    stop("`proxy` must be a character string or NA_character_")
 
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
     stop("H2O is not compatible with R 3.1.0\n",
@@ -103,7 +106,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   if (nchar(doc_port)) port <- as.numeric(doc_port)
 
   warnNthreads <- FALSE
-  tmpConn <- new("H2OConnection", ip = ip, port = port)
+  tmpConn <- new("H2OConnection", ip = ip, port = port, proxy = proxy)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -119,6 +122,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
                     assertion = assertion, forceDL = forceDL, license = license, ice_root = ice_root, stdout=stdout)
 
       count <- 0L
+      cat("Starting H2O JVM and connecting: ")
       while(!h2o.clusterIsUp(conn = tmpConn) && (count < 60L)) {
         cat(".")
         Sys.sleep(1L)
@@ -142,9 +146,9 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
       stop("Can only start H2O launcher if IP address is localhost.")
   }
 
-  conn <- new("H2OConnection", ip = ip, port = port)
+  conn <- new("H2OConnection", ip = ip, port = port, proxy = proxy)
   assign("SERVER", conn, .pkg.env)
-  cat("Successfully connected to", h2o.getBaseURL(conn), "\n\n")
+  cat(" Connection successful!\n\n")
   h2o.clusterInfo()
   cat("\n")
 
@@ -183,7 +187,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("\n")
   }
   conn@mutable$session_id <- .init.session_id()
-  conn
+  invisible(conn)
 }
 
 #' Retrieve an H2O Connection
@@ -443,7 +447,7 @@ h2o.clusterStatus <- function() {
   args <- mem_args
   ltrs <- paste0(sample(letters,3, replace = TRUE), collapse="")
   nums <- paste0(sample(0:9, 3,  replace = TRUE),     collapse="")
-  name <- paste0("H2O_started_from_R_", Sys.info()["user"],"_",ltrs,nums)
+  name <- paste0("H2O_started_from_R_", gsub("\\s", "_", Sys.info()["user"]),"_",ltrs,nums)
   if(assertion) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", name)

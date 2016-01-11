@@ -432,13 +432,16 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
-      } else if(s.matches("useUDP")) {
+      } 
+      else if(s.matches("useUDP")) {
         i = s.incrementAndCheck(i, args);
         ARGS.useUDP = true;
-      } else if(s.matches("cleaner")) {
+      } 
+      else if(s.matches("cleaner")) {
         i = s.incrementAndCheck(i, args);
         ARGS.cleaner = true;
-      } else {
+      } 
+      else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
@@ -1018,6 +1021,10 @@ final public class H2O {
       _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
     }
     protected H2OCountedCompleter(H2OCountedCompleter completer){ super(completer); _priority = MIN_PRIORITY; }
+    protected H2OCountedCompleter(H2OCountedCompleter completer, boolean bumpPriority){ 
+      super(completer); 
+      _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
+    }
 
     /** Used by the F/J framework internally to do work.  Once per F/J task,
      *  drain the high priority queue before doing any low priority work.
@@ -1060,7 +1067,7 @@ final public class H2O {
     public void compute1() { compute2(); }
 
     /** Override to specify actual work to do */
-    protected abstract void compute2();
+    public abstract void compute2();
 
     /** Exceptional completion path; mostly does printing if the exception was
      *  not handled earlier in the stack.  */
@@ -1112,7 +1119,8 @@ final public class H2O {
   public static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
     public H2OCallback(){}
     public H2OCallback(H2OCountedCompleter cc){super(cc);}
-    @Override protected void compute2(){throw H2O.fail();}
+    @Override
+    public void compute2(){throw H2O.fail();}
     @Override public    void onCompletion(CountedCompleter caller){callback((T) caller);}
     public abstract void callback(T t);
   }
@@ -1631,7 +1639,8 @@ final public class H2O {
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
             || ARGS.ga_opt_out
-            || gaidList.contains("CRAN")) {
+            || gaidList.contains("CRAN")
+            || H2O.ABV.projectVersion().split("\\.")[3].equals("99999")) { // dev build has minor version 99999
       GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {

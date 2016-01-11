@@ -4,9 +4,6 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.example.ExampleModel.ExampleOutput;
 import hex.example.ExampleModel.ExampleParameters;
-import hex.schemas.ExampleV3;
-import hex.schemas.ModelBuilderSchema;
-import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
@@ -18,28 +15,12 @@ import java.util.Arrays;
  *  Example model builder... building a trivial ExampleModel
  */
 public class Example extends ModelBuilder<ExampleModel,ExampleParameters,ExampleOutput> {
-  @Override
-  public ModelCategory[] can_build() {
-    return new ModelCategory[]{
-            ModelCategory.Unknown,
-    };
-  }
-
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Unknown, }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
-
   // Called from Nano thread; start the Example Job on a F/J thread
-  public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(false); }
-
-  public ModelBuilderSchema schema() { return new ExampleV3(); }
-
-  @Override protected Example trainModelImpl(long work, boolean restartTimer) {
-    return (Example)start(new ExampleDriver(), work, restartTimer);
-  }
-
-  @Override
-  public long progressUnits() {
-    return _parms._max_iterations;
-  }
+  public Example( ExampleModel.ExampleParameters parms ) { super(parms); init(false); }
+  @Override protected ExampleDriver trainModelImpl() { return new ExampleDriver(); }
+  @Override public long progressUnits() { return _parms._max_iterations; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -55,51 +36,39 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
   }
 
   // ----------------------
-  private class ExampleDriver extends H2OCountedCompleter<ExampleDriver> {
-
-    protected ExampleDriver() { super(true); } // bump priority of drivers
-    @Override protected void compute2() {
+  private class ExampleDriver extends Driver {
+    @Override public void compute2() {
       ExampleModel model = null;
       try {
         Scope.enter();
-        _parms.read_lock_frames(Example.this); // Fetch & read-lock source frame
+        _parms.read_lock_frames(_job); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
-        model = new ExampleModel(dest(), _parms, new ExampleModel.ExampleOutput(Example.this));
-        model.delete_and_lock(_key);
+        model = new ExampleModel(_job._result, _parms, new ExampleModel.ExampleOutput(Example.this));
+        model.delete_and_lock(_job);
 
         // ---
         // Run the main Example Loop
         // Stop after enough iterations
         for( ; model._output._iterations < _parms._max_iterations; model._output._iterations++ ) {
-          if( !isRunning() ) break; // Stopped/cancelled
+          if( _job.stop_requested() ) break; // Stopped/cancelled
 
           double[] maxs = new Max().doAll(_parms.train())._maxs;
 
           // Fill in the model
           model._output._maxs = maxs;
-          model.update(_key); // Update model in K/V store
-          update(1);          // One unit of work
+          model.update(_job);   // Update model in K/V store
+          _job.update(1);       // One unit of work
 
           StringBuilder sb = new StringBuilder();
           sb.append("Example: iter: ").append(model._output._iterations);
           Log.info(sb);
         }
-        done();                 // Job done!
-      } catch( Throwable t ) {
-        if (_state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
       } finally {
-        updateModelOutput();
-        if( model != null ) model.unlock(_key);
-        _parms.read_unlock_frames(Example.this);
-        Scope.exit(model._key);
+        if( model != null ) model.unlock(_job);
+        _parms.read_unlock_frames(_job);
+        Scope.exit(model == null ? null : model._key);
       }
       tryComplete();
     }

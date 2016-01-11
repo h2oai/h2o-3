@@ -41,7 +41,9 @@ public class AAA_PreCloudLock extends TestUtil {
       parms.setProperty("src","./smalldata/iris");
       serve("/3/Typeahead/files", parms);
       water.util.Log.info("Testing that logging will not lock a cloud");
-      serve("/3/ModelBuilders", null);
+      serve("/3/ModelBuilders", null); // Note: no modelbuilders registered yet, so this is a vacuous result
+      serve("/3/About", null);
+      serve("/3/NodePersistentStorage/categories/environment/names/clips/exists", null); // Flow check for prior Flow clips
       assertFalse("Check of pre-cloud classes failed.  You likely made a Key before any outside action triggers cloud-lock.  ", Paxos._cloudLocked);
     } finally {
       TypeMap._check_no_locking=false;

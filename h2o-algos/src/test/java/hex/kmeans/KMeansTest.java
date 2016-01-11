@@ -31,15 +31,9 @@ public class KMeansTest extends TestUtil {
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
     parms._seed = seed;
-    KMeans job = null;
-    KMeansModel kmm = null;
-    try {
-      job = new KMeans(parms);
-      kmm = job.trainModel().get();
-      checkConsistency(kmm);
-    } finally {
-      if (job != null) job.remove();
-    }
+    KMeans job = new KMeans(parms);
+    KMeansModel kmm = job.trainModel().get();
+    checkConsistency(kmm);
     for( int i=0; i<parms._k; i++ )
       Assert.assertTrue( "Seed: "+seed, kmm._output._size[i] != 0 );
     return kmm;
@@ -225,7 +219,7 @@ public class KMeansTest extends TestUtil {
   @Test
   public void testCentroids(){
     Frame fr = ArrayUtils.frame(ard(d(1,0,0),d(0,1,0),d(0,0,1)));
-    Frame fr2=null;
+    Frame fr2;
     try {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -351,13 +345,10 @@ public class KMeansTest extends TestUtil {
       try {
         fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
-        SplitFrame sf = new SplitFrame();
-        sf.dataset = fr;
-        sf.ratios = new double[] { 0.5, 0.5 };
-        sf.destination_frames = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+        SplitFrame sf = new SplitFrame(fr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
         // Invoke the job
         sf.exec().get();
-        Key[] ksplits = sf.destination_frames;
+        Key<Frame>[] ksplits = sf._destination_frames;
         tr = DKV.get(ksplits[0]).get();
         te = DKV.get(ksplits[1]).get();
 
@@ -412,9 +403,7 @@ public class KMeansTest extends TestUtil {
             if (missing) {
               // insert 10% missing values - check the math
               FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(fr._key, 1234, 0.1f);
-              mi.execImpl();
-              fr = mi.get();
-              mi.remove();
+              fr = mi.execImpl().get();
             }
             train = new Frame(Key.make("train"), fr.names(), fr.vecs());
             DKV.put(train);
@@ -538,7 +527,6 @@ public class KMeansTest extends TestUtil {
                 _ref_size[i]
         );
       }
-      job.remove();
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();

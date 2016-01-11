@@ -14,7 +14,7 @@ public class RemoveAllHandler extends Handler {
     Log.info("Removing all objects");
     Futures fs = new Futures();
     // Cancel and remove leftover running jobs
-    for( Job j : Job.jobs() ) { j.cancel(); j.remove(fs); }
+    for( Job j : Job.jobs() ) { j.stop_requested(); j.remove(fs); }
     // Wipe out any and all session info
     if( InitIDHandler.SESSIONS != null ) {
       for(String k: InitIDHandler.SESSIONS.keySet() )

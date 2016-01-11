@@ -13,7 +13,7 @@ import java.util.Properties;
  */
 public class GAUtils {
   public static void logRequest(String uri, Properties header) {
-    if (H2O.GA != null) {
+    if (H2O.GA != null && header != null) {
       // skip useless URIs
       if (uri.contains("/NodePersistentStorage") || uri.contains("/Metadata")) return;
 

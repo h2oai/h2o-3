@@ -35,7 +35,7 @@ public class InteractionTest extends TestUtil {
     in._max_factors = 20;
     in._min_occurrence = 1;
     in._pairwise = false;
-    Frame frame2 = in.execImpl();
+    Frame frame2 = in.execImpl(null).get();
     Log.info(frame2.toString());
 
     frame.delete();
@@ -51,7 +51,7 @@ public class InteractionTest extends TestUtil {
     in._max_factors = 10;
     in._min_occurrence = 1;
     in._pairwise = true;
-    Frame frame2 = in.execImpl();
+    Frame frame2 = in.execImpl(null).get();
     Log.info(frame2.toString());
 
     frame.delete();
@@ -67,7 +67,7 @@ public class InteractionTest extends TestUtil {
     in._max_factors = 106;
     in._min_occurrence = 4;
     in._pairwise = true;
-    Frame frame2 = in.execImpl();
+    Frame frame2 = in.execImpl(null).get();
     Log.info(frame2.toString());
 
     frame.delete();
@@ -83,7 +83,7 @@ public class InteractionTest extends TestUtil {
     in._max_factors = 20;
     in._min_occurrence = 2;
     in._pairwise = false;
-    Frame frame2 = in.execImpl();
+    Frame frame2 = in.execImpl(null).get();
     Log.info(frame2.toString());
 
     frame.delete();

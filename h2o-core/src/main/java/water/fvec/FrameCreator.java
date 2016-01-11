@@ -17,10 +17,16 @@ import water.util.RandomUtils;
  * Helper to make up a Frame from scratch, with random content
  */
 public class FrameCreator extends H2O.H2OCountedCompleter {
+  transient Vec _v;
+  final private CreateFrame _createFrame;
+  private int[] _cat_cols;
+  private int[] _int_cols;
+  private int[] _real_cols;
+  private int[] _bin_cols;
+  private String[][] _domain;
+  private Frame _out;
 
-  public FrameCreator(CreateFrame createFrame, Key job) {
-    super(null);
-    _job=job;
+  public FrameCreator(CreateFrame createFrame) {
     _createFrame = createFrame;
 
     int[] idx = _createFrame.has_response ? ArrayUtils.seq(1, _createFrame.cols + 1) : ArrayUtils.seq(0, _createFrame.cols);
@@ -50,7 +56,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
         _domain[0] = _createFrame.response_factors == 1 ? null : new String[_createFrame.response_factors];
         if (_domain[0] != null) {
           for (int i = 0; i < _domain[0].length; ++i) {
-            _domain[0][i] = new Integer(i).toString();
+            _domain[0][i] = Integer.toString(i);
           }
         }
       }
@@ -71,16 +77,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     _v = makeCon(_createFrame.value, _createFrame.rows, log_rows_per_chunk,false);
   }
 
-  transient Vec _v;
   public int nChunks() { return _v.nChunks(); }
-  final private CreateFrame _createFrame;
-  private int[] _cat_cols;
-  private int[] _int_cols;
-  private int[] _real_cols;
-  private int[] _bin_cols;
-  private String[][] _domain;
-  private Frame _out;
-  final private Key _job;
 
   @Override public void compute2() {
     int totcols = _createFrame.cols + (_createFrame.has_response ? 1 : 0);
@@ -102,27 +99,23 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       for (int i = 0; i < vecs.length; i++) names[i] = "C" + (i+1);
     }
 
-    _out = new Frame(_createFrame._dest, names, vecs);
+    _out = new Frame(_createFrame._job._result, names, vecs);
     assert _out.numRows() == _createFrame.rows;
     assert _out.numCols() == totcols;
-    _out.delete_and_lock(_job);
+    _out.delete_and_lock(_createFrame._job._key);
 
     // fill with random values
     new FrameRandomizer(_createFrame, _cat_cols, _int_cols, _real_cols, _bin_cols).doAll(_out);
 
     //overwrite a fraction with N/A
-    FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(_createFrame._dest, _createFrame.seed, _createFrame.missing_fraction);
-    mi.execImpl();
-    mi.get();
-    mi.remove();
-
+    FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(_createFrame._job._result, _createFrame.seed, _createFrame.missing_fraction);
+    mi.execImpl().get();
     tryComplete();
   }
 
   @Override public void onCompletion(CountedCompleter caller){
-    _out.update(_job);
-    _out.unlock(_job);
-    ((Job)DKV.getGet(_job)).done();
+    _out.update(_createFrame._job._key);
+    _out.unlock(_createFrame._job._key);
   }
 
   private static class FrameRandomizer extends MRTask<FrameRandomizer> {
@@ -146,9 +139,9 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       rng.setSeed(rng.nextLong());
     }
 
-    @Override
-    public void map (Chunk[]cs){
-      if (_createFrame.isCancelledOrCrashed()) return;
+    @Override public void map (Chunk[]cs){
+      Job<Frame> job = _createFrame._job;
+      if (job.stop_requested()) return;
       if (!_createFrame.randomize) return;
       final Random rng = RandomUtils.getRNG(new Random().nextLong());
 
@@ -164,35 +157,35 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
             cs[0].set(r, _createFrame.real_range * (1 - 2 * rng.nextDouble())); //regression
         }
       }
-      _createFrame.update(1);
+      job.update(1);
       for (int c : _cat_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
           cs[c].set(r, (int)(rng.nextDouble() * _createFrame.factors));
         }
       }
-      _createFrame.update(1);
+      job.update(1);
       for (int c : _int_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
           cs[c].set(r, -_createFrame.integer_range + (long)(rng.nextDouble()*(2*_createFrame.integer_range+1)));
         }
       }
-      _createFrame.update(1);
+      job.update(1);
       for (int c : _real_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
           cs[c].set(r, _createFrame.real_range * (1 - 2 * rng.nextDouble()));
         }
       }
-      _createFrame.update(1);
+      job.update(1);
       for (int c : _bin_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
           cs[c].set(r, rng.nextFloat() > _createFrame.binary_ones_fraction ? 0 : 1);
         }
       }
-      _createFrame.update(1);
+      job.update(1);
     }
   }
 }

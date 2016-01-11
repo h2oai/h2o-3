@@ -26,6 +26,8 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
 
 
   public DTask(H2OCountedCompleter completer){super(completer);}
+  public DTask(H2OCountedCompleter completer, boolean bumpPriority) { super(completer, bumpPriority); }
+  public DTask(boolean bumpPriority) { super(bumpPriority); }
 
   protected boolean _modifiesInputs = false;
 

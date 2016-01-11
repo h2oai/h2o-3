@@ -101,7 +101,6 @@ public class GainsLift extends Iced {
         }
         Quantile q = new Quantile(qp);
         qm = q.trainModel().get();
-        DKV.remove(q._key);
         _quantiles = qm._output._quantiles[0];
         // find uniques (is there a more elegant way?)
         TreeSet<Double> hs = new TreeSet<>();

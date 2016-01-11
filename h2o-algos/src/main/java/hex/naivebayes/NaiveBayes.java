@@ -1,17 +1,12 @@
 package hex.naivebayes;
 
 import hex.*;
-import hex.schemas.ModelBuilderSchema;
-import hex.schemas.NaiveBayesV3;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesOutput;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
@@ -29,26 +24,10 @@ import java.util.List;
  *
  */
 public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameters,NaiveBayesOutput> {
-  @Override
-  public ModelBuilderSchema schema() {
-    return new NaiveBayesV3();
-  }
-
   public boolean isSupervised(){return true;}
-
-  @Override protected Job<NaiveBayesModel> trainModelImpl(long work, boolean restartTimer) {
-    return start(new NaiveBayesDriver(), work, restartTimer);
-  }
-
-  @Override
-  public long progressUnits() {
-    return 6;
-  }
-
-  @Override
-  public ModelCategory[] can_build() {
-    return new ModelCategory[]{ ModelCategory.Unknown };
-  }
+  @Override protected NaiveBayesDriver trainModelImpl() { return new NaiveBayesDriver(); }
+  @Override public long progressUnits() { return 6; }
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Unknown }; }
 
   @Override
   protected void checkMemoryFootPrint() {
@@ -67,15 +46,12 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
               + ") - try reducing the number of columns, the number of response classes or the number of categorical factors of the predictors.";
       error("_train", msg);
-      cancel(msg);
     }
   }
 
   // Called from an http request
-  public NaiveBayes(NaiveBayesModel.NaiveBayesParameters parms) {
-    super("NaiveBayes", parms);
-    init(false);
-  }
+  public NaiveBayes(NaiveBayesModel.NaiveBayesParameters parms) { super(parms); init(false); }
+  public NaiveBayes(boolean startup_once) { super(new NaiveBayesParameters(),startup_once); }
 
   @Override
   public void init(boolean expensive) {
@@ -94,18 +70,15 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     hide("_max_after_balance_size", "Max after balance size is not applicable to NaiveBayes.");
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
-  private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
-
-  class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
-    protected NaiveBayesDriver() { super(true); } // bump driver priority
+  class NaiveBayesDriver extends Driver {
 
     public boolean computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
       model._output._levels = _response.domain();
       model._output._rescnt = tsk._rescnt;
       model._output._ncats = dinfo._cats;
 
-      if(!isRunning(_key)) return false;
-      update(1, "Initializing arrays for model statistics");
+      if(_job.stop_requested()) return false;
+      _job.update(1, "Initializing arrays for model statistics");
       // String[][] domains = dinfo._adaptedFrame.domains();
       String[][] domains = model._output._domains;
       double[] apriori = new double[tsk._nrescat];
@@ -115,8 +88,8 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         pcond[i] = new double[tsk._nrescat][ncnt];
       }
 
-      if(!isRunning(_key)) return false;
-      update(1, "Computing probabilities for categorical cols");
+      if(_job.stop_requested()) return false;
+      _job.update(1, "Computing probabilities for categorical cols");
       // A-priori probability of response y
       for(int i = 0; i < apriori.length; i++)
         apriori[i] = ((double)tsk._rescnt[i] + _parms._laplace)/(tsk._nobs + tsk._nrescat * _parms._laplace);
@@ -131,8 +104,8 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         }
       }
 
-      if(!isRunning(_key)) return false;
-      update(1, "Computing mean and standard deviation for numeric cols");
+      if(_job.stop_requested()) return false;
+      _job.update(1, "Computing mean and standard deviation for numeric cols");
       // Mean and standard deviation of numeric predictor x_j for every level of response y
       for(int col = 0; col < dinfo._nums; col++) {
         for(int i = 0; i < pcond[0].length; i++) {
@@ -178,17 +151,16 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
               new String[1][], new double[][] {apriori});
       model._output._model_summary = createModelSummaryTable(model._output);
 
-      if(!isRunning(_key)) return false;
-      update(1, "Scoring and computing metrics on training data");
+      if(_job.stop_requested()) return false;
+      _job.update(1, "Scoring and computing metrics on training data");
       if (_parms._compute_metrics) {
         model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
-        ModelMetrics mm = ModelMetrics.getFromDKV(model,_parms.train());
-        model._output._training_metrics = mm;
+        model._output._training_metrics = ModelMetrics.getFromDKV(model,_parms.train());
       }
 
       // At the end: validation scoring (no need to gather scoring history)
-      if(!isRunning(_key)) return false;
-      update(1, "Scoring and computing metrics on validation data");
+      if(_job.stop_requested()) return false;
+      _job.update(1, "Scoring and computing metrics on validation data");
       if (_valid != null) {
         model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set
         model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
@@ -197,43 +169,32 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       return true;
     }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       NaiveBayesModel model = null;
       DataInfo dinfo = null;
 
       try {
         Scope.enter();
         init(true);   // Initialize parameters
-        _parms.read_lock_frames(NaiveBayes.this); // Fetch & read-lock input frames
+        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
         dinfo = new DataInfo(Key.make(), _train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesOutput(NaiveBayes.this));
-        model.delete_and_lock(_key);
-        _train.read_lock(_key);
+        model.delete_and_lock(_job);
+        _train.read_lock(_job._key);
 
-        update(1, "Begin distributed Naive Bayes calculation");
-        NBTask tsk = new NBTask(_key, dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
+        _job.update(1, "Begin distributed Naive Bayes calculation");
+        NBTask tsk = new NBTask(_job._key, dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         if (computeStatsFillModel(model, dinfo, tsk))
-          model.update(_key);
-
-        done();
-      } catch (Throwable t) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
+          model.update(_job);
       } finally {
-        updateModelOutput();
-        _train.unlock(_key);
-        if (model != null) model.unlock(_key);
+        _train.unlock(_job);
+        if (model != null) model.unlock(_job);
         if (dinfo != null) dinfo.remove();
-        _parms.read_unlock_frames(NaiveBayes.this);
+        _parms.read_unlock_frames(_job);
         Scope.exit();
       }
       tryComplete();
@@ -267,7 +228,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     int col = 0;
     table.set(row, col++, output._apriori_raw.length);
     table.set(row, col++, apriori_min);
-    table.set(row, col++, apriori_max);
+    table.set(row, col  , apriori_max);
     return table;
   }
 
@@ -276,7 +237,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   //             If response y = NA, skip counting row entirely in all calculations
   // H2O's method: Just skip all rows where any x_j = NA or y = NA. Should be more memory-efficient, but results incomparable with R.
   private static class NBTask extends MRTask<NBTask> {
-    final protected Key _jobKey;
+    final protected Key<Job> _jobKey;
     final DataInfo _dinfo;
     final String[][] _domains;  // Domains of the training frame
     final int _nrescat;         // Number of levels for the response y
@@ -287,7 +248,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     public int[/*npreds*/][/*nrescat*/][] _jntcnt;  // For each categorical predictor, joint count of response and predictor levels
     public double[/*npreds*/][/*nrescat*/][] _jntsum; // For each numeric predictor, sum and squared sum of entries for every response level
 
-    public NBTask(Key jobKey, DataInfo dinfo, int nres) {
+    public NBTask(Key<Job> jobKey, DataInfo dinfo, int nres) {
       _jobKey = jobKey;
       _dinfo = dinfo;
       _nrescat = nres;
@@ -298,9 +259,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     }
 
     @Override public void map(Chunk[] chks) {
-      if(_jobKey != null && !isRunning(_jobKey)) {
-        throw new JobCancelledException();
-      }
+      if( _jobKey.get().stop_requested() ) return;
       _nobs = 0;
       _rescnt = new int[_nrescat];
 
@@ -322,8 +281,8 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       OUTER:
       for(int row = 0; row < chks[0]._len; row++) {
         // Skip row if any entries in it are NA
-        for(int col = 0; col < chks.length; col++) {
-          if(Double.isNaN(chks[col].atd(row))) continue OUTER;
+        for( Chunk chk : chks ) {
+          if(Double.isNaN(chk.atd(row))) continue OUTER;
         }
 
         // Record joint counts of categorical predictors and response

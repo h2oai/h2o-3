@@ -2,8 +2,8 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.Distribution;
-import water.H2O;
-import water.MemoryManager;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import water.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 

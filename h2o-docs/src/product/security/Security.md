@@ -1,8 +1,8 @@
 # Security
 
-[H2O Enterprise Edition](http://h2o.ai/enterprise-edition/) contains security features intended for deployment inside a secure data center.
+[H2O Enterprise Support](http://h2o.ai/product/enterprise-support/) contains security features intended for deployment inside a secure data center.
 
-Please see the [H2O Enterprise Edition web page](http://h2o.ai/enterprise-edition/) for more information about the enterprise version of H2O.
+Please see the [H2O Enterprise Support web page](http://h2o.ai/product/enterprise-support/) for more information about the enterprise version of H2O.
 
 ## Security model
 

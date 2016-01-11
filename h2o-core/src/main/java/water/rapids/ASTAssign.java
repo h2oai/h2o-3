@@ -2,7 +2,10 @@ package water.rapids;
 
 import hex.Model;
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 /** Assign a whole frame over a global.  Copy-On-Write optimizations make this cheap. */
 class ASTAssign extends ASTPrim {
@@ -103,7 +106,7 @@ class ASTRectangleAssign extends ASTPrim {
     throw H2O.unimpl();
   }
 
-  // Assign a scalar over some dst rows; optimize for all rows
+  // Assign a NON-STRING SCALAR over some dst rows; optimize for all rows
   private void assign_frame_scalar(Frame dst, int[] cols, final ASTNumList rows, final double src, Session ses) {
 
     // Handle fast small case
@@ -153,7 +156,7 @@ class ASTRectangleAssign extends ASTPrim {
     }.doAll(vecs2);
   }
 
-  // Assign a scalar over some dst rows; optimize for all rows
+  // Assign a STRING over some dst rows; optimize for all rows
   private void assign_frame_scalar(Frame dst, int[] cols, final ASTNumList rows, final String src, Session ses) {
     // Check for needing to copy before updating
     throw H2O.unimpl();
@@ -201,19 +204,21 @@ class ASTRectangleAssign extends ASTPrim {
   }
 
   // Boolean assignment with a scalar
-  private void assign_frame_scalar(Frame dst, int[] cols, Frame rows, final double src, Session ses) {
-    // Check for needing to copy before updating
-    throw H2O.unimpl();
-    //new MRTask() {
-    //  @Override public void map(Chunk[] cs) {
-    //    Chunk pc = cs[cs.length - 1];
-    //    for (int i = 0; i < pc._len; ++i) {
-    //      if (pc.at8(i) == 1)
-    //        for (int c = 0; c < cs.length - 1; ++c)
-    //          cs[c].set(i, src);
-    //    }
-    //  }
-    //}.doAll(dst.add(rows));
+  private void assign_frame_scalar(Frame dst, final int[] cols, Frame rows, final double src, Session ses) {
+    // TODO: COW without materializing vec and depending on assign_frame_frame
+    Frame src2 = new MRTask() {
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        Chunk bool = cs[cs.length-1];
+        for(int i=0; i<cs[0]._len; ++i) {
+          int nc=0;
+          if( bool.at8(i)==1 )
+            for(int c: cols) ncs[nc++].addNum(src);
+          else
+            for(int c: cols) ncs[nc++].addNum(cs[c].atd(i));
+        }
+      }
+    }.doAll(cols.length, Vec.T_NUM, new Frame(dst).add(rows)).outputFrame();
+    assign_frame_frame(dst,cols,new ASTNumList(0,dst.numRows()),src2,ses);
   }
 }
 

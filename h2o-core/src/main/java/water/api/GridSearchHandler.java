@@ -1,18 +1,21 @@
-package hex.api;
+package water.api;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import hex.Model;
+import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.ModelFactory;
 import hex.schemas.GridSearchSchema;
+import water.H2O;
 import water.Job;
 import water.Key;
+import water.TypeMap;
 import water.api.API;
 import water.api.Handler;
 import water.api.JobV3;
@@ -35,49 +38,62 @@ import water.util.PojoUtils;
  * @param <P>  Type of schema representing model parameters
  * @param <S>  Schema representing structure of grid search end-point
  */
-public abstract class GridSearchHandler<G extends Grid<MP>,
+public class GridSearchHandler<G extends Grid<MP>,
     S extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
     P extends ModelParametersSchema> extends Handler {
 
-  public S do_train(int version,
-                    S gridSearchSchema) { // just following convention of model builders
-    // Extract input parameters
-    P parametersSchema = gridSearchSchema.parameters;
-    // TODO: Verify algorithm inputs, make sure to reject wrong training_frame
-    // Extract hyper parameters
-    Map<String, Object[]> hyperParams = gridSearchSchema.hyper_parameters;
+  // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
+  @Override Schema handle(int version, water.api.Route route, Properties parms) throws Exception {
+    // Only here for train or validate-parms
+    if( !route._handler_method.getName().equals("train") )
+      throw water.H2O.unimpl();
+
+    // Peek out the desired algo from the URL
+    String ss[] = route._url_pattern_raw.split("/");
+    String algoURLName = ss[3]; // {}/{99}/{Grid}/{gbm}/
+    String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
+    // Get the latest version of this algo: /99/Grid/gbm  ==> GBMV3
+    String algoSchemaName = Schema.schemaClass(version, algoName).getSimpleName(); // GBMV3
+    int algoVersion = Integer.valueOf(algoSchemaName.substring(algoSchemaName.lastIndexOf("V")+1)); // '3'
+    String paramSchemaName = "hex.schemas."+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;
+
+    // Build the Grid Search schema, and fill it from the parameters
+    GridSearchSchema gss = new GridSearchSchema();
+    gss.init_meta();
+    gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
+    gss.parameters.init_meta();
+    ModelBuilder builder = ModelBuilder.make(algoURLName,null,null); // Default parameter settings
+    gss.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
+    gss.fillFromParms(parms);   // Override defaults from user parms
     // Verify list of hyper parameters
     // Right now only names, no types
-    validateHyperParams(parametersSchema, hyperParams);
+    validateHyperParams((P)gss.parameters, gss.hyper_parameters);
+
+    // Get actual parameters
+    MP params = (MP) gss.parameters.createAndFillImpl();
 
     // Get/create a grid for given frame
     // FIXME: Grid ID is not pass to grid search builder!
-    Key<Grid> destKey = gridSearchSchema.grid_id != null ? gridSearchSchema.grid_id.key() : null;
-    // Get actual parameters
-    MP params = (MP) parametersSchema.createAndFillImpl();
+    Key<Grid> destKey = gss.grid_id != null ? gss.grid_id.key() : null;
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
-    ModelFactory<MP> modelFactory = getModelFactory();
-    GridSearch
-        gsJob = GridSearch.startGridSearch(destKey,
-                                           params,
-                                           hyperParams,
-                                           modelFactory,
-                                           new DefaultModelParametersBuilderFactory<MP, P>());
+    Job<Grid> gsJob = GridSearch.startGridSearch(destKey,
+                                                 params,
+                                                 gss.hyper_parameters,
+                                                 new DefaultModelParametersBuilderFactory<MP, P>());
 
     // Fill schema with job parameters
     // FIXME: right now we have to remove grid parameters which we sent back
-    gridSearchSchema.hyper_parameters = null;
-    gridSearchSchema.total_models = gsJob.getModelCount();
-    gridSearchSchema.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(gsJob);
+    gss.hyper_parameters = null;
+    gss.total_models = gsJob._result.get().getModelCount();
+    gss.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(gsJob);
 
-    return gridSearchSchema;
+    return gss;
   }
 
-  // Force underlying handlers to create their grid implementations
-  // - In the most of cases the call needs to be forwarded to GridSearch factory
-  protected abstract ModelFactory<MP> getModelFactory();
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public S train(int version, S gridSearchSchema) { throw H2O.fail(); }
 
   /**
    * Validate given hyper parameters with respect to type parameter P.
@@ -181,8 +197,3 @@ public abstract class GridSearchHandler<G extends Grid<MP>,
     }
   }
 }
-
-
-
-
-

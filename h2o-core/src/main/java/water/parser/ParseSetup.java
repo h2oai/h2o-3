@@ -3,8 +3,6 @@ package water.parser;
 import water.*;
 import water.api.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OParseException;
-import water.exceptions.H2OParseSetupException;
 import water.fvec.*;
 
 import java.io.BufferedReader;
@@ -290,7 +288,7 @@ public final class ParseSetup extends Iced {
         try {
           _gblSetup = guessSetup(bits, _userSetup);
         } catch (H2OParseException pse) {
-          throw new H2OParseSetupException(key, pse);
+          throw pse.resetMsg(pse.getMessage()+" for "+key);
         }
 /*        } else { // file is aun uncompressed NFSFileVec or HDFSFileVec & larger than the DFLT_CHUNK_SIZE
           FileVec fv = (FileVec) ((Frame) ice).vecs()[0];
@@ -381,7 +379,7 @@ public final class ParseSetup extends Iced {
       } else if (setupA._parse_type == setupB._parse_type) {
         mergedSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
       } else
-        throw new H2OParseSetupException("File type mismatch. Cannot parse files of type "
+        throw new H2OParseException("File type mismatch. Cannot parse files of type "
                 + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
 
       if (mergedSetup._data.length < PreviewParseWriter.MAX_PREVIEW_LINES) {
@@ -395,7 +393,7 @@ public final class ParseSetup extends Iced {
 
     private static int unifyCheckHeader(int chkHdrA, int chkHdrB){
       if (chkHdrA == GUESS_HEADER || chkHdrB == GUESS_HEADER)
-        throw new H2OParseSetupException("Unable to determine header on a file. Not expected.");
+        throw new H2OParseException("Unable to determine header on a file. Not expected.");
       if (chkHdrA == HAS_HEADER || chkHdrB == HAS_HEADER) return HAS_HEADER;
       else return NO_HEADER;
 
@@ -406,7 +404,7 @@ public final class ParseSetup extends Iced {
       else if (sepA == GUESS_SEP) return sepB;
       else if (sepB == GUESS_SEP) return sepA;
       // TODO: Point out which file is problem
-      throw new H2OParseSetupException("Column separator mismatch. One file seems to use \""
+      throw new H2OParseException("Column separator mismatch. One file seems to use \""
               + (char) sepA + "\" and the other uses \"" + (char) sepB + "\".");
     }
 
@@ -416,7 +414,7 @@ public final class ParseSetup extends Iced {
       else if (cntB == 0) return cntA;
       else { // files contain different numbers of columns
         // TODO: Point out which file is problem
-        throw new H2OParseSetupException("Files conflict in number of columns. " + cntA
+        throw new H2OParseException("Files conflict in number of columns. " + cntA
                 + " vs. " + cntB + ".");
       }
     }
@@ -428,7 +426,7 @@ public final class ParseSetup extends Iced {
         for (int i = 0; i < namesA.length; i++) {
           if (i > namesB.length || !namesA[i].equals(namesB[i])) {
             // TODO improvement: if files match except for blanks, merge?
-            throw new H2OParseSetupException("Column names do not match between files.");
+            throw new H2OParseException("Column names do not match between files.");
           }
         }
         return namesA;
@@ -463,7 +461,7 @@ public final class ParseSetup extends Iced {
           } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
         }
     }
-    throw new H2OParseSetupException("Cannot determine file type.");
+    throw new H2OParseException("Cannot determine file type.");
   }
 
   /**
@@ -526,7 +524,7 @@ public final class ParseSetup extends Iced {
     if (bits.length >= 2) {
       if ((bits[0] == (byte) 0xff && bits[1] == (byte) 0xfe) /* UTF-16, little endian */ ||
               (bits[0] == (byte) 0xfe && bits[1] == (byte) 0xff) /* UTF-16, big endian */) {
-        throw new H2OParseSetupException("UTF16 encoding detected, but is not supported.");
+        throw new H2OParseException("UTF16 encoding detected, but is not supported.");
       }
     }
   }

@@ -31,15 +31,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   }
 
   // Called from an http request
-  public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(false); }
+  public GBM( GBMModel.GBMParameters parms                   ) { super(parms     ); init(false); }
+  public GBM( GBMModel.GBMParameters parms, Key<GBMModel> key) { super(parms, key); init(false); }
+  public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
 
-  @Override public GBMV3 schema() { return new GBMV3(); }
-
-  /** Start the GBM training Job on an F/J thread.
-   * @param work
-   * @param restartTimer*/
-  @Override protected Job<GBMModel> trainModelImpl(long work, boolean restartTimer) {
-    return start(new GBMDriver(), work, restartTimer);
+  /** Start the GBM training Job on an F/J thread. */
+  @Override protected GBMDriver trainModelImpl() {
+    return new GBMDriver();
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -76,10 +74,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // wrong direction, and it takes a long time (lotsa trees) to correct that
     // - so your CM sucks for a long time.
     if (expensive) {
-      if (error_count() > 0) {
-        GBM.this.updateValidationMessages();
+      if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GBM.this);
-      }
       if (_parms._distribution == Distribution.Family.AUTO) {
         if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
         if (_nclass == 2) _parms._distribution = Distribution.Family.bernoulli;
@@ -467,7 +463,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Adds a layer to the trees each pass.
       int depth = 0;
       for (; depth < _parms._max_depth; depth++) {
-        if (!isRunning()) return;
+        if (_job.stop_requested()) return;
         hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _mtry < _model._output.nfeatures(), _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if (hcs == null) break;

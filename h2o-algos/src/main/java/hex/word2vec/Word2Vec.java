@@ -1,46 +1,20 @@
 package hex.word2vec;
 
+import hex.ModelBuilder;
 import hex.ModelCategory;
-import water.DKV;
-import water.Job;
-import water.H2O;
+import hex.word2vec.Word2VecModel.*;
 import water.Scope;
 import water.fvec.Vec;
 import water.util.Log;
 
-import hex.ModelBuilder;
-import hex.schemas.Word2VecV3;
-import hex.schemas.ModelBuilderSchema;
-import hex.word2vec.Word2VecModel.*;
-
 public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecParameters,Word2VecModel.Word2VecOutput> {
-  @Override
-  public ModelCategory[] can_build() {
-    return new ModelCategory[]{
-            ModelCategory.Unknown,
-    };
-  }
-
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
-
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Unknown, }; }
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public enum WordModel { SkipGram, CBOW }
   public enum NormModel { HSM, NegSampling }
-
-  public Word2Vec(Word2VecModel.Word2VecParameters parms) { super("Word2Vec", parms); }
-
-  public ModelBuilderSchema schema() { return new Word2VecV3(); }
-
-  /** Start the KMeans training Job on an F/J thread.
-   * @param work
-   * @param restartTimer*/
-  @Override protected Job<Word2VecModel> trainModelImpl(long work, boolean restartTimer) {
-    return start(new Word2VecDriver(), work, restartTimer);
-  }
-
-  @Override
-  public long progressUnits() {
-    return _parms._epochs;
-  }
+  public Word2Vec(Word2VecModel.Word2VecParameters parms) { super(parms); }
+  @Override protected Word2VecDriver trainModelImpl() { return new Word2VecDriver(); }
+  @Override public long progressUnits() { return _parms._epochs; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -64,10 +38,8 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
     if (_parms._epochs < 1) error("_epochs", "Negative epoch count not allowed for Word2Vec.  Expected value > 0, received " + _parms._epochs);
   }
 
-  private class Word2VecDriver extends H2O.H2OCountedCompleter<Word2VecDriver> {
-    protected Word2VecDriver() { super(true); } // bump driver priority
-    @Override
-    protected void compute2() {
+  private class Word2VecDriver extends Driver {
+    @Override public void compute2() {
       Word2VecModel model = null;
       long start, stop, lastCnt=0;
       long tstart, tstop;
@@ -75,12 +47,12 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
 
       try {
         Scope.enter();
-        _parms.read_lock_frames(Word2Vec.this);
+        _parms.read_lock_frames(_job);
         init(true);
 
         //The model to be built
-        model = new Word2VecModel(dest(), _parms, new Word2VecOutput(Word2Vec.this));
-        model.delete_and_lock(_key);
+        model = new Word2VecModel(_job._result, _parms, new Word2VecOutput(Word2Vec.this));
+        model.delete_and_lock(_job);
 
         // main loop
         Log.info("Word2Vec: Starting to train model.");
@@ -90,8 +62,8 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
           model.setModelInfo(new WordVectorTrainer(model.getModelInfo()).doAll(_parms.train()).getModelInfo());
           stop = System.currentTimeMillis();
           model.getModelInfo().updateLearningRate();
-          model.update(_key); // Early version of model is visible
-          Job.update(1, _key);
+          model.update(_job); // Early version of model is visible
+          _job.update(1);
           tDiff = (float)(stop-start)/1000;
           Log.info("Epoch "+i+" "+tDiff+"s  Words trained/s: "+ (model.getModelInfo().getTotalProcessed()-lastCnt)/tDiff);
           lastCnt = model.getModelInfo().getTotalProcessed();
@@ -100,20 +72,9 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         Log.info("Total time :" + ((float)(tstop-tstart))/1000f);
         Log.info("Finished training the Word2Vec model.");
         model.buildModelOutput();
-        done();                 // Job done!
-      } catch (Throwable t) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
       } finally {
-        updateModelOutput();
-        if( model != null ) model.unlock(_key);
-        _parms.read_unlock_frames(Word2Vec.this);
+        if( model != null ) model.unlock(_job);
+        _parms.read_unlock_frames(_job);
         Scope.exit();
       }
       tryComplete();

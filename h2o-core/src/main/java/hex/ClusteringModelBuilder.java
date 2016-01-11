@@ -1,13 +1,15 @@
 package hex;
 
+import water.Job;
 import water.Key;
 
 abstract public class ClusteringModelBuilder<M extends ClusteringModel<M,P,O>, P extends ClusteringModel.ClusteringParameters, O extends ClusteringModel.ClusteringOutput> extends ModelBuilder<M,P,O> {
   public boolean isSupervised() { return false; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
-  public ClusteringModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
-  public ClusteringModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
+  public ClusteringModelBuilder(P parms         ) { super(parms    );  /*only call init in leaf classes*/ }
+  public ClusteringModelBuilder(P parms, Job job) { super(parms,job);  /*only call init in leaf classes*/ }
+  public ClusteringModelBuilder(P parms, boolean startup_once) { super(parms,startup_once);  /*only call init in leaf classes*/ }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

@@ -1079,7 +1079,7 @@ public final class Gram extends Iced<Gram> {
     public Gram _gram;
     public long _nobs;
 
-    public GramTask(Key jobKey, DataInfo dinfo){
+    public GramTask(Key<Job> jobKey, DataInfo dinfo){
       super(jobKey,dinfo);
     }
     @Override protected boolean chunkInit(){

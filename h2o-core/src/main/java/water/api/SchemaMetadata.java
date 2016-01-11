@@ -376,7 +376,7 @@ public final class SchemaMetadata extends Iced {
     // Get metadata of all annotated fields
     fields = getFieldMetadata(schema);
     // Also generates markdown
-    markdown = schema.markdown(this, null).toString();
+    markdown = schema.markdown(this, true, true).toString();
   }
 
   /**
@@ -408,5 +408,4 @@ public final class SchemaMetadata extends Iced {
       throw new IllegalArgumentException(msg);
     }
   }
-
 }
