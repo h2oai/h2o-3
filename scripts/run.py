@@ -245,7 +245,7 @@ class H2OCloudNode:
             if not os.path.exists(jresults_dir):
                 os.mkdir(jresults_dir)
             jresults_dir += "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num)
-            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num)
+            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num) + ",dumponext=false,excludes={dir}/h2o-core/src/main/java/water/HeartBeatThread.java".format(dir=root_dir)
             cmd = cmd[:1] + [jacoco] + cmd[1:]
 
 

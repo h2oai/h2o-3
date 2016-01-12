@@ -57,6 +57,7 @@ public class HeartBeatThread extends Thread {
     //noinspection InfiniteLoopStatement
     while( true ) {
       // Update the interesting health self-info for publication also
+      Log.info("HEARTBEAT!");
       H2O cloud = H2O.CLOUD;
       HeartBeat hb = H2O.SELF._heartbeat;
       hb._hb_version = HB_VERSION++;
