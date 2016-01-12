@@ -79,6 +79,13 @@ public class H2OError extends Iced {
       }
       this._stacktrace = arr.toArray(new String[0]);
     }
+
+    // Add a little header to make it error message stand out. Note: don't do this in toString() as we want clients to get this change too.
+    String prefix  = "\n\nERROR MESSAGE:\n\n";
+    String postfix = "\n\n";
+    _msg =           prefix + _msg           + postfix;
+    _dev_msg =       prefix + _dev_msg       + postfix;
+    _exception_msg = prefix + _exception_msg + postfix;
   }
 
   public H2OError(Exception e, String error_url) {
