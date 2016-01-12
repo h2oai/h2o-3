@@ -73,7 +73,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     double x = 0.782347234;
     boolean identityLink = new Distribution(parms._distribution, parms._tweedie_power).link(x) == x;
     return new DataInfo(
-            Key.make(), //dest key
             train,
             valid,
             parms._autoencoder ? 0 : 1, //nResponses

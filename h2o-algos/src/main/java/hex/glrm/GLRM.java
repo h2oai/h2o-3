@@ -525,7 +525,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model.delete_and_lock(_job);
 
         // Save adapted frame info for scoring later
-        tinfo = new DataInfo(Key.make(), _train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+        tinfo = new DataInfo(_train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(tinfo._key, tinfo);
 
         // Save training frame adaptation information for use in scoring later
@@ -559,7 +559,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         fr = new Frame(_train);
         for (int i = 0; i < _ncolX; i++) fr.add("xcol_" + i, fr.anyVec().makeZero());
         for (int i = 0; i < _ncolX; i++) fr.add("wcol_" + i, fr.anyVec().makeZero());
-        dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+        dinfo = new DataInfo(fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(dinfo._key, dinfo);
 
         int weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
@@ -658,7 +658,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._representation_name = (_parms._representation_name == null || _parms._representation_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._representation_name;
         model._output._representation_key = Key.make(model._output._representation_name);
         Frame x = new Frame(model._output._representation_key, xnames, xvecs);
-        xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+        xinfo = new DataInfo(x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x);
         DKV.put(xinfo);
 
