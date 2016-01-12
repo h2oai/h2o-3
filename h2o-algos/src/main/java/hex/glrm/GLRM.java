@@ -88,7 +88,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
     if (_valid != null && _valid.numRows() != _train.numRows()) error("_valid", "_valid must have same number of rows as _train");
 
-    _ncolY = _train.numColsExp(true, false);
+    _ncolY = LinearAlgebraUtils.numColsExp(_train,true);
     if (_ncolY > MAX_COLS_EXPANDED)
       warn("_train", "_train has " + _ncolY + " columns when categoricals are expanded. Algorithm may be slow.");
 

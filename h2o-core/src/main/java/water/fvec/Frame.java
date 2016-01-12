@@ -199,39 +199,9 @@ public class Frame extends Lockable<Frame> {
   /** Number of columns
    *  @return Number of columns */
   public int  numCols() { return _keys.length; }
-  /** Number of columns with categoricals expanded
-   * @return Number of columns with categoricals expanded into indicator columns */
-  public int numColsExp() { return numColsExp(true, false); }
-  public int numColsExp(boolean useAllFactorLevels, boolean missingBucket) {
-    if(_vecs == null) return 0;
-    int cols = 0;
-    for(int i = 0; i < _vecs.length; i++) {
-      if(_vecs[i].isCategorical() && _vecs[i].domain() != null)
-        cols += _vecs[i].domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
-      else cols++;
-    }
-    return cols;
-  }
   /** Number of rows
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
-
-  /**
-   * Number of degrees of freedom (#numerical columns + sum(#categorical levels))
-   * @return Number of overall degrees of freedom
-   */
-  public long degreesOfFreedom() {
-    long dofs = 0;
-    String[][] dom = domains();
-    for (int i=0; i<numCols(); ++i) {
-      if (dom[i] == null) {
-        dofs++;
-      } else {
-        dofs+=dom[i].length;
-      }
-    }
-    return dofs;
-  }
 
   /** Returns the first readable vector. 
    *  @return the first readable Vec */
@@ -594,14 +564,6 @@ public class Frame extends Lockable<Frame> {
    *  @throws IllegalArgumentException if there is no vector with desired name in this frame.
    */
   public Frame subframe(String[] names) { return subframe(names, false, 0)[0]; }
-
-  /** Returns a new frame composed of vectors of this frame selected by given names.
-   *  The method replaces missing vectors by a constant column filled by given value.
-   *  @param names names of vector to compose a subframe
-   *  @param c value to fill missing columns.
-   *  @return two frames, the first contains subframe, the second contains newly created constant vectors or null
-   */
-  public Frame[] subframe(String[] names, double c) { return subframe(names, true, c); }
 
   /** Create a subframe from this frame based on desired names.
    *  Throws an exception if desired column is not in this frame and <code>replaceBy</code> is <code>false</code>.

@@ -91,7 +91,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   @Override protected void checkMemoryFootPrint() {
     if (_parms._checkpoint != null) return;
-    long p = _train.degreesOfFreedom() - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
+    long p = hex.util.LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
     String[][] dom = _train.domains();
     // hack: add the factor levels for the NAs
     for (int i=0; i<_train.numCols()-(_parms._autoencoder ? 0 : 1); ++i) {

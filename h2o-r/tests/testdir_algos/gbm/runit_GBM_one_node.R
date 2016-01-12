@@ -18,7 +18,7 @@ test.one.node.gbm <- function() {
   )
 
   if (!is.null(e[[1]])) {
-    expect_identical(e[[1]], "Cannot run on a single node in client mode.\n")
+    expect_match(e[[1]], "Cannot run on a single node in client mode")
   } else {
     Log.info("Multi Node:")
     print(paste("MSE:", h2o.mse(gbm.mult)))

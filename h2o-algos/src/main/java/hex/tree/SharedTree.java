@@ -68,7 +68,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     super.init(expensive);
     if( expensive && _parms._seed==-1 ) _parms._seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
     if (H2O.ARGS.client && _parms._build_tree_one_node)
-      error("_build_tree_one_node", "Cannot run on a single node in client mode");
+      error("_build_tree_one_node", "Cannot run on a single node in client mode.");
 
     if( _parms._min_rows < 0 )
       error("_min_rows", "Requested min_rows must be greater than 0");

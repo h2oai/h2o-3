@@ -1023,7 +1023,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private double _oldObj = Double.MAX_VALUE;
 
     public GLMSingleLambdaTsk(H2OCountedCompleter cmp, GLMTaskInfo state) {
-      super(cmp);
+      super(cmp, true);
       _taskInfo = state;
       assert DKV.get(_dinfo._key) != null;
     }
