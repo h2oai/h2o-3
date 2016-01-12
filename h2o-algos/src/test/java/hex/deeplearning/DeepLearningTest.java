@@ -25,6 +25,7 @@ import java.util.Arrays;
 import static hex.Distribution.Family.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import water.util.RandomUtils;
 
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -453,7 +454,7 @@ public class DeepLearningTest extends TestUtil {
       dl._epochs = epochs;
       dl._stopping_rounds = 0;
       dl._activation = activation;
-      dl._export_weights_and_biases = true;
+      dl._export_weights_and_biases = RandomUtils.getRNG(fnametrain.hashCode()).nextBoolean();
       dl._hidden = hidden;
       dl._l1 = l1;
       dl._elastic_averaging = false;
