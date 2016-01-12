@@ -39,8 +39,8 @@ class H2OConnection(object):
   __ENCODING__ = "utf-8"
   __ENCODING_ERROR__ = "replace"
 
-  def __init__(self, ip, port, size, start_h2o, enable_assertions, license, max_mem_size, min_mem_size, ice_root,
-               strict_version_check, proxies, nthreads):
+  def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
+               license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True, proxies=None, nthreads=-1):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
@@ -49,8 +49,8 @@ class H2OConnection(object):
     :param start_h2o: A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
     :param enable_assertions: If start_h2o, pass `-ea` as a VM option.
     :param license: If not None, is a path to a license file.
-    :param max_mem_size: Maximum heap size (jvm option Xmx) in gigabytes.
-    :param min_mem_size: Minimum heap size (jvm option Xms) in gigabytes.
+    :param max_mem_size_GB: Maximum heap size (jvm option Xmx) in gigabytes.
+    :param min_mem_size_GB: Minimum heap size (jvm option Xms) in gigabytes.
     :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
     :param strict_version_check: Setting this to False is unsupported and should only be done when advised by technical support.
     :param proxies: A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
@@ -87,7 +87,7 @@ class H2OConnection(object):
     if start_h2o:
       if not ice_root:
         ice_root = tempfile.mkdtemp()
-      cld = self._start_local_h2o_jar(max_mem_size, min_mem_size, enable_assertions, license, ice_root, jar_path, nthreads)
+      cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path, nthreads)
     else:
       try:
         cld = self._connect(size)
@@ -102,7 +102,7 @@ class H2OConnection(object):
         if path_to_jar:
           if not ice_root:
             ice_root = tempfile.mkdtemp()
-          cld = self._start_local_h2o_jar(max_mem_size, min_mem_size, enable_assertions, license, ice_root, jar_path, nthreads)
+          cld = self._start_local_h2o_jar(max_mem_size_GB, min_mem_size_GB, enable_assertions, license, ice_root, jar_path, nthreads)
         else:
           print("No jar file found. Could not start local instance.")
           print("Jar Paths searched: ")

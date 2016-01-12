@@ -665,8 +665,8 @@ def cluster_status():
     print()
 
 
-def init(ip="localhost", port=54321, size=1, start_h2o=True, enable_assertions=True,
-         license=None, max_mem_size=None, min_mem_size=None, ice_root=None, 
+def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
+         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, 
          strict_version_check=True, proxies=None, nthreads=-1):
   """Initiate an H2O connection to the specified ip and port.
 
@@ -685,9 +685,9 @@ def init(ip="localhost", port=54321, size=1, start_h2o=True, enable_assertions=T
     If start_h2o, pass `-ea` as a VM option.
   license : str
     If not None, is a path to a license file.
-  max_mem_size : int
+  max_mem_size_GB : int
     Maximum heap size (jvm option Xmx) in gigabytes.
-  min_mem_size : int
+  min_mem_size_GB : int
     Minimum heap size (jvm option Xms) in gigabytes.
   ice_root : str
     A temporary directory (default location is determined by tempfile.mkdtemp()) to hold
@@ -712,9 +712,7 @@ def init(ip="localhost", port=54321, size=1, start_h2o=True, enable_assertions=T
   Starting H2O JVM and connecting: ............... Connection successful!
 
   """
-  H2OConnection(ip=ip, port=port,size=size,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,
-                max_mem_size=max_mem_size,min_mem_size=min_mem_size,ice_root=ice_root,
-                strict_version_check=strict_version_check,proxies=proxies,nthreads=nthreads)
+  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies, nthreads=nthreads)
   return None
 
 
