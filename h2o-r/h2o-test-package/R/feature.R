@@ -7,55 +7,46 @@ function(testCase) {
     dataSets <- .loadDataSets(testCase@dataSets)
 
     h2oFeatureParamsList <- .makeH2OFeatureParamsList(testCase@featureParams)
-    print("The h2o feature params list")
-    print(h2oFeatureParamsList)
 
     h2oEnv <- new.env() # new environment for do.call, that has the h2o args defined
     argsH2O <- .makeArgList(h2oFeatureParamsList, dataSets, testCase@feature, h2oEnv, FALSE)
-    print("checking argsH2O")
-    print(argsH2O)
 
     h2oRes <- do.call(what=testCase@feature, args=argsH2O, envir=h2oEnv)
-    print("checking h2o res")
+    h2oTest.logInfo("The result of the H2O operation:")
     print(h2oRes)
-
-    h2oReturnClass <- class(h2oRes)
-    print("class of h2o res")
-    print(h2oReturnClass)
 
     if (testCase@validationMethod == "R") {
 
         rFeatureParamsList <- .translateH2OFeatureParamsListToR(h2oFeatureParamsList, testCase@feature)
-        print("The r feature params list")
-        print(rFeatureParamsList)
 
         rEnv <- new.env()
         argsR <- .makeArgList(rFeatureParamsList, dataSets, testCase@feature, rEnv, TRUE)
-        print("checking argsR")
-        print(argsR)
 
         rRes  <- do.call(what=.whatR(testCase@feature), args=argsR, envir=rEnv)
-        print("checking r res")
+        h2oTest.logInfo("The result of the R operation:")
         print(rRes)
 
-        rReturnClass <- class(rRes)
-        print("class of r res")
-        print(rReturnClass)
+        .compare2Objects(h2oRes, rRes, testCase@feature)
 
-        .validateRAndH2OResultComparability(h2oReturnClass, rReturnClass)
+    } else if (testCase@validationMethod == "H") {
 
-        .compareH2OToR(h2oRes, rRes, h2oReturnClass, rReturnClass, testCase@feature)
-
-    } else if (testCase@validationMethod == "H") { #TODO: allow hard-coded frames, integers, expressions ... anything that h2o can return
         validationDataSet <- .loadDataSets(list(testCase@validationDataSet))[[1]]
-        print("checking validationDataSet")
-        print(validationDataSet)
+
         vFr <- h2o.getFrame(validationDataSet@key)
+        h2oTest.logInfo("The hard-coded validation data set:")
         print(vFr)
-        .compare2Frames(h2oRes, vFr)
+
+        .compare2Objects(vFr, h2oRes)
+
     } else if (testCase@validationMethod == "O") {
-        if (testCase@feature == "asFactor") { .asFactorValidation(h2oRes) }
+
+        if (testCase@feature == "as.factor")        { .asFactorValidation(h2oRes)
+        } else if (testCase@feature == "h2o.hist")  { .h2oHistValidation(h2oRes)
+        }
+
     }
+
+    h2oTest.pass()
 }
 
 #'
@@ -86,8 +77,6 @@ function(dataSets) {
 .makeH2OFeatureParamsList<-
 function(featureParamsString) {
     featureParamsList <- as.list(strsplit(featureParamsString,";")[[1]])
-    print("strList: ")
-    print(featureParamsList)
 
     if (length(featureParamsList) == 0) { return(featureParamsList) }
     # evaluate the individual parameter strings
@@ -174,131 +163,110 @@ function(featureParamsList, dataSets, feature, env, r) {
 
 
 #'
-#' --------------- ensure the h2o and r results are comparable ---------------
-#'
-.validateRAndH2OResultComparability<-
-function(h2oReturnClass, rReturnClass) {
-    if        (h2oReturnClass == "H2OFrame"  && rReturnClass == "data.frame") {
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "matrix")     {
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "table")      {
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "factor")     {
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "numeric")    {
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "character")  {
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "integer")    {
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "list")       {
-    } else if (h2oReturnClass == "data.frame"&& rReturnClass == "matrix")     {
-    } else if (h2oReturnClass == "factor"    && rReturnClass == "factor")     {
-    } else if (h2oReturnClass == "numeric"   && (rReturnClass %in% c("numeric", "integer", "double")))   {
-    } else if (h2oReturnClass == "character" && rReturnClass == "character")  {
-    } else if (h2oReturnClass == "logical"   && rReturnClass == "logical")    {
-    } else {
-        stop("H2O's and R's results cannot be compared because they are not compatible classes.")
-    }
-}
-
-
-#'
 #' --------------- validation methods ---------------
 #'
-.compareH2OToR<-
-function(h2oRes, rRes, h2oReturnClass, rReturnClass, feature) {
-    if        (h2oReturnClass == "H2OFrame"  && rReturnClass == "data.frame") { .compare2Frames(h2oRes, rRes)
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "matrix")     { .compareFrameAndMatrix(h2oRes, rRes)
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "table")      { .compareFrameAndTable(h2oRes, rRes)
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "factor")     { .compareFrameAndBase(h2oRes, rRes)
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "integer")    { .compareFrameAndBase(h2oRes, rRes)
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "character")  { .compareFrameAndBase(h2oRes, rRes)
-    } else if (h2oReturnClass == "H2OFrame"  && rReturnClass == "list")       {
+.compare2Objects<-
+function(obj1, obj2, feature) {
+    obj1Class <- class(obj1)
+    obj2Class <- class(obj2)
+    if        (obj1Class == "H2OFrame"  && obj2Class == "data.frame") { .comp.H2OFrame.data.frame(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "H2OFrame")   { .comp.H2OFrame.H2OFrame(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "matrix")     { .comp.H2OFrame.matrix(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "table")      { .comp.H2OFrame.table(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "factor")     { .comp.H2OFrame.base(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "integer")    { .comp.H2OFrame.base(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "logical")    { .comp.H2OFrame.base(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "character")  { .comp.H2OFrame.base(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "list")       {
         if (feature == "h2o.strsplit") {
-            .compare2Frames(h2oRes, rbind.fill(lapply(rRes, function (r) { as.data.frame(t(r))})))
+            .comp.H2OFrame.data.frame(obj1, rbind.fill(lapply(obj2, function (r) { as.data.frame(t(r))})))
         } else {
-            .compareFrameAndBase(h2oRes, rRes)
+            .comp.H2OFrame.base(obj1, obj2)
         }
-    } else if (h2oReturnClass == "factor"    && rReturnClass == "factor")     { .compare2Bases(h2oRes, rRes)
-    } else if (h2oReturnClass == "data.frame"&& rReturnClass == "matrix")     { .compareFrameAndMatrix(h2oRes, rRes)
-    } else if (h2oReturnClass == "numeric"   && is(rReturnClass,"numeric"))   { .compare2Bases(h2oRes, rRes)
-    } else if (h2oReturnClass == "character" && rReturnClass == "character")  { .compare2Bases(h2oRes, rRes)
-    } else if (h2oReturnClass == "logical"   && rReturnClass == "logical")    { .compare2Bases(h2oRes, rRes)
+    } else if (obj1Class == "factor"    && obj2Class == "factor")     { .comp.base.base(obj1, obj2)
+    } else if (obj1Class == "data.frame"&& obj2Class == "matrix")     { .comp.H2OFrame.matrix(obj1, obj2)
+    } else if (obj1Class == "numeric"   && obj2Class == "numeric")    { .comp.base.base(obj1, obj2)
+    } else if (obj1Class == "character" && obj2Class == "character")  { .comp.base.base(obj1, obj2)
+    } else if (obj1Class == "logical"   && obj2Class == "logical")    { .comp.base.base(obj1, obj2)
+    } else { stop(paste0("Objects of class ", obj1Class, " and ", obj2Class, " cannot be compared."))
     }
 }
 
-.compare2Frames<-
-function(h2oRes, rRes) {
-    #dimensions
-    h2oRes <- as.data.frame(h2oRes)
-    rRes   <- as.data.frame(rRes)
-    nRowH <- nrow(h2oRes)
-    nColH <- ncol(h2oRes)
-    nRowR <- nrow(rRes)
-    nColR <- ncol(rRes)
+.comp.data.frame.data.frame<-
+function(df1, df2) {
+    nRowH <- nrow(df1)
+    nColH <- ncol(df1)
+    nRowR <- nrow(df2)
+    nColR <- ncol(df2)
 
     if(nRowH != nRowR) {
-        stop(paste0("Expected h2o's and R's results to have the same number of rows, but got: ", nRowH, " and ",
+        stop(paste0("Expected df1 and df2 results to have the same number of rows, but got: ", nRowH, " and ",
                     nRowR, ", respectively."))
     }
     if(nColH != nColR) {
-        stop(paste0("Expected h2o's and R's results to have the same number of cols, but got: ", nColH, " and ",
+        stop(paste0("Expected df1 and df2 results to have the same number of cols, but got: ", nColH, " and ",
                     nColR, ", respectively."))
     }
     #values
 }
-
-.compareFrameAndMatrix<-
-function(h2oRes, rRes) {
-    .compare2Frames(h2oRes, as.data.frame(rRes))
-}
-
-.compareFrameAndTable<-
-function(h2oRes, rRes) {
-    if (ncol(h2oRes) > 2) { # case 2 dimensions
-        .compare2Frames(h2oRes[,2:ncol(h2oRes)], as.data.frame.matrix(rRes))
+.comp.H2OFrame.H2OFrame <- function(hf1, hf2) { .comp.data.frame.data.frame(as.data.frame(hf1), as.data.frame(hf2)) }
+.comp.H2OFrame.data.frame <- function(hf, df) { .comp.data.frame.data.frame(as.data.frame(hf), df) }
+.comp.H2OFrame.matrix <- function(hf, m) { .comp.H2OFrame.data.frame(hf, as.data.frame(m)) }
+.comp.H2OFrame.table<-
+function(hf, table) {
+    if (ncol(hf) > 2) { # case 2 dimensions
+        .comp.H2OFrame.data.frame(hf[,2:ncol(hf)], as.data.frame.matrix(table))
     } else { # case 1 dimension
-        .compare2Frames(h2oRes[,2],as.data.frame(as.data.frame(rRes)[,2]))
+        .comp.H2OFrame.data.frame(hf[,2],as.data.frame(as.data.frame(table)[,2]))
     }
 }
-
-.compareFrameAndBase<-
-function(h2oRes, rRes) {
-    numH2OCols <- ncol(h2oRes)
-    numH2ORows <- nrow(h2oRes)
-    if (class(rRes) == "list") {
-        numListElements <- length(rRes)
+.comp.H2OFrame.base<-
+function(hf, b) {
+    numH2OCols <- ncol(hf)
+    numH2ORows <- nrow(hf)
+    if (class(b) == "list") {
+        numListElements <- length(b)
         if (!(numH2OCols == numListElements)) {
-            stop(paste0("Expected the H2OFrame to have the same number of columns as the R result has list elements. ",
-                        "H2OFrame cols: ", numH2OCols, " . R result list elements: ", numListElements))
+            stop(paste0("Expected the H2OFrame to have the same number of columns as the base class result has list elements. ",
+                        "H2OFrame cols: ", numH2OCols, " . Base class result list elements: ", numListElements))
         }
-        numREntries <- length(rRes[[1]])
+        numREntries <- length(b[[1]])
         if (!(numH2ORows == numREntries)) {
-            stop(paste0("Expected the same number of h2o rows as R list element length, but got: ", numH2ORows,
+            stop(paste0("Expected the same number of h2o rows as list element length, but got: ", numH2ORows,
                         " and ", numREntries, ", respectively."))
         }
     } else {
         if (!(numH2OCols == 1)) {
             stop(paste0("Expected the H2OFrame to have 1 column, but got: ", numH2OCols))
         }
-        numREntries   <- length(rRes)
+        numREntries   <- length(b)
         if (!(numH2ORows == numREntries)) {
             stop(paste0("Expected the same number of h2o rows as R entries, but got: ", numH2ORows, " and ",
                         numREntries, ", respectively."))
         }
-        .compare2Frames(h2oRes, as.h2o(rRes))
+        .comp.H2OFrame.H2OFrame(hf, as.h2o(b))
     }
 }
-
-.compare2Bases<-
-function(h2oRes, rRes) {
-    if (!all(h2oRes == rRes)) {
-        stop(paste0("Expected h2o's and R's results to be the same, but got: ", h2oRes, " and ", rRes,
+.comp.base.base<-
+function(b1, b2) {
+    if (!all(b1 == b2)) {
+        stop(paste0("Expected b1 and b2 results to be the same, but got: ", b1, " and ", b2,
                     ", respectively."))
     }
 }
 
+# special validation methods
 .asFactorValidation<-
 function(h2oRes) {
     if (!is.factor(h2oRes[,1])) {
         stop("Expected column 1 of h2o frame to be a factor, but it's not.")
     }
 }
+.h2oHistValidation<-
+function(h2oRes) {
+    print("Unimplemented!")
+}
+
 
 
 #'

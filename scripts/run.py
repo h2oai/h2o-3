@@ -1181,14 +1181,14 @@ class TestRunner:
         if (ff == ''): return None
         features = ff.split(';')[0]
         if (features == ''): return None
-        else: return features
+        else: return features.split(',')
 
     @staticmethod
     def get_feature_test_cases(ff):
         if (ff == ''): return None
         cases = ff.split(';')
         if (len(cases) == 1 or cases[1] == ''): return None
-        else: return cases[1]
+        else: return cases[1].split(',')
 
     def build_integration_test_list(self, test_group, run_small, run_medium, run_large, run_xlarge, nopass, nointernal):
         """
@@ -1505,7 +1505,8 @@ class TestRunner:
 
                 if (test.get_completed()):
                     failed += 1
-                    if (not test.get_nopass(nopass) and not test.get_nofeature(nopass)):
+                    if (isinstance(test, IntegrationTest) and not test.get_nopass(nopass) and not test.get_nofeature(
+                            nopass)):
                         true_fail_list.append(test.get_test_name())
                 else:
                     notrun += 1
@@ -1535,7 +1536,7 @@ class TestRunner:
         self._log("Did not complete:          " + str(notrun))
         if (skipped > 0):
             self._log("SKIPPED tests:             " + str(skipped))
-        if (isinstance(test, IntegrationTest)):
+        if (self.tests != [] and isinstance(self.tests[0], IntegrationTest)):
             self._log("H2O INTERNAL tests:        " + str(self.h2o_internal_counter))
             self._log("H2O INTERNAL failures:     " + str(h2o_internal_failed))
             #self._log("Tolerated NOPASS:         " + str(nopass_but_tolerate))
