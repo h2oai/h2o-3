@@ -494,9 +494,9 @@ h2o.clusterStatus <- function() {
     stop("type must be one of 'stdout', 'stderr', or 'pid'")
 
   if(.Platform$OS.type == "windows") {
-    usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USERNAME", unset="UnknownUser"))
+    usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USERNAME"))
   } else {
-    usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USER", unset="UnknownUser"))
+    usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USER"))
   }
 
   if(type == "stdout")
