@@ -190,7 +190,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         thisx >>= 8;
       }
       for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
-        offset += _bytesUsed[c-1]-1;  // advance offset by the previous field width
+        offset += _bytesUsed[c-1];    // advance offset by the previous field width
         thisx = chk[c].at8(r);        // TO DO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
         for (int i = _bytesUsed[c] - 1; i >= 0; i--) {
           this_x[offset + i] = (byte) (thisx & 0xFF);
