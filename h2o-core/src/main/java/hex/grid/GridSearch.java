@@ -3,7 +3,7 @@ package hex.grid;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
-import hex.grid.HyperSpaceWalker.CartesianWalker;
+import hex.grid.HyperSpaceWalker.BaseWalker;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
@@ -32,7 +32,7 @@ import java.util.Map;
  * and blocking. So after finish the last model, whole grid search job is done as well.
  *
  * By default, the grid search invokes cartezian grid search, but it can be
- * modified by passing explicit hyper space walk strategy via the 
+ * modified by passing explicit hyper space walk strategy via the
  * {@link #startGridSearch(Key, HyperSpaceWalker)} method.
  *
  * If any of forked jobs fails then the failure is ignored, and grid search
@@ -254,9 +254,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
 
   /**
-   * Start a new grid search job.
+   * Start a new grid search job.  This is the method that gets called by GridSearchHandler.do_train().
    *
-   * <p>This method launches "classical" grid search traversing cartezian grid of parameters
+   * <p>This method launches "classical" grid search traversing cartesian grid of parameters
    * point-by-point.
    *
    * @param destKey              A key to store result of grid search under.
@@ -276,7 +276,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       final Map<String, Object[]> hyperParams,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
     // Create a walker to traverse hyper space of model parameters
-    CartesianWalker<MP> hyperSpaceWalker = new CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
+    BaseWalker<MP>
+        hyperSpaceWalker =
+        // TODO: let the client choose!
+//        new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory);
+      new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
 
     return startGridSearch(destKey, hyperSpaceWalker);
   }
@@ -285,7 +289,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   /**
    * Start a new grid search job.
    *
-   * <p>This method launches "classical" grid search traversing cartezian grid of parameters
+   * <p>This method launches "classical" grid search traversing cartesian grid of parameters
    * point-by-point.
    *
    * @param destKey      A key to store result of grid search under.
