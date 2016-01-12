@@ -7,7 +7,7 @@ from __future__ import print_function
 
 #Import h2o and load up h2o.init()
 import h2o
-h2o.init()
+h2o.init(strict_version_check=False)
 
 #Get H2OConnection() class
 conn = h2o.H2OConnection(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
