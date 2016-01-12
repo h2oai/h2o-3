@@ -23,10 +23,14 @@ function(reqs) {
     pkgNames <- append(pkgNames,"bit64",after=which(pkgNames %in% "bit"))
     pkgNames <- pkgNames[-which(pkgNames %in% "rversions")]
     pkgNames <- append(pkgNames,"rversions",after=which(pkgNames %in% "xml2"))
+    pkgNames <- pkgNames[-which(pkgNames %in% "foreach")]
+    pkgNames <- append(pkgNames,"foreach",after=which(pkgNames %in% "iterators"))
     pkgNames <- pkgNames[-which(pkgNames %in% "Matrix")]
     pkgNames <- append(pkgNames,"Matrix",after=which(pkgNames %in% "lattice"))
     pkgNames <- pkgNames[-which(pkgNames %in% "flexclust")]
     pkgNames <- append(pkgNames,"flexclust",after=which(pkgNames %in% "lattice"))
+    pkgNames <- pkgNames[-which(pkgNames %in% "modeltools")]
+    pkgNames <- append(pkgNames,"modeltools",after=which(pkgNames %in% "lattice"))
     pkgNames <- pkgNames[-which(pkgNames %in% "flexmix")]
     pkgNames <- append(pkgNames,"flexmix",after=which(pkgNames %in% "nnet"))
     pkgNames <- pkgNames[-which(pkgNames %in% "e1071")]
@@ -37,14 +41,20 @@ function(reqs) {
     pkgNames <- append(pkgNames,"gbm",after=which(pkgNames %in% "survival"))
     pkgNames <- pkgNames[-which(pkgNames %in% "glmnet")]
     pkgNames <- append(pkgNames,"glmnet",after=which(pkgNames %in% "Matrix"))
+    pkgNames <- pkgNames[-which(pkgNames %in% "KernSmooth")]
+    pkgNames <- append(pkgNames,"KernSmooth",after=which(pkgNames %in% "gtools"))
     pkgNames <- pkgNames[-which(pkgNames %in% "gplots")]
     pkgNames <- append(pkgNames,"gplots",after=which(pkgNames %in% "KernSmooth"))
     pkgNames <- pkgNames[-which(pkgNames %in% "gdata")]
     pkgNames <- append(pkgNames,"gdata",after=which(pkgNames %in% "KernSmooth"))
+    pkgNames <- pkgNames[-which(pkgNames %in% "caTools")]
+    pkgNames <- append(pkgNames,"caTools",after=which(pkgNames %in% "KernSmooth"))
     pkgNames <- pkgNames[-which(pkgNames %in% "ROCR")]
     pkgNames <- append(pkgNames,"ROCR",after=which(pkgNames %in% "gplots"))
     pkgNames <- pkgNames[-which(pkgNames %in% "prabclus")]
     pkgNames <- append(pkgNames,"prabclus",after=which(pkgNames %in% "MASS"))
+    pkgNames <- pkgNames[-which(pkgNames %in% "mclust")]
+    pkgNames <- append(pkgNames,"mclust",after=which(pkgNames %in% "MASS"))
     pkgNames <- pkgNames[-which(pkgNames %in% "latticeExtra")]
     pkgNames <- append(pkgNames,"latticeExtra",after=which(pkgNames %in% "lattice"))
     return(reqs[match(pkgNames,reqs[,1]),])
