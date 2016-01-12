@@ -25,7 +25,7 @@ public class HeartBeatThread extends Thread {
 
   // Timeout in msec before we decide to not include a Node in the next round
   // of Paxos Cloud Membership voting.
-  static public final int TIMEOUT = 60000;
+  static public final int TIMEOUT = 180000;
 
   // Timeout in msec before we decide a Node is suspect, and call for a vote
   // to remove him.  This must be strictly greater than the TIMEOUT.
