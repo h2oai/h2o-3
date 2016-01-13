@@ -166,7 +166,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     Job[] jobs = jobs(), jobsUserVisible = new Job[jobs.length];
     int i=0;
     for (Job j : jobs)
-      if (j._result.user_allowed())
+      if (j != null && j._result != null && j._result.user_allowed())
         jobsUserVisible[i++] = j;
     return Arrays.copyOf(jobsUserVisible, i);
   }
