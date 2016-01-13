@@ -40,7 +40,7 @@ public class GainsLift extends Iced {
     _weights = weights;
   }
 
-  private void init() throws IllegalArgumentException {
+  private void init(Job job) throws IllegalArgumentException {
     _labels = _labels.toCategoricalVec();
     if( _labels ==null || _preds ==null )
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs!");
@@ -99,8 +99,7 @@ public class GainsLift extends Iced {
         } else {
           qp._probs = new double[]{0.99, 0.98, 0.97, 0.96, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0};
         }
-        Quantile q = new Quantile(qp);
-        qm = q.trainModel().get();
+        qm = job != null ? new Quantile(qp, job).trainModelNested() : new Quantile(qp).trainModel().get();
         _quantiles = qm._output._quantiles[0];
         // find uniques (is there a more elegant way?)
         TreeSet<Double> hs = new TreeSet<>();
@@ -111,14 +110,17 @@ public class GainsLift extends Iced {
         while (it.hasNext()) _quantiles[i++] = it.next();
       } finally {
         if (qm!=null) qm.remove();
-        DKV.remove(fr._key);
+        if (fr!=null) DKV.remove(fr._key);
       }
     }
   }
 
   public void exec() {
+    exec(null);
+  }
+  public void exec(Job job) {
     Scope.enter();
-    init(); //check parameters and obtain _quantiles from _preds
+    init(job); //check parameters and obtain _quantiles from _preds
     try {
       GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
       gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);

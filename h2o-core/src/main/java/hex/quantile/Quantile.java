@@ -2,10 +2,7 @@ package hex.quantile;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import water.Key;
-import water.MRTask;
-import water.H2O;
-import water.Scope;
+import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -22,6 +19,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   // Called from Nano thread; start the Quantile Job on a F/J thread
   public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }
+  public Quantile( QuantileModel.QuantileParameters parms, Job job ) { super(parms, job); init(false); }
   @Override public Driver trainModelImpl() { return new QuantileDriver(); }
   @Override public long progressUnits() { return train().numCols()*_parms._probs.length; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
