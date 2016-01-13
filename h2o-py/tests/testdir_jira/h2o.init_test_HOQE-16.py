@@ -7,12 +7,12 @@ from __future__ import print_function
 
 #Import h2o and load up h2o.init()
 import h2o
-h2o.init()
+h2o.init(strict_version_check=False)
 
 #Get H2OConnection() class
 conn = h2o.H2OConnection(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
 											license=None, nthreads=-1, max_mem_size=None, min_mem_size=None, ice_root=None,
-											strict_version_check=True, proxy=None, https=False, insecure=False, username=None,
+											strict_version_check=False, proxy=None, https=False, insecure=False, username=None,
 											password=None, max_mem_size_GB=None, min_mem_size_GB=None)
 
 #Get if cluster is up (True) or not (False)
