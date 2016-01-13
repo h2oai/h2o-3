@@ -1,16 +1,14 @@
 package water.api;
 
-import hex.ModelBuilder;
 import water.*;
 import water.exceptions.H2ONotFoundArgumentException;
-import water.util.Log;
 
 public class JobsHandler extends Handler {
   /** Impl class for a collection of jobs; only used in the API to make it easier to cons up the jobs array via the magic of PojoUtils.copyProperties.  */
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public JobsV3 list(int version, JobsV3 s) {
-    Job[] jobs = Job.jobs();
+    Job[] jobs = Job.jobsUserVisible();
     // Jobs j = new Jobs();
     // j._jobs = Job.jobs();
     // PojoUtils.copyProperties(s, j, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
