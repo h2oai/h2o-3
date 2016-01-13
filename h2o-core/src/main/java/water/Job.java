@@ -254,7 +254,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       final DException dex = new DException(ex,caller.getClass());
       new Barrier1OnExCom(dex).apply(Job.this);
-      if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
+      if( getCompleter().getCompleter() == null ) { // barrier2 doesn't handle this exception, so print it out
         System.err.println("barrier onExCompletion for "+caller.getClass());
         ex.printStackTrace();
       }
@@ -293,6 +293,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( bar != null )           // Barrier may be null if task already completed
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
+    if (_ex!=null) throw _ex instanceof RuntimeException ? (RuntimeException)_ex : new RuntimeException(_ex);
     // Maybe null return, if the started fjtask does not actually produce a result at this Key
     return _result==null ? null : _result.get(); 
   }
