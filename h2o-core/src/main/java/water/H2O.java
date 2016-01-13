@@ -1054,7 +1054,7 @@ final public class H2O {
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
         if( h2o != null ) h2o.completeExceptionally(ex);
-        else ex.printStackTrace();
+        else { ex.printStackTrace(); throw ex; }
       } finally {
         t._priority = pp;
         if( pp == MIN_PRIORITY && set_t_prior ) t.setPriority(Thread.NORM_PRIORITY-1);
