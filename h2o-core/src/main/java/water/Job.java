@@ -113,7 +113,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.
    *  Can default to returning e.g. 0 always.  */
-  public float progress() { update_from_remote(); return _work==0 ? 0f : (float)_worked/_work; }
+  public float progress() { update_from_remote(); return _work==0 ? 0f : (float)Math.min(1,_worked/_work); }
   /** Returns last progress message. */
   public String progress_msg() { update_from_remote(); return _msg; }
 
@@ -279,6 +279,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       assert old._end_time==0 : "onComp should be called once at most, and never if onExComp is called";
       old._end_time = System.currentTimeMillis();
       if( old._worked < old._work ) old._worked = old._work;
+      old._msg = old._stop_requested ? "Cancelled." : "Done.";
     }
   }
   private static class Barrier1OnExCom extends JAtomic {
@@ -290,6 +291,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       job._stop_requested = true; // Since exception set, also set stop
       if( job._end_time == 0 )    // Keep first end-time
         job._end_time = System.currentTimeMillis();
+      job._msg = "Failed.";
     }
   }
   private class Barrier2 extends CountedCompleter {
