@@ -10,7 +10,7 @@ public class JobsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public JobsV3 list(int version, JobsV3 s) {
-    Job[] jobs = Job.jobs();
+    Job[] jobs = Job.jobsUserVisible();
     // Jobs j = new Jobs();
     // j._jobs = Job.jobs();
     // PojoUtils.copyProperties(s, j, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
