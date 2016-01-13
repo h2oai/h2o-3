@@ -319,6 +319,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   private void update_from_remote( ) {
     Job remote = DKV.getGet(_key); // Watch for changes in the DKV
     if( this==remote ) return; // Trivial!
+    if( null==remote ) return; // Stay with local version
     boolean differ = false;
     if( _stop_requested != remote._stop_requested ) differ = true;
     if(_start_time!= remote._start_time) differ = true;
