@@ -607,7 +607,25 @@ public class Frame extends Lockable<Frame> {
   @Override protected Futures remove_impl(Futures fs) {
     final Key[] keys = _keys;
     if( keys.length==0 ) return fs;
-    final int ncs = anyVec().nChunks(); // TODO: do not call anyVec which loads all Vecs... only to delete them
+
+    // Get the nChunks without calling anyVec - which loads all Vecs eagerly,
+    // only to delete them.  Supports Frames with some Vecs already deleted, as
+    // a Scope cleanup action might delete Vecs out of order.
+    Vec v = _col0;
+    if( v == null ) {
+      Vec[] vecs = _vecs;       // Read once, in case racily being cleared
+      if( vecs != null )
+        for( int i=0; i<vecs.length; i++ )
+          if( (v=vecs[i]) != null ) // Stop on finding the 1st Vec
+            break;
+    }
+    if( v == null )             // Ok, now do DKV gets
+      for( int i=0; i<_keys.length; i++ )
+        if( (v=_keys[i].get()) != null )
+          break;                // Stop on finding the 1st Vec
+    if( v == null ) return fs;
+
+    final int ncs = v.nChunks();
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = new Key[0];
