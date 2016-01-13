@@ -1,9 +1,7 @@
 package water.api;
 
-import hex.ModelBuilder;
 import water.*;
 import water.exceptions.H2ONotFoundArgumentException;
-import water.util.Log;
 
 public class JobsHandler extends Handler {
   /** Impl class for a collection of jobs; only used in the API to make it easier to cons up the jobs array via the magic of PojoUtils.copyProperties.  */
