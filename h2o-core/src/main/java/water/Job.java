@@ -160,6 +160,17 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     return jobs;
   }
 
+  /** The list of all user-visible Jobs, past and present.
+   *  @return The list of all user-visible Jobs, past and present */
+  public static Job[] jobsUserVisible() {
+    Job[] jobs = jobs(), jobsUserVisible = new Job[jobs.length];
+    int i=0;
+    for (Job j : jobs)
+      if (j._result.user_allowed())
+        jobsUserVisible[i++] = j;
+    return Arrays.copyOf(jobsUserVisible, i);
+  }
+
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
    *  @param work Amount of work to-do, for updating progress bar
