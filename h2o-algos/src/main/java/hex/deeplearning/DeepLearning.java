@@ -225,6 +225,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         DataInfo dinfo;
         try {
+          // PUBDEV-2513: Adapt _train and _valid (in-place) to match the frames that were used for the previous model
+          // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
+          for (String st : previous.adaptTestForTrain(_train,true,false)) Log.warn(st);
+          for (String st : previous.adaptTestForTrain(_valid,true,false)) Log.warn(st);
+
           dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
