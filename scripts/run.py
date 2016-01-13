@@ -249,7 +249,7 @@ class H2OCloudNode:
             if not os.path.exists(jresults_dir):
                 os.mkdir(jresults_dir)
             jresults_dir += "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num)
-            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num) + ",excludes=water.HeartBeatThread"
+            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num)
             cmd = cmd[:1] + [jacoco] + cmd[1:]
 
 
@@ -1634,7 +1634,10 @@ class TestRunner:
         h2o_okay = False
         try:
             http = requests.get("http://{}:{}/{}/{}".format(ip,port,__H2O_REST_API_VERSION__,"Cloud?skip_ticks=true"))
-            h2o_okay = http.json()['cloud_healthy']
+            # JaCoCo tends to cause clouds to temporarily report as unhealthy
+            # even when they aren't, so we'll just assume that they are okay
+            if g_include_jacoco: h2o_okay = True
+            else: h2o_okay = http.json()['cloud_healthy']
         except exceptions.ConnectionError: pass
         if not h2o_okay: self._remove_cloud(ip, port)
         return h2o_okay
