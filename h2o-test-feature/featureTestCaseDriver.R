@@ -64,6 +64,10 @@ function(args) {
         i <- i + 1
         if (i > length(args)) featureTestCaseDriverUsage()
         featureTestCaseArgs$featureTestCasesCSV <- args[i]
+      } else if (s == "--description") {
+        i <- i + 1
+        if (i > length(args)) featureTestCaseDriverUsage()
+        featureTestCaseArgs$description <- args[i]
       } else {
         unknownFeatureTestCaseArg(s)
       }
@@ -111,6 +115,8 @@ function() {
   h2oTest.logInfo("    --featureTestCasesCSV PATH    (optional) path of the feature test cases csv file. If unspecified, then")
   h2oTest.logInfo("                                  h2o-3/h2o-test-feature/featureTestCases.csv is used.")
   h2oTest.logInfo("")
+  h2oTest.logInfo("    --description DESC            (optional) short description of the test case.")
+  h2oTest.logInfo("")
   q("no",1,FALSE) #exit with nonzero exit code
 }
 
@@ -157,6 +163,7 @@ function(cArgs) {
                 dArgs$validationDataSetId <- as.character(testCase$validation_data_set_id)
             }
         }
+        if (is.null(dArgs[['description']]))            { dArgs$description <- as.character(testCase$description) }
     }
     return(dArgs)
 }

@@ -750,7 +750,7 @@ class Test:
 
 class FeatureTest(Test):
     def __init__(self, output_dir, id, feature, feature_params, data_set_ids, validation_method,
-                 validation_data_set_id, feature_test_cases_csv):
+                 validation_data_set_id, description, feature_test_cases_csv):
         """
         Create a feature test
 
@@ -764,6 +764,7 @@ class FeatureTest(Test):
         self.data_set_ids = data_set_ids
         self.validation_method = validation_method
         self.validation_data_set_id = validation_data_set_id
+        self.description = description
         self.feature_test_cases_csv = feature_test_cases_csv
         self.test_case_driver = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                               "../h2o-test-feature/featureTestCaseDriver.R"))
@@ -788,7 +789,7 @@ class FeatureTest(Test):
                self.output_dir, "--testCaseId", self.id, "--feature", self.feature, "--featureParams",
                self.feature_params, "--dataSetIds", self.data_set_ids, "--validationMethod", self.validation_method,
                "--validationDataSetId", self.validation_data_set_id, "--featureTestCasesCSV",
-               self.feature_test_cases_csv]
+               self.feature_test_cases_csv, "--description", self.description]
 
         self.output_file_name = os.path.join(self.output_dir, "feature_test_" + self.id + "_out.txt")
         f = open(self.output_file_name, "w")
@@ -1331,7 +1332,7 @@ class TestRunner:
         """
 
         test = FeatureTest(self.output_dir, test_case[0], test_case[1], test_case[2], test_case[3], test_case[4],
-                           test_case[5], feature_test_cases_csv)
+                           test_case[5], test_case[6], feature_test_cases_csv)
         self.tests.append(test)
         self.tests_not_started.append(test)
 
