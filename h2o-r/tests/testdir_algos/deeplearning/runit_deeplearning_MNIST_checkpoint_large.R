@@ -28,7 +28,7 @@ check.deeplearning_MNIST_cp <- function() {
                                classification_stop=-1,  # Turn off early stopping
                                l1=1e-5,
                                hidden=c(50,50), 
-                               train_samples_per_iteration=0,
+                               train_samples_per_iteration=1000,
                                epochs=1
                               )
   
@@ -41,7 +41,7 @@ check.deeplearning_MNIST_cp <- function() {
                                 classification_stop=-1,  # Turn off early stopping
                                 l1=1e-5,
                                 hidden=c(50,50), 
-                                train_samples_per_iteration=0,
+                                train_samples_per_iteration=1000,
                                 epochs=2
                                )
   
