@@ -86,6 +86,9 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public int stopping_rounds;
 
+  @API(help = "Maximum allowed training time in seconds", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  public double max_runtime_secs;
+
   /**
    * Metric to use for convergence checking, only for _stopping_rounds > 0
    */

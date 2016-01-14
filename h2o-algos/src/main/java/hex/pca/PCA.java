@@ -241,7 +241,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Build an SVD model
           SVDModel svd = new SVD(parms, _job).trainModelNested();
-          if (_job.stop_requested()) return;
+          if (stop_requested()) return;
           svd.remove(); // Remove from DKV
 
           // Recover PCA results from SVD model
@@ -269,7 +269,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Build an SVD model
           GLRMModel glrm = new GLRM(parms, _job).trainModelNested();
-          if (_job.stop_requested()) return;
+          if (stop_requested()) return;
           glrm._output._representation_key.get().delete();
           glrm.remove(); // Remove from DKV
 

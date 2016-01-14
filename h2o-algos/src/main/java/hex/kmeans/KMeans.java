@@ -119,7 +119,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             centers = ArrayUtils.append(centers, sampler._sampled);
 
             // Fill in sample centers into the model
-            if (_job.stop_requested()) return null; // Stopped/cancelled
+            if (stop_requested()) return null; // Stopped/cancelled
             model._output._centers_raw = destandardize(centers, _isCats, means, mults);
             model._output._tot_withinss = sqr._sqr / _train.numRows();
 
@@ -212,7 +212,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     // Stopping criteria
     boolean isDone( KMeansModel model, double[][] newCenters, double[][] oldCenters ) {
-      if( _job.stop_requested() ) return true; // Stopped/cancelled
+      if( stop_requested() ) return true; // Stopped/cancelled
       // Stopped for running out iterations
       if( model._output._iterations >= _parms._max_iterations) return true;
 

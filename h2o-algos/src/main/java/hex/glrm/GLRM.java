@@ -321,7 +321,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         SVDModel svd = (SVDModel)ModelCacheManager.get(parms);
         if( svd == null ) svd = new SVD(parms,_job).trainModelNested();
-        if (_job.stop_requested()) return null;
+        if (stop_requested()) return null;
         model._output._init_key = svd._key;
 
         // Ensure SVD centers align with adapted training frame cols
@@ -361,7 +361,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         ModelCacheManager MCM = H2O.getMCM();
         KMeansModel km = (KMeansModel)MCM.get(parms);
         if( km == null ) km = new KMeans(parms,_job).trainModelNested();
-        if (_job.stop_requested()) return null;
+        if (stop_requested()) return null;
         model._output._init_key = km._key;
 
         // Score only if clusters well-defined and closed-form solution does not exist
@@ -414,7 +414,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // Stopping criteria
     private boolean isDone(GLRMModel model, int steps_in_row, double step) {
-      if (_job.stop_requested()) return true;  // Stopped/cancelled
+      if (stop_requested()) return true;  // Stopped/cancelled
 
       // Stopped for running out of iterations
       if (model._output._iterations >= _parms._max_iterations) return true;

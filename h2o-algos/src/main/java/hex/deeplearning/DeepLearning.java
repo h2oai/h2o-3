@@ -391,10 +391,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepLearningTask (_job._key,        model.model_info(), rowFraction(train, mp, model), model.iterations).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
         }
-        while (!_job.stop_requested() && model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false));
+        while (!stop_requested() && model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false));
 
         // replace the model with the best model so far (if it's better)
-        if (!_job.stop_requested() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
+        if (!stop_requested() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.loss() < model.loss() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             if (!_parms._quiet_mode)
@@ -414,7 +414,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         model.model_info().data_info().coefNames();
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
-          if (_job.stop_requested()) {
+          if (stop_requested()) {
             Log.info("Deep Learning model training was interrupted.");
           } else {
             Log.info("Finished training the Deep Learning model.");

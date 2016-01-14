@@ -1140,7 +1140,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               // todo update the model here so we can show intermediate results
               if(_taskInfo._iter >= _parms._max_iterations)
                 Log.warn("L_BFGS reached max number of iterations");
-              return !_job.stop_requested() && _taskInfo._iter < _parms._max_iterations;
+              return !stop_requested() && _taskInfo._iter < _parms._max_iterations;
             }
           };
           double[] beta = _taskInfo._beta;
@@ -1868,7 +1868,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     @Override
     public void compute2() { // part of the outer loop to compute sol for lambda_k+1. keep active cols using strong rules and calls solve.
-      if(_job.stop_requested()) throw new GLMCancelledException();
+      if(stop_requested()) throw new GLMCancelledException();
       _start_time = System.currentTimeMillis();
       double previousLambda = _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1];
       _taskInfo.adjustToNewLambda(previousLambda,_parms._lambda[_lambdaId],_parms._alpha[0],true);
@@ -1964,7 +1964,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _taskInfo._ginfo = null;
           }
         }
-        if (_job.stop_requested()) throw new GLMCancelledException();
+        if (stop_requested()) throw new GLMCancelledException();
         assert glmt._nobs == _taskInfo._nobs:"got wrong number of observations, expected " + _taskInfo._nobs + ", but got " + glmt._nobs;
         assert _taskInfo._activeCols == null || glmt._beta == null || glmt._beta.length == (_taskInfo._activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _taskInfo._activeCols.length);
         assert _taskInfo._activeCols == null || _taskInfo._activeCols.length == _activeData.fullN();

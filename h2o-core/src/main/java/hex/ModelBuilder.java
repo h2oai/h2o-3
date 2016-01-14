@@ -33,6 +33,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
+  private long _start_time; //start time in msecs - only used for time-based stopping
+  protected boolean stop_requested() {
+    assert(_start_time > 0) : "Must set _start_time for each individual model.";
+    return _job.stop_requested() ||
+            (_parms._max_runtime_secs > 0 && System.currentTimeMillis() - _start_time > (long) (_parms._max_runtime_secs * 1e3));
+  }
+
   /** Default model-builder key */
   public static Key<? extends Model> defaultKey(String algoName) {
     return Key.make(H2O.calcNextUniqueModelId(algoName));
@@ -143,7 +150,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   final public Job<M> trainModel() {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
-
+    _start_time = System.currentTimeMillis();
     if( !nFoldCV() )
       return _job.start(trainModelImpl(), progressUnits());
 
@@ -161,7 +168,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   final public M trainModelNested() {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
-
+    _start_time = System.currentTimeMillis();
     if( !nFoldCV() ) trainModelImpl().compute2();
     else computeCrossValidation();
     return _result.get();
@@ -329,6 +336,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; ++i ) {
       if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
       Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
+      cvModelBuilders[i]._start_time = System.currentTimeMillis();
       submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
       if( !async ) submodel_tasks[i].join();
     }
@@ -339,6 +347,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _job.stop_requested() ) return null;
     assert _job.isRunning();
     Log.info("Building main model.");
+    _start_time = System.currentTimeMillis();
     modifyParmsForCrossValidationMainModel(cvModelBuilders); //tell the main model that it shouldn't stop early either
     H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking
     if( !async ) mainMB.join();

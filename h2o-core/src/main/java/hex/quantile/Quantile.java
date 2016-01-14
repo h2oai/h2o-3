@@ -79,7 +79,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         // Run the main Quantile Loop
         Vec vecs[] = train().vecs();
         for( int n=0; n<_ncols; n++ ) {
-          if( _job.stop_requested() ) return; // Stopped/cancelled
+          if( stop_requested() ) return; // Stopped/cancelled
           Vec vec = vecs[n];
           if (vec.isBad()) {
             model._output._quantiles[n] = new double[_parms._probs.length];

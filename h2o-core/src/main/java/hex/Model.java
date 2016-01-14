@@ -117,6 +117,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _score_each_iteration;
 
     /**
+     * Maximum allowed runtime in seconds. Use 0 to disable.
+     */
+    public double _max_runtime_secs = 0;
+
+    /**
      * Early stopping based on convergence of stopping_metric.
      * Stop if simple moving average of length k of the stopping_metric does not improve (by stopping_tolerance) for k=stopping_rounds scoring events."
      * Can only trigger after at least 2k scoring events. Use 0 to disable.
