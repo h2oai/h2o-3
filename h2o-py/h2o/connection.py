@@ -22,7 +22,7 @@ from six import iteritems, PY3
 from string import ascii_lowercase, digits
 from random import choice
 warnings.simplefilter('always', UserWarning)
-requests.packages.urllib3.disable_warnings()
+warnings.simplefilter('ignore', requests.packages.urllib3.exceptions.InsecureRequestWarning)
 __H2OCONN__ = None            # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
 
