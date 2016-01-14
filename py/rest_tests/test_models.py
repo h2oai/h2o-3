@@ -30,6 +30,9 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' } ),
        ]
     
+    # TODO: remove!
+#    models_to_build = []
+
     built_models = {}
     for model_spec in models_to_build:
         model = model_spec.build_and_validate_model(a_node)
@@ -74,7 +77,8 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', sort_order='asc')
     h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', sort_order='asc')
 
-
+#    import sys
+#    sys.exit(0)
     #######################################
     # Test default parameters validation for each model builder
     #
@@ -91,6 +95,8 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         if algo in algo_additional_default_params:
             test_parameters.update(algo_additional_default_params[algo])
     
+        if h2o_test_utils.isVerboser(): print 'Testing ' + algo + ' with params: ' + repr(test_parameters)
+    
         parameters_validation = a_node.validate_model_parameters(algo=algo, training_frame=None, parameters=test_parameters, timeoutSecs=240) # synchronous
         assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
         h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
@@ -106,6 +112,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     # Test DeepLearning parameters validation
     #
     # Default parameters:
+    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning default parameters. . .'
     model_builder = a_node.model_builders(algo='deeplearning', timeoutSecs=240)['model_builders']['deeplearning']
     dl_test_parameters_list = model_builder['parameters']
     dl_test_parameters = {value['name'] : value['default_value'] for value in dl_test_parameters_list}
@@ -119,6 +126,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     assert 0 == parameters_validation['error_count'], "FAIL: 0 != error_count in good-parameters parameters validation result."
     
     # Good parameters (note: testing with null training_frame):
+    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning good parameters. . .'
     dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
@@ -130,6 +138,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     
     # Bad parameters (hidden is null):
     # (note: testing with null training_frame)
+    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning bad parameters, null training_frame. . .'
     dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in bad-parameters parameters validation result (input_dropout_ratio)."
@@ -143,6 +152,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     assert found_expected_error, "FAIL: Failed to find error message about input_dropout_ratio in the validation messages."
     
     # Bad parameters (no response_column):
+    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning bad parameters, null response_column. . .'
     dl_test_parameters = {'hidden': "[10, 20, 10]" }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame='prostate_binomial', parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in bad-parameters parameters validation result (response_column)."

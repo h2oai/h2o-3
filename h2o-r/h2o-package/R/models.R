@@ -356,8 +356,8 @@ h2o.getFutureModel <- function(object) {
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2O H2OFrame object with probabilites and
 #'         default predictions.
-#' @seealso \code{link{h2o.deeplearning}}, \code{link{h2o.gbm}},
-#'          \code{link{h2o.glm}}, \code{link{h2o.randomForest}} for model
+#' @seealso \code{\link{h2o.deeplearning}}, \code{\link{h2o.gbm}},
+#'          \code{\link{h2o.glm}}, \code{\link{h2o.randomForest}} for model
 #'          generation in h2o.
 #' @export
 predict.H2OModel <- function(object, newdata, ...) {

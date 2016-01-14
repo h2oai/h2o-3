@@ -1,18 +1,14 @@
 package hex.grid;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Collection;
-
 import hex.Model;
 import water.*;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.IcedLong;
-import water.util.PojoUtils;
+import water.util.*;
 import water.util.PojoUtils.FieldNaming;
-import water.util.StringUtils;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.Collection;
 
 /** A Grid of Models representing result of hyper-parameter space exploration.
  *  Lazily filled in, this object represents the potentially infinite variety
@@ -304,7 +300,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   }
 
   /** Write out K/V pairs */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     for (Key<Model> k : _cache.values())
       ab.putKey(k);
     return super.writeAll_impl(ab);
@@ -315,4 +311,3 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
   @Override public Class<water.api.KeyV3.GridKeyV3> makeSchema() { return water.api.KeyV3.GridKeyV3.class; }
 }
-

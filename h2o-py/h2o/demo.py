@@ -219,7 +219,7 @@ def glm_demo(interactive, echo, test):
                      '\n# Convert the response columns to factors (for binary classification problems)',
                      '>>> train["CAPSULE"] = train["CAPSULE"].asfactor()',
                      '>>> test["CAPSULE"] = test["CAPSULE"].asfactor()\n',
-                     '\n# Build a (classification) GBM',
+                     '\n# Build a (classification) GLM',
                      '>>> prostate_glm = h2o.glm(x=train[["AGE", "RACE", "PSA", "VOL", "GLEASON"]], '
                      'y=train["CAPSULE"], family="binomial", alpha=[0.5])\n',
                      '\n# Show the model',
