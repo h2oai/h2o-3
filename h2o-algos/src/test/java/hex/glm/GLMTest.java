@@ -1713,4 +1713,27 @@ public class GLMTest  extends TestUtil {
   }
 
   private static Key<GLMModel> glmkey(String str) { return Key.<GLMModel>make(str); }
+
+  @Ignore @Test public void testAbalone() {
+    Scope.enter();
+    GLMModel model = null;
+    try {
+      Frame fr = parse_test_file("smalldata/glm_test/Abalone.gz");
+      Scope.track(fr);
+      GLMParameters params = new GLMParameters(Family.gaussian);
+      params._train = fr._key;
+      params._response_column = fr._names[8];
+      params._alpha = new double[]{1.0};
+      params._lambda_search = true;
+      GLM glm = new GLM(params);
+      model = glm.trainModel().get();
+      Frame res = model.score(fr);
+      Scope.track(res);
+      model.testJavaScoring(fr,res,0.0);
+      
+    } finally {
+      if( model != null ) model.delete();
+      Scope.exit();
+    }
+  }
 }
