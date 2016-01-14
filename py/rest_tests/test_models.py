@@ -30,8 +30,8 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' } ),
        ]
     
-    # TODO: remove!
-#    models_to_build = []
+    # For grid testing, don't build any non-grid models:
+    # models_to_build = []
 
     built_models = {}
     for model_spec in models_to_build:

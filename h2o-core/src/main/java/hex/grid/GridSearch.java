@@ -203,14 +203,36 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * @return return a new model if it does not exist
    */
   private Model buildModel(final MP params, Grid<MP> grid, int paramsIdx, String protoModelKey) {
-    // Make sure that the model is not yet built (can be case of duplicated hyper parameters)
+    // Make sure that the model is not yet built (can be case of duplicated hyper parameters).
+    // We first look in the grid _models cache, then we look in the DKV.
     // FIXME: get checksum here since model builder will modify instance of params!!!
-    long checksum = params.checksum();
+
+    final long checksum = params.checksum();
     Key<Model> key = grid.getModelKey(checksum);
-    // It was already built
     if (key != null) {
-      return key.get();
+      if (DKV.get(key) == null) {
+        // We know about a model that's been removed; rebuild.
+        Log.info("GridSearch.buildModel(): model with these parameters was built but removed, rebuilding; checksum: " + checksum);
+      } else {
+        Log.info("GridSearch.buildModel(): model with these parameters already exists, skipping; checksum: " + checksum);
+        return key.get();
+      }
     }
+
+    // Is there a model with the same params in the DKV?
+    final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+      @Override
+      public boolean filter(KeySnapshot.KeyInfo k) {
+        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get()).checksum() == checksum;
+      }
+    }).keys();
+
+    if (modelKeys.length > 0) {
+      grid.putModel(checksum, modelKeys[0]);
+      return modelKeys[0].get();
+    }
+
+
     // Modify model key to have nice version with counter
     // Note: Cannot create it before checking the cache since checksum would differ for each model
     Key<Model> result = Key.make(protoModelKey + paramsIdx);
