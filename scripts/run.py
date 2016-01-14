@@ -891,6 +891,7 @@ class TestRunner:
         self.start_seconds = time.time()
         self.terminated = False
         self.clouds = []
+        self.suspicious_clouds = []
         self.bad_clouds = []
         self.tests = []
         self.tests_not_started = []
@@ -1207,14 +1208,17 @@ class TestRunner:
         while (len(self.tests_not_started) > 0):
             if (self.terminated):
                 return
-            completed_test = self._wait_for_one_test_to_complete()
+            cld = self._wait_for_available_cloud(nopass)
+            # Check if no cloud was found
+            if cld is None:
+                if len(self.clouds) == 0:
+                self._log('NO GOOD CLOUDS REMAINING...')
+                self.terminate()
+            available_ip, available_port = cld
             if (self.terminated):
                 return
-            self._report_test_result(completed_test, nopass)
-            ip_of_completed_test = completed_test.get_ip()
-            port_of_completed_test = completed_test.get_port()
-            if self._h2o_exists_and_healthy(ip_of_completed_test, port_of_completed_test):
-                self._start_next_test_on_ip_port(ip_of_completed_test, port_of_completed_test)
+            if self._h2o_exists_and_healthy(available_ip, available_port):
+                self._start_next_test_on_ip_port(available_ip, available_port)
 
         # Wait for remaining running tests to complete.
         while (len(self.tests_running) > 0):
@@ -1521,6 +1525,39 @@ class TestRunner:
                 self._log('WAITING FOR ONE TEST TO COMPLETE, BUT THERE ARE NO RUNNING TESTS. EXITING...')
                 sys.exit(1)
 
+    def _wait_for_available_cloud(self, nopass, timeout=60):
+        """
+        Waits for an available cloud to appear by either a test completing or by a cloud on the suspicious_clouds list
+        reporting as healthy, and then returns a tuple containing its ip and port. If no tests are running and no clouds
+        are reporting as healthy, then the function will wait until the designated timeout time expires before returning
+        None.
+        """
+        timer_on = False
+        t_start = None
+        while True:
+            if timer_on:
+                if time.time() - t_start > timeout:
+                    return None
+
+            for ip, port in self.suspicious_clouds:
+                if (self._h2o_exists_and_healthy(ip, port)):
+                    self.suspicious_clouds.remove([ip, port])
+                    return (ip, port)
+
+            if len(self.tests_running) > 0:
+                for test in self.tests_running:
+                    if (test.is_completed()):
+                    self.tests_running.remove(test)
+                    self._report_test_result(test, nopass)
+                    return (test.get_ip(), test.get_port())
+            else if len(self.suspicious_clouds) == 0:
+                self._log('WAITING FOR ONE TEST TO COMPLETE, BUT THERE ARE NO RUNNING TESTS. EXITING...')
+                sys.exit(1)
+            else:
+                t_start = time.time()
+                timer_on = True
+
+
     def _report_test_result(self, test, nopass):
         port = test.get_port()
         finish_seconds = time.time()
@@ -1634,12 +1671,13 @@ class TestRunner:
         h2o_okay = False
         try:
             http = requests.get("http://{}:{}/{}/{}".format(ip,port,__H2O_REST_API_VERSION__,"Cloud?skip_ticks=true"))
-            # JaCoCo tends to cause clouds to temporarily report as unhealthy
-            # even when they aren't, so we'll just assume that they are okay
-            if g_include_jacoco: h2o_okay = True
-            else: h2o_okay = http.json()['cloud_healthy']
+            h2o_okay = http.json()['cloud_healthy']
         except exceptions.ConnectionError: pass
-        if not h2o_okay: self._remove_cloud(ip, port)
+        if not h2o_okay:
+            # JaCoCo tends to cause clouds to temporarily report as unhealthy even when they aren't,
+            # so we'll just consider an unhealthy cloud as suspicious
+            if g_include_jacoco: self._suspect_cloud(ip, port)
+            else: self._remove_cloud(ip, port)
         return h2o_okay
 
     def _remove_cloud(self, ip, port):
@@ -1660,6 +1698,13 @@ class TestRunner:
             self._log('NO GOOD CLOUDS REMAINING...')
             self.terminate()
 
+    def _suspect_cloud(self, ip, port):
+        """
+        add the ip, port to TestRunner's suspicious cloud list. This way the cloud is considered to have the potential
+        to report as being healthy sometime in the future. Unlike _remove_cloud(), the suspicious cloud is not removed from the
+        TestRunner's cloud list.
+        """
+        if not [ip, str(port)] in self.suspicious_clouds: self.suspicious_clouds.append([ip, str(port)])
 # --------------------------------------------------------------------
 # Main program
 # --------------------------------------------------------------------
