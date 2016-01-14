@@ -1714,7 +1714,7 @@ public class GLMTest  extends TestUtil {
 
   private static Key<GLMModel> glmkey(String str) { return Key.<GLMModel>make(str); }
 
-  @Ignore @Test public void testAbalone() {
+  @Test public void testAbalone() {
     Scope.enter();
     GLMModel model = null;
     try {

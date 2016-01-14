@@ -1760,6 +1760,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         public void callback(final GLMGradientTask gt1) {
           if(_bc != null && _bc._betaGiven != null && _bc._rho != null)
             ProximalGradientSolver.proximal_gradient(gt1._gradient,0,gt1._beta,_bc._betaGiven,_bc._rho);
+          // got valid solution, update the state and complete
+          double l2pen = _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]) * ArrayUtils.l2norm2(gt1._beta, _activeData._intercept);
+          if(_bc._betaGiven != null && _bc._rho != null) {
+            for(int i = 0; i < _bc._betaGiven.length; ++i) {
+              double diff = gt1._beta[i] - _bc._betaGiven[i];
+              l2pen += _bc._rho[i] * diff * diff;
+            }
+          }
+          l2pen *= .5;
+          _taskInfo._ginfo = new GLMGradientInfo(gt1._likelihood, gt1._likelihood * gt1._reg + l2pen, gt1._gradient);
+          assert _taskInfo._ginfo._gradient.length == _dinfo.fullN() + 1:_taskInfo._ginfo._gradient.length + " != " + _dinfo.fullN() + ", intercept = " + _parms._intercept;
+          _taskInfo._objVal = objVal(gt1._likelihood,gt1._beta);
+          _sc.addIterationScore(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal); // it's in here for the gaussian family score :(
+          _taskInfo._beta = fullBeta;
           assert gt1._nobs == _taskInfo._nobs;
           double[] subgrad = gt1._gradient.clone();
           ADMM.subgrad(_parms._alpha[0] * _parms._lambda[_lambdaId], fullBeta, subgrad);
@@ -1848,20 +1862,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _model.update(_job._key);
             }
           }
-          // got valid solution, update the state and complete
-          double l2pen = _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]) * ArrayUtils.l2norm2(gt1._beta, _activeData._intercept);
-          if(_bc._betaGiven != null && _bc._rho != null) {
-            for(int i = 0; i < _bc._betaGiven.length; ++i) {
-              double diff = gt1._beta[i] - _bc._betaGiven[i];
-              l2pen += _bc._rho[i] * diff * diff;
-            }
-          }
-          l2pen *= .5;
-          _taskInfo._ginfo = new GLMGradientInfo(gt1._likelihood, gt1._likelihood * gt1._reg + l2pen, gt1._gradient);
-          assert _taskInfo._ginfo._gradient.length == _dinfo.fullN() + 1:_taskInfo._ginfo._gradient.length + " != " + _dinfo.fullN() + ", intercept = " + _parms._intercept;
-          _taskInfo._objVal = objVal(gt1._likelihood,gt1._beta);
-          _sc.addIterationScore(_taskInfo._iter,gt1._likelihood,_taskInfo._objVal); // it's in here for the gaussian family score :(
-          _taskInfo._beta = fullBeta;
+
         }
       }).setValidate(_parms._intercept ? _taskInfo._ymu[0] : _parms._family == Family.binomial ? 0.5 : 0, score).dfork(_dinfo._adaptedFrame);
     }
