@@ -24,10 +24,7 @@ check.deeplearning_MNIST_cp <- function() {
   model <- h2o.deeplearning(x=c(1:784), y=785,
                                training_frame=test_hex,
                                activation="RectifierWithDropout",
-                               input_dropout_ratio=0.2,
-                               classification_stop=-1,  # Turn off early stopping
-                               l1=1e-5,
-                               hidden=c(50,50), 
+                               hidden=c(50,50),
                                train_samples_per_iteration=1000,
                                epochs=1
                               )
@@ -36,11 +33,7 @@ check.deeplearning_MNIST_cp <- function() {
   model2 <- h2o.deeplearning(checkpoint = model@model_id,
                                 x=c(1:784), y=785,
                                 training_frame=train_hex,
-                                activation="RectifierWithDropout",
-                                input_dropout_ratio=0.2,
-                                classification_stop=-1,  # Turn off early stopping
-                                l1=1e-5,
-                                hidden=c(50,50), 
+                                hidden=c(50,50),
                                 train_samples_per_iteration=1000,
                                 epochs=2
                                )
