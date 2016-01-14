@@ -30,9 +30,9 @@ public class Icer<T extends Freezable> {
   protected final T read2    (AutoBuffer ab, T ice) { return ice; }
   protected final T readJSON2(AutoBuffer ab, T ice) { return ice; }
   // That end in the TypeMap ID for "H2OCountedCompleter" class - which is "3".
-  protected final AutoBuffer write3    (AutoBuffer ab, T ice) { return ab; } 
+  protected final AutoBuffer write3    (AutoBuffer ab, T ice) { return ice.write_impl(ab); } 
   protected final AutoBuffer writeJSON3(AutoBuffer ab, T ice) { return ab; }
-  protected final T read3    (AutoBuffer ab, T ice) { return ice; }
+  protected final T read3    (AutoBuffer ab, T ice) { return (T)ice.read_impl(ab); }
   protected final T readJSON3(AutoBuffer ab, T ice) { return ice; }
 
   protected void compute1(water.H2O.H2OCountedCompleter h2cc ) { h2cc.compute1(); }

@@ -191,9 +191,9 @@ public class DMatrix  {
       new GetNonZerosTsk(new H2OCallback<GetNonZerosTsk>(this) {
         @Override
         public void callback(GetNonZerosTsk gnz) {
-          new VecTsk(new Callback(), _progressKey, gnz._vals).asyncExec(ArrayUtils.append(_x.vecs(gnz._idxs), _z.vec(i)));
+          new VecTsk(new Callback(), _progressKey, gnz._vals).dfork(ArrayUtils.append(_x.vecs(gnz._idxs), _z.vec(i)));
         }
-      }).asyncExec(_y.vec(i));
+      }).dfork(_y.vec(i));
     }
     private class Callback extends H2OCallback{
       public Callback(){super(MatrixMulTsk.this);}

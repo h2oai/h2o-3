@@ -135,8 +135,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
-    protected Driver() { super(true); } // bump priority of model drivers
-    protected Driver(H2O.H2OCountedCompleter completer){ super(completer,true); }
+    protected Driver(){ super(); }
+    protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
   }
   
   /** Method to launch training of a Model, based on its parameters. */

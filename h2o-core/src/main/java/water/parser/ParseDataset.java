@@ -291,17 +291,14 @@ public final class ParseDataset {
   private static class CreateParse2GlobalCategoricalMaps extends DTask<CreateParse2GlobalCategoricalMaps> {
     private final Key _parseCatMapsKey;
     private final Key _frKey;
-    private final byte _priority;
     private final int _eColCnt;
 
     private CreateParse2GlobalCategoricalMaps(Key parseCatMapsKey, Key key, int eColCnt) {
       _parseCatMapsKey = parseCatMapsKey;
       _frKey = key;
       _eColCnt = eColCnt;
-      _priority = nextThrPriority();
     }
 
-    @Override public byte priority() {return _priority;}
     @Override public void compute2() {
       Frame _fr = DKV.getGet(_frKey);
       // get the node local category->ordinal maps for each column from initial parse pass
@@ -729,7 +726,7 @@ public final class ParseDataset {
             DistributedParse dp = new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
             addToPendingCount(1);
             dp.setCompleter(this);
-            dp.asyncExec(vec);
+            dp.dfork(vec);
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
           } else {

@@ -23,8 +23,7 @@ public class RemoveAllHandler extends Handler {
     }
     fs.blockForPending();
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
-    new MRTask(){
-      @Override public byte priority() { return H2O.GUI_PRIORITY; }
+    new MRTask(H2O.MIN_HI_PRIORITY){
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     // Wipe the backing store without regard as well

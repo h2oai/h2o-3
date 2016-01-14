@@ -10,8 +10,9 @@ package water;
 abstract public class Atomic<T extends Atomic> extends DTask<T> {
   protected Key _key;           // Transaction key
 
-  public Atomic(){}
-  public Atomic(H2O.H2OCountedCompleter completer){super(completer);}
+
+  public Atomic(){ super(H2O.ATOMIC_PRIORITY); }
+  public Atomic(H2O.H2OCountedCompleter completer){super(completer,H2O.ATOMIC_PRIORITY);}
   // User's function to be run atomically.  The Key's Value is fetched from the
   // home STORE and passed in.  The returned Value is atomically installed as
   // the new Value (and the function is retried until it runs atomically).  The
@@ -77,6 +78,4 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
     _key = null;                // No need for key no more, don't send it back
     tryComplete();
   }
-
-  @Override protected byte priority() { return H2O.ATOMIC_PRIORITY; }
 }

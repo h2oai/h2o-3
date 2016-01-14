@@ -189,7 +189,7 @@ public class KeySnapshot {
   // updates the cache when done
   private static class GlobalUKeySetTask extends MRTask<GlobalUKeySetTask> {
     KeyInfo [] _res;
-    @Override public byte priority(){return H2O.GET_KEY_PRIORITY;}
+    GlobalUKeySetTask() { super(H2O.MIN_HI_PRIORITY); }
     @Override public void setupLocal(){ _res = localSnapshot(true)._keyInfos;}
     @Override public void reduce(GlobalUKeySetTask gbt){
       if(_res == null)_res = gbt._res;

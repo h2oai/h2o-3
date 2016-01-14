@@ -76,7 +76,7 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
     }
     setPendingCount(nsplits);
     for (int s=0; s<nsplits; s++)
-      new FrameSplitTask(this,datasetVecs, ratios, s).asyncExec(splits[s]);
+      new FrameSplitTask(this,datasetVecs, ratios, s).dfork(splits[s]);
     tryComplete(); // complete the computation of thrown tasks
   }
 

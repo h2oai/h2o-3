@@ -14,7 +14,10 @@ import water.UDP.udp;
 class FJPacket extends H2OCountedCompleter {
   final AutoBuffer _ab;
   final int _ctrl;              // 1st byte of packet
-  FJPacket( AutoBuffer ab, int ctrl ) { _ab = ab; _ctrl = ctrl;
+  FJPacket( AutoBuffer ab, int ctrl ) {
+    // Run at max priority until we decrypt the packet enough to get priorities out
+    super(UDP.udp.UDPS[ctrl]._prior);
+    _ab = ab; _ctrl = ctrl;
     assert 0 < _ctrl && _ctrl < udp.UDPS.length;
     assert udp.UDPS[_ctrl]._udp != null:"missing udp " + _ctrl;
   }
@@ -36,9 +39,5 @@ class FJPacket extends H2OCountedCompleter {
     ex.printStackTrace();
     water.util.Log.err(ex);
     return true;
-  }
-  // Run at max priority until we decrypt the packet enough to get priorities out
-  @Override protected byte priority() {
-    return UDP.udp.UDPS[_ctrl]._prior;
   }
 }

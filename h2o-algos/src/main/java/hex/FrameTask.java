@@ -27,10 +27,13 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     this(jobKey, dinfo, 0xDECAFBEE, -1, false);
   }
   public FrameTask(Key<Job> jobKey, DataInfo dinfo, long seed, int iteration, boolean sparse) {
-    this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration, sparse);
+    this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration, sparse,null);
   }
-  private FrameTask(Key<Job> jobKey, Key dinfoKey, int [] activeCols,long seed, int iteration, boolean sparse) {
-    super(null);
+  public FrameTask(Key<Job> jobKey, DataInfo dinfo, long seed, int iteration, boolean sparse, H2O.H2OCountedCompleter cmp) {
+    this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration, sparse,cmp);
+  }
+  private FrameTask(Key<Job> jobKey, Key dinfoKey, int [] activeCols,long seed, int iteration, boolean sparse, H2O.H2OCountedCompleter cmp) {
+    super(cmp);
     _jobKey = jobKey;
     _dinfoKey = dinfoKey;
     _activeCols = activeCols;

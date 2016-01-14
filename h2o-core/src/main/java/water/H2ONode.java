@@ -418,7 +418,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // A Golden Completed Task: it's a shared completed task used to represent
   // all instances of tasks that have been completed and are no longer being
   // tracked separately.
-  private final RPC.RPCCall _removed_task = new RPC.RPCCall(null,this,0);
+  private final RPC.RPCCall _removed_task = new RPC.RPCCall(this);
 
   RPC.RPCCall has_task( int tnum ) {
     if( tnum <= _removed_task_ids.get() ) return _removed_task;

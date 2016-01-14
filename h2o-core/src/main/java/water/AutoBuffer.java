@@ -722,6 +722,8 @@ public final class AutoBuffer {
   public AutoBuffer put(Freezable f) {
     if( f == null ) return putInt(TypeMap.NULL);
     assert f.frozenType() > 0 : "No TypeMap for "+f.getClass().getName();
+    if( f.frozenType() == 8 )
+      System.out.println("DTASK");
     putInt(f.frozenType());
     return f.write(this);
   }

@@ -532,14 +532,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     GetRawRemoteRows(Frame fr, long[] rows) {
       _rows = rows;
       _fr = fr;
-      _priority = nextThrPriority();  // bump locally AND ship this priority to the worker where the priority() getter will query it
     }
-    @Override public byte priority() { return _priority; }
-    private byte _priority;
-    // Raise the priority, so that if a thread blocks here, we are guaranteed
-    // the task completes (perhaps using a higher-priority thread from the
-    // upper thread pools).  This prevents thread deadlock.
-    // Remember that this gets queried on both the caller and the sender, of course.
 
     @Override
     public void compute2() {

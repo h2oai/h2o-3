@@ -432,15 +432,15 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
-      } 
+      }
       else if(s.matches("useUDP")) {
         i = s.incrementAndCheck(i, args);
         ARGS.useUDP = true;
-      } 
+      }
       else if(s.matches("cleaner")) {
         i = s.incrementAndCheck(i, args);
         ARGS.cleaner = true;
-      } 
+      }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -1015,15 +1015,23 @@ final public class H2O {
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
-    public final byte _priority;
-    public H2OCountedCompleter( ) { this(false); }
-    public H2OCountedCompleter( boolean bumpPriority ) {
-      _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
+    private /*final*/ byte _priority;
+    // Without a completer, we expect this task will be blocked on - so the
+    // blocking thread is not available in the current thread pool, so the
+    // launched task needs to run at a higher priority.
+    public H2OCountedCompleter( ) { this(null); }
+    // With a completer, this task will NOT be blocked on and the the current
+    // thread is available for executing it... so the priority can remain at
+    // the current level.
+    protected H2OCountedCompleter(H2OCountedCompleter completer) {
+      this(completer,(byte)(currThrPriority() + (completer==null ? 1 : 0)));
     }
-    protected H2OCountedCompleter(H2OCountedCompleter completer){ super(completer); _priority = MIN_PRIORITY; }
-    protected H2OCountedCompleter(H2OCountedCompleter completer, boolean bumpPriority){ 
-      super(completer); 
-      _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
+    // Special for picking GUI priorities
+    protected H2OCountedCompleter( byte prior ) { this(null,prior); }
+
+    protected H2OCountedCompleter(H2OCountedCompleter completer, byte prior) {
+      super(completer);
+      _priority = prior;
     }
 
     /** Used by the F/J framework internally to do work.  Once per F/J task,
@@ -1081,19 +1089,19 @@ final public class H2O {
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
-    protected byte priority() { return _priority; }
+    protected final byte priority() { return _priority; }
     @Override public final T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
     }
 
-    /** If this is a F/J thread, return it's priority+1 - used to lift the
+    /** If this is a F/J thread, return it's priority - used to lift the
      *  priority of a blocking remote call, so the remote node runs it at a
      *  higher priority - so we don't deadlock when we burn the local
      *  thread. */
-    protected final byte nextThrPriority() {
+    protected static byte currThrPriority() {
       Thread cThr = Thread.currentThread();
-      return (byte)((cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority+1 : priority());
+      return (byte)((cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : MIN_PRIORITY);
     }
 
     // The serialization flavor / delegate.  Lazily set on first use.
@@ -1109,8 +1117,8 @@ final public class H2O {
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
-    @Override       public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
-    @Override       public T read_impl( AutoBuffer ab ) { return (T)this; }
+    @Override       public AutoBuffer write_impl( AutoBuffer ab ) { return ab.put1(_priority); }
+    @Override       public T read_impl( AutoBuffer ab ) { this._priority = ab.get1(); return (T)this; }
     @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
     @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
   }
@@ -1517,8 +1525,8 @@ final public class H2O {
   }
 
   // Get the value from the store
-  public static void raw_remove(Key key) { 
-    Value v = STORE.remove(key); 
+  public static void raw_remove(Key key) {
+    Value v = STORE.remove(key);
     if( v != null ) v.removePersist();
   }
   public static void raw_clear() { STORE.clear(); }
@@ -1566,16 +1574,13 @@ final public class H2O {
    */
   public static void gc() {
     class GCTask extends DTask<GCTask> {
-      public GCTask() {}
-
+      public GCTask() {super(GUI_PRIORITY);}
       @Override public void compute2() {
         Log.info("Calling System.gc() now...");
         System.gc();
         Log.info("System.gc() finished");
         tryComplete();
       }
-
-      @Override public byte priority() { return H2O.MIN_HI_PRIORITY; }
     }
 
     for (H2ONode node : H2O.CLOUD._memary) {

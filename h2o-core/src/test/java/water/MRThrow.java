@@ -53,7 +53,7 @@ public class MRThrow extends TestUtil {
                 return super.onExceptionalCompletion(ex,cc);
               }
           });
-          bh.asyncExec(vec);
+          bh.dfork(vec);
           // If the chosen file is too small for the cluster, some nodes will have *no* work
           // and so no exception is thrown.
           int MAX_CNT=50;

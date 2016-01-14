@@ -382,13 +382,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     _keySize = keySize;
     //_nGroup = nGroup;
     _MSBvalue = MSBvalue;
-    _priority = nextThrPriority();  // bump locally AND ship this priority to the worker where the priority() getter will query it
   }
-
-  // priority bump needed now that RadixOrder is a CountedCompleter so that left and right index can run in parallel
-  // if a bump is needed, so far it's been needed at the low level. TODO: ask Cliff why we have to do this manually.
-  @Override public byte priority() { return _priority; }
-  private byte _priority;
 
   @Override
   public void compute2() {

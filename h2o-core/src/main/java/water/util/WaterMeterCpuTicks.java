@@ -16,6 +16,7 @@ public class WaterMeterCpuTicks extends Iced {
   }
 
   private static class GetTicksTask extends DTask<GetTicksTask> {
+    GetTicksTask() { super(H2O.GUI_PRIORITY); }
     private long[][] _cpuTicks;
     @Override public void compute2() {
       // In the case where there isn't any tick information, the client
@@ -24,6 +25,5 @@ public class WaterMeterCpuTicks extends Iced {
       _cpuTicks = LinuxProcFileReader.refresh() ? LinuxProcFileReader.getCpuTicks() : new long[0][0];
       tryComplete();
     }
-    @Override public byte priority() { return H2O.GUI_PRIORITY; }
   }
 }

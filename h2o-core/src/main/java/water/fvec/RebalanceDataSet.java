@@ -46,7 +46,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
   public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks) { this(srcFrame, dstKey,nchunks,null,null);}
   public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks, H2O.H2OCountedCompleter cmp, Key jobKey) {
-    super(cmp,true);
+    super(cmp);
     _in = srcFrame;
     _nchunks = nchunks;
     _jobKey = jobKey;
@@ -82,7 +82,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     final Vec[] srcVecs = _in.vecs();
     _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),rowLayout).makeCons(srcVecs.length,0L,_in.domains(),_in.types()));
     _out.delete_and_lock(_jobKey);
-    new RebalanceTask(this,srcVecs).asyncExec(_out);
+    new RebalanceTask(this,srcVecs).dfork(_out);
   }
 
   @Override public void onCompletion(CountedCompleter caller) {

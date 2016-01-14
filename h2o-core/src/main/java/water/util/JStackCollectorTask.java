@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 import water.*;
 
 public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
+  JStackCollectorTask() { super(H2O.MIN_HI_PRIORITY); }
   public static class DStackTrace extends Iced {
     public final String _node;         // Node name
     public final long _time;           // Unix epoch time
@@ -239,6 +240,4 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
     Log.info(traces[0]);
     _traces[H2O.SELF.index()] = new DStackTrace(traces);
   }
-
-  @Override public byte priority() { return H2O.GUI_PRIORITY; }
 }

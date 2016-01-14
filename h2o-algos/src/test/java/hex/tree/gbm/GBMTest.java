@@ -1541,9 +1541,9 @@ public class GBMTest extends TestUtil {
       ksplits = sf._destination_frames;
 
       GBMModel gbm = null;
-      float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
-      float[] col_sample_rates = new float[]{0.4f, 0.6f, 0.8f, 1.0f};
-      float[] col_sample_rates_per_tree = new float[]{0.4f, 0.6f, 0.8f, 1.0f};
+      float[] sample_rates = new float[]{0.2f, 0.4f, 0.8f, 1.0f};
+      float[] col_sample_rates = new float[]{0.4f, 0.8f, 1.0f};
+      float[] col_sample_rates_per_tree = new float[]{0.4f, 0.6f, 1.0f};
 
       Map<Double, Triple<Float>> hm = new TreeMap<>();
       for (float sample_rate : sample_rates) {
@@ -1556,9 +1556,9 @@ public class GBMTest extends TestUtil {
               parms._valid = ksplits[1];
               parms._response_column = "Angaus"; //regression
               parms._seed = 234;
-              parms._min_rows = 1;
-              parms._max_depth = 15;
-              parms._ntrees = 10;
+              parms._min_rows = 2;
+              parms._max_depth = 12;
+              parms._ntrees = 6;
               parms._col_sample_rate = col_sample_rate;
               parms._col_sample_rate_per_tree = col_sample_rate_per_tree;
               parms._sample_rate = sample_rate;

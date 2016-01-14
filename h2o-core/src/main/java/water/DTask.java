@@ -22,12 +22,10 @@ import water.H2O.H2OCountedCompleter;
  *
  */
 public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
-  protected DTask(){}
-
-
-  public DTask(H2OCountedCompleter completer){super(completer);}
-  public DTask(H2OCountedCompleter completer, boolean bumpPriority) { super(completer, bumpPriority); }
-  public DTask(boolean bumpPriority) { super(bumpPriority); }
+  protected DTask(H2OCountedCompleter completer, byte prior){super(completer,prior);}
+  protected DTask(H2OCountedCompleter completer){super(completer);}
+  protected DTask(byte prior) { super(prior); }
+  protected DTask() { super(); }
 
   protected boolean _modifiesInputs = false;
 
