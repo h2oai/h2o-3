@@ -48,11 +48,11 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       DKV.put(frame);
 
       long start = System.currentTimeMillis();
-      try { Thread.sleep(1000); } catch( InterruptedException _ ) { } //to avoid rounding issues with printed time stamp (1 second resolution)
+      try { Thread.sleep(1000); } catch( InterruptedException ex ) { } //to avoid rounding issues with printed time stamp (1 second resolution)
 
       DeepLearningModel model = new DeepLearning(p).trainModel().get();
       long sleepTime = 3; //seconds
-      try { Thread.sleep(sleepTime*1000); } catch( InterruptedException _ ) { }
+      try { Thread.sleep(sleepTime*1000); } catch( InterruptedException ex ) { }
 
       // checkpoint restart after sleep
       DeepLearningParameters p2 = (DeepLearningParameters)p.clone();

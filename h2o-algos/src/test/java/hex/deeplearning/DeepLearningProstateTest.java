@@ -393,7 +393,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             }
                                           }
                                           Log.info("Parameters combination " + count + ": PASS");
-                                        } catch (H2OModelBuilderIllegalArgumentException | IllegalArgumentException _) {
+                                        } catch (H2OModelBuilderIllegalArgumentException | IllegalArgumentException ex) {
                                           throw H2O.fail("should not get here");
                                         } catch (RuntimeException t) {
                                           Assert.assertTrue(t.getMessage().contains("unstable"));
