@@ -459,12 +459,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         double total_gflops = 0;
         for (H2ONode h2o : H2O.CLOUD._memary) {
           HeartBeat hb = h2o._heartbeat;
-          total_gflops += hb._gflops;
+          total_gflops += hb._gflops; //can be NaN if not yet run
         }
         if (mp._single_node_mode) total_gflops /= H2O.CLOUD.size();
-        if (total_gflops == 0) {
+        if (Double.isNaN(total_gflops)) {
           total_gflops = Linpack.run(H2O.SELF._heartbeat._cpus_allowed) * (mp._single_node_mode ? 1 : H2O.CLOUD.size());
         }
+        assert(!Double.isNaN(total_gflops));
 
         final long model_size = model.model_info().size();
         int[] msg_sizes = new int[]{ 1, (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
@@ -489,6 +490,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         // estimate the time for communication (network) and training (compute)
         model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 1e5 /* add 100ms for multi-node MR overhead */) + network_queue_length * microseconds_collective[1];
         double time_per_row_us  = (flops_overhead_per_row * model_size + 10000 * model.model_info().units[0]) / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
+        assert(!Double.isNaN(time_per_row_us));
 
         // compute the optimal number of training rows per iteration
         // fraction := time_comm_us / (time_comm_us + tspi * time_per_row_us)  ==>  tspi = (time_comm_us/fraction - time_comm_us)/time_per_row_us
@@ -507,7 +509,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         if (!mp._quiet_mode) {
           Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
-          Log.info("Estimated compute power : " + (int)total_gflops + " GFlops");
+          Log.info("Estimated compute power : " + Math.round(total_gflops*100)/100 + " GFlops");
           Log.info("Estimated time for comm : " + PrettyPrint.usecs((long) model.time_for_communication_us));
           Log.info("Estimated time per row  : " + ((long)time_per_row_us > 0 ? PrettyPrint.usecs((long) time_per_row_us) : time_per_row_us + " usecs"));
           Log.info("Estimated training speed: " + (int)(1e6/time_per_row_us) + " rows/sec");
