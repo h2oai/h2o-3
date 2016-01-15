@@ -68,11 +68,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  defaults with user args. */
   private static String[] ALGOBASES = new String[0];
   public static String[] algos() { return ALGOBASES; }
+  private static String[] SCHEMAS = new String[0];
   private static ModelBuilder[] BUILDERS = new ModelBuilder[0];
 
   /** One-time start-up only ModelBuilder, endlessly cloned by the GUI for the
    *  default settings. */
-  protected ModelBuilder(P parms, boolean startup_once) {
+  protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
+  protected ModelBuilder(P parms, boolean startup_once, String externalSchemaDirectory ) {
     assert startup_once;
     _job = null;
     _result = null;
@@ -83,8 +85,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       throw H2O.fail("Only called once at startup per ModelBuilder, and "+base+" has already been called");
     ALGOBASES = Arrays.copyOf(ALGOBASES,ALGOBASES.length+1);
     BUILDERS  = Arrays.copyOf(BUILDERS ,BUILDERS .length+1);
+    SCHEMAS   = Arrays.copyOf(SCHEMAS  ,SCHEMAS  .length+1);
     ALGOBASES[ALGOBASES.length-1] = base;
     BUILDERS [BUILDERS .length-1] = this;
+    SCHEMAS  [SCHEMAS  .length-1] = externalSchemaDirectory;
   }
 
   /** gbm -> GBM, deeplearning -> DeepLearning */
@@ -93,6 +97,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public static String javaName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.javaName(); }
   /** gbm -> GBMParameters */
   public static String paramName(String urlName) { return algoName(urlName)+"Parameters"; }
+  /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
+  public static String schemaDirectory(String urlName) { return SCHEMAS[ArrayUtils.find(ALGOBASES,urlName)]; }
 
 
   /** Factory method to create a ModelBuilder instance for given the algo name.

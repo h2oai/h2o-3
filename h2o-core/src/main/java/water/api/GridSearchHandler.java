@@ -53,10 +53,11 @@ public class GridSearchHandler<G extends Grid<MP>,
     String ss[] = route._url_pattern_raw.split("/");
     String algoURLName = ss[3]; // {}/{99}/{Grid}/{gbm}/
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
+    String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
     // Get the latest version of this algo: /99/Grid/gbm  ==> GBMV3
     String algoSchemaName = Schema.schemaClass(version, algoName).getSimpleName(); // GBMV3
     int algoVersion = Integer.valueOf(algoSchemaName.substring(algoSchemaName.lastIndexOf("V")+1)); // '3'
-    String paramSchemaName = "hex.schemas."+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;
+    String paramSchemaName = schemaDir+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;
 
     // Build the Grid Search schema, and fill it from the parameters
     GridSearchSchema gss = new GridSearchSchema();
