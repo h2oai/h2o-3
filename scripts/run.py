@@ -1211,7 +1211,6 @@ class TestRunner:
             cld = self._wait_for_available_cloud(nopass)
             # Check if no cloud was found
             if cld is None:
-                if len(self.clouds) == 0:
                 self._log('NO GOOD CLOUDS REMAINING...')
                 self.terminate()
             available_ip, available_port = cld
