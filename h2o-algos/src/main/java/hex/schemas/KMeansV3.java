@@ -25,7 +25,8 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
         "max_iterations",
         "standardize",
         "seed",
-        "init"
+        "init",
+        "max_runtime_secs"
     };
 
     // Input fields
