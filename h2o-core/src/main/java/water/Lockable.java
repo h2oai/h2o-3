@@ -65,7 +65,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
    *  Throws IAE if the Key is already locked.
    *  @return self, locked by job_key */
   public T delete_and_lock( ) { return delete_and_lock((Key<Job>)null); }
-  public T delete_and_lock( Job job ) { return (T)delete_and_lock(job._key); }
+  public T delete_and_lock( Job job ) { return delete_and_lock(job._key); }
   public T delete_and_lock( Key<Job> job_key ) {
     Lockable old =  write_lock(job_key);
     if( old != null ) {
@@ -151,7 +151,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Atomically set a new version of self, without changing the locking.  Typically used
    *  to upgrade a write-locked Model to a newer version with more training iterations. */
   public T update( ) { return update((Key<Job>)null); }
-  public T update( Job job ) { return (T)update(job._key); }
+  public T update( Job job ) { return update(job._key); }
   public T update( Key<Job> job_key ) { 
     Log.debug("update write-locked "+_key+" by job "+job_key);
     new Update(job_key).invoke(_key); 
@@ -173,7 +173,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   // -----------
   /** Atomically set a new version of self and unlock. */
   public T unlock( ) { return unlock(null,true); }
-  public T unlock( Job job ) { return (T)unlock(job._key,true); }
+  public T unlock( Job job ) { return unlock(job._key,true); }
   public T unlock( Key<Job> job_key ) { return unlock(job_key,true); }
   public T unlock( Key<Job> job_key, boolean exact ) {
     if( _key != null ) {
