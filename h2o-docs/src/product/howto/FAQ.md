@@ -738,6 +738,24 @@ After obtaining your results, click the **Combine predictions with frame** butto
 
 ---
 
+
+**What are these RTMP and py_ temporary Frames? Why are they the same size as my original data?**
+
+No data is copied.
+H2O does a classic copy-on-write optimization.
+That Frame you see - it's nothing more than a thin wrapper over an internal list of columns; the columns are shared to avoid the copying.
+
+The RTMP's now need to be entirely managed by the H2O wrapper - because indeed they are using shared state under the hood.  If you delete one, you probably delete parts of others.  Instead, temp management should be automatic and "good" - as in: it's a bug if you need to delete a temp manually, or if passing around Frames, or adding or removing columns turns into large data copies.
+
+R's GC is now used to remove unused R temps, and when the last use of a shared column goes away, then the H2O wrapper will tell the H2O cluster to remove that no longer needed column.
+
+In other words:
+Don't delete RTMPs, they'll disappear at the next R GC.
+Don't worry about copies (they aren't getting made).
+Do Nothing and All Is Well. 
+
+---
+
 ##Hadoop
 
 

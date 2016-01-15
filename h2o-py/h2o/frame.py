@@ -1420,6 +1420,7 @@ class H2OFrame(object):
     job = {}
     job['job'] = H2OConnection.post_json("MissingInserter", **kwargs)
     H2OJob(job, job_type=("Insert Missing Values")).poll()
+    self._ex._cache.flush()
     return self
 
   def min(self):
