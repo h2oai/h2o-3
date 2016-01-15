@@ -1117,8 +1117,10 @@ final public class H2O {
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
-    @Override       public AutoBuffer write_impl( AutoBuffer ab ) { return ab.put1(_priority); }
-    @Override       public T read_impl( AutoBuffer ab ) { this._priority = ab.get1(); return (T)this; }
+              final        AutoBuffer write_impl3( AutoBuffer ab) { return ab.put1(_priority); }
+    @Override       public AutoBuffer write_impl ( AutoBuffer ab ) { return write_impl3(ab); }
+              final public T read_impl3( AutoBuffer ab ) { this._priority = ab.get1(); return (T)this; }
+    @Override       public T read_impl ( AutoBuffer ab ) { return read_impl3(ab); }
     @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
     @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
   }
