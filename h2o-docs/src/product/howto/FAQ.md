@@ -807,6 +807,30 @@ When you are running H2O on Hadoop, H2O tries to determine the home HDFS directo
 
 ---
 
+**How do I access data in HDFS without launching H2O on Yarn?**
+
+Each h2odriver.jar file is built with a specific Hadoop distribution so in order to have a working HDFS connection download the h2odriver.jar file for your Hadoop distribution.
+
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.2.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
+	    wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
+		
+	**Note**: Enter only one of the above commands.
+
+
+Then run the command to launch the H2O Application in the driver by specifying the classpath:
+
+		unzip h2o-{{project_version}}-*.zip
+		cd h2o-{{project_version}}-*
+		java -cp h2odriver.jar water.H2OApp
+
+---
+
 ##Java
 
 **How do I use H2O with Java?**

@@ -16,7 +16,7 @@ For security reasons, we recommend writing a script to read the access credentia
 
 When running H2O in standalone mode using the simple Java launch command, we can pass in the S3 credentials in two ways. 
 
-- You can pass in credentials in standalone mode the same way as accessing data from HDFS on Hadoop. Create a `core-site.xml` file and pass it in with the flag `-hdfs_config`. For an example `core-site.xml` file, refer to [Core-site.xml](#Example). 
+- You can pass in credentials in standalone mode by creating a `core-site.xml` file and pass it in with the flag `-hdfs_config`. For an example `core-site.xml` file, refer to [Core-site.xml](#Example). 
 
  0. Edit the properties in the core-site.xml file to include your Access Key ID and Access Key as shown in the following example:
    
