@@ -1616,7 +1616,7 @@ class H2OFrame(object):
     """
     return H2OFrame._expr(expr=ExprNode("length", self))
 
-  def table(self, data2=None):
+  def table(self, data2=None, dense=True):
     """Compute the counts of values appearing in a column, or co-occurence counts between
     two columns.
 
@@ -1624,12 +1624,15 @@ class H2OFrame(object):
     ----------
       data2 : H2OFrame
         Default is None, can be an optional single column to aggregate counts by.
+      dense : bool
+        Default is True, for dense representation, which lists only non-zero counts, 1 combination per row. Set to False 
+        to expand counts across all combinations.  
 
     Returns
     -------
       H2OFrame of the counts at each combination of factor levels
     """
-    return H2OFrame._expr(expr=ExprNode("table",self,data2)) if data2 is not None else H2OFrame._expr(expr=ExprNode("table",self))
+    return H2OFrame._expr(expr=ExprNode("table",self,data2,dense)) if data2 is not None else H2OFrame._expr(expr=ExprNode("table",self,dense))
 
   def hist(self, breaks="Sturges", plot=True, **kwargs):
     """Compute a histogram over a numeric column.

@@ -11,7 +11,8 @@ import water.nbhm.NonBlockingHashMapLong;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 
-import java.util.Arrays;
+import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
 // TODO:  Define "table" in terms of "groupby"
@@ -22,23 +23,31 @@ import java.util.concurrent.atomic.AtomicLong;
 /** Variance between columns of a frame */
 class ASTTable extends ASTPrim {
   @Override
-  public String[] args() { return new String[]{"X", "Y"}; }
-  @Override int nargs() { return -1; } // (table X)  or (table X Y)
+  public String[] args() { return new String[]{"X", "Y", "dense"}; }
+  @Override int nargs() { return -1; } // (table X dense)  or (table X Y dense)
   @Override public String str() { return "table"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr1 = stk.track(asts[1].exec(env)).getFrame();
-    Frame fr2 = asts.length==3 ? stk.track(asts[2].exec(env)).getFrame() : null;
+    final boolean dense = asts[asts.length-1].exec(env).getNum()==1;
+    Frame fr2 = asts.length==4 ? stk.track(asts[2].exec(env)).getFrame() : null;
     int ncols = fr1.numCols() + (fr2==null ? 0 : fr2.numCols());
     Vec vec1 = fr1.vec(0);
 
     Val res = fast_table(vec1,ncols,fr1._names[0]);
     if( res != null ) return res;
 
-    if( !(asts.length == 2 || asts.length == 3) || ncols > 2 )
+    if( !(asts.length == 3 || asts.length == 4) || ncols > 2 )
       throw new IllegalArgumentException("table expects one or two columns");
 
     Vec vec2 = fr1.numCols()==2 ? fr1.vec(1) : fr2 != null ? fr2.vec(0) : null;
-    return slow_table(vec1,vec2,fr1._names[0]);
+    int sz = fr1._names.length + (fr2 != null ? fr2._names.length : 0);
+    String[] colnames = new String[sz];
+    int i = 0;
+    for( String name : fr1._names ) colnames[i++] = name;
+    if( fr2 != null ) for( String name : fr2._names ) colnames[i++] = name;
+    
+    
+    return slow_table(vec1,vec2,colnames,dense);
   }
 
   // -------------------------------------------------------------------------
@@ -89,7 +98,7 @@ class ASTTable extends ASTPrim {
   // -------------------------------------------------------------------------
   // Count unique combos in 1 or 2 columns, where the values are not integers,
   // or cover a very large span.
-  private ValFrame slow_table( Vec v1, Vec v2, String colname ) {
+  private ValFrame slow_table( Vec v1, Vec v2, String[] colnames, boolean dense ) {
     // For simplicity, repeat v1 if v2 is missing; this will end up filling in
     // only the diagonal of a 2-D array (in what is otherwise a 1-D array).
     // This should be nearly the same cost as a 1-D array, since everything is
@@ -110,7 +119,7 @@ class ASTTable extends ASTPrim {
       Frame res = new Frame();
       Vec rowlabel = Vec.makeVec(dcols,Vec.VectorGroup.VG_LEN1.addVec());
       rowlabel.setDomain(v1.domain());
-      res.add(colname,rowlabel);
+      res.add(colnames[0],rowlabel);
       long cnts[] = new long[dcols.length];
       for( int col=0; col<dcols.length; col++ ) {
         long lkey = Double.doubleToRawLongBits(dcols[col]);
@@ -124,31 +133,60 @@ class ASTTable extends ASTPrim {
     }
 
     // 2-d table result.
-
-    // Need the row headers as sorted doubles also, but these are scattered
-    // throughout the nested tables.  Fold 'em into 1 table.
-    NonBlockingHashMapLong<AtomicLong> rows = new NonBlockingHashMapLong<>();
-    for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); )
-      rows.putAll(sc._col0s.get(i.nextLong()));
-    double drows[] = collectDomain(rows);
-
-    // Now walk the columns one by one, building a Vec per column, building a
-    // Frame result.  Rowlabel for first column.
     Frame res = new Frame();
-    Vec rowlabel = Vec.makeVec(drows,Vec.VectorGroup.VG_LEN1.addVec());
-    rowlabel.setDomain(v1.domain());
-    res.add(colname,rowlabel);
-    long cnts[] = new long[drows.length];
-    for( int col=0; col<dcols.length; col++ ) {
-      NonBlockingHashMapLong<AtomicLong> colx = sc._col0s.get(Double.doubleToRawLongBits(dcols[col]));
-      for( int row = 0; row<drows.length; row++ ) {
-        AtomicLong al = colx.get(Double.doubleToRawLongBits(drows[row]));
-        cnts[row] = al==null ? 0 : al.get();
+    if (!dense) {
+      // Need the row headers as sorted doubles also, but these are scattered
+      // throughout the nested tables.  Fold 'em into 1 table.
+      NonBlockingHashMapLong<AtomicLong> rows = new NonBlockingHashMapLong<>();
+      for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); )
+        rows.putAll(sc._col0s.get(i.nextLong()));
+      double drows[] = collectDomain(rows);
+  
+      // Now walk the columns one by one, building a Vec per column, building a
+      // Frame result.  Rowlabel for first column.
+      
+      Vec rowlabel = Vec.makeVec(drows,Vec.VectorGroup.VG_LEN1.addVec());
+      rowlabel.setDomain(v1.domain());
+      res.add(colnames[0],rowlabel);
+      long cnts[] = new long[drows.length];
+      for (int col = 0; col < dcols.length; col++) {
+        NonBlockingHashMapLong<AtomicLong> colx = sc._col0s.get(Double.doubleToRawLongBits(dcols[col]));
+        for (int row = 0; row < drows.length; row++) {
+          AtomicLong al = colx.get(Double.doubleToRawLongBits(drows[row]));
+          cnts[row] = al == null ? 0 : al.get();
+        }
+        Vec vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
+        res.add(vx.isCategorical() ? vx.domain()[col] : Double.toString(dcols[col]), vec);
       }
-      Vec vec = Vec.makeVec(cnts,null,Vec.VectorGroup.VG_LEN1.addVec());
-      res.add(vx.isCategorical() ? vx.domain()[col] : Double.toString(dcols[col]),vec);
-    }
+    } else {
+      int x = 0;
+      int sz = 0;
+      for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); ) {
+        sz += sc._col0s.get(i.nextLong()).size();
+      }
+      long cnts[] = new long[sz];
+      double[] left_categ = new double[sz];
+      double[] right_categ = new double[sz];
 
+      for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); ) {
+        long l = i.nextLong();
+        for (Entry<Long, AtomicLong> entry : sc._col0s.get(l).entrySet()) {
+          left_categ[x] = Double.longBitsToDouble(entry.getKey());
+          right_categ[x] = Double.longBitsToDouble(l);
+          cnts[x] = (entry.getValue()).get();
+          x++;
+        }
+      }
+      
+      Vec vec = Vec.makeVec(left_categ, Vec.VectorGroup.VG_LEN1.addVec());
+      if( v1.isCategorical() ) vec.setDomain(v1.domain());
+      res.add(colnames[0], vec);
+      vec = Vec.makeVec(right_categ, Vec.VectorGroup.VG_LEN1.addVec());
+      if( vx.isCategorical() ) vec.setDomain(vx.domain());
+      res.add(colnames[1], vec);
+      vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
+      res.add("Counts", vec);
+    }
     return new ValFrame(res);
   }
 
