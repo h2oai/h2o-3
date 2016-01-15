@@ -17,7 +17,7 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp:2.0.0'
 }
 
-def runner = new File("$rootDir/h2o-r/tests/run.py").canonicalPath
+def runner = new File("$rootDir/scripts/run.py").canonicalPath
 
 // REST API Documentation generator
 // --------------------------------
