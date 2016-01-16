@@ -1,4 +1,4 @@
-asdfasdfasdffrom future import standard_library
+from future import standard_library
 standard_library.install_aliases()
 import sys
 sys.path.insert(1,"../../")
