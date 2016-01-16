@@ -1,2 +1,0 @@
-runit_deeplearning_MNIST_checkpoint_large.R
-runit_deeplearning_MNIST_large.R 
