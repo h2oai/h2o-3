@@ -39,13 +39,13 @@ public class Merge {
   }*/
 
   // single-threaded driver logic
-  static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft) {
+  static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft, int[][] id_maps) {
 
     // each of those launches an MRTask
     System.out.println("\nCreating left index ...");
     long t0 = System.nanoTime();
     RadixOrder leftIndex;
-    H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols));
+    H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols, null));
     left.join(); // Running 3 consecutive times on an idle cluster showed that running left and right in parallel was
                  // a little slower (97s) than one by one (89s).  TODO: retest in future
     System.out.println("***\n*** Creating left index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
@@ -53,7 +53,7 @@ public class Merge {
     System.out.println("\nCreating right index ...");
     t0 = System.nanoTime();
     RadixOrder rightIndex;
-    H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols));
+    H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols, id_maps));
     right.join();
     System.out.println("***\n*** Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
 

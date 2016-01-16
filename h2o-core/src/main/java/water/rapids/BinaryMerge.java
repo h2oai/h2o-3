@@ -158,11 +158,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     byte xByte=0, yByte=0;
     // TODO: switch to use keycmp_sameShape() for common case of all(leftFieldSizes == rightFieldSizes), although, skipping to current column will
     //        help save repeating redundant work and saving the outer for() loop and one if() may not be worth it.
-    int i=0, xlen=0, ylen=0;
-
-    while (i<_numJoinCols && xlen==0) {    // TO DO: pass i in to start at a later key column, when known
-      xlen = _leftFieldSizes[i];
-      ylen = _rightFieldSizes[i];
+    int i=0;
+    while (i<_numJoinCols && xByte==yByte) {    // TO DO: pass i in to start at a later key column, when known
+      int xlen = _leftFieldSizes[i];
+      int ylen = _rightFieldSizes[i];
       if (xlen!=ylen) {
         while (xlen>ylen && xbatch[xoff]==0) { xoff++; xlen--; }
         while (ylen>xlen && ybatch[yoff]==0) { yoff++; ylen--; }
@@ -296,7 +295,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       if (_perNodeNumRightRowsToFetch[i] > 0) {
         int nbatch = (int) ((_perNodeNumRightRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
         int lastSize = (int) (_perNodeNumRightRowsToFetch[i] - (nbatch - 1) * batchSize);
-        System.out.println("Sending " +nbatch+ " right batches to node " +i+ " from node " +thisNode+ " for rightMSB " + _rightMSB);
+        System.out.println("Sending " +_perNodeNumRightRowsToFetch[i]+ " row requests to node " +i+ " in " +nbatch+ " batches from node " +thisNode+ " for rightMSB " +_rightMSB);
         assert nbatch >= 1;
         assert lastSize > 0;
         perNodeRightRows[i] = new long[nbatch][];
@@ -312,7 +311,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       if (_perNodeNumLeftRowsToFetch[i] > 0) {
         int nbatch = (int) ((_perNodeNumLeftRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
         int lastSize = (int) (_perNodeNumLeftRowsToFetch[i] - (nbatch - 1) * batchSize);
-        System.out.println("Sending " +nbatch+ " left batches to node " +i+ " from node " +thisNode+ " for leftMSB " + _leftMSB);
+        System.out.println("Sending " +_perNodeNumLeftRowsToFetch[i]+ " row requests to node " +i+ " in " +nbatch+ " batches from node " +thisNode+ " for leftMSB " + _leftMSB);
         assert nbatch >= 1;
         assert lastSize > 0;
         perNodeLeftRows[i] = new long[nbatch][];
