@@ -1549,7 +1549,7 @@ class TestRunner:
                         self.tests_running.remove(test)
                         self._report_test_result(test, nopass)
                         return (test.get_ip(), test.get_port())
-            else if len(self.suspicious_clouds) == 0:
+            elif len(self.suspicious_clouds) == 0:
                 self._log('WAITING FOR ONE TEST TO COMPLETE, BUT THERE ARE NO RUNNING TESTS. EXITING...')
                 sys.exit(1)
             else:
