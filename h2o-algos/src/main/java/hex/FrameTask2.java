@@ -1,11 +1,8 @@
 package hex;
 
 import hex.DataInfo.Row;
-import water.DKV;
+import water.*;
 import water.H2O.H2OCountedCompleter;
-import water.Job;
-import water.Key;
-import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.*;
 import water.util.FrameUtils;
@@ -47,7 +44,7 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
 
 
   public boolean handlesSparseData(){return false;}
-  abstract protected void processRow(Row r);
+  protected abstract void processRow(Row r);
 
   @Override
   public void map(Chunk[] chks) {

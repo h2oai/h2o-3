@@ -393,7 +393,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
       }
 //      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
-    DKV.put(dataInfo);
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
     actual_best_model_key = cp.actual_best_model_key;
     time_of_start_ms = cp.time_of_start_ms;
@@ -436,7 +435,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
     _output._domains= train.domains();
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
-    DKV.put(dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, nClasses, train, valid);
     model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
     actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
@@ -1078,7 +1076,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningParam
         if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
       }
     }
-    DKV.remove(model_info().data_info()._key);
     deleteElasticAverageModels();
     super.delete();
   }

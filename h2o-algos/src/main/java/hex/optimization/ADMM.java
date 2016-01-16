@@ -81,12 +81,9 @@ public class ADMM {
       return gerr;
     }
 
-
-
-
-
     public boolean solve(ProximalSolver solver, double[] z, double l1pen, boolean hasIntercept, double[] lb, double[] ub) {
       gerr = Double.POSITIVE_INFINITY;
+      iter = 0;
       if (l1pen == 0 && lb == null && ub == null) {
         solver.solve(null, z);
         return true;
@@ -100,8 +97,9 @@ public class ADMM {
       double [] x = z.clone();
       double [] beta_given = MemoryManager.malloc8d(N);
       double [] kappa = MemoryManager.malloc8d(rho.length);
+      int hasIcpt = hasIntercept?1:0;
       if(l1pen > 0)
-        for(int i = 0; i < N-1; ++i)
+        for(int i = 0; i < N-hasIcpt; ++i)
           kappa[i] = rho[i] != 0?l1pen/rho[i]:0;
       int i;
       double orlx = 1.0; // over-relaxation
@@ -111,7 +109,7 @@ public class ADMM {
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
         boolean allzeros = true;
-        for (int j = 0; j < N - 1; ++j) {
+        for (int j = 0; j < N - hasIcpt; ++j) {
           double xj = x[j];
           double zjold = z[j];
           double x_hat = xj * orlx + (1 - orlx) * zjold;

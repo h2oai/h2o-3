@@ -307,8 +307,7 @@ public class GLMBasicTestRegression extends TestUtil {
           assertEquals(res_dof, GLMTest.resDOF(model), 0);
           // test scoring
           scoreTrain = model.score(_earinf);
-
-          model.testJavaScoring(_earinf,scoreTrain,1e-8);
+          assertTrue(model.testJavaScoring(_earinf,scoreTrain,1e-8));
           hex.ModelMetricsRegressionGLM mmTrain = (ModelMetricsRegressionGLM) hex.ModelMetricsRegression.getFromDKV(model, _earinf);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(GLMTest.residualDeviance(model), mmTrain._resDev, 1e-8);
@@ -429,11 +428,13 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._alpha = new double[]{0};
     parms._response_column = "Infections";
     parms._compute_p_values = true;
+    parms._objective_epsilon = 0;
 
     GLM job = new GLM(Key.make("prostate_model"), "glm test p-values", parms);
     GLMModel model = null;
     try {
       model = job.trainModel().get();
+      System.out.println(model.coefficients());
       String[] names_expected = new String[]{"Intercept", "Swimmer.Occas", "Location.NonBeach", "Age.20-24", "Age.25-29", "Sex.Male"};
       String[] names_actual = model._output.coefficientNames();
       HashMap<String, Integer> coefMap = new HashMap<>();

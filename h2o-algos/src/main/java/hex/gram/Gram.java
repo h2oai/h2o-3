@@ -50,12 +50,9 @@ public final class Gram extends Iced<Gram> {
   }
 
   public Gram(double[][] xx) {
-    this(xx.length, 0, xx.length, 0, false);
-    for( int i = 0; i < _xx.length; ++i ) {
-      for( int j = 0; j < _xx[i].length; ++j ) {
-        _xx[i][j] = xx[i][j];
-      }
-    }
+    _diagN = 0;
+    _xx = xx;
+    _denseN = _fullN = xx.length;
   }
 
   public void dropIntercept(){

@@ -31,6 +31,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** All the parameters required to build the model. */
   public P _parms;
 
+
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to an Categorical, etc.  */

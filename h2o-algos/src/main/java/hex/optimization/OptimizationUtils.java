@@ -30,9 +30,6 @@ public class OptimizationUtils {
       return " objVal = " + _objVal + ", " + Arrays.toString(_gradient);
     }
 
-    public boolean hasNaNsOrInfs() {
-      return Double.isNaN(_objVal) || ArrayUtils.hasNaNsOrInfs(_gradient);
-    }
   }
 
   /**
@@ -45,47 +42,62 @@ public class OptimizationUtils {
      * @param beta
      * @return
      */
-    public abstract GradientInfo  getGradient(double [] beta);
+    GradientInfo getGradient(double [] beta);
+    GradientInfo getObjective(double [] beta);
   }
 
 
   public interface LineSearchSolver {
-    public boolean evaluate(GradientSolver slvr, GradientInfo ginfo, double [] betaStart, double [] direction, final double minStep, final double maxStep, int maxfev);
-    public double step();
-    public GradientInfo ginfo();
-    public LineSearchSolver setInitialStep(double s);
-    public int nfeval();
+    boolean evaluate(double [] direction, final double minStep, final double maxStep, int maxfev);
+    double step();
+    GradientInfo ginfo();
+    LineSearchSolver setInitialStep(double s);
+    int nfeval();
+    double getObj();
+    double[] getX();
   }
 
-  public static final class BacktrackingLS implements LineSearchSolver {
-    double [] _beta;
+  public static final class SimpleBacktrackingLS implements LineSearchSolver {
+    private double [] _beta;
     final double _stepDec;
-    final double _ftol = .1;
-    final double _gtol = .9;
-    double _step;
+    private double _step;
+    private final GradientSolver _gslvr;
+    private GradientInfo _ginfo; // gradient info excluding l1 penalty
+    private double _objVal; // objective including l1 penalty
+    final double _l1pen;
 
-    public BacktrackingLS(double stepDec) {_stepDec = stepDec;}
+    public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen) {this(gslvr, betaStart, l1pen, gslvr.getObjective(betaStart),.5);}
+    public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen, GradientInfo ginfo, double stepDec) {
+      _gslvr = gslvr;
+      _stepDec = stepDec;
+      _beta = betaStart;
+      _ginfo = ginfo;
+      _l1pen = l1pen;
+      _objVal = _ginfo._objVal + _l1pen * ArrayUtils.l1norm(_beta,true);
+    }
     public int nfeval() {return -1;}
+
+    @Override
+    public double getObj() {return _objVal;}
+
+    @Override
+    public double[] getX() {return _beta;}
 
     public LineSearchSolver setInitialStep(double s){
       return this;
     }
-    GradientInfo _ginfo;
+
     @Override
-    public boolean evaluate(GradientSolver slvr, GradientInfo ginfo, double[] betaStart, double[] direction, double minStep, double maxStep, int maxfev) {
-      if(_beta == null)
-        _beta = new double[betaStart.length];
-      double dg = ArrayUtils.innerProduct(ginfo._gradient,direction);
-      double fhat = _ftol*dg;
-      double ghat = -_gtol*dg;
-      assert fhat < 0;
-      for(double step = maxStep; step >= minStep && --maxfev >= 0; step *= _stepDec) {
-        for(int i = 0; i < betaStart.length; ++i)
-          _beta[i] = betaStart[i] + step * direction[i];
-        GradientInfo newGinfo = slvr.getGradient(_beta);
-        double dgp = Math.abs(ArrayUtils.innerProduct(newGinfo._gradient,direction));
-        if(newGinfo._objVal < ginfo._objVal + step*fhat && Math.abs(ArrayUtils.innerProduct(newGinfo._gradient,direction)) < ghat) {
-          _ginfo = newGinfo;
+    public boolean evaluate(double[] direction, double minStep, double maxStep, int maxfev) {
+      double step = 1;
+      double [] newBeta = direction.clone();
+      for(int i = 0; i < maxfev && step >= minStep; ++i, step*= _stepDec) {
+        GradientInfo ginfo = _gslvr.getObjective(ArrayUtils.wadd(_beta,direction,newBeta,step));
+        double objVal = ginfo._objVal + _l1pen * ArrayUtils.l1norm(_beta,true);
+        if(objVal < _objVal){
+          _ginfo = ginfo;
+          _objVal = objVal;
+          _beta = newBeta;
           _step = step;
           return true;
         }
@@ -102,34 +114,34 @@ public class OptimizationUtils {
     public GradientInfo ginfo() {
       return _ginfo;
     }
-
   }
+
+
+
   public static final class MoreThuente implements LineSearchSolver {
     double _stMin, _stMax;
 
     double _initialStep = 1;
     double _minRelativeImprovement = 1e-8;
+    private final GradientSolver _gslvr;
+    private double [] _beta;
 
-    public MoreThuente(){}
-    public MoreThuente(double ftol, double gtol, double xtol) {
+
+    public MoreThuente(GradientSolver gslvr, double [] betaStart){
+      this(gslvr,betaStart,gslvr.getGradient(betaStart),.1,.1,1e-2);
+    }
+    public MoreThuente(GradientSolver gslvr, double [] betaStart, GradientInfo ginfo){
+      this(gslvr,betaStart,ginfo,.1,.1,1e-2);
+    }
+    public MoreThuente(GradientSolver gslvr, double [] betaStart, GradientInfo ginfo, double ftol, double gtol, double xtol){
+      _gslvr = gslvr;
+      _beta = betaStart;
+      _ginfox = ginfo;
+      if(ginfo._gradient == null)
+        throw new IllegalArgumentException("GradientInfo for MoreThuente line search solver must include gradient");
       _ftol = ftol;
       _gtol = gtol;
       _xtol = xtol;
-    }
-
-    public MoreThuente setXtol(double xtol) {
-      _xtol = xtol;
-      return this;
-    }
-
-    public MoreThuente setFtol(double ftol) {
-      _ftol = ftol;
-      return this;
-    }
-
-    public MoreThuente setGtol(double gtol) {
-      _gtol = gtol;
-      return this;
     }
 
     public MoreThuente setInitialStep(double t) {_initialStep = t; return this;}
@@ -138,6 +150,12 @@ public class OptimizationUtils {
     public int nfeval() {
       return _iter;
     }
+
+    @Override
+    public double getObj() {return ginfo()._objVal;}
+
+    @Override
+    public double[] getX() { return _beta;}
 
     double _xtol = 1e-2;
     double _ftol = .1; // .2/.25 works
@@ -284,8 +302,9 @@ public class OptimizationUtils {
       return "MoreThuente line search, iter = " + _iter + ", status = " + messages[_returnStatus] + ", step = " + _stx + ", I = " + "[" + _stMin + ", " + _stMax + "], grad = " + _dgx + ", bestObj = "  + _fvx;
     }
     private int _iter;
-    private double [] _beta;
-    public boolean evaluate(GradientSolver slvr, final GradientInfo ginfo, double [] betaStart, double [] direction, final double minStep, double maxStep, int maxfev) {
+    @Override
+    public boolean evaluate(double [] direction, final double minStep, double maxStep, int maxfev) {
+      double oldObjval = _ginfox._objVal;
       double step = _initialStep;
       _bound = false;
       _brackt = false;
@@ -294,18 +313,16 @@ public class OptimizationUtils {
       _betGradient = null;
       _bestPsiVal = Double.POSITIVE_INFINITY;
       _bestStep = 0;
-      double maxObj = ginfo._objVal - _minRelativeImprovement*ginfo._objVal;
-      final double dgInit = ArrayUtils.innerProduct(ginfo._gradient, direction);
+      double maxObj = _ginfox._objVal - _minRelativeImprovement*_ginfox._objVal;
+      final double dgInit = ArrayUtils.innerProduct(_ginfox._gradient, direction);
       final double dgtest = dgInit * _ftol;
+      assert dgtest < 0:"invalid gradient/direction, got positive differential " + dgtest;
       if(dgtest >= 0) return false;
-//      assert dgtest < 0:"invalid gradient/direction, got positive differential " + dgtest;
-      if(_beta == null)_beta = new double[betaStart.length];
+      double [] beta = new double[_beta.length];
       double width = maxStep - minStep;
       double oldWidth = 2*width;
-
       boolean stage1 = true;
-      _ginfox = ginfo;
-      _fvx = _fvy = ginfo._objVal;
+      _fvx = _fvy = _ginfox._objVal;
       _dgx = _dgy = dgInit;
       _iter = 0;
 
@@ -317,14 +334,13 @@ public class OptimizationUtils {
           _stMin = _stx;
           _stMax = step + _xtrapf * (step - _stx);
         }
-
         step = Math.min(step,maxStep);
         step = Math.max(step,minStep);
-        double maxFval = ginfo._objVal + step * dgtest;
+        double maxFval = oldObjval + step * dgtest;
 
-        for (int i = 0; i < _beta.length; ++i)
-          _beta[i] = betaStart[i] + step * direction[i];
-        GradientInfo newGinfo = slvr.getGradient(_beta);
+        for (int i = 0; i < beta.length; ++i)
+          beta[i] = _beta[i] + step * direction[i];
+        GradientInfo newGinfo = _gslvr.getGradient(beta);
         if(newGinfo._objVal < maxObj && (_betGradient == null || (newGinfo._objVal - maxFval) < _bestPsiVal)){
           _bestPsiVal = (newGinfo._objVal - maxFval);
           _betGradient = newGinfo;
@@ -401,7 +417,8 @@ public class OptimizationUtils {
         }
         step = nextStep;
       }
-      boolean succ = _ginfox._objVal < ginfo._objVal;
+      boolean succ = _ginfox._objVal < oldObjval;
+      if(succ) _beta = beta;
       return succ;
     }
 

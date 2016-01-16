@@ -180,6 +180,13 @@ public class ArrayUtils {
     return a;
   }
 
+  public static double[] wadd(double[] a, double[] b, double [] c, double w) {
+    if( a==null ) return b;
+    for(int i = 0; i < a.length; i++ )
+      c[i] = a[i] + w*b[i];
+    return c;
+  }
+
   // a <- b + c
   public static double[] add(double[] a, double[] b, double [] c) {
     for(int i = 0; i < a.length; i++ )
@@ -1004,6 +1011,13 @@ public class ArrayUtils {
     return res;
   }
 
+  public static double [] expandAndScatter(double [] ary, int N, int [] ids) {
+    double [] res = MemoryManager.malloc8d(N);
+    int j = 0;
+    for(int i:ids) res[i] = ary[j++];
+    return res;
+  }
+
 
   /**
    * Sort an integer array of indices based on values
@@ -1043,9 +1057,10 @@ public class ArrayUtils {
     subtract(a,b,c);
     return c;
   }
-  public static void subtract (double [] a, double [] b, double [] c) {
+  public static double[] subtract (double [] a, double [] b, double [] c) {
     for(int i = 0; i < a.length; ++i)
       c[i] = a[i] - b[i];
+    return c;
   }
 
   /** Flatenize given array.
@@ -1067,6 +1082,17 @@ public class ArrayUtils {
       j += arr[i].length;
     }
     return result;
+  }
+
+  public static double [][] convertTo2DMatrix(double [] x, int N) {
+    assert x.length % N == 0;
+    int len = x.length/N;
+    double [][] res = new double[len][];
+    for(int i = 0; i < len; ++i) {
+      res[i] = MemoryManager.malloc8d(N);
+      System.arraycopy(x,i*N,res[i],0,N);
+    }
+    return res;
   }
 
   public static double[] flat(double[][] arr) {
@@ -1201,4 +1227,11 @@ public class ArrayUtils {
     return res;
   }
 
+  public static boolean hasNzs(double[] x) {
+    if(x == null)
+      return false;
+    for(double d:x)
+      if(d != 0) return true;
+    return false;
+  }
 }
