@@ -54,6 +54,8 @@
 #'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop)
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -86,7 +88,8 @@ h2o.randomForest <- function(x, y, training_frame,
                              score_each_iteration = FALSE,
                              stopping_rounds=0,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
-                             stopping_tolerance=1e-3
+                             stopping_tolerance=1e-3,
+                             max_runtime_secs=0
                              )
 {
   # Training_frame and validation_frame may be a key or a H2OFrame object
@@ -160,6 +163,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if(!missing(stopping_rounds)) parms$stopping_rounds <- stopping_rounds
   if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
+  if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
 
   .h2o.modelJob('drf', parms)
 }

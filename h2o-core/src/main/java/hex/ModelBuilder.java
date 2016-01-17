@@ -874,6 +874,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
     }
+    if (_parms._max_runtime_secs < 0) {
+      error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
+    }
   }
   
   /**

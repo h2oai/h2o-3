@@ -896,6 +896,7 @@ class TestRunner:
         self.on_hadoop = on_hadoop
         self.perf = perf
         self.perf_file = None
+        self.exclude_list = []
 
         if (use_cloud):
             node_num = 0
@@ -973,6 +974,35 @@ class TestRunner:
         except IOError as e:
             print("")
             print("ERROR: Failure reading test list: " + test_list_file)
+            print("       (errno {0}): {1}".format(e.errno, e.strerror))
+            print("")
+            sys.exit(1)
+
+    def read_exclude_list_file(self, exclude_list_file):
+        """
+        Read in a file of excluded tests line by line.  Each line in the file is a test
+        to NOT add to the test run.
+
+        @param exclude_list_file: Filesystem path to a file with a list of tests to NOT run.
+        @return: none
+        """
+        try:
+            f = open(exclude_list_file, "r")
+            s = f.readline()
+            while (len(s) != 0):
+                stripped = s.strip()
+                if (len(stripped) == 0):
+                    s = f.readline()
+                    continue
+                if (stripped.startswith("#")):
+                    s = f.readline()
+                    continue
+                self.exclude_list.append(stripped)
+                s = f.readline()
+            f.close()
+        except IOError as e:
+            print("")
+            print("ERROR: Failure reading exclude list: " + exclude_list_file)
             print("       (errno {0}): {1}".format(e.errno, e.strerror))
             print("")
             sys.exit(1)
@@ -1105,8 +1135,11 @@ class TestRunner:
         test_short_dir = self._calc_test_short_dir(test_path)
 
         test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.hadoop_namenode, self.on_hadoop)
-        self.tests.append(test)
-        self.tests_not_started.append(test)
+        if (test_path.split('/')[-1] in self.exclude_list):
+            print("INFO: Skipping {0} because it was placed on the exclude list.".format(test_path))
+        else:
+            self.tests.append(test)
+            self.tests_not_started.append(test)
 
     def start_clouds(self):
         """
@@ -1656,6 +1689,7 @@ g_wipe_test_state = False
 g_wipe_output_dir = False
 g_test_to_run = None
 g_test_list_file = None
+g_exclude_list_file = None
 g_test_group = None
 g_run_small = True
 g_run_medium = True
@@ -1757,6 +1791,7 @@ def usage():
     print("")
     print("    --testlist       A file containing a list of tests to run (for example the")
     print("                     'failed.txt' file from the output directory).")
+    print("    --excludelist    A file containing a list of tests to NOT run.")
     print("")
     print("    --testgroup      Test a group of tests by function:")
     print("                     pca, glm, kmeans, gbm, rf, deeplearning, algos, golden, munging")
@@ -1867,6 +1902,7 @@ def parse_args(argv):
     global g_wipe_output_dir
     global g_test_to_run
     global g_test_list_file
+    global g_exclude_list_file
     global g_test_group
     global g_run_small
     global g_run_medium
@@ -1950,6 +1986,11 @@ def parse_args(argv):
             if (i > len(argv)):
                 usage()
             g_test_list_file = argv[i]
+        elif (s == "--excludelist"):
+            i += 1
+            if (i > len(argv)):
+                usage()
+            g_exclude_list_file = argv[i]
         elif (s == "--testgroup"):
             i += 1
             if (i > len(argv)):
@@ -2126,6 +2167,7 @@ def main(argv):
     global g_failed_output_dir
     global g_test_to_run
     global g_test_list_file
+    global g_exclude_list_file
     global g_test_group
     global g_runner
     global g_nopass
@@ -2192,6 +2234,9 @@ def main(argv):
                           testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf)
 
     # Build test list.
+    if (g_exclude_list_file is not None):
+        g_runner.read_exclude_list_file(g_exclude_list_file)
+
     if (g_test_to_run is not None):
         g_runner.add_test(g_test_to_run)
     elif (g_test_list_file is not None):

@@ -174,7 +174,7 @@ public class ASTMerge extends ASTPrim {
   private ValFrame sortingMerge( Frame left, Frame right, boolean allLeft, boolean allRite, int ncols, int[][] id_maps) {
     int cols[] = new int[ncols];
     for (int i=0; i<ncols; i++) cols[i] = i;
-    return new ValFrame(Merge.merge(left, right, cols, cols, allLeft));
+    return new ValFrame(Merge.merge(left, right, cols, cols, allLeft, id_maps));
   }
 
   // One Row object per row of the hashed dataset, so kept as small as

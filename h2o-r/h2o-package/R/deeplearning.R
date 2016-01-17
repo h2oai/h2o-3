@@ -73,6 +73,8 @@
 #'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop)
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @param quiet_mode Enable quiet mode for less output to standard output
 #' @param max_confusion_matrix_size Max. size (number of classes) for confusion matrices to be shown
 #' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ratio computation(for
@@ -170,6 +172,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              stopping_rounds=5,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
                              stopping_tolerance=0,
+                             max_runtime_secs=0,
                              quiet_mode,
                              max_confusion_matrix_size,
                              max_hit_ratio_k,
@@ -308,6 +311,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if(!missing(stopping_rounds)) parms$stopping_rounds <- stopping_rounds
   if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
+  if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(quiet_mode))
     parms$quiet_mode <- quiet_mode
   if(!missing(max_confusion_matrix_size))
