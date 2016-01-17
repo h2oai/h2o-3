@@ -2747,3 +2747,17 @@ h2o.trim <- function(x) .newExpr("trim", x)
 #' @param x The column whose string lengths will be returned.
 #' @export
 h2o.nchar <- function(x) .newExpr("length", x)
+
+#'
+#' Strip set from left
+#'
+#' @param x The column whose strings should be lstrip-ed.
+#' @export
+h2o.lstrip <- function(x, pattern = " ") .newExpr("lstrip", x, .quote(set))
+
+#'
+#' Strip set from right
+#'
+#' @param x The column whose strings should be lstrip-ed.
+#' @export
+h2o.rstrip <- function(x, pattern = " ") .newExpr("rstrip", x, .quote(set))

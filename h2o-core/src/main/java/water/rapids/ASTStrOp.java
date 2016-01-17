@@ -665,3 +665,117 @@ class ASTStrLength extends ASTPrim {
     }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
   }
 }
+
+/**
+ * Accepts a frame with a single string column.
+ * Returns a new string column containing the lstripped versions of the strings in the target column.
+ * Stripping removes all characters in the strings for the target columns that match the user provided set
+ */
+class ASTLStrip extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary", "set"}; }
+  @Override int nargs() { return 1+2; }
+  @Override public String str() { return "lstrip"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    String set = asts[2].exec(env).getStr();
+
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("trim() requires a string or categorical column. "
+                +"Received "+fr.anyVec().get_type_str()
+                +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = trimCategoricalCol(v);
+      else
+        nvs[i] = trimStringCol(v, set);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
+  }
+
+  // FIXME: this should resolve any categoricals that now have the same value after the trim
+  private Vec trimCategoricalCol(Vec vec) {
+    String[] doms = vec.domain();
+    for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
+    Vec v = vec.makeCopy(doms);
+    return v;
+  }
+
+  private Vec trimStringCol(Vec vec, String set) {
+    final String charSet = set;
+    return new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if ( chk instanceof C0DChunk ) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+          // Java String.trim() only operates on ASCII whitespace
+          // so UTF-8 safe methods are not needed here.
+        else ((CStrChunk)chk).asciiLStrip(newChk, charSet);
+      }
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+  }
+}
+
+/**
+ * Accepts a frame with a single string column.
+ * Returns a new string column containing the rstripped versions of the strings in the target column.
+ * Stripping removes all characters in the strings for the target columns that match the user provided set
+ */
+class ASTRStrip extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary", "set"}; }
+  @Override int nargs() { return 1+2; }
+  @Override public String str() { return "rstrip"; }
+  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    String set = asts[2].exec(env).getStr();
+
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("trim() requires a string or categorical column. "
+                +"Received "+fr.anyVec().get_type_str()
+                +". Please convert column to a string or categorical first.");
+
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for(Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = trimCategoricalCol(v);
+      else
+        nvs[i] = trimStringCol(v, set);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
+  }
+
+  // FIXME: this should resolve any categoricals that now have the same value after the trim
+  private Vec trimCategoricalCol(Vec vec) {
+    String[] doms = vec.domain();
+    for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
+    Vec v = vec.makeCopy(doms);
+    return v;
+  }
+
+  private Vec trimStringCol(Vec vec, String set) {
+    final String charSet = set;
+    return new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if ( chk instanceof C0DChunk ) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+          // Java String.trim() only operates on ASCII whitespace
+          // so UTF-8 safe methods are not needed here.
+        else ((CStrChunk)chk).asciiRStrip(newChk, charSet);
+      }
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+  }
+}

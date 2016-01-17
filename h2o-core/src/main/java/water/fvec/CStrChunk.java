@@ -4,6 +4,8 @@ import water.*;
 import water.util.UnsafeUtils;
 import water.parser.BufferedString;
 
+import java.nio.charset.Charset;
+
 public class CStrChunk extends Chunk {
   static final int NA = -1;
   static protected final int _OFF=4+1;
@@ -149,6 +151,65 @@ public class CStrChunk extends Chunk {
       }
     }
     return nc;
+  }
+
+  /**
+   * Optimized lstrip() & rstrip() methods to operate across the entire CStrChunk buffer in one pass.
+   * This mimics Java String.trim() by only considering characters of value
+   * <code>'&#92;u0020'</code> or less as whitespace to be trimmed. This means that like
+   * Java's String.trim() it ignores 16 of the 17 characters regarded as a space in UTF.
+   *
+   * NewChunk is the same size as the original, despite trimming.
+   *
+   * @param nc NewChunk to be filled with strip version of strings in this chunk
+   * @return Filled NewChunk
+   */
+  public NewChunk asciiLStrip(NewChunk nc, String set) {
+    // copy existing data
+    nc = this.inflate_impl(nc);
+    //update offsets and byte array
+    for(int i=0; i < _len; i++) {
+      int j = 0;
+      int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      if (off != NA) {
+        while( intersects(_mem[_valstart + off + j], set) ) j++;
+        if (j > 0) nc._is[i] = off + j;
+      }
+    }
+    return nc;
+  }
+
+  public NewChunk asciiRStrip(NewChunk nc, String set) {
+    // copy existing data
+    nc = this.inflate_impl(nc);
+    //update offsets and byte array
+    for(int i=0; i < _len; i++) {
+      int j = 0;
+      int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      if (off != NA) {
+        while( _mem[_valstart+off+j] != 0 ) j++; //Find end
+        j--;
+        while( intersects(_mem[_valstart + off + j], set) ) { // March back while char in set
+          nc._ss[off+j] = 0; //Set new end
+          j--;
+        }
+      }
+    }
+    return nc;
+  }
+
+  /**
+   * Does c intersect w/ set?
+   * @param c char to look for
+   * @param set set to look in
+   * @return true if c is in set
+   */
+  private boolean intersects(byte c, String set) {
+    byte[] b = set.getBytes(Charset.forName("UTF-8"));
+    for (int i=0; i < set.length(); i++)
+      if (c == b[i])
+        return true;
+    return false;
   }
 
   /**

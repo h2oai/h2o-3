@@ -212,6 +212,8 @@ abstract public class AST extends Iced<AST> {
     init(new ASTCountMatches());
     init(new ASTToUpper());
     init(new ASTStrLength());
+    init(new ASTLStrip());
+    init(new ASTRStrip());
 
     // Functional data mungers
     init(new ASTApply());
