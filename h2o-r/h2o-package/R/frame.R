@@ -2753,11 +2753,11 @@ h2o.nchar <- function(x) .newExpr("length", x)
 #'
 #' @param x The column whose strings should be lstrip-ed.
 #' @export
-h2o.lstrip <- function(x, pattern = " ") .newExpr("lstrip", x, .quote(set))
+h2o.lstrip <- function(x, set = " ") .newExpr("lstrip", x, .quote(set))
 
 #'
 #' Strip set from right
 #'
 #' @param x The column whose strings should be lstrip-ed.
 #' @export
-h2o.rstrip <- function(x, pattern = " ") .newExpr("rstrip", x, .quote(set))
+h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
