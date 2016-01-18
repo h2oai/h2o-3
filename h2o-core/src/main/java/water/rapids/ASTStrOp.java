@@ -705,7 +705,7 @@ class ASTLStrip extends ASTPrim {
     String[] doms = vec.domain();
     for (int i = 0; i < doms.length; ++i) {
       int j;
-      for(j = 0; j < doms[i].length() && set.indexOf(doms[i].charAt(j)) != -1; j++);
+      for(j = 0; j < doms[i].length() && set.indexOf(doms[i].charAt(j)) != -1; j++); // march up while char in set
       if (j > 0) doms[i] = doms[i].substring(j);
     }
     Vec v = vec.makeCopy(doms);
@@ -767,7 +767,7 @@ class ASTRStrip extends ASTPrim {
     for (int i = 0; i < doms.length; ++i) {
       int lastChar = doms[i].length() - 1;
       int j;
-      for(j = lastChar; j >= 0 && set.indexOf(doms[i].charAt(j)) > -1; j--);
+      for(j = lastChar; j >= 0 && set.indexOf(doms[i].charAt(j)) > -1; j--); // march down while char in set
       if (j < lastChar) doms[i] = doms[i].substring(0, j+1);
     }
     Vec v = vec.makeCopy(doms);
