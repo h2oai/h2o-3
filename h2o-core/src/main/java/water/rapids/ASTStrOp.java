@@ -691,7 +691,7 @@ class ASTLStrip extends ASTPrim {
     int i = 0;
     for(Vec v: fr.vecs()) {
       if (v.isCategorical())
-        nvs[i] = trimCategoricalCol(v);
+        nvs[i] = trimCategoricalCol(v, set);
       else
         nvs[i] = trimStringCol(v, set);
       i++;
@@ -701,10 +701,13 @@ class ASTLStrip extends ASTPrim {
   }
 
   // FIXME: this should resolve any categoricals that now have the same value after the trim
-  // TODO: make this actually trip from the left
-  private Vec trimCategoricalCol(Vec vec) {
+  private Vec trimCategoricalCol(Vec vec, String set) {
     String[] doms = vec.domain();
-    for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
+    for (int i = 0; i < doms.length; ++i) {
+      int j;
+      for(j = 0; j < doms[i].length() && set.indexOf(doms[i].charAt(j)) != -1; j++);
+      if (j > 0) doms[i] = doms[i].substring(j);
+    }
     Vec v = vec.makeCopy(doms);
     return v;
   }
@@ -749,7 +752,7 @@ class ASTRStrip extends ASTPrim {
     int i = 0;
     for(Vec v: fr.vecs()) {
       if (v.isCategorical())
-        nvs[i] = trimCategoricalCol(v);
+        nvs[i] = trimCategoricalCol(v, set);
       else
         nvs[i] = trimStringCol(v, set);
       i++;
@@ -759,10 +762,14 @@ class ASTRStrip extends ASTPrim {
   }
 
   // FIXME: this should resolve any categoricals that now have the same value after the trim
-  // TODO: make this actually do trim from the right
-  private Vec trimCategoricalCol(Vec vec) {
+  private Vec trimCategoricalCol(Vec vec, String set) {
     String[] doms = vec.domain();
-    for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
+    for (int i = 0; i < doms.length; ++i) {
+      int lastChar = doms[i].length() - 1;
+      int j;
+      for(j = lastChar; j >= 0 && set.indexOf(doms[i].charAt(j)) > -1; j--);
+      if (j < lastChar) doms[i] = doms[i].substring(0, j+1);
+    }
     Vec v = vec.makeCopy(doms);
     return v;
   }
