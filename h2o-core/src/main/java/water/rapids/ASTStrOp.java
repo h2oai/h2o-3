@@ -701,6 +701,7 @@ class ASTLStrip extends ASTPrim {
   }
 
   // FIXME: this should resolve any categoricals that now have the same value after the trim
+  // TODO: make this actually trip from the left
   private Vec trimCategoricalCol(Vec vec) {
     String[] doms = vec.domain();
     for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
@@ -758,6 +759,7 @@ class ASTRStrip extends ASTPrim {
   }
 
   // FIXME: this should resolve any categoricals that now have the same value after the trim
+  // TODO: make this actually do trim from the right
   private Vec trimCategoricalCol(Vec vec) {
     String[] doms = vec.domain();
     for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
