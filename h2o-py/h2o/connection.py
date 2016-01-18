@@ -427,6 +427,9 @@ class H2OConnection(object):
 
   @staticmethod
   def ip(): return __H2OCONN__._ip
+  
+  @staticmethod
+  def https(): return  __H2OCONN__._https
 
   @staticmethod
   def current_connection(): return __H2OCONN__
@@ -445,7 +448,7 @@ class H2OConnection(object):
     :return: TRUE if the cluster is up; FALSE otherwise
     """
     if not isinstance(conn, H2OConnection): raise ValueError("`conn` must be an H2OConnection object")
-    rv = conn.current_connection()._attempt_rest(url="http://{0}:{1}/".format(conn.ip(), conn.port()), method="GET",
+    rv = conn.current_connection()._attempt_rest(url=("https" if conn.https() else "http") +"://{0}:{1}/".format(conn.ip(), conn.port()), method="GET",
                                                  post_body="", file_upload_info="")
     if rv.status_code == 401: warnings.warn("401 Unauthorized Access. Did you forget to provide a username and password?") 
     return rv.status_code == 200 or rv.status_code == 301
@@ -465,10 +468,10 @@ class H2OConnection(object):
   """
 
   @staticmethod
-  def make_url(url_suffix,**kwargs):
-    self=__H2OCONN__
-    _rest_version = kwargs['_rest_version'] if "_rest_version" in kwargs else self._rest_version
-    return "http://{}:{}/{}/{}".format(self._ip,self._port,_rest_version,url_suffix)
+  def make_url(url_suffix, _rest_version=None):
+    scheme = "https" if H2OConnection.https() else "http" 
+    _rest_version = _rest_version or H2OConnection.rest_version()
+    return "{}://{}:{}/{}/{}".format(scheme,H2OConnection.ip(),H2OConnection.port(),_rest_version,url_suffix)
 
   @staticmethod
   def get(url_suffix, **kwargs):
@@ -516,8 +519,8 @@ class H2OConnection(object):
     else:
       _rest_version = self._rest_version
 
-    url = ("https" if self._https else "http") + "://{}:{}/{}/{}".format(self._ip,self._port,_rest_version,url_suffix)
-
+    url = H2OConnection.make_url(url_suffix,_rest_version)
+    
     query_string = ""
     for k,v in iteritems(kwargs):
       if isinstance(v, list):

@@ -617,7 +617,7 @@ h2o.filterNACols <- function(data, frac=0.2) .eval.scalar(.newExpr("filterNACols
 #'        FALSE to expand counts across all combinations.  
 #' @return Returns a tabulated H2OFrame object.
 #' @examples
-#' \donttest{]
+#' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")

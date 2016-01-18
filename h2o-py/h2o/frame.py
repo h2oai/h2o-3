@@ -878,35 +878,36 @@ class H2OFrame(object):
       use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame instance's
       data.
     """
-    url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(self.frame_id))
+    url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(self.frame_id)
+    if H2OConnection.https():
+      try:
+        import ssl
+      except ImportError:
+        raise ValueError("ssl module is required when using HTTPS")
+      ctx = ssl.create_default_context()
+      ctx.check_hostname = False
+      ctx.verify_mode = ssl.CERT_NONE
     if PY3:
       from urllib import request
-      response = StringIO(request.urlopen(url).read().decode())
+      try: 
+        response = StringIO(request.urlopen(url, context=ctx).read().decode()) if H2OConnection.https() else StringIO(request.urlopen(url).read().decode())
+      except TypeError:
+        raise ValueError("Python version 2.7.9 (or higher) or 3.4.3 (or higher) is required when using HTTPS.")
     else:
       import urllib2
-      response = urllib2.urlopen(url)
+      response = urllib2.urlopen(url, context=ctx) if H2OConnection.https() else urllib2.urlopen(url)
     if can_use_pandas() and use_pandas:
       import pandas
       df = pandas.read_csv(response, low_memory=False)
-      time_cols = []
-      # category_cols = []
-      if self.types is not None:
-        for col_name in self.names:
-          xtype = self.type(col_name)
-          if xtype.lower() == 'time': time_cols.append(col_name)
-          # elif xtype.lower() == 'enum': category_cols.append(col_name)
-        #change Time to pandas datetime
-        if time_cols:
-          #hacky way to get the utc offset
-          sample_timestamp = 1380610868
-          utc_offset = 1000 * ((datetime.utcfromtimestamp(sample_timestamp) - datetime.fromtimestamp(sample_timestamp)).total_seconds())
-          try:
-            df[time_cols] = (df[time_cols] - utc_offset).astype('datetime64[ms]')
-          except pandas.tslib.OutOfBoundsDatetime:
-            pass
-        #change Enum to pandas category
-        # for cat_col in category_cols: #for loop is required
-        #   df[cat_col] = df[cat_col].astype('category')
+      #change H2O time to pandas datetime
+      time_cols = [col_name for col_name in self.names if self.types is not None and self.type(col_name).lower() == 'time']
+      if time_cols:
+        sample_timestamp = 1380610868         #hacky way to get the utc offset
+        utc_offset = 1000 * ((datetime.utcfromtimestamp(sample_timestamp) - datetime.fromtimestamp(sample_timestamp)).total_seconds())
+        try:
+          df[time_cols] = (df[time_cols] - utc_offset).astype('datetime64[ms]')
+        except pandas.tslib.OutOfBoundsDatetime:
+          pass
       return df
     else:
       cr = csv.reader(response)
