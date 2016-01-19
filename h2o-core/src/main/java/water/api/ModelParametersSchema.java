@@ -46,6 +46,9 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_predictions;
 
+  @API(help="Allow parallel training of cross-validation models", direction=API.Direction.INOUT, level = API.Level.expert)
+  public boolean parallelize_cross_validation;
+
   @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT, gridable = true)
   public FrameV3.ColSpecifierV3 response_column;
 

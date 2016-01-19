@@ -187,6 +187,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   abstract protected Driver trainModelImpl();
   abstract protected long progressUnits();
 
+  /**
+   * How many should be trained in parallel during N-fold cross-validation?
+   * Train all CV models in parallel when parallelism is enabled, otherwise train one at a time
+   * Each model can override this logic, based on parameters, dataset size, etc.
+   * @return How many models to train in parallel during cross-validation
+   */
+  protected int nModelsInParallel() {
+    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
+    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    return 1; //safe fallback
+  }
+
   // Work for each requested fold
   private int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
@@ -196,8 +208,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     fc.remove();
     return N;
   }
-  // Temp zero'd vector, same size as train()
-  private Vec zTmp() { return train().anyVec().makeZero(); }
 
   /**
    * Default naive (serial) implementation of N-fold cross-validation
@@ -222,7 +232,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);
 
       // Step 4: Run all the CV models and launch the main model
-      H2O.H2OCountedCompleter mainMB = cv_runCVBuilds(N, cvModelBuilders);
+      H2O.H2OCountedCompleter mainMB = cv_buildModels(N, cvModelBuilders);
 
       // Step 5: Score the CV models
       ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
@@ -255,8 +265,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
     switch( _parms._fold_assignment ) {
     case AUTO:
-    case Random:     return ASTKFold.          kfoldColumn(    zTmp(),N,seed);
-    case Modulo:     return ASTKFold.    moduloKfoldColumn(    zTmp(),N     );
+    case Random:     return ASTKFold.          kfoldColumn(train().anyVec().makeZero(),N,seed);
+    case Modulo:     return ASTKFold.    moduloKfoldColumn(train().anyVec().makeZero(),N     );
     case Stratified: return ASTKFold.stratifiedKFoldColumn(response(),N,seed);
     default:         throw H2O.unimpl();
     }
@@ -338,27 +348,26 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 4: Run all the CV models and launch the main model
-  public H2O.H2OCountedCompleter cv_runCVBuilds( int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    final boolean async = true; // Set to TRUE for parallel building
+  public H2O.H2OCountedCompleter cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
+    int nRunning=0;
     for( int i=0; i<N; ++i ) {
       if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
       Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
       cvModelBuilders[i]._start_time = System.currentTimeMillis();
       submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
-      if( !async ) submodel_tasks[i].join();
+      if(nRunning++ == nModelsInParallel()) //piece-wise advance in training the CV models
+        while (nRunning>0) submodel_tasks[i+1-nRunning--].join();
     }
-    if( async )                 // Block for the parallel builds to complete
-      for( int i=0; i<N; ++i )  // (block, even if cancelled)
-        submodel_tasks[i].join();
+    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
+      submodel_tasks[i].join();
     // Now do the main model
     if( _job.stop_requested() ) return null;
     assert _job.isRunning();
     Log.info("Building main model.");
     _start_time = System.currentTimeMillis();
     modifyParmsForCrossValidationMainModel(cvModelBuilders); //tell the main model that it shouldn't stop early either
-    H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking
-    if( !async ) mainMB.join();
+    H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking: start the main model
     return mainMB;
   }
 
