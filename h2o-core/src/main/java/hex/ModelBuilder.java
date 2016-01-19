@@ -34,10 +34,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Key<M> dest() { return _result; }
 
   private long _start_time; //start time in msecs - only used for time-based stopping
-  protected boolean stop_requested() {
+  protected boolean timeout() {
     assert(_start_time > 0) : "Must set _start_time for each individual model.";
-    return _job.stop_requested() ||
-            (_parms._max_runtime_secs > 0 && System.currentTimeMillis() - _start_time > (long) (_parms._max_runtime_secs * 1e3));
+    return _parms._max_runtime_secs > 0 && System.currentTimeMillis() - _start_time > (long) (_parms._max_runtime_secs * 1e3);
+  }
+  protected boolean stop_requested() {
+    return _job.stop_requested() || timeout();
   }
 
   /** Default model-builder key */

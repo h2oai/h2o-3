@@ -387,14 +387,16 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         _job.update(0,"Training...");
 
         //main loop
-        do {
+        for(;;) {
           model.iterations++;
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepLearningTask (_job._key,        model.model_info(), rowFraction(train, mp, model), model.iterations).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+          if (stop_requested() && !timeout()) break; //cancellation
+          if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
+          if (timeout()) break; //stop after scoring
         }
-        while (!stop_requested() && model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false));
 
         // replace the model with the best model so far (if it's better)
         if (!stop_requested() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {

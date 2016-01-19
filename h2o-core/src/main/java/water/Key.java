@@ -360,14 +360,6 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     return fs;
   }
 
-  // Hide a user key by turning it into a system key of type HIDDEN_USER_KEY
-  public static <P extends Keyed> Key<P> makeUserHidden(final Key<P> orig) {
-    if (!orig.user_allowed()) return orig; //already hidden
-    byte[] kb = orig._kb.clone();
-    kb[0] = Key.HIDDEN_USER_KEY;
-    return Key.make(kb);
-  }
-
   /** True if a {@link #USER_KEY} and not a system key.
    * @return True if a {@link #USER_KEY} and not a system key */
   public boolean user_allowed() { return type()==USER_KEY; }

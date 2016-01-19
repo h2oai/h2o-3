@@ -366,11 +366,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     } else {
       _output.weights = new Key[get_params()._hidden.length + 1];
       for (int i = 0; i < _output.weights.length; ++i) {
-        _output.weights[i] = Key.makeUserHidden(Key.make(destKey + ".weights." + i));
+        _output.weights[i] = Key.makeSystem(destKey + ".weights." + i);
       }
       _output.biases = new Key[get_params()._hidden.length + 1];
       for (int i = 0; i < _output.biases.length; ++i) {
-        _output.biases[i] = Key.makeUserHidden(Key.make(destKey + ".biases." + i));
+        _output.biases[i] = Key.makeSystem(destKey + ".biases." + i);
       }
       _output.normmul = model_info.data_info._normMul;
       _output.normsub = model_info.data_info._normSub;
@@ -445,8 +445,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo);
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
-    model_info_key = Key.makeUserHidden(Key.make(H2O.SELF));
-    actual_best_model_key = Key.makeUserHidden(Key.make(H2O.SELF));
+    model_info_key = Key.make(H2O.SELF);
+    actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
       scoringInfo = new DeepLearningScoring[1];

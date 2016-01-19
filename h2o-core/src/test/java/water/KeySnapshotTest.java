@@ -24,7 +24,7 @@ public class KeySnapshotTest extends TestUtil {
         DKV.put(k, new IcedInt(i), fs, true);
       }
       for (int i = 0; i < 100; ++i) {
-        Key k = Key.makeUserHidden(Key.make()); madeKeys.add(k);
+        Key k = Key.make(H2O.SELF); madeKeys.add(k);
         DKV.put(k, new IcedInt(i), fs, true);
       }
       fs.blockForPending();
@@ -44,7 +44,7 @@ public class KeySnapshotTest extends TestUtil {
         Key k = Key.make("key" + i); madeKeys.add(k);
         DKV.put(k, new IcedInt(i),fs,true);
         if(k.home())++homeKeys;
-        k = Key.makeUserHidden(Key.make()); madeKeys.add(k);
+        k = Key.make(H2O.SELF); madeKeys.add(k);
         DKV.put(k, new IcedInt(i),fs,true);
       }
       fs.blockForPending();
@@ -65,12 +65,12 @@ public class KeySnapshotTest extends TestUtil {
     try {
       for(int i = 0; i < (userKeys.length >> 1); ++i){
         DKV.put(userKeys[i] = Key.make("key" + i), new IcedInt(i),fs,false);
-        systemKeys[i] = Key.makeUserHidden(Key.make());
+        systemKeys[i] = Key.make(H2O.SELF);
         DKV.put(systemKeys[i], new Value(systemKeys[i], new IcedInt(i)));
       }
       for(int i = (userKeys.length >> 1); i < userKeys.length; ++i){
         DKV.put(userKeys[i] = Key.make("key" + i), new IcedDouble(i),fs,false);
-        systemKeys[i] = Key.makeUserHidden(Key.make());
+        systemKeys[i] = Key.make(H2O.SELF);
         DKV.put(systemKeys[i], new Value(systemKeys[i], new IcedDouble(i)));
       }
       fs.blockForPending();

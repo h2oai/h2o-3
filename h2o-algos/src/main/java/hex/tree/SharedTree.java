@@ -280,6 +280,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         buildNextKTrees();
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
+        if (timeout()) break; // If timed out, do the final scoring
         if( stop_requested() ) return; // If canceled during building, do not bulkscore
       }
       // Final scoring (skip if job was cancelled)
