@@ -46,6 +46,9 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_predictions;
 
+  @API(help="Allow parallel training of cross-validation models", direction=API.Direction.INOUT, level = API.Level.expert)
+  public boolean parallelize_cross_validation;
+
   @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT, gridable = true)
   public FrameV3.ColSpecifierV3 response_column;
 
@@ -86,7 +89,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public int stopping_rounds;
 
-  @API(help = "Maximum allowed runtime in seconds for model training. Use 0 to disable. For cross-validation or grid searches, this limit applies to all sub-models", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  @API(help = "Maximum allowed runtime in seconds for model training. Use 0 to disable. For cross-validation or grid searches, this limit applies to all sub-models.", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public double max_runtime_secs;
 
   /**

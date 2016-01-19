@@ -10,7 +10,7 @@ source("../../scripts/h2o-r-test-setup.R")
 # setupRandomSeed(1994831827)
 
 test <- function() {
-	hex = h2o.importFile(locate("bigdata/server/airlines_all.csv"), "hex")
+	hex = h2o.importFile(locate("bigdata/laptop/airlines_all.05p.csv"), "hex")
   print(hex)
       
     

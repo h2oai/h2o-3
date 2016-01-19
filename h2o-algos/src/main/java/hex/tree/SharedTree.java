@@ -280,6 +280,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         buildNextKTrees();
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
+        if (timeout()) break; // If timed out, do the final scoring
         if( stop_requested() ) return; // If canceled during building, do not bulkscore
       }
       // Final scoring (skip if job was cancelled)
@@ -774,14 +775,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   }
 
   @Override public void modifyParmsForCrossValidationMainModel(ModelBuilder<M, P, O>[] cvModelBuilders) {
-    if( _parms._stopping_rounds == 0 ) return; // No exciting changes to stopping conditions
+    if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     _parms._stopping_rounds = 0;
+    _parms._max_runtime_secs = 0;
     int sum = 0;
     for( int i=0; i<cvModelBuilders.length; ++i )
       sum += ((SharedTreeModel.SharedTreeOutput)DKV.<Model>getGet(cvModelBuilders[i].dest())._output)._ntrees;
     _parms._ntrees = (int)((double)sum/cvModelBuilders.length);
     warn("_epochs", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
     warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
+    warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
   }
 }

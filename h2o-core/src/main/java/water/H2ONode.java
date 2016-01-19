@@ -235,9 +235,9 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
   synchronized void freeTCPSocket( SocketChannel sock ) {
     assert 0 <= _socksAvail && _socksAvail < _socks.length;
+    assert TCPS.get() > 0;
     if( sock != null && !sock.isOpen() ) sock = null;
     _socks[_socksAvail++] = sock;
-    assert TCPS.get() > 0;
     if( sock == null ) TCPS.decrementAndGet();
     notify();
   }

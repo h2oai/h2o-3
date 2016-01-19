@@ -10,7 +10,6 @@ package water;
 abstract public class Atomic<T extends Atomic> extends DTask<T> {
   protected Key _key;           // Transaction key
 
-
   public Atomic(){ super(H2O.ATOMIC_PRIORITY); }
   public Atomic(H2O.H2OCountedCompleter completer){super(completer,H2O.ATOMIC_PRIORITY);}
   // User's function to be run atomically.  The Key's Value is fetched from the
@@ -28,9 +27,9 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
   protected void onSuccess( Value old ){}
 
   /** Block until it completes, even if run remotely */
-  public final T invoke( Key key ) {
+  public final Atomic<T> invoke( Key key ) {
     RPC<Atomic<T>> rpc = fork(key);
-    return (T)(rpc == null ? this : rpc.get()); // Block for it
+    return (rpc == null ? this : rpc.get()); // Block for it
   }
 
   // Fork off

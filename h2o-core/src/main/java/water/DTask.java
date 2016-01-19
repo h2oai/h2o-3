@@ -27,8 +27,6 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
   protected DTask(byte prior) { super(prior); }
   protected DTask() { super(); }
 
-  protected boolean _modifiesInputs = false;
-
   /** A distributable exception object, thrown by {@link #dinvoke}.  */
   protected DException _ex;
   /** True if {@link #dinvoke} threw an exception.
@@ -76,11 +74,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
    *  remote/local distinction (RPC versus submitTask).  */
   public static abstract class DKeyTask<T extends DKeyTask,V extends Keyed> extends DTask<DKeyTask>{
     private final Key _key;
-    public DKeyTask(final Key k) {this(null,k);}
-    public DKeyTask(H2OCountedCompleter cmp,final Key k) {
-      super(cmp);
-      _key = k;
-    }
+    public DKeyTask(H2OCountedCompleter cmp,final Key k) { super(cmp); _key = k; }
 
     /** Override map(); will be run on Key's home node */
     protected abstract void map(V v);

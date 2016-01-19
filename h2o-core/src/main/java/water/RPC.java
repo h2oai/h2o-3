@@ -196,7 +196,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           AutoBuffer ab = new AutoBuffer(_target,_dt.priority());
           try {
             final boolean t;
-            int offset = ab.position();
             ab.putTask(UDP.udp.exec, _tasknum).put1(CLIENT_UDP_SEND);
             ab.put(_dt);
             t = ab.hasTCP();

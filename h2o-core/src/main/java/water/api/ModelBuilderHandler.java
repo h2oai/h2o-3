@@ -16,12 +16,13 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     String ss[] = route._url_pattern_raw.split("/");
     String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
+    String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
 
     // Build a Model Schema and a ModelParameters Schema
-    String schemaName = "hex.schemas."+algoName+"V"+version;
+    String schemaName = schemaDir+algoName+"V"+version;
     ModelBuilderSchema schema = (ModelBuilderSchema) TypeMap.newFreezable(schemaName);
     schema.init_meta();
-    String parmName = "hex.schemas."+algoName+"V"+version+"$"+algoName+"ParametersV"+version;
+    String parmName = schemaDir+algoName+"V"+version+"$"+algoName+"ParametersV"+version;
     ModelParametersSchema parmSchema = (ModelParametersSchema)TypeMap.newFreezable(parmName);
     schema.parameters = parmSchema;
 

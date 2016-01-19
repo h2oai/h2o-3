@@ -78,6 +78,8 @@
 #' @param recover_svd A logical value indicating whether the singular values and eigenvectors
 #'        should be recovered during post-processing of the generalized low rank decomposition.
 #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.kmeans}, \link{h2o.svd}}, \code{\link{h2o.prcomp}}
 #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
@@ -117,7 +119,8 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
                      expand_user_y = TRUE,
                      impute_original = FALSE,
                      recover_svd = FALSE,
-                     seed)
+                     seed,
+                     max_runtime_secs=0)
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
@@ -180,7 +183,8 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
     parms$recover_svd <- recover_svd
   if(!missing(seed))
     parms$seed <- seed
-  
+  if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
+
   # Check if user_y is an acceptable set of user-specified starting points
   if( is.data.frame(user_y) || is.matrix(user_y) || is.list(user_y) || is.H2OFrame(user_y) ) {
     # Convert user-specified starting points to H2OFrame

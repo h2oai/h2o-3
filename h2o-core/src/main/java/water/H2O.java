@@ -1023,9 +1023,18 @@ final public class H2O {
     // With a completer, this task will NOT be blocked on and the the current
     // thread is available for executing it... so the priority can remain at
     // the current level.
-    protected H2OCountedCompleter(H2OCountedCompleter completer) {
-      this(completer,(byte)(currThrPriority() + (completer==null ? 1 : 0)));
+    static private byte computePriority( H2OCountedCompleter completer ) {
+      int currThrPrior = currThrPriority();
+      // If there's no completer, then current thread will block on this task
+      // at the current priority, possibly filling up the current-priority
+      // thread pool - so the task has to run at the next higher priority.
+      if( completer == null ) return (byte)(currThrPrior+1);
+      // With a completer - no thread blocks on this task, so no thread pool
+      // gets filled-up with blocked threads.  We can run at the current
+      // priority (or the completer's priority if it's higher).
+      return (byte)Math.max(currThrPrior,completer.priority());
     }
+    protected H2OCountedCompleter(H2OCountedCompleter completer) { this(completer,computePriority(completer));  }
     // Special for picking GUI priorities
     protected H2OCountedCompleter( byte prior ) { this(null,prior); }
 
@@ -1117,8 +1126,10 @@ final public class H2O {
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
-    @Override       public AutoBuffer write_impl( AutoBuffer ab ) { return ab.put1(_priority); }
-    @Override       public T read_impl( AutoBuffer ab ) { this._priority = ab.get1(); return (T)this; }
+              final        AutoBuffer write_impl3( AutoBuffer ab) { return ab.put1(_priority); }
+    @Override       public AutoBuffer write_impl ( AutoBuffer ab ) { return write_impl3(ab); }
+              final public T read_impl3( AutoBuffer ab ) { this._priority = ab.get1(); return (T)this; }
+    @Override       public T read_impl ( AutoBuffer ab ) { return read_impl3(ab); }
     @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
     @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
   }

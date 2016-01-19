@@ -481,9 +481,9 @@ public final class AutoBuffer {
   // the task has been cancelled (still sending ack ack back).
   void drainClose() {
     if( isClosed() ) return;              // Already closed
-    assert _h2o != null || _chan != null; // Byte-array backed should not be closed
-    if( _chan != null ) {                 // Channel assumed sick from prior IOException
-      ByteChannel chan = _chan;           // Read before closing
+    final ByteChannel chan = _chan;       // Read before closing
+    assert _h2o != null || chan != null;  // Byte-array backed should not be closed
+    if( chan != null ) {                  // Channel assumed sick from prior IOException
       try { chan.close(); } catch( IOException ignore ) {} // Silently close
       _chan = null;                       // No channel now!
       if( !_read && chan instanceof SocketChannel) _h2o.freeTCPSocket((SocketChannel)chan); // Recycle writable TCP channel

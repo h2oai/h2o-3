@@ -409,8 +409,7 @@ public class VecUtils {
 
     @Override public CollectDomain read_impl( AutoBuffer ab ) {
       long ls[] = ab.getA8();
-      assert _uniques == null || _uniques.size()==0 // first time receipt
-              || _uniques.size()==ls.length /* duplicate receipt(s) are OK (network congestion) */;
+      assert _uniques == null || _uniques.size()==0; // Only receiving into an empty (shared) NBHM
       _uniques = new NonBlockingHashMapLong<>();
       if( ls != null ) for( long l : ls ) _uniques.put(l, "");
       return this;
