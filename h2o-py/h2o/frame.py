@@ -3,14 +3,14 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-from six import iteritems, itervalues, PY3
+import requests
+from six import iteritems, itervalues
 import collections
 from io import StringIO
 import csv
 import imp
 import os
 import tempfile
-from datetime import datetime
 import sys
 import traceback
 from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, quote
@@ -22,6 +22,8 @@ from .group_by import GroupBy
 import h2o
 from past.builtins import basestring
 from functools import reduce
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 
 # TODO: Automatically convert column names into Frame properties!
@@ -878,40 +880,23 @@ class H2OFrame(object):
       use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame instance's
       data.
     """
-    url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(self.frame_id)
-    if H2OConnection.https():
-      try:
-        import ssl
-      except ImportError:
-        raise ValueError("ssl module is required when using HTTPS")
-      ctx = ssl.create_default_context()
-      ctx.check_hostname = False
-      ctx.verify_mode = ssl.CERT_NONE
-    if PY3:
-      from urllib import request
-      try: 
-        response = StringIO(request.urlopen(url, context=ctx).read().decode()) if H2OConnection.https() else StringIO(request.urlopen(url).read().decode())
-      except TypeError:
-        raise ValueError("Python version 2.7.9 (or higher) or 3.4.3 (or higher) is required when using HTTPS.")
-    else:
-      import urllib2
-      response = urllib2.urlopen(url, context=ctx) if H2OConnection.https() else urllib2.urlopen(url)
     if can_use_pandas() and use_pandas:
       import pandas
-      df = pandas.read_csv(response, low_memory=False)
-      #change H2O time to pandas datetime
-      time_cols = [col_name for col_name in self.names if self.types is not None and self.type(col_name).lower() == 'time']
-      if time_cols:
-        sample_timestamp = 1380610868         #hacky way to get the utc offset
-        utc_offset = 1000 * ((datetime.utcfromtimestamp(sample_timestamp) - datetime.fromtimestamp(sample_timestamp)).total_seconds())
-        try:
-          df[time_cols] = (df[time_cols] - utc_offset).astype('datetime64[ms]')
-        except pandas.tslib.OutOfBoundsDatetime:
-          pass
-      return df
-    else:
-      cr = csv.reader(response)
-      return [[''] if row == [] else row for row in cr]
+      return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False)
+    return [row for row in csv.reader(StringIO(self.get_frame_data()))]
+
+  def get_frame_data(self):
+    """Get frame data as str in csv format
+    
+    Returns
+    -------
+      A local python string, each line is a row and each element separated by commas, containing this H2OFrame 
+      instance's data.
+    """
+    url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(self.frame_id)
+    return requests.get(url, headers = {'User-Agent': 'H2O Python client/'+sys.version.replace('\n','')},
+                        auth = (H2OConnection.username(), H2OConnection.password()),
+                        verify = not H2OConnection.insecure(), stream = True).text
 
   def flatten(self):
     return ExprNode("flatten",self)._eager_scalar()

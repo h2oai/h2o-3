@@ -430,6 +430,15 @@ class H2OConnection(object):
   
   @staticmethod
   def https(): return  __H2OCONN__._https
+  
+  @staticmethod
+  def username(): return __H2OCONN__._username
+  
+  @staticmethod
+  def password(): return __H2OCONN__._password
+  
+  @staticmethod
+  def insecure(): return __H2OCONN__._insecure
 
   @staticmethod
   def current_connection(): return __H2OCONN__
