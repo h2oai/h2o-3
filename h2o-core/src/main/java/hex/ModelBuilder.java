@@ -248,7 +248,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( !fold.isInt() ||
           (!(fold.min() == 0 && fold.max() == N-1) &&
            !(fold.min() == 1 && fold.max() == N  ) )) // Allow 0 to N-1, or 1 to N
-        throw new H2OIllegalArgumentException("Fold column must be integers from 0 to number of folds, and all folds must be non-empty");
+        throw new H2OIllegalArgumentException("Fold column must be either categorical or contiguous integers from 0..N-1 or 1..N");
       return fold;
     }
     final long seed = _parms.nFoldSeed();
