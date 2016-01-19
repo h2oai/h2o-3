@@ -19,8 +19,6 @@ RESULTS.DIR                 <<- NULL
 TEST.NAME                   <<- "RTest"
 SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
-FORCE.CONNECT               <<- FALSE # This parameter needs to exist for run.py to execute tests when using coverage
-                                      # but since h2o-R doesn't stop when a cluster is unhealhty, it ultimately has no effect.
 
 #'
 #'
@@ -58,8 +56,6 @@ function(args) {
         i <- i + 1
         if (i > length(args)) usage()
         TEST.NAME <<- args[i]
-      } else if (s == "--forceConnect") {
-        FORCE.CONNECT <<- TRUE
       } else {
         unknownArg(s)
       }
@@ -94,8 +90,6 @@ function() {
   print("    --resultsDir      the results directory.")
   print("")
   print("    --testName        name of the rdemo, runit, or rbooklet.")
-  print("")
-  print("    --forceConnect    connect to cluster regardless of its health.")
   print("")
   q("no",1,FALSE) #exit with nonzero exit code
 }
@@ -179,7 +173,7 @@ function() {
         stop(paste0("Unrecognized test type. Must be of type rdemo, runit, or rbooklet, but got: ", TEST.NAME)) }
 
     cat(sprintf("[%s] %s\n", Sys.time(), paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT)))
-    h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE, strict_version_check = strict_version_check, force_connect = FORCE.CONNECT)
+    h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE, strict_version_check = strict_version_check)
 
     if (!is.null(RESULTS.DIR)) {
         h2o.startLogging(paste(RESULTS.DIR, "/rest.log", sep = ""))

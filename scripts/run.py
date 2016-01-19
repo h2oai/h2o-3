@@ -625,8 +625,6 @@ class Test:
         self.output_file_name = \
             os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
-        # When using JaCoCo, we want to have the process run regardless of the cloud's health
-        if g_include_jacoco: cmd.append("--forceConnect")
         self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
         self.pid = self.child.pid
 
@@ -803,6 +801,8 @@ class Test:
       elif is_ipython_notebook(test_name): cmd = cmd + ["--ipynb"]
       elif is_pydemo(test_name):           cmd = cmd + ["--pyDemo"]
       else:                                cmd = cmd + ["--pyBooklet"]
+      if g_include_jacoco: cmd = cmd + "--forceConnect" # When using JaCoCo we don't want the test to return an error
+                                                        # if a cloud reports as unhealthy
       return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
