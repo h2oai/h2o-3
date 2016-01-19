@@ -1,11 +1,5 @@
 package water.api;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
@@ -16,14 +10,15 @@ import water.H2O;
 import water.Job;
 import water.Key;
 import water.TypeMap;
-import water.api.API;
-import water.api.Handler;
-import water.api.JobV3;
-import water.api.ModelParametersSchema;
-import water.api.Schema;
-import water.api.SchemaMetadata;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OIllegalValueException;
 import water.util.PojoUtils;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * A generic grid search handler implementing launch of grid search.
@@ -44,7 +39,9 @@ public class GridSearchHandler<G extends Grid<MP>,
     P extends ModelParametersSchema> extends Handler {
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  @Override Schema handle(int version, water.api.Route route, Properties parms) throws Exception {
+  // TODO: why does this do its own params filling?
+  // TODO: why does this do its own sub-dispatch?
+  @Override S handle(int version, water.api.Route route, Properties parms) throws Exception {
     // Only here for train or validate-parms
     if( !route._handler_method.getName().equals("train") )
       throw water.H2O.unimpl();
@@ -57,16 +54,39 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Get the latest version of this algo: /99/Grid/gbm  ==> GBMV3
     String algoSchemaName = Schema.schemaClass(version, algoName).getSimpleName(); // GBMV3
     int algoVersion = Integer.valueOf(algoSchemaName.substring(algoSchemaName.lastIndexOf("V")+1)); // '3'
+
+    // TODO: this is a horrible hack which is going to cause maintenance problems:
     String paramSchemaName = schemaDir+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;
 
     // Build the Grid Search schema, and fill it from the parameters
-    GridSearchSchema gss = new GridSearchSchema();
+    S gss = (S) new GridSearchSchema();
     gss.init_meta();
     gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
     gss.parameters.init_meta();
     ModelBuilder builder = ModelBuilder.make(algoURLName,null,null); // Default parameter settings
     gss.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
     gss.fillFromParms(parms);   // Override defaults from user parms
+
+    if (parms.contains("strategy"))
+      try { gss.strategy = GridSearch.Strategy.valueOf((String)parms.get("strategy")); }
+      catch (IllegalArgumentException iae) { throw new H2OIllegalValueException("strategy", parms.get("strategy")); }
+
+    if (parms.contains("max_models"))
+      try { gss.max_models = Integer.valueOf((String)parms.get("max_models")); }
+      catch (NumberFormatException nfe) { throw new H2OIllegalValueException("max_models", parms.get("max_models")); }
+
+    if (parms.contains("max_time_ms"))
+      try { gss.max_time_ms = Integer.valueOf((String)parms.get("max_time_ms")); }
+      catch (NumberFormatException nfe) { throw new H2OIllegalValueException("max_time_ms", parms.get("max_time_ms")); }
+
+    if (parms.contains("seed"))
+      try { gss.seed = Long.valueOf((String)parms.get("seed")); }
+      catch (NumberFormatException nfe) { throw new H2OIllegalValueException("seed", parms.get("seed")); }
+
+    // TODO: for testing; remove:
+    // gss.max_models = 10000;
+    // gss.strategy = GridSearch.Strategy.Random;
+
     // Verify list of hyper parameters
     // Right now only names, no types
     validateHyperParams((P)gss.parameters, gss.hyper_parameters);
@@ -82,7 +102,8 @@ public class GridSearchHandler<G extends Grid<MP>,
     Job<Grid> gsJob = GridSearch.startGridSearch(destKey,
                                                  params,
                                                  gss.hyper_parameters,
-                                                 new DefaultModelParametersBuilderFactory<MP, P>());
+                                                 new DefaultModelParametersBuilderFactory<MP, P>(),
+            gss.strategy, gss.max_models, gss.max_time_ms, gss.seed);
 
     // Fill schema with job parameters
     // FIXME: right now we have to remove grid parameters which we sent back

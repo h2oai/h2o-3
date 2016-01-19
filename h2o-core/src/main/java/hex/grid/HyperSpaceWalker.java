@@ -28,7 +28,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
     MP nextModelParameters(Model previousModel);
 
     /**
-     * Returns true if the iterator can continue.
+     * Returns true if the iterator can continue.  Takes into account strategy-specific stopping criteria, if any.
      * @param previousModel  optional parameter which helps to determine next step, can be null
      * @return  true if the iterator can produce one more model parameters configuration.
      */
@@ -61,13 +61,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
   String[] getHyperParamNames();
 
   /**
-   * Return estimated size of hyperspace.
+   * Return estimated maximum size of hyperspace, not subject to any early stopping criteria.
    *
    * Can return -1 if estimate is not available.
    *
    * @return size of hyper space to explore
    */
-  int getHyperSpaceSize();
+  int getMaxHyperSpaceSize();
 
   /**
    * Return initial model parameters for search.
@@ -108,10 +108,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
     final protected String[] _hyperParamNames;
 
     /**
-     * Compute size of hyper space to walk. Includes duplicates (point in space specified multiple
-     * times)
+     * Compute max size of hyper space to walk. May include duplicates if points in space are specified multiple
+     * times.
      */
-    final private int _hyperSpaceSize;
+    final protected int _maxHyperSpaceSize;
 
     /**
      *
@@ -125,7 +125,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
       _hyperParams = hyperParams;
       _paramsBuilderFactory = paramsBuilderFactory;
       _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
-      _hyperSpaceSize = computeSizeOfHyperSpace();
+      _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
     }
 
     @Override
@@ -134,8 +134,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
     }
 
     @Override
-    public int getHyperSpaceSize() {
-      return _hyperSpaceSize;
+    public int getMaxHyperSpaceSize() {
+      return _maxHyperSpaceSize;
     }
 
     @Override
@@ -159,7 +159,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
       return paramsBuilder.build();
     }
 
-    protected int computeSizeOfHyperSpace() {
+    protected int computeMaxSizeOfHyperSpace() {
       int work = 1;
       for (Map.Entry<String, Object[]> p : _hyperParams.entrySet()) {
         if (p.getValue() != null) {
@@ -276,15 +276,25 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
   public static class RandomDiscreteValueWalker<MP extends Model.Parameters>
       extends BaseWalker<MP> {
     Random random;
+
+    // stopping criteria:
+    private int _max_models;
+    private int _max_time_ms;
+
     /** All visited hyper params permutations, including the current one. */
-    private int[][] _visitedPermutations = new int[10000][]; // TODO: size dynamically;
+    private List<int[]> _visitedPermutations = new ArrayList<>();
     private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
 
     public RandomDiscreteValueWalker(MP params,
-                           Map<String, Object[]> hyperParams,
-                           ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
+                                     Map<String, Object[]> hyperParams,
+                                     ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                                     int max_models,
+                                     int max_time_ms,
+                                     long seed) {
       super(params, hyperParams, paramsBuilderFactory);
-      random = new Random(123456); // TODO: allow the user to set the seed
+      random = new Random(seed); // TODO: allow the user to set the seed
+      this._max_models = max_models;
+      this._max_time_ms = max_time_ms;
     }
 
     @Override
@@ -305,10 +315,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
           _currentHyperparamIndices = nextModelIndices();
 
           if (_currentHyperparamIndices != null) {
-            _visitedPermutations[_currentPermutationNum++] = _currentHyperparamIndices;
-
-
+            _visitedPermutations.add(_currentHyperparamIndices);
             _visitedPermutationHashes.add(integerHash(_currentHyperparamIndices));
+            _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
             Object[] hypers = hypers(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
@@ -326,7 +335,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         @Override
         public boolean hasNext(Model previousModel) {
           // _currentPermutationNum is 1-based
-          return _currentPermutationNum <= getHyperSpaceSize();
+          return _currentPermutationNum < _maxHyperSpaceSize && _currentPermutationNum < _max_models;
         }
 
         @Override
@@ -348,7 +357,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         hyperparamIndices[i] = random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);
       }
 
-      // check for aliases
+      // check for aliases and recurse if we've visited this combo before
       if (_visitedPermutationHashes.contains(integerHash(hyperparamIndices)))
         return nextModelIndices();
 

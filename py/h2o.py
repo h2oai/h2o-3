@@ -817,7 +817,7 @@ class H2O(object):
     Build a Cartesian grid of models on the h2o cluster using the given algorithm, training 
     Frame, model parameters and grid parameters.
     '''
-    def build_model_grid(self, algo, training_frame, parameters, grid_parameters, grid_id = None, timeoutSecs=60, asynchronous=False, **kwargs):
+    def build_model_grid(self, algo, training_frame, parameters, grid_parameters, grid_id = None, timeoutSecs=60, asynchronous=False, search_criteria=None, **kwargs):
         # basic parameter checking
         assert algo is not None, 'FAIL: "algo" parameter is null'
         assert training_frame is not None, 'FAIL: "training_frame" parameter is null'
@@ -842,6 +842,12 @@ class H2O(object):
         post_parameters.update(parameters)
         post_parameters['hyper_parameters'] = grid_parameters
         # gridParams['grid_parameters'] = json.dumps(hyperParameters)
+
+        if search_criteria is not None:
+            if 'strategy' in search_criteria: post_parameters['strategy'] = search_criteria['strategy']
+            if 'max_models' in search_criteria: post_parameters['max_models'] = search_criteria['max_models']
+            if 'max_time_ms' in search_criteria: post_parameters['max_time_ms'] = search_criteria['max_time_ms']
+            if 'seed' in search_criteria: post_parameters['seed'] = search_criteria['seed']
 
         # print("post_parameters: " + repr(post_parameters))
 

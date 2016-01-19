@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.Model;
 import hex.grid.Grid;
+import hex.grid.GridSearch.Strategy;
 import water.H2O;
 import water.Key;
 import water.api.*;
@@ -10,11 +11,14 @@ import water.util.IcedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 
 /**
  * This is a common grid search schema composed of two parameters: default parameters for a builder
  * and hyper parameters which are given as a mapping from parameter name to list of possible
  * values.
+ * <p>
+ * TODO: this needs a V99 subclass for bindings generation.
  *
  * @param <G>  a specific implementation type for GridSearch holding results of grid search (model list)
  * @param <S>  self type
@@ -35,9 +39,20 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help = "Grid search parameters.", direction = API.Direction.INOUT)
   public IcedHashMap<String, Object[]> hyper_parameters;
 
-  @API(help = "Destination id for this grid; auto-generated if not specified", required = false, direction = API.Direction.INOUT)
+  @API(help = "Destination id for this grid; auto-generated if not specified.", required = false, direction = API.Direction.INOUT)
   public KeyV3.GridKeyV3 grid_id;
 
+  @API(help="Hyperparameter search strategy, either \"Cartesian\" or \"Random\".", required = false, values = { "Cartesian", "Random" }, direction = API.Direction.INOUT)
+  public Strategy strategy = Strategy.Cartesian;
+
+  @API(help="Maximum number of models to build.", required = false, direction = API.Direction.INOUT)
+  public int max_models = Integer.MAX_VALUE;
+
+  @API(help="Maximum time to spend building models, in mS.  The highest possible is ~24.855 days.", required = false, direction = API.Direction.INOUT)
+  public int max_time_ms = Integer.MAX_VALUE;
+
+  @API(help="Seed for randomized search criteria.", required = false, direction = API.Direction.INOUT)
+  public long seed = (new Random().nextLong());
 
   //
   // Outputs
@@ -61,10 +76,13 @@ public class GridSearchSchema<G extends Grid<MP>,
       parms.remove("hyper_parameters");
     }
 
-    if (parms.containsKey("grid_id")) {
-      grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id")));
-      parms.remove("grid_id");
-    }
+    // Ugh:
+    if (parms.containsKey("strategy")) { strategy = Strategy.valueOf(parms.getProperty("strategy")); parms.remove("strategy"); }
+    if (parms.containsKey("max_models")) { max_models = Integer.valueOf(parms.getProperty("max_models")); parms.remove("max_models"); }
+    if (parms.containsKey("max_time_ms")) { max_time_ms = Integer.valueOf(parms.getProperty("max_time_ms")); parms.remove("max_time_ms"); }
+    if (parms.containsKey("seed")) { seed = Long.valueOf(parms.getProperty("seed")); parms.remove("seed"); }
+
+    if (parms.containsKey("grid_id")) { grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id"))); parms.remove("grid_id"); }
 
     // Do not check validity of parameters, GridSearch is tolerant of bad
     // parameters (on purpose, many hyper-param points in the grid might be

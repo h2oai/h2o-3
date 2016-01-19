@@ -66,6 +66,7 @@ import java.util.Map;
  * @see #startGridSearch(Key, HyperSpaceWalker)
  */
 public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSearch> {
+  public enum Strategy { Unknown, Cartesian, Random } // search strategy
   public final Key<Grid> _result;
   public final Job<Grid> _job;
 
@@ -85,7 +86,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   }
 
   Job<Grid> start() {
-    final int gridSize = _hyperSpaceWalker.getHyperSpaceSize();
+    final int gridSize = _hyperSpaceWalker.getMaxHyperSpaceSize();
     Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
@@ -128,7 +129,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * @return expected number of models produced by this grid search
    */
   public int getModelCount() {
-    return _hyperSpaceWalker.getHyperSpaceSize();
+    return _hyperSpaceWalker.getMaxHyperSpaceSize();
   }
 
   /**
@@ -277,9 +278,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
   /**
    * Start a new grid search job.  This is the method that gets called by GridSearchHandler.do_train().
-   *
-   * <p>This method launches "classical" grid search traversing cartesian grid of parameters
-   * point-by-point.
+   * <p>
+   * This method launches a "classical" grid search traversing cartesian grid of parameters
+   * point-by-point, <b>or</b> a random hyperparameter search, depending on the value of the <i>strategy</i>
+   * parameter.
    *
    * @param destKey              A key to store result of grid search under.
    * @param params               Default parameters for model builder. This object is used to create
@@ -296,13 +298,21 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       final Key<Grid> destKey,
       final MP params,
       final Map<String, Object[]> hyperParams,
-      final ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
-    // Create a walker to traverse hyper space of model parameters
-    BaseWalker<MP>
-        hyperSpaceWalker =
-        // TODO: let the client choose!
-//        new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory);
-      new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
+      final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+      final Strategy strategy,
+      final int max_models,
+      final int max_time_ms,
+      long seed) {
+
+    // Create a walker to traverse the hyper space of model parameters.
+    // TODO: encapsulate this switch in a factory to make it pluggable.
+    BaseWalker<MP> hyperSpaceWalker;
+    if (strategy == Strategy.Cartesian)
+      hyperSpaceWalker = new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
+    else if (strategy == Strategy.Random)
+      hyperSpaceWalker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, max_models, max_time_ms, seed);
+    else
+      throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
 
     return startGridSearch(destKey, hyperSpaceWalker);
   }
@@ -312,7 +322,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * Start a new grid search job.
    *
    * <p>This method launches "classical" grid search traversing cartesian grid of parameters
-   * point-by-point.
+   * point-by-point.  For more advanced hyperparameter search behavior call the referenced method.
    *
    * @param destKey      A key to store result of grid search under.
    * @param params       Default parameters for model builder. This object is used to create a
@@ -322,11 +332,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
+   *
+   * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, Strategy, int, int, long)
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(final Key<Grid> destKey,
                                                                         final MP params,
                                                                         final Map<String, Object[]> hyperParams) {
-    return startGridSearch(destKey, params, hyperParams, new SimpleParametersBuilderFactory<MP>());
+    return startGridSearch(destKey, params, hyperParams, new SimpleParametersBuilderFactory<MP>(),
+            Strategy.Cartesian, -1, -1, -1L);
   }
 
   /**

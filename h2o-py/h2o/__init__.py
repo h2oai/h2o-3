@@ -2,7 +2,7 @@
 # module h2o
 # from (h2o)
 from __future__ import absolute_import
-__version__ = "SUBST_PROJECT_VERSION"
+__version__ = "3.7.0.99999"
 
 from .h2o import *
 
