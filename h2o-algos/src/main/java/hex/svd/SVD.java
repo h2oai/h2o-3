@@ -165,13 +165,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // Calculate Cholesky of Y Gram to get R' = L matrix
         _job.update(1, "Computing QR factorization of Y");
-        yinfo = new DataInfo(Key.make(), yqfrm, null, true, DataInfo.TransformType.NONE, true, false, false);
+        yinfo = new DataInfo(yqfrm, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
         LinearAlgebraUtils.computeQInPlace(_job._key, yinfo);
 
         model._output._iterations = 0;
         while (model._output._iterations < _parms._max_iterations) {
-          if(_job.stop_requested()) break;
+          if(stop_requested()) break;
           _job.update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
@@ -223,7 +223,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // Calculate Cholesky of Gram to get R' = L matrix
         _job.update(1, "Computing QR factorization of Y");
-        yinfo = new DataInfo(Key.make(), ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+        yinfo = new DataInfo(ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
         LinearAlgebraUtils.computeQ(_job._key, yinfo, yqfrm);
 
@@ -231,7 +231,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
         double qerr = 2 * TOLERANCE * qobs;   // Stop when average SSE between Q_j and Q_{j-2} below tolerance
         while ((model._output._iterations < 10 || qerr / qobs > TOLERANCE) && model._output._iterations < _parms._max_iterations) {   // Run at least 10 iterations before tolerance cutoff
-          if(_job.stop_requested()) break;
+          if(stop_requested()) break;
           _job.update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
@@ -294,7 +294,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model._output._u_key = Key.make(u_name);
           double[][] svdJ_u = svdJ.getV().getMatrix(0,atqJ.getColumnDimension()-1,0,_parms._nv-1).getArray();
 
-          qinfo = new DataInfo(Key.make(), qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
+          qinfo = new DataInfo(qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
           DKV.put(qinfo._key, qinfo);
           BMulTask btsk = new BMulTask(_job._key, qinfo, ArrayUtils.transpose(svdJ_u));
           btsk.doAll(_parms._nv, Vec.T_NUM, qinfo._adaptedFrame);
@@ -327,7 +327,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model.delete_and_lock(_job);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+        dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -428,7 +428,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           Gram gram_update = guptsk._gram;
 
           for (int k = 1; k < _parms._nv; k++) {
-            if (_job.stop_requested()) break;
+            if (stop_requested()) break;
             _job.update(1, "Iteration " + String.valueOf(k+1) + " of power method");   // One unit of work
 
             // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||

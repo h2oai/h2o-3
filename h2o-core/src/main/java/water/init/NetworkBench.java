@@ -168,7 +168,6 @@ public class NetworkBench extends Iced {
           }
         }.asyncExecOnAllNodes();
     }
-    @Override public byte priority(){return 1;}
     @Override public void onCompletion(CountedCompleter cc) {
       _time = System.currentTimeMillis() - _time;
     }

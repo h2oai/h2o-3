@@ -22,14 +22,10 @@ import water.H2O.H2OCountedCompleter;
  *
  */
 public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
-  protected DTask(){}
-
-
-  public DTask(H2OCountedCompleter completer){super(completer);}
-  public DTask(H2OCountedCompleter completer, boolean bumpPriority) { super(completer, bumpPriority); }
-  public DTask(boolean bumpPriority) { super(bumpPriority); }
-
-  protected boolean _modifiesInputs = false;
+  protected DTask(H2OCountedCompleter completer, byte prior){super(completer,prior);}
+  protected DTask(H2OCountedCompleter completer){super(completer);}
+  protected DTask(byte prior) { super(prior); }
+  protected DTask() { super(); }
 
   /** A distributable exception object, thrown by {@link #dinvoke}.  */
   protected DException _ex;
@@ -78,11 +74,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
    *  remote/local distinction (RPC versus submitTask).  */
   public static abstract class DKeyTask<T extends DKeyTask,V extends Keyed> extends DTask<DKeyTask>{
     private final Key _key;
-    public DKeyTask(final Key k) {this(null,k);}
-    public DKeyTask(H2OCountedCompleter cmp,final Key k) {
-      super(cmp);
-      _key = k;
-    }
+    public DKeyTask(H2OCountedCompleter cmp,final Key k) { super(cmp); _key = k; }
 
     /** Override map(); will be run on Key's home node */
     protected abstract void map(V v);

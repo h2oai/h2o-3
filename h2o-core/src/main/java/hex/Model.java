@@ -89,8 +89,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public Key<Frame> _train;               // User-Key of the Frame the Model is trained on
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
-    public int _nfolds;
-    public boolean _keep_cross_validation_predictions;
+    public int _nfolds = 0;
+    public boolean _keep_cross_validation_predictions = false;
+    public boolean _parallelize_cross_validation = true;
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
@@ -115,6 +116,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // costs to less than 10% of the build time.  This flag forces scoring for
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
+
+    /**
+     * Maximum allowed runtime in seconds for model training. Use 0 to disable.
+     * For cross-validation and grid searches, this time limit applies to all sub-models.
+     */
+    public double _max_runtime_secs = 0;
 
     /**
      * Early stopping based on convergence of stopping_metric.

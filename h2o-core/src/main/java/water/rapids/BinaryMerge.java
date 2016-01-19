@@ -129,6 +129,17 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       bmerge_r(-1, _leftN, -1, _rightN);
       _timings[1] += (System.nanoTime() - t0) / 1e9;
 
+      if (_allLeft) {
+        assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == _leftN;
+      } else {
+        long tt = 0;
+        for (int i=0; i<_retFirst.length; i++)    // i.e. sum(_retFirst>0) in R
+          for (int j=0; j<_retFirst[i].length; j++)
+            tt += (_retFirst[i][j] > 0) ? 1 : 0;
+        assert tt <= _leftN;  // TODO: change to tt.privateAssertMethod() containing the loop above to avoid that loop when asserts are off
+        assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == tt;
+      }
+
       if (_numRowsInResult > 0) createChunksInDKV();
     }
 
@@ -147,11 +158,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     byte xByte=0, yByte=0;
     // TODO: switch to use keycmp_sameShape() for common case of all(leftFieldSizes == rightFieldSizes), although, skipping to current column will
     //        help save repeating redundant work and saving the outer for() loop and one if() may not be worth it.
-    int i=0, xlen=0, ylen=0;
-
-    while (i<_numJoinCols && xlen==0) {    // TO DO: pass i in to start at a later key column, when known
-      xlen = _leftFieldSizes[i];
-      ylen = _rightFieldSizes[i];
+    int i=0;
+    while (i<_numJoinCols && xByte==yByte) {    // TO DO: pass i in to start at a later key column, when known
+      int xlen = _leftFieldSizes[i];
+      int ylen = _rightFieldSizes[i];
       if (xlen!=ylen) {
         while (xlen>ylen && xbatch[xoff]==0) { xoff++; xlen--; }
         while (ylen>xlen && ybatch[yoff]==0) { yoff++; ylen--; }
@@ -253,9 +263,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     // TO DO: check assumption that retFirst and retLength are initialized to 0, for case of no match
     // Now branch (and TO DO in parallel) to merge below and merge above
-    if (lLow > lLowIn && rLow > rLowIn)
+    if (lLow > lLowIn && (rLow > rLowIn || _allLeft)) // '|| _allLeft' is needed here in H2O (but not data.table) for the _perNodeNumLeftRowsToFetch above to populate and pass the assert near the end of the compute2() above.
       bmerge_r(lLowIn, lLow + 1, rLowIn, rLow+1);
-    if (lUpp < lUppIn && rUpp < rUppIn)
+    if (lUpp < lUppIn && (rUpp < rUppIn || _allLeft))
       bmerge_r(lUpp-1, lUppIn, rUpp-1, rUppIn);
 
     // We don't feel tempted to reduce the global _ansN here and make a global frame,
@@ -285,7 +295,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       if (_perNodeNumRightRowsToFetch[i] > 0) {
         int nbatch = (int) ((_perNodeNumRightRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
         int lastSize = (int) (_perNodeNumRightRowsToFetch[i] - (nbatch - 1) * batchSize);
-        System.out.println("Sending " +nbatch+ " right batches to node " +i+ " from node " +thisNode+ " for rightMSB " + _rightMSB);
+        System.out.println("Sending " +_perNodeNumRightRowsToFetch[i]+ " row requests to node " +i+ " in " +nbatch+ " batches from node " +thisNode+ " for rightMSB " +_rightMSB);
         assert nbatch >= 1;
         assert lastSize > 0;
         perNodeRightRows[i] = new long[nbatch][];
@@ -301,7 +311,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       if (_perNodeNumLeftRowsToFetch[i] > 0) {
         int nbatch = (int) ((_perNodeNumLeftRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
         int lastSize = (int) (_perNodeNumLeftRowsToFetch[i] - (nbatch - 1) * batchSize);
-        System.out.println("Sending " +nbatch+ " left batches to node " +i+ " from node " +thisNode+ " for leftMSB " + _leftMSB);
+        System.out.println("Sending " +_perNodeNumLeftRowsToFetch[i]+ " row requests to node " +i+ " in " +nbatch+ " batches from node " +thisNode+ " for leftMSB " + _leftMSB);
         assert nbatch >= 1;
         assert lastSize > 0;
         perNodeLeftRows[i] = new long[nbatch][];
@@ -339,6 +349,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         }
         { // new scope so 'row' can be declared in the for() loop below and registerized (otherwise 'already defined in this scope' in that scope)
           // Fetch the left rows and mark the contiguous from-ranges each left row should be recycled over
+          // TODO: when single node, not needed
           long row = _leftOrder[(int)(leftLoc / _leftBatchSize)][(int)(leftLoc % _leftBatchSize)];  // TODO could loop through batches rather than / and % wastefully
           int chkIdx = _leftVec.elem2ChunkIdx(row); //binary search in espc
           int ni = _leftChunkNode[chkIdx];
@@ -373,8 +384,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
     // Create the chunks for the final frame from this MSB pair.
     batchSize = 256*1024*1024 / 16;  // number of rows per chunk to fit in 256GB DKV limit.   16 bytes for each UUID (biggest type). Enum will be long (8). TODO: How is non-Enum 'string' handled by H2O?
-    int nbatch = (int) (_numRowsInResult-1)/batchSize +1;  // TODO: wrap in class to avoid this boiler plate
-    int lastSize = (int)(_numRowsInResult - (nbatch-1)*batchSize);
+    int nbatch = (int) ((_numRowsInResult-1)/batchSize +1);  // TODO: wrap in class to avoid this boiler plate
+    int lastSize = (int) (_numRowsInResult - (nbatch-1)*batchSize);
     assert nbatch >= 1;
     assert lastSize > 0;
     _chunkSizes = new int[nbatch];
@@ -532,14 +543,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     GetRawRemoteRows(Frame fr, long[] rows) {
       _rows = rows;
       _fr = fr;
-      _priority = nextThrPriority();  // bump locally AND ship this priority to the worker where the priority() getter will query it
     }
-    @Override public byte priority() { return _priority; }
-    private byte _priority;
-    // Raise the priority, so that if a thread blocks here, we are guaranteed
-    // the task completes (perhaps using a higher-priority thread from the
-    // upper thread pools).  This prevents thread deadlock.
-    // Remember that this gets queried on both the caller and the sender, of course.
 
     @Override
     public void compute2() {

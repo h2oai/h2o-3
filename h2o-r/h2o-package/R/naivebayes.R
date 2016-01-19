@@ -24,6 +24,8 @@
 #' @param eps A threshold cutoff to deal with numeric instability, must be positive.
 #' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
 #'        FALSE to reduce the runtime of the algorithm.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional
 #'        on the response, and a Gaussian distribution of numeric predictors with mean and standard
 #'        deviation computed from the training dataset. When building a naive Bayes classifier,
@@ -46,7 +48,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            laplace = 0,
                            threshold = 0.001,
                            eps = 0,
-                           compute_metrics = TRUE)
+                           compute_metrics = TRUE,
+                           max_runtime_secs=0)
 {
   # Training_frame may be a key or an H2O H2OFrame object
   if (!is.H2OFrame(training_frame))
@@ -76,6 +79,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$eps_sdev <- eps
   if(!missing(compute_metrics))
     parms$compute_metrics <- compute_metrics
+  if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
 
   # In R package, cutoff and threshold for probability and standard deviation are the same
   parms$min_prob <- threshold

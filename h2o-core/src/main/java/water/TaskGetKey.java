@@ -39,7 +39,7 @@ public class TaskGetKey extends DTask<TaskGetKey> {
     return rpc;                 // Successful install of a fresh RPC
   }
 
-  private TaskGetKey( Key key ) { _key = _xkey = key; }
+  private TaskGetKey( Key key ) { super(H2O.GET_KEY_PRIORITY); _key = _xkey = key; }
 
   // Top-level non-recursive invoke
   @Override public void dinvoke( H2ONode sender ) {
@@ -84,5 +84,4 @@ public class TaskGetKey extends DTask<TaskGetKey> {
   @Override public void onAckAck() {
     if( _val != null ) _val.lowerActiveGetCount(_h2o);
   }
-  @Override protected byte priority() { return H2O.GET_KEY_PRIORITY; }
 }

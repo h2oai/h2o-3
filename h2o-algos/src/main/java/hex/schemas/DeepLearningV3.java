@@ -68,6 +68,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "stopping_rounds",
         "stopping_metric",
         "stopping_tolerance",
+        "max_runtime_secs",
         "score_validation_sampling",
         "diagnostics",
         "fast_mode",

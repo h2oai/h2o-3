@@ -353,18 +353,16 @@ final class RollupStats extends Iced {
   // If rs computation is already in progress, it will wait for it to finish.
   // Throws IAE if the Vec is being modified (or removed) while this task is in progress.
   static final class ComputeRollupsTask extends DTask<ComputeRollupsTask>{
-    private final byte _priority;
     final Key _vecKey;
     final Key _rsKey;
     final boolean _computeHisto;
 
     public ComputeRollupsTask(Vec v, boolean computeHisto){
-      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY-2;
+      super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY-2));
       _vecKey = v._key;
       _rsKey = v.rollupStatsKey();
       _computeHisto = computeHisto;
     }
-    @Override public byte priority(){return _priority; }
 
     private Value makeComputing(){
       RollupStats newRs = RollupStats.makeComputing();

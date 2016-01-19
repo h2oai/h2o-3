@@ -160,17 +160,6 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     return jobs;
   }
 
-  /** The list of all user-visible Jobs, past and present.
-   *  @return The list of all user-visible Jobs, past and present */
-  public static Job[] jobsUserVisible() {
-    Job[] jobs = jobs(), jobsUserVisible = new Job[jobs.length];
-    int i=0;
-    for (Job j : jobs)
-      if (j._result.user_allowed())
-        jobsUserVisible[i++] = j;
-    return Arrays.copyOf(jobsUserVisible, i);
-  }
-
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
    *  @param work Amount of work to-do, for updating progress bar
@@ -265,7 +254,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       final DException dex = new DException(ex,caller.getClass());
       new Barrier1OnExCom(dex).apply(Job.this);
-      if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
+      if( getCompleter().getCompleter() == null ) { // barrier2 doesn't handle this exception, so print it out
         System.err.println("barrier onExCompletion for "+caller.getClass());
         ex.printStackTrace();
       }
@@ -304,6 +293,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( bar != null )           // Barrier may be null if task already completed
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
+    if (_ex!=null) throw _ex instanceof RuntimeException ? (RuntimeException)_ex : new RuntimeException(_ex);
     // Maybe null return, if the started fjtask does not actually produce a result at this Key
     return _result==null ? null : _result.get(); 
   }
@@ -330,6 +320,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   private void update_from_remote( ) {
     Job remote = DKV.getGet(_key); // Watch for changes in the DKV
     if( this==remote ) return; // Trivial!
+    if( null==remote ) return; // Stay with local version
     boolean differ = false;
     if( _stop_requested != remote._stop_requested ) differ = true;
     if(_start_time!= remote._start_time) differ = true;

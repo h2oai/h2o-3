@@ -42,13 +42,11 @@ public class UDPRebooted extends UDP {
     final int _nodeId;
 
     public ShutdownTsk(H2ONode killer, int nodeId, int timeout, boolean [] confirmations){
+      super(H2O.GUI_PRIORITY);
       _nodeId = nodeId;
       _killer = killer;
       _timeout = timeout;
       _confirmations = confirmations;
-    }
-    @Override public byte priority(){
-      return H2O.GUI_PRIORITY;
     }
     transient boolean _didShutDown;
     private synchronized void doShutdown(int exitCode, String msg){

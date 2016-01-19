@@ -10,7 +10,6 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
   final String[] _files;        // File names found locally
   final long  [] _sizes;        // File sizes found locally
   int[] _ok;                    // OUTPUT: files which are globally compatible
-
   @Override public void setupLocal() {
     _ok = new int[_files.length];
     for( int i = 0; i < _files.length; ++i ) {
@@ -21,7 +20,6 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
   }
 
   @Override public void reduce( FileIntegrityChecker o ) { ArrayUtils.add(_ok,o._ok); }
-  @Override public byte priority() { return H2O.GUI_PRIORITY; }
 
   private void addFolder(File path, ArrayList<File> filesInProgress ) {
     if( !path.canRead() ) return;
@@ -45,6 +43,7 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
   public static FileIntegrityChecker check(File r) {  return new FileIntegrityChecker(r).doAllNodes(); }
 
   public FileIntegrityChecker(File root) {
+    super(H2O.GUI_PRIORITY);
     ArrayList<File> filesInProgress = new ArrayList<>();
     addFolder(root,filesInProgress);
     _files = new String[filesInProgress.size()];

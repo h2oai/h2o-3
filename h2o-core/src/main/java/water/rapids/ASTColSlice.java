@@ -405,7 +405,7 @@ class ASTRBind extends ASTPrim {
       addToPendingCount(_vecs.length-1-1);
       int offset=0;
       for( int i=1; i<_vecs.length; i++ ) {
-        new RbindMRTask(this, _cmaps[i], _v, offset).asyncExec(_vecs[i]);
+        new RbindMRTask(this, _cmaps[i], _v, offset).dfork(_vecs[i]);
         offset += _vecs[i].nChunks();
       }
     }

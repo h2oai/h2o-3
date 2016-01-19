@@ -35,6 +35,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   public GBM( GBMModel.GBMParameters parms, Key<GBMModel> key) { super(parms, key); init(false); }
   public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
 
+  @Override protected int nModelsInParallel() {
+    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
+    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    return 2; //GBM always has some serial work, so it's fine to build two models at once
+  }
+
   /** Start the GBM training Job on an F/J thread. */
   @Override protected GBMDriver trainModelImpl() {
     return new GBMDriver();
@@ -176,7 +182,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       QuantileModel qm = null;
       Frame tempFrame = null;
       try {
-        tempFrame = new Frame(Key.makeUserHidden(Key.make()), new String[]{"y"}, new Vec[]{y});
+        tempFrame = new Frame(Key.make(H2O.SELF), new String[]{"y"}, new Vec[]{y});
         if (hasWeightCol()) tempFrame.add("w", _weights);
         DKV.put(tempFrame);
         QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
@@ -463,7 +469,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Adds a layer to the trees each pass.
       int depth = 0;
       for (; depth < _parms._max_depth; depth++) {
-        if (_job.stop_requested()) return;
         hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _mtry < _model._output.nfeatures(), _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if (hcs == null) break;

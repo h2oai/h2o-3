@@ -321,7 +321,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         SVDModel svd = (SVDModel)ModelCacheManager.get(parms);
         if( svd == null ) svd = new SVD(parms,_job).trainModelNested();
-        if (_job.stop_requested()) return null;
+        if (stop_requested()) return null;
         model._output._init_key = svd._key;
 
         // Ensure SVD centers align with adapted training frame cols
@@ -361,7 +361,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         ModelCacheManager MCM = H2O.getMCM();
         KMeansModel km = (KMeansModel)MCM.get(parms);
         if( km == null ) km = new KMeans(parms,_job).trainModelNested();
-        if (_job.stop_requested()) return null;
+        if (stop_requested()) return null;
         model._output._init_key = km._key;
 
         // Score only if clusters well-defined and closed-form solution does not exist
@@ -414,7 +414,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
     // Stopping criteria
     private boolean isDone(GLRMModel model, int steps_in_row, double step) {
-      if (_job.stop_requested()) return true;  // Stopped/cancelled
+      if (stop_requested()) return true;  // Stopped/cancelled
 
       // Stopped for running out of iterations
       if (model._output._iterations >= _parms._max_iterations) return true;
@@ -525,7 +525,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model.delete_and_lock(_job);
 
         // Save adapted frame info for scoring later
-        tinfo = new DataInfo(Key.make(), _train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+        tinfo = new DataInfo(_train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(tinfo._key, tinfo);
 
         // Save training frame adaptation information for use in scoring later
@@ -559,7 +559,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         fr = new Frame(_train);
         for (int i = 0; i < _ncolX; i++) fr.add("xcol_" + i, fr.anyVec().makeZero());
         for (int i = 0; i < _ncolX; i++) fr.add("wcol_" + i, fr.anyVec().makeZero());
-        dinfo = new DataInfo(Key.make(), fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+        dinfo = new DataInfo(fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(dinfo._key, dinfo);
 
         int weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
@@ -658,7 +658,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._representation_name = (_parms._representation_name == null || _parms._representation_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._representation_name;
         model._output._representation_key = Key.make(model._output._representation_name);
         Frame x = new Frame(model._output._representation_key, xnames, xvecs);
-        xinfo = new DataInfo(Key.make(), x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+        xinfo = new DataInfo(x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x);
         DKV.put(xinfo);
 

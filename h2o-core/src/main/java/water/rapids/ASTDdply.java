@@ -131,14 +131,8 @@ class ASTDdply extends ASTPrim {
 
     RemoteRapids( Frame data, Key<Vec> vKey, AST fun, ASTFun scope) {
       _data = data; _vKey=vKey; _fun=fun; _scope = scope;
-      // Always 1 higher priority than calling thread... because the caller will
-      // block & burn a thread waiting for this MRTask to complete.
-      Thread cThr = Thread.currentThread();
-      _priority = (byte)((cThr instanceof H2O.FJWThr) ? ((H2O.FJWThr)cThr)._priority+1 : super.priority());
     }
 
-    final private byte _priority;
-    @Override public byte priority() { return _priority; }
     @Override public void compute2() {
       assert _vKey.home();
       final Vec gvec = DKV.getGet(_vKey);

@@ -3,8 +3,7 @@ package water;
 /** Invalidate cached value on remote. */
 class TaskInvalidateKey extends TaskPutKey {
   private final transient Value _newval;
-  private TaskInvalidateKey(Key key, Value newval){super(key,null); _newval=newval;}
-  @Override public byte priority(){return H2O.INVALIDATE_PRIORITY;}
+  private TaskInvalidateKey(Key key, Value newval){super(key); _newval=newval;}
   static void invalidate( H2ONode h2o, Key key, Value newval, Futures fs ) {
     assert newval._key != null && key.home();
     // Prevent the new Value from being overwritten by Yet Another PUT by

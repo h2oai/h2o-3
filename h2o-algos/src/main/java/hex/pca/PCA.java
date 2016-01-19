@@ -191,7 +191,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model.delete_and_lock(_job);
 
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
-          dinfo = new DataInfo(Key.make(), _train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+          dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
           
           // Calculate and save Gram matrix of training data
@@ -241,7 +241,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Build an SVD model
           SVDModel svd = new SVD(parms, _job).trainModelNested();
-          if (_job.stop_requested()) return;
+          if (stop_requested()) return;
           svd.remove(); // Remove from DKV
 
           // Recover PCA results from SVD model
@@ -269,7 +269,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Build an SVD model
           GLRMModel glrm = new GLRM(parms, _job).trainModelNested();
-          if (_job.stop_requested()) return;
+          if (stop_requested()) return;
           glrm._output._representation_key.get().delete();
           glrm.remove(); // Remove from DKV
 

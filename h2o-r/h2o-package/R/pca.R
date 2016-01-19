@@ -41,6 +41,8 @@
 #'        if too many entries are NA when using methods like GramSVD. Defaults to FALSE.
 #' @param seed (Optional) Random seed used to initialize the right singular vectors
 #'        at the beginning of each power method iteration.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
@@ -63,7 +65,9 @@ h2o.prcomp <- function(training_frame, x, k,
                       use_all_factor_levels = FALSE,
                       compute_metrics = TRUE,
                       impute_missing = FALSE,
-                      seed)
+                      seed,
+                      max_runtime_secs=0
+                      )
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
@@ -88,6 +92,7 @@ h2o.prcomp <- function(training_frame, x, k,
   if(!missing(use_all_factor_levels)) parms$use_all_factor_levels <- use_all_factor_levels
   if(!missing(impute_missing))        parms$impute_missing <- impute_missing
   if(!missing(seed))                  parms$seed <- seed
+  if(!missing(max_runtime_secs))      parms$max_runtime_secs <- max_runtime_secs
 
   # Error check and build model
   .h2o.modelJob('pca', parms)

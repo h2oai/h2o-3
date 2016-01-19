@@ -20,11 +20,13 @@ class RadixCount extends MRTask<RadixCount> {
   int _biggestBit;
   int _col;
   boolean _isLeft; // used to determine the unique DKV names since DF._key is null now and before only an RTMP name anyway
+  int _id_maps[][];
 
-  RadixCount(boolean isLeft, int biggestBit, int col) {
+  RadixCount(boolean isLeft, int biggestBit, int col, int id_maps[][]) {
     _isLeft = isLeft;
     _biggestBit = biggestBit;
     _col = col;
+    _id_maps = id_maps;
   }
 
   // make a unique deterministic key as a function of frame, column and node
@@ -46,9 +48,16 @@ class RadixCount extends MRTask<RadixCount> {
     int shift = _biggestBit-8;
     if (shift<0) shift = 0;
     // TO DO: assert chk instanceof integer or enum;  -- but how?  // alternatively: chk.getClass().equals(C8Chunk.class)
-    for (int r=0; r<chk._len; r++) {
-      tmp[(int) (chk.at8(r) >> shift & 0xFFL)]++;  // forget the L => wrong answer with no type warning from IntelliJ
-      // TODO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
+    if (!_isLeft && chk.vec().isCategorical()) {   // first column (for MSB split) in an Enum. Heed the id_maps.
+      assert _id_maps[0].length > 0;
+      for (int r=0; r<chk._len; r++) {
+        tmp[(int) (_id_maps[0][(int)chk.at8(r)] >> shift & 0xFFL)]++;
+      }
+    } else {
+      for (int r=0; r<chk._len; r++) {
+        tmp[(int) (chk.at8(r) >> shift & 0xFFL)]++;  // forget the L => wrong answer with no type warning from IntelliJ
+        // TODO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
+      }
     }
   }
 
@@ -71,13 +80,15 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   int[]_col;
   long _numRowsOnThisNode;
   Key _linkTwoMRTask;
+  int _id_maps[][];
 
   static Hashtable<Key,SplitByMSBLocal> MOVESHASH = new Hashtable<>();
-  SplitByMSBLocal(boolean isLeft, int biggestBit, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask) {
+  SplitByMSBLocal(boolean isLeft, int biggestBit, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask, int[][] id_maps) {
     _isLeft = isLeft;
     _biggestBit = biggestBit; _batchSize=batchSize; _bytesUsed = bytesUsed; _col = col;
     _keySize = keySize;  // ArrayUtils.sum(_bytesUsed) -1;
     _linkTwoMRTask = linkTwoMRTask;
+    _id_maps = id_maps;
     //setProfile(true);
   }
 
@@ -124,7 +135,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
     for (int msb = 0; msb < 256; msb++) {
       if (MSBhist[msb] == 0) continue;
-      int nbatch = (int) (MSBhist[msb]-1)/_batchSize +1;  // at least one batch
+      int nbatch = (int) ((MSBhist[msb]-1)/_batchSize +1);  // at least one batch
       int lastSize = (int) (MSBhist[msb] - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize)
       assert nbatch == 1;  // Prevent large testing for now.  TO DO: test nbatch>0 by reducing batchSize very small and comparing results with non-batched
       assert lastSize > 0;
@@ -174,13 +185,14 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     long t0 = System.nanoTime();
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       long thisx = chk[0].at8(r);  // - _colMin[0]) << leftAlign;  (don't subtract colMin because it unlikely helps compression and makes joining 2 compressed keys more difficult and expensive).
-      int shift = _biggestBit-8;
+      if (!_isLeft && _id_maps[0] != null) thisx = _id_maps[0][(int)thisx];  // TO DO: restore branch-free again, go by column and retain original compression with no .at8()
+      int shift = _biggestBit-8;   // TO DO: not needed if we stick with original compression and standardize in merge.
       if (shift<0) shift = 0;
       int MSBvalue = (int) (thisx >> shift & 0xFFL);
       long target = myCounts[MSBvalue]++;
       int batch = (int) (target / _batchSize);
       int offset = (int) (target % _batchSize);
-      if (_o[MSBvalue] == null) throw new RuntimeException("Internal error: o_[MSBvalue] is null. Should never happen.");
+      assert _o[MSBvalue] != null;
       _o[MSBvalue][batch][offset] = (long) r + chk[0].start();    // move i and the index.
 
       byte this_x[] = _x[MSBvalue][batch];
@@ -190,8 +202,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         thisx >>= 8;
       }
       for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
-        offset += _bytesUsed[c-1]-1;  // advance offset by the previous field width
+        offset += _bytesUsed[c-1];    // advance offset by the previous field width
         thisx = chk[c].at8(r);        // TO DO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
+        if (!_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx];  // TO DO: restore branch-free again, go by column and retain original compression with no .at8()
         for (int i = _bytesUsed[c] - 1; i >= 0; i--) {
           this_x[offset + i] = (byte) (thisx & 0xFF);
           thisx >>= 8;
@@ -382,13 +395,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     _keySize = keySize;
     //_nGroup = nGroup;
     _MSBvalue = MSBvalue;
-    _priority = nextThrPriority();  // bump locally AND ship this priority to the worker where the priority() getter will query it
   }
-
-  // priority bump needed now that RadixOrder is a CountedCompleter so that left and right index can run in parallel
-  // if a bump is needed, so far it's been needed at the low level. TODO: ask Cliff why we have to do this manually.
-  @Override public byte priority() { return _priority; }
-  private byte _priority;
 
   @Override
   public void compute2() {
@@ -411,8 +418,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     if (_numRows == 0) { tryComplete(); return; }
 
     // Allocate final _o and _x for this MSB which is gathered together on this node from the other nodes.
-    int nbatch = (int) (_numRows -1) / _batchSize +1;   // at least one batch.    TO DO:  as Arno suggested, wrap up into class for fixed width batching (to save espc overhead)
-    int lastSize = (int) (_numRows - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize, too if happens to be exact multiple of batchSize)
+    int nbatch = (int) ((_numRows-1) / _batchSize +1);   // at least one batch.    TO DO:  as Arno suggested, wrap up into class for fixed width batching (to save espc overhead)
+    int lastSize = (int) (_numRows - (nbatch-1)*_batchSize);   // the size of the last batch (could be batchSize, too if happens to be exact multiple of batchSize)
     _o = new long[nbatch][];
     _x = new byte[nbatch][];
     int b;
@@ -551,7 +558,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     don't be tempted to binsearch backwards here because have to shift anyway  */
   {
     int batch0 = (int) (start / _batchSize);
-    int batch1 = (int) (start+len-1) / _batchSize;
+    int batch1 = (int) ((start+len-1) / _batchSize);
     long origstart = start;   // just for when straddle batch boundaries
     int len0 = 0;             // same
     // _nGroup[_MSBvalue]++;  // TODO: reinstate.  This is at least 1 group (if all keys in this len items are equal)
@@ -614,7 +621,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       return;
     }
     int batch0 = (int) (start / _batchSize);
-    int batch1 = (int) (start+len-1) / _batchSize;
+    int batch1 = (int) ((start+len-1) / _batchSize);
     // could well span more than one boundary when very large number of rows.
     // assert batch0==0;
     // assert batch0==batch1;  // Count across batches of 2Bn is now done.  Wish we had 64bit indexing in Java.
@@ -716,12 +723,13 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
   //byte[][][] _x;
   Frame _DF;
   boolean _isLeft;
-  int _whichCols[];
+  int _whichCols[], _id_maps[][];
 
-  RadixOrder(Frame DF, boolean isLeft, int whichCols[]) {
+  RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][]) {
     _DF = DF;
     _isLeft = isLeft;
     _whichCols = whichCols;
+    _id_maps = id_maps;
   }
 
   @Override
@@ -736,7 +744,15 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
       Vec col = _DF.vec(_whichCols[i]);
       //long range = (long) (col.max() - col.min());
       //assert range >= 1;   // otherwise log(0)==-Inf next line
-      _biggestBit[i] = 1 + (int) Math.floor(Math.log(col.max()) / Math.log(2));   // number of bits starting from 1 easier to think about (for me)
+      double numerator;
+      if (!_isLeft && col.isCategorical()) {
+        // the right's levels have been matched to the left's levels and we store the mapped values so it's that mapped range we need here (or the col.max() of the corresonding left table would be fine too, but mapped range might be less so use that for possible efficiency)
+        assert _id_maps[i] != null;
+        numerator = ArrayUtils.maxValue(_id_maps[i]);  // could use rightcol.max(), but this way if we join to a small subset of levels, we'll benefit from the small range here.
+      } else {
+        numerator = col.max();
+      }
+      _biggestBit[i] = 1 + (int) Math.floor(Math.log(numerator) / Math.log(2));   // number of bits starting from 1 easier to think about (for me)
       _bytesUsed[i] = (int) Math.ceil(_biggestBit[i] / 8.0);
       //colMin[i] = (long) col.min();   // TO DO: non-int/enum
     }
@@ -747,7 +763,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     System.out.println("Time to use rollup stats to determine biggestBit: " + (System.nanoTime() - t0) / 1e9);
 
     t0 = System.nanoTime();
-    new RadixCount(_isLeft, _biggestBit[0], _whichCols[0]).doAll(_DF.vec(_whichCols[0]));
+    new RadixCount(_isLeft, _biggestBit[0], _whichCols[0], _isLeft ? null : _id_maps ).doAll(_DF.vec(_whichCols[0]));
     System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + (System.nanoTime() - t0) / 1e9);
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
@@ -761,7 +777,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     // from first on that node to second on that node.  // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
     t0 = System.nanoTime();
     Key linkTwoMRTask = Key.make();
-    SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _biggestBit[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
+    SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _biggestBit[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
     System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + (System.nanoTime() - t0) / 1e9);
     System.out.print(tmp.profString());
 

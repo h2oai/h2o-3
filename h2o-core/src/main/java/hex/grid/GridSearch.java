@@ -3,7 +3,7 @@ package hex.grid;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
-import hex.grid.HyperSpaceWalker.CartesianWalker;
+import hex.grid.HyperSpaceWalker.BaseWalker;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
@@ -32,7 +32,7 @@ import java.util.Map;
  * and blocking. So after finish the last model, whole grid search job is done as well.
  *
  * By default, the grid search invokes cartezian grid search, but it can be
- * modified by passing explicit hyper space walk strategy via the 
+ * modified by passing explicit hyper space walk strategy via the
  * {@link #startGridSearch(Key, HyperSpaceWalker)} method.
  *
  * If any of forked jobs fails then the failure is ignored, and grid search
@@ -203,14 +203,36 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * @return return a new model if it does not exist
    */
   private Model buildModel(final MP params, Grid<MP> grid, int paramsIdx, String protoModelKey) {
-    // Make sure that the model is not yet built (can be case of duplicated hyper parameters)
+    // Make sure that the model is not yet built (can be case of duplicated hyper parameters).
+    // We first look in the grid _models cache, then we look in the DKV.
     // FIXME: get checksum here since model builder will modify instance of params!!!
-    long checksum = params.checksum();
+
+    final long checksum = params.checksum();
     Key<Model> key = grid.getModelKey(checksum);
-    // It was already built
     if (key != null) {
-      return key.get();
+      if (DKV.get(key) == null) {
+        // We know about a model that's been removed; rebuild.
+        Log.info("GridSearch.buildModel(): model with these parameters was built but removed, rebuilding; checksum: " + checksum);
+      } else {
+        Log.info("GridSearch.buildModel(): model with these parameters already exists, skipping; checksum: " + checksum);
+        return key.get();
+      }
     }
+
+    // Is there a model with the same params in the DKV?
+    final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+      @Override
+      public boolean filter(KeySnapshot.KeyInfo k) {
+        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get()).checksum() == checksum;
+      }
+    }).keys();
+
+    if (modelKeys.length > 0) {
+      grid.putModel(checksum, modelKeys[0]);
+      return modelKeys[0].get();
+    }
+
+
     // Modify model key to have nice version with counter
     // Note: Cannot create it before checking the cache since checksum would differ for each model
     Key<Model> result = Key.make(protoModelKey + paramsIdx);
@@ -254,9 +276,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
 
   /**
-   * Start a new grid search job.
+   * Start a new grid search job.  This is the method that gets called by GridSearchHandler.do_train().
    *
-   * <p>This method launches "classical" grid search traversing cartezian grid of parameters
+   * <p>This method launches "classical" grid search traversing cartesian grid of parameters
    * point-by-point.
    *
    * @param destKey              A key to store result of grid search under.
@@ -276,7 +298,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       final Map<String, Object[]> hyperParams,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
     // Create a walker to traverse hyper space of model parameters
-    CartesianWalker<MP> hyperSpaceWalker = new CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
+    BaseWalker<MP>
+        hyperSpaceWalker =
+        // TODO: let the client choose!
+//        new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory);
+      new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
 
     return startGridSearch(destKey, hyperSpaceWalker);
   }
@@ -285,7 +311,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   /**
    * Start a new grid search job.
    *
-   * <p>This method launches "classical" grid search traversing cartezian grid of parameters
+   * <p>This method launches "classical" grid search traversing cartesian grid of parameters
    * point-by-point.
    *
    * @param destKey      A key to store result of grid search under.

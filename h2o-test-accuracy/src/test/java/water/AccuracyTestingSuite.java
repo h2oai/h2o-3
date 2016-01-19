@@ -251,7 +251,6 @@ public class AccuracyTestingSuite {
     for( Job j : Job.jobs() ) { j.stop(); j.remove(fs); }
     fs.blockForPending();
     new MRTask(){
-      @Override public byte priority() { return H2O.GUI_PRIORITY; }
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     H2O.getPM().getIce().cleanUp();

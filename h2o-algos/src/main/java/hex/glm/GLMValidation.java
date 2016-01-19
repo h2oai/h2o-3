@@ -217,7 +217,7 @@ public class GLMValidation extends MetricBuilderSupervised<GLMValidation> {
         Vec weights = f.vec(m._parms._weights_column);
         if (resp != null) {
           gl = new GainsLift(preds.lastVec(), resp, weights);
-          gl.exec();
+          gl.exec(m._output._job);
         }
       }
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), nullDeviance(), _aic, nullDOF(), resDOF(), gl);

@@ -51,7 +51,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _tree = tree;
     _leaf = leaf;
     _hcs  = hcs;
-    _modifiesInputs = true;
     _family = family;
   }
 

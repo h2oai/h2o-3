@@ -9,6 +9,7 @@ import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.util.*;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
 
@@ -510,7 +511,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                   "Bad parameter definition for field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was declared static or transient)");
         }
         // Only support a single annotation which is an API, and is required
-        API api = (API)f.getAnnotations()[0];
+        Annotation[] apis = f.getAnnotations();
+        if( apis.length == 0 ) throw H2O.fail("Broken internal schema; missing API annotation for field: " + key);
+        API api = (API)apis[0];
         // Must have one of these set to be an input field
         if( api.direction() == API.Direction.OUTPUT ) {
           throw new H2OIllegalArgumentException(
@@ -519,9 +522,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         }
         // Parse value and set the field
         setField(this, f, key, parms.getProperty(key), api.required(), thisSchemaClass);
-      } catch( ArrayIndexOutOfBoundsException aioobe ) {
-        // Come here if missing annotation
-        throw H2O.fail("Broken internal schema; missing API annotation for field: " + key);
       } catch( IllegalAccessException iae ) {
         // Come here if field is final or private
         throw H2O.fail("Broken internal schema; field cannot be private nor final: " + key);

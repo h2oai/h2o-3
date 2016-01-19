@@ -63,11 +63,12 @@ public class MetadataHandler extends Handler {
       String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
       int version2 = Integer.valueOf(ss[1]);
       String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
-      String inputSchemaName = "hex.schemas."+algoName+"V"+version2;  // hex.schemas.GBMV3
+      String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
+      String inputSchemaName = schemaDir+algoName+"V"+version2;  // hex.schemas.GBMV3
       sinput = (Schema)TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
       sinput.init_meta();
       // hex.schemas.GBMModelV3$GBMModelOutputV3
-      String outputSchemaName = "hex.schemas."+algoName+"ModelV"+version2+"$"+algoName+"ModelOutputV"+version2;
+      String outputSchemaName = schemaDir+algoName+"ModelV"+version2+"$"+algoName+"ModelOutputV"+version2;
       soutput= (Schema)TypeMap.theFreezable(TypeMap.onIce(outputSchemaName));
       soutput.init_meta();
     } else {

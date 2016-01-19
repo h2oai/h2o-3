@@ -52,7 +52,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
         // Run the main Example Loop
         // Stop after enough iterations
         for( ; model._output._iterations < _parms._max_iterations; model._output._iterations++ ) {
-          if( _job.stop_requested() ) break; // Stopped/cancelled
+          if( stop_requested() ) break; // Stopped/cancelled
 
           double[] maxs = new Max().doAll(_parms.train())._maxs;
 

@@ -2,10 +2,7 @@ package hex.quantile;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import water.Key;
-import water.MRTask;
-import water.H2O;
-import water.Scope;
+import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -21,7 +18,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   @Override protected boolean logMe() { return false; }
 
   // Called from Nano thread; start the Quantile Job on a F/J thread
-  public Quantile( QuantileModel.QuantileParameters parms ) { super(parms, (Key<QuantileModel>)(Key.makeUserHidden(defaultKey(parms.algoName())))); init(false); }
+  public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }
+  public Quantile( QuantileModel.QuantileParameters parms, Job job ) { super(parms, job); init(false); }
   @Override public Driver trainModelImpl() { return new QuantileDriver(); }
   @Override public long progressUnits() { return train().numCols()*_parms._probs.length; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
@@ -81,7 +79,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         // Run the main Quantile Loop
         Vec vecs[] = train().vecs();
         for( int n=0; n<_ncols; n++ ) {
-          if( _job.stop_requested() ) return; // Stopped/cancelled
+          if( stop_requested() ) return; // Stopped/cancelled
           Vec vec = vecs[n];
           if (vec.isBad()) {
             model._output._quantiles[n] = new double[_parms._probs.length];

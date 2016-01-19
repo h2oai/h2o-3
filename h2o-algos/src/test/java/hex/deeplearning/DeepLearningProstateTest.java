@@ -24,7 +24,7 @@ import java.util.Random;
 import static hex.ConfusionMatrix.buildCM;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void run() throws Exception { runFraction(0.00002f); }
 
@@ -393,7 +393,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             }
                                           }
                                           Log.info("Parameters combination " + count + ": PASS");
-                                        } catch (H2OModelBuilderIllegalArgumentException | IllegalArgumentException _) {
+                                        } catch (H2OModelBuilderIllegalArgumentException | IllegalArgumentException ex) {
                                           throw H2O.fail("should not get here");
                                         } catch (RuntimeException t) {
                                           Assert.assertTrue(t.getMessage().contains("unstable"));

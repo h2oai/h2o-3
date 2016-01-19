@@ -22,9 +22,7 @@ public class ProfileCollectorTask extends MRTask<ProfileCollectorTask> {
     public int[] counts;
   }
 
-  public ProfileCollectorTask(int stack_depth) {
-    _stack_depth = stack_depth;
-  }
+  public ProfileCollectorTask(int stack_depth) { super(H2O.GUI_PRIORITY); _stack_depth = stack_depth; }
 
   // input
   public final int _stack_depth;
@@ -118,6 +116,4 @@ public class ProfileCollectorTask extends MRTask<ProfileCollectorTask> {
     _result[idx].stacktraces = sorted_stacktraces;
     _result[idx].counts = sorted_counts;
   }
-
-  @Override public byte priority() { return H2O.GUI_PRIORITY; }
 }

@@ -17,7 +17,7 @@ import java.util.Properties;
  *  running model-building work. */
 public class APIThrPriorTest extends TestUtil {
   @BeforeClass static public void setup() { 
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(5);
     H2O.finalizeRegistration();
   }
 
@@ -182,7 +182,7 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
 
   private class BogusDriver extends Driver {
     @Override public void compute2() {
-      _driver_priority = _priority; // Get H2OCountedCompleter priority
+      _driver_priority = priority(); // Get H2OCountedCompleter priority
       synchronized(Bogus.this) {
         if( _state == 0 ) _state = 1;
         Bogus.this.notify();

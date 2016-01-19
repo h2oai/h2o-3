@@ -1,18 +1,14 @@
 package hex.grid;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Collection;
-
 import hex.Model;
 import water.*;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.IcedLong;
-import water.util.PojoUtils;
+import water.util.*;
 import water.util.PojoUtils.FieldNaming;
-import water.util.StringUtils;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.Collection;
 
 /** A Grid of Models representing result of hyper-parameter space exploration.
  *  Lazily filled in, this object represents the potentially infinite variety
@@ -27,7 +23,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   public static final Grid GRID_PROTO = new Grid(null, null, null, null);
 
   // A cache of double[] hyper-parameters mapping to Models.
-  private final IcedHashMap<IcedLong, Key<Model>> _cache = new IcedHashMap<>();
+  private final IcedHashMap<IcedLong, Key<Model>> _models = new IcedHashMap<>();
 
   // Used "based" model parameters for this grid search.
   private final MP _params;
@@ -120,7 +116,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   }
 
   Key<Model> getModelKey(long paramsChecksum) {
-    Key<Model> mKey = _cache.get(IcedLong.valueOf(paramsChecksum));
+    Key<Model> mKey = _models.get(IcedLong.valueOf(paramsChecksum));
     return mKey;
   }
 
@@ -128,7 +124,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * parameters are not imutable and model builder modifies them! */
   /* package */
   synchronized Key<Model> putModel(long checksum, Key<Model> modelKey) {
-    return _cache.put(IcedLong.valueOf(checksum), modelKey);
+    return _models.put(IcedLong.valueOf(checksum), modelKey);
   }
 
   /**
@@ -205,7 +201,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @return list of model keys
    */
   public Key<Model>[] getModelKeys() {
-    return _cache.values().toArray(new Key[_cache.size()]);
+    return _models.values().toArray(new Key[_models.size()]);
   }
 
   /**
@@ -214,7 +210,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @return all models in this grid
    */
   public Model[] getModels() {
-    Collection<Key<Model>> modelKeys = _cache.values();
+    Collection<Key<Model>> modelKeys = _models.values();
     Model[] models = new Model[modelKeys.size()];
     int i = 0;
     for (Key<Model> mKey : modelKeys) {
@@ -228,7 +224,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * Returns number of models in this grid.
    */
   public int getModelCount() {
-    return _cache.size();
+    return _models.size();
   }
 
   /**
@@ -297,15 +293,15 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
   // Cleanup models and grid
   @Override protected Futures remove_impl(final Futures fs) {
-    for (Key<Model> k : _cache.values())
+    for (Key<Model> k : _models.values())
       k.remove(fs);
-    _cache.clear();
+    _models.clear();
     return fs;
   }
 
   /** Write out K/V pairs */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
-    for (Key<Model> k : _cache.values())
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    for (Key<Model> k : _models.values())
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
@@ -315,4 +311,3 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
   @Override public Class<water.api.KeyV3.GridKeyV3> makeSchema() { return water.api.KeyV3.GridKeyV3.class; }
 }
-

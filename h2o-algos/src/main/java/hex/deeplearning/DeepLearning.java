@@ -39,6 +39,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   }
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
+  @Override protected int nModelsInParallel() {
+    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
+    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    return 1;
+  }
+
   @Override protected DeepLearningDriver trainModelImpl() { return new DeepLearningDriver(); }
 
   @Override
@@ -73,7 +79,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     double x = 0.782347234;
     boolean identityLink = new Distribution(parms._distribution, parms._tweedie_power).link(x) == x;
     return new DataInfo(
-            Key.make(), //dest key
             train,
             valid,
             parms._autoencoder ? 0 : 1, //nResponses
@@ -121,9 +126,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   @Override public void modifyParmsForCrossValidationMainModel(ModelBuilder[] cvModelBuilders) {
     _parms._overwrite_with_best_model = false;
-    if( _parms._stopping_rounds == 0 ) return; // No exciting changes to stopping conditions
+
+    if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     _parms._stopping_rounds = 0;
+    _parms._max_runtime_secs = 0;
     double sum = 0;
     for( ModelBuilder cvmb : cvModelBuilders )
       sum += ((DeepLearningModel)DKV.getGet(cvmb.dest())).last_scored().epoch_counter;
@@ -131,6 +138,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     if( !_parms._quiet_mode ) {
       warn("_epochs", "Setting optimal _epochs to " + _parms._epochs + " for cross-validation main model based on early stopping of cross-validation models.");
       warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
+      warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
     }
   }
   
@@ -225,6 +233,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         DataInfo dinfo;
         try {
+          // PUBDEV-2513: Adapt _train and _valid (in-place) to match the frames that were used for the previous model
+          // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
+          for (String st : previous.adaptTestForTrain(_train,true,false)) Log.warn(st);
+          for (String st : previous.adaptTestForTrain(_valid,true,false)) Log.warn(st);
+
           dinfo = makeDataInfo(_train, _valid, _parms);
           DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
@@ -380,17 +393,19 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         _job.update(0,"Training...");
 
         //main loop
-        do {
+        for(;;) {
           model.iterations++;
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepLearningTask (_job._key,        model.model_info(), rowFraction(train, mp, model), model.iterations).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+          if (stop_requested() && !timeout()) break; //cancellation
+          if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
+          if (timeout()) break; //stop after scoring
         }
-        while (!_job.stop_requested() && model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false));
 
         // replace the model with the best model so far (if it's better)
-        if (!_job.stop_requested() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
+        if (!stop_requested() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.loss() < model.loss() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             if (!_parms._quiet_mode)
@@ -410,7 +425,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         model.model_info().data_info().coefNames();
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
-          if (_job.stop_requested()) {
+          if (stop_requested()) {
             Log.info("Deep Learning model training was interrupted.");
           } else {
             Log.info("Finished training the Deep Learning model.");
@@ -455,12 +470,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         double total_gflops = 0;
         for (H2ONode h2o : H2O.CLOUD._memary) {
           HeartBeat hb = h2o._heartbeat;
-          total_gflops += hb._gflops;
+          total_gflops += hb._gflops; //can be NaN if not yet run
         }
         if (mp._single_node_mode) total_gflops /= H2O.CLOUD.size();
-        if (total_gflops == 0) {
+        if (Double.isNaN(total_gflops)) {
           total_gflops = Linpack.run(H2O.SELF._heartbeat._cpus_allowed) * (mp._single_node_mode ? 1 : H2O.CLOUD.size());
         }
+        assert(!Double.isNaN(total_gflops));
 
         final long model_size = model.model_info().size();
         int[] msg_sizes = new int[]{ 1, (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
@@ -485,6 +501,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         // estimate the time for communication (network) and training (compute)
         model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 1e5 /* add 100ms for multi-node MR overhead */) + network_queue_length * microseconds_collective[1];
         double time_per_row_us  = (flops_overhead_per_row * model_size + 10000 * model.model_info().units[0]) / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
+        assert(!Double.isNaN(time_per_row_us));
 
         // compute the optimal number of training rows per iteration
         // fraction := time_comm_us / (time_comm_us + tspi * time_per_row_us)  ==>  tspi = (time_comm_us/fraction - time_comm_us)/time_per_row_us
@@ -503,7 +520,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         if (!mp._quiet_mode) {
           Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
-          Log.info("Estimated compute power : " + (int)total_gflops + " GFlops");
+          Log.info("Estimated compute power : " + Math.round(total_gflops*100)/100 + " GFlops");
           Log.info("Estimated time for comm : " + PrettyPrint.usecs((long) model.time_for_communication_us));
           Log.info("Estimated time per row  : " + ((long)time_per_row_us > 0 ? PrettyPrint.usecs((long) time_per_row_us) : time_per_row_us + " usecs"));
           Log.info("Estimated training speed: " + (int)(1e6/time_per_row_us) + " rows/sec");

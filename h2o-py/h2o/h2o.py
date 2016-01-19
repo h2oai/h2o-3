@@ -794,7 +794,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
                  fast_mode=None,ignore_const_cols=None,force_load_balance=None,replicate_training_data=None,single_node_mode=None,
                  shuffle_training_data=None,sparse=None,col_major=None,average_activation=None,sparsity_beta=None,
                  max_categorical_features=None,reproducible=None,export_weights_and_biases=None,offset_column=None,weights_column=None,
-                 nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None):
+                 nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None, max_runtime_secs=None):
   """
   Build a supervised Deep Learning model
   Performs Deep Learning neural networks on an H2OFrame
@@ -976,7 +976,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
                 max_after_balance_size=None,diagnostics=None,variable_importances=None,
                 fast_mode=None,ignore_const_cols=None,force_load_balance=None,replicate_training_data=None,single_node_mode=None,
                 shuffle_training_data=None,sparse=None,col_major=None,average_activation=None,sparsity_beta=None,
-                max_categorical_features=None,reproducible=None,export_weights_and_biases=None):
+                max_categorical_features=None,reproducible=None,export_weights_and_biases=None, max_runtime_secs=None):
   """
   Build unsupervised auto encoder using H2O Deeplearning
 
@@ -1133,7 +1133,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
         balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
         score_each_iteration=None,offset_column=None,weights_column=None,do_future=None,checkpoint=None,
-        stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
+        stopping_rounds=None, stopping_metric=None, stopping_tolerance=None, max_runtime_secs=None):
   """
   Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
   The default distribution function will guess the model type based on the response column typerun properly the
@@ -1222,7 +1222,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
         tweedie_variance_power=None,tweedie_link_power=None,alpha=None,prior=None,lambda_search=None,
         nlambdas=None,lambda_min_ratio=None,beta_constraints=None,offset_column=None,weights_column=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
-        intercept=None, Lambda=None, max_active_predictors=None, do_future=None, checkpoint=None):
+        intercept=None, Lambda=None, max_active_predictors=None, do_future=None, checkpoint=None, max_runtime_secs=None):
   """
   Build a Generalized Linear Model
   Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error
@@ -1339,7 +1339,7 @@ def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
 def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standardize=None,init=None,seed=None,
            nfolds=None,fold_column=None,fold_assignment=None,training_frame=None,validation_frame=None,
            user_points=None,ignored_columns=None,score_each_iteration=None,keep_cross_validation_predictions=None,
-           ignore_const_cols=None,checkpoint=None):
+           ignore_const_cols=None,checkpoint=None,max_runtime_secs=None):
   """
   Performs k-means clustering on an H2O dataset.
 
@@ -1386,7 +1386,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
                   max_after_balance_size=None,seed=None,offset_column=None,weights_column=None,nfolds=None,
                   fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
                   score_each_iteration=None,checkpoint=None,
-                  stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
+                  stopping_rounds=None, stopping_metric=None, stopping_tolerance=None, max_runtime_secs=None):
   """
   Build a Big Data Random Forest Model
   Builds a Random Forest Model on an H2OFrame
@@ -1468,7 +1468,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
 
 
 def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None,
-           training_frame=None,validation_frame=None,pca_method=None):
+           training_frame=None,validation_frame=None,pca_method=None, max_runtime_secs=None):
   """
   Principal components analysis of a H2O dataset.
 
@@ -1507,7 +1507,7 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
 
 
 def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
-        use_all_factor_levels=None,svd_method=None):
+        use_all_factor_levels=None,svd_method=None, max_runtime_secs=None):
   """
   Singular value decomposition of a H2O dataset.
 
@@ -1548,7 +1548,7 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,max_updates=None,transform=None,
          seed=None,ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
-         user_y=None,user_x=None,expand_user_y=None,impute_original=None,recover_svd=None):
+         user_y=None,user_x=None,expand_user_y=None,impute_original=None,recover_svd=None, max_runtime_secs=None):
   """
   Builds a generalized low rank model of a H2O dataset.
 
@@ -1634,7 +1634,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
 def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,validation_frame=None,
                 laplace=None,threshold=None,eps=None,compute_metrics=None,offset_column=None,weights_column=None,
                 balance_classes=None,max_after_balance_size=None, nfolds=None,fold_column=None,fold_assignment=None,
-                keep_cross_validation_predictions=None,checkpoint=None):
+                keep_cross_validation_predictions=None,checkpoint=None, max_runtime_secs=None):
   """
   The naive Bayes classifier assumes independence between predictor variables conditional on the response, and a
   Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset.
