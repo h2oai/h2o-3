@@ -9,8 +9,10 @@ import itertools
 
 def table_check():
   df = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv"))
-  print(df[['AGE','RACE']].table(dense=True))
-  print(df[['AGE','RACE']].table(dense=False))
+  print(df[['AGE','RACE']].table(dense=True).head().as_data_frame(True))
+  print(df[['AGE','RACE']].table(dense=False).head().as_data_frame(True))
+  print(df[['RACE','AGE']].table(dense=True).head().as_data_frame(True))
+  print(df[['RACE','AGE']].table(dense=False).head().as_data_frame(True))
   iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 
   # single column (frame)

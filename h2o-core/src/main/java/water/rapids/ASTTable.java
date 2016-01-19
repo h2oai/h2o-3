@@ -99,23 +99,26 @@ class ASTTable extends ASTPrim {
   // Count unique combos in 1 or 2 columns, where the values are not integers,
   // or cover a very large span.
   private ValFrame slow_table( Vec v1, Vec v2, String[] colnames, boolean dense ) {
+
+
     // For simplicity, repeat v1 if v2 is missing; this will end up filling in
     // only the diagonal of a 2-D array (in what is otherwise a 1-D array).
     // This should be nearly the same cost as a 1-D array, since everything is
     // sparsely filled in.
-    Vec vx = v2==null ? v1 : v2;
-
-    // Slow-pass group counting, very sparse hashtables.  Note that Vec v2 is
-    // used as the left-most arg, or OUTER dimension - which will be columns in
-    // the final result.
-    SlowCnt sc = new SlowCnt().doAll(vx,v1);
-
-    // Get the column headers as sorted doubles
-    double dcols[] = collectDomain(sc._col0s);
-
+    
     // If this is the 1-column case (all counts on the diagonals), just build a
     // 1-d result.
     if( v2==null ) {
+      
+
+      // Slow-pass group counting, very sparse hashtables.  Note that Vec v2 is
+      // used as the left-most arg, or OUTER dimension - which will be columns in
+      // the final result.
+      SlowCnt sc = new SlowCnt().doAll(v1,v1);
+
+      // Get the column headers as sorted doubles
+      double dcols[] = collectDomain(sc._col0s);
+      
       Frame res = new Frame();
       Vec rowlabel = Vec.makeVec(dcols,Vec.VectorGroup.VG_LEN1.addVec());
       rowlabel.setDomain(v1.domain());
@@ -135,6 +138,15 @@ class ASTTable extends ASTPrim {
     // 2-d table result.
     Frame res = new Frame();
     if (!dense) {
+
+      // Slow-pass group counting, very sparse hashtables.  Note that Vec v2 is
+      // used as the left-most arg, or OUTER dimension - which will be columns in
+      // the final result.
+      SlowCnt sc = new SlowCnt().doAll(v2,v1);
+
+      // Get the column headers as sorted doubles
+      double dcols[] = collectDomain(sc._col0s);
+
       // Need the row headers as sorted doubles also, but these are scattered
       // throughout the nested tables.  Fold 'em into 1 table.
       NonBlockingHashMapLong<AtomicLong> rows = new NonBlockingHashMapLong<>();
@@ -156,9 +168,19 @@ class ASTTable extends ASTPrim {
           cnts[row] = al == null ? 0 : al.get();
         }
         Vec vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
-        res.add(vx.isCategorical() ? vx.domain()[col] : Double.toString(dcols[col]), vec);
+        res.add(v2.isCategorical() ? v2.domain()[col] : Double.toString(dcols[col]), vec);
       }
     } else {
+      
+      SlowCnt sc = new SlowCnt().doAll(v1,v2);
+
+      double dcols[] = collectDomain(sc._col0s);
+      
+      NonBlockingHashMapLong<AtomicLong> rows = new NonBlockingHashMapLong<>();
+      for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); )
+        rows.putAll(sc._col0s.get(i.nextLong()));
+      double drows[] = collectDomain(rows);
+      
       int x = 0;
       int sz = 0;
       for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); ) {
@@ -168,13 +190,16 @@ class ASTTable extends ASTPrim {
       double[] left_categ = new double[sz];
       double[] right_categ = new double[sz];
 
-      for( NonBlockingHashMapLong.IteratorLong i = iter(sc._col0s); i.hasNext(); ) {
-        long l = i.nextLong();
-        for (Entry<Long, AtomicLong> entry : sc._col0s.get(l).entrySet()) {
-          left_categ[x] = Double.longBitsToDouble(entry.getKey());
-          right_categ[x] = Double.longBitsToDouble(l);
-          cnts[x] = (entry.getValue()).get();
-          x++;
+      for (double dcol : dcols) {
+        NonBlockingHashMapLong<AtomicLong> colx = sc._col0s.get(Double.doubleToRawLongBits(dcol));
+        for (double drow : drows) {
+          AtomicLong al = colx.get(Double.doubleToRawLongBits(drow));
+          if (al != null) {
+            left_categ[x] = dcol;
+            right_categ[x] = drow;
+            cnts[x] = al.get();
+            x++;
+          }
         }
       }
       
@@ -182,7 +207,7 @@ class ASTTable extends ASTPrim {
       if( v1.isCategorical() ) vec.setDomain(v1.domain());
       res.add(colnames[0], vec);
       vec = Vec.makeVec(right_categ, Vec.VectorGroup.VG_LEN1.addVec());
-      if( vx.isCategorical() ) vec.setDomain(vx.domain());
+      if( v2.isCategorical() ) vec.setDomain(v2.domain());
       res.add(colnames[1], vec);
       vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
       res.add("Counts", vec);

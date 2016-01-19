@@ -13,7 +13,7 @@ public class TableTest extends TestUtil {
 
   @Test public void testBasic() {
     Frame fr = null;
-    String tree = "(table (cols_py hex [\"AGE\" \"RACE\"]))";
+    String tree = "(table (cols_py hex [\"AGE\" \"RACE\"]) FALSE)";
     try {
       fr = chkTree(tree,"smalldata/prostate/prostate.csv");
 
@@ -27,7 +27,7 @@ public class TableTest extends TestUtil {
 
   @Test public void testBasicDdply() {
     Frame fr = null;
-    String tree = "(table (cols_py hex [\"VOL\"]))";
+    String tree = "(table (cols_py hex [\"VOL\"]) FALSE)";
     try {
       fr = chkTree(tree,"smalldata/prostate/prostate.csv");
 
