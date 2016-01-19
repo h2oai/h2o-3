@@ -438,6 +438,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     if( what.length()==0 ) return null;
     if (what.charAt(0) == MAGIC_CHAR) {
       int len = what.indexOf(MAGIC_CHAR,1);
+      if( len < 0 ) throw new IllegalArgumentException("No matching magic '"+MAGIC_CHAR+"', key name is not legal");
       String tail = what.substring(len+1);
       byte[] res = new byte[(len-1)/2 + tail.length()];
       int r = 0;

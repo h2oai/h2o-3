@@ -1,6 +1,5 @@
 package water.api;
 
-import water.Key;
 import water.api.KeyV3.FrameKeyV3;
 import water.fvec.FileVec;
 import water.parser.ParseSetup;
