@@ -52,7 +52,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
                      enable_assertions = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
-                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_) {
+                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_, force_connect = FALSE) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -95,7 +95,8 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     stop("`password` must be a character string or NA_character_")
   if (is.na(username) != is.na(password))
     stop("Must provide both `username` and `password`")
-
+  if(!is.logical(force_connect) || length(force_connect) != 1L || is.na(force_connect))
+    stop("`force_connect` must be TRUE or FALSE")
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
     stop("H2O is not compatible with R 3.1.0\n",
          "Please change to a newer or older version of R.\n",
@@ -110,7 +111,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
 
   warnNthreads <- FALSE
   tmpConn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure, 
-    username = username, password = password)
+    username = username, password = password, force_connect = force_connect)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -151,7 +152,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
   }
 
   conn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure, 
-    username = username, password = password)
+    username = username, password = password, force_connect = force_connect)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
   h2o.clusterInfo()

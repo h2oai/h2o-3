@@ -613,7 +613,6 @@ class Test:
             cmd = self._pytest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
         elif (is_gradle_build_python_test(self.test_name)):
             cmd = ["python", self.test_name, "--usecloud", self.ip + ":" + str(self.port)]
-            if g_include_jacoco: cmd.append("--forceConnect")
         elif (is_javascript_test_file(self.test_name)): cmd = self._javascript_cmd(self.test_name, self.ip, self.port)
         else:
             print("")
@@ -627,6 +626,7 @@ class Test:
             os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
         # When using JaCoCo, we want to have the process run regardless of the cloud's health
+        if g_include_jacoco: cmd.append("--forceConnect")
         self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
         self.pid = self.child.pid
 

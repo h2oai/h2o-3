@@ -66,6 +66,7 @@ setClass("H2OConnection",
          representation(ip="character", port="numeric", proxy="character",
                         https="logical", insecure="logical",
                         username="character", password="character",
+                        force_connect="logical",
                         mutable="H2OConnectionMutableState"),
          prototype(ip       = NA_character_,
                    port     = NA_integer_,
@@ -74,6 +75,7 @@ setClass("H2OConnection",
                    insecure = FALSE,
                    username = NA_character_,
                    password = NA_character_,
+                   force_connect = FALSE,
                    mutable  = new("H2OConnectionMutableState")))
 
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
