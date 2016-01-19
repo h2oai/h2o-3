@@ -42,7 +42,7 @@ class H2OConnection(object):
   __ENCODING_ERROR__ = "replace"
 
   def __init__(self, ip, port, start_h2o, enable_assertions, license, nthreads, max_mem_size, min_mem_size, ice_root,
-               strict_version_check, proxy, https, insecure, username, password, max_mem_size_GB, min_mem_size_GB):
+               strict_version_check, proxy, https, insecure, username, password, force_connect, max_mem_size_GB, min_mem_size_GB):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
@@ -60,7 +60,8 @@ class H2OConnection(object):
     :param https: Set this to True to use https instead of http.
     :param insecure: Set this to True to disable SSL certificate checking.
     :param username: Username to login with.
-    :param password: Password to login with. 
+    :param password: Password to login with.
+    :param force_connect: Set this to True to attempt to establish a connection even if the cluster reports as unhealthy
     :param max_mem_size_GB: DEPRECATED. Use max_mem_size.
     :param min_mem_size_GB: DEPRECATED. Use min_mem_size.
     :return: None
@@ -88,6 +89,7 @@ class H2OConnection(object):
     self._insecure = insecure
     self._username = username
     self._password = password
+    self.force_connect = force_connect
     self._session_id = None
     self._rest_version = __H2O_REST_API_VERSION__
     self._child = getattr(__H2OCONN__, "_child") if hasattr(__H2OCONN__, "_child") else None
@@ -229,7 +231,10 @@ class H2OConnection(object):
       try:
         cld = H2OConnection.get_json(url_suffix="Cloud")
         if not cld['cloud_healthy']:
-          raise ValueError("Cluster reports unhealthy status", cld)
+          if __H2OCONN__.force_connect:
+            print("WARNING: Cluster reports unhealthy status")
+          else:
+            raise ValueError("Cluster reports unhealthy status", cld)
         if cld['cloud_size'] >= size and cld['consensus']:
           if print_dots: print(" Connection successful!")
           return cld
