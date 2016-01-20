@@ -17,47 +17,17 @@ JENKINS.R.VERSION.MINOR <- "2.2"
 #'
 orderByDependencies<-
 function(reqs) {
-    # create character vector of package names in desired order
-    pkgNames <- as.character(reqs[,1])
-    pkgNames <- pkgNames[-which(pkgNames %in% "bit64")]
-    pkgNames <- append(pkgNames,"bit64",after=which(pkgNames %in% "bit"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "rversions")]
-    pkgNames <- append(pkgNames,"rversions",after=which(pkgNames %in% "xml2"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "foreach")]
-    pkgNames <- append(pkgNames,"foreach",after=which(pkgNames %in% "iterators"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "Matrix")]
-    pkgNames <- append(pkgNames,"Matrix",after=which(pkgNames %in% "lattice"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "flexclust")]
-    pkgNames <- append(pkgNames,"flexclust",after=which(pkgNames %in% "lattice"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "modeltools")]
-    pkgNames <- append(pkgNames,"modeltools",after=which(pkgNames %in% "lattice"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "flexmix")]
-    pkgNames <- append(pkgNames,"flexmix",after=which(pkgNames %in% "nnet"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "e1071")]
-    pkgNames <- append(pkgNames,"e1071",after=which(pkgNames %in% "class"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "survival")]
-    pkgNames <- append(pkgNames,"survival",after=which(pkgNames %in% "lattice"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "gbm")]
-    pkgNames <- append(pkgNames,"gbm",after=which(pkgNames %in% "survival"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "glmnet")]
-    pkgNames <- append(pkgNames,"glmnet",after=which(pkgNames %in% "Matrix"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "KernSmooth")]
-    pkgNames <- append(pkgNames,"KernSmooth",after=which(pkgNames %in% "gtools"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "gplots")]
-    pkgNames <- append(pkgNames,"gplots",after=which(pkgNames %in% "KernSmooth"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "gdata")]
-    pkgNames <- append(pkgNames,"gdata",after=which(pkgNames %in% "KernSmooth"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "caTools")]
-    pkgNames <- append(pkgNames,"caTools",after=which(pkgNames %in% "KernSmooth"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "ROCR")]
-    pkgNames <- append(pkgNames,"ROCR",after=which(pkgNames %in% "gplots"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "prabclus")]
-    pkgNames <- append(pkgNames,"prabclus",after=which(pkgNames %in% "MASS"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "mclust")]
-    pkgNames <- append(pkgNames,"mclust",after=which(pkgNames %in% "MASS"))
-    pkgNames <- pkgNames[-which(pkgNames %in% "latticeExtra")]
-    pkgNames <- append(pkgNames,"latticeExtra",after=which(pkgNames %in% "lattice"))
-    return(reqs[match(pkgNames,reqs[,1]),])
+    installOrder <- c("spatial","proto","randomForest","boot","rgl","ade4","RUnit","AUC","mlbench","HDtweedie",
+                      "LiblineaR","statmod","bit","bit64","R.methodsS3","R.oo","R.utils","bitops","RCurl","caTools",
+                      "KernSmooth","gtools","gdata","gplots","ROCR","codetools","iterators","foreach","lattice",
+                      "Matrix","nlme","mgcv","glmnet","modeltools","flexclust","MASS","nnet","flexmix","DEoptimR",
+                      "robustbase","trimcluster","mclust","kernlab","diptest","mvtnorm","prabclus","cluster","class",
+                      "e1071","fpc","foreign","acepack","Formula","rpart","colorspace","munsell","dichromat",
+                      "labeling","mime","R6","rstudioapi","git2r","brew","whisker","magrittr","stringi","BH",
+                      "RColorBrewer","gtable","Rcpp","digest","xml2","curl","rversions","jsonlite","gridExtra",
+                      "survival","gbm","latticeExtra","stringr","evaluate","roxygen2","memoise","crayon","testthat",
+                      "httr","devtools","plyr","reshape2","scales","ggplot2","Hmisc")
+    return(reqs[match(installOrder,reqs[,1]),])
 }
 
 #'
