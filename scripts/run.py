@@ -801,7 +801,7 @@ class Test:
       elif is_ipython_notebook(test_name): cmd = cmd + ["--ipynb"]
       elif is_pydemo(test_name):           cmd = cmd + ["--pyDemo"]
       else:                                cmd = cmd + ["--pyBooklet"]
-      if g_include_jacoco: cmd = cmd + "--forceConnect" # When using JaCoCo we don't want the test to return an error
+      if g_include_jacoco: cmd = cmd + ["--forceConnect"] # When using JaCoCo we don't want the test to return an error
                                                         # if a cloud reports as unhealthy
       return cmd
 
