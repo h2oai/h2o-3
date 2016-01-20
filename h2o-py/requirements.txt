@@ -10,4 +10,4 @@ patsy
 sklearn
 six
 seaborn
-
+future
