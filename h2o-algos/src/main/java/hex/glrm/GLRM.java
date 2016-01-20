@@ -633,9 +633,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           }
 
           // Add to scoring history
-          model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._training_time_ms.length+1, System.currentTimeMillis());
-          model._output._history_step_size = ArrayUtils.copyAndFillOf(model._output._history_step_size, model._output._history_step_size.length+1, step);
-          model._output._history_objective = ArrayUtils.copyAndFillOf(model._output._history_objective, model._output._history_objective.length+1, model._output._objective);
+          model._output._training_time_ms  = ArrayUtils.append(model._output._training_time_ms, System.currentTimeMillis());
+          model._output._history_step_size = ArrayUtils.append(model._output._history_step_size, step);
+          model._output._history_objective = ArrayUtils.append(model._output._history_objective, model._output._objective);
           model._output._scoring_history = createScoringHistoryTable(model._output);
           model.update(_job); // Update model in K/V store
         }
@@ -663,9 +663,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(xinfo);
 
         // Add to scoring history
-        model._output._history_step_size = ArrayUtils.copyAndFillOf(
-                model._output._history_step_size,
-                model._output._history_step_size.length+1, step);
+        model._output._history_step_size = ArrayUtils.append(model._output._history_step_size, step);
         model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 

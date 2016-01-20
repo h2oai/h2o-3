@@ -28,6 +28,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public Key<Frame> _user_points;
     public boolean _pred_indicator = false;   // For internal use only: generate indicator cols during prediction
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
+    public float _overClusterFactor = 1.0f;   // Extra clusters to generate internally
     @Override protected long nFoldSeed() { return _seed; }
   }
 
@@ -40,18 +41,20 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
     // Sum squared distance between each point and its cluster center.
     public double[/*k*/] _withinss;   // Within-cluster sum of square error
+    public double[/*iterations*/][/*k*/] _history_clust_withinss = new double[0][];
 
     // Cluster size. Defined as the number of rows in each cluster.
     public long[/*k*/] _size;
+    public long[/*iterations*/][/*k*/] _history_size = new long[0][];
 
     // Sum squared distance between each point and its cluster center.
     public double _tot_withinss;      // Within-cluster sum-of-square error
-    public double[/*iterations*/] _history_withinss = new double[0];
+    public double[/*iterations*/] _history_tot_withinss = new double[0];
 
     // Sum squared distance between each point and grand mean.
     public double _totss;            // Total sum-of-square error to grand mean centroid
 
-    // Sum squared distance between each cluster center and grand mean, divided by total number of observations.
+    // Sum squared distance between each cluster center and grand mean
     public double _betweenss;    // Total between-cluster sum-of-square error (totss - tot_withinss)
 
     // Number of categorical columns trained on

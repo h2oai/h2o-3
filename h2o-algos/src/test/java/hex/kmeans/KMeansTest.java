@@ -4,18 +4,13 @@ import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
 import org.junit.*;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.MathUtils;
+import water.util.*;
 
 import java.io.File;
 import java.util.Arrays;
@@ -26,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
@@ -39,7 +34,9 @@ public class KMeansTest extends TestUtil {
     return kmm;
   }
 
-  //PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
+  // PUBDEV-871: 
+  // Double-check the training metrics (gathered by computeStatsFillModel) and
+  // the scoring logic by scoring on the training set
   private static void checkConsistency(KMeansModel kmm) {
     //FIXME: TODO: remove this false, and fix the algo! PUBDEV-871
     if (false) {
@@ -538,4 +535,40 @@ public class KMeansTest extends TestUtil {
     }
   }
 
+  // Test over-clustering
+  @Test 
+  public void testOverCluster() {
+    Scope.enter();
+    KMeansModel kmm=null;
+    Frame tfr = null;
+    try {
+      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      tfr.remove("class").remove();
+      DKV.put(tfr);
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = tfr._key;
+      parms._valid = tfr._key;
+      parms._seed = 0xdecaf;
+      parms._k = 3;
+      parms._overClusterFactor = 2.0f;
+      parms._score_each_iteration = true;
+
+      kmm = new KMeans(parms).trainModel().get();
+      // Report
+      KMeansModel.KMeansOutput kout = kmm._output;
+      System.out.println(kout._model_summary.toString());
+      System.out.println(kout._scoring_history.toString());
+      for( int i=0; i<kout._iterations; i++ ) {
+        System.out.println("--- Iter "+i+" , mse= "+kout._history_tot_withinss[i]+" ---");
+        for( int j=0; j<kout._history_size[i].length; j++ )
+          System.out.println("Cluster "+j+" , sz= "+kout._history_size[i][j]+" , mse= "+(kout._history_clust_withinss[i][j]/kout._history_size[i][j]));
+      }
+
+    } finally {
+      if( tfr != null ) tfr.delete();
+      if( kmm != null ) kmm.delete();
+      Scope.exit();
+    }
+  }
 }

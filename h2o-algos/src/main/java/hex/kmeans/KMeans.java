@@ -64,6 +64,15 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       } else if( user_points.numRows() != _parms._k)
         error("_user_y","The number of rows in the user-specified points is not equal to k = " + _parms._k);
     }
+    if( _parms._offset_column != null )
+      error("_offset_column","KMeans does not support an offset column");
+    if( _parms._fold_column != null )
+      error("_fold_column","KMeans does not support a fold column");
+    if( _parms._weights_column != null ) {
+      Vec weights = train().vec(_parms._weights_column);
+      if( !(weights.isInt() && weights.min()>=0 && weights.max()<=1) )
+        error("_weights_column","KMeans weights must be either 0 or 1");
+    }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
@@ -76,10 +85,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
       // Categoricals use a different distance metric than numeric columns.
       model._output._categorical_column_count=0;
+      if( hasWeightCol() ) throw H2O.unimpl("Using weight col sizing isCats");
       _isCats = new String[vecs.length][];
       for( int v=0; v<vecs.length; v++ ) {
         _isCats[v] = vecs[v].isCategorical() ? new String[0] : null;
-        if (_isCats[v] != null) model._output._categorical_column_count++;
+        if( vecs[v].isCategorical() ) model._output._categorical_column_count++;
       }
       
       Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
@@ -99,6 +109,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         }
       }
       else { // Random, Furthest, or PlusPlus initialization
+        if( hasWeightCol() ) throw H2O.unimpl("Using weight col in randomRow");
         if (_parms._init == Initialization.Random) {
           // Initialize all cluster centers to random rows
           centers = new double[_parms._k][model._output.nfeatures()];
@@ -112,6 +123,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model._output._iterations = 0;
           while (model._output._iterations < 5) {
             // Sum squares distances to cluster center
+            if( hasWeightCol() ) throw H2O.unimpl("Using weight col in SumSqr");
             SumSqr sqr = new SumSqr(centers, means, mults, modes, _isCats).doAll(vecs);
 
             // Sample with probability inverse to square distance
@@ -121,7 +133,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             // Fill in sample centers into the model
             if (stop_requested()) return null; // Stopped/cancelled
             model._output._centers_raw = destandardize(centers, _isCats, means, mults);
-            model._output._tot_withinss = sqr._sqr / _train.numRows();
+            model._output._tot_withinss = sqr._sqr;
 
             model._output._iterations++;     // One iteration done
 
@@ -172,40 +184,34 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // Compute all interesting KMeans stats (errors & variances of clusters,
     // etc).  Return new centers.
     double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults, final int[] modes ) {
-      // Fill in the model based on original destandardized centers
-      if (model._parms._standardize) {
-        model._output._centers_std_raw = task._cMeans;
-      }
-      model._output._centers_raw = destandardize(task._cMeans, _isCats, means, mults);
-      model._output._size = task._size;
-      model._output._withinss = task._cSqr;
-      double ssq = 0;       // sum squared error
-      for( int i=0; i<_parms._k; i++ )
-        ssq += model._output._withinss[i]; // sum squared error all clusters
-      model._output._tot_withinss = ssq;
+      final KMeansModel.KMeansOutput kout = model._output;
+      // fill in the model based on original destandardized centers
+      if (model._parms._standardize)
+        kout._centers_std_raw = task._cMeans;
+      kout._centers_raw = destandardize(task._cMeans, _isCats, means, mults);
+      kout._size = task._size;  // Cluster rows
+      kout._withinss = task._cSqr;               // Square error per-cluster
+      kout._tot_withinss = ArrayUtils.sum(kout._withinss);
 
       // Sum-of-square distance from grand mean
-      if(_parms._k == 1)
-        model._output._totss = model._output._tot_withinss;
-      else {
-        // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means,mults,modes, _parms.train().domains(), _parms.train().cardinality()).doAll(vecs);
-        model._output._totss = totss._tss;
-      }
-      model._output._betweenss = model._output._totss - model._output._tot_withinss;  // MSE between-cluster
-      model._output._iterations++;
+      // If data already standardized, grand mean is just the origin
+      TotSS totss = new TotSS(means,mults,modes, _parms.train().domains(), _parms.train().cardinality()).doAll(vecs);
+      kout._totss = totss._tss;
+      kout._betweenss = totss._tss - kout._tot_withinss;  // MSE between-cluster
+      kout._iterations++;
 
       // add to scoring history
-      model._output._history_withinss = ArrayUtils.copyAndFillOf(
-          model._output._history_withinss,
-          model._output._history_withinss.length+1, model._output._tot_withinss);
+      kout._history_size = ArrayUtils.append(kout._history_size,kout._size);
+      kout._history_clust_withinss = ArrayUtils.append(kout._history_clust_withinss, kout._withinss);
+      kout._history_tot_withinss = ArrayUtils.append(kout._history_tot_withinss, kout._tot_withinss);
 
-      // Two small TwoDimTables - cheap
-      model._output._model_summary = createModelSummaryTable(model._output);
-      model._output._scoring_history = createScoringHistoryTable(model._output);
+      // Two small TwoDimTables
+      final long effectiveRows = Math.round(_train.numRows() * (hasWeightCol() ? _train.lastVec().mean() : 1));
+      kout._model_summary = createModelSummaryTable(kout, effectiveRows);
+      kout._scoring_history = createScoringHistoryTable(kout, effectiveRows);
 
       // Take the cluster stats from the model, and assemble them into a model metrics object
-      model._output._training_metrics = makeTrainingMetrics(model);
+      kout._training_metrics = makeTrainingMetrics(model);
 
       return task._cMeans;      // New centers
     }
@@ -222,12 +228,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       for( int clu=0; clu<_parms._k; clu++ )
         average_change += hex.genmodel.GenModel.KMeans_distance(oldCenters[clu],newCenters[clu],_isCats,null,null);
       average_change /= _parms._k;  // Average change per cluster
-      model._output._avg_centroids_chg = ArrayUtils.copyAndFillOf(
-              model._output._avg_centroids_chg,
-              model._output._avg_centroids_chg.length+1, average_change);
-      model._output._training_time_ms = ArrayUtils.copyAndFillOf(
-              model._output._training_time_ms,
-              model._output._training_time_ms.length+1, System.currentTimeMillis());
+      model._output._avg_centroids_chg = ArrayUtils.append(model._output._avg_centroids_chg, average_change);
+      model._output._training_time_ms  = ArrayUtils.append(model._output._training_time_ms, System.currentTimeMillis());
       return average_change < TOLERANCE;
     }
 
@@ -304,108 +306,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       }
       tryComplete();
     }
-
-    private TwoDimTable createModelSummaryTable(KMeansModel.KMeansOutput output) {
-      List<String> colHeaders = new ArrayList<>();
-      List<String> colTypes = new ArrayList<>();
-      List<String> colFormat = new ArrayList<>();
-      colHeaders.add("Number of Rows"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("Number of Clusters"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("Number of Categorical Columns"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("Within Cluster Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Total Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Between Cluster Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
-
-      final int rows = 1;
-      TwoDimTable table = new TwoDimTable(
-              "Model Summary", null,
-              new String[rows],
-              colHeaders.toArray(new String[0]),
-              colTypes.toArray(new String[0]),
-              colFormat.toArray(new String[0]),
-              "");
-      int row = 0;
-      int col = 0;
-      table.set(row, col++, Math.round(_train.numRows() * (hasWeightCol() ? _train.lastVec().mean() : 1)));
-      table.set(row, col++, output._centers_raw.length);
-      table.set(row, col++, output._categorical_column_count);
-      table.set(row, col++, output._iterations);
-      table.set(row, col++, output._tot_withinss);
-      table.set(row, col++, output._totss);
-      table.set(row, col++, output._betweenss);
-      return table;
-    }
-
-    private TwoDimTable createScoringHistoryTable(KMeansModel.KMeansOutput output) {
-      List<String> colHeaders = new ArrayList<>();
-      List<String> colTypes = new ArrayList<>();
-      List<String> colFormat = new ArrayList<>();
-      colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
-      colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
-      colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("Avg. Change of Std. Centroids"); colTypes.add("double"); colFormat.add("%.5f");
-      colHeaders.add("Within Cluster Sum Of Squares"); colTypes.add("double"); colFormat.add("%.5f");
-
-      final int rows = output._avg_centroids_chg.length;
-      TwoDimTable table = new TwoDimTable(
-              "Scoring History", null,
-              new String[rows],
-              colHeaders.toArray(new String[0]),
-              colTypes.toArray(new String[0]),
-              colFormat.toArray(new String[0]),
-              "");
-      int row = 0;
-      for( int i = 0; i<rows; i++ ) {
-        int col = 0;
-        assert(row < table.getRowDim());
-        assert(col < table.getColDim());
-        DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        table.set(row, col++, fmt.print(output._training_time_ms[i]));
-        table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[i]-_job.start_time(), true));
-        table.set(row, col++, i);
-        table.set(row, col++, output._avg_centroids_chg[i]);
-        table.set(row, col++, output._history_withinss[i]);
-        row++;
-      }
-      return table;
-    }
-  }
-
-  static public TwoDimTable createCenterTable(KMeansModel.KMeansOutput output, boolean standardized) {
-    String name = standardized ? "Standardized Cluster Means" : "Cluster Means";
-    if(output._size == null || output._names == null || output._domains == null || output._centers_raw == null ||
-            (standardized && output._centers_std_raw == null)) {
-      TwoDimTable table = new TwoDimTable(name, null, new String[] {"1"}, new String[]{"C1"}, new String[]{"double"},
-              new String[]{"%f"}, "Centroid");
-      table.set(0,0,Double.NaN);
-      return table;
-    }
-
-    String[] rowHeaders = new String[output._size.length];
-    for(int i = 0; i < rowHeaders.length; i++)
-      rowHeaders[i] = String.valueOf(i+1);
-    String[] colTypes = new String[output._names.length];
-    String[] colFormats = new String[output._names.length];
-    for (int i = 0; i < output._domains.length; ++i) {
-      colTypes[i] = output._domains[i] == null ? "double" : "String";
-      colFormats[i] = output._domains[i] == null ? "%f" : "%s";
-    }
-    TwoDimTable table = new TwoDimTable(name, null, rowHeaders, output._names, colTypes, colFormats, "Centroid");
-
-    for (int j=0; j<output._domains.length; ++j) {
-      boolean string = output._domains[j] != null;
-      if (string) {
-        for (int i=0; i<output._centers_raw.length; ++i) {
-          table.set(i, j, output._domains[j][(int)output._centers_raw[i][j]]);
-        }
-      } else {
-        for (int i=0; i<output._centers_raw.length; ++i) {
-          table.set(i, j, standardized ? output._centers_std_raw[i][j] : output._centers_raw[i][j]);
-        }
-      }
-    }
-    return table;
   }
 
   // -------------------------------------------------------------------------
@@ -771,10 +671,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     return d;
   }
 
-  /**
-   * This helper creates a ModelMetricsClustering from a trained model
-   * @param model, must contain valid statistics from training, such as _betweenss etc.
-   */
+  /** This helper creates a ModelMetricsClustering from a trained model.
+   *  @param model, must contain valid statistics from training, such as _betweenss etc. */
   private ModelMetricsClustering makeTrainingMetrics(KMeansModel model) {
     ModelMetricsClustering mm = new ModelMetricsClustering(model, model._parms.train());
     mm._size = model._output._size;
@@ -784,6 +682,104 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     mm._tot_withinss = model._output._tot_withinss;
     model.addMetrics(mm);
     return mm;
+  }
+
+  private static TwoDimTable createModelSummaryTable(KMeansModel.KMeansOutput output, long effectiveRows) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Weighted Rows"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Clusters"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Iterations"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Within Cluster MSE"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Grand Center MSE (k=1 model)"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Between Cluster Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
+    
+    final int rows = 1;
+    TwoDimTable table = new TwoDimTable("Model Summary", null, new String[rows],
+                                        colHeaders.toArray(new String[0]),
+                                        colTypes.toArray(new String[0]),
+                                        colFormat.toArray(new String[0]),
+                                        "");
+    int row = 0;
+    int col = 0;
+    table.set(row, col++, effectiveRows);
+    table.set(row, col++, output._centers_raw.length);
+    table.set(row, col++, output._iterations);
+    table.set(row, col++, output._tot_withinss/effectiveRows);
+    table.set(row, col++, output._totss/effectiveRows);
+    table.set(row, col++, output._betweenss);
+    return table;
+  }
+
+  static private TwoDimTable createScoringHistoryTable(KMeansModel.KMeansOutput output, final long effectiveRows) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Avg. Change of Std. Centroids"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Within Cluster MSE"); colTypes.add("double"); colFormat.add("%.5f");
+
+    final int rows = output._avg_centroids_chg.length;
+    TwoDimTable table = new TwoDimTable(
+            "Scoring History", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    for( int i = 0; i<rows; i++ ) {
+      int col = 0;
+      assert(row < table.getRowDim());
+      assert(col < table.getColDim());
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+      table.set(row, col++, fmt.print(output._training_time_ms[i]));
+      table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[i]-output._job.start_time(), true));
+      table.set(row, col++, i);
+      table.set(row, col++, output._avg_centroids_chg[i]);
+      table.set(row, col++, output._history_tot_withinss[i]/effectiveRows);
+      row++;
+    }
+    return table;
+  }
+
+  static public TwoDimTable createCenterTable(KMeansModel.KMeansOutput output, boolean standardized) {
+    String name = standardized ? "Standardized Cluster Means" : "Cluster Means";
+    if(output._size == null || output._names == null || output._domains == null || output._centers_raw == null ||
+            (standardized && output._centers_std_raw == null)) {
+      TwoDimTable table = new TwoDimTable(name, null, new String[] {"1"}, new String[]{"C1"}, new String[]{"double"},
+              new String[]{"%f"}, "Centroid");
+      table.set(0,0,Double.NaN);
+      return table;
+    }
+
+    String[] rowHeaders = new String[output._size.length];
+    for(int i = 0; i < rowHeaders.length; i++)
+      rowHeaders[i] = String.valueOf(i+1);
+    String[] colTypes = new String[output._names.length];
+    String[] colFormats = new String[output._names.length];
+    for (int i = 0; i < output._domains.length; ++i) {
+      colTypes[i] = output._domains[i] == null ? "double" : "String";
+      colFormats[i] = output._domains[i] == null ? "%f" : "%s";
+    }
+    TwoDimTable table = new TwoDimTable(name, null, rowHeaders, output._names, colTypes, colFormats, "Centroid");
+
+    for (int j=0; j<output._domains.length; ++j) {
+      boolean string = output._domains[j] != null;
+      if (string) {
+        for (int i=0; i<output._centers_raw.length; ++i) {
+          table.set(i, j, output._domains[j][(int)output._centers_raw[i][j]]);
+        }
+      } else {
+        for (int i=0; i<output._centers_raw.length; ++i) {
+          table.set(i, j, standardized ? output._centers_std_raw[i][j] : output._centers_raw[i][j]);
+        }
+      }
+    }
+    return table;
   }
 
 }

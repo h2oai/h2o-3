@@ -933,6 +933,24 @@ public class ArrayUtils {
     tmp[a.length] = b;
     return tmp;
   }
+  public static long[] append(long[] a, long b) {
+    if( a==null || a.length == 0) return  new long[]{b};
+    long[] tmp = Arrays.copyOf(a,a.length+1);
+    tmp[a.length] = b;
+    return tmp;
+  }
+  public static double[] append(double[] a, double b) {
+    if( a==null || a.length == 0) return  new double[]{b};
+    double[] tmp = Arrays.copyOf(a,a.length+1);
+    tmp[a.length] = b;
+    return tmp;
+  }
+  static public <T> T[] append(T[] a, T b) {
+    //if( a==null || a.length == 0) return new T[]{b};
+    T[] tmp = Arrays.copyOf(a,a.length+1);
+    tmp[a.length] = b;
+    return tmp;
+  }
 
   static public String[] prepend(String[] ary, String s) {
     if (ary==null) return new String[] { s };
@@ -940,38 +958,6 @@ public class ArrayUtils {
     nary[0] = s;
     System.arraycopy(ary,0,nary,1,ary.length);
     return nary;
-  }
-  static public <T> T[] copyAndFillOf(T[] original, int newLength, T padding) {
-    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
-    T[] newArray = Arrays.copyOf(original, newLength);
-    if(original.length < newLength) {
-      System.arraycopy(original, 0, newArray, 0, original.length);
-      Arrays.fill(newArray, original.length, newArray.length, padding);
-    } else
-      System.arraycopy(original, 0, newArray, 0, newLength);
-    return newArray;
-
-  }
-
-  static public double[] copyAndFillOf(double[] original, int newLength, double padding) {
-    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
-    double[] newArray = new double[newLength];
-    if(original.length < newLength) {
-      System.arraycopy(original, 0, newArray, 0, original.length);
-      Arrays.fill(newArray, original.length, newArray.length, padding);
-    } else
-      System.arraycopy(original, 0, newArray, 0, newLength);
-    return newArray;
-  }
-  static public long[] copyAndFillOf(long[] original, int newLength, long padding) {
-    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
-    long[] newArray = new long[newLength];
-    if(original.length < newLength) {
-      System.arraycopy(original, 0, newArray, 0, original.length);
-      Arrays.fill(newArray, original.length, newArray.length, padding);
-    } else
-      System.arraycopy(original, 0, newArray, 0, newLength);
-    return newArray;
   }
 
   static public double[] copyFromIntArray(int[] a) {
