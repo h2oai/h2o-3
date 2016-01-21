@@ -60,18 +60,15 @@ public class AutoCollect {
     return null;
   }
 
-  private HashMap<String, String>[/*0: FrameMeta; 1: ColMeta*/] computeMetaData(String datasetName, Frame f, int[] x, int y) {
+  private HashMap<String, Object>[/*0: FrameMeta; 1: ColMeta*/] computeMetaData(String datasetName, Frame f, int[] x, int y) {
     if( !hasMeta(datasetName) ) {
       // gather up the FrameMeta data.
-      HashMap<String, String> frameMeta = makeEmptyFrameMeta();
+      FrameMeta fm = new FrameMeta(f,y,datasetName);
+      HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
+      fm.fillSimpleMeta(frameMeta);
+      fm.fillDummies(frameMeta);
     }
     return null;
-  }
-
-  private HashMap<String, String> makeEmptyFrameMeta() {
-    HashMap<String,String> hm = new HashMap<>();
-    for(String key: FrameMeta.metaValues) hm.put(key, "");
-    return hm;
   }
 
   boolean hasMeta(String datasetName) {
