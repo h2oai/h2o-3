@@ -37,7 +37,7 @@ else
   # Increase XMX since JAVA_HOME can point to java6
   JAVA6_REGEXP=".*1\.6.*"
   if [[ $TEST_JAVA_HOME =~ $JAVA6_REGEXP ]]; then
-    JAVA_CMD="${JAVA_CMD} -Xmx2g"
+    JAVA_CMD="${JAVA_CMD}"
   fi
 fi
 # Gradle puts files:
