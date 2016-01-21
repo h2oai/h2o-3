@@ -31,7 +31,7 @@ abstract class DummyScore extends MRTask<DummyScore> {
 
   // TODO: allow user to specify some custom loss
   enum FCN {
-    mse() {
+    mse() {   // AKA deviance for regression and guassian family
       @Override void op( double[] d0s, double err, double weight, int which) { d0s[which] += weight*err*err; }
       @Override void postOp( double ds[], double wcount ) { ArrayUtils.div(ds,wcount); }
       @Override double classificationConstScore(Vec y, int cls) { return 1. - ((double)y.bins()[cls] / (double)(y.length() - y.naCnt())); }
@@ -183,9 +183,8 @@ class DummyClassifier extends DummyScore {
  *
  *         double[losses][dummy values per loss]:
  *
- *         Example: losses = { MSE, Logloss };
- *                  getDummies -> [ [meanMSE, medianMSE],
- *                                  [meanLogloss, medianLogloss]
+ *         Example: losses = { MSE };
+ *                  getDummies -> [ [meanMSE, medianMSE]
  *                                ]
  *
  */
