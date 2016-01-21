@@ -613,6 +613,8 @@ h2o.filterNACols <- function(data, frac=0.2) .eval.scalar(.newExpr("filterNACols
 #'
 #' @param x An H2O H2OFrame object with at most two columns.
 #' @param y An H2O H2OFrame similar to x, or \code{NULL}.
+#' @param dense A logical for dense representation, which lists only non-zero counts, 1 combination per row. Set to 
+#'        FALSE to expand counts across all combinations.  
 #' @return Returns a tabulated H2OFrame object.
 #' @examples
 #' \donttest{
@@ -631,10 +633,10 @@ h2o.filterNACols <- function(data, frac=0.2) .eval.scalar(.newExpr("filterNACols
 #' h2o.table(prostate.hex[,c(3,4)])
 #' }
 #' @export
-h2o.table <- function(x, y = NULL) {
+h2o.table <- function(x, y = NULL, dense = TRUE) {
   chk.H2OFrame(x)
   if( !is.null(y) ) chk.H2OFrame(y)
-  if( is.null(y) ) .newExpr("table",x) else .newExpr("table",x,y)
+  if( is.null(y) ) .newExpr("table",x,dense) else .newExpr("table",x,y,dense)
 }
 
 #' @rdname h2o.table

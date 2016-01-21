@@ -4,8 +4,15 @@
 
 #Below is the test that will be implemented:
 
-#Load up h2o and h2o.init()
 library(h2o)
+
+#Call h2o.init() just in case instance is not running
+h2o.init()
+
+#First, we will shutdown any instance of h2o
+h2o.shutdown(prompt = FALSE)
+
+#Load up h2o and h2o.init()
 h2o.init()
 
 #Way to check if cluster is up and also get status:

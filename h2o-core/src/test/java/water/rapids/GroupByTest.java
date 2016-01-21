@@ -220,7 +220,7 @@ public class GroupByTest extends TestUtil {
     ((ValFrame)v_gb)._fr.delete();
     
     long start2 = System.currentTimeMillis();
-    Val v_tb = Exec.exec("(table cov)");
+    Val v_tb = Exec.exec("(table cov FALSE)");
     System.out.println("Table Time= "+(System.currentTimeMillis()-start2)+"msec");
     System.out.println(v_tb.toString());
     ((ValFrame)v_tb)._fr.delete();
