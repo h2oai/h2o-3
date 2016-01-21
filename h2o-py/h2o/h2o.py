@@ -557,7 +557,7 @@ def download_csv(data, filename):
   """
   if not isinstance(data, H2OFrame):
     raise ValueError
-  url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(data.frame_id))
+  url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(data.frame_id)
   with open(filename, 'wb') as f:
     f.write(urlopen()(url).read())
 

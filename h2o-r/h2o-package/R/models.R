@@ -427,7 +427,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #'        match the dataset that was used to train the model, in terms of
 #'        column names, types, and dimensions. If data is passed in, then train and valid are ignored.
 #' @param valid A logical value indicating whether to return the validation metrics (constructed during training).
-#' @param ... Extra args passed in for use by other functions.
+#' @param xval A logical value indicating whether to return the cross-validation metrics. 
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \donttest{
@@ -440,20 +440,16 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' h2o.performance(model = prostate.gbm, data=prostate.hex)
 #' }
 #' @export
-h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
+h2o.performance <- function(model, data=NULL, valid=FALSE, xval=FALSE) {
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
   if(!is.null(data) && !is.H2OFrame(data) ) stop("`data` must be an H2O H2OFrame object")
+  if(valid && xval) stop("`valid` and `xval` can't both be TRUE")
 
   missingData <- missing(data) || is.null(data)
-  trainingH2OFrame <- model@parameters$training_frame
-  data.id <- if( missingData ) trainingH2OFrame else h2o.getId(data)
-  if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
-  else if( missingData &&  valid ) {
-    if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
-    else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
-  }
-  else if( !missingData ) {
+  
+  if( !missingData ) {
+    data.id <- h2o.getId(data)
     parms <- list()
     parms[["model"]] <- model@model_id
     parms[["frame"]] <- data.id
@@ -473,9 +469,15 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
         algorithm = model@algorithm,
         on_train  = missingData,
         metrics   = metrics)
-  } else {
-    warning("Shouldn't be here, returning NULL")
-    return(NULL)
+  } 
+  else if( !valid && !xval) return(model@model$training_metrics)    # no data, valid and xval are false, return the training metrics
+  else if( valid ) {
+    if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
+    else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
+  }
+  else { #if xval
+    if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
+    else                                                  return(model@model$cross_validation_metrics)  # no data, but valid is true, return the validation metrics
   }
 }
 

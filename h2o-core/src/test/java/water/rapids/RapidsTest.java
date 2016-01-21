@@ -211,13 +211,13 @@ public class RapidsTest extends TestUtil {
     tree = "({x . (var x x \"everything\")} a.hex)";
     checkTree(tree);
 
-    tree = "(table (trunc (cols a.hex 1)))";
+    tree = "(table (trunc (cols a.hex 1)) FALSE)";
     checkTree(tree);
 
-    tree = "(table (cols a.hex 1))";
+    tree = "(table (cols a.hex 1) FALSE)";
     checkTree(tree);
 
-    tree = "(table (cols a.hex 1) (cols a.hex 2))";
+    tree = "(table (cols a.hex 1) (cols a.hex 2) FALSE)";
     checkTree(tree);
   }
 
