@@ -105,7 +105,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
             // Update the model
             model.update(_job); // Update model in K/V store
-            _job.update(1);     // One unit of work
+            _job.update(0);     // One unit of work
           }
           StringBuilder sb = new StringBuilder();
           sb.append("Quantile: iter: ").append(model._output._iterations).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
