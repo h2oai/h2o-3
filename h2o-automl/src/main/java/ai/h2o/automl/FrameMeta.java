@@ -2,6 +2,8 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.collectors.MetaCollector;
 import ai.h2o.automl.guessers.ProblemTypeGuesser;
+import ai.h2o.automl.tasks.DummyClassifier;
+import ai.h2o.automl.tasks.DummyRegressor;
 import hex.tree.DHistogram;
 import water.H2O;
 import water.Iced;
@@ -13,28 +15,113 @@ import water.fvec.Vec;
 import water.util.AtomicUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Cache common questions asked upon the frame.
  */
 public class FrameMeta extends Iced {
+  final String _datasetName;
   final Frame _fr;
   private final int _response;
+  private long _naCnt=-1;  // count of nas across whole frame
+  private int _numFeat=-1; // count of numerical features
+  private int _catFeat=-1; // count of categorical features
+  private int _nclass=-1;  // number of classes if classification problem
+  private double[][] _dummies=null; // dummy predictions
   ColMeta[] _cols;
 
-  public static String[] metaValues = new String[]{
-    "DatasetName", "NRow", "NCol", "LogNRow", "LogNCol",
-    "NACount", "NAFraction", "NumberNumericFeat", "NumberCatFeat",
-    "RatioNumericToCatFeat", "RatioCatToNumericFeat", "DatasetRatio",
-    "LogDatasetRatio", "InverseDatasetRatio", "LogInverseDatasetRatio",
-    "Classification"};
+  public final static String[] METAVALUES = new String[]{
+    "DatasetName", "NRow", "NCol", "LogNRow", "LogNCol", "NACount", "NAFraction",
+    "NumberNumericFeat", "NumberCatFeat", "RatioNumericToCatFeat", "RatioCatToNumericFeat",
+    "DatasetRatio", "LogDatasetRatio", "InverseDatasetRatio", "LogInverseDatasetRatio",
+    "Classification", "DummyStratMSE", "DummyStratLogLoss", "DummyMostFreqMSE",
+    "DummyMostFreqLogLoss", "DummyRandomMSE", "DummyRandomLogLoss", "DummyMedianMSE",
+    "DummyMeanMSE", "NClass"};
+
+  public static HashMap<String, Object> makeEmptyFrameMeta() {
+    HashMap<String,Object> hm = new HashMap<>();
+    for(String key: FrameMeta.METAVALUES) hm.put(key,null);
+    return hm;
+  }
+
+  // Takes empty frame meta hashmap and fills in the metadata not requiring MRTask
+  // TODO: make helper functions so that it's possible to iterate over METAVALUES only
+  public void fillSimpleMeta(HashMap<String, Object> fm) {
+    fm.put("DatasetName", _datasetName.hashCode());
+    fm.put("NRow", (double)_fr.numRows());
+    fm.put("NCol", (double)_fr.numCols());
+    fm.put("LogNRow", Math.log((double)fm.get("NRow")));
+    fm.put("LogNCol", Math.log((double)fm.get("NCol")));
+    fm.put("NACount", (double)naCount());
+    fm.put("NAFraction", (double) naCount() / (double) (_fr.numCols() * _fr.numRows()));
+    fm.put("NumberNumericFeat", (double)numberOfNumericFeatures());
+    fm.put("NumberCatFeat", (double) numberOfCategoricalFeatures());
+    fm.put("RatioNumericToCatFeat", (double) fm.get("NumberNumericFeat") / (double) fm.get("NumberCatFeat"));
+    fm.put("RatioCatToNumericFeat", (double) fm.get("NumberCatFeat") / (double) fm.get("NumberNumericFeat"));
+    fm.put("DatasetRatio", (double) _fr.numCols() / (double) _fr.numRows());
+    fm.put("LogDatasetRatio", Math.log((double) fm.get("DatasetRatio")));
+    fm.put("InverseDatasetRatio", (double)_fr.numRows() / (double) _fr.numCols() );
+    fm.put("LogInverseDatasetRatio", Math.log((double)fm.get("InverseDatasetRatio")));
+  }
+
+  public void fillDummies(HashMap<String, Object> fm) {
+    double[][] dummies = getDummies();
+    fm.put("DummyStratMSE", _isClassification?dummies[0][0]:Double.NaN);
+    fm.put("DummyStratLogLoss", _isClassification?dummies[1][0]:Double.NaN);
+    fm.put("DummyMostFreqMSE", _isClassification?dummies[0][2]:Double.NaN);
+    fm.put("DummyMostFreqLogLoss", _isClassification?dummies[1][2]:Double.NaN);
+    fm.put("DummyRandomMSE", _isClassification?dummies[0][1]:Double.NaN);
+    fm.put("DummyRandomLogLoss", _isClassification?dummies[1][1]:Double.NaN);
+    fm.put("DummyMedianMSE", _isClassification?Double.NaN:dummies[0][1]);
+    fm.put("DummyMeanMSE", _isClassification?Double.NaN:dummies[0][0]);
+    fm.put("NClass", _nclass);
+  }
+
+  public long naCount() {
+    if( _naCnt!=-1 ) return _naCnt;
+    long cnt=0;
+    for(Vec v: _fr.vecs()) cnt+=v.naCnt();
+    return (_naCnt=cnt);
+  }
+
+  public int numberOfNumericFeatures() {
+    if( _numFeat!=-1 ) return _numFeat;
+    int cnt=0;
+    for(Vec v: _fr.vecs()) cnt+= v.isNumeric() ? 1 : 0;
+    return (_numFeat=cnt);
+  }
+
+  public int numberOfCategoricalFeatures() {
+    if( _catFeat!=-1 ) return _catFeat;
+    int cnt=0;
+    for(Vec v: _fr.vecs()) cnt+= v.isCategorical() ? 1 : 0;
+    return (_catFeat=cnt);
+  }
+
+  public double[][] getDummies() {
+    if( _dummies!=null ) return _dummies;
+    DummyClassifier dc=null;
+    _dummies = _isClassification
+            ? DummyClassifier.getDummies(dc=new DummyClassifier(_fr.vec(_response), new String[]{"mse", "logloss"}), _fr.vec(_response), null)
+            : DummyRegressor.getDummies(_fr.vec(_response), null, new String[]{"mse"});
+    assert (_isClassification && dc!=null) || !_isClassification;
+    _nclass = _isClassification?dc._nclass:1;
+    return _dummies;
+  }
 
   private boolean _isClassification;
 
   // cached things
   private String[] _ignoredCols;
 
-  public FrameMeta(Frame fr, int response) {
+  public FrameMeta(Frame fr, int response, String datasetName, boolean isClassification) {
+    this(fr,response,datasetName);
+    _isClassification=isClassification;
+  }
+
+  public FrameMeta(Frame fr, int response, String datasetName) {
+    _datasetName=datasetName;
     _fr=fr;
     _response=response;
     _cols = new ColMeta[_fr.numCols()];
