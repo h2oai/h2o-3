@@ -9,8 +9,7 @@ import water.fvec.Frame;
 
 
 public class VIFTest extends TestUtil {
-  @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testVIFs() {
     Frame fr = null;
