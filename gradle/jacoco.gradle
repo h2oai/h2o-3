@@ -3,11 +3,11 @@
 apply plugin: 'jacoco'
 
 //
-// Currently Jenkins isn't compatible with anything above
-// Jacoco version 0.7.4
+// When using v2.0+ of the Jenkins JaCoCo plugin, the
+// JaCoCo version needs to be 0.7.5+
 // 
 jacoco {
-    toolVersion = "0.7.4.201502262128"
+    toolVersion = "0.7.5.201505241946"
     reportsDir = file("${buildDir}/reports/jacoco/")
 }
 
