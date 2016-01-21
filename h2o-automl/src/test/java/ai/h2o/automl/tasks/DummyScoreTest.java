@@ -40,13 +40,13 @@ public class DummyScoreTest extends TestUtil {
     Frame fr = null;
     try {
       fr = parse_test_file(Key.make("a.hex"), "/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
-      double[][] dummies = DummyRegressor.getDummies(fr.vec(0), null, new String[]{"logloss", "mse"});
+      double[][] dummies = DummyRegressor.getDummies(fr.vec(0), null, new String[]{"mse"});
       System.out.println();
     } finally {
       if(fr!=null)  fr.delete();
     }
   }
-//
+
 //  @Test public void testIrisCol2() {
 //    Frame fr = null;
 //    try {
