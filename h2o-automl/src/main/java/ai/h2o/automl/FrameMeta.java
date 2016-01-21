@@ -22,6 +22,13 @@ public class FrameMeta extends Iced {
   private final int _response;
   ColMeta[] _cols;
 
+  public static String[] metaValues = new String[]{
+    "DatasetName", "NRow", "NCol", "LogNRow", "LogNCol",
+    "NACount", "NAFraction", "NumberNumericFeat", "NumberCatFeat",
+    "RatioNumericToCatFeat", "RatioCatToNumericFeat", "DatasetRatio",
+    "LogDatasetRatio", "InverseDatasetRatio", "LogInverseDatasetRatio",
+    "Classification"};
+
   private boolean _isClassification;
 
   // cached things

@@ -1,5 +1,3 @@
-// TODO/FIXME : OMG THIS IS HORRIBLE... Need to pull test code from h2o-3 in a better way!
-
 package ai.h2o.automl;
 
 import org.junit.AfterClass;
@@ -41,6 +39,7 @@ public class TestUtil extends Iced {
   public static void stall_till_cloudsize(int x) {
     if( !_stall_called_before ) {
       H2O.main(new String[]{});
+      H2O.registerRestApis(System.getProperty("user.dir"));
       _stall_called_before = true;
     }
     H2O.waitForCloudSize(x, 30000);
@@ -53,9 +52,9 @@ public class TestUtil extends Iced {
     int cnt=0;
     if( leaked_keys > 0 ) {
       for( Key k : H2O.localKeySet() ) {
-        water.Value value = Value.STORE_get(k);
+        Value value = Value.STORE_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST || k == AutoML.MODELLIST || // FIXME: modified from the original in h2o-3 repo
+        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
                 // Also leave around all attempted Jobs for the Jobs list
                 (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
@@ -69,7 +68,6 @@ public class TestUtil extends Iced {
     assertTrue("No keys leaked", leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
-      @Override public byte priority() { return H2O.GUI_PRIORITY; }
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     _initial_keycnt = H2O.store_size();
