@@ -13,6 +13,11 @@ import java.util.Arrays;
  * Holds usual rollup stats and additional interesting bits of information.
  */
 public class ColMeta extends Iced {
+  public static final String[] METAVALUES = new String[]{
+          "idFrame", "ColumnName", "ColumnType", "Min", "Max", "Mean", "Median",
+          "Variance", "Cardinality", "Kurtosis", "Skew", "VIF", "FractionNA",
+          "TimeToMRTaskMillis"};
+
   public final Vec _v;          // the column
   public final byte _nameType;  // guessed at by ColNameScanner
   public final String _name;    // column name

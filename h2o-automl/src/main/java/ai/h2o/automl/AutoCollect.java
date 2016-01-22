@@ -61,14 +61,19 @@ public class AutoCollect {
   }
 
   public void computeMetaData(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
-    if( !hasMeta(datasetName) ) {
+    //if( !hasMeta(datasetName) ) {
       // gather up the FrameMeta data.
       FrameMeta fm = new FrameMeta(f,y,datasetName, isClassification);
       HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
       fm.fillSimpleMeta(frameMeta);
       fm.fillDummies(frameMeta);
-      pushFrameMeta(frameMeta);
-    }
+      int idFrameMeta = pushFrameMeta(frameMeta);
+      computeAndPushColMeta(fm, idFrameMeta);
+//    }
+  }
+
+  private void computeAndPushColMeta(FrameMeta fm, int idFrameMeta) {
+
   }
 
   boolean hasMeta(String datasetName) {
@@ -104,11 +109,12 @@ public class AutoCollect {
 
   public static int update(String query) {
     Statement s;
-    int rs;
     try {
       s = conn.createStatement();
-      rs = s.executeUpdate(query);
-      return rs;
+      s.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
+      ResultSet genKeys = s.getGeneratedKeys();
+      genKeys.next();
+      return genKeys.getInt(1); // return the last insertID
     } catch (SQLException ex) {
       System.out.println("SQLException: " + ex.getMessage());
       System.out.println("SQLState: " + ex.getSQLState());
@@ -117,7 +123,7 @@ public class AutoCollect {
     throw new RuntimeException("Query failed");
   }
 
-  private void pushFrameMeta(HashMap<String,Object> fm) {
+  private int pushFrameMeta(HashMap<String,Object> fm) {
     StringBuilder sb = new StringBuilder("INSERT INTO FrameMeta (");
     sb.append(collapseStringArray(FrameMeta.METAVALUES)).append(") \n");
     sb.append("VALUES (");
@@ -127,9 +133,7 @@ public class AutoCollect {
       if(i++==fm.size()-1) sb.append(");");
       else sb.append(",");
     }
-    int rs = update(sb.toString());
-    // do something with rs!
-    System.out.println("attempted insert into autocollect db");
+    return update(sb.toString());
   }
 
   static String collapseStringArray(String[] strs) {
