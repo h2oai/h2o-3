@@ -48,7 +48,7 @@ public class FrameMeta extends Iced {
   // Takes empty frame meta hashmap and fills in the metadata not requiring MRTask
   // TODO: make helper functions so that it's possible to iterate over METAVALUES only
   public void fillSimpleMeta(HashMap<String, Object> fm) {
-    fm.put("DatasetName", _datasetName.hashCode());
+    fm.put("DatasetName", _datasetName);
     fm.put("NRow", (double)_fr.numRows());
     fm.put("NCol", (double)_fr.numCols());
     fm.put("LogNRow", Math.log((double)fm.get("NRow")));
@@ -63,18 +63,19 @@ public class FrameMeta extends Iced {
     fm.put("LogDatasetRatio", Math.log((double) fm.get("DatasetRatio")));
     fm.put("InverseDatasetRatio", (double)_fr.numRows() / (double) _fr.numCols() );
     fm.put("LogInverseDatasetRatio", Math.log((double)fm.get("InverseDatasetRatio")));
+    fm.put("Classification", _isClassification?1:0);
   }
 
   public void fillDummies(HashMap<String, Object> fm) {
     double[][] dummies = getDummies();
-    fm.put("DummyStratMSE", _isClassification?dummies[0][0]:Double.NaN);
-    fm.put("DummyStratLogLoss", _isClassification?dummies[1][0]:Double.NaN);
-    fm.put("DummyMostFreqMSE", _isClassification?dummies[0][2]:Double.NaN);
-    fm.put("DummyMostFreqLogLoss", _isClassification?dummies[1][2]:Double.NaN);
-    fm.put("DummyRandomMSE", _isClassification?dummies[0][1]:Double.NaN);
-    fm.put("DummyRandomLogLoss", _isClassification?dummies[1][1]:Double.NaN);
-    fm.put("DummyMedianMSE", _isClassification?Double.NaN:dummies[0][1]);
-    fm.put("DummyMeanMSE", _isClassification?Double.NaN:dummies[0][0]);
+    fm.put("DummyStratMSE", _isClassification?dummies[0][0]:-1);
+    fm.put("DummyStratLogLoss", _isClassification?dummies[1][0]:-1);
+    fm.put("DummyMostFreqMSE", _isClassification?dummies[0][2]:-1);
+    fm.put("DummyMostFreqLogLoss", _isClassification?dummies[1][2]:-1);
+    fm.put("DummyRandomMSE", _isClassification?dummies[0][1]:-1);
+    fm.put("DummyRandomLogLoss", _isClassification?dummies[1][1]:-1);
+    fm.put("DummyMedianMSE", _isClassification?-1:dummies[0][1]);
+    fm.put("DummyMeanMSE", _isClassification?-1:dummies[0][0]);
     fm.put("NClass", _nclass);
   }
 

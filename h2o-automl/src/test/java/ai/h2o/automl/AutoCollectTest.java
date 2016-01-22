@@ -1,11 +1,15 @@
 package ai.h2o.automl;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Key;
+import water.fvec.Frame;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class AutoCollectTest { // requires mysql-connector-java-3.1.14-bin.jar in -cp
+public class AutoCollectTest extends TestUtil { // requires mysql-connector-java-3.1.14-bin.jar in -cp
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
   @Test public void testConnection() {
     ResultSet rs = AutoCollect.query("SHOW TABLES;");
     try {
@@ -26,5 +30,16 @@ public class AutoCollectTest { // requires mysql-connector-java-3.1.14-bin.jar i
     AutoCollect ac = new AutoCollect(3600,"");
     System.out.println(ac.hasMeta("iris"));
     System.out.println("--");
+  }
+
+  @Test public void testPutIris(){
+    Frame fr=null;
+    try {
+      AutoCollect ac = new AutoCollect(3600, "");
+      fr = parse_test_file(Key.make("a.hex"), "/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+      ac.computeMetaData("iris_wheader", fr, null, 4, true);
+    } finally {
+      if( fr!=null ) fr.delete();
+    }
   }
 }
