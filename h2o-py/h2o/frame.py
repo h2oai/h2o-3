@@ -408,7 +408,7 @@ class H2OFrame(object):
     # cached, so must be pulled.  While we're at it, go ahead and fill in
     # the default caches if they are not already filled in
 
-    res = H2OConnection.get_json("Frames/"+quote(self.frame_id)+"?row_count="+str(10))["frames"][0]
+    res = H2OConnection.get_json("Frames/"+self.frame_id+"?row_count="+str(10))["frames"][0]
     self._ex._cache._fill_data(res)
     print("Rows:{:,}".format(self.nrow), "Cols:{:,}".format(self.ncol))
     res["chunk_summary"].show()
