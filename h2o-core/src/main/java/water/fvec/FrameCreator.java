@@ -73,8 +73,12 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       }
     }
     // All columns together fill one chunk
-    final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int)Math.floor(Math.log(_createFrame.cols)/Math.log(2.)));
-    _v = makeCon(_createFrame.value, _createFrame.rows, log_rows_per_chunk,false);
+    final int rows_per_chunk = FileVec.calcOptimalChunkSize(
+            (int)(((float)(catcols+intcols)/_createFrame.cols)*_createFrame.rows*4
+                    +(((float)bincols/_createFrame.cols)*_createFrame.rows*_createFrame.binary_ones_fraction)
+                    +((float)realcols/_createFrame.cols)*_createFrame.rows*8),
+            _createFrame.cols, _createFrame.cols*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
+    _v = makeCon(_createFrame.value, _createFrame.rows, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
   }
 
   public int nChunks() { return _v.nChunks(); }
