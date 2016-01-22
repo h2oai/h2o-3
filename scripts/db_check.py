@@ -45,6 +45,9 @@ class CheckDB:
                 widths.append(max(cd[2], len(cd[0])))
                 columns.append(cd[0])
 
+            #Reallocate width length
+            widths[0] = 30
+
             for w in widths:
                 pipe += " %-"+"%ss |" % (w,)
                 separator += '-'*w + '--+'
@@ -107,6 +110,9 @@ class CheckDB:
             widths.append(max(cd[2], len(cd[0])))
             columns.append(cd[0])
 
+        #Reallocate width length
+        widths[0] = widths[1] = widths[2] = 50
+
         for w in widths:
             pipe += " %-"+"%ss |" % (w,)
             separator += '-'*w + '--+'
@@ -119,8 +125,43 @@ class CheckDB:
             print(pipe % row)
         print(separator)
 
+    '''
+    Get current and total connections per host
+    '''
+    def get_host(self):
+        db = mysql.connector.connect(user='root', password = '0xdata', host = '172.16.2.178', database = 'performance_schema')
+        cursor = db.cursor()
+        cursor.execute(" SELECT * FROM accounts;")
+
+        results = cursor.fetchall()
+        print cursor.description
+        widths = []
+        columns = []
+        pipe = '|'
+        separator = '+'
+
+        for cd in cursor.description:
+            widths.append(max(cd[2], len(cd[0])))
+            columns.append(cd[0])
+
+        #Reallocate width length
+        widths[0] = widths[1] = widths[2] = widths[3] = 50
+        
+        for w in widths:
+            pipe += " %-"+"%ss |" % (w,)
+            separator += '-'*w + '--+'
+
+        print "\n*****Current and Total Connections per Host:*****"
+        print(separator)
+        print(pipe % tuple(columns))
+        print(separator)
+        for row in results:
+            print(pipe % row)
+        print(separator)
+
 if __name__ == '__main__':
     CheckDB().check_connection()
     CheckDB().get_tables_h2o()
     CheckDB().get_tables_mrunit()
     CheckDB().get_table_size()
+    CheckDB().get_host()
