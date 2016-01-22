@@ -113,7 +113,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.
    *  Can default to returning e.g. 0 always.  */
-  public float progress() { update_from_remote(); return _work==0 ? 0f : (float)Math.min(1,_worked/_work); }
+  public float progress() { update_from_remote(); return _work==0 ? 0f : Math.min(1,(float)_worked/_work); }
   /** Returns last progress message. */
   public String progress_msg() { update_from_remote(); return _msg; }
 

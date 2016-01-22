@@ -49,7 +49,7 @@ else
   # Increase XMX since JAVA_HOME can point to java6
   JAVA6_REGEXP=".*1\.6.*"
   if [[ $TEST_JAVA_HOME =~ $JAVA6_REGEXP ]]; then
-    JAVA_CMD="${JAVA_CMD} -Xmx2g"
+    JAVA_CMD="${JAVA_CMD}"
   fi
 fi
 
@@ -61,8 +61,9 @@ then
 else
     COVERAGE=""
 fi
-# Command to invoke test
-JVM="nice $JAVA_CMD $COVERAGE -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+# Command to invoke test.  Note the explicit 2g sizes; if the JVM runs out of
+# memory on these tests, we need to diagnose the extra memory requirements
+JVM="nice $JAVA_CMD $COVERAGE -Xmx2g -Xms2g -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests
