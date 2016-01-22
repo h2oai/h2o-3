@@ -2119,6 +2119,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_response_column",
               "_activation",
               "_use_all_factor_levels",
+              "_standardize",
               "_adaptive_rate",
               "_autoencoder",
               "_rho",
