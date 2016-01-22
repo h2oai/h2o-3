@@ -108,32 +108,28 @@ class H2OConnection(object):
     elif os.path.exists(jarpaths[3]): jar_path = jarpaths[3]
     elif os.path.exists(jarpaths[4]): jar_path = jarpaths[4]
     else:                             jar_path = jarpaths[5]
-    if start_h2o:
-      if not ice_root:
-        ice_root = tempfile.mkdtemp()
-      cld = self._start_local_h2o_jar(max_mem_size, min_mem_size, enable_assertions, license, ice_root, jar_path, nthreads)
-    else:
-      try:
-        cld = self._connect()
-      except:
-        # try to start local jar or re-raise previous exception
+    try:
+      cld = self._connect()
+    except:
+      # try to start local jar or re-raise previous exception
+      if not start_h2o: raise ValueError("Cannot connect to H2O server. Please check that H2O is running at {}".format(H2OConnection.make_url("")))
+      print()
+      print()
+      print("No instance found at ip and port: " + ip + ":" + str(port) + ". Trying to start local jar...")
+      print()
+      print()
+      path_to_jar = os.path.exists(jar_path)
+      if path_to_jar:
+        if not ice_root:
+          ice_root = tempfile.mkdtemp()
+        cld = self._start_local_h2o_jar(max_mem_size, min_mem_size, enable_assertions, license, ice_root, jar_path, nthreads)
+      else:
+        print("No jar file found. Could not start local instance.")
+        print("Jar Paths searched: ")
+        for jp in jarpaths:
+          print("\t" + jp)
         print()
-        print()
-        print("No instance found at ip and port: " + ip + ":" + str(port) + ". Trying to start local jar...")
-        print()
-        print()
-        path_to_jar = os.path.exists(jar_path)
-        if path_to_jar:
-          if not ice_root:
-            ice_root = tempfile.mkdtemp()
-          cld = self._start_local_h2o_jar(max_mem_size, min_mem_size, enable_assertions, license, ice_root, jar_path, nthreads)
-        else:
-          print("No jar file found. Could not start local instance.")
-          print("Jar Paths searched: ")
-          for jp in jarpaths:
-            print("\t" + jp)
-          print()
-          raise
+        raise
     __H2OCONN__._cld = cld
 
     if strict_version_check and os.environ.get('H2O_DISABLE_STRICT_VERSION_CHECK') is None:
