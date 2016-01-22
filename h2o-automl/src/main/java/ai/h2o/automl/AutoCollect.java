@@ -60,15 +60,15 @@ public class AutoCollect {
     return null;
   }
 
-  private HashMap<String, Object>[/*0: FrameMeta; 1: ColMeta*/] computeMetaData(String datasetName, Frame f, int[] x, int y) {
+  public void computeMetaData(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
     if( !hasMeta(datasetName) ) {
       // gather up the FrameMeta data.
-      FrameMeta fm = new FrameMeta(f,y,datasetName);
+      FrameMeta fm = new FrameMeta(f,y,datasetName, isClassification);
       HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
       fm.fillSimpleMeta(frameMeta);
       fm.fillDummies(frameMeta);
+      pushFrameMeta(frameMeta);
     }
-    return null;
   }
 
   boolean hasMeta(String datasetName) {
@@ -100,5 +100,45 @@ public class AutoCollect {
       System.out.println("VendorError: " + ex.getErrorCode());
     }
     throw new RuntimeException("Query failed");
+  }
+
+  public static int update(String query) {
+    Statement s;
+    int rs;
+    try {
+      s = conn.createStatement();
+      rs = s.executeUpdate(query);
+      return rs;
+    } catch (SQLException ex) {
+      System.out.println("SQLException: " + ex.getMessage());
+      System.out.println("SQLState: " + ex.getSQLState());
+      System.out.println("VendorError: " + ex.getErrorCode());
+    }
+    throw new RuntimeException("Query failed");
+  }
+
+  private void pushFrameMeta(HashMap<String,Object> fm) {
+    StringBuilder sb = new StringBuilder("INSERT INTO FrameMeta (");
+    sb.append(collapseStringArray(FrameMeta.METAVALUES)).append(") \n");
+    sb.append("VALUES (");
+    int i=0;
+    for(String k: FrameMeta.METAVALUES) {
+      sb.append("'").append(fm.get(k)).append("'");
+      if(i++==fm.size()-1) sb.append(");");
+      else sb.append(",");
+    }
+    int rs = update(sb.toString());
+    // do something with rs!
+    System.out.println("attempted insert into autocollect db");
+  }
+
+  static String collapseStringArray(String[] strs) {
+    StringBuilder sb = new StringBuilder();
+    for(int i=0;i<strs.length;++i) {
+      sb.append(strs[i]);
+      if( i==strs.length-1 ) return sb.toString();
+      sb.append(",");
+    }
+    throw new RuntimeException("Should never be here");
   }
 }

@@ -16,6 +16,7 @@ import java.util.Arrays;
  * (dataset, response, loss) combo.
  */
 public final class AutoML {
+  private final String _datasetName;     // dataset name
   private final Frame _fr;               // all learning on this frame
   private final int _response;           // response column, -1 for no response column
   private final String _loss;            // overarching loss to minimize (meta loss)
@@ -30,8 +31,9 @@ public final class AutoML {
   enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
 
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
-  public AutoML(Frame fr, int response, String loss, long maxTime, double minAccuracy,
+  public AutoML(String datasetName, Frame fr, int response, String loss, long maxTime, double minAccuracy,
                 boolean ensemble, String[] modelExclude, boolean allowMutations) {
+    _datasetName=datasetName;
     _fr=fr;
     _response=response;
     _loss=loss;
@@ -59,7 +61,7 @@ public final class AutoML {
   public void learn() {
 
     // step 1: gather initial frame metadata and guess the problem type
-    _fm = new FrameMeta(_fr, _response).computeFrameMetaPass1();
+    _fm = new FrameMeta(_fr, _response, _datasetName).computeFrameMetaPass1();
     _isClassification = _fm.isClassification();
 
     // step 2: build a fast RF
