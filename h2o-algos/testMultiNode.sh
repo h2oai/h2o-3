@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Argument parsing
+if [ "$1" = "jacoco" ]
+then
+    JACOCO_ENABLED=true
+else
+    JACOCO_ENABLED=false
+fi
+
 # Clean out any old sandbox, make a new one
 OUTDIR=sandbox
 rm -fr $OUTDIR; mkdir -p $OUTDIR
@@ -46,7 +54,7 @@ fi
 #   build/resources/main - Main resources (e.g. page.html)
 
 # Check if coverage should be run
-if [ "$1" = "jacoco" ]
+if [ $JACOCO_ENABLED = true ]
 then
     AGENT="../jacoco/jacocoagent.jar"
     COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-algos.exec"
@@ -90,6 +98,12 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $O
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.2 2>&1 & PID_2=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.4 2>&1 & PID_4=$!
+
+# If coverage is being run, then give the clouds some more time to initialize
+if [ $JACOCO_ENABLED = true ]
+then
+   sleep 30s
+fi
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-algos junit tests...

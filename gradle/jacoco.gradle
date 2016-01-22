@@ -4,7 +4,7 @@ apply plugin: 'jacoco'
 
 //
 // When using v2.0+ of the Jenkins JaCoCo plugin, the
-// JaCoCo version needs to be 0.7.5+
+// JaCoCo version needs to be v0.7.5+
 // 
 jacoco {
     toolVersion = "0.7.5.201505241946"

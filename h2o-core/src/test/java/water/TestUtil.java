@@ -41,7 +41,7 @@ public class TestUtil extends Iced {
       H2O.registerRestApis(System.getProperty("user.dir"));
       _stall_called_before = true;
     }
-    H2O.waitForCloudSize(x, 60000);
+    H2O.waitForCloudSize(x, 30000);
     _initial_keycnt = H2O.store_size();
   }
 
