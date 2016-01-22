@@ -2,10 +2,12 @@ package hex.schemas;
 
 import hex.Model;
 import hex.grid.Grid;
+import hex.grid.GridSearch;
 import hex.grid.GridSearch.Strategy;
 import water.H2O;
 import water.Key;
 import water.api.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
 
 import java.util.List;
@@ -77,10 +79,25 @@ public class GridSearchSchema<G extends Grid<MP>,
     }
 
     // Ugh:
-    if (parms.containsKey("strategy")) { strategy = Strategy.valueOf(parms.getProperty("strategy")); parms.remove("strategy"); }
-    if (parms.containsKey("max_models")) { max_models = Integer.valueOf(parms.getProperty("max_models")); parms.remove("max_models"); }
-    if (parms.containsKey("max_time_ms")) { max_time_ms = Integer.valueOf(parms.getProperty("max_time_ms")); parms.remove("max_time_ms"); }
-    if (parms.containsKey("seed")) { seed = Long.valueOf(parms.getProperty("seed")); parms.remove("seed"); }
+    if (parms.containsKey("strategy"))
+      try { strategy = GridSearch.Strategy.valueOf((String)parms.get("strategy")); }
+      catch (IllegalArgumentException iae) { throw new H2OIllegalArgumentException("strategy", (String)parms.get("strategy")); }
+      finally { parms.remove("strategy"); }
+
+    if (parms.containsKey("max_models"))
+      try { max_models = Integer.valueOf((String)parms.get("max_models")); }
+      catch (NumberFormatException nfe) { throw new H2OIllegalArgumentException("max_models", (String)parms.get("max_models")); }
+      finally { parms.remove("max_models"); }
+
+    if (parms.containsKey("max_time_ms"))
+      try { max_time_ms = Integer.valueOf((String)parms.get("max_time_ms")); }
+      catch (NumberFormatException nfe) { throw new H2OIllegalArgumentException("max_time_ms", (String)parms.get("max_time_ms")); }
+      finally { parms.remove("max_time_ms"); }
+
+    if (parms.containsKey("seed"))
+      try { seed = Long.valueOf((String)parms.get("seed")); }
+      catch (NumberFormatException nfe) { throw new H2OIllegalArgumentException("seed", (String)parms.get("seed")); }
+      finally { parms.remove("seed"); }
 
     if (parms.containsKey("grid_id")) { grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id"))); parms.remove("grid_id"); }
 

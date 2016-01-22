@@ -11,7 +11,6 @@ import water.Job;
 import water.Key;
 import water.TypeMap;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OIllegalValueException;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
@@ -67,26 +66,6 @@ public class GridSearchHandler<G extends Grid<MP>,
     gss.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
     gss.fillFromParms(parms);   // Override defaults from user parms
 
-    if (parms.contains("strategy"))
-      try { gss.strategy = GridSearch.Strategy.valueOf((String)parms.get("strategy")); }
-      catch (IllegalArgumentException iae) { throw new H2OIllegalValueException("strategy", parms.get("strategy")); }
-
-    if (parms.contains("max_models"))
-      try { gss.max_models = Integer.valueOf((String)parms.get("max_models")); }
-      catch (NumberFormatException nfe) { throw new H2OIllegalValueException("max_models", parms.get("max_models")); }
-
-    if (parms.contains("max_time_ms"))
-      try { gss.max_time_ms = Integer.valueOf((String)parms.get("max_time_ms")); }
-      catch (NumberFormatException nfe) { throw new H2OIllegalValueException("max_time_ms", parms.get("max_time_ms")); }
-
-    if (parms.contains("seed"))
-      try { gss.seed = Long.valueOf((String)parms.get("seed")); }
-      catch (NumberFormatException nfe) { throw new H2OIllegalValueException("seed", parms.get("seed")); }
-
-    // TODO: for testing; remove:
-    // gss.max_models = 10000;
-    // gss.strategy = GridSearch.Strategy.Random;
-
     // Verify list of hyper parameters
     // Right now only names, no types
     validateHyperParams((P)gss.parameters, gss.hyper_parameters);
@@ -108,7 +87,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Fill schema with job parameters
     // FIXME: right now we have to remove grid parameters which we sent back
     gss.hyper_parameters = null;
-    gss.total_models = gsJob._result.get().getModelCount();
+    gss.total_models = gsJob._result.get().getModelCount(); // TODO: looks like it's currently always 0
     gss.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(gsJob);
 
     return gss;

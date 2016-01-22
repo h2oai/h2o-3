@@ -171,6 +171,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         } catch (IllegalArgumentException e) {
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
           // Model parameters cannot be constructed for some reason
+          it.modelFailed(model);
           Object[] rawParams = it.getCurrentRawParameters();
           grid.appendFailedModelParameters(rawParams, e);
         } finally {
@@ -180,6 +181,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.update(_job);
         }
       }
+      Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
     } finally {
       grid.unlock(_job);
     }

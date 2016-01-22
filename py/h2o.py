@@ -814,8 +814,22 @@ class H2O(object):
 
 
     '''
-    Build a Cartesian grid of models on the h2o cluster using the given algorithm, training 
-    Frame, model parameters and grid parameters.
+    Build a Cartesian grid of models on the h2o cluster using the given algorithm, training Frame, model parameters and grid parameters.  
+
+    The search_criteria parameter is an optional dictionary which specifies smarter hyperparameter search. 
+    For example, if we set grid_parameters and search_criteria as follows:
+
+    { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_models': 5 }
+
+    5 models will be built from the 12 possible combinations.
+
+    Available search_criteria parameters are:
+    
+    'strategy': 'Cartesian' (the default) or 'Random'
+
+    'max_models': an optional integer limit on the number of models
+
+    'max_time_ms': an optional limit on the total runtime, in mS
     '''
     def build_model_grid(self, algo, training_frame, parameters, grid_parameters, grid_id = None, timeoutSecs=60, asynchronous=False, search_criteria=None, **kwargs):
         # basic parameter checking

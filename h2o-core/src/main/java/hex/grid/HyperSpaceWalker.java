@@ -2,6 +2,7 @@ package hex.grid;
 
 import hex.Model;
 import hex.ModelParametersBuilderFactory;
+import water.util.Log;
 
 import java.util.*;
 
@@ -33,6 +34,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
      * @return  true if the iterator can produce one more model parameters configuration.
      */
     boolean hasNext(Model previousModel);
+
+    /**
+     * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
+     * @param failedModel
+     */
+    void modelFailed(Model failedModel);
 
     /**
      * Returns current "raw" state of iterator.
@@ -237,6 +244,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         }
 
         @Override
+        public void modelFailed(Model failedModel) {
+          // nada
+        }
+
+        @Override
         public Object[] getCurrentRawParameters() {
           Object[] hyperValues = new Object[_hyperParamNames.length];
           return hypers(_currentHyperparamIndices, hyperValues);
@@ -326,6 +338,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
             // Fill model parameters
             MP params = getModelParams(commonModelParams, hypers);
             // We have another model parameters
+            Log.info("About to build model: " + _currentPermutationNum);
             return params;
           } else {
             throw new NoSuchElementException("No more elements to explore in hyper-space!");
@@ -336,6 +349,14 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         public boolean hasNext(Model previousModel) {
           // _currentPermutationNum is 1-based
           return _currentPermutationNum < _maxHyperSpaceSize && _currentPermutationNum < _max_models;
+        }
+
+        @Override
+        public void modelFailed(Model failedModel) {
+          // Leave _visitedPermutations, _visitedPermutationHashes and _currentHyperparamIndices alone
+          // so we don't revisit bad parameters. Note that if a model build fails for other reasons we
+          // won't retry.
+          _currentPermutationNum--;
         }
 
         @Override
