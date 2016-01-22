@@ -1558,7 +1558,7 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
 #' @param probs Numeric vector of probabilities with values in [0,1].
 #' @param combine_method How to combine quantiles for even sample sizes. Default is to do linear interpolation.
 #'                       E.g., If method is "lo", then it will take the lo value of the quantile. Abbreviations for average, low, and high are acceptable (avg, lo, hi).
-#' @param weights_column Numeric vector of observation weights (Optional).
+#' @param weights_column (Optional) String name of the observation weights column in x or an \code{H2OFrame} object with a single numeric column of observation weights.
 #' @param ... Further arguments passed to or from other methods.
 #' @return A vector describing the percentiles at the given cutoffs for the \code{H2OFrame} object.
 #' @examples
@@ -1582,14 +1582,19 @@ h2o.quantile <- function(x,
                      ...)
 {
   # verify input parameters
-  if (!is(x, "H2OFrame")) stop("`x` must be an H2O H2OFrame object")
+  if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   #if(!na.rm && .h2o.__unary_op("any.na", x)) stop("missing values and NaN's not allowed if 'na.rm' is FALSE")
   if(!is.numeric(probs) || length(probs) == 0L || any(!is.finite(probs) | probs < 0 | probs > 1))
     stop("`probs` must be between 0 and 1 exclusive")
   if (is.null(weights_column)) {
-    weights_column = "_" ##HACK: .newExpr() strips "", must use something else here.
+    weights_column <- "_" ##HACK: .newExpr() strips "", must use something else here.
   } else {
-    if (!is.character(weights_column)) stop("`weights_column` must be a String: column name in x")
+    if (!(is.character(weights_column) || (is(weights_column, "H2OFrame") && ncol(weights_column) ==1) && nrow(weights_column) == nrow(x)))
+      stop("`weights_column` must be a String of a column name in x or an H2OFrame object with 1 column and same row count as x")
+    if (is(weights_column, "H2OFrame")) {
+      x <- h2o.cbind(x,weights_column)
+      weights_column <- tail(names(x),1)
+    }
     if (!(weights_column %in% names(x))) stop("`weights_column` must be a column in x")
   }
 
@@ -1602,10 +1607,10 @@ h2o.quantile <- function(x,
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
   res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method), weights_column)
-  res <- as.matrix(res)
-  col <- as.numeric(res[,-1])
-  names(col) <- paste0(100*res[,1], "%")
-  col
+  tr <- as.matrix(t(res))
+  rownames(tr) <- colnames(res)
+  colnames(tr) <- paste0(100*tr[1,],"%")
+  tr[-1,]
 }
 
 #' @rdname h2o.quantile

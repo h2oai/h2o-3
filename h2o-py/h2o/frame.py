@@ -1189,15 +1189,24 @@ class H2OFrame(object):
       For even samples, how to combine quantiles.
       Should be one of ["interpolate", "average", "low", "hi"]
     weights_column : str, default=None
-      Name of column with optional observation weights in this H2OFrame
+      Name of column with optional observation weights in this H2OFrame or a 1-column H2OFrame of observation weights.
 
     Returns
     -------
       A new H2OFrame containing the quantiles and probabilities.
     """
     if len(self) == 0: return self
-    if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
-    if not weights_column: weights_column="_"
+    if prob is None: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
+    if weights_column is None: weights_column="_"
+    else:
+      if not (isinstance(weights_column, basestring) or (isinstance(weights_column, H2OFrame) 
+                                                        and weights_column.ncol == 1 
+                                                        and weights_column.nrow == self.nrow)):
+        raise ValueError("`weights_column` must be a column name in x or an H2OFrame object with 1 column and same row count as x")
+      if isinstance(weights_column, H2OFrame):
+        merged = self.cbind(weights_column)
+        weights_column = merged.names[-1]
+        return H2OFrame._expr(expr=ExprNode("quantile",merged,prob,combine_method,weights_column))
     return H2OFrame._expr(expr=ExprNode("quantile",self,prob,combine_method,weights_column))
 
   def cbind(self,data):

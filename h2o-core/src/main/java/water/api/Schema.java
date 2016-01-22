@@ -278,7 +278,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     int idx = clz_name.lastIndexOf('V');
     if( idx == -1 ) return -1;
     try { return Integer.valueOf(clz_name.substring(idx+1)); }
-    catch( NumberFormatException _ ) { return -1; }
+    catch( NumberFormatException ex) { return -1; }
   }
 
   /** Get the version number of this schema, for example 3 or 99. Note that 99
