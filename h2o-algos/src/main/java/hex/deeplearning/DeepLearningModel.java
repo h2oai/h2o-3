@@ -1471,7 +1471,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public boolean _autoencoder = false;
   
     public boolean _use_all_factor_levels = true;
-  
+
+    /**
+     * If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
+     */
+    public boolean _standardize = true;
+
   /*Neural Net Topology*/
     /**
      * The activation function (non-linearity) to be used the neurons in the hidden layers.

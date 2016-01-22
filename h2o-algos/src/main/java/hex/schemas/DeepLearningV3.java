@@ -33,6 +33,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "checkpoint",
         "overwrite_with_best_model",
         "use_all_factor_levels",
+        "standardize",
         "activation",
         "hidden",
         "epochs",
@@ -142,6 +143,9 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public boolean use_all_factor_levels;
+
+    @API(help="If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public boolean standardize;
 
     /*Neural Net Topology*/
     /**
