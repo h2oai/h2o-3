@@ -26,6 +26,42 @@ class CheckDB:
             print("Something went wrong: {}".format(err))
 
     '''
+    Get size of each database in MySQL server for reference
+    '''
+    def get_db_size(selfs):
+        db = mysql.connector.connect(user='root', password='0xdata', host='172.16.2.178', database='information_schema')
+        cursor_h2o = db.cursor()
+
+        cursor_h2o.execute("SELECT table_schema as 'Database', "
+                           "sum(round(((data_length + index_length) / 1024 / 1024 / 1024), 5)) as 'Size in GB' "
+                           "FROM TABLES group by table_schema;")
+
+        results = cursor_h2o.fetchall()
+        widths = []
+        columns = []
+        pipe = '|'
+        separator = '+'
+
+        for cd in cursor_h2o.description:
+            widths.append(max(cd[2], len(cd[0])))
+            columns.append(cd[0])
+
+        #Reallocate width length
+        widths[0] = 30
+
+        for w in widths:
+            pipe += " %-"+"%ss |" % (w,)
+            separator += '-'*w + '--+'
+
+        print "\n*****Size of each database in MySQL Server in GB:*****"
+        print(separator)
+        print(pipe % tuple(columns))
+        print(separator)
+        for row in results:
+            print(pipe % row)
+        print(separator)
+
+    '''
     Display of tables in the h2o database for reference.
     Will be displayed in Jenkins logs.
     '''
@@ -52,7 +88,7 @@ class CheckDB:
                 pipe += " %-"+"%ss |" % (w,)
                 separator += '-'*w + '--+'
 
-            print "\nTables currently in the h2o database:"
+            print "\n*****Tables currently in the h2o database:*****"
             print(separator)
             print(pipe % tuple(columns))
             print(separator)
@@ -83,7 +119,7 @@ class CheckDB:
             pipe += " %-"+"%ss |" % (w,)
             separator += '-'*w + '--+'
 
-        print "\nTables currently in the mr_unit database:"
+        print "\n*****Tables currently in the mr_unit database:*****"
         print(separator)
         print(pipe % tuple(columns))
         print(separator)
@@ -161,6 +197,7 @@ class CheckDB:
 
 if __name__ == '__main__':
     CheckDB().check_connection()
+    CheckDB().get_db_size()
     CheckDB().get_tables_h2o()
     CheckDB().get_tables_mrunit()
     CheckDB().get_table_size()
