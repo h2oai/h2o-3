@@ -984,7 +984,7 @@ public class Frame extends Lockable<Frame> {
       names[i] = _names[c2[i]];
     }
     Frame ff = new Frame(names, vecs);
-    ff.add("preidcate", frows.anyVec());
+    ff.add("predicate", frows.anyVec());
     return new DeepSelect().doAll(types(c2),ff).outputFrame(names(c2),domains(c2));
   }
 

@@ -3,6 +3,7 @@ package water.api;
 import water.DKV;
 import water.Job;
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
@@ -13,6 +14,7 @@ class ParseHandler extends Handler {
   public ParseV3 parse(int version, ParseV3 parse) {
     ParseSetup setup = new ParseSetup(parse.parse_type, parse.separator, parse.single_quotes, parse.check_header, parse.number_columns, delNulls(parse.column_names), ParseSetup.strToColumnTypes(parse.column_types), parse.domains, parse.na_strings, null, parse.chunk_size);
 
+    if (parse.source_frames == null) throw new H2OIllegalArgumentException("Data for Frame '" + parse.destination_frame.name + "' is not available. Please check that the path is valid (for all H2O nodes).'");
     Key[] srcs = new Key[parse.source_frames.length];
     for (int i = 0; i < parse.source_frames.length; i++)
       srcs[i] = parse.source_frames[i].key();

@@ -3,7 +3,7 @@ from .estimator_base import H2OEstimator
 
 class H2ODeepLearningEstimator(H2OEstimator):
   def __init__(self, model_id=None, overwrite_with_best_model=None, checkpoint=None,
-               use_all_factor_levels=None, activation=None, hidden=None, epochs=None,
+               use_all_factor_levels=None, standardize=None, activation=None, hidden=None, epochs=None,
                train_samples_per_iteration=None, seed=None, adaptive_rate=None, rho=None,
                epsilon=None, rate=None, rate_annealing=None, rate_decay=None,
                momentum_start=None, momentum_ramp=None, momentum_stable=None,
@@ -42,6 +42,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
       Use all factor levels of categorical variance. Otherwise the first factor level is
       omitted (without loss of accuracy). Useful for variable importances and auto-enabled
       for autoencoder.
+    standardize : bool
+      If enabled, automatically standardize the data. If disabled, the user must
+      provide properly scaled input data.
     activation : str
       A string indicating the activation function to use.
       Must be either "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout",
@@ -228,6 +231,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
   @use_all_factor_levels.setter
   def use_all_factor_levels(self, value):
     self._parms["use_all_factor_levels"] = value
+
+  @property
+  def standardize(self):
+      return self._parms["standardize"]
+
+  @standardize.setter
+  def standardize(self, value):
+      self._parms["standardize"] = value
 
   @property
   def activation(self):
