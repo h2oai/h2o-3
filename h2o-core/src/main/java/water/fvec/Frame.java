@@ -2,17 +2,16 @@ package water.fvec;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-
 import water.*;
 import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -1210,15 +1209,16 @@ public class Frame extends Lockable<Frame> {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length-1];
       BufferedString tmpStr = new BufferedString();
-      for(int i = 0; i < pred._len; ++i) {
-        if( pred.atd(i) != 0 && !pred.isNA(i) ) {
-          for( int j = 0; j < chks.length - 1; j++ ) {
-            Chunk chk = chks[j];
-            if( chk.isNA(i) )                   nchks[j].addNA();
-            else if( chk instanceof C16Chunk )  nchks[j].addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchks[j].addStr(chk.atStr(tmpStr, i));
-            else if( chk.hasFloat() )           nchks[j].addNum(chk.atd(i));
-            else                                nchks[j].addNum(chk.at8(i),0);
+      for( int j = 0; j < chks.length - 1; j++ ) {
+        Chunk chk = chks[j];
+        NewChunk nchk = nchks[j];
+        for(int i = 0; i < pred._len; ++i) {
+          if( pred.atd(i) != 0 && !pred.isNA(i) ) {
+            if( chk.isNA(i) )                   nchk.addNA();
+            else if( chk instanceof C16Chunk )  nchk.addUUID(chk, i);
+            else if( chk instanceof CStrChunk)  nchk.addStr(chk.atStr(tmpStr, i));
+            else if( chk.hasFloat() )           nchk.addNum(chk.atd(i));
+            else                                nchk.addNum(chk.at8(i),0);
           }
         }
       }
