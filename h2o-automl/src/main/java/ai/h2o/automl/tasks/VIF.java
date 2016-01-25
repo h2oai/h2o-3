@@ -45,7 +45,7 @@ public class VIF extends DTask<VIF> {
 
   @Override public void compute2() { _glm.trainModel(); tryComplete(); }
 
-  double vif() {
+  public double vif() {
     if( _glm!=null ) {
       Model m;
       _vif = 1. / (1. - ((ModelMetricsSupervised) (m=_glm.get())._output._training_metrics).r2());

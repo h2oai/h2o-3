@@ -37,7 +37,7 @@ public class AutoCollectTest extends TestUtil { // requires mysql-connector-java
     try {
       AutoCollect ac = new AutoCollect(3600, "");
       fr = parse_test_file(Key.make("a.hex"), "/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
-      ac.computeMetaData("iris_wheader", fr, null, 4, true);
+      ac.computeMetaData("iris_wheader", fr, new int[]{0,1,2,3}, 4, true);
     } finally {
       if( fr!=null ) fr.delete();
     }

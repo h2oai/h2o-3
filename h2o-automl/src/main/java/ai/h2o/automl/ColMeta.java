@@ -7,6 +7,7 @@ import water.Iced;
 import water.fvec.Vec;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 /** Column Meta Data
  *
@@ -53,6 +54,9 @@ public class ColMeta extends Iced {
   public double _kurtosis;      // the sharpness of the peak of a frequency-distribution curve
   public double _skew;          // measure of the assymetry of a distribution; < 0 means shifted to the right; > 0 means shifted to the left
 
+  // VIF
+  public double _vif;           // vifs computed by FrameMeta
+
   // SECOND PASS
   // https://0xdata.atlassian.net/browse/STEAM-41 --column metadata to gather
   public long _numUniq;
@@ -88,6 +92,42 @@ public class ColMeta extends Iced {
     _ignored = v.isConst() || v.isString() || v.isBad() || v.isUUID(); // auto ignore from the outset
     _sigma=v.sigma();
     _variance=_sigma*_sigma;
+    _vif=-1;
+  }
+
+  public static HashMap<String, Object> makeEmptyColMeta() {
+    HashMap<String,Object> hm = new HashMap<>();
+    for(String key: ColMeta.METAVALUES) hm.put(key,null);
+    return hm;
+  }
+
+  public void fillColMeta(HashMap<String, Object> cm, int idFrame) {
+    cm.put("idFrame", idFrame);
+    cm.put("ColumnName", _name);
+    cm.put("ColumnType", _v.get_type_str()); // TODO:
+    if( !_v.isNumeric() ) {
+      cm.put("Min", AutoML.SQLNAN);
+      cm.put("Max", AutoML.SQLNAN);
+      cm.put("Mean", AutoML.SQLNAN);
+      cm.put("Median", AutoML.SQLNAN);
+      cm.put("Variance", AutoML.SQLNAN);
+      cm.put("Cardinality", _v.cardinality());
+      cm.put("Kurtosis", AutoML.SQLNAN);
+      cm.put("Skew", AutoML.SQLNAN);
+      cm.put("VIF", AutoML.SQLNAN);
+    } else {
+      cm.put("Min", _v.min());
+      cm.put("Max", _v.max());
+      cm.put("Mean", _v.mean());
+      cm.put("Median", _v.pctiles()[8/*p=0.5 pctile; see Vec.PERCENTILES*/]);
+      cm.put("Variance", _v.sigma()*_v.sigma());
+      cm.put("Cardinality", AutoML.SQLNAN);
+      cm.put("Kurtosis", _kurtosis);
+      cm.put("Skew", _skew);
+      cm.put("VIF", _vif);
+    }
+    cm.put("FractionNA", (double) _v.naCnt() / (double) _v.length() );
+    cm.put("TimeToMRTaskMillis", _MRTaskMillis);
   }
 
   // stupid wrapper class for possibly special types of NAs; things like 999999 or -1 or 0

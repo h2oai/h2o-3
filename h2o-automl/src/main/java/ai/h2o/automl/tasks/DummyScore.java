@@ -27,7 +27,10 @@ abstract class DummyScore extends MRTask<DummyScore> {
     mse() {   // AKA deviance for regression and guassian family
       @Override void op( double[] d0s, double err, double weight, int which) { d0s[which] += weight*err*err; }
       @Override void postOp( double ds[], double wcount ) { ArrayUtils.div(ds,wcount); }
-      @Override double classificationConstScore(Vec y, int cls) { return 1. - ((double)y.bins()[cls] / (double)(y.length() - y.naCnt())); }
+      @Override double classificationConstScore(Vec y, int cls) {
+        double p = ((double)y.bins()[cls] / (double)(y.length() - y.naCnt()));
+        return p*(1-p);
+      }
     },
     logloss() {
       double _eps=1e-15;

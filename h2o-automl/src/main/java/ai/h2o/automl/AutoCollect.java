@@ -60,20 +60,39 @@ public class AutoCollect {
     return null;
   }
 
-  public void computeMetaData(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
-    //if( !hasMeta(datasetName) ) {
-      // gather up the FrameMeta data.
-      FrameMeta fm = new FrameMeta(f,y,datasetName, isClassification);
-      HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
-      fm.fillSimpleMeta(frameMeta);
-      fm.fillDummies(frameMeta);
-      int idFrameMeta = pushFrameMeta(frameMeta);
-      computeAndPushColMeta(fm, idFrameMeta);
-//    }
+  public int computeMetaData(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
+    if( hasMeta(datasetName) ) return getidFrameMeta(datasetName);
+    FrameMeta fm = new FrameMeta(f, y, x, datasetName, isClassification);
+    HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
+    fm.fillSimpleMeta(frameMeta);
+    fm.fillDummies(frameMeta);
+    int idFrameMeta = pushFrameMeta(frameMeta);
+    computeAndPushColMeta(fm, idFrameMeta);
+    return idFrameMeta;
   }
 
   private void computeAndPushColMeta(FrameMeta fm, int idFrameMeta) {
+    fm.computeFrameMetaPass1();
+    fm.computeVIFs();
+    for(int i=0; i<fm._cols.length; ++i) {
+      HashMap<String, Object> colMeta = ColMeta.makeEmptyColMeta();
+      fm._cols[i].fillColMeta(colMeta, idFrameMeta);
+      pushColMeta(colMeta);
+    }
+  }
 
+  int getidFrameMeta(String datasetName) {
+    String query = "SELECT idFrameMeta  AS id FROM FrameMeta WHERE DataSetName=\"" + datasetName + "\";";
+    ResultSet rs = query(query);
+    try {
+      rs.next();
+      return rs.getInt(1);
+    } catch( SQLException ex) {
+      System.out.println("SQLException: " + ex.getMessage());
+      System.out.println("SQLState: " + ex.getSQLState());
+      System.out.println("VendorError: " + ex.getErrorCode());
+      throw new RuntimeException("Failed to retrieve ID for frame: " + datasetName);
+    }
   }
 
   boolean hasMeta(String datasetName) {
@@ -116,6 +135,7 @@ public class AutoCollect {
       genKeys.next();
       return genKeys.getInt(1); // return the last insertID
     } catch (SQLException ex) {
+      System.out.println("STATEMENT: " + query);
       System.out.println("SQLException: " + ex.getMessage());
       System.out.println("SQLState: " + ex.getSQLState());
       System.out.println("VendorError: " + ex.getErrorCode());
@@ -123,12 +143,14 @@ public class AutoCollect {
     throw new RuntimeException("Query failed");
   }
 
-  private int pushFrameMeta(HashMap<String,Object> fm) {
-    StringBuilder sb = new StringBuilder("INSERT INTO FrameMeta (");
-    sb.append(collapseStringArray(FrameMeta.METAVALUES)).append(") \n");
+  private int pushFrameMeta(HashMap<String,Object> fm) { return pushMeta(fm, FrameMeta.METAVALUES, "FrameMeta"); }
+  private int pushColMeta  (HashMap<String,Object> cm) { return pushMeta(cm, ColMeta.METAVALUES, "ColMeta"); }
+  private int pushMeta(HashMap<String, Object> fm, String[] metaValues, String tableName) {
+    StringBuilder sb = new StringBuilder("INSERT INTO " + tableName + " (");
+    sb.append(collapseStringArray(metaValues)).append(") \n");
     sb.append("VALUES (");
     int i=0;
-    for(String k: FrameMeta.METAVALUES) {
+    for(String k: metaValues) {
       sb.append("'").append(fm.get(k)).append("'");
       if(i++==fm.size()-1) sb.append(");");
       else sb.append(",");
