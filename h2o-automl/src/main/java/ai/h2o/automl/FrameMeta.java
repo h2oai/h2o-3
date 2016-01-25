@@ -4,6 +4,7 @@ import ai.h2o.automl.collectors.MetaCollector;
 import ai.h2o.automl.guessers.ProblemTypeGuesser;
 import ai.h2o.automl.tasks.DummyClassifier;
 import ai.h2o.automl.tasks.DummyRegressor;
+import ai.h2o.automl.tasks.VIF;
 import hex.tree.DHistogram;
 import water.H2O;
 import water.Iced;
@@ -12,9 +13,11 @@ import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -68,14 +71,14 @@ public class FrameMeta extends Iced {
 
   public void fillDummies(HashMap<String, Object> fm) {
     double[][] dummies = getDummies();
-    fm.put("DummyStratMSE", _isClassification?dummies[0][0]:-1);
-    fm.put("DummyStratLogLoss", _isClassification?dummies[1][0]:-1);
-    fm.put("DummyMostFreqMSE", _isClassification?dummies[0][2]:-1);
-    fm.put("DummyMostFreqLogLoss", _isClassification?dummies[1][2]:-1);
-    fm.put("DummyRandomMSE", _isClassification?dummies[0][1]:-1);
-    fm.put("DummyRandomLogLoss", _isClassification?dummies[1][1]:-1);
-    fm.put("DummyMedianMSE", _isClassification?-1:dummies[0][1]);
-    fm.put("DummyMeanMSE", _isClassification?-1:dummies[0][0]);
+    fm.put("DummyStratMSE", _isClassification?dummies[0][0]:AutoML.SQLNAN);
+    fm.put("DummyStratLogLoss", _isClassification?dummies[1][0]:AutoML.SQLNAN);
+    fm.put("DummyMostFreqMSE", _isClassification?dummies[0][2]:AutoML.SQLNAN);
+    fm.put("DummyMostFreqLogLoss", _isClassification?dummies[1][2]:AutoML.SQLNAN);
+    fm.put("DummyRandomMSE", _isClassification?dummies[0][1]:AutoML.SQLNAN);
+    fm.put("DummyRandomLogLoss", _isClassification?dummies[1][1]:AutoML.SQLNAN);
+    fm.put("DummyMedianMSE", _isClassification?AutoML.SQLNAN:dummies[0][1]);
+    fm.put("DummyMeanMSE", _isClassification?AutoML.SQLNAN:dummies[0][0]);
     fm.put("NClass", _nclass);
   }
 
@@ -115,17 +118,27 @@ public class FrameMeta extends Iced {
 
   // cached things
   private String[] _ignoredCols;
-
-  public FrameMeta(Frame fr, int response, String datasetName, boolean isClassification) {
-    this(fr,response,datasetName);
-    _isClassification=isClassification;
-  }
+  private String[] _includeCols;
 
   public FrameMeta(Frame fr, int response, String datasetName) {
     _datasetName=datasetName;
     _fr=fr;
     _response=response;
     _cols = new ColMeta[_fr.numCols()];
+  }
+
+  public FrameMeta(Frame fr, int response, String datasetName, boolean isClassification) {
+    this(fr,response,datasetName);
+    _isClassification=isClassification;
+  }
+
+  public FrameMeta(Frame fr, int response, int[] predictors, String datasetName, boolean isClassification) {
+    this(fr, response, intAtoStringA(predictors, fr.names()), datasetName, isClassification);
+  }
+
+  public FrameMeta(Frame fr, int response, String[] predictors, String datasetName, boolean isClassification) {
+    this(fr, response, datasetName, isClassification);
+    _includeCols = predictors;
   }
 
   public boolean isClassification() { return _isClassification; }
@@ -142,6 +155,12 @@ public class FrameMeta extends Iced {
     return _ignoredCols;
   }
 
+  public String[] includedCols() {
+    if( _includeCols==null )
+      _includeCols = ArrayUtils.difference(_fr.names(), ignoredCols());
+    return _includeCols;
+  }
+
   public ColMeta response() { return _cols[_response]; }
 
   // blocking call to compute 1st pass of column metadata
@@ -155,6 +174,23 @@ public class FrameMeta extends Iced {
     for(MetaPass1 cmt: tasks)
       _cols[cmt._colMeta._idx] = cmt._colMeta;
     return this;
+  }
+
+  public FrameMeta computeVIFs() {
+    VIF[] vifs = VIF.make(_fr._key, includedCols(), _fr.names());
+    VIF.launchVIFs(vifs);
+    int i=0;
+    for( String col: includedCols() ) {
+      _cols[Arrays.asList(_fr.names()).indexOf(col)]._vif = vifs[i++].vif();
+    }
+    return this;
+  }
+
+  private static String[] intAtoStringA(int[] select, String[] names) {
+    String[] preds = new String[select.length];
+    int i=0;
+    for(int p: select) preds[i++] = names[p];
+    return preds;
   }
 
   private static class MetaPass1 extends H2O.H2OCountedCompleter<MetaPass1> {

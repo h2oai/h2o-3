@@ -16,6 +16,9 @@ import java.util.Arrays;
  * (dataset, response, loss) combo.
  */
 public final class AutoML {
+
+  public static final double SQLNAN = -99999;
+
   private final String _datasetName;     // dataset name
   private final Frame _fr;               // all learning on this frame
   private final int _response;           // response column, -1 for no response column
