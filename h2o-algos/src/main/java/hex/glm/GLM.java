@@ -565,7 +565,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol).solve(innerSolver, beta, l1pen, true, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _state.updateState(beta,gslvr.getGradient(beta));
       } else {
-        Result r = lbfgs.solve(gslvr, beta, _state.ginfo(), this);
+        Result r = lbfgs.solve(gslvr, beta, _state.ginfo(), new ProgressMonitor() {
+          @Override
+          public boolean progress(double[] beta, GradientInfo ginfo) {
+            if(_state._iter < 4 || ((_state._iter & 3) == 0))
+              Log.info(LogMsg("LBFGS, gradient norm = " + ArrayUtils.linfnorm(ginfo._gradient,false)));
+            return GLMDriver.this.progress(beta,ginfo);
+          }
+        });
         Log.info(LogMsg(r.toString()));
         _state.updateState(r.coefs,(GLMGradientInfo)r.ginfo);
       }

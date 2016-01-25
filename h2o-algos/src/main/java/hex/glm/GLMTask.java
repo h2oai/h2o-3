@@ -251,6 +251,7 @@ public abstract class GLMTask  {
       for(int i = 0; i < row.nBins; ++i)
         g[row.binIds[i]] += gval;
       int off = _dinfo.numStart();
+
       // numbers
       for (int j = 0; j < row.nNums; ++j)
         _gradient[(row.numIds == null ? j + off : row.numIds[j])] += row.numVals[j] * gval;
@@ -266,6 +267,13 @@ public abstract class GLMTask  {
       _likelihood += gmgt._likelihood;
     }
     @Override public void postGlobal(){
+      if(_sparse && _dinfo._normSub != null) {
+        int numStart = _dinfo.numStart();
+        for(int i = 0; i < _dinfo._normSub.length; ++i) {
+          double d = _dinfo._normSub[i]*_dinfo._normMul[i];
+          _gradient[numStart+i] -= d*_gradient[_gradient.length-1];
+        }
+      }
       ArrayUtils.mult(_gradient,_reg);
       for(int j = 0; j < _beta.length - (_dinfo._intercept?1:0); ++j)
         _gradient[j] += _currentLambda * _beta[j];
