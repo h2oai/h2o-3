@@ -59,13 +59,13 @@ public final class ParseDataset {
     if(colNames == null) { // no names, generate
       colNames = new String[ncols];
       for(int i=0; i < ncols; i++ )
-        colNames[i] = "C" + String.valueOf(i+1);
+        colNames[i] = "C" + Integer.toString(i+1);
     } else { // some or all names exist, fill in blanks
       HashSet<String> nameSet = new HashSet<>(Arrays.asList(colNames));
       colNames = Arrays.copyOf(colNames, ncols);
       for(int i=0; i < ncols; i++ ) {
         if (colNames[i] == null || colNames[i].equals("")) {
-          String tmp = "C" + String.valueOf(i + 1);
+          String tmp = "C" + Integer.toString(i+1);
           while (nameSet.contains(tmp)) // keep building name until unique
             tmp = tmp + tmp;
           colNames[i] = tmp;
