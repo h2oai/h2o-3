@@ -27,7 +27,7 @@ abstract class ASTBinOp extends ASTPrim {
 
   Val prim_apply( Val left, Val rite ) {
     switch( left.type() ) {
-    case Val.NUM: 
+    case Val.NUM:
       final double dlf = left.getNum();
       switch( rite.type() ) {
       case Val.NUM:  return new ValNum( op (dlf,rite.getNum()));
@@ -37,7 +37,7 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.STRS: throw H2O.unimpl();
       default: throw H2O.fail();
       }
-      
+
     case Val.NUMS:
       final double ddlf = left.getNums()[0];
       switch( rite.type() ) {
@@ -47,9 +47,9 @@ abstract class ASTBinOp extends ASTPrim {
         case Val.STR:  throw H2O.unimpl();
         case Val.STRS: throw H2O.unimpl();
         default: throw H2O.fail();
-      }  
+      }
 
-    case Val.FRM: 
+    case Val.FRM:
       Frame flf = left.getFrame();
       switch( rite.type() ) {
       case Val.NUM:  return frame_op_scalar(flf,rite.getNum());
@@ -59,14 +59,14 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.FRM:  return frame_op_frame (flf,rite.getFrame());
       default: throw H2O.fail();
       }
-          
-    case Val.STR: 
+
+    case Val.STR:
       String slf = left.getStr();
       switch( rite.type() ) {
       case Val.NUM:  throw H2O.unimpl();
-      case Val.NUMS: throw H2O.unimpl();  
+      case Val.NUMS: throw H2O.unimpl();
       case Val.STR:  throw H2O.unimpl();
-      case Val.STRS: throw H2O.unimpl();  
+      case Val.STRS: throw H2O.unimpl();
       case Val.FRM:  return scalar_op_frame(slf, rite.getFrame());
       default: throw H2O.fail();
       }
@@ -81,7 +81,7 @@ abstract class ASTBinOp extends ASTPrim {
         case Val.FRM:  return scalar_op_frame(sslf,rite.getFrame());
         default: throw H2O.fail();
       }
-      
+
     case Val.ROW:
       double dslf[] = left.getRow();
       switch( rite.type() ) {
@@ -221,8 +221,15 @@ abstract class ASTBinOp extends ASTPrim {
    *  auto-widen element-by-element.  Short-cut if one frame has zero
    *  columns. */
   private ValFrame frame_op_frame( Frame lf, Frame rt ) {
-    if( lf.numRows() != rt.numRows() ) 
+    if( lf.numRows() != rt.numRows() ) {
+      // special case for broadcasting a single row of data across a frame
+      if( lf.numRows() == 1 || rt.numRows()==1 ) {
+        if (lf.numCols() != rt.numCols())
+          throw new IllegalArgumentException("Frames must have same columns, found " + lf.numCols() + " columns and " + rt.numCols() + " columns.");
+        return frame_op_row(lf, rt);
+      } else
       throw new IllegalArgumentException("Frames must have same rows, found "+lf.numRows()+" rows and "+rt.numRows()+" rows.");
+    }
     if( lf.numCols() == 0 ) return new ValFrame(lf);
     if( rt.numCols() == 0 ) return new ValFrame(rt);
     if( lf.numCols() == 1 && rt.numCols() > 1 ) return vec_op_frame(lf.vecs()[0],rt);
@@ -249,6 +256,27 @@ abstract class ASTBinOp extends ASTPrim {
         }
       }.doAll(lf.numCols(), Vec.T_NUM, new Frame(lf).add(rt)).outputFrame(lf._names,null);
     return cleanCategorical(lf, res); // Cleanup categorical misuse
+  }
+
+  private ValFrame frame_op_row(Frame lf, Frame row) {
+    final double[] rawRow = new double[row.numCols()];
+    for(int i=0; i<rawRow.length;++i)
+      rawRow[i] = row.vec(i).isNumeric() ? row.vec(i).at(0) : Double.NaN; // is numeric, if not then NaN
+    Frame res = new MRTask() {
+      @Override public void map(Chunk[] chks, NewChunk[] cress) {
+        for( int c=0; c<cress.length; c++ ) {
+          Chunk clf = chks[c];
+          NewChunk cres = cress[c];
+          for(int r=0;r<clf._len; ++r) {
+            if (clf.vec().isString())
+              cres.addNum(Double.NaN); // TODO: improve
+            else
+              cres.addNum(op(clf.atd(r), rawRow[c]));
+          }
+        }
+      }
+    }.doAll(lf.numCols(), Vec.T_NUM, lf).outputFrame(lf._names, null);
+    return cleanCategorical(lf, res);
   }
 
   private ValRow row_op_row( double[] lf, double[] rt, String[] names ) {
@@ -294,7 +322,7 @@ abstract class ASTBinOp extends ASTPrim {
       }.doAll(fr.numCols(), Vec.T_NUM, lf).outputFrame(fr._names,null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
-  
+
   // Make sense to run this OP on an enm?
   boolean categoricalOK() { return false; }
 }
@@ -313,9 +341,9 @@ class ASTSub  extends ASTBinOp { public String str() { return "-" ; } double op(
 class ASTIntDiv extends ASTBinOp { public String str() { return "intDiv"; } double op(double l, double r) { return (((int)r)==0) ? Double.NaN : (int)l/(int)r;}}
 class ASTIntDivR extends ASTBinOp { public String str() { return "%/%"; } double op(double l, double r) { return (int)(l/r);}} // Language R intdiv op
 
-class ASTRound extends ASTBinOp { 
+class ASTRound extends ASTBinOp {
   public String str() { return "round"; }
-  double op(double x, double digits) { 
+  double op(double x, double digits) {
     // e.g.: floor(2.676*100 + 0.5) / 100 => 2.68
     if(Double.isNaN(x)) return x;
     double sgn = x < 0 ? -1 : 1;
@@ -330,9 +358,9 @@ class ASTRound extends ASTBinOp {
   }
 }
 
-class ASTSignif extends ASTBinOp { 
+class ASTSignif extends ASTBinOp {
   public String str() { return "signif"; }
-  double op(double x, double digits) { 
+  double op(double x, double digits) {
     if(Double.isNaN(x)) return x;
     java.math.BigDecimal bd = new java.math.BigDecimal(x);
     bd = bd.round(new java.math.MathContext((int)digits, java.math.RoundingMode.HALF_EVEN));
@@ -394,7 +422,7 @@ class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op(
 
 // ----------------------------------------------------------------------------
 // Logical-AND.  If the first arg is false, do not execute the 2nd arg.
-class ASTLAnd extends ASTBinOp { 
+class ASTLAnd extends ASTBinOp {
   public String str() { return "&&"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val left = stk.track(asts[1].exec(env));
@@ -408,13 +436,13 @@ class ASTLAnd extends ASTBinOp {
   }
   // Weird R semantics, zero trumps NA
   double op( double l, double r ) { return and_op(l,r); }
-  static double and_op( double l, double r ) {   
-    return (l==0||r==0) ? 0 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 1); 
-  } 
+  static double and_op( double l, double r ) {
+    return (l==0||r==0) ? 0 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 1);
+  }
 }
 
 // Logical-OR.  If the first arg is true, do not execute the 2nd arg.
-class ASTLOr extends ASTBinOp { 
+class ASTLOr extends ASTBinOp {
   public String str() { return "||"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val left = stk.track(asts[1].exec(env));
@@ -428,12 +456,12 @@ class ASTLOr extends ASTBinOp {
   }
   // Weird R semantics, zero trumps NA
   double op( double l, double r ) { return or_op(l, r); }
-  static double or_op( double l, double r ) {   
-    return (l!=0||r!=0) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0); 
-  } 
+  static double or_op( double l, double r ) {
+    return (l!=0||r!=0) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0);
+  }
 }
 
-// IfElse.  
+// IfElse.
 //
 // "NaNs poison".  If the test is a NaN, evaluate neither side and return a NaN
 //

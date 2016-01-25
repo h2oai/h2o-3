@@ -21,11 +21,13 @@ def insert_missing():
     h2o_data = h2o.H2OFrame(data)
 
     h2o_data.insert_missing_values(fraction = 0.0)
-    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol)])
+    print(h2o_data)
+    num_nas = sum([v.isna().sum() for v in h2o_data])
     assert num_nas == 0, "Expected no missing values inserted, but got {0}".format(num_nas)
 
     h2o_data.insert_missing_values(fraction = 1.0)
-    num_nas = sum([h2o_data[c].isna().sum() for c in range(h2o_data.ncol)])
+    print(h2o_data)
+    num_nas = sum([v.isna().sum() for v in h2o_data])
     assert num_nas == h2o_data.nrow*h2o_data.ncol, "Expected all missing values inserted, but got {0}".format(num_nas)
 
 

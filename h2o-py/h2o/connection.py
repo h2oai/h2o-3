@@ -18,6 +18,7 @@ import site
 from .display import H2ODisplay
 from .h2o_logging import _is_logging, _log_rest
 from .two_dim_table import H2OTwoDimTable
+from .utils.shared_utils import quote
 from six import iteritems, PY3
 from string import ascii_lowercase, digits
 from random import choice
@@ -542,7 +543,7 @@ class H2OConnection(object):
         x += ']'
       else:
         x = str(v) if PY3 else str(v).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__)
-      query_string += k+"="+x+"&"
+      query_string += k+"="+quote(x)+"&"
     query_string = query_string[:-1]  # Remove trailing extra &
 
     post_body = ""
