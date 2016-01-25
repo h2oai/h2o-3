@@ -612,7 +612,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(idxs != null){
         for(int i = 0; i < idxs.length; ++i)
           beta[idxs[i]] = this.beta[i];
-        beta[beta.length-1] = this.beta[this.beta.length-1];
+//        beta[beta.length-1] = this.beta[this.beta.length-1];
       } else
         System.arraycopy(this.beta,0,beta,0,beta.length);
       return beta;
@@ -626,8 +626,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             if(d != 0)++res;
         return res;
       }
-      int icpt = beta[beta.length-1] == 0?0:1;
-      return idxs != null?idxs.length+icpt:beta.length;
+      return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
 
     /**

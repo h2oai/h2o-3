@@ -292,7 +292,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_parms._obj_reg == -1)
           _parms._obj_reg = 1.0 / ymt._wsum;
         _dinfo.updateWeightedSigmaAndMean(ymt._basicStats.sigma(), ymt._basicStats.mean());
-        _state._ymu = ymt._yMu;
+        _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
       } else {
         _nobs = _train.numRows();
         if (_parms._obj_reg == -1)
@@ -304,7 +304,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (int i = 0; i < _state._ymu.length; ++i)
             _state._ymu[i] = bins[i] * reg;
         } else
-          _state._ymu = new double[]{_train.lastVec().mean()};
+          _state._ymu = new double[]{_parms._intercept?_train.lastVec().mean():0};
       }
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
         GLMGradientSolver gslvr = new GLMGradientSolver(_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
