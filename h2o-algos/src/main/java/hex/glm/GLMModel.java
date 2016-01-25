@@ -608,6 +608,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double [] beta;
     public final double [][] betaMultinomial;
 
+    public double [] getBeta(double [] beta) {
+      if(idxs != null){
+        for(int i = 0; i < idxs.length; ++i)
+          beta[idxs[i]] = this.beta[i];
+        beta[beta.length-1] = this.beta[this.beta.length-1];
+      } else
+        System.arraycopy(this.beta,0,beta,0,beta.length);
+      return beta;
+    }
 
     public int rank(){
       if(betaMultinomial != null) {
@@ -813,11 +822,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return best;
     }
 
-    public double[] getNormBeta() {
-      double [] res = MemoryManager.malloc8d(_dinfo.fullN()+1);
-      getBeta(_best_lambda_idx,res);
-      return res;
-    }
+    public double[] getNormBeta() {return _submodels[_best_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));}
 
     public double[][] getNormBetaMultinomial() {
       return getNormBetaMultinomial(_best_lambda_idx);
@@ -837,13 +842,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public double[][] get_global_beta_multinomial(){return _global_beta_multinomial;}
 
-    public void getBeta(int l, double [] beta) {
-      assert beta.length == _dinfo.fullN()+1;
-      int k = 0;
-      for(int i:_submodels[l].idxs)
-        beta[i] = _submodels[l].beta[k++];
-      beta[beta.length-1] = _submodels[l].beta[_submodels[l].beta.length-1];
-    }
+
     public void setSubmodelIdx(int l){
       _best_lambda_idx = l;
       if(_multinomial) {
@@ -855,7 +854,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
         else
           Arrays.fill(_global_beta, 0);
-        getBeta(l, _global_beta);
+        _submodels[l].getBeta(_global_beta);
         _global_beta = _dinfo.denormalizeBeta(_global_beta);
       }
     }

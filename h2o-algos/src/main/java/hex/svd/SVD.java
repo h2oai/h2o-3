@@ -4,6 +4,7 @@ import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 import hex.*;
+import hex.DataInfo.Row;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
@@ -598,15 +599,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     @Override protected boolean chunkInit(){
       _gram = new Gram(_dinfo.fullN(), 0, _ivv.length, 0, false);
+      _numRow = _dinfo.newDenseRow(MemoryManager.malloc8d(_ivv.length),0);
       return true;
     }
 
+    private transient Row _numRow;
     @Override protected void processRow(long gid, DataInfo.Row r) {
       double w = 1; // TODO: add weights to dinfo?
-      double[] nums = new double[_ivv.length];
+      double[] nums = _numRow.numVals;
       for(int row = 0; row < _ivv.length; row++)
         nums[row] = r.innerProduct(_ivv[row]);
-      _gram.addRow(_dinfo.newDenseRow(nums), w);
+      _gram.addRow(_numRow, w);
       ++_nobs;
     }
 

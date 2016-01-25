@@ -159,7 +159,6 @@ public class ADMM {
           if(gerr > _eps)
             Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
           iter = i;
-          Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iterations");
           return true;
         }
       }
@@ -178,6 +177,9 @@ public class ADMM {
       return false;
     }
 
+    @Override public String toString(){
+      return "iter = " + iter + ", gerr = " + gerr;
+    }
     /**
      * Estimate optimal rho based on l1 penalty and (estimate of) solution x without the l1penalty
      * @param x

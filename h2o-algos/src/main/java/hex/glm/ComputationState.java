@@ -79,7 +79,7 @@ public final class ComputationState {
   public void dropActiveData(){_activeData = null;}
 
   public String toString() {
-    return "iteration = " + _iter + ", lambda = " + MathUtils.roundToNDigits(_lambda, 4);
+    return "iter=" + _iter + " lambda=" + MathUtils.roundToNDigits(_lambda, 4) + " obj=" + MathUtils.roundToNDigits(objVal(),4);
   }
 
   private void adjustToNewLambda() {
@@ -136,25 +136,33 @@ public final class ComputationState {
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, selected));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
+        _gslvr = new GLMGradientSolver(_parms,_activeData,(1-_alpha)*_lambda,_bc);
       }
     }
     return selected;
   }
 
   private DataInfo [] _activeDataMultinomial;
-  private int [] _classOffsets;
+  private int [] _classOffsets = new int[]{0};
 
 
-  public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial[c];}
+  public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial != null?_activeDataMultinomial[c]:_dinfo;}
 
   public double [] betaMultinomial(int c) {
     return Arrays.copyOfRange(_beta,_classOffsets[c],_classOffsets[c+1]);
   }
 
-  public GLMGradientInfo ginfoMultinomial(int c) {
-    return new GLMGradientInfo(_ginfo._likelihood,_ginfo._objVal,Arrays.copyOfRange(_ginfo._gradient,_classOffsets[c],_classOffsets[c+1]));
+  public GLMSubsetGinfo ginfoMultinomial(int c) {
+    return new GLMSubsetGinfo(_ginfo,_classOffsets[c],_classOffsets[c+1]);
   }
 
+  public static class GLMSubsetGinfo extends GLMGradientInfo {
+    public final GLMGradientInfo _fullInfo;
+    public GLMSubsetGinfo(GLMGradientInfo fullInfo, int from, int to) {
+      super(fullInfo._likelihood, fullInfo._objVal, Arrays.copyOfRange(fullInfo._gradient,from,to));
+      _fullInfo = fullInfo;
+    }
+  }
   public GradientSolver gslvrMultinomial(final int c) {
     final double [] fullbeta = _beta.clone();
     return new GradientSolver() {
@@ -162,16 +170,17 @@ public final class ComputationState {
       public GradientInfo getGradient(double[] beta) {
         System.arraycopy(beta,0,fullbeta,_classOffsets[c],beta.length);
         GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);
-        return new GLMGradientInfo(fullGinfo._likelihood,fullGinfo._objVal,Arrays.copyOfRange(fullGinfo._gradient,_classOffsets[c],_classOffsets[c+1]));
+        return new GLMSubsetGinfo(fullGinfo,_classOffsets[c],_classOffsets[c+1]);
       }
       @Override
       public GradientInfo getObjective(double[] beta) {return getGradient(beta);}
     };
   }
 
-  public void setBetaMultinomial(int c, double [] b) {
+  public void setBetaMultinomial(int c, double [] b, GLMSubsetGinfo ginfo) {
     assert _classOffsets[c+1] - _classOffsets[c] == b.length;
     System.arraycopy(b,0,_beta,_classOffsets[c],b.length);
+    _ginfo = ginfo._fullInfo;
   }
   /**
    * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
@@ -210,13 +219,14 @@ public final class ComputationState {
         for(int i = _classOffsets[c]; i < selected; ++i)
           cols[i] += c*N;
       }
+      _classOffsets[_nclasses] = selected;
       _allIn = _alpha == 0 || selected == cols.length;
       if(!_allIn) {
         cols = Arrays.copyOf(cols, selected);
         _beta = ArrayUtils.select(_beta, cols);
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
       }
-    } else for(int c = 1; c < _nclasses; ++c)
+    } else for(int c = 1; c <= _nclasses; ++c)
       _classOffsets[c] = c*N;
     return selected;
   }
@@ -230,7 +240,6 @@ public final class ComputationState {
     if(_parms._family == Family.multinomial)
       return checkKKTsMultinomial();
     double [] beta = _beta;
-    assert beta.length == _dinfo.fullN()+(_intercept?1:0);
     if(_activeData._activeCols != null)
       beta = ArrayUtils.expandAndScatter(beta,_dinfo.fullN() + (_intercept?1:0),_activeData._activeCols);
     int [] activeCols = _activeData.activeCols();

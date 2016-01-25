@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.DataInfo.Row;
 
 import hex.DataInfo.Rows;
+import hex.FrameTask;
 import hex.FrameTask2;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Link;
@@ -75,6 +76,8 @@ public abstract class GLMTask  {
     }
     private transient GLMWeights _glmw;
     private final double _sparseOffset;
+
+    @Override public boolean handlesSparseData(){return true;}
     @Override
     public void chunkInit() {
       _glmw = new GLMWeights();
@@ -108,7 +111,7 @@ public abstract class GLMTask  {
    public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean setIgnores){
      _nums = dinfo._nums;
      _numOff = dinfo._cats;
-     _responseId = dinfo.responseChunkId();
+     _responseId = dinfo.responseChunkId(0);
      _weightId = dinfo._weights?dinfo.weightChunkId():-1;
      _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
      _nClasses = nclasses;
@@ -208,6 +211,67 @@ public abstract class GLMTask  {
     return Math.log(sumExp) + maxRow;
   }
 
+  static class GLMBinomialGradientTask extends FrameTask2<GLMBinomialGradientTask> {
+    double [] _gradient;
+    long _nobs;
+    double _wsum;
+    double _likelihood;
+    final double [] _beta;
+    final double _reg;
+    final double _currentLambda;
+    private transient double _sparseOffset;
+
+    public GLMBinomialGradientTask(Key jobKey, DataInfo dinfo, double [] beta, double reg, double lambda) {
+      super(null,dinfo,jobKey);
+      _beta = beta;
+      _reg = reg;
+      _currentLambda = lambda;
+    }
+    private transient int _icptId = -1;
+
+    @Override public boolean handlesSparseData(){return true;}
+    @Override public void chunkInit(){
+      _icptId = _dinfo.fullN();
+      _gradient = MemoryManager.malloc8d(_icptId+1);
+      if(_sparse)
+        _sparseOffset = GLM.sparseOffset(_beta,_dinfo);
+    }
+    @Override
+    protected void processRow(Row row) {
+      double [] g = _gradient;
+      double [] b = _beta;
+      double y = -1 + 2*row.response(0);
+      ++_nobs;
+      double eta = row.innerProduct(b) + _sparseOffset + row.offset;
+      double gval;
+      double d = 1 + Math.exp(-y * eta);
+      _likelihood += row.weight*Math.log(d);
+      gval = row.weight*-y*(1-1.0/d);
+      // categoricals
+      for(int i = 0; i < row.nBins; ++i)
+        g[row.binIds[i]] += gval;
+      int off = _dinfo.numStart();
+      // numbers
+      for (int j = 0; j < row.nNums; ++j)
+        _gradient[(row.numIds == null ? j + off : row.numIds[j])] += row.numVals[j] * gval;
+      // intercept
+      g[_icptId] += gval;
+    }
+
+    @Override
+    public void reduce(GLMBinomialGradientTask gmgt){
+      ArrayUtils.add(_gradient,gmgt._gradient);
+      _nobs += gmgt._nobs;
+      _wsum += gmgt._wsum;
+      _likelihood += gmgt._likelihood;
+    }
+    @Override public void postGlobal(){
+      ArrayUtils.mult(_gradient,_reg);
+      for(int j = 0; j < _beta.length - (_dinfo._intercept?1:0); ++j)
+        _gradient[j] += _currentLambda * _beta[j];
+    }
+  }
+
   static class GLMMultinomialGradientTask extends MRTask<GLMMultinomialGradientTask> {
     final double [][] _beta;
     final DataInfo _dinfo;
@@ -264,7 +328,12 @@ public abstract class GLMTask  {
         if(row.bad || row.weight == 0) continue;
         _wsum += row.weight;
         _nobs++;
-        processRow(row, _beta, etas, etaOffsets,  exps);
+        try{
+          processRow(row, _beta, etas, etaOffsets, exps);
+        } catch(Throwable t) {
+          throw new RuntimeException(t);
+        }
+
       }
       if (rows._sparse && _dinfo._normSub != null) { // adjust for centering
         int off = _dinfo.numStart();
@@ -539,7 +608,7 @@ public abstract class GLMTask  {
       double  [] g = _gradient;
       Chunk offsetChunk = _dinfo._offset?chks[_dinfo.offsetChunkId()]:new C0DChunk(0,chks[0]._len);
       Chunk weightChunk = _dinfo._weights ?chks[_dinfo.weightChunkId()]:new C0DChunk(1,chks[0]._len);
-      Chunk responseChunk = chks[_dinfo.responseChunkId()];
+      Chunk responseChunk = chks[_dinfo.responseChunkId(0)];
       double eta_sum = 0;
       // compute the predicted mean and variance and ginfo for each row
       for(int r = 0; r < chks[0]._len; ++r){
@@ -1042,11 +1111,10 @@ public abstract class GLMTask  {
   }
 
   public static class GLMMultinomialUpdate extends FrameTask2<GLMMultinomialUpdate> {
-    final double [][] _beta; // updated  value of beta
-    final int _c;
-    transient double [] _sparseOffsets;
-    transient double [] _etas;
-    double _likelihood;
+    private final double [][] _beta; // updated  value of beta
+    private final int _c;
+    private transient double [] _sparseOffsets;
+    private transient double [] _etas;
 
     public GLMMultinomialUpdate(DataInfo dinfo, Key jobKey, double [] beta, int c) {
       super(null, dinfo, jobKey);
@@ -1070,7 +1138,7 @@ public abstract class GLMTask  {
     @Override public void map(Chunk [] chks) {
       _sumExpChunk = chks[chks.length-2];
       _maxRowChunk = chks[chks.length-1];
-      super.map(Arrays.copyOf(chks,chks.length-2));
+      super.map(chks);
     }
 
     @Override
@@ -1078,16 +1146,15 @@ public abstract class GLMTask  {
       double maxrow = 0;
       for(int i = 0; i < _beta.length; ++i) {
         _etas[i] = r.innerProduct(_beta[i]) + _sparseOffsets[i];
-        if(_etas[i] > maxrow /*|| -_etas[i] > maxrow*/)
+        if(_etas[i] > maxrow)
           maxrow = _etas[i];
       }
       double sumExp = 0;
       for(int i = 0; i < _beta.length; ++i)
-        if(i != _c)
+//        if(i != _c)
           sumExp += Math.exp(_etas[i]-maxrow);
-      _maxRowChunk.set(r.cid,maxrow);
-      _sumExpChunk.set(r.cid,sumExp);
-
+      _maxRowChunk.set(r.cid,_etas[_c]);
+      _sumExpChunk.set(r.cid,Math.exp(_etas[_c]-maxrow)/sumExp);
     }
   }
 
@@ -1136,7 +1203,8 @@ public abstract class GLMTask  {
       // initialize
       _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,true);
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
-      _sparseOffset = GLM.sparseOffset(_beta,_dinfo);
+      if(_sparse)
+         _sparseOffset = GLM.sparseOffset(_beta,_dinfo);
       _w = new GLMWeights();
     }
 
@@ -1148,16 +1216,15 @@ public abstract class GLMTask  {
       final int numStart = _dinfo.numStart();
       double wz,w;
       if(_glmf._family == Family.multinomial) {
-        double sumExp = r.response(1);
-        double maxRow = r.response(2);
+//        double maxRow = r.response(2);
         y = (y == _c)?1:0;
-        double eta = r.innerProduct(_beta) + _sparseOffset;
-        if(eta > maxRow) maxRow = eta;
-        double etaExp = Math.exp(eta-maxRow);
-        sumExp += etaExp;
-        double mu = (etaExp == Double.POSITIVE_INFINITY?1:(etaExp / sumExp));
-        if(mu < 1e-16)
-          mu = 1e-16;//
+//        double eta = r.innerProduct(_beta) + _sparseOffset;
+//          double etaExp = Math.exp(eta-maxRow);
+//        double sumExp = r.response(1);// + etaExp;
+//        double mu = (etaExp == Double.POSITIVE_INFINITY?1:(etaExp / sumExp));
+//        double mu = etaExp/sumExp;
+        double mu = r.response(1);
+        double eta = r.response(2);
         double d = mu*(1-mu);
         wz = r.weight * (eta * d + (y-mu));
         w  = r.weight * d;

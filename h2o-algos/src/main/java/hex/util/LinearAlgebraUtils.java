@@ -159,18 +159,15 @@ public class LinearAlgebraUtils {
 
     @Override public void map(Chunk[] cs) {
       assert cs.length == _ncolX + _yt.length;
-
       // Copy over only X frame chunks
       Chunk[] xchk = new Chunk[_ncolX];
       for(int i = 0; i < _ncolX; i++) xchk[i] = cs[i];
-
+      DataInfo.Row xrow = _xinfo.newDenseRow();
       double sum;
       for(int row = 0; row < cs[0]._len; row++) {
         // Extract row of X
-        DataInfo.Row xrow = _xinfo.newDenseRow();
         _xinfo.extractDenseRow(xchk, row, xrow);
         if (xrow.bad) continue;
-
         int bidx = _ncolX;
         for (int p = 0; p < _yt.length; p++) {
           // Inner product of X row with Y column (Y' row)

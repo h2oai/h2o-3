@@ -100,7 +100,6 @@ public class DataInfo extends Keyed<DataInfo> {
   public boolean _weights;
   public final boolean _fold;
   public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
-  public int responseChunkId(){return responseChunkId(0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
   public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
   public int weightChunkId(){return _cats + _nums;}
@@ -520,8 +519,8 @@ public class DataInfo extends Keyed<DataInfo> {
     public int       nOutpus;
     public double    offset = 0;
     public double    weight = 1;
-    public final double etaOffset;
     private C8DChunk [] _outputs;
+
 
     public void setOutput(int i, double v) {_outputs[i].set8D(cid,v);}
     public double getOutput(int i) {return _outputs[i].get8D(cid);}
@@ -531,28 +530,34 @@ public class DataInfo extends Keyed<DataInfo> {
     public final boolean isSparse(){return numIds != null;}
 
 
-    public Row(boolean sparse, int nNums, int nBins, int nresponses, double etaOffset) {
+    public Row(boolean sparse, int nNums, int nBins, int nresponses, int i, long start) {
       binIds = MemoryManager.malloc4(nBins);
       numVals = MemoryManager.malloc8d(nNums);
       response = MemoryManager.malloc8d(nresponses);
       if(sparse)
         numIds = MemoryManager.malloc4(nNums);
-      this.etaOffset = etaOffset;
       this.nNums = sparse?0:nNums;
+      cid = i;
+      rid = start + i;
     }
 
-    public Row(boolean sparse, double[] numVals, int[] binIds, double[] response, double etaOffset) {
+    public Row(boolean sparse, double[] numVals, int[] binIds, double[] response, int i, long start) {
       int nNums = numVals == null ? 0:numVals.length;
       this.numVals = numVals;
       if(sparse)
         numIds = MemoryManager.malloc4(nNums);
-      this.etaOffset = etaOffset;
       this.nNums = sparse ? 0:nNums;
       this.nBins = binIds == null ? 0:binIds.length;
       this.binIds = binIds;
       this.response = response;
+      cid = i;
+      rid = start + i;
     }
 
+    public Row(double [] nums) {
+      numVals = nums;
+      nNums = nums.length;
+    }
     public double response(int i) {return response[i];}
 
     public double get(int i) {
@@ -648,6 +653,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
     row.rid = rid + chunks[0].start();
+    row.cid = rid;
     if(_weights)
       row.weight = chunks[weightChunkId()].atd(rid);
     if(row.weight == 0) return row;
@@ -683,7 +689,11 @@ public class DataInfo extends Keyed<DataInfo> {
       row.numVals[i] = d;
     }
     for (int i = 0; i < _responses; ++i) {
-      row.response[i] = chunks[responseChunkId()].atd(rid);
+      try {
+        row.response[i] = chunks[responseChunkId(i)].atd(rid);
+      } catch(Throwable t){
+        throw new RuntimeException(t);
+      }
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
       if (Double.isNaN(row.response[i])) {
@@ -703,11 +713,9 @@ public class DataInfo extends Keyed<DataInfo> {
   public Vec getOffsetVec(){
     return _adaptedFrame.vec(offsetChunkId());
   }
-  public Row newDenseRow(){
-    return new Row(false,_nums,_cats,_responses,0);
-  }
-  public Row newDenseRow(double[] numVals) {
-    return new Row(false, numVals, null, null, 0);
+  public Row newDenseRow(){return new Row(false,_nums,_cats,_responses,0,0);}
+  public Row newDenseRow(double[] numVals, long start) {
+    return new Row(false, numVals, null, null, 0, start);
   }
   public double computeSparseOffset(double [] coefficients) {
     double etaOffset = 0;
@@ -727,10 +735,11 @@ public class DataInfo extends Keyed<DataInfo> {
     private Rows(Chunk [] chks, boolean sparse) {
       _nrows = chks[0]._len;
       _sparse = sparse;
+      long start = chks[0].start();
       if(sparse) {
         _denseRow = null;
         _chks = null;
-        _sparseRows = extractSparseRows(chks,0);
+        _sparseRows = extractSparseRows(chks);
       } else {
         _denseRow = DataInfo.this.newDenseRow();
         _chks = chks;
@@ -754,14 +763,13 @@ public class DataInfo extends Keyed<DataInfo> {
    * Note: 0 remains 0 - _normSub of DataInfo isn't used (mean shift during standarization is not reverted) - UNLESS offset is specified (for GLM only)
    * Essentially turns the dataset 90 degrees.
    * @param chunks - chunk of dataset
-   * @param offset - adjustment for 0s if running with on-the-fly standardization (i.e. zeros are not really zeros because of centering)
    * @return array of sparse rows
    */
-  public final Row[] extractSparseRows(Chunk [] chunks, double offset) {
+  public final Row[] extractSparseRows(Chunk [] chunks) {
     Row[] rows = new Row[chunks[0]._len];
-
+    long startOff = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, offset);
+      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, i, startOff);
       rows[i].rid = chunks[0].start() + i;
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
@@ -809,11 +817,12 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     // response(s)
     for (int i = 1; i <= _responses; ++i) {
-      Chunk rChunk = chunks[responseChunkId()];
+      int rid = responseChunkId(i-1);
+      Chunk rChunk = chunks[rid];
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
         if(row.bad) continue;
-        row.response[row.response.length - i] = rChunk.atd(r);
+        row.response[i-1] = rChunk.atd(r);
         if (_normRespMul != null) {
           row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
         }
@@ -831,10 +840,9 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public final Row[] extractDenseRowsVertical(Chunk[] chunks) {
     Row[] rows = new Row[chunks[0]._len];
-
+  long start = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(false, _nums, _cats, _responses, 0);
-      rows[i].rid = chunks[0].start() + i;
+      rows[i] = new Row(false, _nums, _cats, _responses, i, start);
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
         if(Double.isNaN(rows[i].offset)) rows[i].bad = true;
@@ -876,7 +884,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     // response(s)
     for (int i = 1; i <= _responses; ++i) {
-      Chunk rChunk = chunks[responseChunkId()];
+      Chunk rChunk = chunks[responseChunkId(i-1)];
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
         if(row.bad) continue;

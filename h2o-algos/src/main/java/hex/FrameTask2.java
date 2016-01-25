@@ -53,7 +53,7 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
     chunkInit();
     // compute
     if(_sparse) {
-      for(Row r:_dinfo.extractSparseRows(chks, 0)) {
+      for(Row r:_dinfo.extractSparseRows(chks)) {
         if(!r.bad && r.weight != 0)
           processRow(r);
       }

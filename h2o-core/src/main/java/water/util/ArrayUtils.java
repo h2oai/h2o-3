@@ -1234,4 +1234,11 @@ public class ArrayUtils {
       if(d != 0) return true;
     return false;
   }
+
+  public static int countNonzeros(double[] beta) {
+    int res = 0;
+    for(double d:beta)
+      if(d != 0)++res;
+    return res;
+  }
 }

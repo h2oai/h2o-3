@@ -66,7 +66,9 @@ public class OptimizationUtils {
     private double _objVal; // objective including l1 penalty
     final double _l1pen;
 
-    public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen) {this(gslvr, betaStart, l1pen, gslvr.getObjective(betaStart),.5);}
+    public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen) {
+      this(gslvr, betaStart, l1pen, gslvr.getObjective(betaStart),.5);
+    }
     public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen, GradientInfo ginfo, double stepDec) {
       _gslvr = gslvr;
       _stepDec = stepDec;
@@ -93,7 +95,7 @@ public class OptimizationUtils {
       double [] newBeta = direction.clone();
       for(int i = 0; i < maxfev && step >= minStep; ++i, step*= _stepDec) {
         GradientInfo ginfo = _gslvr.getObjective(ArrayUtils.wadd(_beta,direction,newBeta,step));
-        double objVal = ginfo._objVal + _l1pen * ArrayUtils.l1norm(_beta,true);
+        double objVal = ginfo._objVal + _l1pen * ArrayUtils.l1norm(newBeta,true);
         if(objVal < _objVal){
           _ginfo = ginfo;
           _objVal = objVal;
@@ -317,7 +319,8 @@ public class OptimizationUtils {
       final double dgInit = ArrayUtils.innerProduct(_ginfox._gradient, direction);
       final double dgtest = dgInit * _ftol;
       assert dgtest < 0:"invalid gradient/direction, got positive differential " + dgtest;
-      if(dgtest >= 0) return false;
+      if(dgtest >= 0)
+        return false;
       double [] beta = new double[_beta.length];
       double width = maxStep - minStep;
       double oldWidth = 2*width;
