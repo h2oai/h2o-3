@@ -10,11 +10,13 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import water.H2O;
 import water.fvec.Frame;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 
 import static water.util.RandomUtils.getRNG;
@@ -29,9 +31,19 @@ import static water.util.RandomUtils.getRNG;
  */
 public class AutoCollect {
 
-  private final static String[] RFGRIDDABLES = new String[]{
-          "mtries", "sample_rate", "ntrees", "max_depth",
-          "min_rows", "nbins", "nbins_cats", "nbins_top_level"};
+  public static int RFMAXDEPTH=50;
+  public static int RFMAXNBINS=4096;
+  public static int RFMAXNBINSCATS=4096;
+  public static int RFMAXNTREES=1000;
+  public static int RFMAXNROWS=50;
+
+  private final static String[] DLGRIDDABLES = new String[]{
+          "activation", "layers", "neurons", "epochs", "rho", "rate", "rate_annealing",
+          "rate_decay", "momentum_ramp", "momentum_stable", "input_dropout_ratio", "l1",
+          "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale"
+  };
+
+  private HashSet<String> configs;  // set of configs across all runs
 
   public static final byte RF=0;
   public static final byte GBM=1;
@@ -64,6 +76,7 @@ public class AutoCollect {
     _seconds=seconds;
     _path=path;
     _algo=ANY;
+    grabConfigs();
   }
 
   public AutoCollect(int seconds, String path, byte algo) {
@@ -77,8 +90,20 @@ public class AutoCollect {
     while( elapsed <= _seconds ) {
       ModelBuilder builder = selectNewBuilder();
       Model m = (Model)builder.trainModel().get();
-      
       elapsed = System.currentTimeMillis()-start;
+    }
+  }
+
+  private void grabConfigs() {
+    configs = new HashSet<>();
+    for (String table : new String[]{"RFConfig", "GBMConfig", "DLConfig", "GLMConfig"}) {
+      ResultSet rs = AutoCollect.query("SELECT ConfigID FROM " + table + ";");
+      try {
+        while (rs.next())
+          configs.add(rs.getString(1));
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -95,44 +120,115 @@ public class AutoCollect {
     }
   }
 
-//  DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
-//  drf._train = training_frame._key;
-//  drf._response_column = response;
-////    drf._model_id = Key.make(modelName);
-//  drf._ntrees = ntree;
-//  drf._max_depth = max_depth;
-//  drf._min_rows = min_rows;
-//  drf._stopping_rounds = stopping_rounds;
-//  drf._stopping_tolerance = stopping_tolerance;
-//  drf._nbins = nbins;
-//  drf._nbins_cats = nbins_cats;
-//  drf._mtries = mtries;
-//  drf._sample_rate = sample_rate;
-//  drf._seed = seed;
-//  return new DRF(drf);
+  DRF makeDRF() { return new DRF(genRFParams());  }
+  GBM makeGBM() { return new GBM(genGBMParams()); }
+  GLM makeGLM() { return new GLM(genGLMParams()); }
+  DeepLearning makeDL() { return new DeepLearning(genDLParams()); }
 
-  static DRF makeDRF() {         return new DRF(genRFParams());  }
-  static GBM makeGBM() {         return new GBM(genGBMParams()); }
-  static GLM makeGLM() {         return new GLM(genGLMParams()); }
-  static DeepLearning makeDL() { return new DeepLearning(genDLParams()); }
-
-  static DRFModel.DRFParameters genRFParams() {
-
-    return null;
+  private String getConfig(Model.Parameters parms) {
+    String configID;
+    if( parms instanceof DRFModel.DRFParameters) {
+      DRFModel.DRFParameters p = (DRFModel.DRFParameters)parms;
+      configID = "rf_"+_idFrame+"_"+p._mtries+"_"+p._sample_rate+"_"+p._ntrees+"_"+p._max_depth+"_"+p._min_rows+"_"+p._nbins+"_"+p._nbins_cats;
+    } else if( parms instanceof GBMModel.GBMParameters ) {
+      GBMModel.GBMParameters p = (GBMModel.GBMParameters)parms;
+      configID = "gbm_"+_idFrame+"_"+p._ntrees+"_"+p._max_depth+"_"+p._min_rows+"_"+p._learn_rate+"_"+p._sample_rate+"_"+p._col_sample_rate+"_"+p._col_sample_rate_per_tree+"_"+p._nbins+"_"+p._nbins_cats;
+    } else if( parms instanceof GLMModel.GLMParameters ) {
+      GLMModel.GLMParameters p = (GLMModel.GLMParameters)parms;
+      configID = "glm_"+_idFrame+"_"+p._alpha[0]+"_"+p._lambda[0];
+    } else if( parms instanceof DeepLearningModel.DeepLearningParameters ) {
+      DeepLearningModel.DeepLearningParameters p = (DeepLearningModel.DeepLearningParameters)parms;
+      throw H2O.unimpl();
+    } else
+      throw new IllegalArgumentException("Don't know what to do with parameters: " + parms.getClass());
+    return configID;
   }
 
-  static GBMModel.GBMParameters genGBMParams() {
-    return null;
+  DRFModel.DRFParameters genRFParams() {
+    String configID;
+    DRFModel.DRFParameters p = new DRFModel.DRFParameters();
+    HashMap<String, Object> config = new HashMap<>();
+    config.put("idFrame", _idFrame);
+    do {
+      config.put("mtries", p._mtries = getRNG(new Random().nextLong()).nextInt(_preds.length));
+      config.put("sample_rate", p._sample_rate = getRNG(new Random().nextLong()).nextFloat());
+      config.put("ntrees", p._ntrees = getRNG(new Random().nextLong()).nextInt(RFMAXNTREES));
+      config.put("max_depth", p._max_depth = getRNG(new Random().nextLong()).nextInt(RFMAXDEPTH));
+      config.put("min_rows", p._min_rows = getRNG(new Random().nextLong()).nextInt(RFMAXNROWS));
+      config.put("nbins", p._nbins = getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
+      config.put("nbins_cats", p._nbins_cats = getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
+      config.put("ConfigID", configID = getConfig(p));
+    } while(!isValidConfig(configID));
+    configs.add(configID);
+    pushMeta(config, config.keySet().toArray(new String[config.size()]), "RFConfig");
+    return p;
   }
 
-  static GLMModel.GLMParameters genGLMParams() {
-    return null;
+  GBMModel.GBMParameters genGBMParams() {
+    String configID;
+    GBMModel.GBMParameters p = new GBMModel.GBMParameters();
+    HashMap<String, Object> config = new HashMap<>();
+    config.put("idFrame", _idFrame);
+    do {
+      config.put("ntrees", p._ntrees = getRNG(new Random().nextLong()).nextInt(RFMAXNTREES));
+      config.put("max_depth", p._max_depth = getRNG(new Random().nextLong()).nextInt(RFMAXDEPTH));
+      config.put("min_rows", p._min_rows = getRNG(new Random().nextLong()).nextInt(RFMAXNROWS));
+      config.put("learn_rate", p._learn_rate = getRNG(new Random().nextLong()).nextFloat());
+      config.put("sample_rate", p._sample_rate = getRNG(new Random().nextLong()).nextFloat());
+      config.put("col_sample_rate", p._col_sample_rate = getRNG(new Random().nextLong()).nextFloat());
+      config.put("col_sample_rate_per_tree", p._col_sample_rate_per_tree = getRNG(new Random().nextLong()).nextFloat());
+      config.put("nbins", p._nbins = getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
+      config.put("nbins_cats", p._nbins_cats = getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
+      config.put("ConfigID", configID = getConfig(p));
+    } while(!isValidConfig(configID));
+    configs.add(configID);
+    pushMeta(config, config.keySet().toArray(new String[config.size()]), "GBMConfig");
+    return p;
   }
 
-  static DeepLearningModel.DeepLearningParameters genDLParams() {
-    return null;
+  GLMModel.GLMParameters genGLMParams() {
+    String configID;
+    GLMModel.GLMParameters p = new GLMModel.GLMParameters();
+    HashMap<String, Object> config = new HashMap<>();
+    config.put("idFrame", _idFrame);
+    do {
+      config.put("alpha", p._alpha = new double[]{getRNG(new Random().nextLong()).nextDouble()});
+      // for lambda, place probability distribution heavily weighted to the left: [0,1e-3) U [1e-3, 1) U [1, 10)  ... with probs (0.8, 0.1, 0.1)
+      double r = getRNG(new Random().nextLong()).nextDouble();
+      double lambda=getRNG(new Random().nextLong()).nextDouble();
+      if( r < 0.8 )
+        while( lambda< 1e-3)
+          lambda = getRNG(new Random().nextLong()).nextDouble();
+      else if( 0.8 <= r && r < 0.9 )
+        while (1e-3 <= lambda && lambda < 1 )
+          lambda = getRNG(new Random().nextLong()).nextDouble();
+      else
+        while(lambda < 1 || lambda > 10)
+          lambda = 1 + getRNG(new Random().nextLong()).nextDouble()*10;
+        config.put("lambda", p._lambda = new double[]{lambda});
+      config.put("ConfigId", configID = getConfig(p));
+    } while(!isValidConfig(configID));
+    configs.add(configID);
+    pushMeta(config, config.keySet().toArray(new String[config.size()]), "GLMConfig");
+    return p;
   }
 
+  DeepLearningModel.DeepLearningParameters genDLParams() { throw H2O.unimpl(); }
+    //          "activation", "layers", "neurons", "epochs", "rho", "rate", "rate_annealing",
+//    "rate_decay", "momentum_ramp", "momentum_stable", "input_dropout_ratio", "l1",
+//            "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale"
+//    String configID;
+//    DeepLearningModel.DeepLearningParameters p = new DeepLearningModel.DeepLearningParameters();
+//    do {
+//      p._activation = DeepLearningModel.DeepLearningParameters.Activation.values()[getRNG(new Random().nextLong()).nextInt(DeepLearningModel.DeepLearningParameters.Activation.values().length)];
+//      p._hidden
+//      configID = getConfig(p);
+//    } while(!isValidConfig(configID));
+//    configs.add(configID);
+//    return p;
+//  }
+
+  private boolean isValidConfig(String configID) { return !configs.contains(configID); }
 
   // member fields updated upon each call to computeMetaData
   private Frame _fr;
@@ -140,6 +236,7 @@ public class AutoCollect {
   private int[] _ignored;
   private int _resp;
   private boolean _isClass;
+  private int _idFrame;
   public int computeMetaData(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
     _fr=f; _preds=x; _resp=y; _isClass=isClassification; ignored(x, f);
     if( hasMeta(datasetName) ) return getidFrameMeta(datasetName);
@@ -147,9 +244,9 @@ public class AutoCollect {
     HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
     fm.fillSimpleMeta(frameMeta);
     fm.fillDummies(frameMeta);
-    int idFrameMeta = pushFrameMeta(frameMeta);
-    computeAndPushColMeta(fm, idFrameMeta);
-    return idFrameMeta;
+    _idFrame = pushFrameMeta(frameMeta);
+    computeAndPushColMeta(fm, _idFrame);
+    return _idFrame;
   }
 
   private void ignored(int[] x, Frame f) {
