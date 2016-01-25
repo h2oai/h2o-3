@@ -186,7 +186,7 @@ public class FrameMeta extends Iced {
     return this;
   }
 
-  private static String[] intAtoStringA(int[] select, String[] names) {
+  public static String[] intAtoStringA(int[] select, String[] names) {
     String[] preds = new String[select.length];
     int i=0;
     for(int p: select) preds[i++] = names[p];
