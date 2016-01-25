@@ -1086,8 +1086,8 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \linkS4class{H2OBinomialMetrics} objects.
 #'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
-#' @param thresholds A value or a list of values between 0.0 and 1.0.
-#' @param metric A specified paramter to retrieve.
+#' @param thresholds (Optional) A value or a list of values between 0.0 and 1.0.
+#' @param metric (Optional) A specified paramter to retrieve.
 #' @return Returns either a single value, or a list of values.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
@@ -1108,23 +1108,9 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @export
 h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
-    if(!missing(thresholds)) {
-      t <- as.character(thresholds)
-      t[t=="0"] <- "0.0"
-      t[t=="1"] <- "1.0"
-      if(!all(t %in% rownames(object@metrics$thresholds_and_metric_scores))) {
-        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholds_and_metric_scores), collapse=', ')))
-      }
-      else {
-        output <- object@metrics$thresholds_and_metric_scores[t, metric]
-        names(output) <- t
-        output
-      }
-    }
+    if(!missing(thresholds)) lapply(thresholds, function(t,object,metric) h2o.find_row_by_threshold(object, t)[, metric], object, metric)
     else {
-      output <- object@metrics$thresholds_and_metric_scores[, metric]
-      names(output) <- rownames(object@metrics$thresholds_and_metric_scores)
-      output
+     if(missing(metric)) object@metrics$thresholds_and_metric_scores else object@metrics$thresholds_and_metric_scores[, c("threshold", metric)]
     }
   }
   else{

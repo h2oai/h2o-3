@@ -495,7 +495,7 @@ def frame(frame_id, exclude=""):
   -------
     Python dict containing the frame meta-information
   """
-  return H2OConnection.get_json("Frames/" + quote(frame_id + exclude))
+  return H2OConnection.get_json("Frames/" + frame_id + exclude)
 
 
 def frames():

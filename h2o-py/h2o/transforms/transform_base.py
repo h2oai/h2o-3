@@ -57,4 +57,4 @@ class H2OTransformer(object):
     return fr
 
   def to_rest(self, args):
-    return urllib.parse.quote("{}__{}__{}__{}__{}".format(*args))
+    return "{}__{}__{}__{}__{}".format(*args)

@@ -20,6 +20,10 @@
 #'        name and parameters specify a supervised or unsupervised algorithm.
 #' @param do_hyper_params_check  Perform client check for specified hyper parameters. It can be time expensive for
 #'        large hyper space.
+#' @param search_criteria  (Optional)  List of control parameters for smarter hyperparameter search.  Specify the
+#'        Random strategy to get random search of all the combinations of your hyperparameters.  Generally this
+#'        should be combined with an early stopping criterion,
+#'        max_models or max_time_ms, e.g. \code{list(strategy = "Random", max_models = 42)}.  
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \donttest{
@@ -41,7 +45,8 @@ h2o.grid <- function(algorithm,
                      ...,
                      hyper_params = list(),
                      is_supervised = NULL,
-                     do_hyper_params_check = FALSE)
+                     do_hyper_params_check = FALSE,
+                     search_criteria = list())
 {
   # Extract parameters
   dots <- list(...)
@@ -91,6 +96,9 @@ h2o.grid <- function(algorithm,
                                                         do_hyper_params_check = do_hyper_params_check)
   # Append grid parameters in JSON form
   params$hyper_parameters <- toJSON(hyper_values, digits=99)
+
+  # pass along the search criteria among the other params
+  params <- c(params, search_criteria)
 
   # Append grid_id if it is specified
   if (!missing(grid_id)) params$grid_id <- grid_id

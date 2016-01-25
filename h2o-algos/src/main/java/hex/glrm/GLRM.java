@@ -56,7 +56,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   @Override protected GLRMDriver trainModelImpl() { return new GLRMDriver(); }
   @Override public long progressUnits() { return 2 + _parms._max_iterations; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Clustering}; }
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public enum Initialization { Random, SVD, PlusPlus, User }
 
   // Called from an http request

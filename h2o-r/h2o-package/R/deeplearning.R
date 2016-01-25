@@ -15,6 +15,7 @@
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
 #'        Otherwise the first factor level is omitted (without loss of accuracy). Useful for
 #'        variable importances and auto-enabled for autoencoder.
+#' @param standardize \code{Logical}. If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
 #' @param activation A string indicating the activation function to use. Must be either "Tanh",
 #'        "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
 #' @param hidden Hidden layer sizes (e.g. c(100,100))
@@ -137,6 +138,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              checkpoint,
                              autoencoder = FALSE,
                              use_all_factor_levels = TRUE,
+                             standardize = TRUE,
                              activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
                              hidden= c(200, 200),
                              epochs = 10,
@@ -239,6 +241,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$autoencoder <- autoencoder
   if(!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
+  if(!missing(standardize))
+    parms$standardize <- standardize
   if(!missing(activation))
     parms$activation <- activation
   if(!missing(hidden))
