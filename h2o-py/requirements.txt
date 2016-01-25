@@ -11,3 +11,4 @@ sklearn
 six
 seaborn
 future
+matplotlib

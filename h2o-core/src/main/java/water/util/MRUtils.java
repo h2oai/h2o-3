@@ -122,9 +122,9 @@ public class MRUtils {
   }
 
   public static class Dist extends MRTask<Dist> {
-    private transient NonBlockingHashMap<Double,Integer> _dist;
+    private IcedHashMap<Double,Integer> _dist;
     @Override public void map(Chunk ys) {
-      _dist = new NonBlockingHashMap<>();
+      _dist = new IcedHashMap<>();
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) ) {
           double v = ys.atd(row);
@@ -135,8 +135,8 @@ public class MRUtils {
 
     @Override public void reduce(Dist mrt) {
       if( _dist != mrt._dist ) {
-        NonBlockingHashMap<Double,Integer> l = _dist;
-        NonBlockingHashMap<Double,Integer> r = mrt._dist;
+        IcedHashMap<Double,Integer> l = _dist;
+        IcedHashMap<Double,Integer> r = mrt._dist;
         if( l.size() < r.size() ) { l=r; r=_dist; }
         for( Double v: r.keySet() ) {
           Integer oldVal = l.putIfAbsent(v, r.get(v));
