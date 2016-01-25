@@ -100,10 +100,10 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $O
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
 # If coverage is being run, then give the clouds some more time to initialize
-if [ $JACOCO_ENABLED = true ]
-then
-   sleep 30s
-fi
+#if [ $JACOCO_ENABLED = true ]
+#then
+#   sleep 30s
+#fi
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-algos junit tests...
