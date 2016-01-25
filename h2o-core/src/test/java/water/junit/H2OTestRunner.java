@@ -51,7 +51,13 @@ public class H2OTestRunner {
 
   public static void main(String[] args) throws Exception {
     H2OTestRunner testRunner = new H2OTestRunner();
-    Result result = testRunner.run(args);
+    Result result = null;
+    if (args[0].equals("-j")) {
+      water.TestUtil.jacocoEnabled = true;
+      result = testRunner.run(java.util.Arrays.copyOfRange(args, 1, args.length - 1));
+    } else {
+      result = testRunner.run(args);
+    }
     System.exit(result.wasSuccessful() ? 0 : 1);
   }
 }
