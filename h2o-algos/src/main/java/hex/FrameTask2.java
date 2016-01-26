@@ -47,13 +47,13 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
 
   private transient Job _job;
   @Override
-  public void setupLocal(){_job = _jobKey.get();}
+  public void setupLocal(){if(_jobKey != null)_job = _jobKey.get();}
 
   public boolean handlesSparseData(){return false;}
   protected abstract void processRow(Row r);
 
   @Override public void map(Chunk[] chks) {
-    if(!_job.isRunning()) throw new JobCancelledException();
+    if(_job != null && !_job.isRunning()) throw new JobCancelledException();
     chunkInit();
     // compute
     if(_sparse) {
