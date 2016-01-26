@@ -33,9 +33,9 @@ import java.util.Arrays;
  * <p><b>Overview</b></p>
  * <p>
  * Distributed computation starts by calling <code>doAll</code>,
- * <code>dfork</code>, or <code>asyncExec</code>.  <code>doAll</code> simply
- * calls <code>dfork</code> and <code>asyncExec</code> before blocking;
- * <code>dfork</code> and <code>asyncExec</code> are non-blocking.  The main
+ * <code>dfork</code>, or <code>dfork</code>.  <code>doAll</code> simply
+ * calls <code>dfork</code> and <code>dfork</code> before blocking;
+ * <code>dfork</code> and <code>dfork</code> are non-blocking.  The main
  * pardigm is divide-conquer-combine using ForkJoin. </p>
  * <p>
  * If <code>doAll</code> is called with Keys, then one <code>map</code> call is
@@ -90,7 +90,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   *
   *     Diagram 2:
   *     ----------
-  *       asyncExec on N1
+  *       dfork on N1
   *         - _topGlobal=true
   *         - _nlo=0
   *         - _nhi=CLOUD_SIZE
@@ -115,15 +115,16 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   *
   */
 
-  public MRTask() {}
+  public MRTask() { super(); }
   protected MRTask(H2O.H2OCountedCompleter cmp) {super(cmp); }
+  protected MRTask(byte prior) { super(prior); }
 
   /**
    * This Frame instance is the handle for computation over a set of Vec instances. Recall
    * that a Frame is a collection Vec instances, so this includes any invocation of
    * <code>doAll</code> with Frame and Vec[] instances. Top-level calls to
    * <code>doAll</code> wrap Vec instances into a new Frame instance and set this into
-   * <code>_fr</code> during a call to <code>asyncExec</code>.
+   * <code>_fr</code> during a call to <code>dfork</code>.
    */
   public Frame _fr;
 
@@ -176,10 +177,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
-
-  /** @return priority of this MRTask */
-  @Override public byte priority() { return _priority; }
-  private byte _priority;
 
   public String profString() { return _profile != null ? _profile.toString() : "Profiling turned off"; }
   MRProfile _profile;
@@ -399,24 +396,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   // Special mode doing 1 map per key.  No frame
   public T doAll( Key... keys ) {
-    // Raise the priority, so that if a thread blocks here, we are guaranteed
-    // the task completes (perhaps using a higher-priority thread from the
-    // upper thread pools).  This prevents thread deadlock.
-    _priority = nextThrPriority();
-    _topGlobal = true;
-    _keys = keys;
-    _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
-    setupLocal0();              // Local setup
-    H2O.submitTask(this);       // Begin normal execution on a FJ thread
+    dfork(keys);
     return getResult();         // Block For All
   }
-
-
   // Special mode doing 1 map per key.  No frame
-  public void asyncExec( Key... keys ) {
-    // Raise the priority, so that if a thread blocks here, we are guaranteed
-    // the task completes (perhaps using a higher-priority thread from the
-    // upper thread pools).  This prevents thread deadlock.
+  public void dfork(Key... keys ) {
     _topGlobal = true;
     _keys = keys;
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
@@ -427,29 +411,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Special mode to run once-per-node
   public T doAllNodes() { return doAll((Key[])null); }
 
-  public void asyncExecOnAllNodes() { asyncExec((Key[]) null); }
-
-  /**
-   * Invokes the map/reduce computation over the given Frame instance. This call is
-   * asynchronous. It returns 'this', on which <code>getResult</code> may be invoked
-   * by the caller to block for pending computation to complete. This call produces no
-   * output Vec instances or Frame instances.
-   *
-   * @param fr Perform the computation on this Frame instance.
-   * @return this
-   */
-   public T dfork( Frame fr ){ return dfork(null,fr,false); }
-
-  /**
-   * Invokes the map/reduce computation over the given array of Vec instances. This call
-   * is asynchronous. It returns 'this', on which <code>getResult</code> may be invoked
-   * by the caller to block for pending computation to complete. This call produces no
-   * output Vec instances or Frame instances.
-   *
-   * @param vecs Perform the computation on this array of Vec instances.
-   * @return this
-   */
-  public final T dfork( Vec... vecs ) { return dfork(null,vecs); }
+  public void asyncExecOnAllNodes() { dfork((Key[]) null); }
 
   /**
    * Invokes the map/reduce computation over the given Vec instances and produces
@@ -463,31 +425,17 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    */
   public final T dfork( byte[] types, Vec... vecs) { return dfork(types,new Frame(vecs),false); }
 
+  public final T dfork(Vec... vecs){ return dfork(null,new Frame(vecs),false); }
   /**
-   * Invokes the map/reduce computation over the given Vec instances and produces
-   * <code>outputs</code> Vec instances. This call is asynchronous. It returns 'this', on
-   * which <code>getResult</code> may be invoked by the caller to block for pending
-   * computation to complete.
+   * Invokes the map/reduce computation over the given Frame instance. This call is
+   * asynchronous. It returns 'this', on which <code>getResult</code> may be invoked
+   * by the caller to block for pending computation to complete. This call produces no
+   * output Vec instances or Frame instances.
    *
-   * @param types The type of output Vec instances to create.
-   * @param fr The input Frame instances upon which computation is performed.
-   * @param run_local If <code>true</code>, then all data is pulled to the calling
-   *                  <code>H2ONode</code> and all computation is performed locally. If
-   *                  <code>false</code>, then each <code>H2ONode</code> performs
-   *                  computation over its own node-local data.
+   * @param fr Perform the computation on this Frame instance.
    * @return this
    */
-  public final T dfork( byte[] types, Frame fr, boolean run_local) {
-    // Raise the priority, so that if a thread blocks here, we are guaranteed
-    // the task completes (perhaps using a higher-priority thread from the
-    // upper thread pools).  This prevents thread deadlock.
-    _priority = nextThrPriority();
-    asyncExec(types,fr,run_local);
-    return self();
-  }
-
-  public final T asyncExec(Vec... vecs){asyncExec(null,new Frame(vecs),false); return self();}
-  public final T asyncExec(Frame fr){asyncExec(null,fr,false); return self();}
+  public final T dfork(Frame fr){ return dfork(null,fr,false); }
 
   /** Fork the task in strictly non-blocking fashion.
    *  Same functionality as dfork, but does not raise priority, so user is should
@@ -495,7 +443,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  Because it does not raise priority, these can be tail-call chained together
    *  for any length.
    */
-  public final void asyncExec( byte[] types, Frame fr, boolean run_local){
+  public final T dfork( byte[] types, Frame fr, boolean run_local) {
     _topGlobal = true;
     _output_types = types;
     if( types != null && types.length > 0 )
@@ -505,16 +453,18 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     _run_local = run_local;     // Run locally by copying data, or run globally?
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
+    return self();
   }
 
-  /** Block for &amp; get any final results from a dfork'd MRTask.
+  /** Block for and get any final results from a dfork'd MRTask.
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
   public final T getResult() {
+    assert getCompleter()==null; // No completer allowed here; FJ never awakens threads with completers
     try { ForkJoinPool.managedBlock(this); }
     catch( InterruptedException ignore ) { }
     catch( Throwable re ) { setException(re);  }
     DException.DistributedException de = getDException();
-    if( de != null ) throw new RuntimeException(de);
+    if( de != null ) throw de;
     assert _topGlobal:"lost top global flag";
     return self();
   }

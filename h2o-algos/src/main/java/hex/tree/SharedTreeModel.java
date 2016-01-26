@@ -1,9 +1,5 @@
 package hex.tree;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import hex.*;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -11,6 +7,10 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
 import water.util.*;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
 
@@ -28,7 +28,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
-    public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
+    public long _seed = -1;
 
     public int _nbins_top_level = 1<<10; //hardcoded maximum top-level number of bins for real-valued columns
 
@@ -40,7 +40,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
 
-    @Override protected long nFoldSeed() { return _seed; }
+    @Override protected long nFoldSeed() { 
+      return _seed == -1 ? (_seed = RandomUtils.getRNG(System.nanoTime()).nextLong()) : _seed;
+    }
+
+    public float _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree
 
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
@@ -191,6 +195,28 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
     }
+  }
+
+  /** Performs deep clone of given model.  */
+  protected M deepClone(Key<M> result) {
+    M newModel = (M)IcedUtils.deepCopy(this);
+    newModel._key = result;
+    // Do not clone model metrics
+    newModel._output.clearModelMetrics();
+    newModel._output._training_metrics = null;
+    newModel._output._validation_metrics = null;
+    // Clone trees
+    Key[][] treeKeys = newModel._output._treeKeys;
+    for (int i = 0; i < treeKeys.length; i++) {
+      for (int j = 0; j < treeKeys[i].length; j++) {
+        if (treeKeys[i][j] == null) continue;
+        CompressedTree ct = DKV.get(treeKeys[i][j]).get();
+        CompressedTree newCt = IcedUtils.deepCopy(ct);
+        newCt._key = CompressedTree.makeTreeKey(i, j);
+        DKV.put(treeKeys[i][j] = newCt._key,newCt);
+      }
+    }
+    return newModel;
   }
 
   @Override protected Futures remove_impl( Futures fs ) {

@@ -360,14 +360,6 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     return fs;
   }
 
-  // Hide a user key by turning it into a system key of type HIDDEN_USER_KEY
-  public static <P extends Keyed> Key<P> makeUserHidden(final Key<P> orig) {
-    if (!orig.user_allowed()) return orig; //already hidden
-    byte[] kb = orig._kb.clone();
-    kb[0] = Key.HIDDEN_USER_KEY;
-    return Key.make(kb);
-  }
-
   /** True if a {@link #USER_KEY} and not a system key.
    * @return True if a {@link #USER_KEY} and not a system key */
   public boolean user_allowed() { return type()==USER_KEY; }
@@ -446,6 +438,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     if( what.length()==0 ) return null;
     if (what.charAt(0) == MAGIC_CHAR) {
       int len = what.indexOf(MAGIC_CHAR,1);
+      if( len < 0 ) throw new IllegalArgumentException("No matching magic '"+MAGIC_CHAR+"', key name is not legal");
       String tail = what.substring(len+1);
       byte[] res = new byte[(len-1)/2 + tail.length()];
       int r = 0;

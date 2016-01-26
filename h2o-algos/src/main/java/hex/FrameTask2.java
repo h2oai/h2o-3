@@ -1,10 +1,11 @@
 package hex;
 
 import hex.DataInfo.Row;
-import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.Job;
+import water.Key;
+import water.MRTask;
 import water.fvec.Chunk;
-import water.fvec.*;
 import water.util.FrameUtils;
 
 /**
@@ -18,10 +19,12 @@ import water.util.FrameUtils;
  */
 public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   protected boolean _sparse;
-  final Key     _jobKey;
+  final Key<Job> _jobKey;
   protected final DataInfo _dinfo;
 
-  public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey){
+  public static class JobCancelledException extends RuntimeException {}
+
+  public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key<Job> jobKey){
     super(cmp);
     _dinfo = dinfo;
     _jobKey = jobKey;
@@ -42,14 +45,15 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
    */
   public void chunkDone(){}
 
+  private transient Job _job;
+  @Override
+  public void setupLocal(){_job = _jobKey.get();}
 
   public boolean handlesSparseData(){return false;}
   protected abstract void processRow(Row r);
 
-  @Override
-  public void map(Chunk[] chks) {
-    if(_jobKey != null && (DKV.get(_jobKey) == null || !Job.isRunning(_jobKey)))
-      throw new Job.JobCancelledException();
+  @Override public void map(Chunk[] chks) {
+    if(!_job.isRunning()) throw new JobCancelledException();
     chunkInit();
     // compute
     if(_sparse) {
@@ -67,5 +71,4 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
     }
     chunkDone();
   }
-
 }

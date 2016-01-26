@@ -1,9 +1,0 @@
-grip
-tabulate
-wheel
-sklearn
-numpy
-scipy
-pandas
-statsmodels
-patsy

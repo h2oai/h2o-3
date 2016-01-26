@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.ModelMetricsBinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -47,7 +48,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._train = frame._key;
           p._response_column = frame.names()[resp];
-          Scope.track(frame.replace(resp, frame.vecs()[resp].toCategoricalVec())._key); // Convert response to categorical
+          Scope.track(frame.replace(resp, frame.vecs()[resp].toCategoricalVec())); // Convert response to categorical
           DKV.put(frame);
           p._valid = null;
           p._score_interval = 2;
@@ -61,20 +62,11 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._shuffle_training_data = false;
           p._force_load_balance = false;
           p._replicate_training_data = false;
-          p._model_id = model_id;
           p._adaptive_rate = true;
           p._reproducible = true;
           p._rho = 0.99;
           p._epsilon = 5e-3;
-          DeepLearning dl = new DeepLearning(p);
-          try {
-            dl.trainModel().get();
-          } catch (Throwable t) {
-            t.printStackTrace();
-            throw new RuntimeException(t);
-          } finally {
-            dl.remove();
-          }
+          new DeepLearning(p,model_id).trainModel().get();
         }
 
         // score and check result

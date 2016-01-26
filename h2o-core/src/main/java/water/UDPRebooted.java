@@ -10,8 +10,8 @@ import water.util.Log;
  * @version 1.0
  */
 
-class UDPRebooted extends UDP {
-  static enum T {
+public class UDPRebooted extends UDP {
+  public static enum T {
     none,
     reboot,
     shutdown,
@@ -20,7 +20,7 @@ class UDPRebooted extends UDP {
     locked,
     mismatch;
 
-    void send(H2ONode target) {
+    public void send(H2ONode target) {
       assert this != none;
       new AutoBuffer(target,udp.rebooted._prior).putUdp(udp.rebooted).put1(ordinal()).close();
     }
@@ -42,13 +42,11 @@ class UDPRebooted extends UDP {
     final int _nodeId;
 
     public ShutdownTsk(H2ONode killer, int nodeId, int timeout, boolean [] confirmations){
+      super(H2O.GUI_PRIORITY);
       _nodeId = nodeId;
       _killer = killer;
       _timeout = timeout;
       _confirmations = confirmations;
-    }
-    @Override public byte priority(){
-      return H2O.GUI_PRIORITY;
     }
     transient boolean _didShutDown;
     private synchronized void doShutdown(int exitCode, String msg){
@@ -58,7 +56,7 @@ class UDPRebooted extends UDP {
       H2O.exit(exitCode);
     }
     @Override
-    protected void compute2() {
+    public void compute2() {
       Log.info("Orderly shutdown from " + _killer);
       // start a separate thread which will force termination after timeout expires (in case we don't get ack ack in time)
       new Thread(){

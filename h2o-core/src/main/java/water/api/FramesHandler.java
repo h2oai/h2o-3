@@ -1,14 +1,11 @@
 package water.api;
 
 import hex.Model;
-import jsr166y.CountedCompleter;
 import water.*;
 import water.api.ModelsHandler.Models;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.persist.PersistManager;
-import water.util.KeyedVoid;
 import water.util.Log;
 
 import java.io.InputStream;
@@ -57,8 +54,6 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     Key frame_id;
     long row_offset;
     int row_count;
-    long column_offset;
-    int column_count;
     Frame[] frames;
     String column;
     public boolean find_compatible_models = false;
@@ -69,14 +64,13 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     protected static Frame[] fetchAll() {
       // Get all the frames.
       final Key[] frameKeys = KeySnapshot.globalKeysOfClass(Frame.class);
-      List<Frame> frames = new ArrayList<Frame>(frameKeys.length);
-      for (int i = 0; i < frameKeys.length; i++) {
-        Frame frame = getFromDKV("(none)", frameKeys[i]);
+      List<Frame> frames = new ArrayList<>(frameKeys.length);
+      for( Key key : frameKeys ) {
+        Frame frame = getFromDKV("(none)", key);
         // Weed out frames with vecs that are no longer in DKV
-        Vec[] vs = frame.vecs();
         boolean skip = false;
-        for (int j=0; j < vs.length; j++) {
-          if (DKV.get(vs[j]._key) == null) {
+        for( Vec vec : frame.vecs() ) {
+          if (DKV.get(vec._key) == null) {
             Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
             skip = true;
             break;
@@ -102,13 +96,13 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
      *
      * @param frame The frame for which we should fetch the compatible models.
      * @param all_models An array of all the Models in the DKV.
-     * @return
+     * @return An array of compatible models
      */
     private static Model[] findCompatibleModels(Frame frame, Model[] all_models) {
       Map<Model, Set<String>> all_models_cols = Frames.fetchModelCols(all_models);
-      List<Model> compatible_models = new ArrayList<Model>();
+      List<Model> compatible_models = new ArrayList<>();
 
-      Set<String> frame_column_names = new HashSet(Arrays.asList(frame._names));
+      HashSet<String> frame_column_names = new HashSet<>(Arrays.asList(frame._names));
 
       for (Map.Entry<Model, Set<String>> entry : all_models_cols.entrySet()) {
         Model model = entry.getKey();
@@ -124,7 +118,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
           }
         }
       }
-      return compatible_models.toArray(new Model[0]);
+      return compatible_models.toArray(new Model[compatible_models.size()]);
     }
   }
 
@@ -158,7 +152,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   // TODO: almost identical to ModelsHandler; refactor
   public static Frame getFromDKV(String param_name, Key key) {
     if (null == key)
-      throw new H2OIllegalArgumentException(param_name, "Frames.getFromDKV()", key);
+      throw new H2OIllegalArgumentException(param_name, "Frames.getFromDKV()", null);
 
     Value v = DKV.get(key);
     if (null == v)
@@ -223,6 +217,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   /** Docs for column summary. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public StringBuffer columnSummaryDocs(int version, StringBuffer docs) {
     return null; // doc(this, version, docs, "docs/columnSummary.md");
   }
@@ -243,7 +238,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   private FramesV3 doFetch(int version, FramesV3 s) {
-    Frames f = s.createAndFillImpl();
+    s.createAndFillImpl();
 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
@@ -267,118 +262,82 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 export(int version, FramesV3 s) {
     Frame fr = getFromDKV("key", s.frame_id.key());
     Log.info("ExportFiles processing (" + s.path + ")");
-    s.job =  (JobV3) Schema.schema(version, Job.class).fillFromImpl(ExportDatasetJob.export(fr, s.path, s.frame_id.key().toString(),s.force));
+    s.job =  (JobV3) Schema.schema(version, Job.class).fillFromImpl(export(fr, s.path, s.frame_id.key().toString(),s.force));
     return s;
   }
 
 
-  // TODO: export a collection of columns as a single Frame.
-//  public FrameV3 exportCols(int version, FramesV3 s) {
-//    // have a collection of frames and column indices, cbind them, export, drop the ephemeral Frame
-//
-//  }
+  private static Job export(Frame fr, String path, String frameName, boolean overwrite) {
+    // Validate input
+    boolean fileExists = H2O.getPM().exists(path);
+    if (overwrite && fileExists) {
+      Log.warn("File " + path + " exists, but will be overwritten!");
+    } else if (!overwrite && fileExists) {
+      throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
+    }
+    InputStream is = (fr).toCSV(true, false);
+    Job job =  new Job(fr._key,"water.fvec.Frame","Export dataset");
+    ExportTask t = new ExportTask(is, path, frameName, overwrite, job);
+    return job.start(t, fr.anyVec().nChunks());
+  }
 
-  private static class ExportDatasetJob extends Job<KeyedVoid> {
+  private static class ExportTask extends H2O.H2OCountedCompleter<ExportTask> {
+    final InputStream _csv;
+    final String _path;
+    final String _frameName;
+    final boolean _overwrite;
+    final Job _j;
 
-    private ExportDatasetJob(String path) {
-      super(Key.<KeyedVoid>make(path), "Export frame");
+    ExportTask(InputStream csv, String path, String frameName, boolean overwrite, Job j) {
+      _csv = csv;
+      _path = path;
+      _frameName = frameName;
+      _overwrite = overwrite;
+      _j = j;
     }
 
-    private static ExportDatasetJob export(Frame fr, String path, String frameName, boolean overwrite) {
-      // Validate input
-      boolean fileExists = H2O.getPM().exists(path);
-      if (overwrite && fileExists) {
-        Log.warn("File " + path + " exists, but will be overwritten!");
-      } else if (!overwrite && fileExists) {
-        throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
+    private long copyStream(OutputStream os, final int buffer_size) {
+      long len = 0;
+      int curIdx = 0;
+      try {
+        byte[] bytes = new byte[buffer_size];
+        for (; ; ) {
+          int count = _csv.read(bytes, 0, buffer_size);
+          if (count <= 0) {
+            break;
+          }
+          len += count;
+          os.write(bytes, 0, count);
+          int workDone = ((Frame.CSVStream) _csv)._curChkIdx;
+          if (curIdx != workDone) {
+            _j.update(workDone - curIdx);
+            curIdx = workDone;
+          }
+        }
+      } catch (Exception ex) {
+        throw new RuntimeException(ex);
       }
-      InputStream is = (fr).toCSV(true, false);
-      ExportDatasetJob job = new ExportDatasetJob(path);
-      ExportTask t = new ExportTask(is, path, frameName, overwrite, job);
-      job.start(t, fr.anyVec().nChunks(), true);
-      return job;
+      return len;
     }
 
-    private static class ExportTask extends H2O.H2OCountedCompleter<ExportTask> {
-
-      final InputStream _csv;
-      final String _path;
-      final String _frameName;
-      final boolean _overwrite;
-      final Job _j;
-
-      ExportTask(InputStream csv, String path, String frameName, boolean overwrite, Job j) {
-        _csv = csv;
-        _path = path;
-        _frameName = frameName;
-        _overwrite = overwrite;
-        _j = j;
-      }
-
-      private long copyStream(OutputStream os, final int buffer_size) {
-        long len = 0;
-        int curIdx = 0;
-        try {
-          byte[] bytes = new byte[buffer_size];
-          for (; ; ) {
-            int count = _csv.read(bytes, 0, buffer_size);
-            if (count <= 0) {
-              break;
-            }
-            len += count;
-            os.write(bytes, 0, count);
-            int workDone = ((Frame.CSVStream) _csv)._curChkIdx;
-            if (curIdx != workDone) {
-              _j.update(workDone - curIdx);
-              curIdx = workDone;
-            }
-          }
-        } catch (Exception ex) {
-          throw new RuntimeException(ex);
-        }
-        return len;
-      }
-
-      @Override
-      public void compute2() {
-        PersistManager pm = H2O.getPM();
-        OutputStream os = null;
-        long written = -1;
-        try {
-          os = pm.create(_path, _overwrite);
-          written = copyStream(os, 4 * 1024 * 1024);
-        } finally {
-          if (os != null) {
-            try {
-              os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
-              os.close();
-              Log.info("Key '" + _frameName + "' of "+written+" bytes was written to " + _path + ".");
-            } catch (Exception e) {
-              Log.err(e);
-            }
+    @Override public void compute2() {
+      OutputStream os = null;
+      long written = -1;
+      try {
+        os = H2O.getPM().create(_path, _overwrite);
+        written = copyStream(os, 4 * 1024 * 1024);
+      } finally {
+        if (os != null) {
+          try {
+            os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
+            os.close();
+            Log.info("Key '" + _frameName + "' of "+written+" bytes was written to " + _path + ".");
+          } catch (Exception e) {
+            Log.err(e);
           }
         }
-        tryComplete();
       }
-
-      // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
-      @Override
-      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-        if (_j != null) {
-          _j.cancel();
-          if (ex instanceof H2OParseException) {
-            throw (H2OParseException) ex;
-          } else {
-            _j.failed(ex);
-          }
-        }
-        return true;
-      }
-
-      @Override
-      public void onCompletion(CountedCompleter caller) {
-        _j.done();
-      }
+      tryComplete();
     }
   }
 

@@ -2,6 +2,8 @@ package hex.tree.gbm;
 
 import hex.Distribution;
 import hex.ModelCategory;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import hex.schemas.GBMV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
@@ -9,9 +11,7 @@ import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
+import water.fvec.*;
 import water.util.*;
 
 import java.util.Arrays;
@@ -31,15 +31,19 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   }
 
   // Called from an http request
-  public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(false); }
+  public GBM( GBMModel.GBMParameters parms                   ) { super(parms     ); init(false); }
+  public GBM( GBMModel.GBMParameters parms, Key<GBMModel> key) { super(parms, key); init(false); }
+  public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
 
-  @Override public GBMV3 schema() { return new GBMV3(); }
+  @Override protected int nModelsInParallel() {
+    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
+    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    return 2; //GBM always has some serial work, so it's fine to build two models at once
+  }
 
-  /** Start the GBM training Job on an F/J thread.
-   * @param work
-   * @param restartTimer*/
-  @Override protected Job<GBMModel> trainModelImpl(long work, boolean restartTimer) {
-    return start(new GBMDriver(), work, restartTimer);
+  /** Start the GBM training Job on an F/J thread. */
+  @Override protected GBMDriver trainModelImpl() {
+    return new GBMDriver();
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -76,10 +80,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // wrong direction, and it takes a long time (lotsa trees) to correct that
     // - so your CM sucks for a long time.
     if (expensive) {
-      if (error_count() > 0) {
-        GBM.this.updateValidationMessages();
+      if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GBM.this);
-      }
       if (_parms._distribution == Distribution.Family.AUTO) {
         if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
         if (_nclass == 2) _parms._distribution = Distribution.Family.bernoulli;
@@ -115,6 +117,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     case gaussian:
       if (isClassifier()) error("_distribution", H2O.technote(2, "Gaussian requires the response to be numeric."));
       break;
+    case laplace:
+      if (isClassifier()) error("_distribution", H2O.technote(2, "Laplace requires the response to be numeric."));
+      break;
     case AUTO:
       break;
     default:
@@ -131,13 +136,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private class GBMDriver extends Driver {
     @Override protected boolean doOOBScoring() { return false; }
     @Override protected void initializeModelSpecifics() {
-      _mtry = Math.max(1, (int)(_parms._col_sample_rate * _ncols));
+      _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
+      if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
+      _mtry = Math.max(1, (int)(_parms._col_sample_rate * _parms._col_sample_rate_per_tree * _ncols)); //per-split
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
 
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
-      _initialPrediction = _nclass > 2 ? 0 : getInitialValue();
-      if (hasOffsetCol() && _parms._distribution == Distribution.Family.bernoulli) {
-        _initialPrediction = getInitialValueBernoulliOffset(_train);
+      _initialPrediction = _nclass > 2 || _parms._distribution == Distribution.Family.laplace ? 0 : getInitialValue();
+      if (_parms._distribution == Distribution.Family.bernoulli) {
+        if (hasOffsetCol()) _initialPrediction = getInitialValueBernoulliOffset(_train);
+      } else if (_parms._distribution == Distribution.Family.laplace) {
+        _initialPrediction = getInitialValueQuantile(0.5);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
 
@@ -151,6 +160,43 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           }
         }.doAll(vec_tree(_train, 0), _parms._build_tree_one_node); // Only setting tree-column 0
       }
+    }
+
+    /**
+     * Helper to compute the initial value for Laplace (incl. optional offset and obs weights)
+     * @return weighted median of response - offset
+     */
+    private double getInitialValueQuantile(double quantile) {
+      // obtain y - o
+      Vec y = hasOffsetCol() ? new MRTask() {
+        @Override public void map(Chunk[] chks, NewChunk[] nc) {
+          final Chunk resp = chk_resp(chks);
+          final Chunk offset = chk_offset(chks);
+          for (int i=0; i<chks[0]._len; ++i)
+            nc[0].addNum(resp.atd(i) - offset.atd(i)); //y - o
+        }
+      }.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec() : response();
+
+      // Now compute (weighted) quantile of y - o
+      double res = Double.NaN;
+      QuantileModel qm = null;
+      Frame tempFrame = null;
+      try {
+        tempFrame = new Frame(Key.make(H2O.SELF), new String[]{"y"}, new Vec[]{y});
+        if (hasWeightCol()) tempFrame.add("w", _weights);
+        DKV.put(tempFrame);
+        QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+        parms._train = tempFrame._key;
+        parms._probs = new double[]{quantile};
+        parms._weights_column = hasWeightCol() ? "w" : null;
+        Job<QuantileModel> job1 = new Quantile(parms).trainModel();
+        qm = job1.get();
+        res = qm._output._quantiles[0][0];
+      } finally {
+        if (qm!=null) qm.remove();
+        if (tempFrame!=null) DKV.remove(tempFrame._key);
+      }
+      return res;
     }
 
     /**
@@ -352,21 +398,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // Compute predictions and resulting residuals for trees built so far
       // ESL2, page 387, Steps 2a, 2b
-//      Log.info("3 before ComputePredAndRes\n", _train);
       new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node); //fills "Work" columns for all rows (incl. OOB)
 
-//      Log.info("4 before growTrees\n", _train);
       // ----
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
       growTrees(ktrees, leafs, _rand); //assign to OOB and split using non-OOB only
 
-//      Log.info("5 before fitBestConstants\n", _train);
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      fitBestConstants(ktrees, leafs, new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train));
+      GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train);
+      if (_parms._distribution == Distribution.Family.laplace) {
+        fitBestConstantsQuantile(ktrees, leafs, 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
+      } else {
+        fitBestConstants(ktrees, leafs, gp);
+      }
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
       if (_parms._distribution == Distribution.Family.gamma ||
@@ -400,7 +448,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
           if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
-          ktrees[k] = new DTree(_train, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, _mtry, rseed);
+          ktrees[k] = new DTree(_train, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, _mtry, _mtry_per_tree, rseed);
           new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0])); // The "root" node
         }
       }
@@ -421,7 +469,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Adds a layer to the trees each pass.
       int depth = 0;
       for (; depth < _parms._max_depth; depth++) {
-        if (!isRunning()) return;
         hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _mtry < _model._output.nfeatures(), _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if (hcs == null) break;
@@ -452,6 +499,34 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           }
         }
       } // -- k-trees are done
+    }
+
+    private void fitBestConstantsQuantile(DTree[] ktrees, int[] leafs, double quantile) {
+      assert(_nclass==1);
+      Vec response = new MRTask() {
+        @Override
+        public void map(Chunk[] chks, NewChunk[] nc) {
+          final Chunk resp = chk_resp(chks);
+          final Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
+          final Chunk preds = chk_tree(chks,0);
+          for (int i=0; i<chks[0].len(); ++i)
+            nc[0].addNum(resp.atd(i) - preds.atd(i) - offset.atd(i)); //y - (f+o)
+        }
+      }.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+      Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
+      Vec strata = _train.vecs()[idx_nids(0)];
+
+      // compute quantile for all leaf nodes
+      Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, response, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);
+      H2O.submitTask(sqt);
+      sqt.join();
+
+      for (int i = 0; i < ktrees[0]._len - leafs[0]; i++) {
+        float val = (float) (_parms._learn_rate * sqt._quantiles[i]);
+        assert !Float.isNaN(val) && !Float.isInfinite(val);
+        ((LeafNode) ktrees[0].node(leafs[0] + i))._pred = val;
+//        Log.info("Leaf " + (leafs[0]+i) + " has median: " + sqt._quantiles[i]);
+      }
     }
 
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp) {
@@ -560,7 +635,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             assert !ress.isNA(row);
 
             // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
-            if (wasOOBRow) continue;
+            // For Laplace distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
+            if (wasOOBRow || _parms._distribution == Distribution.Family.laplace) continue;
 
             // Compute numerator and denominator of terminal node estimate (gamma)
             double w = hasWeightCol() ? chk_weight(chks).atd(row) : 1; //weight

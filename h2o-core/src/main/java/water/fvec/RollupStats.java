@@ -24,7 +24,7 @@ import java.util.Arrays;
  *  manage the M/R job computing the rollups.  Losers block for the same
  *  rollup.  Remote requests *always* forward to the Rollup Key's master.
  */
-class RollupStats extends Iced {
+final class RollupStats extends Iced {
   /** The count of missing elements.... or -2 if we have active writers and no
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last
@@ -280,8 +280,7 @@ class RollupStats extends Iced {
     RollupStats rs = getOrNull(vec,rskey);
     if(rs == null || (computeHisto && !rs.hasHisto()))
       fs.add(new RPC(rskey.home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
-        @Override
-        public void callback(H2OCountedCompleter h2OCountedCompleter) {
+        @Override public void callback(H2OCountedCompleter h2OCountedCompleter) {
           DKV.get(rskey); // fetch new results via DKV to enable caching of the results.
         }
       }).call());
@@ -354,18 +353,16 @@ class RollupStats extends Iced {
   // If rs computation is already in progress, it will wait for it to finish.
   // Throws IAE if the Vec is being modified (or removed) while this task is in progress.
   static final class ComputeRollupsTask extends DTask<ComputeRollupsTask>{
-    private final byte _priority;
     final Key _vecKey;
     final Key _rsKey;
     final boolean _computeHisto;
 
     public ComputeRollupsTask(Vec v, boolean computeHisto){
-      _priority = (Thread.currentThread() instanceof H2O.FJWThr) ? nextThrPriority() : H2O.GUI_PRIORITY-2;
+      super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY-2));
       _vecKey = v._key;
       _rsKey = v.rollupStatsKey();
       _computeHisto = computeHisto;
     }
-    @Override public byte priority(){return _priority; }
 
     private Value makeComputing(){
       RollupStats newRs = RollupStats.makeComputing();
@@ -384,7 +381,7 @@ class RollupStats extends Iced {
     }
 
     @Override
-    protected void compute2() {
+    public void compute2() {
       assert _rsKey.home();
       final Vec vec = DKV.getGet(_vecKey);
       while(true) {

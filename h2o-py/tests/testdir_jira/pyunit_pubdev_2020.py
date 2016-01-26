@@ -38,7 +38,7 @@ def test2():
 
 def test3():
     df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
-    splits = df.split_frame(ratios=[0.8], seed=2015)
+    splits = df.split_frame(ratios=[0.8], seed=0)
     part1 = splits[1]
     value = part1[0, "C1"]
     assert value == 4
@@ -48,13 +48,13 @@ def test3():
     assert value == 22
 
     df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
-    splits = df.split_frame(ratios=[0.8], seed=2016)
+    splits = df.split_frame(ratios=[0.8], seed=0)
     part1 = splits[1]
     value = part1[0, "C1"]
     assert value == 4, value
 
     df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
-    splits = df.split_frame(ratios=[0.8], seed=2016)
+    splits = df.split_frame(ratios=[0.8], seed=0)
     part1 = splits[1]
     value = part1[0, "C1"]
     assert value == 4, value

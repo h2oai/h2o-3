@@ -3,25 +3,140 @@ package water;
 import jsr166y.CountedCompleter;
 import java.util.Arrays;
 import water.H2O.H2OCountedCompleter;
-import water.util.Log;
-import water.util.StringUtils;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
  *  completed Jobs, and cancel currently running Jobs.
  *  <p>
  *  Jobs are {@link Keyed}, because they need to Key to control e.g. atomic updates.
- *  Jobs produce a {@link Keyed} result, such as a Frame (from Parsing), or a Model.
- *  NOTE: the Job class is parametrized on the type of its _dest field.
+ *  <p>
+ *  Jobs are generic on Keyed, because their primary result is a Keyed result -
+ *  which is Not a Job.  Obvious examples are Frames (from running Parse or
+ *  CreateFrame jobs), or Models (from running ModelBuilder jobs).
+ *  <p>
+ *  Long running tasks will has-a Job, not is-a Job.
  */
-public class Job<T extends Keyed> extends Keyed<Job> {
+public final class Job<T extends Keyed> extends Keyed<Job> {
+  /** Result Key */
+  public final Key<T> _result;
+  public final int _typeid;
+
+  /** User description */
+  public final String _description;
+
+  /** Create a Job
+   *  @param key  Key of the final result
+   *  @param clz_of_T String class of the Keyed result
+   *  @param desc String description   */
+  public Job(Key<T> key, String clz_of_T, String desc) {
+    super(defaultJobKey());     // Passing in a brand new Job key
+    assert key==null || clz_of_T!=null;
+    _result = key;              // Result (destination?) key
+    _typeid = clz_of_T==null ? 0 : TypeMap.onIce(clz_of_T);
+    _description = desc; 
+  }
+
+  // Job Keys are pinned to this node (i.e., the node that invoked the
+  // computation), because it should be almost always updated locally
+  private static Key<Job> defaultJobKey() { return Key.make((byte) 0, Key.JOB, false, H2O.SELF); }
+
+
+  /** Job start_time and end_time using Sys.CTM */
+  private long _start_time;     // Job started, or 0 if not running
+  private long   _end_time;     // Job end time, or 0 if not ended
+
+  // Simple internal state accessors
+  private boolean created() { return _start_time == 0; }
+  private boolean running() { return _start_time != 0 && _end_time == 0; }
+  private boolean stopped() { return   _end_time != 0; }
+
+  // Simple state accessors; public ones do a DKV update check
+  public long start_time()   { update_from_remote(); assert !created(); return _start_time; }
+  public long   end_time()   { update_from_remote(); assert  stopped(); return   _end_time; }
+  public boolean isRunning() { update_from_remote(); return  running(); }
+  public boolean isStopped() { update_from_remote(); return  stopped(); }
+  // Slightly more involved state accessors
+  public boolean isStopping(){ return isRunning() && _stop_requested; }
+  public boolean isDone()    { return isStopped() && _ex == null; }
+  public boolean isCrashing(){ return isRunning() && _ex != null; }
+  public boolean isCrashed (){ return isStopped() && _ex != null; }
+
+
+  /** Current runtime; zero if not started. */
+  public long msec() {
+    update_from_remote();
+    if( created() ) return 0;   // Created, not running
+    if( running() ) return System.currentTimeMillis() - _start_time;
+    return _end_time - _start_time; // Stopped
+  }
+
+  /** Jobs may be requested to Stop.  Each individual job will respond to this
+   *  on a best-effort basis, and make some time to stop.  Stop really means
+   *  "the Job stops", but is not an indication of any kind of error or fail.
+   *  Perhaps the user simply got bored.  Because it takes time to stop, a Job
+   *  may be both in state isRunning and stop_requested, and may later switch
+   *  to isStopped and stop_requested.  Also, an exception may be posted. */
+  private volatile boolean _stop_requested; // monotonic change from false to true
+  public boolean stop_requested() { update_from_remote(); return _stop_requested; }
+  public void stop() { 
+    if( !_stop_requested )      // fast path cutout
+      new JAtomic() {
+        @Override boolean abort(Job job) { return job._stop_requested; }
+        @Override void update(Job job) { job._stop_requested = true; }
+      }.apply(this);
+  }
+
+  /** Any exception thrown by this Job, or null if none.  Note that while
+   *  setting an exception generally triggers stopping a Job, stopping
+   *  takes time, so the Job might still be running with an exception
+   *  posted. */
+  private Throwable _ex;
+  public Throwable ex() { return _ex; }
+  public boolean hasEx() { update_from_remote(); return _ex != null; }
+  /** Set an exception into this Job, marking it as failing and setting the
+   *  _stop_requested flag.  Only the first exception (of possibly many) is kept. */
+  public void setEx(Throwable ex, Class thrower_clz) {
+    if( _ex == null ) {
+      final DException dex = new DException(ex, thrower_clz);
+      new JAtomic() {
+        @Override boolean abort(Job job) { return job._ex != null; } // One-shot update; keep first exception
+        @Override void update(Job job) { job._ex = dex.toEx(); job._stop_requested = true; }
+      }.apply(this);
+    }
+  }
+
+
+  /** Total expected work. */
+  public long _work;            // Total work to-do
+  private long _worked;         // Work accomplished; between 0 and _work
+  private String _msg;          // Progress string
+
+  /** Returns a float from 0 to 1 representing progress.  Polled periodically.
+   *  Can default to returning e.g. 0 always.  */
+  public float progress() { update_from_remote(); return _work==0 ? 0f : Math.min(1,(float)_worked/_work); }
+  /** Returns last progress message. */
+  public String progress_msg() { update_from_remote(); return _msg; }
+
+  /** Report new work done for this job */
+  public final void update( final long newworked, final String msg) {
+    if( newworked > 0 || (msg != null && !msg.equals(_msg)) ) {
+      new JAtomic() {
+        @Override boolean abort(Job job) { return newworked==0 && ((msg==null && _msg==null) || (msg != null && msg.equals(job._msg))); }
+        @Override void update(Job old) { old._worked += newworked; old._msg = msg; }
+      }.apply(this);
+    }
+  }
+  public final  void update(final long newworked) { update(newworked,(String)null); }
+  public static void update(final long newworked, Key<Job> jobkey) { update(newworked, null, jobkey); }
+  public static void update(final long newworked, String msg, Key<Job> jobkey) { jobkey.get().update(newworked, msg); }
+
+  // --------------
   /** A system key for global list of Job keys. */
   public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
   private static class JobList extends Keyed {
     Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
     private JobList(Key<Job>[]jobs) { super(LIST); _jobs = jobs; }
-    @Override protected long checksum_impl() { throw H2O.fail("Joblist checksum does not exist by definition"); }
   }
 
   /** The list of all Jobs, past and present.
@@ -45,125 +160,62 @@ public class Job<T extends Keyed> extends Keyed<Job> {
     return jobs;
   }
 
-  transient H2OCountedCompleter _fjtask; // Top-level task to do
-  transient H2OCountedCompleter _barrier;// Top-level task you can block on
-
-  /** Jobs produce a single DKV result into Key _dest */
-  public Key<T> _dest;   // Key for result
-  /** Since _dest is public final, not sure why we have a getter but some
-   *  people like 'em. */
-  public final Key<T> dest() { return _dest; }
-
-  public final Key<Job> jobKey() { return _key; }
-
-  /** User description */
-  public String _description;
-  /** Job start_time using Sys.CTM */
-  public long _start_time;     // Job started
-  /** Job end_time using Sys.CTM, or 0 if not ended */
-  public long   _end_time;     // Job end time, or 0 if not ended
-  /** Any exception thrown by this Job, or null if none */
-  public String _exception;    // Unpacked exception & stack trace
-
-  /** Possible job states.  These are ORDERED; state levels can increased but never decrease */
-  public enum JobState {
-    CREATED,   // Job was created
-    RUNNING,   // Job is running
-    DONE,      // Job was successfully finished
-    CANCELLED, // Job was cancelled by user
-    FAILED,    // Job crashed, error message/exception is available
-  }
-
-  public JobState _state;
-
-  /** Returns true if the job was cancelled by the user or crashed.
-   *  @return true if the job is in state {@link JobState#CANCELLED} or {@link JobState#FAILED} */
-  public boolean isCancelledOrCrashed() {
-    return _state == JobState.CANCELLED || _state == JobState.FAILED;
-  }
-
-  /** Returns true if this job is running
-   *  @return returns true only if this job is in running state. */
-  public boolean isRunning() { return _state == JobState.RUNNING; }
-  /** Returns true if this job is done
-   *  @return  true if the job is in state {@link JobState#DONE} */
-  public boolean isDone   () { return _state == JobState.DONE   ; }
-
-  /** Returns true if this job was started and is now stopped */
-  public boolean isStopped() { return _state == JobState.DONE || isCancelledOrCrashed(); }
-
-  /** Check if given job is running.
-   *  @param job_key job key
-   *  @return true if job is still running else returns false.  */
-  public static boolean isRunning(Key<Job> job_key) { return job_key.get().isRunning(); }
-
-  /** Current runtime; zero if not started */
-  public final long msec() {
-    switch( _state ) {
-    case CREATED: return 0;
-    case RUNNING: return System.currentTimeMillis() - _start_time;
-    default:      return _end_time                  - _start_time;
-    }
-  }
-
-  private Job(Key<Job> jobKey, Key<T> dest, String desc) {
-    super(jobKey);
-    _description = desc;
-    _dest = dest;
-    _state = JobState.CREATED;  // Created, but not yet running
-  }
-  /** Create a Job
-   *  @param dest Final result Key to be produced by this Job
-   *  @param desc String description
-   */
-  public Job(Key<T> dest, String desc) {
-    this(defaultJobKey(),dest,desc);
-  }
-  // Job Keys are pinned to this node (i.e., the node that invoked the
-  // computation), because it should be almost always updated locally
-  private static Key<Job> defaultJobKey() { return Key.make((byte) 0, Key.JOB, false, H2O.SELF); }
-
-
   /** Start this task based on given top-level fork-join task representing job computation.
    *  @param fjtask top-level job computation task.
-   *  @param work Units of work to be completed
-   *  @param restartTimer
-   *  @return this job in {@link JobState#RUNNING} state
+   *  @param work Amount of work to-do, for updating progress bar
+   *  @return this job in {@code isRunning()} state
    *
-   *  @see JobState
    *  @see H2OCountedCompleter
    */
-  protected Job<T> start(final H2OCountedCompleter fjtask, long work, boolean restartTimer) {
-    if (work >= 0)
-      DKV.put(_progressKey = createProgressKey(), new Progress(work));
-    assert _state == JobState.CREATED : "Trying to run job which was already run?";
+  public Job<T> start(final H2OCountedCompleter fjtask, long work) {
+    // Job does not exist in any DKV, and so does not have any global
+    // visibility (yet).
+    assert !new AssertNoKey(_key).doAllNodes()._found;
+    assert created() && !running() && !stopped();
     assert fjtask != null : "Starting a job with null working task is not permitted!";
     assert fjtask.getCompleter() == null : "Cannot have a completer; this must be a top-level task";
-    _fjtask = fjtask;
 
-    // Make a wrapper class that only *starts* when the fjtask completes -
-    // especially it only starts even when fjt completes exceptionally... thus
-    // the fjtask onExceptionalCompletion code runs completely before this
-    // empty task starts - providing a simple barrier.  Threads blocking on the
-    // job will block on the "barrier" task, which will block until the fjtask
-    // runs the onCompletion or onExceptionCompletion code.
-    _barrier = new H2OCountedCompleter() {
-        @Override public void compute2() { }
-        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-          if( getCompleter() == null ) { // nobody else to handle this exception, so print it out
-            System.err.println("barrier onExCompletion for "+fjtask);
-            ex.printStackTrace();
-            Job.this.failed(ex);
-          }
-          return true;
-        }
-      };
-    fjtask.setCompleter(_barrier);
-    if (restartTimer) _start_time = System.currentTimeMillis();
-    _state      = JobState.RUNNING;
-    // Save the full state of the job
-    DKV.put(_key, this);
-    // Update job list
+    // F/J rules: upon receiving an exception (the task's compute/compute2
+    // throws an exception caugt by F/J), the task is marked as "completing
+    // exceptionally" - it is marked "completed" before the onExComplete logic
+    // runs.  It is then notified, and wait'ers wake up - before the
+    // onExComplete runs; onExComplete runs on in another thread, so wait'ers
+    // are racing with the onExComplete.  
+
+    // We want wait'ers to *wait* until the task's onExComplete runs, AND Job's
+    // onExComplete runs (marking the Job as stopped, with an error).  So we
+    // add a few wrappers:
+
+    // Make a wrapper class that only *starts* when the task completes -
+    // especially it only starts even when task completes exceptionally... thus
+    // the task onExceptionalCompletion code runs completely before Barrer1
+    // starts - providing a simple barrier.  The Barrier1 onExComplete runs in
+    // parallel with wait'ers on Barrier1.  When Barrier1 onExComplete itself
+    // completes, Barrier2 is notified.
+
+    // Barrier2 is an empty class, and vacuously runs in parallel with wait'ers
+    // of Barrier2 - all callers of Job.get().
+    _barrier = new Barrier2(); 
+    fjtask.setCompleter(new Barrier1(_barrier));
+
+    // These next steps must happen in-order:
+    // 4 - cannot submitTask without being on job-list, lest all cores get
+    // slammed but no user-visible record of why, so 4 after 3
+    // 3 - cannot be on job-list without job in DKV, lest user (briefly) see it
+    // on list but cannot click the link & find job, so 3 after 2
+    // 2 - cannot be findable in DKV without job also being in running state
+    // lest the finder be confused about the job state, so 2 after 1
+    // 1 - set state to running
+
+    // 1 - Change state from created to running
+    _start_time = System.currentTimeMillis();
+    assert !created() && running() && !stopped();
+    _work = work;
+
+    // 2 - Save the full state of the job, first time ever making it public
+    DKV.put(this);              // Announce in DKV
+
+    // 3 - Update job list
     final Key jobkey = _key;
     new TAtomic<JobList>() {
       @Override public JobList atomic(JobList old) {
@@ -174,208 +226,119 @@ public class Job<T extends Keyed> extends Keyed<Job> {
         return old;
       }
     }.invoke(LIST);
+    // 4 - Fire off the FJTASK
     H2O.submitTask(fjtask);
     return this;
   }
+  transient private Barrier2 _barrier; // Top-level task to block on
 
-  protected Key createProgressKey() { return Key.make(); }
-
-  protected boolean deleteProgressKey() { return true; }
-
-  /** Blocks and get result of this job.
-   * <p>
-   * This call blocks on working task which was passed via {@link #start}
-   * method and returns the result which is fetched from DKV based on job
-   * destination key.
-   * </p>
-   * @return result of this job fetched from DKV by destination key.
-   * @see #start
-   * @see DKV
-   */
-  public T get() {
-    block();
-    assert !isRunning() : "Job state should not be running, but it is " + _state;
-    return _dest.get();
+  // Handy for assertion
+  private static class AssertNoKey extends MRTask<AssertNoKey> {
+    private final Key<Job> _key;
+    boolean _found;
+    AssertNoKey( Key<Job> key ) { _key = key; }
+    @Override public void setupLocal() { _found = H2O.containsKey(_key); }
+    @Override public void reduce( AssertNoKey ank ) { _found |= ank._found; }
   }
 
-  /**
-   * Blocks for job completion, but do not return anything as the destination object might not yet be finished
-   */
-  public void block() {
-    assert _fjtask != null : "Cannot block on missing F/J task";
-    _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
-  }
-
-  /** Marks job as finished and records job end time. */
-  public void done() {
-    done(false);
-  }
-
-  /**
-   * Conditionally mark the job as finished and record job end time
-   * @param force If set to false, then ask canBeDone() whether to mark the job as finished
-   */
-  protected void done(boolean force) {
-    if (force || canBeDone()) changeJobState(null, JobState.DONE);
-  }
-
-  /**
-   * Allow ModelBuilders to override this to conditionally mark the job as finished
-   * @return whether or not the job should be marked as finished in done() or done(false)
-   */
-  protected boolean canBeDone() { return true; }
-
-  /** Signal cancellation of this job.
-   * <p>The job will be switched to state {@link JobState#CANCELLED} which signals that
-   * the job was cancelled by a user. */
-  public void cancel() { changeJobState(null, JobState.CANCELLED); }
-
-  /** Signal exceptional cancellation of this job.
-   *  @param ex exception causing the termination of job. */
-  public void failed(Throwable ex) {
-    String stackTrace = StringUtils.toString(ex);
-    changeJobState("Got exception '" + ex.getClass() + "', with msg '" + ex.getMessage() + "'\n" + stackTrace, JobState.FAILED);
-    //if(_fjtask != null && !_fjtask.isDone()) _fjtask.completeExceptionally(ex);
-  }
-
-  /** Signal exceptional cancellation of this job.
-   *  @param msg cancellation message explaining reason for cancellation */
-  public void cancel(final String msg) { changeJobState(msg, msg == null ? JobState.CANCELLED : JobState.FAILED); }
-
-  private void changeJobState(final String msg, final JobState resultingState) {
-    assert resultingState != JobState.RUNNING;
-    if( _state == JobState.CANCELLED ) Log.info("Canceled job " + _key + "("  + _description + ") was cancelled again.");
-    if( _state == resultingState ) return; // No change if already done
-    final float finalProgress = resultingState==JobState.DONE ? 1.0f : progress_impl(); // One-shot set from NaN to progress, no longer need Progress Key
-    final long done = System.currentTimeMillis();
-    // Atomically flag the job as canceled
-    new TAtomic<Job>() {
-      @Override public Job atomic(Job old) {
-        if( old == null ) return null; // Job already removed
-        // States monotonically increase; states can increase but not decrease
-        if( resultingState.ordinal() <= old._state.ordinal() ) return null;
-        // Atomically capture changeJobState/crash state, plus end time
-        old._exception = msg;
-        old._state = resultingState;
-        old._end_time = done;
-        old._finalProgress = finalProgress;
-        return old;
+  // A simple barrier.  Threads blocking on the job will block on this
+  // "barrier" task, which will block until the fjtask runs the onCompletion or
+  // onExceptionCompletion code.
+  private class Barrier1 extends CountedCompleter {
+    Barrier1(CountedCompleter cc) { super(cc,0); }
+    @Override public void compute() { }
+    @Override public void onCompletion(CountedCompleter caller) {
+      new Barrier1OnCom().apply(Job.this);
+      _barrier = null;          // Free for GC
+    }
+    @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+      final DException dex = new DException(ex,caller.getClass());
+      new Barrier1OnExCom(dex).apply(Job.this);
+      if( getCompleter().getCompleter() == null ) { // barrier2 doesn't handle this exception, so print it out
+        System.err.println("barrier onExCompletion for "+caller.getClass());
+        ex.printStackTrace();
       }
-    }.invoke(_key);
-    // Also immediately update immediately a possibly cached local POJO (might
-    // be shared with the DKV cached job, might not).
-    if( this != DKV.getGet(_key) ) {
-      _exception = msg;
-      _state = resultingState;
-      _end_time = done;
-      _finalProgress = finalProgress;
+      _barrier = null;          // Free for GC
+      return true;
     }
-    // Remove on cancel/fail/done, only used whilst Job is Running
-    if (deleteProgressKey())
-      DKV.remove(_progressKey);
   }
-
-  /** Returns a float from 0 to 1 representing progress.  Polled periodically.
-   *  Can default to returning e.g. 0 always.  */
-  public float progress() {
-    return isStopped() ? _finalProgress : progress_impl();
-  }
-  // Read racy progress in a non-racy way: read the DKV exactly once,
-  // null-checking as we go.  Handles the case where the Job is being removed
-  // exactly when we are reading progress e.g. for the GUI.
-  private Progress getProgress() {
-    Key k = _progressKey;
-    Value val;
-    return k!=null && (val=DKV.get(k))!=null ? (Progress)val.get() : null;
-  }
-  // Checks the DKV for the progress Key & object
-  private float progress_impl() {
-    Progress p = getProgress();
-    return p==null ? 0f : p.progress();
-  }
-
-  /** Returns last progress message. */
-  public String progress_msg() { return isStopped() ? _state.toString() : progress_msg_impl(); }
-  private String progress_msg_impl() {
-    Progress p = getProgress();
-    return p==null ? "" : p.progress_msg();
-  }
-
-  protected Key<Progress> _progressKey; //Key to store the Progress object under
-  private float _finalProgress = Float.NaN; // Final progress after Job stops running
-
-  /** Report new work done for this job */
-  public final  void update(final long newworked) { update(newworked,(String)null); }
-  public final  void update(final long newworked, String msg) { new ProgressUpdate(newworked, msg).fork(_progressKey); }
-  public static void update(final long newworked, Key<Job> jobkey) { update(newworked, null, jobkey); }
-  public static void update(final long newworked, String msg, Key<Job> jobkey) { jobkey.get().update(newworked, msg); }
-
-  /**
-   * Helper class to store the job progress in the DKV
-   */
-  public static class Progress extends Keyed<Progress> {
-    @Override
-    protected long checksum_impl() {
-      return 2134340823432L*_work + 9023742947234L*_worked+(long)(12343242340234L*_fraction_done)+_progress_msg.hashCode();
+  private static class Barrier1OnCom extends JAtomic {
+    @Override boolean abort(Job job) { return false; }
+    @Override public void update(Job old) {
+      assert old._end_time==0 : "onComp should be called once at most, and never if onExComp is called";
+      old._end_time = System.currentTimeMillis();
+      if( old._worked < old._work ) old._worked = old._work;
+      old._msg = old._stop_requested ? "Cancelled." : "Done.";
     }
-
-    // Progress methodology 1:  Specify total work up front and periodically tell when new units of work complete.
-    private final long _work;
-    private long _worked;
-    public Progress() { _work = -1; _fraction_done = 0; _progress_msg = "Running..."; }
-
-    // Progress methodology 2:  Client tells what fraction is total work is done every time.
-    // In addition, a short one-line message can optionally be provided for a smart client like Flow.
-    private float _fraction_done;
-    private String _progress_msg;
-    public Progress(long total) { _work = total; _fraction_done = -1.0f; _progress_msg = "Running...";}
-
-    /** Report Job progress from 0 to 1.  Completed jobs are always 1.0 */
-    public float progress() {
-      if (_work >= 0) return _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float) _worked / (float) _work));
-      return _fraction_done;
+  }
+  private static class Barrier1OnExCom extends JAtomic {
+    final DException _dex;
+    Barrier1OnExCom(DException dex) { _dex = dex; }
+    @Override boolean abort(Job job) { return job._ex != null && job._end_time!=0; } // Already stopped & exception'd
+    @Override void update(Job job) {
+      if( job._ex == null ) job._ex = _dex.toEx(); // Keep first exception ever
+      job._stop_requested = true; // Since exception set, also set stop
+      if( job._end_time == 0 )    // Keep first end-time
+        job._end_time = System.currentTimeMillis();
+      job._msg = "Failed.";
     }
+  }
+  private class Barrier2 extends CountedCompleter {
+    @Override public void compute() { }
+  }
 
-    /** Report most recent progress message. */
-    public String progress_msg() {
-      return _progress_msg;
+  /** Blocks until the Job completes  */
+  public T get() {
+    Barrier2 bar = _barrier;
+    if( bar != null )           // Barrier may be null if task already completed
+      bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+    assert isStopped();
+    if (_ex!=null) throw _ex instanceof RuntimeException ? (RuntimeException)_ex : new RuntimeException(_ex);
+    // Maybe null return, if the started fjtask does not actually produce a result at this Key
+    return _result==null ? null : _result.get(); 
+  }
+
+  // --------------
+  // Atomic State Updaters.  Atomically change state on the home node.  They
+  // also update the *this* object from the freshest remote state, meaning the
+  // *this* object changes after these calls.  
+  // NO OTHER CHANGES HAPPEN TO JOB FIELDS.
+
+  private abstract static class JAtomic extends TAtomic<Job> {
+    void apply(Job job) { invoke(job._key); job.update_from_remote(); }
+    abstract boolean abort(Job job);
+    abstract void update(Job job);
+    @Override public Job atomic(Job job) {
+      assert job != null : "Race on creation";
+      if( abort(job) ) return null;
+      update(job);
+      return job;
     }
   }
 
-  /** Helper class to atomically update the job progress in the DKV */
-  public static class ProgressUpdate extends TAtomic<Progress> {
-    final long _newwork;
-    final String _progress_msg;
-    public ProgressUpdate(long newwork, String progress_msg) {  _newwork = newwork; _progress_msg = progress_msg; }
-    public ProgressUpdate(String progress_msg) { this(0L,progress_msg); }
-
-    /** Update progress with new work & message */
-    @Override public Progress atomic(Progress old) {
-      if( old == null ) return old;
-      old._worked += _newwork;
-      if (_progress_msg != null) old._progress_msg = _progress_msg;
-      return old;
-    }
+  // Update the *this* object from a remote object.
+  private void update_from_remote( ) {
+    Job remote = DKV.getGet(_key); // Watch for changes in the DKV
+    if( this==remote ) return; // Trivial!
+    if( null==remote ) return; // Stay with local version
+    boolean differ = false;
+    if( _stop_requested != remote._stop_requested ) differ = true;
+    if(_start_time!= remote._start_time) differ = true;
+    if(_end_time  != remote._end_time  ) differ = true;
+    if(_ex        != remote._ex        ) differ = true;
+    if(_work      != remote._work      ) differ = true;
+    if(_worked    != remote._worked    ) differ = true;
+    if(_msg       != remote._msg       ) differ = true;
+    if( differ ) 
+      synchronized(this) { 
+        _stop_requested = remote._stop_requested;
+        _start_time= remote._start_time;
+        _end_time  = remote._end_time  ;
+        _ex        = remote._ex        ;
+        _work      = remote._work      ;
+        _worked    = remote._worked    ;
+        _msg       = remote._msg       ;
+      }
   }
-
-  /** Simple named exception class */
-  public static class JobCancelledException extends RuntimeException{}
-
-  @Override protected Futures remove_impl(Futures fs) {
-    if (null != _progressKey && deleteProgressKey()) DKV.remove(_progressKey, fs);
-    return super.remove_impl(fs);
-  }
-
-  /** Write out K/V pairs, in this case progress. */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
-    ab.putKey(_progressKey);
-    return super.writeAll_impl(ab);
-  }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
-    ab.getKey(_progressKey,fs);
-    return super.readAll_impl(ab,fs);
-  }
-
-  /** Default checksum; not really used by Jobs.  */
-  @Override protected long checksum_impl() { throw H2O.fail("Job checksum does not exist by definition"); }
+  @Override public Class<water.api.KeyV3.JobKeyV3> makeSchema() { return water.api.KeyV3.JobKeyV3.class; }
 }

@@ -35,7 +35,7 @@ public class MungingTest extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(find_test_file("/home/mdowle/devtestdata/step1.csv"));
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
     System.out.println("Loaded file, now calling Query ...");
-    new RadixOrder(frame, true, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
+    // new RadixOrder(frame, true, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
     // TO DO: change back to DoGroup(frame, new int[] {0,1}, frame.vec(3), true)
     frame.delete();
   }
@@ -59,12 +59,12 @@ public class MungingTest extends TestUtil {
     //   Log.info("Chunk " + i + " is on node " + rightFrame.anyVec().chunkKey(i).home_node().index());
     // }
 
-    Frame fr1 = Merge.merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1}, false);  // 0==id, 1==date  (no dups)
-    Frame fr2 = Merge.merge(leftFrame, rightFrame, new int[] {0},   new int[] {0}, false  );  // 0==id           (many dups)
+    // Frame fr1 = Merge.merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1}, false);  // 0==id, 1==date  (no dups)
+    // Frame fr2 = Merge.merge(leftFrame, rightFrame, new int[] {0},   new int[] {0}, false  );  // 0==id           (many dups)
 
 
-    Log.info(fr1.toString(0,(int)fr1.numRows()));
-    Log.info(fr2.toString(0,(int)fr2.numRows()));
+    //Log.info(fr1.toString(0,(int)fr1.numRows()));
+    //Log.info(fr2.toString(0,(int)fr2.numRows()));
 
 //      NFSFileVec ref1 = NFSFileVec.make(find_test_file("/users/arno/devtestdata/ref1.csv"));
 //      Frame ref1Frame = ParseDataset.parse(Key.make(), nfs._key);
@@ -76,8 +76,8 @@ public class MungingTest extends TestUtil {
 //
 //      ref1Frame.delete();
 //      ref2Frame.delete();
-    fr1.delete();
-    fr2.delete();
+    //fr1.delete();
+    //fr2.delete();
     leftFrame.delete();
     rightFrame.delete();
     //Merge.cleanUp();

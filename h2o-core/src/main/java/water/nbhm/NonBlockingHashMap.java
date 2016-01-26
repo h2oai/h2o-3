@@ -1,5 +1,6 @@
 package water.nbhm;
 import sun.misc.Unsafe;
+import water.util.Log;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -908,7 +909,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       long tm = System.currentTimeMillis();
       long q=0;
       if( newsz <= oldlen && // New table would shrink or hold steady?
-          (tm <= topmap._last_resize_milli+10000 || // Recent resize (less than 1 sec ago)
+          (tm <= topmap._last_resize_milli+10000 || // Recent resize (less than 10 sec ago)
            (q=_slots.estimate_get()) >= (sz<<1)) )  // 1/2 of keys are dead?
         newsz = oldlen<<1;      // Double the existing size
 
@@ -918,6 +919,14 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // Convert to power-of-2
       int log2;
       for( log2=MIN_SIZE_LOG; (1<<log2) < newsz; log2++ ) ; // Compute log2 of size
+      long len = ((1L << log2) << 1) + 2;
+      // prevent integer overflow - limit of 2^31 elements in a Java array
+      // so here, 2^30 + 2 is the largest number of elements in the hash table
+      if ((int)len!=len) {
+        log2 = 30;
+        len = (1L << log2) + 2;
+        if (sz > ((len >> 2) + (len >> 1))) throw new RuntimeException("Table is full.");
+      }
 
       // Now limit the number of threads actually allocating memory to a
       // handful - lest we have 750 threads all trying to allocate a giant
@@ -928,7 +937,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // Size calculation: 2 words (K+V) per table entry, plus a handful.  We
       // guess at 64-bit pointers; 32-bit pointers screws up the size calc by
       // 2x but does not screw up the heuristic very much.
-      int megs = ((((1<<log2)<<1)+8)<<3/*word to bytes*/)>>20/*megs*/;
+      long megs = ((((1L<<log2)<<1)+8)<<3/*word to bytes*/)>>20/*megs*/;
       if( r >= 2 && megs > 0 ) { // Already 2 guys trying; wait and see
         newkvs = _newkvs;        // Between dorking around, another thread did it
         if( newkvs != null )     // See if resize is already in progress
@@ -947,7 +956,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
         return newkvs;          // Use the new table already
 
       // Double size for K,V pairs, add 1 for CHM
-      newkvs = water.MemoryManager.mallocObj(((1<<log2)<<1)+2); // This can get expensive for big arrays
+      newkvs = water.MemoryManager.mallocObj((int)len); // This can get expensive for big arrays
       newkvs[0] = new CHM(_size); // CHM in slot 0
       newkvs[1] = water.MemoryManager.malloc4(1<<log2); // hashes in slot 1
 
@@ -959,9 +968,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // racing resizing threads.  Extra CHM's will be GC'd.
       if( CAS_newkvs( newkvs ) ) { // NOW a resize-is-in-progress!
         //notifyAll();            // Wake up any sleepers
-        //long nano = System.nanoTime();
-        //System.out.println(" "+nano+" Resize from "+oldlen+" to "+(1<<log2)+" and had "+(_resizers-1)+" extras" );
-        //if( System.out != null ) System.out.print("["+log2);
+        Log.info("Resizing NBHM: "+oldlen+" -> "+(1<<log2)+" extras: "+(_resizers-1));
         topmap.rehash();        // Call for Hashtable's benefit
       } else                    // CAS failed?
         newkvs = _newkvs;       // Reread new table

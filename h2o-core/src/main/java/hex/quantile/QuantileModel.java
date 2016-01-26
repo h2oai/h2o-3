@@ -14,6 +14,9 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
     public double _probs[/*Q*/] = new double[]{0.001,0.01,0.1,0.25,0.333,0.50,0.667,0.75,0.9,0.99,0.999};
     public CombineMethod _combine_method = CombineMethod.INTERPOLATE;
     protected boolean defaultDropConsCols() { return false; }
+    public String algoName() { return "Quantiles"; }
+    public String fullName() { return "Quantiles"; }
+    public String javaName() { return QuantileModel.class.getName(); }
   }
 
   public static class QuantileOutput extends Model.Output {

@@ -18,10 +18,10 @@ test_that( "h2o.metalearn produces valid results (binomial)", {
   
   # Specify the base learner library & the metalearner
   # Let's use a reproducible library (set seed on RF and GBM):
-  #h2o.randomForest.1 <- function(..., ntrees = 100, seed = 1) h2oEnsemble::h2o.randomForest.wrapper(..., ntrees = ntrees, seed = seed)
-  #h2o.gbm.1 <- function(..., ntrees = 100, seed = 1) h2oEnsemble::h2o.gbm.wrapper(..., ntrees = ntrees, seed = seed)
-  #learner <- c("h2o.glm.wrapper", "h2o.randomForest.1", "h2o.gbm.1")  #this does not work w/ testthat bc functions are in wrong namespace
-  learner <- c("h2o.glm.wrapper", "h2o.gbm.wrapper")  #this works bc functions exist in h2oEnsemble namespace
+  h2o.randomForest.1 <- function(..., ntrees = 100, seed = 1) h2oEnsemble::h2o.randomForest.wrapper(..., ntrees = ntrees, seed = seed)
+  h2o.gbm.1 <- function(..., ntrees = 100, seed = 1) h2oEnsemble::h2o.gbm.wrapper(..., ntrees = ntrees, seed = seed)
+  learner <- c("h2o.glm.wrapper", "h2o.randomForest.1", "h2o.gbm.1")  #this does not work w/ testthat bc functions are in wrong namespace
+  #learner <- c("h2o.glm.wrapper", "h2o.gbm.wrapper")  #this works bc functions exist in h2oEnsemble namespace, but the GLM metalearner does not work
   metalearner_a <- "h2o.glm.wrapper"
   metalearner_b <- "h2o.gbm.wrapper"
   
@@ -96,10 +96,10 @@ test_that( "h2o.metalearn produces valid results (gaussian)", {
   
   # Specify the base learner library & the metalearner
   # Let's use a reproducible library (set seed on RF and GBM):
-  #h2o.randomForest.1 <- function(..., ntrees = 100, seed = 1) h2oEnsemble::h2o.randomForest.wrapper(..., ntrees = ntrees, seed = seed)
-  #h2o.gbm.1 <- function(..., ntrees = 100, seed = 1) h2oEnsemble::h2o.gbm.wrapper(..., ntrees = ntrees, seed = seed)
-  #learner <- c("h2o.glm.wrapper", "h2o.randomForest.1", "h2o.gbm.1")  #this does not work w/ testthat bc functions are in wrong namespace
-  learner <- c("h2o.glm.wrapper", "h2o.gbm.wrapper")  #this works bc functions exist in h2oEnsemble namespace
+  h2o.randomForest.1 <- function(..., ntrees = 100, seed = 1) h2oEnsemble::h2o.randomForest.wrapper(..., ntrees = ntrees, seed = seed)
+  h2o.gbm.1 <- function(..., ntrees = 100, seed = 1) h2oEnsemble::h2o.gbm.wrapper(..., ntrees = ntrees, seed = seed)
+  learner <- c("h2o.glm.wrapper", "h2o.randomForest.1", "h2o.gbm.1")  #this does not work w/ testthat bc functions are in wrong namespace
+  #learner <- c("h2o.glm.wrapper", "h2o.gbm.wrapper")  #this works bc functions exist in h2oEnsemble namespace
   metalearner_a <- "h2o.glm.wrapper"
   metalearner_b <- "h2o.gbm.wrapper"
   

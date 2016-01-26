@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import water.Key;
 import water.H2O;
-import water.exceptions.H2OParseException;
-import water.exceptions.H2OParseSetupException;
 import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
@@ -88,7 +86,7 @@ class XlsParser extends Parser {
       return new ParseSetup(ParserType.XLS, ParseSetup.GUESS_SEP, false,
             dout.colNames()==null?ParseSetup.NO_HEADER:ParseSetup.HAS_HEADER,dout._ncols,
                                  dout.colNames(), dout.guessTypes(),null,null,dout._data);
-    else throw new H2OParseSetupException("Could not parse file as an XLS file.");
+    else throw new H2OParseException("Could not parse file as an XLS file.");
   }
 
 
@@ -148,7 +146,7 @@ class XlsParser extends Parser {
     readAtLeast(IDENTIFIER_OLE.length);
     for( int i=0; i<IDENTIFIER_OLE.length; i++ ) 
       if( _buf[i] != IDENTIFIER_OLE[i] )
-        throw new H2OParseException("Not a valid XLS file.","Tried to parse as XLS file, but lacks correct starting bits (aka magic number).");
+        throw new H2OParseException("Not a valid XLS file, lacks correct starting bits (aka magic number).");
 
     _numBigBlockDepotBlocks = get4(NUM_BIG_BLOCK_DEPOT_BLOCKS_POS);
     _sbdStartBlock = get4(SMALL_BLOCK_DEPOT_BLOCK_POS);

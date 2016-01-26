@@ -2,17 +2,16 @@ package water.fvec;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-
 import water.*;
 import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -132,7 +131,7 @@ public class Frame extends Lockable<Frame> {
    *  The resulting Frame does not share with the original, so the set of Vecs
    *  can be freely hacked without disturbing the original Frame. */
   public Frame( Frame fr ) {
-    super( Key.make() );
+    super( Key.<Frame>make() );
     _names= fr._names.clone();
     _keys = fr._keys .clone();
     _vecs = fr.vecs().clone();
@@ -205,39 +204,9 @@ public class Frame extends Lockable<Frame> {
   /** Number of columns
    *  @return Number of columns */
   public int  numCols() { return _keys.length; }
-  /** Number of columns with categoricals expanded
-   * @return Number of columns with categoricals expanded into indicator columns */
-  public int numColsExp() { return numColsExp(true, false); }
-  public int numColsExp(boolean useAllFactorLevels, boolean missingBucket) {
-    if(_vecs == null) return 0;
-    int cols = 0;
-    for(int i = 0; i < _vecs.length; i++) {
-      if(_vecs[i].isCategorical() && _vecs[i].domain() != null)
-        cols += _vecs[i].domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0);
-      else cols++;
-    }
-    return cols;
-  }
   /** Number of rows
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
-
-  /**
-   * Number of degrees of freedom (#numerical columns + sum(#categorical levels))
-   * @return Number of overall degrees of freedom
-   */
-  public long degreesOfFreedom() {
-    long dofs = 0;
-    String[][] dom = domains();
-    for (int i=0; i<numCols(); ++i) {
-      if (dom[i] == null) {
-        dofs++;
-      } else {
-        dofs+=dom[i].length;
-      }
-    }
-    return dofs;
-  }
 
   /** Returns the first readable vector. 
    *  @return the first readable Vec */
@@ -555,7 +524,7 @@ public class Frame extends Lockable<Frame> {
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs(),fr.numCols()); return this; }
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs().clone(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
@@ -601,14 +570,6 @@ public class Frame extends Lockable<Frame> {
    */
   public Frame subframe(String[] names) { return subframe(names, false, 0)[0]; }
 
-  /** Returns a new frame composed of vectors of this frame selected by given names.
-   *  The method replaces missing vectors by a constant column filled by given value.
-   *  @param names names of vector to compose a subframe
-   *  @param c value to fill missing columns.
-   *  @return two frames, the first contains subframe, the second contains newly created constant vectors or null
-   */
-  public Frame[] subframe(String[] names, double c) { return subframe(names, true, c); }
-
   /** Create a subframe from this frame based on desired names.
    *  Throws an exception if desired column is not in this frame and <code>replaceBy</code> is <code>false</code>.
    *  Else replace a missing column by a constant column with given value.
@@ -651,7 +612,25 @@ public class Frame extends Lockable<Frame> {
   @Override protected Futures remove_impl(Futures fs) {
     final Key[] keys = _keys;
     if( keys.length==0 ) return fs;
-    final int ncs = anyVec().nChunks(); // TODO: do not call anyVec which loads all Vecs... only to delete them
+
+    // Get the nChunks without calling anyVec - which loads all Vecs eagerly,
+    // only to delete them.  Supports Frames with some Vecs already deleted, as
+    // a Scope cleanup action might delete Vecs out of order.
+    Vec v = _col0;
+    if( v == null ) {
+      Vec[] vecs = _vecs;       // Read once, in case racily being cleared
+      if( vecs != null )
+        for( int i=0; i<vecs.length; i++ )
+          if( (v=vecs[i]) != null ) // Stop on finding the 1st Vec
+            break;
+    }
+    if( v == null )             // Ok, now do DKV gets
+      for( int i=0; i<_keys.length; i++ )
+        if( (v=_keys[i].get()) != null )
+          break;                // Stop on finding the 1st Vec
+    if( v == null ) return fs;
+
+    final int ncs = v.nChunks();
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = new Key[0];
@@ -820,8 +799,8 @@ public class Frame extends Lockable<Frame> {
   // Make an initial Frame & lock it for writing.  Build Vec Keys.
   void preparePartialFrame( String[] names ) {
     // Nuke any prior frame (including freeing storage) & lock this one
-    if( _keys != null ) delete_and_lock(null);
-    else write_lock(null);
+    if( _keys != null ) delete_and_lock();
+    else write_lock();
     _names = names;
     _keys = new Vec.VectorGroup().addVecs(names.length);
     // No Vectors tho!!! These will be added *after* the import
@@ -880,7 +859,7 @@ public class Frame extends Lockable<Frame> {
       DKV.put(_keys[i],vec,fs);
     }
     fs.blockForPending();
-    unlock(null);
+    unlock();
   }
 
   // --------------------------------------------------------------------------
@@ -1003,15 +982,14 @@ public class Frame extends Lockable<Frame> {
     Frame frows = (Frame)orows;
     // It's a compatible Vec; use it as boolean selector.
     // Build column names for the result.
-    Vec [] vecs = new Vec[c2.length+1];
-    String [] names = new String[c2.length+1];
+    Vec [] vecs = new Vec[c2.length];
+    String [] names = new String[c2.length];
     for(int i = 0; i < c2.length; ++i){
       vecs[i] = _vecs[c2[i]];
       names[i] = _names[c2[i]];
     }
-    vecs[c2.length] = frows.anyVec();
-    names[c2.length] = "predicate";
     Frame ff = new Frame(names, vecs);
+    ff.add("predicate", frows.anyVec());
     return new DeepSelect().doAll(types(c2),ff).outputFrame(names(c2),domains(c2));
   }
 
@@ -1081,6 +1059,12 @@ public class Frame extends Lockable<Frame> {
     String[][] strCells = new String[len+5][ncols];
     double[][] dblCells = new double[len+5][ncols];
     for( int i=0; i<ncols; i++ ) {
+      if( DKV.get(_keys[i]) == null ) { // deleted Vec in Frame
+        coltypes[i] = "string";
+        for( int j=0; j<len+5; j++ ) dblCells[j][i] = TwoDimTable.emptyDouble;
+        for( int j=0; j<len; j++ ) strCells[j+5][i] = "NO_VEC";
+        continue;
+      }
       Vec vec = vecs[i];
       dblCells[0][i] = vec.min();
       dblCells[1][i] = vec.mean();
@@ -1231,15 +1215,16 @@ public class Frame extends Lockable<Frame> {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length-1];
       BufferedString tmpStr = new BufferedString();
-      for(int i = 0; i < pred._len; ++i) {
-        if( pred.atd(i) != 0 && !pred.isNA(i) ) {
-          for( int j = 0; j < chks.length - 1; j++ ) {
-            Chunk chk = chks[j];
-            if( chk.isNA(i) )                   nchks[j].addNA();
-            else if( chk instanceof C16Chunk )  nchks[j].addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchks[j].addStr(chk.atStr(tmpStr, i));
-            else if( chk.hasFloat() )           nchks[j].addNum(chk.atd(i));
-            else                                nchks[j].addNum(chk.at8(i),0);
+      for( int j = 0; j < chks.length - 1; j++ ) {
+        Chunk chk = chks[j];
+        NewChunk nchk = nchks[j];
+        for(int i = 0; i < pred._len; ++i) {
+          if( pred.atd(i) != 0 && !pred.isNA(i) ) {
+            if( chk.isNA(i) )                   nchk.addNA();
+            else if( chk instanceof C16Chunk )  nchk.addUUID(chk, i);
+            else if( chk instanceof CStrChunk)  nchk.addStr(chk.atStr(tmpStr, i));
+            else if( chk.hasFloat() )           nchk.addNum(chk.atd(i));
+            else                                nchk.addNum(chk.at8(i),0);
           }
         }
       }
@@ -1290,7 +1275,7 @@ public class Frame extends Lockable<Frame> {
     H2O.submitTask(new RebalanceDataSet(this, f, k)).join();
     Frame f2 = (Frame)k.get();
     DKV.remove(k);
-    for (Vec v : f2.vecs()) Scope.track(v._key);
+    for (Vec v : f2.vecs()) Scope.track(v);
     return f2.vecs();
   }
 
@@ -1414,4 +1399,5 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
+  @Override public Class<water.api.KeyV3.FrameKeyV3> makeSchema() { return water.api.KeyV3.FrameKeyV3.class; }
 }

@@ -2,9 +2,10 @@ package water.api;
 
 import water.Key;
 import water.api.KeyV3.FrameKeyV3;
+import water.fvec.Frame;
 import water.util.DCTTransformer;
 
-public class DCTTransformerV3 extends JobV3<DCTTransformer, DCTTransformerV3> {
+public class DCTTransformerV3 extends RequestSchema<DCTTransformer, DCTTransformerV3> {
   @API(help="Dataset", required = true)
   public FrameKeyV3 dataset;
 
@@ -18,6 +19,6 @@ public class DCTTransformerV3 extends JobV3<DCTTransformer, DCTTransformerV3> {
   public boolean inverse;
 
   @Override public DCTTransformer createImpl() {
-    return new DCTTransformer(Key.<DCTTransformer>make(), "DCTTransformer job");
+    return new DCTTransformer(destination_frame == null ? Key.<Frame>make() : destination_frame.key());
   }
 }

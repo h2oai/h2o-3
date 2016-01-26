@@ -196,7 +196,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           AutoBuffer ab = new AutoBuffer(_target,_dt.priority());
           try {
             final boolean t;
-            int offset = ab.position();
             ab.putTask(UDP.udp.exec, _tasknum).put1(CLIENT_UDP_SEND);
             ab.put(_dt);
             t = ab.hasTCP();
@@ -300,7 +299,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     // Pretty-print bytes 1-15; byte 0 is the udp_type enum
     @Override String print16( AutoBuffer ab ) {
       int flag = ab.getFlag();
-      String clazz = (flag == CLIENT_UDP_SEND) ? TypeMap.className(ab.get2()) : "";
+      String clazz = (flag == CLIENT_UDP_SEND) ? TypeMap.className(ab.getInt()) : "";
       return "task# "+ab.getTask()+" "+ clazz+" "+COOKIES[flag-SERVER_UDP_SEND];
     }
   }
@@ -319,6 +318,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     // if should remain the same size.  Also used for profiling.
     int _size;
     RPCCall(DTask dt, H2ONode client, int tsknum) {
+      super(dt.priority());
       _dt = dt;
       _client = client;
       _tsknum = tsknum;
@@ -326,8 +326,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       _started = System.currentTimeMillis(); // for nack timeout
       _retry = RETRY_MS >> 1; // half retry for sending nack
     }
+    RPCCall(H2ONode client) { _client = client; _tsknum = 0; }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       // First set self to be completed when this subtask completer
       assert _dt.getCompleter() == null;
       _dt.setCompleter(this);
@@ -430,7 +432,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // note the generous 5sec cap: ping at least every 5 sec.
       _retry += (_retry < MAX_TIMEOUT ) ? _retry : MAX_TIMEOUT;
     }
-    @Override protected byte priority() { return _dt.priority(); }
     // How long until we should do the "timeout" action?
     @Override public final long getDelay( TimeUnit unit ) {
       long delay = (_started+_retry)-System.currentTimeMillis();
@@ -612,9 +613,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     // Also notify any and all pending completion-style tasks
     if( _fjtasks != null )
       for( final H2OCountedCompleter task : _fjtasks ) {
-        H2O.submitTask(new H2OCountedCompleter() {
-          @Override
-          public void compute2() {
+        H2O.submitTask(new H2OCountedCompleter(task.priority()) {
+          @Override public void compute2() {
             if (e != null) // re-throw exception on this side as if it happened locally
               task.completeExceptionally(e);
             else try {
@@ -622,11 +622,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
             } catch (Throwable e) {
               task.completeExceptionally(e);
             }
-          }
-
-          @Override
-          public byte priority() {
-            return task.priority();
           }
         });
       }

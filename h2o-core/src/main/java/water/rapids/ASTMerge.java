@@ -174,7 +174,7 @@ public class ASTMerge extends ASTPrim {
   private ValFrame sortingMerge( Frame left, Frame right, boolean allLeft, boolean allRite, int ncols, int[][] id_maps) {
     int cols[] = new int[ncols];
     for (int i=0; i<ncols; i++) cols[i] = i;
-    return new ValFrame(Merge.merge(left, right, cols, cols, allLeft));
+    return new ValFrame(Merge.merge(left, right, cols, cols, allLeft, id_maps));
   }
 
   // One Row object per row of the hashed dataset, so kept as small as
@@ -214,10 +214,12 @@ public class ASTMerge extends ASTPrim {
       synchronized (this) {
         if( _dups==null ) {
           _dups = new long[]{_row,row};
-          _dupIdx = 2;
-        } else if( _dupIdx==_dups.length )
-          _dups = Arrays.copyOf(_dups, _dupIdx>>1);
-        _dups[_dupIdx++]=row;
+          _dupIdx=2;
+        } else {
+          if( _dupIdx==_dups.length )
+            _dups = Arrays.copyOf(_dups,_dups.length << 1);
+          _dups[_dupIdx++]=row;
+        }
       }
     }
   }
@@ -356,12 +358,12 @@ public class ASTMerge extends ASTPrim {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
       Vec[] vecs = _hashed.vecs(); // Data source from hashed set
-      assert vecs.length == _ncols + nchks.length;
+//      assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
       int len = chks[0]._len;
       for( int i=0; i<len; i++ ) {
-        Row hashed = rows.getk(row.fill(chks, null, i));
+        Row hashed = _rows.getk(row.fill(chks, null, i));
         if( hashed == null ) {    // no rows, fill in chks, and pad NAs as needed...
           if( _allLeft ) {        // pad NAs to the right...
             int c=0;
@@ -377,7 +379,7 @@ public class ASTMerge extends ASTPrim {
     void addRow(NewChunk[] nchks, Chunk[] chks, Vec[] vecs, int relRow, long absRow, BufferedString bStr) {
       int c=0;
       for( ;c< chks.length;++c) addElem(nchks[c],chks[c],relRow);
-      for( ;c<nchks.length;++c) addElem(nchks[c],vecs[c - (chks.length + _ncols)],absRow,bStr);
+      for( ;c<nchks.length;++c) addElem(nchks[c],vecs[_ncols],absRow,bStr);
     }
   }
 }

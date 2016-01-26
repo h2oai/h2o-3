@@ -495,7 +495,7 @@ def frame(frame_id, exclude=""):
   -------
     Python dict containing the frame meta-information
   """
-  return H2OConnection.get_json("Frames/" + quote(frame_id + exclude))
+  return H2OConnection.get_json("Frames/" + frame_id + exclude)
 
 
 def frames():
@@ -557,7 +557,7 @@ def download_csv(data, filename):
   """
   if not isinstance(data, H2OFrame):
     raise ValueError
-  url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(data.frame_id))
+  url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(data.frame_id)
   with open(filename, 'wb') as f:
     f.write(urlopen()(url).read())
 
@@ -665,8 +665,10 @@ def cluster_status():
     print()
 
 
-def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-         license=None, max_mem_size_GB=None, min_mem_size_GB=None, ice_root=None, strict_version_check=True, proxies=None):
+def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
+         license=None, nthreads=-1, max_mem_size=None, min_mem_size=None, ice_root=None, 
+         strict_version_check=True, proxy=None, https=False, insecure=False, username=None, 
+         password=None, max_mem_size_GB=None, min_mem_size_GB=None):
   """Initiate an H2O connection to the specified ip and port.
 
   Parameters
@@ -675,38 +677,57 @@ def init(ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=
     A string representing the hostname or IP address of the server where H2O is running.
   port : int
     A port, default is 54321
-  size : int
-    The expected number of h2o instances (ignored if start_h2o is True)
   start_h2o : bool
     A boolean dictating whether this module should start the H2O jvm. An attempt is made
     anyways if _connect fails.
   enable_assertions : bool
-    If start_h2o, pass `-ea` as a VM option.s
+    If start_h2o, pass `-ea` as a VM option.
   license : str
     If not None, is a path to a license file.
-  max_mem_size_GB : int
+  nthreads : int
+    Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
+    -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. 
+    This value is only used when Python starts H2O.
+  max_mem_size : int
     Maximum heap size (jvm option Xmx) in gigabytes.
-  min_mem_size_GB : int
+  min_mem_size : int
     Minimum heap size (jvm option Xms) in gigabytes.
   ice_root : str
     A temporary directory (default location is determined by tempfile.mkdtemp()) to hold
     H2O log files.
-  proxies : dict
-    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy
-    path.
+  strict_version_check : bool 
+    Setting this to False is unsupported and should only be done when advised by technical support.
+  proxy : dict
+    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
+  https: bool
+    Set this to True to use https instead of http.
+  insecure: bool
+    Set this to True to disable SSL certificate checking.
+  username : str
+    Username to login with.
+  password : str
+    Password to login with.
+  max_mem_size_GB: DEPRECATED
+    Use max_mem_size instead.
+  min_mem_size_GB: DEPRECATED
+    Use min_mem_size instead.
+  
 
   Examples
   --------
-  Using the 'proxies' parameter
+  Using the 'proxy' parameter
 
   >>> import h2o
   >>> import urllib
   >>> proxy_dict = urllib.getproxies()
-  >>> h2o.init(proxies=proxy_dict)
+  >>> h2o.init(proxy=proxy_dict)
   Starting H2O JVM and connecting: ............... Connection successful!
 
   """
-  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,ice_root=ice_root,strict_version_check=strict_version_check, proxies=proxies)
+  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,
+                nthreads=nthreads,max_mem_size=max_mem_size,min_mem_size=min_mem_size,ice_root=ice_root,
+                strict_version_check=strict_version_check,proxy=proxy,https=https,insecure=insecure,username=username,
+                password=password,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB)
   return None
 
 
@@ -771,7 +792,7 @@ def deeplearning(x,y=None,validation_x=None,validation_y=None,training_frame=Non
                  fast_mode=None,ignore_const_cols=None,force_load_balance=None,replicate_training_data=None,single_node_mode=None,
                  shuffle_training_data=None,sparse=None,col_major=None,average_activation=None,sparsity_beta=None,
                  max_categorical_features=None,reproducible=None,export_weights_and_biases=None,offset_column=None,weights_column=None,
-                 nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None):
+                 nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None, max_runtime_secs=None):
   """
   Build a supervised Deep Learning model
   Performs Deep Learning neural networks on an H2OFrame
@@ -953,7 +974,7 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
                 max_after_balance_size=None,diagnostics=None,variable_importances=None,
                 fast_mode=None,ignore_const_cols=None,force_load_balance=None,replicate_training_data=None,single_node_mode=None,
                 shuffle_training_data=None,sparse=None,col_major=None,average_activation=None,sparsity_beta=None,
-                max_categorical_features=None,reproducible=None,export_weights_and_biases=None):
+                max_categorical_features=None,reproducible=None,export_weights_and_biases=None, max_runtime_secs=None):
   """
   Build unsupervised auto encoder using H2O Deeplearning
 
@@ -1105,12 +1126,12 @@ def autoencoder(x,training_frame=None,model_id=None,overwrite_with_best_model=No
 
 def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,
         distribution=None,tweedie_power=None,ntrees=None,max_depth=None,min_rows=None,
-        learn_rate=None,sample_rate=None,col_sample_rate=None,nbins=None,
+        learn_rate=None,sample_rate=None,col_sample_rate=None,col_sample_rate_per_tree=None,nbins=None,
         nbins_top_level=None,nbins_cats=None,validation_frame=None,
         balance_classes=None,max_after_balance_size=None,seed=None,build_tree_one_node=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
         score_each_iteration=None,offset_column=None,weights_column=None,do_future=None,checkpoint=None,
-        stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
+        stopping_rounds=None, stopping_metric=None, stopping_tolerance=None, max_runtime_secs=None):
   """
   Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
   The default distribution function will guess the model type based on the response column typerun properly the
@@ -1128,7 +1149,7 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
   model_id : str
     (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
   distribution : str
-     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie" or "gaussian"
+     A character string. The distribution function of the response. Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace" or "gaussian"
   tweedie_power : float
     Tweedie power (only for Tweedie distribution, must be between 1 and 2)
   ntrees : int
@@ -1143,6 +1164,8 @@ def gbm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
     Row sample rate (from 0.0 to 1.0)
   col_sample_rate : float
     Column sample rate (from 0.0 to 1.0)
+  col_sample_rate_per_tree : float
+    Column sample rate per tree (from 0.0 to 1.0)
   nbins : int
     For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
   nbins_top_level : int
@@ -1197,7 +1220,7 @@ def glm(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=Non
         tweedie_variance_power=None,tweedie_link_power=None,alpha=None,prior=None,lambda_search=None,
         nlambdas=None,lambda_min_ratio=None,beta_constraints=None,offset_column=None,weights_column=None,
         nfolds=None,fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
-        intercept=None, Lambda=None, max_active_predictors=None, do_future=None, checkpoint=None):
+        intercept=None, Lambda=None, max_active_predictors=None, do_future=None, checkpoint=None, max_runtime_secs=None):
   """
   Build a Generalized Linear Model
   Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error
@@ -1314,7 +1337,7 @@ def start_glm_job(x,y,validation_x=None,validation_y=None,**kwargs):
 def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standardize=None,init=None,seed=None,
            nfolds=None,fold_column=None,fold_assignment=None,training_frame=None,validation_frame=None,
            user_points=None,ignored_columns=None,score_each_iteration=None,keep_cross_validation_predictions=None,
-           ignore_const_cols=None,checkpoint=None):
+           ignore_const_cols=None,checkpoint=None,max_runtime_secs=None):
   """
   Performs k-means clustering on an H2O dataset.
 
@@ -1356,12 +1379,12 @@ def kmeans(x,validation_x=None,k=None,model_id=None,max_iterations=None,standard
 
 
 def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,model_id=None,mtries=None,sample_rate=None,
-                  build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,nbins_top_level=None,
-                  nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
+                  col_sample_rate_per_tree=None,build_tree_one_node=None,ntrees=None,max_depth=None,min_rows=None,nbins=None,
+                  nbins_top_level=None,nbins_cats=None,binomial_double_trees=None,validation_frame=None,balance_classes=None,
                   max_after_balance_size=None,seed=None,offset_column=None,weights_column=None,nfolds=None,
                   fold_column=None,fold_assignment=None,keep_cross_validation_predictions=None,
                   score_each_iteration=None,checkpoint=None,
-                  stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
+                  stopping_rounds=None, stopping_metric=None, stopping_tolerance=None, max_runtime_secs=None):
   """
   Build a Big Data Random Forest Model
   Builds a Random Forest Model on an H2OFrame
@@ -1382,7 +1405,9 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
     Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
     where p is the number of predictors.
   sample_rate : float
-    Sample rate, from 0 to 1.0.
+    Row sample rate (from 0.0 to 1.0)
+  col_sample_rate_per_tree : float
+    Column sample rate per tree (from 0.0 to 1.0)
   build_tree_one_node : bool
     Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
   ntrees : int
@@ -1441,7 +1466,7 @@ def random_forest(x,y,validation_x=None,validation_y=None,training_frame=None,mo
 
 
 def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transform=None,seed=None,use_all_factor_levels=None,
-           training_frame=None,validation_frame=None,pca_method=None):
+           training_frame=None,validation_frame=None,pca_method=None, max_runtime_secs=None):
   """
   Principal components analysis of a H2O dataset.
 
@@ -1480,7 +1505,7 @@ def prcomp(x,validation_x=None,k=None,model_id=None,max_iterations=None,transfor
 
 
 def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,max_iterations=None,transform=None,seed=None,
-        use_all_factor_levels=None,svd_method=None):
+        use_all_factor_levels=None,svd_method=None, max_runtime_secs=None):
   """
   Singular value decomposition of a H2O dataset.
 
@@ -1521,7 +1546,7 @@ def svd(x,validation_x=None,training_frame=None,validation_frame=None,nv=None,ma
 def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,max_iterations=None,max_updates=None,transform=None,
          seed=None,ignore_const_cols=None,loss=None,multi_loss=None,loss_by_col=None,loss_by_col_idx=None,regularization_x=None,
          regularization_y=None,gamma_x=None,gamma_y=None,init_step_size=None,min_step_size=None,init=None,svd_method=None,
-         user_y=None,user_x=None,expand_user_y=None,impute_original=None,recover_svd=None):
+         user_y=None,user_x=None,expand_user_y=None,impute_original=None,recover_svd=None, max_runtime_secs=None):
   """
   Builds a generalized low rank model of a H2O dataset.
 
@@ -1607,7 +1632,7 @@ def glrm(x,validation_x=None,training_frame=None,validation_frame=None,k=None,ma
 def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,validation_frame=None,
                 laplace=None,threshold=None,eps=None,compute_metrics=None,offset_column=None,weights_column=None,
                 balance_classes=None,max_after_balance_size=None, nfolds=None,fold_column=None,fold_assignment=None,
-                keep_cross_validation_predictions=None,checkpoint=None):
+                keep_cross_validation_predictions=None,checkpoint=None, max_runtime_secs=None):
   """
   The naive Bayes classifier assumes independence between predictor variables conditional on the response, and a
   Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset.

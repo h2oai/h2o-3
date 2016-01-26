@@ -13,7 +13,7 @@ public class H2OModelBuilderIllegalArgumentException extends H2OIllegalArgumentE
 
   public static H2OModelBuilderIllegalArgumentException makeFromBuilder(ModelBuilder builder) {
     Model.Parameters parameters = builder._parms;
-    String algo = ModelBuilder.getAlgo(builder.getClass());
+    String algo = builder._parms.algoName();
     String msg = "Illegal argument(s) for " + algo + " model: " + builder.dest() + ".  Details: " + builder.validationErrors();
 
     H2OModelBuilderIllegalArgumentException exception = new H2OModelBuilderIllegalArgumentException(msg, msg);

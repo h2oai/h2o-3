@@ -432,13 +432,16 @@ final public class H2O {
       }
       else if (s.matches("quiet")) {
         ARGS.quiet = true;
-      } else if(s.matches("useUDP")) {
+      }
+      else if(s.matches("useUDP")) {
         i = s.incrementAndCheck(i, args);
         ARGS.useUDP = true;
-      } else if(s.matches("cleaner")) {
+      }
+      else if(s.matches("cleaner")) {
         i = s.incrementAndCheck(i, args);
         ARGS.cleaner = true;
-      } else {
+      }
+      else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
@@ -1012,12 +1015,33 @@ final public class H2O {
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
-    public final byte _priority;
-    public H2OCountedCompleter( ) { this(false); }
-    public H2OCountedCompleter( boolean bumpPriority ) {
-      _priority = bumpPriority && (Thread.currentThread() instanceof FJWThr) ? nextThrPriority() : MIN_PRIORITY;
+    private /*final*/ byte _priority;
+    // Without a completer, we expect this task will be blocked on - so the
+    // blocking thread is not available in the current thread pool, so the
+    // launched task needs to run at a higher priority.
+    public H2OCountedCompleter( ) { this(null); }
+    // With a completer, this task will NOT be blocked on and the the current
+    // thread is available for executing it... so the priority can remain at
+    // the current level.
+    static private byte computePriority( H2OCountedCompleter completer ) {
+      int currThrPrior = currThrPriority();
+      // If there's no completer, then current thread will block on this task
+      // at the current priority, possibly filling up the current-priority
+      // thread pool - so the task has to run at the next higher priority.
+      if( completer == null ) return (byte)(currThrPrior+1);
+      // With a completer - no thread blocks on this task, so no thread pool
+      // gets filled-up with blocked threads.  We can run at the current
+      // priority (or the completer's priority if it's higher).
+      return (byte)Math.max(currThrPrior,completer.priority());
     }
-    protected H2OCountedCompleter(H2OCountedCompleter completer){ super(completer); _priority = MIN_PRIORITY; }
+    protected H2OCountedCompleter(H2OCountedCompleter completer) { this(completer,computePriority(completer));  }
+    // Special for picking GUI priorities
+    protected H2OCountedCompleter( byte prior ) { this(null,prior); }
+
+    protected H2OCountedCompleter(H2OCountedCompleter completer, byte prior) {
+      super(completer);
+      _priority = prior;
+    }
 
     /** Used by the F/J framework internally to do work.  Once per F/J task,
      *  drain the high priority queue before doing any low priority work.
@@ -1047,7 +1071,7 @@ final public class H2O {
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
         if( h2o != null ) h2o.completeExceptionally(ex);
-        else ex.printStackTrace();
+        else { ex.printStackTrace(); throw ex; }
       } finally {
         t._priority = pp;
         if( pp == MIN_PRIORITY && set_t_prior ) t.setPriority(Thread.NORM_PRIORITY-1);
@@ -1060,7 +1084,7 @@ final public class H2O {
     public void compute1() { compute2(); }
 
     /** Override to specify actual work to do */
-    protected abstract void compute2();
+    public abstract void compute2();
 
     /** Exceptional completion path; mostly does printing if the exception was
      *  not handled earlier in the stack.  */
@@ -1074,19 +1098,19 @@ final public class H2O {
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
-    protected byte priority() { return _priority; }
+    protected final byte priority() { return _priority; }
     @Override public final T clone(){
       try { return (T)super.clone(); }
       catch( CloneNotSupportedException e ) { throw Log.throwErr(e); }
     }
 
-    /** If this is a F/J thread, return it's priority+1 - used to lift the
+    /** If this is a F/J thread, return it's priority - used to lift the
      *  priority of a blocking remote call, so the remote node runs it at a
      *  higher priority - so we don't deadlock when we burn the local
      *  thread. */
-    protected final byte nextThrPriority() {
+    protected static byte currThrPriority() {
       Thread cThr = Thread.currentThread();
-      return (byte)((cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority+1 : priority());
+      return (byte)((cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : MIN_PRIORITY);
     }
 
     // The serialization flavor / delegate.  Lazily set on first use.
@@ -1102,8 +1126,10 @@ final public class H2O {
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
-    @Override       public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
-    @Override       public T read_impl( AutoBuffer ab ) { return (T)this; }
+              final        AutoBuffer write_impl3( AutoBuffer ab) { return ab.put1(_priority); }
+    @Override       public AutoBuffer write_impl ( AutoBuffer ab ) { return write_impl3(ab); }
+              final public T read_impl3( AutoBuffer ab ) { this._priority = ab.get1(); return (T)this; }
+    @Override       public T read_impl ( AutoBuffer ab ) { return read_impl3(ab); }
     @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
     @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
   }
@@ -1112,7 +1138,8 @@ final public class H2O {
   public static abstract class H2OCallback<T extends H2OCountedCompleter> extends H2OCountedCompleter{
     public H2OCallback(){}
     public H2OCallback(H2OCountedCompleter cc){super(cc);}
-    @Override protected void compute2(){throw H2O.fail();}
+    @Override
+    public void compute2(){throw H2O.fail();}
     @Override public    void onCompletion(CountedCompleter caller){callback((T) caller);}
     public abstract void callback(T t);
   }
@@ -1503,14 +1530,14 @@ final public class H2O {
     if( old != null && val == null ) old.removePersist(); // Remove the old guy
     if( val != null ) {
       Cleaner.dirty_store(); // Start storing the new guy
-      if( old==null ) Scope.track(key); // New Key - start tracking
+      if( old==null ) Scope.track_internal(key); // New Key - start tracking
     }
     return old; // Return success
   }
 
   // Get the value from the store
-  public static void raw_remove(Key key) { 
-    Value v = STORE.remove(key); 
+  public static void raw_remove(Key key) {
+    Value v = STORE.remove(key);
     if( v != null ) v.removePersist();
   }
   public static void raw_clear() { STORE.clear(); }
@@ -1558,16 +1585,13 @@ final public class H2O {
    */
   public static void gc() {
     class GCTask extends DTask<GCTask> {
-      public GCTask() {}
-
+      public GCTask() {super(GUI_PRIORITY);}
       @Override public void compute2() {
         Log.info("Calling System.gc() now...");
         System.gc();
         Log.info("System.gc() finished");
         tryComplete();
       }
-
-      @Override public byte priority() { return H2O.MIN_HI_PRIORITY; }
     }
 
     for (H2ONode node : H2O.CLOUD._memary) {
@@ -1631,7 +1655,8 @@ final public class H2O {
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
             || ARGS.ga_opt_out
-            || gaidList.contains("CRAN")) {
+            || gaidList.contains("CRAN")
+            || H2O.ABV.projectVersion().split("\\.")[3].equals("99999")) { // dev build has minor version 99999
       GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {

@@ -12,6 +12,7 @@ import water.fvec.NFSFileVec;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 /**
  * This test simulates environment

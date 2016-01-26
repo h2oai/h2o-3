@@ -187,9 +187,7 @@ public class GroupingBench extends TestUtil {
         cf.positive_response = false;
         cf.has_response = true;
         cf.seed = 1234;
-        cf.execImpl();
-        cf.get();
-        Frame frame = DKV.getGet(cf.dest());
+        Frame frame = cf.execImpl().get();
         System.out.print( frame.toString(0,14) );
 
         for (int i=0; i<30; i++) System.out.print((int)vec.at(i) + " ");  System.out.println("\n");

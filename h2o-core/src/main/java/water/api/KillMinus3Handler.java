@@ -1,5 +1,6 @@
 package water.api;
 
+import water.H2O;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 
@@ -23,9 +24,7 @@ public class KillMinus3Handler extends Handler {
   }
 
   public KillMinus3V3 killm3(int version, KillMinus3V3 u) {
-      new MRTask() {
-        private final byte _priority = (Thread.currentThread() instanceof water.H2O.FJWThr) ? nextThrPriority() : water.H2O.GUI_PRIORITY - 2;
-        @Override public byte priority() { return _priority; }
+      new MRTask((byte)(H2O.MIN_HI_PRIORITY - 1)) {
         @Override public void setupLocal() {
           try {
             String cmd = "/bin/kill -3 " + getProcessId();

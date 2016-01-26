@@ -307,6 +307,19 @@ public class ArrayUtils {
   }
 
   /**
+   * Provide array from start to end in steps of 1
+   * @param start beginning value (inclusive)
+   * @param end   ending value (exclusive)
+   * @return specified range of integers
+   */
+  public static int[] range(int start, int end) {
+    int[] r = new int[end-start+1];
+    for(int i=0;i<r.length;i++)
+      r[i] = i+start;
+    return r;
+  }
+
+  /**
    * Given a n by k matrix X, form its Gram matrix
    * @param x Matrix of real numbers
    * @param transpose If true, compute n by n Gram of rows = XX'
@@ -565,6 +578,12 @@ public class ArrayUtils {
   }
   public static long maxValue(long[] from) {
     long result = from[0];
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]>result) result = from[i];
+    return result;
+  }
+  public static long maxValue(int[] from) {
+    int result = from[0];
     for (int i = 1; i<from.length; ++i)
       if (from[i]>result) result = from[i];
     return result;

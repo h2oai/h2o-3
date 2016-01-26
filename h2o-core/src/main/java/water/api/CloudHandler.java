@@ -14,6 +14,8 @@ class CloudHandler extends Handler {
   public CloudV3 status(int version, CloudV3 cloud) {
     // TODO: this really ought to be in the water package
     cloud.version = H2O.ABV.projectVersion();
+    cloud.branch_name = H2O.ABV.branchName();
+    cloud.build_number = H2O.ABV.buildNumber();
 
     cloud.node_idx = H2O.SELF.index();
     cloud.cloud_name = H2O.ARGS.name;

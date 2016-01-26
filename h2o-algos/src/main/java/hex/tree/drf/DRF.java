@@ -2,7 +2,6 @@ package hex.tree.drf;
 
 import hex.Distribution;
 import hex.ModelCategory;
-import hex.schemas.DRFV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -33,16 +32,13 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   }
 
   // Called from an http request
-  public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF", parms); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms                   ) { super(parms     ); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms, Key<DRFModel> key) { super(parms, key); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms, Job job          ) { super(parms, job); init(false); }
+  public DRF(boolean startup_once) { super(new hex.tree.drf.DRFModel.DRFParameters(),startup_once); }
 
-  @Override public DRFV3 schema() { return new DRFV3(); }
-
-  /** Start the DRF training Job on an F/J thread.
-   * @param work
-   * @param restartTimer*/
-  @Override protected Job<hex.tree.drf.DRFModel> trainModelImpl(long work, boolean restartTimer) {
-    return start(new DRFDriver(), work, restartTimer);
-  }
+  /** Start the DRF training Job on an F/J thread. */
+  @Override protected Driver trainModelImpl() { return new DRFDriver(); }
 
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -84,7 +80,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     public transient TreeMeasuresCollector.TreeMeasures _treeMeasuresOnOOB;
     // Tree votes/SSE per individual features on permutated OOB rows
     public transient TreeMeasuresCollector.TreeMeasures[/*features*/] _treeMeasuresOnSOOB;
-    // Variable importance beased on tree split decisions
+    // Variable importance based on tree split decisions
     private transient float[/*nfeatures*/] _improvPerVar;
 
     private void initTreeMeasurements() {
@@ -103,9 +99,12 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
 
     @Override protected void initializeModelSpecifics() {
+      _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols));
+      if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
       _mtry = (_parms._mtries==-1) ? // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
               ( isClassifier() ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
+
       _initialPrediction = isClassifier() ? 0 : getInitialValue();
       // Initialize TreeVotes for classification, MSE arrays for regression
       initTreeMeasurements();
@@ -173,7 +172,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // This optimization assumes the 2nd tree of a 2-class system is the
           // inverse of the first (and that the same columns were picked)
           if( k==1 && _nclass==2 && _model.binomialOpt()) continue;
-          ktrees[k] = new DTree(_train, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, _mtry, rseed);
+          ktrees[k] = new DTree(_train, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, _mtry, _mtry_per_tree, rseed);
           new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0])); // The "root" node
         }
       }
@@ -190,7 +189,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Adds a layer to the trees each pass.
       int depth=0;
       for( ; depth<_parms._max_depth; depth++ ) {
-        if( !isRunning() ) return;
         hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _mtry < _model._output.nfeatures(), _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;

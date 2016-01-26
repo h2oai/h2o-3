@@ -23,7 +23,8 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
       "use_all_factor_levels",
       "compute_metrics",
       "impute_missing",
-      "seed"
+      "seed",
+      "max_runtime_secs"
     };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true)  // TODO: pull out of categorical class

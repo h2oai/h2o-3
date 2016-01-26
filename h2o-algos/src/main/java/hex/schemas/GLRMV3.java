@@ -39,7 +39,8 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
                 "user_x",
                 "expand_user_y",
                 "impute_original",
-				"recover_svd"
+				"recover_svd",
+        "max_runtime_secs"
 		};
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true)  // TODO: pull out of categorical class

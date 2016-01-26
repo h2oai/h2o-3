@@ -3,8 +3,6 @@ package hex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -23,9 +21,7 @@ public class CreateFrameTest extends TestUtil {
     cf.positive_response = false;
     cf.has_response = true;
     cf.seed = 1234;
-    cf.execImpl();
-    cf.get();
-    Frame frame = DKV.getGet(cf.dest());
+    Frame frame = cf.execImpl().get();
     Assert.assertTrue(frame.numCols() == 11);
     Assert.assertTrue(frame.numRows() == 100);
     // Tries to print a frame
@@ -46,9 +42,7 @@ public class CreateFrameTest extends TestUtil {
     cf.positive_response = false;
     cf.has_response = true;
     cf.seed = 1234;
-    cf.execImpl();
-    cf.get();
-    Frame frame = DKV.getGet(cf.dest());
+    Frame frame = cf.execImpl().get();
     Assert.assertTrue(frame.numCols() == 101);
     Assert.assertTrue(frame.numRows() == 10);
     // Print a fame

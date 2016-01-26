@@ -28,7 +28,7 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: Fourth Edition 
+\monthname \hspace{1pt}  \the\year: Fifth Edition 
 
 \bigskip
 \end{center}
@@ -62,7 +62,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fourth Edition
+\monthname \hspace{1pt}  \the\year: Fifth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -261,6 +261,7 @@ To launch H2O locally with default initialization arguments, use the following:
 \medskip
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_init_default.R}
 
+\newpage
 
 To connect to an established H2O cluster (in a multi-node Hadoop environment, for example) specify the IP address and port number for the established cluster using the \texttt{ip} and \texttt{port} parameters in the \texttt{h2o.init()} command.
 
@@ -268,7 +269,6 @@ To connect to an established H2O cluster (in a multi-node Hadoop environment, fo
 \medskip
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_connect_existing.R}
 
-\newpage
 \subsection{Launching from the Command Line}
 
 A simple way to launch H2O from the command line is to download the H2O zip file from the H2O download page. Unzip and
@@ -460,7 +460,6 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 After creating a model, use it to make predictions. For more information about predictions, refer to {\textbf{\nameref{ssec:Predictions}}}.
 
 %%mal: this feels too lengthy for a modeling example here; perhaps it would be better to have entire work flows at the end?
-\newpage
 
 \section{Demo: GLM}
 
@@ -514,7 +513,7 @@ To determine if any column contains categorical data (also known as a factor), u
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_factors.R}
 
 \subsection{Converting to Factors}
-To convert an integer into a non-ordered factor (also called an enum or categorical), use {\texttt{is.factor()}} with the name of the R reference object in parentheses, followed by the number of the column to convert in brackets.
+To convert an integer into a non-ordered factor (also called an enum or categorical), use {\texttt{as.factor()}} with the name of the R reference object in parentheses, followed by the number of the column to convert in brackets.
 
 \waterExampleInR
 \medskip
@@ -531,7 +530,7 @@ To convert an H2O parsed data object into an R data frame that can be manipulate
 
 \subsection{Transferring Data Frames}
 To transfer a data frame from the R environment to the H2O instance, use  {\texttt{as.h2o()}}. In the parentheses, specify the object in the R environment to convert to an H2O object. Optionally, include the name of the destination frame in H2O. Precede the destination frame name with {\texttt{destination\_frame = }} and enclose the name in quotes as in the following example.
-\newpage
+
 \waterExampleInR
 \medskip
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_as_h2o.R}
@@ -706,6 +705,7 @@ To generate two subsets (according to specified ratios) from an existing H2O dat
 \medskip
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_splitframe.R}
 
+\newpage
 \subsection{Getting Frames}
 
 
@@ -744,6 +744,8 @@ To generate a list of all H2O objects generated during a session and each object
 
 \normalsize 
 
+\newpage
+
 \subsection{Removing H2O Objects}
 
 
@@ -753,7 +755,6 @@ To remove an H2O object on the server associated with the object in the R enviro
 \medskip
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_rm.R}
 
-\newpage
 \subsection{Adding Functions}
 
 
@@ -1055,7 +1056,7 @@ The following section lists some common R commands by function and a brief descr
 \medskip
 \emph{Data Sampling/Splitting}\par
 {\texttt{h2o.splitFrame}}: Split an existing H2O dataset according to user-specified ratios. 
-\newpage
+
 \emph{Missing Data Handling}\par
 {\texttt{h2o.impute}}: Impute a column of data using the mean, median, or mode. 
 {\texttt{h2o.insertMissingValues}}: Replaces a user-specified fraction of entries in a H2O dataset with missing values. 
@@ -1095,7 +1096,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{is.factor}}: Check if a given column contains categorical data. 
 \medskip
 {\emph{Data Type Coercion}}\par
-{\texttt{is.factor}}: Convert a column from numeric to factor. 
+{\texttt{as.factor}}: Convert a column from numeric to factor. 
 {\texttt{as.Date}}: Converts a column from factor to date. 
 }
 

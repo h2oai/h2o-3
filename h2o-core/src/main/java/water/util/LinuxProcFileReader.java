@@ -53,7 +53,7 @@ public abstract class LinuxProcFileReader {
   static { PROCESS_CPUS_ALLOWED = parseProcessStatusFile(readProcessStatusFile(PID)); }
   private static String readProcessStatusFile(int pid) {
     try { return pid== -1 ? null : readFile(new File("/proc/"+pid+"/status")); }
-    catch( IOException _ ) { return null; }
+    catch( IOException ignore ) { return null; }
   }
   private static char parseProcessStatusFile(String s) {
     char cpus = (char) Runtime.getRuntime().availableProcessors();
@@ -90,7 +90,7 @@ public abstract class LinuxProcFileReader {
 
   private static String readProcessProcFile(int pid) {
     try { return pid == -1 ? null : readFile(new File("/proc/"+pid+"/stat")); }
-    catch( IOException _ ) { return null; }
+    catch( IOException ignore ) { return null; }
   }
   private static final Pattern procPattern = Pattern.compile(
     "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
@@ -135,7 +135,7 @@ public abstract class LinuxProcFileReader {
   // Read from various /proc files, returning a String or null if not available
   private static String readSystemProcFile() {
     try { return readFile(new File("/proc/stat")); }
-    catch( IOException _ ) { return null; }
+    catch( IOException ignore ) { return null; }
   }
   private static final Pattern sysTicksPattern = Pattern.compile("cpu\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+).*");
   private static final Pattern cpuTicksPattern = Pattern.compile("cpu(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+).*");
@@ -190,7 +190,7 @@ public abstract class LinuxProcFileReader {
         cpu++;
         line = reader.readLine();
       }
-    } catch( IOException _ ) {/**/}
+    } catch( IOException ignore ) {/**/}
   }
 
   // --------- /proc/pid/stat --- System and Process cpu ticks -----------

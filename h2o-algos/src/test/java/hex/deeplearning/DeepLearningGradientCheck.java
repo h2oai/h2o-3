@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.Distribution;
 import hex.FrameTask;
@@ -23,7 +24,7 @@ public class DeepLearningGradientCheck extends TestUtil {
   static final float SAMPLE_RATE = 0.1f;
 
   @Test
-  public void cancar() {
+  public void gradientCheck() {
     Frame tfr = null;
     DeepLearningModel dl = null;
 
@@ -78,7 +79,8 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._epochs = 100; //converge to a reasonable model to avoid too large gradients
 //            parms._l1 = 1e-3; //FIXME
 //            parms._l2 = 1e-3; //FIXME
-                parms._reproducible = true;
+//            parms._reproducible = true;
+                parms._force_load_balance = false;
                 parms._hidden = new int[]{10, 10, 10};
                 parms._fast_mode = false; //otherwise we introduce small bprop errors
                 parms._response_column = response;
@@ -90,7 +92,6 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._rate = 1e-4;
                 parms._momentum_start = 0.9;
                 parms._momentum_stable = 0.99;
-                parms._model_id = Key.make();
                 DeepLearningModelInfo.gradientCheck = null;
 
                 // Build a first model; all remaining models should be equal
@@ -236,13 +237,12 @@ public class DeepLearningGradientCheck extends TestUtil {
 //                    assert(Math.abs(meanLoss-resdev)/Math.abs(resdev) < 1e-5);
 //                  }
                 } catch(RuntimeException ex) {
-                  dl = DKV.getGet(parms._model_id);
+                  dl = DKV.getGet(job.dest());
                   if (dl != null)
                     Assert.assertTrue(dl.model_info().isUnstable());
                   else
-                    Assert.assertTrue(job.isCancelledOrCrashed());
+                    Assert.assertTrue(job.isStopped());
                 } finally {
-                  job.remove();
                   if (dl != null) dl.delete();
                 }
               }

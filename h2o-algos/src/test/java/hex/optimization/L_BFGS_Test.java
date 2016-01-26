@@ -13,8 +13,6 @@ import water.*;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

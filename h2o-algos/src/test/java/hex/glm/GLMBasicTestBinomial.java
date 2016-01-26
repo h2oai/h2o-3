@@ -29,7 +29,6 @@ public class GLMBasicTestBinomial extends TestUtil {
 
   @Test
   public void testOffset() {
-    GLM job = null;
     GLMModel model = null;
 
     double [] offset_train = new double[] {
@@ -138,8 +137,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         try {
           params._solver = s;
           System.out.println("SOLVER = " + s);
-          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
-          model = job.trainModel().get();
+          model = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
@@ -186,7 +184,6 @@ public class GLMBasicTestBinomial extends TestUtil {
           if (scoreTrain != null) scoreTrain.delete();
 
           if (scoreTest != null)  scoreTest.delete();
-          if (job != null) job.remove();
         }
       }
     } finally {
@@ -216,22 +213,16 @@ public class GLMBasicTestBinomial extends TestUtil {
     parms._intercept = false;
     parms._standardize = false;
     GLMModel m = null;
-    GLM job = null;
     try {
-      job = new GLM(Key.make("glm_abcd"), "glm test abcd", parms);
-      m = job.trainModel().get();
+      m = new GLM(parms).trainModel().get();
       System.out.println(m.coefficients());
     } finally {
-      if(m != null)
-        m.delete();
-      if(job != null)
-        job.remove();
+      if(m != null) m.delete();
     }
   }
 
   @Test
   public void testNoInterceptWithOffset() {
-    GLM job = null;
     GLMModel model = null;
     double [] offset_train = new double[] {
       -0.39771185,+1.20479170,-0.16374109,-0.97885903,-1.42996530,+0.83474893,+0.83474893,-0.74488827,+0.83474893,+0.86851236,
@@ -341,8 +332,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         try {
           params._solver = s;
           System.out.println("SOLVER = " + s);
-          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
-          model = job.trainModel().get();
+          model = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           for (int i = 0; i < cfs1.length; ++i)
@@ -386,7 +376,6 @@ public class GLMBasicTestBinomial extends TestUtil {
           if (model != null) model.delete();
           if (scoreTrain != null) scoreTrain.delete();
           if (scoreTest != null) scoreTest.delete();
-          if (job != null) job.remove();
         }
       }
     } finally {
@@ -403,7 +392,6 @@ public class GLMBasicTestBinomial extends TestUtil {
 
   @Test
   public void testNoIntercept() {
-    GLM job = null;
     GLMModel model = null;
 //    Call:  glm(formula = CAPSULE ~ . - 1 - RACE - DCAPS, family = binomial,
 //      data = train)
@@ -434,8 +422,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       try {
         params._solver = s;
         System.out.println("SOLVER = " + s);
-        job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
-        model = job.trainModel().get();
+        model = new GLM( params).trainModel().get();
         HashMap<String, Double> coefs = model.coefficients();
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
@@ -475,7 +462,6 @@ public class GLMBasicTestBinomial extends TestUtil {
         if (model != null) model.delete();
         if (scoreTrain != null) scoreTrain.delete();
         if(scoreTest != null) scoreTest.delete();
-        if (job != null) job.remove();
       }
     }
   }
@@ -483,7 +469,6 @@ public class GLMBasicTestBinomial extends TestUtil {
   @Test
   public void testWeights() {
     System.out.println("got " + _prostateTrain.anyVec().nChunks() + " chunks");
-    GLM job = null;
     GLMModel model = null, modelUpsampled = null;
 
     // random observation weights, integers in 0 - 9 range
@@ -577,12 +562,10 @@ public class GLMBasicTestBinomial extends TestUtil {
           params._gradient_epsilon = 1e-8;
           params._objective_epsilon = 0;
           System.out.println("SOLVER = " + s);
-          job = new GLM(Key.make("prostate_model"), "glm test", params);
-          model = job.trainModel().get();
+          model = new GLM(params).trainModel().get();
           params._train = _prostateTrainUpsampled._key;
           params._weights_column = null;
-          GLM job2 = new GLM(Key.make("prostate_model_upsampled"), "glm test", params);
-          modelUpsampled = job2.trainModel().get();
+          modelUpsampled = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           HashMap<String, Double> coefsUpsampled = modelUpsampled.coefficients();
           System.out.println("coefs = " + coefs);
@@ -652,7 +635,6 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain.delete();
           if (scoreTest != null)
             scoreTest.delete();
-          if (job != null) job.remove();
         }
       }
     } finally {
@@ -666,7 +648,6 @@ public class GLMBasicTestBinomial extends TestUtil {
   
   @Test
   public void testNonNegative() {
-    GLM job = null;
     GLMModel model = null;
 //   glmnet result
 //    (Intercept)         AGE      RACER1      RACER2      RACER3      DPROSb
@@ -692,8 +673,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       try {
         params._solver = s;
         System.out.println("SOLVER = " + s);
-        job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
-        model = job.trainModel().get();
+        model = new GLM(params).trainModel().get();
         HashMap<String, Double> coefs = model.coefficients();
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
@@ -714,7 +694,6 @@ public class GLMBasicTestBinomial extends TestUtil {
         if (model != null) model.delete();
         if (scoreTrain != null) scoreTrain.delete();
         if(scoreTest != null) scoreTest.delete();
-        if (job != null) job.remove();
       }
     }
   }
@@ -722,7 +701,6 @@ public class GLMBasicTestBinomial extends TestUtil {
   @Test
   public void testNonNegativeNoIntercept() {
     Scope.enter();
-    GLM job = null;
     GLMModel model = null;
 //   glmnet result
 //    (Intercept)         AGE      RACER1      RACER2      RACER3      DPROSb
@@ -749,8 +727,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         params._solver = s;
         params._max_iterations = 500;
         System.out.println("SOLVER = " + s);
-        job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
-        model = job.trainModel().get();
+        model = new GLM(params).trainModel().get();
         HashMap<String, Double> coefs = model.coefficients();
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
@@ -772,7 +749,6 @@ public class GLMBasicTestBinomial extends TestUtil {
         if (model != null) model.delete();
         if (scoreTrain != null) scoreTrain.delete();
         if(scoreTest != null) scoreTest.delete();
-        if (job != null) job.remove();
       }
     }
     Scope.exit();
@@ -781,7 +757,6 @@ public class GLMBasicTestBinomial extends TestUtil {
   @Test
   public void testNoInterceptWithOffsetAndWeights() {
     Scope.enter();
-    GLM job = null;
     GLMModel model = null;
     double [] offset_train = new double[] {
       -0.39771185,+1.20479170,-0.16374109,-0.97885903,-1.42996530,+0.83474893,+0.83474893,-0.74488827,+0.83474893,+0.86851236,
@@ -920,14 +895,12 @@ public class GLMBasicTestBinomial extends TestUtil {
           params._valid = fTest._key;
           System.out.println("SOLVER = " + s);
           try {
-            job = new GLM(Key.make("prostate_model"), "glm test", params);
-            model = job.trainModel().get();
+            model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           } catch(Exception iae) {
             assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
           }
           params._valid = null;
-          job = new GLM(Key.make("prostate_model"), "glm test simple poisson", params);
-          model = job.trainModel().get();
+          model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           for (int i = 0; i < cfs1.length; ++i)
@@ -970,7 +943,6 @@ public class GLMBasicTestBinomial extends TestUtil {
           if (model != null) model.delete();
           if (scoreTrain != null) scoreTrain.delete();
           if (scoreTest != null) scoreTest.delete();
-          if (job != null) job.remove();
         }
       }
     } finally {
@@ -1040,41 +1012,33 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._lambda = new double[]{0};
     GLM job0 = null;
     try {
-      job0 = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+      job0 = new GLM(params);
       params._solver = Solver.L_BFGS;
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
-      if(job0 != null)
-        job0.remove();
     }
     try {
-      job0 = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+      job0 = new GLM(params);
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
-      if(job0 != null)
-        job0.remove();
     }
     try {
-      job0 = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+      job0 = new GLM(params);
       params._solver = Solver.COORDINATE_DESCENT;
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
-      if(job0 != null)
-        job0.remove();
     }
     params._solver = Solver.IRLSM;
     try {
-      job0 = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+      job0 = new GLM(params);
       params._lambda = new double[]{1};
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with no regularization",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
-      if(job0 != null)
-        job0.remove();
     }
     params._lambda = new double[]{0};
     try {
@@ -1082,13 +1046,9 @@ public class GLMBasicTestBinomial extends TestUtil {
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with no regularization (i.e. no lambda search)",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
-      if(job0 != null)
-        job0.remove();
     }
     params._lambda_search = false;
-    params._objective_epsilon = 0;
-    params._gradient_epsilon = 0;
-    GLM job = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+    GLM job = new GLM(params);
     GLMModel model = null;
     try {
 
@@ -1112,7 +1072,6 @@ public class GLMBasicTestBinomial extends TestUtil {
       }
     } finally {
       if(model != null) model.delete();
-      if(job != null) job.remove();
     }
 //    2) STANDARDIZED
 
@@ -1164,7 +1123,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 
     params._standardize = true;
 
-    job = new GLM(Key.make("prostate_model"), "glm test p-values", params);
+    job = new GLM(params);
     try {
       model = job.trainModel().get();
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
@@ -1187,7 +1146,6 @@ public class GLMBasicTestBinomial extends TestUtil {
       }
     } finally {
       if(model != null) model.delete();
-      if(job != null) job.remove();
     }
   }
 

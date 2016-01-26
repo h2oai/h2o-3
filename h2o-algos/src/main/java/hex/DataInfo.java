@@ -4,7 +4,6 @@ import water.*;
 import water.fvec.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -101,6 +100,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final boolean _fold;
   public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
+
   public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
   public int weightChunkId(){return _cats + _nums;}
   public int outputChunkId() { return outputChunkId(0);}
@@ -116,36 +116,14 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int [][] _catLvls;
 
   private DataInfo() {  _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
-
-  @Override
-  protected long checksum_impl() {return 0;}
+  public String[] _coefNames;
+  @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
   public DataInfo deep_clone() {
     AutoBuffer ab = new AutoBuffer();
     this.write(ab);
     ab.flipForReading();
-    DataInfo res = (DataInfo)new DataInfo().read(ab);
-    res._adaptedFrame = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
-    return res;
-  }
-
-  // make *empty* data info for numeric only datasets with no regularization
-  public static DataInfo makeEmpty(int fullN) {
-    return new DataInfo(fullN);
-  }
-
-  private DataInfo(int nums) {
-    super(Key.<DataInfo>make());
-    _offset = false;
-    _weights = false;
-    _fold = false;
-    _nums = nums;
-    _catOffsets = new int[]{0};
-    _predictor_transform = TransformType.NONE;
-    _response_transform = TransformType.NONE;
-    _skipMissing = true;
-    _imputeMissing = false;
-    _catLvls = null;
+    return new DataInfo().read(ab);
   }
 
   // Modify the train & valid frames directly; sort the categorical columns
@@ -172,7 +150,6 @@ public class DataInfo extends Keyed<DataInfo> {
     _useAllFactorLevels = useAllFactorLevels;
     _permutation = new int[train.numCols()];
     final Vec[] tvecs = train.vecs();
-    final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
     // Count categorical-vs-numerical
     final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0);
@@ -381,8 +358,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if(_predictor_transform.isMeanAdjusted()) {
       if(mean.length != _normSub.length)
         throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
-      for(int i = 0; i < mean.length; ++i)
-        _normSub[i] = mean[i];
+      System.arraycopy(mean,0,_normSub,0,mean.length);
     }
   }
 
@@ -439,7 +415,8 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int fullN(){return _nums + _catOffsets[_cats];}
   public final int largestCat(){return _cats > 0?_catOffsets[1]:0;}
   public final int numStart(){return _catOffsets[_cats];}
-  public final String [] coefNames(){
+  public final String[] coefNames(){
+    if (_coefNames != null) return _coefNames; 
     int k = 0;
     final int n = fullN();
     String [] res = new String[n];
@@ -455,6 +432,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
+    _coefNames = res;
     return res;
   }
 
@@ -486,22 +464,6 @@ public class DataInfo extends Keyed<DataInfo> {
     for (int k=numStart(); k < fullN(); ++k) {
       double m = _normMul == null ? 1f : _normMul[k-numStart()];
       double s = _normSub == null ? 0f : _normSub[k-numStart()];
-      out[k] = in[k] / m + s;
-    }
-  }
-
-  /**
-   * Undo the standardization/normalization of numerical columns
-   * @param in input values
-   * @param out output values (can be the same as input)
-   */
-  public final void unScaleResponses(double[] in, double[] out) {
-    if (_responses == 0) return;
-    assert (in.length == out.length);
-    assert (in.length == _responses);
-    for (int k=0; k < _responses; ++k) {
-      float m = _normRespMul == null ? 1f : (float)_normRespMul[k];
-      float s = _normRespSub == null ? 0f : (float)_normRespSub[k];
       out[k] = in[k] / m + s;
     }
   }
@@ -573,11 +535,6 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
 
-    public void addBinId(int id) {
-      if(binIds.length == nBins)
-        binIds = Arrays.copyOf(binIds,Math.max(4, (binIds.length + (binIds.length >> 1))));
-      binIds[nBins++] = id;
-    }
     public void addNum(int id, double val) {
       if(numIds.length == nNums) {
         int newSz = Math.max(4,numIds.length + (numIds.length >> 1));
@@ -616,8 +573,7 @@ public class DataInfo extends Keyed<DataInfo> {
       for(int i = 0; i < nBins; ++i)
         res[binIds[i]] = 1;
       if(numIds == null) {
-        for(int i = 0; i < numVals.length; ++i)
-          res[numStart+i] = numVals[i];
+        System.arraycopy(numVals,0,res,numStart,numVals.length);
       } else {
         for(int i = 0; i < nNums; ++i)
           res[numIds[i]] = numVals[i];
@@ -706,23 +662,11 @@ public class DataInfo extends Keyed<DataInfo> {
 
     return row;
   }
-
-  public Vec getWeightsVec(){
-    return _adaptedFrame.vec(weightChunkId());
-  }
-  public Vec getOffsetVec(){
-    return _adaptedFrame.vec(offsetChunkId());
-  }
+  public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
+  public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
   public Row newDenseRow(){return new Row(false,_nums,_cats,_responses,0,0);}
   public Row newDenseRow(double[] numVals, long start) {
     return new Row(false, numVals, null, null, 0, start);
-  }
-  public double computeSparseOffset(double [] coefficients) {
-    double etaOffset = 0;
-    if(_normMul != null && _normSub != null && coefficients != null)
-      for(int i = 0; i < _nums; ++i)
-        etaOffset -= coefficients[i+numStart()] * _normSub[i] * _normMul[i];
-    return etaOffset;
   }
 
   public final class Rows {

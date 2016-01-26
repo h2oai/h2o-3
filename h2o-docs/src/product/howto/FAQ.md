@@ -738,6 +738,24 @@ After obtaining your results, click the **Combine predictions with frame** butto
 
 ---
 
+
+**What are these RTMP and py_ temporary Frames? Why are they the same size as my original data?**
+
+No data is copied.
+H2O does a classic copy-on-write optimization.
+That Frame you see - it's nothing more than a thin wrapper over an internal list of columns; the columns are shared to avoid the copying.
+
+The RTMP's now need to be entirely managed by the H2O wrapper - because indeed they are using shared state under the hood.  If you delete one, you probably delete parts of others.  Instead, temp management should be automatic and "good" - as in: it's a bug if you need to delete a temp manually, or if passing around Frames, or adding or removing columns turns into large data copies.
+
+R's GC is now used to remove unused R temps, and when the last use of a shared column goes away, then the H2O wrapper will tell the H2O cluster to remove that no longer needed column.
+
+In other words:
+Don't delete RTMPs, they'll disappear at the next R GC.
+Don't worry about copies (they aren't getting made).
+Do Nothing and All Is Well. 
+
+---
+
 ##Hadoop
 
 
@@ -778,8 +796,7 @@ After creating and applying the desired node labels and associating them with sp
 To import from HDFS in R: 
 
 ```
-h2o.importHDFS(path, pattern = "", destination_frame = "", parse = TRUE,
-header = NA, sep = "", col.names = NULL, na.strings = NULL)
+h2o.importFolder(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings = NULL)
 ```
 
 Here is another example: 
@@ -805,6 +822,30 @@ Error saving notebook: Error calling POST /3/NodePersistentStorage/notebook/Test
 ```
 
 When you are running H2O on Hadoop, H2O tries to determine the home HDFS directory so it can use that as the download location. If the default home HDFS directory is not found, manually set the download location from the command line using the `-flow_dir` parameter (for example, `hadoop jar h2odriver.jar <...> -flow_dir hdfs:///user/yourname/yourflowdir`). You can view the default download directory in the logs by clicking **Admin > View logs...** and looking for the line that begins `Flow dir:`.
+
+---
+
+**How do I access data in HDFS without launching H2O on Yarn?**
+
+Each h2odriver.jar file is built with a specific Hadoop distribution so in order to have a working HDFS connection download the h2odriver.jar file for your Hadoop distribution.
+
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.2.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
+	    wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
+		
+	**Note**: Enter only one of the above commands.
+
+
+Then run the command to launch the H2O Application in the driver by specifying the classpath:
+
+		unzip h2o-{{project_version}}-*.zip
+		cd h2o-{{project_version}}-*
+		java -cp h2odriver.jar water.H2OApp
 
 ---
 
@@ -1282,6 +1323,40 @@ Remove the `h2o.shim(enable=TRUE)` line and try running the code again. Note tha
 **How do I extract the model weights from a model I've creating using H2O in R? I've enabled `extract_model_weights_and_biases`, but the output refers to a file I can't open in R.**
 
 For an example of how to extract weights and biases from a model, refer to the following repo location on [GitHub](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_weights_and_biases.R). 
+
+---
+
+**How do I extract the run time of my model as output?**
+
+
+For the following example: 
+
+```
+out.h2o.rf = h2o.randomForest( x=c("x1", "x2", "x3", "w"), y="y", training_frame=h2o.df.train, seed=555, model_id= "my.model.1st.try.out.h2o.rf" )
+```
+
+Use `out.h2o.rf@model$run_time` to determine the value of the `run_time` variable. 
+
+
+---
+
+**What is the best way to do group summarizations? For example, getting sums of specific columns grouped by a categorical column.**
+
+We strongly recommend using `h2o.group_by` for this function instead of `h2o.ddply`, as shown in the following example:
+
+```
+newframe <- h2o.group_by(h2oframe, by="footwear_category", nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"), sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+```
+
+Using `gb.control` is optional; here it is included so the column names are user-configurable. 
+
+The `by` option can take a list of columns if you want to group by more than one column to compute the summary as shown in the following example: 
+
+```
+newframe <- h2o.group_by(h2oframe, by=c("footwear_category","age_group"), nrow("email_event_click_ct"), sum("email_event_click_ct"), mean("email_event_click_ct"), sd("email_event_click_ct"), gb.control = list( col.names=c("count", "total_email_event_click_ct", "avg_email_event_click_ct", "std_email_event_click_ct") ) )
+```
+
+
 
 ---
 

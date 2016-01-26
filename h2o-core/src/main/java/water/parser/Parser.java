@@ -58,8 +58,8 @@ public abstract class Parser extends Iced {
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
   protected final ParseSetup _setup;
-  protected final Key _jobKey;
-  Parser( ParseSetup setup, Key jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
+  protected final Key<Job> _jobKey;
+  Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
   protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
@@ -71,7 +71,7 @@ public abstract class Parser extends Iced {
     int cidx=0;
     // FIXME leaving _jobKey == null until sampling is done, this mean entire zip files
     // FIXME are parsed for parseSetup
-    while( is.available() > 0 && (_jobKey == null || !((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()))
+    while( is.available() > 0 && (_jobKey == null || _jobKey.get().stop_requested()) )
       parseChunk(cidx++, din, dout);
     parseChunk(cidx, din, dout);     // Parse the remaining partial 32K buffer
     return dout;
@@ -95,7 +95,7 @@ public abstract class Parser extends Iced {
         nextChunk.close(); // Match output chunks to input zipfile chunks
         if( dout != nextChunk ) {
           dout.reduce(nextChunk);
-          if (_jobKey != null && ((Job)DKV.getGet(_jobKey)).isCancelledOrCrashed()) break;
+          if (_jobKey != null && _jobKey.get().stop_requested()) break;
         }
         nextChunk = nextChunk.nextChunk();
       }
@@ -110,7 +110,7 @@ public abstract class Parser extends Iced {
   /** Class implementing DataIn from a Stream (probably a GZIP stream)
    *  Implements a classic double-buffer reader.
    */
-  private static class StreamData implements ParseReader {
+  private final static class StreamData implements ParseReader {
     final transient InputStream _is;
     private byte[] _bits0 = new byte[64*1024];
     private byte[] _bits1 = new byte[64*1024];

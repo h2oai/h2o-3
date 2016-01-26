@@ -351,7 +351,8 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
 
   res <- .h2o.__remoteSend(.h2o.__CREATE_FRAME, method = "POST", .params = parms)
   .h2o.__waitOnJob(res$key$name)
-  fr <- h2o.getFrame(parms$dest)
+  fr <- .newH2OFrame("createFrame",parms$dest,-1,-1)
+  .fetch.data(fr,1L)
   .set(fr,"eval",TRUE)  # Declare the result a named tmp
   reg.finalizer(fr, .nodeFinalizer, onexit=TRUE)
   fr
@@ -612,6 +613,8 @@ h2o.filterNACols <- function(data, frac=0.2) .eval.scalar(.newExpr("filterNACols
 #'
 #' @param x An H2O H2OFrame object with at most two columns.
 #' @param y An H2O H2OFrame similar to x, or \code{NULL}.
+#' @param dense A logical for dense representation, which lists only non-zero counts, 1 combination per row. Set to 
+#'        FALSE to expand counts across all combinations.  
 #' @return Returns a tabulated H2OFrame object.
 #' @examples
 #' \donttest{
@@ -630,10 +633,10 @@ h2o.filterNACols <- function(data, frac=0.2) .eval.scalar(.newExpr("filterNACols
 #' h2o.table(prostate.hex[,c(3,4)])
 #' }
 #' @export
-h2o.table <- function(x, y = NULL) {
+h2o.table <- function(x, y = NULL, dense = TRUE) {
   chk.H2OFrame(x)
   if( !is.null(y) ) chk.H2OFrame(y)
-  if( is.null(y) ) .newExpr("table",x) else .newExpr("table",x,y)
+  if( is.null(y) ) .newExpr("table",x,dense) else .newExpr("table",x,y,dense)
 }
 
 #' @rdname h2o.table
@@ -786,7 +789,7 @@ h2o.dct <- function(data, destination_frame, dimensions, inverse=FALSE) {
   res <- .h2o.__remoteSend(method="POST", h2oRestApiVersion = 99, "DCTTransformer", .params = params)
   job_key <- res$key$name
   .h2o.__waitOnJob(job_key)
-  h2o.getFrame(res$destination_frame$name)
+  h2o.getFrame(res$dest$name)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1208,6 +1211,23 @@ h2o.which <- function(x) {
   else .newExpr("which",x)
 }
 
+#' Count of NAs per column
+#'
+#' Gives the count of NAs per column.
+#'
+#' @param x An H2O H2OFrame object.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' h2o.nacnt(iris.hex)  # should return all 0s
+#' h2o.insertMissingValues(iris.hex)
+#' h2o.nacnt(iris.hex)
+#' }
+#' @export
+h2o.nacnt <- function(x)
+  .eval.scalar(.newExpr("naCnt", x))
+
 #' Returns the Dimensions of an H2O H2OFrame
 #'
 #' Returns the number of rows and columns for a H2OFrame object.
@@ -1348,10 +1368,10 @@ tail.H2OFrame <- h2o.tail
 is.factor <- function(x) {
   # Eager evaluate and use the cached result to return a scalar
   if( is.H2OFrame(x) ) {
-    x <- .fetch.data(x,1L)
-    if( ncol(x)==1L ) x <- x[,1]
+    sapply(.eval.scalar(.newExpr("is.factor", x)), as.logical)
+  } else {
+    base::is.factor(x)
   }
-  base::is.factor(x)
 }
 
 #' Check if numeric
@@ -1361,7 +1381,7 @@ is.factor <- function(x) {
 #' @export
 is.numeric <- function(x) {
   if( !is.H2OFrame(x) ) .Primitive("is.numeric")(x)
-  else as.logical(.eval.scalar(.newExpr("is.numeric",x)))
+  else sapply(.eval.scalar(.newExpr("is.numeric", x)), as.logical)
 }
 
 #' Check if character
@@ -1371,7 +1391,7 @@ is.numeric <- function(x) {
 #' @export
 is.character <- function(x) {
   if( !is.H2OFrame(x) ) .Primitive("is.character")(x)
-  else as.logical(.eval.scalar(.newExpr("is.character",x)))
+  else sapply(.eval.scalar(.newExpr("is.character", x)), as.logical)
 }
 
 #' Print An H2O H2OFrame
@@ -1473,12 +1493,17 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
   }
 
   # Row arg is missing, means "all the rows"
-  if(allRow) rows <- paste0("[]") # Shortcut for "all rows"
-  else       rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
+  if(allRow) rows <- paste0("[]")  # Shortcut for "all rows"
+  else {
+    if( !is.H2OFrame(row) )    # Generic R expression
+      rows <- .row.col.selector(substitute(row), row,envir=parent.frame())
+    else
+      rows <- row
+  }
 
   name <- NA
   if( allCol ) {   # Col arg is missing, means "all the cols"
-    cols <- paste0("[]") # Shortcut for "all cols"
+    cols <- paste0("[]")  # Shortcut for "all cols"
   } else {
     if( base::is.character(col) ) {
       idx <- match(col, colnames(data))
@@ -1533,7 +1558,7 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
 #' @param probs Numeric vector of probabilities with values in [0,1].
 #' @param combine_method How to combine quantiles for even sample sizes. Default is to do linear interpolation.
 #'                       E.g., If method is "lo", then it will take the lo value of the quantile. Abbreviations for average, low, and high are acceptable (avg, lo, hi).
-#' @param weights_column Numeric vector of observation weights (Optional).
+#' @param weights_column (Optional) String name of the observation weights column in x or an \code{H2OFrame} object with a single numeric column of observation weights.
 #' @param ... Further arguments passed to or from other methods.
 #' @return A vector describing the percentiles at the given cutoffs for the \code{H2OFrame} object.
 #' @examples
@@ -1557,14 +1582,19 @@ h2o.quantile <- function(x,
                      ...)
 {
   # verify input parameters
-  if (!is(x, "H2OFrame")) stop("`x` must be an H2O H2OFrame object")
+  if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   #if(!na.rm && .h2o.__unary_op("any.na", x)) stop("missing values and NaN's not allowed if 'na.rm' is FALSE")
   if(!is.numeric(probs) || length(probs) == 0L || any(!is.finite(probs) | probs < 0 | probs > 1))
     stop("`probs` must be between 0 and 1 exclusive")
   if (is.null(weights_column)) {
-    weights_column = "_" ##HACK: .newExpr() strips "", must use something else here.
+    weights_column <- "_" ##HACK: .newExpr() strips "", must use something else here.
   } else {
-    if (!is.character(weights_column)) stop("`weights_column` must be a String: column name in x")
+    if (!(is.character(weights_column) || (is(weights_column, "H2OFrame") && ncol(weights_column) ==1) && nrow(weights_column) == nrow(x)))
+      stop("`weights_column` must be a String of a column name in x or an H2OFrame object with 1 column and same row count as x")
+    if (is(weights_column, "H2OFrame")) {
+      x <- h2o.cbind(x,weights_column)
+      weights_column <- tail(names(x),1)
+    }
     if (!(weights_column %in% names(x))) stop("`weights_column` must be a column in x")
   }
 
@@ -1577,10 +1607,10 @@ h2o.quantile <- function(x,
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
   res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method), weights_column)
-  res <- as.matrix(res)
-  col <- as.numeric(res[,-1])
-  names(col) <- paste0(100*res[,1], "%")
-  col
+  tr <- as.matrix(t(res))
+  rownames(tr) <- colnames(res)
+  colnames(tr) <- paste0(100*tr[1,],"%")
+  tr[-1,]
 }
 
 #' @rdname h2o.quantile
@@ -1632,12 +1662,11 @@ h2o.summary <- function(object, factors=6L, ...) {
       if( !(is.null(col.sum$maxs) || length(col.sum$maxs) == 0L) ) cmax <- max(col.sum$maxs,na.rm=TRUE)  # set the max
       if( !(is.null(col.sum$mean))                               ) cmean<- col.sum$mean                  # set the mean
 
-      #               1      2    3    4    5     6        7          8    9   10   11          12    13   14   15    16  17
-      # new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
-      if( !is.null(col.sum$percentiles) ){# set the 1st quartile, median, and 3rd quartile
-        c1Q     <- col.sum$percentiles[5] # p=.25 col.rest$frames[[1]]$default_percentiles ==  c(0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 0.99, 0.999)
-        cmedian <- col.sum$percentiles[9] # p=.5
-        c3Q     <- col.sum$percentiles[13] # p=.75
+      quantiles <- h2o.quantile(object[col.sum$label],c(.25,.5,.75)) # set the 1st quartile, median, and 3rd quartile
+      if( !is.null(quantiles) ){
+        c1Q     <- quantiles[1]
+        cmedian <- quantiles[2]
+        c3Q     <- quantiles[3]
       }
 
       missing.count <- NULL
@@ -1724,6 +1753,43 @@ h2o.summary <- function(object, factors=6L, ...) {
   colnames(result) <- cnames
   rownames(result) <- rep("", nrow(result))
   result
+}
+
+#' H2O Description of A Dataset
+#'
+#' Reports the "Flow" style summary rollups on an instance of H2OFrame. Includes
+#' information about column types, mins/maxs/missing/zero counts/stds/number of levels
+#'
+#' @name h2o.describe
+#' @param frame An H2O H2OFrame object.
+#' @return A table with the Frame stats.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(path = prosPath)
+#' h2o.describe(prostate.hex)
+#' }
+#' @export
+h2o.describe <- function(frame) {
+  fr.sum <- .h2o.__remoteSend(paste0("Frames/", h2o.getId(frame), "/summary"), method = "GET", `_exclude_fields`="frames/columns/data,frames/columns/domain,frames/columns/histogram_bins,frames/columns/percentiles")$frames[[1]]
+  res <- data.frame(t(sapply(fr.sum$columns, function(col) {
+                                    c(col$label,
+                                      col$type,
+                                      col$missing_count,
+                                      col$zero_count,
+                                      col$positive_infinity_count,
+                                      col$negative_infinity_count,
+                                      col$mins[1],
+                                      col$maxs[1],
+                                      ifelse(col$mean=="NaN", NA, col$mean),
+                                      ifelse(col$sigma=="NaN",NA, col$sigma),
+                                      ifelse(col$type=="enum", col$domain_cardinality, NA)
+                                    )
+         })))
+  names(res) <- c("Label", "Type", "Missing", "Zeros", "PosInf", "NegInf", "Min", "Max", "Mean", "Sigma", "Cardinality")
+  res
 }
 
 #' @rdname h2o.summary

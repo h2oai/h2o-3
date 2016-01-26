@@ -71,7 +71,7 @@ class H2OEstimator(ModelBase):
     self._job.poll()
     self._job=None
 
-  def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
+  def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,max_runtime_secs=None,**params):
     """Train the H2O model by specifying the predictor columns, response column, and any
     additional frame-specific values.
 
@@ -94,6 +94,9 @@ class H2OEstimator(ModelBase):
       The name or index of the column in training_frame that holds the per-row weights.
     validation_frame : H2OFrame, optional
       H2OFrame with validation data to be scored on while training.
+    max_runtime_secs : float
+      Maximum allowed runtime in seconds for model training. Use 0 to disable.
+      For cross-validation and grid searches, this time limit applies to all sub-models.
     """
     algo_params = locals()
     parms = self._parms.copy()

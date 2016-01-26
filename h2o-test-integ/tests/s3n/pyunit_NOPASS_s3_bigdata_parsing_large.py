@@ -10,7 +10,7 @@ def s3timings(ip, port):
   # defining timers
   air_run = timeit.Timer(stmt = 'h2o.import_frame("s3n://h2o-airlines-unpacked/allyears.1987.2013.csv")',
     setup = 'import h2o')
-  bigx_run = timeit.Timer(stmt = 'h2o.import_frame("s3://h2o-public-test-data/bigdata/server/flow-tests/BigCross.data")',
+  bigx_run = timeit.Timer(stmt = 'h2o.import_frame("s3://h2o-public-test-data/bigdata/server/BigCross.data")',
     setup = 'import h2o')
   higg_run = timeit.Timer(stmt = 'h2o.import_frame("s3://h2o-public-test-data/bigdata/server/HIGGS.csv")',
     setup = 'import h2o')

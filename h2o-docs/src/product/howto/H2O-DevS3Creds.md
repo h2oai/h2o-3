@@ -16,7 +16,7 @@ For security reasons, we recommend writing a script to read the access credentia
 
 When running H2O in standalone mode using the simple Java launch command, we can pass in the S3 credentials in two ways. 
 
-- You can pass in credentials in standalone mode the same way as accessing data from HDFS on Hadoop. Create a `core-site.xml` file and pass it in with the flag `-hdfs_config`. For an example `core-site.xml` file, refer to [Core-site.xml](#Example). 
+- You can pass in credentials in standalone mode by creating a `core-site.xml` file and pass it in with the flag `-hdfs_config`. For an example `core-site.xml` file, refer to [Core-site.xml](#Example). 
 
  0. Edit the properties in the core-site.xml file to include your Access Key ID and Access Key as shown in the following example:
    
@@ -97,7 +97,7 @@ Build a cluster of EC2 instances by running the following commands on the host t
   - To stop H2O: `./h2o-cluster-stop-h2o.sh`
   - To shut down the cluster, use your [Amazon AWS console](http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html) to shut down the cluster manually. 
 
-
+ >**Note**: To successfully import data, the data must reside in the same location on all nodes. 
 
 ---
 

@@ -5,9 +5,8 @@ import water.util.Log;
 
 public class UnlockTask extends MRTask<UnlockTask> {
   final boolean _quiet;
-  public UnlockTask() {_quiet = false; }
-  public UnlockTask(boolean q) { _quiet = q; }
-  @Override public byte priority() { return H2O.GUI_PRIORITY; }
+  public UnlockTask() {super(H2O.GUI_PRIORITY); _quiet = false; }
+  public UnlockTask(boolean q) { super(H2O.GUI_PRIORITY); _quiet = q; }
   @Override public void setupLocal() {
     final KeySnapshot.KeyInfo[] kinfo = KeySnapshot.localSnapshot(true)._keyInfos;
     for(KeySnapshot.KeyInfo k:kinfo) {

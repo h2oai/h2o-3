@@ -238,39 +238,32 @@ public class PersistManager {
    * @param dels  (Output) I don't know what this is
    */
   public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    assert path != null;
-    String s = path.toLowerCase();
-    if (s.startsWith("http:") || s.startsWith("https:")) {
+    String s = path.toLowerCase(); // path must not be null
+    if( s.startsWith("http:") || s.startsWith("https:") ) {
       try {
         java.net.URL url = new URL(path);
         Key destination_key = Key.make(path);
         java.io.InputStream is = url.openStream();
-        if( is == null ) {
-          Log.err("Unable to open stream to URL " + path);
-        }
-
         UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
         UploadFileVec.readPut(destination_key, is, stats);
-
         files.add(path);
         keys.add(destination_key.toString());
+      } catch( Throwable e) {
+        fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
       }
-      catch( Throwable e) {
-        fails.add(path);
-      }
-
       return;
     }
-    else if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:")
-                               || s.startsWith("s3a:") || s.startsWith("maprfs:")) {
-      if (I[Value.HDFS] == null) {
-        throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
-      }
 
+    if( s.startsWith("hdfs:") || 
+        s.startsWith("s3:") || 
+        s.startsWith("s3n:") || 
+        s.startsWith("s3a:") || 
+        s.startsWith("maprfs:")) {
+      if (I[Value.HDFS] == null) throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
       I[Value.HDFS].importFiles(path, files, keys, fails, dels);
       return;
     }
-
+    // Attempt NFS import instead
     I[Value.NFS].importFiles(path, files, keys, fails, dels);
   }
 

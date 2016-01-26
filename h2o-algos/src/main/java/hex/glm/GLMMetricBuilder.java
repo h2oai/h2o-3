@@ -204,7 +204,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
         Vec weights = f.vec(m._parms._weights_column);
         if (resp != null) {
           gl = new GainsLift(preds.lastVec(), resp, weights);
-          gl.exec();
+          gl.exec(m._output._job);
         }
       }
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), gl);

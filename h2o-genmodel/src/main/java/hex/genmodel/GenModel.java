@@ -197,7 +197,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
     long hash = 0;              // hash for tie-breaking
     if( data != null )
-      for( double d : data ) hash ^= Double.doubleToRawLongBits(d) >> 6; // drop 6 least significants bits of mantisa (layout of long is: 1b sign, 11b exp, 52b mantisa)
+      for( double d : data ) hash ^= Double.doubleToRawLongBits(d) >> 6; // drop 6 least significants bits of mantissa (layout of long is: 1b sign, 11b exp, 52b mantisa)
 
     if (priorClassDist!=null) {
       // Tie-breaking based on prior probabilities

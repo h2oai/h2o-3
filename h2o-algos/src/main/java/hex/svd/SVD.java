@@ -7,8 +7,6 @@ import hex.*;
 import hex.DataInfo.Row;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
-import hex.schemas.ModelBuilderSchema;
-import hex.schemas.SVDV99;
 import hex.svd.SVDModel.SVDParameters;
 import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.*;
@@ -18,11 +16,12 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Singular Value Decomposition
@@ -41,44 +40,27 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // Number of columns in training set (p)
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
-  @Override public ModelBuilderSchema schema() {
-    return new SVDV99();
-  }
-
-  @Override protected Job<SVDModel> trainModelImpl(long work, boolean restartTimer) {
-    return start(new SVDDriver(), work, restartTimer);
-  }
-
-  @Override
-  public long progressUnits() {
+  @Override protected SVDDriver trainModelImpl() { return new SVDDriver(); }
+  @Override public long progressUnits() {
     switch(_parms._svd_method) {
-      case GramSVD:
-        return 2;
-      case Power:
-        return 1 + _parms._nv;
-      case Randomized:
-        return 5 + _parms._max_iterations;
-      default: return _parms._nv;
+    case GramSVD:    return 2;
+    case Power:      return 1 + _parms._nv;
+    case Randomized: return 5 + _parms._max_iterations;
+    default:         return _parms._nv;
     }
   }
-
-
-  @Override public ModelCategory[] can_build() {
-    return new ModelCategory[]{ ModelCategory.DimReduction };
-  }
-
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.DimReduction }; }
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
   // Called from an http request
-  public SVD(SVDModel.SVDParameters parms) {
-    super("SVD", parms);
-    init(false);
-  }
+  public SVD(SVDModel.SVDParameters parms         ) { super(parms    ); init(false); }
+  public SVD(SVDModel.SVDParameters parms, Job job) { super(parms,job); init(false); }
+  public SVD(boolean startup_once) { super(new SVDParameters(),startup_once); }
 
   @Override
   protected void checkMemoryFootPrint() {
     HeartBeat hb = H2O.SELF._heartbeat;
-    double p = _train.degreesOfFreedom();
+    double p = LinearAlgebraUtils.numColsExp(_train,true);
     long mem_usage = (long)(hb._cpus_allowed * p*p * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)); //one gram per core
     long max_mem = hb.get_free_mem();
     if (mem_usage > max_mem) {
@@ -86,7 +68,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
               + ") - try reducing the number of columns and/or the number of categorical factors.";
       error("_train", msg);
-      cancel(msg);
     }
   }
 
@@ -96,7 +77,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       error("_max_iterations", "max_iterations must be at least 1");
 
     if(_train == null) return;
-    _ncolExp = _train.numColsExp(_parms._use_all_factor_levels, false);
+    _ncolExp = LinearAlgebraUtils.numColsExp(_train,_parms._use_all_factor_levels);
     if (_ncolExp > MAX_COLS_EXPANDED)
       warn("_train", "_train has " + _ncolExp + " columns when categoricals are expanded. Algorithm may be slow.");
 
@@ -119,8 +100,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return ivv_sum;
   }
 
-  class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
-    protected SVDDriver() { super(true); } // bump driver priority
+  class SVDDriver extends Driver {
+    SVDModel _model;
 
     // private double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }
     private double[] powerLoop(Gram gram, long seed) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN(), seed)); }
@@ -155,12 +136,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     private double computeSigmaU(DataInfo dinfo, SVDModel model, int k, double[][] ivv_sum, Vec[] uvecs) {
       double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
-      CalcSigmaU ctsk = new CalcSigmaU(self(), dinfo, ivv_vk).doAll(Vec.T_NUM, dinfo._adaptedFrame);
+      CalcSigmaU ctsk = new CalcSigmaU(_job._key, dinfo, ivv_vk).doAll(Vec.T_NUM, dinfo._adaptedFrame);
       model._output._d[k] = ctsk._sval;
       assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;    // Check same number of skipped rows as Gram
       Frame tmp = ctsk.outputFrame();
       uvecs[k] = tmp.vec(0);   // Save output column of U
-      tmp.unlock(self());
+      tmp.unlock(_job);
       return model._output._d[k];
     }
 
@@ -171,9 +152,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
       try {
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
-        update(1, "Initializing random subspace of training data Y");
+        _job.update(1, "Initializing random subspace of training data Y");
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
-        RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
+        RandSubInit rtsk = new RandSubInit(_job._key, dinfo, gt);
         rtsk.doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
         yqfrm = rtsk.outputFrame(Key.make(), null, null);   // Alternates between Y and Q from Y = QR
 
@@ -184,15 +165,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         aqfrm.add(yqfrm);
 
         // Calculate Cholesky of Y Gram to get R' = L matrix
-        update(1, "Computing QR factorization of Y");
+        _job.update(1, "Computing QR factorization of Y");
         yinfo = new DataInfo(yqfrm, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
-        LinearAlgebraUtils.computeQInPlace(self(), yinfo);
+        LinearAlgebraUtils.computeQInPlace(_job._key, yinfo);
 
         model._output._iterations = 0;
         while (model._output._iterations < _parms._max_iterations) {
-          if(!isRunning()) break;
-          update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
+          if(stop_requested()) break;
+          _job.update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
           SMulTask stsk = new SMulTask(dinfo, _parms._nv);
@@ -205,18 +186,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // 3) [A,Q_{j-1}] -> [A,Y_j]: Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
           BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(qtilde));
           tsk.doAll(aqfrm);
-          LinearAlgebraUtils.computeQInPlace(self(), yinfo);
+          LinearAlgebraUtils.computeQInPlace(_job._key, yinfo);
           model._output._iterations++;
-          model.update(self());
-        }
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
+          model.update(_job);
         }
       } finally {
         if( yinfo != null ) yinfo.remove();
@@ -233,9 +205,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
       try {
         // 1) Initialize Y = AG where G ~ N(0,1) and compute Y = QR factorization
-        update(1, "Initializing random subspace of training data Y");
+        _job.update(1, "Initializing random subspace of training data Y");
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
-        RandSubInit rtsk = new RandSubInit(self(), dinfo, gt);
+        RandSubInit rtsk = new RandSubInit(_job._key, dinfo, gt);
         rtsk.doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
         ybig = rtsk.outputFrame(Key.make(), null, null);
 
@@ -251,17 +223,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         aqfrm.add(ayqfrm.subframe(ncolA + _parms._nv, ayqfrm.numCols()));   // [A,Q]
 
         // Calculate Cholesky of Gram to get R' = L matrix
-        update(1, "Computing QR factorization of Y");
+        _job.update(1, "Computing QR factorization of Y");
         yinfo = new DataInfo(ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
-        LinearAlgebraUtils.computeQ(self(), yinfo, yqfrm);
+        LinearAlgebraUtils.computeQ(_job._key, yinfo, yqfrm);
 
         model._output._iterations = 0;
         long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
         double qerr = 2 * TOLERANCE * qobs;   // Stop when average SSE between Q_j and Q_{j-2} below tolerance
         while ((model._output._iterations < 10 || qerr / qobs > TOLERANCE) && model._output._iterations < _parms._max_iterations) {   // Run at least 10 iterations before tolerance cutoff
-          if(!isRunning()) break;
-          update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
+          if(stop_requested()) break;
+          _job.update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
           SMulTask stsk = new SMulTask(dinfo, _parms._nv);
@@ -274,24 +246,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
           BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(ysmall_q));
           tsk.doAll(ayfrm);
-          qerr = LinearAlgebraUtils.computeQ(self(), yinfo, yqfrm);
+          qerr = LinearAlgebraUtils.computeQ(_job._key, yinfo, yqfrm);
           model._output._iterations++;
-          model.update(self());
+          model.update(_job);
         }
 
         // 4) Extract and save final Q_j from [A,Q] frame
         qfrm = ayqfrm.extractFrame(ncolA + _parms._nv, ayqfrm.numCols());
         qfrm = new Frame(Key.make(), qfrm.names(), qfrm.vecs());
         DKV.put(qfrm);
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
       } finally {
         if( yinfo != null ) yinfo.remove();
         if( ybig != null ) ybig.delete();
@@ -317,58 +280,51 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Frame aqfrm = new Frame(vecs);
 
         // 1) Form the matrix B' = A'Q = (Q'A)'
-        update(1, "Forming small matrix B = Q'A for direct SVD");
+        _job.update(1, "Forming small matrix B = Q'A for direct SVD");
         SMulTask stsk = new SMulTask(dinfo, _parms._nv);
         stsk.doAll(aqfrm);
 
         // 2) Compute SVD of small matrix: If B' = WDV', then B = VDW'
-        update(1, "Calculating SVD of small matrix locally");
+        _job.update(1, "Calculating SVD of small matrix locally");
         Matrix atqJ = new Matrix(stsk._atq);
         SingularValueDecomposition svdJ = atqJ.svd();
 
         // 3) Form orthonormal matrix U = QV
-        update(1, "Forming distributed orthonormal matrix U");
+        _job.update(1, "Forming distributed orthonormal matrix U");
         if (_parms._keep_u) {
           model._output._u_key = Key.make(u_name);
           double[][] svdJ_u = svdJ.getV().getMatrix(0,atqJ.getColumnDimension()-1,0,_parms._nv-1).getArray();
           qinfo = new DataInfo(qfrm, null, true, DataInfo.TransformType.NONE, false, false, false);
           DKV.put(qinfo._key, qinfo);
-          BMulTask btsk = new BMulTask(self(), qinfo, ArrayUtils.transpose(svdJ_u));
+          BMulTask btsk = new BMulTask(_job._key, qinfo, ArrayUtils.transpose(svdJ_u));
           btsk.doAll(_parms._nv, Vec.T_NUM, qinfo._adaptedFrame);
           u = btsk.outputFrame(model._output._u_key, null, null);
         }
 
         model._output._d = Arrays.copyOfRange(svdJ.getSingularValues(),0,_parms._nv);
         model._output._v = svdJ.getU().getMatrix(0,atqJ.getRowDimension()-1,0,_parms._nv-1).getArray();
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
       } finally {
         if( qinfo != null ) qinfo.remove();
       }
       return u;
     }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       SVDModel model = null;
       DataInfo dinfo = null;
       Frame u = null, qfrm = null;
       Vec[] uvecs = null;
 
       try {
+        Scope.enter();
         init(true);   // Initialize parameters
-        _parms.read_lock_frames(SVD.this); // Fetch & read-lock input frames
+        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
         model = new SVDModel(dest(), _parms, new SVDModel.SVDOutput(SVD.this));
-        model.delete_and_lock(self());
+        model.delete_and_lock(_job);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
         dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
@@ -393,13 +349,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if(_parms._svd_method == SVDParameters.Method.GramSVD) {
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
-          update(1, "Begin distributed calculation of Gram matrix");
-          GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
+          _job.update(1, "Begin distributed calculation of Gram matrix");
+          GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
           model._output._nobs = gtsk._nobs;
           model._output._total_variance = gram.diagSum() * gtsk._nobs / (gtsk._nobs-1);  // Since gram = X'X/nobs, but variance requires nobs-1 in denominator
-          model.update(self());
+          model.update(_job);
 
           // Cannot calculate SVD if all rows contain missing value(s) and hence were skipped
           if(gtsk._nobs == 0)
@@ -407,12 +363,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
           // Calculate SVD of G = A'A/n and back out SVD of A. If SVD of A = UDV' then A'A/n = V(D^2/n)V'
-          update(1, "Calculating SVD of Gram matrix locally");
+          _job.update(1, "Calculating SVD of Gram matrix locally");
           Matrix gramJ = new Matrix(gtsk._gram.getXX());
           SingularValueDecomposition svdJ = gramJ.svd();
 
           // Output diagonal of D
-          update(1, "Computing stats from SVD");
+          _job.update(1, "Computing stats from SVD");
           double[] sval = svdJ.getSingularValues();
           model._output._d = new double[_parms._nv];    // Only want rank = nv diagonal values
           for(int k = 0; k < _parms._nv; k++)
@@ -420,7 +376,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           // Output right singular vectors V
           double[][] v = svdJ.getV().getArray();
-          assert v.length == _ncolExp && dinfo._adaptedFrame.numColsExp(_parms._use_all_factor_levels, false) == _ncolExp;
+          assert v.length == _ncolExp && LinearAlgebraUtils.numColsExp(dinfo._adaptedFrame,_parms._use_all_factor_levels) == _ncolExp;
           model._output._v = new double[_ncolExp][_parms._nv];  // Only want rank = nv decomposition
           for(int i = 0; i < v.length; i++)
             System.arraycopy(v[i], 0, model._output._v[i], 0, _parms._nv);
@@ -431,22 +387,22 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             double[][] vt = ArrayUtils.transpose(model._output._v);
             for (int k = 0; k < _parms._nv; k++)
               ArrayUtils.div(vt[k], model._output._d[k]);
-            BMulTask tsk = new BMulTask(self(), dinfo, vt).doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
+            BMulTask tsk = new BMulTask(_job._key, dinfo, vt).doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
             u = tsk.outputFrame(model._output._u_key, null, null);
           }
         } else if(_parms._svd_method == SVDParameters.Method.Power) {
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
-          update(1, "Begin distributed calculation of Gram matrix");
-          GramTask gtsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
+          _job.update(1, "Begin distributed calculation of Gram matrix");
+          GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
           model._output._nobs = gtsk._nobs;
           model._output._total_variance = gram.diagSum() * gtsk._nobs / (gtsk._nobs-1);  // Since gram = X'X/nobs, but variance requires nobs-1 in denominator
-          model.update(self());
+          model.update(_job);
 
           // 1) Run one iteration of power method
-          update(1, "Iteration 1 of power method");     // One unit of work
+          _job.update(1, "Iteration 1 of power method");     // One unit of work
           // 1a) Initialize right singular vector v_1
           model._output._v = new double[_parms._nv][_ncolExp];  // Store V' for ease of use and transpose back at end
           model._output._v[0] = powerLoop(gram, _parms._seed);
@@ -463,17 +419,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             computeSigmaU(dinfo, model, 0, ivv_sum, uvecs);  // Compute first singular value \sigma_1
           }
           model._output._iterations = 1;
-          model.update(self()); // Update model in K/V store
+          model.update(_job); // Update model in K/V store
 
           // 1c) Update Gram matrix A_1'A_1 = (I - v_1v_1')A'A(I - v_1v_1')
           updateIVVSum(ivv_sum, model._output._v[0]);
           // double[][] gram_update = ArrayUtils.multArrArr(ArrayUtils.multArrArr(ivv_sum, gram), ivv_sum);
-          GramUpdate guptsk = new GramUpdate(self(), dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
+          GramUpdate guptsk = new GramUpdate(_job._key, dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
           Gram gram_update = guptsk._gram;
 
           for (int k = 1; k < _parms._nv; k++) {
-            if (!isRunning()) break;
-            update(1, "Iteration " + String.valueOf(k+1) + " of power method");   // One unit of work
+            if (stop_requested()) break;
+            _job.update(1, "Iteration " + String.valueOf(k+1) + " of power method");   // One unit of work
 
             // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
             model._output._v[k] = powerLoop(gram_update, _parms._seed);
@@ -486,17 +442,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
             updateIVVSum(ivv_sum, model._output._v[k]);   // Update I - \sum_{i=1}^k v_iv_i' with sum up to current singular value
             // gram_update = ArrayUtils.multArrArr(ivv_sum, ArrayUtils.multArrArr(gram, ivv_sum));  // Too slow on wide arrays
-            guptsk = new GramUpdate(self(), dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
+            guptsk = new GramUpdate(_job._key, dinfo, ivv_sum).doAll(dinfo._adaptedFrame);
             gram_update = guptsk._gram;
             model._output._iterations++;
-            model.update(self()); // Update model in K/V store
+            model.update(_job); // Update model in K/V store
           }
 
           // 4) Normalize output frame columns by singular values to get left singular vectors
           model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
 
           if (!_parms._only_v && !_parms._keep_u) {          // Delete U vecs if computed, but user does not want it returned
-            for (int i = 0; i < uvecs.length; i++) uvecs[i].remove();
+            for( Vec uvec : uvecs ) uvec.remove();
             model._output._u_key = null;
           } else if (!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
             u = new Frame(model._output._u_key, null, uvecs);
@@ -515,33 +471,22 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           ArrayUtils.frame(model._output._v_key, null, model._output._v);
         }
         model._output._model_summary = createModelSummaryTable(model._output);
-        model.update(self());
-        done();
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
+        model.update(_job);
       } finally {
-        updateModelOutput();
-        if( model != null ) model.unlock(_key);
+        if( model != null ) model.unlock(_job);
         if( dinfo != null ) dinfo.remove();
         if( u != null & !_parms._keep_u ) u.delete();
         if( qfrm != null ) qfrm.delete();
-        _parms.read_unlock_frames(SVD.this);
+        _parms.read_unlock_frames(_job);
+
+        List<Key> keep = new ArrayList<>();
+        Frame uFrm = DKV.getGet(model._output._u_key);
+        if (uFrm != null) for (Vec vec : uFrm.vecs()) keep.add(vec._key);
+        Frame vFrm = DKV.getGet(model._output._v_key);
+        if (vFrm != null) for (Vec vec : vFrm.vecs()) keep.add(vec._key);
+        Scope.exit(keep.toArray(new Key[0]));
       }
-
-      // Job thisJob = DKV.getGet(_key);
-      // System.out.println("------------- JOB status: " + Arrays.toString(Job.jobs()));
       tryComplete();
-    }
-
-    Key self() {
-      return _key;
     }
   }
 
@@ -563,7 +508,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     public double _sval;
     public long _nobs;
 
-    public CalcSigmaU(Key jobKey, DataInfo dinfo, double[] svec) {
+    public CalcSigmaU(Key<Job> jobKey, DataInfo dinfo, double[] svec) {
       super(jobKey, dinfo);
       _svec = svec;
       _sval = 0;
@@ -591,7 +536,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     public Gram _gram;
     public long _nobs;
 
-    public GramUpdate(Key jobKey, DataInfo dinfo, double[][] ivv) {
+    public GramUpdate(Key<Job> jobKey, DataInfo dinfo, double[][] ivv) {
       super(jobKey, dinfo);
       assert null != ivv && ivv.length == ivv[0].length;
       _ivv = ivv;
@@ -651,7 +596,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   private static class RandSubInit extends FrameTask<RandSubInit> {
     final double[][] _gaus;   // G' is k by p for convenient multiplication
 
-    public RandSubInit(Key jobKey, DataInfo dinfo, double[][] gaus) {
+    public RandSubInit(Key<Job> jobKey, DataInfo dinfo, double[][] gaus) {
       super(jobKey, dinfo);
       _gaus = gaus;
     }

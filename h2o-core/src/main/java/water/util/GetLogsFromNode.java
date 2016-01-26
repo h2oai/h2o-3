@@ -53,9 +53,7 @@ public class GetLogsFromNode extends Iced {
   private static class GetLogsTask extends DTask<GetLogsTask> {
     private byte[] _bytes;
 
-    public GetLogsTask() {
-      _bytes = null;
-    }
+    public GetLogsTask() { super(H2O.MIN_HI_PRIORITY); _bytes = null; }
 
     public void doIt() {
       try {
@@ -139,10 +137,6 @@ public class GetLogsFromNode extends Iced {
       catch(Exception e) {
         Log.warn(e);
       }
-    }
-
-    @Override public byte priority() {
-      return H2O.MIN_HI_PRIORITY;
     }
   }
 }

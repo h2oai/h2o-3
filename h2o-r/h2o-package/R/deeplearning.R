@@ -15,6 +15,7 @@
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
 #'        Otherwise the first factor level is omitted (without loss of accuracy). Useful for
 #'        variable importances and auto-enabled for autoencoder.
+#' @param standardize \code{Logical}. If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
 #' @param activation A string indicating the activation function to use. Must be either "Tanh",
 #'        "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
 #' @param hidden Hidden layer sizes (e.g. c(100,100))
@@ -73,6 +74,8 @@
 #'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop)
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @param quiet_mode Enable quiet mode for less output to standard output
 #' @param max_confusion_matrix_size Max. size (number of classes) for confusion matrices to be shown
 #' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ratio computation(for
@@ -135,6 +138,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              checkpoint,
                              autoencoder = FALSE,
                              use_all_factor_levels = TRUE,
+                             standardize = TRUE,
                              activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
                              hidden= c(200, 200),
                              epochs = 10,
@@ -170,6 +174,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              stopping_rounds=5,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
                              stopping_tolerance=0,
+                             max_runtime_secs=0,
                              quiet_mode,
                              max_confusion_matrix_size,
                              max_hit_ratio_k,
@@ -236,6 +241,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$autoencoder <- autoencoder
   if(!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
+  if(!missing(standardize))
+    parms$standardize <- standardize
   if(!missing(activation))
     parms$activation <- activation
   if(!missing(hidden))
@@ -308,6 +315,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if(!missing(stopping_rounds)) parms$stopping_rounds <- stopping_rounds
   if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
+  if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(quiet_mode))
     parms$quiet_mode <- quiet_mode
   if(!missing(max_confusion_matrix_size))

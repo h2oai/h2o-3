@@ -17,8 +17,8 @@ public class UnlockTest extends TestUtil {
     Frame fr1 = new Frame(Key.make(), f.names(), f.vecs());
     Frame fr2 = new Frame(Key.make(), f.names(), f.vecs());
     // Lock the frames against writes
-    fr1.delete_and_lock(null);
-    fr2.delete_and_lock(null);
+    fr1.delete_and_lock();
+    fr2.delete_and_lock();
     int i = 0;
     try {
       // try to delete the write-locked frames -> will throw an exception

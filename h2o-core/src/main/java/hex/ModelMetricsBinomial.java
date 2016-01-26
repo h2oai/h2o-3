@@ -124,7 +124,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
           Vec weight = frameWithWeights.vec(m._parms._weights_column);
           if (resp != null) {
             gl = new GainsLift(preds.lastVec(), resp, weight);
-            gl.exec();
+            gl.exec(m._output._job);
           }
         }
         return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc,  logloss, gl));

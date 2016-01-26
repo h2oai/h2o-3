@@ -38,6 +38,7 @@ public class TestUtil extends Iced {
   public static void stall_till_cloudsize(int x) {
     if( !_stall_called_before ) {
       H2O.main(new String[]{});
+      H2O.registerRestApis(System.getProperty("user.dir"));
       _stall_called_before = true;
     }
     H2O.waitForCloudSize(x, 30000);
@@ -68,7 +69,6 @@ public class TestUtil extends Iced {
     assertTrue("No keys leaked, leaked_keys = " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
-      @Override public byte priority() { return H2O.GUI_PRIORITY; }
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     _initial_keycnt = H2O.store_size();

@@ -1,5 +1,6 @@
 package hex;
 
+import water.Iced;
 import water.Job;
 import water.Key;
 import water.Keyed;
@@ -9,15 +10,14 @@ import water.Keyed;
  *
  * Experimental API (to support nice Java/Scala API) and share common code with ModelBuilder.
  */
-abstract public class Transformer<T extends Keyed> extends Job<T> {
+abstract public class Transformer<T extends Keyed> extends Iced {
+  public final Job<T> _job;
 
-  public Transformer(Key<T> dest, String desc) { super(dest, desc); }
+  public Transformer(Key<T> dest, String clz_of_T, String desc) { _job = new Job(dest, clz_of_T, desc); }
 
   /** Execution endpoint for transformations. */
-  public <X extends Transformer<T>> X exec() {
-    return execImpl();
-  }
+  public final Job<T> exec() { return execImpl(); }
 
   /** Implementation endpoint for transformations. */
-  protected abstract <X extends Transformer<T>> X execImpl();
+  protected abstract Job<T> execImpl();
 }

@@ -4,6 +4,7 @@ import h2o
 from tests import pyunit_utils
 
 
+#analogous to runit_empty_strings.R
 def empty_strings():
 
   #dictionary

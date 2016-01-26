@@ -1,7 +1,6 @@
 package water.init;
 
 import jsr166y.CountedCompleter;
-import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.util.Log;
@@ -61,7 +60,7 @@ public class NetworkBench extends Iced {
     long t1 = System.currentTimeMillis();
     H2O.submitTask(new H2OCountedCompleter() {
      @Override
-     protected void compute2() {
+     public void compute2() {
        _results = new NetworkBenchResults[MSG_SZS.length];
        for(int i = 0; i < MSG_SZS.length; ++i) {
          long t2 = System.currentTimeMillis();
@@ -105,7 +104,7 @@ public class NetworkBench extends Iced {
         new Random().nextBytes(dd);
       }
       @Override
-      protected void compute2() {tryComplete();}
+      public void compute2() {tryComplete();}
     }
     @Override
     public void setupLocal(){
@@ -119,7 +118,7 @@ public class NetworkBench extends Iced {
           H2O.submitTask(new H2OCountedCompleter(this) {
             long t1;
             @Override
-            protected void compute2() {
+            public void compute2() {
               t1 = System.currentTimeMillis();
               addToPendingCount(_msgCnt - 1);
               for (int j = 0; j < _msgCnt; ++j)
@@ -155,7 +154,7 @@ public class NetworkBench extends Iced {
     }
     long _time;  // out
     @Override
-    protected void compute2() {
+    public void compute2() {
       Futures fs = new Futures();
       _time = System.currentTimeMillis();
       addToPendingCount(_msgCnt-1);
@@ -169,7 +168,6 @@ public class NetworkBench extends Iced {
           }
         }.asyncExecOnAllNodes();
     }
-    @Override public byte priority(){return 1;}
     @Override public void onCompletion(CountedCompleter cc) {
       _time = System.currentTimeMillis() - _time;
     }

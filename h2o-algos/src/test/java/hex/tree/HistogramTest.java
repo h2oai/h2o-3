@@ -94,7 +94,8 @@ public class HistogramTest extends TestUtil {
     private final Histo _histo;
     Filler(Histo histo, long seed) { _seed = seed; _histo = histo; }
 
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       Random rng = new Random(_seed);
       // make sure there's enough work for each thread (and hence enough race conditions)
       for (int loop=0; loop<THREAD_LOOPS; ++loop) {

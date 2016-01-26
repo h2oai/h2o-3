@@ -53,16 +53,14 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   // Override this to read in subparts
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { return this; }
 
-  /**
-   * High-quality 64-bit checksum of the <i>content</i> of the
-   * object.  Similar to hashcode(), but a long to reduce the
-   * chance of hash clashes.  For composite objects this should
-   * be defined using the subcomponents' checksums (or hashcodes
-   * if not available).  If two Keyed objects have the same
-   * checksum() there should be a 1 - 1/2^64 chance that they
-   * are the same object by value.
+  /** High-quality 64-bit checksum of the <i>content</i> of the object.  Similar
+   *  to hashcode(), but a long to reduce the chance of hash clashes.  For
+   *  composite objects this should be defined using the subcomponents' checksums
+   *  (or hashcodes if not available).  If two Keyed objects have the same
+   *  checksum() there should be a 1 - 1/2^64 chance that they are the same
+   *  object by value.
    */
-  abstract protected long checksum_impl();
+  protected long checksum_impl() { throw H2O.fail("Checksum not implemented by class "+this.getClass()); }
   private long _checksum;
   // Efficiently fetch the checksum, setting on first access
   public final long checksum() {
@@ -71,4 +69,6 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     if( x==0 ) x=1;
     return (_checksum=x);
   }
+
+  public Class<? extends water.api.KeyV3> makeSchema() { throw H2O.fail("Override in subclasses which can be the result of a Job"); }
 }

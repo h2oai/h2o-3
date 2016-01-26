@@ -2,6 +2,9 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import static java.lang.Double.isNaN;
+
+import hex.Model;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.*;
 import water.fvec.Frame;
 import water.util.*;
@@ -102,13 +105,11 @@ final public class DeepLearningModelInfo extends Iced {
   }
 
   public DeepLearningParameters parameters;
-
-  public final DeepLearningParameters get_params() {
-    return parameters;
-  }
-
-  public final void set_params(DeepLearningParameters p) {
+  Key<Model> _model_id;
+  public final DeepLearningParameters get_params() { return parameters; }
+  public final void set_params(DeepLearningParameters p, Key<Model> model_id ) {
     parameters = (DeepLearningParameters) p.clone();
+    _model_id = model_id;
   }
 
   private double[] mean_rate;
@@ -160,12 +161,13 @@ final public class DeepLearningModelInfo extends Iced {
    * @param train User-given training data frame, prepared by AdaptTestTrain
    * @param valid User-specified validation data frame, prepared by AdaptTestTrain
    */
-  public DeepLearningModelInfo(final DeepLearningParameters params, final DataInfo dinfo, int nClasses, Frame train, Frame valid) {
+  public DeepLearningModelInfo(final DeepLearningParameters params, Key model_id, final DataInfo dinfo, int nClasses, Frame train, Frame valid) {
     _classification = nClasses > 1;
     _train = train;
     _valid = valid;
     data_info = dinfo;
     parameters = (DeepLearningParameters) params.clone(); //make a copy, don't change model's parameters
+    _model_id = model_id;
     DeepLearningParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
 
     final int num_input = dinfo.fullN();
@@ -309,7 +311,7 @@ final public class DeepLearningModelInfo extends Iced {
     long byte_size = new AutoBuffer().put(this).buf().length;
     TwoDimTable table = new TwoDimTable(
             "Status of Neuron Layers",
-            (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
+            (!get_params()._autoencoder ? ("predicting " + data_info._adaptedFrame.lastVecName() + ", ") : "") +
                     (get_params()._autoencoder ? "auto-encoder" :
                             _classification ? (units[units.length - 1] + "-class classification") : "regression")
                     + ", " + get_params()._distribution + " distribution, " + get_params()._loss + " loss, "
@@ -711,11 +713,11 @@ final public class DeepLearningModelInfo extends Iced {
   }
 
   public Key localModelInfoKey(H2ONode node) {
-    return Key.make(get_params()._model_id + ".node" + node.index(), (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
+    return Key.make(_model_id + ".node" + node.index(), (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
   }
 
   public Key elasticAverageModelInfoKey() {
-    return Key.make(get_params()._model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
+    return Key.make(_model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
   }
 
   static public class GradientCheck {

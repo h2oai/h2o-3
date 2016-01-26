@@ -1,21 +1,10 @@
 package water.api;
 
-import hex.ModelBuilder;
 import water.*;
 import water.exceptions.H2ONotFoundArgumentException;
-import water.util.Log;
 
 public class JobsHandler extends Handler {
   /** Impl class for a collection of jobs; only used in the API to make it easier to cons up the jobs array via the magic of PojoUtils.copyProperties.  */
-
-  public static final class Jobs extends Iced {
-    public Key _job_id;
-    public Job[] _jobs;
-
-    public Jobs() {}
-    public Jobs(Job j) { _jobs = new Job[1]; _jobs[0] = j; }
-  }
-
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public JobsV3 list(int version, JobsV3 s) {
@@ -27,25 +16,9 @@ public class JobsHandler extends Handler {
 
     int i = 0;
     for (Job j : jobs) {
-      if (j instanceof ModelBuilder) {
-        // special case: need to add a ModelBuilderJobV3 next.
-        try {
-          s.jobs[i] = new ModelBuilderJobV3().fillFromImpl((ModelBuilder) j);
-        }
-        catch (Exception e) {
-          // can happen if, e.g., someone overwrites a Model in the DKV with an object of another kind, and _dest ModelKeyV3 creation fails
-          Log.warn("Caught exception filling a ModelBuilderJobV3; falling back to JobV3: " + e);
-          s.jobs[i] = new JobV3().fillFromImpl(j);
-        }
-      } else {
-        try {
-          s.jobs[i] = (JobV3) Schema.schema(version, j).fillFromImpl(j);
-        }
-        catch (H2ONotFoundArgumentException e) {
-          // no special schema for this job subclass, so fall back to JobV3
-          s.jobs[i] = new JobV3().fillFromImpl(j);
-        }
-      }
+      try { s.jobs[i] = (JobV3) Schema.schema(version, j).fillFromImpl(j); }
+      // no special schema for this job subclass, so fall back to JobV3
+      catch (H2ONotFoundArgumentException e) { s.jobs[i] = new JobV3().fillFromImpl(j); }
       i++; // Java does the increment before the function call which throws?!
     }
     return s;
@@ -60,25 +33,11 @@ public class JobsHandler extends Handler {
     if( !(ice instanceof Job) ) throw new IllegalArgumentException("Must be a Job not a "+ice.getClass());
 
     Job j = (Job) ice;
-    Jobs jobs = new Jobs();
-    jobs._jobs = new Job[1];
-    jobs._jobs[0] = (Job) ice;
     s.jobs = new JobV3[1];
     // s.fillFromImpl(jobs);
-
-    if (j instanceof ModelBuilder) {
-      // special case: need to add a ModelBuilderJobV3 next.
-      s.jobs[0] = new ModelBuilderJobV3().fillFromImpl(j);
-    } else {
-      try {
-        s.jobs[0] = (JobV3) Schema.schema(version, j).fillFromImpl(j);
-      }
-      catch (H2ONotFoundArgumentException e) {
-        // no special schema for this job subclass, so fall back to JobV3
-        s.jobs[0] = new JobV3().fillFromImpl(j);
-      }
-    }
-
+    try { s.jobs[0] = (JobV3) Schema.schema(version, j).fillFromImpl(j); }
+    // no special schema for this job subclass, so fall back to JobV3
+    catch (H2ONotFoundArgumentException e) { s.jobs[0] = new JobV3().fillFromImpl(j); }
     return s;
   }
 
@@ -87,7 +46,7 @@ public class JobsHandler extends Handler {
     if (j == null) {
       throw new IllegalArgumentException("No job with key " + c.job_id.key());
     }
-    j.cancel();
+    j.stop(); // Request Job stop
     return c;
   }
 }

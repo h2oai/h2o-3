@@ -72,9 +72,7 @@ public class WaterMeterIo extends Iced {
   private static class GetTask extends DTask<GetTask> {
     private IoStatsEntry _persist_stats[];
 
-    public GetTask() {
-      _persist_stats = null;
-    }
+    public GetTask() { super(H2O.MIN_HI_PRIORITY); _persist_stats = null; }
 
     @Override public void compute2() {
       PersistManager.PersistStatsEntry s[] = H2O.getPM().getStats();
@@ -120,10 +118,6 @@ public class WaterMeterIo extends Iced {
       }
 
       tryComplete();
-    }
-
-    @Override public byte priority() {
-      return H2O.MIN_HI_PRIORITY;
     }
   }
 }

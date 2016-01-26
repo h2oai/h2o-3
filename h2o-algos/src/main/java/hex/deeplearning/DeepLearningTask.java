@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.FrameTask;
 import water.DKV;
@@ -37,7 +38,10 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param iteration
    */
   public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, int iteration){
-    super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + inputModel.get_processed_global(), iteration, inputModel.get_params()._sparse);
+    this(jobKey,inputModel,fraction,iteration,null);
+  }
+  public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, int iteration, H2O.H2OCountedCompleter cmp){
+    super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + inputModel.get_processed_global(), iteration, inputModel.get_params()._sparse,cmp);
     assert(inputModel.get_processed_local() == 0);
     _training=true;
     _sharedmodel = inputModel;
@@ -61,7 +65,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           _localmodel = _sharedmodel.deep_clone();
         } else {
           //Make sure that the local model has the right global (shared) parameters after checkpoint restart!
-          _localmodel.set_params(_sharedmodel.get_params());
+          _localmodel.set_params(_sharedmodel.get_params(), _sharedmodel._model_id);
           _localmodel.set_processed_global(_sharedmodel.get_processed_global());
         }
       }

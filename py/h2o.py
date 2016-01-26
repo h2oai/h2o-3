@@ -10,7 +10,7 @@ class H2O(object):
     json_url_history = []
     python_test_name = inspect.stack()[1][1]
     verbose = False
-    experimental_algos = ["pca", "svd", "glrm"]
+    experimental_algos = ["svd"]
 
     ## TODO: support api_version parameter for all api calls!
     # Also a global in the H2O object set at creation time.
@@ -764,7 +764,7 @@ class H2O(object):
           _rest_version = 99
         else:
           _rest_version = 3
-        result = self.__do_json_request('/' + str(_rest_version) + '/ModelBuilders/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors 
+        result = self.__do_json_request('/' + str(_rest_version) + '/ModelBuilders/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False, suppressErrorMsg=True)  # NOTE: DO NOT die if validation errors 
 
         H2O.verboseprint("model parameters validation: " + repr(result))
         return result
@@ -814,10 +814,24 @@ class H2O(object):
 
 
     '''
-    Build a Cartesian grid of models on the h2o cluster using the given algorithm, training 
-    Frame, model parameters and grid parameters.
+    Build a Cartesian grid of models on the h2o cluster using the given algorithm, training Frame, model parameters and grid parameters.  
+
+    The search_criteria parameter is an optional dictionary which specifies smarter hyperparameter search. 
+    For example, if we set grid_parameters and search_criteria as follows:
+
+    { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_models': 5 }
+
+    5 models will be built from the 12 possible combinations.
+
+    Available search_criteria parameters are:
+    
+    'strategy': 'Cartesian' (the default) or 'Random'
+
+    'max_models': an optional integer limit on the number of models
+
+    'max_time_ms': an optional limit on the total runtime, in mS
     '''
-    def build_model_grid(self, algo, training_frame, parameters, grid_parameters, grid_id = None, timeoutSecs=60, asynchronous=False, **kwargs):
+    def build_model_grid(self, algo, training_frame, parameters, grid_parameters, grid_id = None, timeoutSecs=60, asynchronous=False, search_criteria=None, **kwargs):
         # basic parameter checking
         assert algo is not None, 'FAIL: "algo" parameter is null'
         assert training_frame is not None, 'FAIL: "training_frame" parameter is null'
@@ -842,6 +856,12 @@ class H2O(object):
         post_parameters.update(parameters)
         post_parameters['hyper_parameters'] = grid_parameters
         # gridParams['grid_parameters'] = json.dumps(hyperParameters)
+
+        if search_criteria is not None:
+            if 'strategy' in search_criteria: post_parameters['strategy'] = search_criteria['strategy']
+            if 'max_models' in search_criteria: post_parameters['max_models'] = search_criteria['max_models']
+            if 'max_time_ms' in search_criteria: post_parameters['max_time_ms'] = search_criteria['max_time_ms']
+            if 'seed' in search_criteria: post_parameters['seed'] = search_criteria['seed']
 
         # print("post_parameters: " + repr(post_parameters))
 

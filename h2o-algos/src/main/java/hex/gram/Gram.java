@@ -173,8 +173,8 @@ public final class Gram extends Iced<Gram> {
    * Compute Cholesky decompostion by computing partial QR decomposition (R == LU).
    *
    * The advantage of this method over the standard solve is that it can deal with Non-SPD matrices.
-   * Gram matrix comes out as Non-SPD if we have co-linear columns.
-   * QR decomposition can identify co-linear (redundant) columns and remove them from the dataset.
+   * Gram matrix comes out as Non-SPD if we have collinear columns.
+   * QR decomposition can identify collinear (redundant) columns and remove them from the dataset.
    *
    * QR computation:
    * QR is computed using Gram-Schmidt elimination, using Gram matrix instead of the underlying dataset.
@@ -185,7 +185,7 @@ public final class Gram extends Iced<Gram> {
    *      for l = 1:j-1
    *        gamma_jl = dot(x_l,x_j)/dot(x_l,x_l)
    *      zj = xj - sum(gamma_j[l]*x_l)
-   *      if(zj ~= 0) xj was redundant (co-linear)
+   *      if(zj ~= 0) xj was redundant (collinear)
    * Zjs are orthogonal projections of xk and form base of the X space. (dot(z_i,z_j) == 0 for i != j)
    * In the end, gammas contain (Scaled) R from the QR decomp which is == LU from cholesky decomp.
    *
@@ -211,7 +211,7 @@ public final class Gram extends Iced<Gram> {
    *       compute gamma_jl
    *     update gram by replacing xk with zk = xk- sum(gamma_jl*s*xl);
    *
-   * @param dropped_cols - empty list which will be filled with co-linear columns removed during computation
+   * @param dropped_cols - empty list which will be filled with collinear columns removed during computation
    * @return Cholesky - cholesky decomposition fo the gram
    */
   public Cholesky qrCholesky(ArrayList<Integer> dropped_cols) {
@@ -239,7 +239,7 @@ public final class Gram extends Iced<Gram> {
       for(int k = 0; k < j; ++k) // only need the diagonal, the rest is 0 (dot product of orthogonal vectors)
         zjj += gamma[k] * (gamma[k] * Z[k][k] - 2*Z[j][k]);
       ZdiagInv[j] = 1./zjj;
-      if(-f_eps < zjj && zjj < f_eps) { // co-linear column, drop it!
+      if(-f_eps < zjj && zjj < f_eps) { // collinear column, drop it!
         zjj = 0;
         dropped_cols.add(j);
         ZdiagInv[j] = 0;
@@ -1076,7 +1076,7 @@ public final class Gram extends Iced<Gram> {
     public Gram _gram;
     public long _nobs;
 
-    public GramTask(Key jobKey, DataInfo dinfo){
+    public GramTask(Key<Job> jobKey, DataInfo dinfo){
       super(jobKey,dinfo);
     }
     @Override protected boolean chunkInit(){

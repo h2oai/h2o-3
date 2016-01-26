@@ -36,12 +36,14 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
         "stopping_rounds",
         "stopping_metric",
         "stopping_tolerance",
+        "max_runtime_secs",
 				"seed",
 				"build_tree_one_node",
         "mtries",
         "sample_rate",
         "binomial_double_trees",
-        "checkpoint"
+        "checkpoint",
+        "col_sample_rate_per_tree"
     };
 
     // Input fields

@@ -2,7 +2,7 @@ package hex.deeplearning;
 
 import hex.FrameSplitter;
 import water.TestUtil;
-
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -63,8 +63,7 @@ public class DeepLearningMissingTest extends TestUtil {
             frtmp.remove(frtmp.numCols() - 1); //exclude the response
             DKV.put(frtmp._key, frtmp); //need to put the frame (to be modified) into DKV for MissingInserter to pick up
             FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
-            j.execImpl();
-            j.get(); //MissingInserter is non-blocking, must block here explicitly
+            j.execImpl().get(); //MissingInserter is non-blocking, must block here explicitly
             DKV.remove(frtmp._key); //Delete the frame header (not the data)
           }
 
@@ -81,7 +80,6 @@ public class DeepLearningMissingTest extends TestUtil {
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
           p._epochs = 3;
-          p._model_id = Key.make();
           p._reproducible = true;
           p._seed = seed;
           p._elastic_averaging = false;
@@ -89,21 +87,14 @@ public class DeepLearningMissingTest extends TestUtil {
           // Convert response to categorical
           int ri = train.numCols()-1;
           int ci = test.find(p._response_column);
-          Scope.track(train.replace(ri, train.vecs()[ri].toCategoricalVec())._key);
-          Scope.track(test .replace(ci, test.vecs()[ci].toCategoricalVec())._key);
+          Scope.track(train.replace(ri, train.vecs()[ri].toCategoricalVec()));
+          Scope.track(test .replace(ci, test.vecs()[ci].toCategoricalVec()));
           DKV.put(train);
           DKV.put(test);
 
           DeepLearning dl = new DeepLearning(p);
-          try {
-            Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");
-            mymodel = dl.trainModel().get();
-          } catch (Throwable t) {
-            t.printStackTrace();
-            throw new RuntimeException(t);
-          } finally {
-            dl.remove();
-          }
+          Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");
+          mymodel = dl.trainModel().get();
 
           // Extract the scoring on validation set from the model
           double err = mymodel.loss();

@@ -14,7 +14,7 @@ public class RemoveAllHandler extends Handler {
     Log.info("Removing all objects");
     Futures fs = new Futures();
     // Cancel and remove leftover running jobs
-    for( Job j : Job.jobs() ) { j.cancel(); j.remove(fs); }
+    for( Job j : Job.jobs() ) { j.stop_requested(); j.remove(fs); }
     // Wipe out any and all session info
     if( InitIDHandler.SESSIONS != null ) {
       for(String k: InitIDHandler.SESSIONS.keySet() )
@@ -23,8 +23,7 @@ public class RemoveAllHandler extends Handler {
     }
     fs.blockForPending();
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
-    new MRTask(){
-      @Override public byte priority() { return H2O.GUI_PRIORITY; }
+    new MRTask(H2O.MIN_HI_PRIORITY){
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
     }.doAllNodes();
     // Wipe the backing store without regard as well

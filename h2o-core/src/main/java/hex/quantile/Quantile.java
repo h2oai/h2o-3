@@ -2,17 +2,8 @@ package hex.quantile;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.schemas.ModelBuilderSchema;
-import hex.schemas.QuantileV3;
-import water.DKV;
-import water.H2O.H2OCountedCompleter;
-import water.Job;
-import water.MRTask;
-import water.Scope;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.*;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -27,23 +18,13 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   @Override protected boolean logMe() { return false; }
 
   // Called from Nano thread; start the Quantile Job on a F/J thread
-  public Quantile( QuantileModel.QuantileParameters parms ) { super("Quantile",parms); init(false); }
-
-  public ModelBuilderSchema schema() { return new QuantileV3(); }
-
-  @Override public Quantile trainModelImpl(long work, boolean restartTimer) {
-    return (Quantile)start(new QuantileDriver(), work, restartTimer);
-  }
-
-  @Override
-  public long progressUnits() {
-    return train().numCols()*_parms._probs.length;
-  }
-
-
-  @Override public ModelCategory[] can_build() {
-    return new ModelCategory[]{ModelCategory.Unknown};
-  }
+  public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }
+  public Quantile( QuantileModel.QuantileParameters parms, Job job ) { super(parms, job); init(false); }
+  @Override public Driver trainModelImpl() { return new QuantileDriver(); }
+  @Override public long progressUnits() { return train().numCols()*_parms._probs.length; }
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
+  // any number of chunks is fine - don't rebalance - it's not worth it for a few passes over the data (at most)
+  @Override protected int desiredChunks(final Frame original_fr, boolean local) { return 1;  }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -64,41 +45,41 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     if ( numSpecialCols() >1 ) throw new IllegalArgumentException("Cannot handle more than 1 special vec (weights)");
   }
 
-  // ----------------------
-  private class QuantileDriver extends H2OCountedCompleter<QuantileDriver> {
-
-    private class SumWeights extends MRTask<SumWeights> {
-      double sum;
-      @Override public void map(Chunk c, Chunk w) { for (int i=0;i<c.len();++i)
-        if (!c.isNA(i)) {
-          double wt = w.atd(i);
+  private static class SumWeights extends MRTask<SumWeights> {
+    double sum;
+    @Override public void map(Chunk c, Chunk w) { for (int i=0;i<c.len();++i)
+      if (!c.isNA(i)) {
+        double wt = w.atd(i);
 //          For now: let the user give small weights, results are probably not very good (same as for wtd.quantile in R)
 //          if (wt > 0 && wt < 1) throw new H2OIllegalArgumentException("Quantiles only accepts weights that are either 0 or >= 1.");
-          sum += wt;
-        }
+        sum += wt;
       }
-      @Override public void reduce(SumWeights mrt) { sum+=mrt.sum; }
     }
+    @Override public void reduce(SumWeights mrt) { sum+=mrt.sum; }
+  }
 
-    @Override protected void compute2() {
+  // ----------------------
+  private class QuantileDriver extends Driver {
+
+    @Override public void compute2() {
       QuantileModel model = null;
       try {
         Scope.enter();
-        _parms.read_lock_frames(Quantile.this); // Fetch & read-lock source frame
+        _parms.read_lock_frames(_job); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
         model = new QuantileModel(dest(), _parms, new QuantileModel.QuantileOutput(Quantile.this));
         model._output._parameters = _parms;
         model._output._quantiles = new double[_ncols][_parms._probs.length];
-        model.delete_and_lock(_key);
+        model.delete_and_lock(_job);
 
 
         // ---
         // Run the main Quantile Loop
         Vec vecs[] = train().vecs();
         for( int n=0; n<_ncols; n++ ) {
-          if( !isRunning() ) return; // Stopped/cancelled
+          if( stop_requested() ) return; // Stopped/cancelled
           Vec vec = vecs[n];
           if (vec.isBad()) {
             model._output._quantiles[n] = new double[_parms._probs.length];
@@ -123,75 +104,78 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
             }
 
             // Update the model
-            model.update(_key); // Update model in K/V store
-            update(1);          // One unit of work
+            model.update(_job); // Update model in K/V store
+            _job.update(0);     // One unit of work
           }
           StringBuilder sb = new StringBuilder();
           sb.append("Quantile: iter: ").append(model._output._iterations).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
           Log.debug(sb);
         }
-        done();                 // Job done!
-      } catch( Throwable t ) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          t.printStackTrace();
-          failed(t);
-          throw t;
-        }
       } finally {
-        updateModelOutput();
-        if( model != null ) model.unlock(_key);
-        _parms.read_unlock_frames(Quantile.this);
+        if( model != null ) model.unlock(_job);
+        _parms.read_unlock_frames(_job);
         Scope.exit(model == null ? null : model._key);
       }
       tryComplete();
     }
   }
 
-  // FIXME: This is sloppy, but want to run Quantile without Job... Basically, H2O architecture is not good for this so have to hack it!
-  public static class QTask extends H2OCountedCompleter<QTask> {
-    final double _probs[];
-    final Frame _train;
+  public static class StratifiedQuantilesTask extends H2O.H2OCountedCompleter<StratifiedQuantilesTask> {
+    // INPUT
+    final double _prob;
+    final Vec _response; //vec to compute quantile for
+    final Vec _weights; //obs weights
+    final Vec _strata; //continuous integer range mapping into the _quantiles[id][]
     final QuantileModel.CombineMethod _combine_method;
 
-    public double[][] _quantiles;
-    public QTask(H2OCountedCompleter cc, double[] probs, Frame train, QuantileModel.CombineMethod combine_method) {
-      super(cc); _train=train; _probs=probs; _combine_method=combine_method;
+    // OUTPUT
+    public double[/*strata*/] _quantiles;
+
+    public StratifiedQuantilesTask(H2O.H2OCountedCompleter cc,
+                                   double prob,
+                                   Vec response, // response
+                                   Vec weights,  // obs weights
+                                   Vec strata,   // stratification (can be null)
+                                   QuantileModel.CombineMethod combine_method) {
+      super(cc); _response = response; _prob=prob; _combine_method=combine_method; _weights=weights; _strata=strata;
     }
+
     @Override public void compute2() {
-      // Run the main Quantile Loop
-      _quantiles = new double[_train.numCols()][_probs.length];
-      Vec vecs[] = _train.vecs();
-      for( int n=0; n<vecs.length; n++ ) {
-        Vec vec = vecs[n];
-        if (vec.isBad()) {
-          _quantiles[n] = new double[_probs.length];
-          Arrays.fill(_quantiles[n], Double.NaN);
-          continue;
+      int nstrata = _strata == null ? 1 : (int) (_strata.max() - _strata.min() + 1);
+      Log.info("Computing quantiles for " + nstrata + " different strata.");
+      _quantiles = new double[nstrata];
+      Vec weights = _weights != null ? _weights : _response.makeCon(1);
+      for (int i=0;i<nstrata;++i) { //loop over nodes
+        Vec newWeights = weights.makeCopy();
+        //only keep weights for this stratum (node), set rest to 0
+        if (_strata!=null) new ZeroOutWeights((int) (_strata.min() + i)).doAll(_strata, newWeights);
+        double sumRows = new SumWeights().doAll(_response, newWeights).sum;
+        Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
+        h.doAll(_response, newWeights);
+        while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method))) {
+          h = h.refinePass(_prob).doAll(_response, newWeights);
         }
+        newWeights.remove();
+      }
+      if (_weights != weights) weights.remove();
+      tryComplete();
+    }
 
-        // Compute top-level histogram
-        Histo h1 = new Histo(vec.min(),vec.max(),0,vec.length(),vec.isInt()).doAll(vec);
-
-        // For each probability, see if we have it exactly - or else run
-        // passes until we do.
-        for( int p = 0; p < _probs.length; p++ ) {
-          double prob = _probs[p];
-          Histo h = h1;  // Start from the first global histogram
-
-          while( Double.isNaN(_quantiles[n][p] = h.findQuantile(prob,_combine_method)) )
-            h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
+    private static class ZeroOutWeights extends MRTask<ZeroOutWeights> {
+      ZeroOutWeights(int stratumToKeep) { this.stratumToKeep = stratumToKeep; }
+      int stratumToKeep;
+      @Override public void map(Chunk strata, Chunk newW) {
+        for (int i=0; i<strata._len; ++i) {
+//          Log.info("NID:" + ((int) strata.at8(i)));
+          if ((int) strata.at8(i) != stratumToKeep)
+            newW.set(i, 0);
         }
       }
-      tryComplete();
     }
   }
 
   // -------------------------------------------------------------------------
-
-  private static class Histo extends MRTask<Histo> {
+  private final static class Histo extends MRTask<Histo> {
     private static final int NBINS = 1024; // Default bin count
     private final int _nbins;            // Actual  bin count
     private final double _lb;            // Lower bound of bin[0]

@@ -51,16 +51,17 @@
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
-#' @param ... (Currently Unimplemented)
-#'        coefficients.
 #' @param intercept Logical, include constant term (intercept) in the model
 #' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
-
 #' @param objective_epsilon Convergence criteria. Converge if relative change in objective function is below this threshold.
 #' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold.
 #' @param non_negative Logical, allow only positive coefficients.
 #' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are co-linear predictors.
-#' @param remove_colinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
+#' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+#' @param ... (Currently Unimplemented)
+#'        coefficients.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -132,7 +133,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     gradient_epsilon = -1,
                     non_negative = FALSE,
                     compute_p_values = FALSE,
-                    remove_colinear_columns = FALSE)
+                    remove_collinear_columns = FALSE,
+                    max_runtime_secs = 0)
 {
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame(beta_constraints))
@@ -188,7 +190,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(gradient_epsilon) )          parms$gradient_epsilon       <- gradient_epsilon
   if( !missing(non_negative) )              parms$non_negative           <- non_negative
   if( !missing(compute_p_values) )          parms$compute_p_values       <- compute_p_values
-  if( !missing(remove_colinear_columns) )   parms$remove_colinear_columns<- remove_colinear_columns
+  if( !missing(remove_collinear_columns) )  parms$remove_collinear_columns<- remove_collinear_columns
+  if( !missing(max_runtime_secs))           parms$max_runtime_secs       <- max_runtime_secs
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.

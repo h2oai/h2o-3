@@ -58,7 +58,7 @@ def javapredict_dynamic_data():
                                                                   "RectifierWithDropout", "MaxoutWithDropout"],1)[0]
     if random.randint(0,1): params['epochs'] = random.sample(list(range(1,10)),1)[0]
     if random.randint(0,1):
-        h = random.randint(1,21)
+        h = random.randint(10,21)
         params['hidden'] = [h for x in range(random.randint(2,3))]
     params['distribution'] = distribution
     params['l1'] = random.random()

@@ -356,8 +356,8 @@ h2o.getFutureModel <- function(object) {
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2O H2OFrame object with probabilites and
 #'         default predictions.
-#' @seealso \code{link{h2o.deeplearning}}, \code{link{h2o.gbm}},
-#'          \code{link{h2o.glm}}, \code{link{h2o.randomForest}} for model
+#' @seealso \code{\link{h2o.deeplearning}}, \code{\link{h2o.gbm}},
+#'          \code{\link{h2o.glm}}, \code{\link{h2o.randomForest}} for model
 #'          generation in h2o.
 #' @export
 predict.H2OModel <- function(object, newdata, ...) {
@@ -375,7 +375,7 @@ predict.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.predict <- predict.H2OModel
 
-h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...) {
+h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random")) {
   output <- data.frame()
 
   if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
@@ -422,12 +422,14 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #'
 #'
 #' @param model An \linkS4class{H2OModel} object
-#' @param data An H2O H2OFrame. The model will make predictions
+#' @param newdata An H2O H2OFrame. The model will make predictions
 #'        on this dataset, and subsequently score them. The dataset should
 #'        match the dataset that was used to train the model, in terms of
-#'        column names, types, and dimensions. If data is passed in, then train and valid are ignored.
+#'        column names, types, and dimensions. If newdata is passed in, then train, valid, and xval are ignored.
+#' @param train A logical value indicating whether to return the training metrics (constructed during training).
 #' @param valid A logical value indicating whether to return the validation metrics (constructed during training).
-#' @param ... Extra args passed in for use by other functions.
+#' @param xval A logical value indicating whether to return the cross-validation metrics (constructed during training). 
+#' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \donttest{
@@ -437,45 +439,58 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
-#' h2o.performance(model = prostate.gbm, data=prostate.hex)
+#' h2o.performance(model = prostate.gbm, newdata=prostate.hex)
 #' }
 #' @export
-h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
+h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL) {
+
+  # data is now deprecated and the new arg name is newdata
+  if (!is.null(data)) {
+    warning("The `data` argument is DEPRECATED; use `newdata` instead as `data` will eventually be removed")
+    if (is.null(newdata)) newdata <- data
+    else stop("Do not use both `data` and `newdata`; just use `newdata`")  
+  }
+
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
-  if(!is.null(data) && !is.H2OFrame(data) ) stop("`data` must be an H2O H2OFrame object")
-
-  missingData <- missing(data) || is.null(data)
-  trainingH2OFrame <- model@parameters$training_frame
-  data.id <- if( missingData ) trainingH2OFrame else h2o.getId(data)
-  if( missingData && !valid ) return(model@model$training_metrics)    # no data, valid is false, return the training metrics
-  else if( missingData &&  valid ) {
-    if( is.null(model@model$validation_metrics@metrics) ) return(NULL)
-    else                                                  return(model@model$validation_metrics)  # no data, but valid is true, return the validation metrics
-  }
-  else if( !missingData ) {
+  if(!is.null(newdata) && !is.H2OFrame(newdata)) stop("`newdata` must be an H2OFrame object")
+  if(!is.logical(train) || length(train) != 1L || is.na(train)) stop("`train` must be TRUE or FALSE") 
+  if(!is.logical(valid) || length(valid) != 1L || is.na(valid)) stop("`valid` must be TRUE or FALSE") 
+  if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE") 
+  if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
+  
+  missingNewdata <- missing(newdata) || is.null(newdata)
+  
+  if( !missingNewdata ) {
+    newdata.id <- h2o.getId(newdata)
     parms <- list()
     parms[["model"]] <- model@model_id
-    parms[["frame"]] <- data.id
-    res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id,data.id), .params = parms)
+    parms[["frame"]] <- newdata.id
+    res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id,newdata.id), .params = parms)
 
     ####
     # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
-    model_metrics <- Filter(function(mm) { mm$frame$name==data.id}, res$model_metrics)[[1]]   # filter on data.id, R's builtin Filter function
+    model_metrics <- Filter(function(mm) { mm$frame$name==newdata.id}, res$model_metrics)[[1]]   # filter on newdata.id, R's builtin Filter function
     #
     ####
     metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
     model_category <- model_metrics$model_category
     Class <- paste0("H2O", model_category, "Metrics")
     metrics$frame <- list()
-    metrics$frame$name <- data.id
+    metrics$frame$name <- newdata.id
     new(Class     = Class,
         algorithm = model@algorithm,
-        on_train  = missingData,
+        on_train  = missingNewdata,
         metrics   = metrics)
-  } else {
-    warning("Shouldn't be here, returning NULL")
-    return(NULL)
+  }
+  else if( train || (!train && !valid && !xval) ) return(model@model$training_metrics)    # no newdata, train, valid, and xval are false (all defaults), return the training metrics
+  else if( valid ) {
+    if( is.null(model@model$validation_metrics@metrics) ) return(NULL) # no newdata, but valid is true, return the validation metrics
+    else                                                  return(model@model$validation_metrics)  
+  }
+  else { #if xval
+    if( is.null(model@model$cross_validation_metrics@metrics) ) return(NULL) # no newdata, but xval is true, return the crosss_validation metrics
+    else                                                        return(model@model$cross_validation_metrics)  
   }
 }
 
@@ -490,8 +505,6 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 #' @param train Retrieve the training AUC
 #' @param valid Retrieve the validation AUC
 #' @param xval Retrieve the cross-validation AUC
-#' @param \dots extra arguments to be passed if `object` is of type
-#'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
 #'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
@@ -510,11 +523,14 @@ h2o.performance <- function(model, data=NULL, valid=FALSE, ...) {
 #' h2o.auc(perf)
 #' }
 #' @export
-h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AUC )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$AUC )
+    if ( !train && !valid && !xval ) { 
+      metric <- model.parts$tm@metrics$AUC
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -522,25 +538,26 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$AUC)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$AUC)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No AUC for ", class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }      
+    }
   }
+  warning(paste0("No AUC for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -553,14 +570,15 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param train Retrieve the training AIC
 #' @param valid Retrieve the validation AIC
 #' @param xval Retrieve the cross-validation AIC
-#' @param \dots extra arguments to be passed if `object` is of type
-#'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @export
-h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AIC )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$AIC )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$AIC
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -568,25 +586,26 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$AIC)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$AIC)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No AIC for ", class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No AIC for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -601,8 +620,6 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param train Retrieve the training R2
 #' @param valid  Retrieve the validation set R2 if a validation set was passed in during model build time.
 #' @param xval Retrieve the cross-validation R2
-#' @param \dots extra arguments to be passed if `object` is of type
-#'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -615,11 +632,14 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' h2o.r2(m)
 #' }
 #' @export
-h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$r2 )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$r2 )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$r2
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -627,25 +647,26 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$r2)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$r2)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No R2 for ", class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No R2 for ", class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -660,8 +681,6 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param train Retrieve the training Mean Residual Deviance
 #' @param valid Retrieve the validation Mean Residual Deviance
 #' @param xval Retrieve the cross-validation Mean Residual Deviance
-#' @param \dots extra arguments to be passed if `object` is of type
-#'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -674,11 +693,14 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' h2o.mean_residual_deviance(m)
 #' }
 #' @export
-h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$mean_residual_deviance )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$mean_residual_deviance )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$mean_residual_deviance
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -686,25 +708,26 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$mean_residual_deviance)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$mean_residual_deviance)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No Mean Residual Deviance for ", class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No mean residual deviance for ", class(object)))
+  invisible(NULL)
 }
 
 #' Retrieve the GINI Coefficcient
@@ -718,8 +741,6 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
 #' @param train Retrieve the training GINI Coefficcient
 #' @param valid Retrieve the validation GINI Coefficcient
 #' @param xval Retrieve the cross-validation GINI Coefficcient
-#' @param \dots extra arguments to be passed if `object` is of type
-#'              \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @seealso \code{\link{h2o.auc}} for AUC,  \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.metric}} for the various. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
@@ -738,11 +759,14 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
 #' h2o.giniCoef(perf)
 #' }
 #' @export
-h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if(is(object, "H2OModelMetrics")) return( object@metrics$Gini )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$Gini )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$Gini
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -750,26 +774,26 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$Gini)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$Gini)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
-  else{
-    warning(paste0("No Gini for ",class(object)))
-    invisible(NULL)
-  }
+  warning(paste0("No Gini for ",class(object)))
+  invisible(NULL)
 }
 
 #'
@@ -813,7 +837,6 @@ h2o.coef_norm <- function(object) {
 #' @param train Retrieve the training MSE
 #' @param valid Retrieve the validation MSE
 #' @param xval Retrieve the cross-validation MSE
-#' @param \dots Extra arguments to be passed if `object` is of type \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.mse}} for MSE, and
 #'          \code{\link{h2o.metric}} for the various threshold metrics. See
 #'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
@@ -831,12 +854,15 @@ h2o.coef_norm <- function(object) {
 #' h2o.mse(perf)
 #' }
 #' @export
-h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$MSE )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     metrics <- NULL # break out special for clustering vs the rest
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$MSE )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$MSE
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -845,7 +871,7 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         if( is(object, "H2OClusteringModel") ) v <- model.parts$vm@metrics$centroid_stats$within_cluster_sum_of_squares
         else v <- c(v,model.parts$vm@metrics$MSE)
@@ -853,19 +879,20 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
         else v <- c(v,model.parts$xm@metrics$MSE)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else {
-    warning(paste0("No MSE for ",class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No MSE for ",class(object)))
+  invisible(NULL)
 }
 
 #' Retrieve the Log Loss Value
@@ -880,14 +907,15 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param train Retrieve the training Log Loss
 #' @param valid Retrieve the validation Log Loss
 #' @param xval Retrieve the cross-validation Log Loss
-#' @param \dots Extra arguments to be passed if `object` is of type
-#'        \linkS4class{H2OModel} (e.g. train=TRUE)
 #' @export
-h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$logloss )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$logloss )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$logloss
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -895,34 +923,34 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$logloss)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$logloss)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-  } else  {
-    warning(paste("No log loss for",class(object)))
-    invisible(NULL)
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste("No log loss for",class(object)))
+  invisible(NULL)
 }
 
 #'
 #' Retrieve the variable importance.
 #'
 #' @param object An \linkS4class{H2OModel} object.
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.varimp <- function(object, ...) {
+h2o.varimp <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
@@ -942,9 +970,8 @@ h2o.varimp <- function(object, ...) {
 #' Retrieve Model Score History
 #'
 #' @param object An \linkS4class{H2OModel} object.
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.scoreHistory <- function(object, ...) {
+h2o.scoreHistory <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     sh <- o@model$scoring_history
@@ -961,9 +988,8 @@ h2o.scoreHistory <- function(object, ...) {
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
 #' @param matrix_id An integer, ranging from 1 to number of layers + 1, that specifies the weight matrix to return.
-#' @param \dots further arguments to be passed to/from this method.
 #' @export
-h2o.weights <- function(object, matrix_id=1, ...){
+h2o.weights <- function(object, matrix_id=1){
   o <- object
   if( is(o, "H2OModel") ) {
     sh <- o@model$weights[[matrix_id]]
@@ -981,9 +1007,8 @@ h2o.weights <- function(object, matrix_id=1, ...){
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
 #' @param vector_id An integer, ranging from 1 to number of layers + 1, that specifies the bias vector to return.
-#' @param \dots further arguments to be passed to/from this method.
 #' @export
-h2o.biases <- function(object, vector_id=1, ...){
+h2o.biases <- function(object, vector_id=1){
   o <- object
   if( is(o, "H2OModel") ) {
     sh <- o@model$biases[[vector_id]]
@@ -1006,13 +1031,15 @@ h2o.biases <- function(object, vector_id=1, ...){
 #' @param train Retrieve the training Hit Ratio
 #' @param valid Retrieve the validation Hit Ratio
 #' @param xval Retrieve the cross-validation Hit Ratio
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$hit_ratio_table )
-  else if( is(object, "H2OModel") ) {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$hit_ratio_table )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$hit_ratio_table
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- list()
     v_names <- c()
     if ( train ) {
@@ -1020,27 +1047,29 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ..
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v[[length(v)+1]] <- model.parts$vm@metrics$hit_ratio_table
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v[[length(v)+1]] <- model.parts$xm@metrics$hit_ratio_table
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
-
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
   # if o is a data.frame, then the hrt was passed in -- just for pretty printing
-  } else if( is(object, "data.frame") ) return(object)
+  if( is(object, "data.frame") ) return(object)
 
   # warn if we got something unexpected...
-  else warning( paste0("No hit ratio table for ", class(object)) )
+  warning( paste0("No hit ratio table for ", class(object)) )
   invisible(NULL)
 }
 
@@ -1057,8 +1086,8 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ..
 #' \linkS4class{H2OBinomialMetrics} objects.
 #'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
-#' @param thresholds A value or a list of values between 0.0 and 1.0.
-#' @param metric A specified paramter to retrieve.
+#' @param thresholds (Optional) A value or a list of values between 0.0 and 1.0.
+#' @param metric (Optional) A specified paramter to retrieve.
 #' @return Returns either a single value, or a list of values.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
@@ -1079,23 +1108,9 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ..
 #' @export
 h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
-    if(!missing(thresholds)) {
-      t <- as.character(thresholds)
-      t[t=="0"] <- "0.0"
-      t[t=="1"] <- "1.0"
-      if(!all(t %in% rownames(object@metrics$thresholds_and_metric_scores))) {
-        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholds_and_metric_scores), collapse=', ')))
-      }
-      else {
-        output <- object@metrics$thresholds_and_metric_scores[t, metric]
-        names(output) <- t
-        output
-      }
-    }
+    if(!missing(thresholds)) lapply(thresholds, function(t,object,metric) h2o.find_row_by_threshold(object, t)[, metric], object, metric)
     else {
-      output <- object@metrics$thresholds_and_metric_scores[, metric]
-      names(output) <- rownames(object@metrics$thresholds_and_metric_scores)
-      output
+     if(missing(metric)) object@metrics$thresholds_and_metric_scores else object@metrics$thresholds_and_metric_scores[, c("threshold", metric)]
     }
   }
   else{
@@ -1243,25 +1258,22 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' Retrieve the Model Centers
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.centers <- function(object, ...) { as.data.frame(object@model$centers[,-1]) }
+h2o.centers <- function(object) { as.data.frame(object@model$centers[,-1]) }
 
 #'
 #' Retrieve the Model Centers STD
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.centersSTD <- function(object, ...) { as.data.frame(object@model$centers_std)[,-1] }
+h2o.centersSTD <- function(object) { as.data.frame(object@model$centers_std)[,-1] }
 
 #'
 #' Get the Within SS
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.withinss <- function(object, ...) { h2o.mse(object, ...) }
+h2o.withinss <- function(object) { h2o.mse(object) }
 
 #'
 #' Get the total within cluster sum of squares.
@@ -1273,9 +1285,8 @@ h2o.withinss <- function(object, ...) { h2o.mse(object, ...) }
 #' @param train Retrieve the training total within cluster sum of squares
 #' @param valid Retrieve the validation total within cluster sum of squares
 #' @param xval Retrieve the cross-validation total within cluster sum of squares
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
   if ( !train && !valid && !xval ) return( model.parts$tm@metrics$tot_withinss )
   v <- c()
@@ -1312,9 +1323,8 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
 #' @param train Retrieve the training between cluster sum of squares
 #' @param valid Retrieve the validation between cluster sum of squares
 #' @param xval Retrieve the cross-validation between cluster sum of squares
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
   if ( !train && !valid && !xval ) return( model.parts$tm@metrics$betweenss )
   v <- c()
@@ -1351,9 +1361,8 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
 #' @param train Retrieve the training total sum of squares
 #' @param valid Retrieve the validation total sum of squares
 #' @param xval Retrieve the cross-validation total sum of squares
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
   if ( !train && !valid && !xval ) return( model.parts$tm@metrics$totss )
   v <- c()
@@ -1398,9 +1407,8 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' @param train Retrieve the training centroid statistics
 #' @param valid Retrieve the validation centroid statistics
 #' @param xval Retrieve the cross-validation centroid statistics
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
   if ( !train && !valid && !xval ) return( model.parts$tm@metrics$centroid_stats )
   v <- list()
@@ -1437,9 +1445,8 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...
 #' @param train Retrieve the training cluster sizes
 #' @param valid Retrieve the validation cluster sizes
 #' @param xval Retrieve the cross-validation cluster sizes
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
-h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
   if ( !train && !valid && !xval ) return( model.parts$tm@metrics$centroid_stats$size )
   v <- list()
@@ -1477,13 +1484,15 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
 #' @param train Retrieve the training null deviance
 #' @param valid Retrieve the validation null deviance
 #' @param xval Retrieve the cross-validation null deviance
-#' @param \dots further arguments to be passed to/from this method.
 #' @export
-h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
-  else {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$null_deviance )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$null_deviance
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -1491,23 +1500,28 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$null_deviance)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$null_deviance)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No null deviance for ", class(object)))
+  invisible(NULL)
 }
+    
 
 #' Retrieve the residual deviance
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training residual deviance value is returned. If more
@@ -1518,13 +1532,15 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...)
 #' @param train Retrieve the training residual deviance
 #' @param valid Retrieve the validation residual deviance
 #' @param xval Retrieve the cross-validation residual deviance
-#' @param \dots further arguments to be passed to/from this method.
 #' @export
-h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
-  else {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$residual_deviance )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$residual_deviance
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -1532,22 +1548,26 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, 
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$residual_deviance)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$residual_deviance)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No residual deviance for ", class(object)))
+  invisible(NULL)
 }
 
 
@@ -1560,13 +1580,15 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE, 
 #' @param train Retrieve the training residual degrees of freedom
 #' @param valid Retrieve the validation residual degrees of freedom
 #' @param xval Retrieve the cross-validation residual degrees of freedom
-#' @param \dots further arguments to be passed to/from this method.
 #' @export
-h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
-  else {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$residual_degrees_of_freedom )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$residual_degrees_of_freedom
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -1574,23 +1596,28 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$residual_degrees_of_freedom)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$residual_degrees_of_freedom)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
-}
+  warning(paste0("No residual dof for ", class(object)))
+  invisible(NULL)
+}  
+    
 
 #' Retrieve the null degrees of freedom
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training null degrees of freedom value is returned. If more
@@ -1601,13 +1628,15 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) 
 #' @param train Retrieve the training null degrees of freedom
 #' @param valid Retrieve the validation null degrees of freedom
 #' @param xval Retrieve the cross-validation null degrees of freedom
-#' @param \dots further arguments to be passed to/from this method.
 #' @export
-h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
+h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )
-  else {
+  if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) return( model.parts$tm@metrics$null_degrees_of_freedom )
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$null_degrees_of_freedom
+      if ( !is.null(metric) ) return(metric)
+    }
     v <- c()
     v_names <- c()
     if ( train ) {
@@ -1615,22 +1644,26 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE, ...) {
       v_names <- c(v_names,"train")
     }
     if ( valid ) {
-      if( is.null(model.parts$vm) ) invisible(.warn.no.validation())
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         v <- c(v,model.parts$vm@metrics$null_degrees_of_freedom)
         v_names <- c(v_names,"valid")
       }
     }
     if ( xval ) {
-      if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         v <- c(v,model.parts$xm@metrics$null_degrees_of_freedom)
         v_names <- c(v_names,"xval")
       }
     }
-    names(v) <- v_names
-    if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
   }
+  warning(paste0("No null dof for ", class(object)))
+  invisible(NULL)
 }
 
 #' Access H2O Gains/Lift Tables
@@ -1894,7 +1927,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     } else if (!(metric %in% c("log_likelihood", "objective"))) {
       stop("for GLM, metric must be one of: log_likelihood, objective")
     }
-    graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History")
+    graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Validation Scoring History", ...)
   } else if (x@algorithm == "glrm") {
     timestep <- "iteration"
     if (metric == "AUTO") {
@@ -1902,7 +1935,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     } else if (!(metric %in% c("step_size", "objective"))) {
       stop("for GLRM, metric must be one of: step_size, objective")
     }
-    graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Objective Function Value per Iteration")
+    graphics::plot(df$iteration, df[,c(metric)], type="l", xlab = timestep, ylab = metric, main = "Objective Function Value per Iteration", ...)
   } else if (x@algorithm %in% c("deeplearning", "drf", "gbm")) {
     if (is(x, "H2OBinomialModel")) {
       if (metric == "AUTO") {
@@ -1954,13 +1987,19 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     }
     if (validation_metric %in% names(df)) {  #Training and Validation scoring history
       ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
+      if (sum(is.na(ylim))>1) {
+        ylim <- c(0.0, 1.0)
+      }  
       graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
-                     main = "Scoring History", col = "blue", ylim = ylim)
+                     main = "Scoring History", col = "blue", ylim = ylim, ...)
       graphics::par(new = TRUE)
-      graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim)
+      graphics::plot(df[,c(timestep)], df[,c(validation_metric)], type="l", xlab = timestep, ylab = metric, col = "orange", ylim = ylim, ...)
       graphics::legend("topright", legend = c("Training", "Validation"), col = c("blue", "orange"), lty = c(1,1))
     } else {  #Training scoring history only
       ylim <- range(c(df[,c(training_metric)]))
+      if (sum(is.na(ylim))>1) {
+        ylim <- c(0.0, 1.0)
+      }
       graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = timestep, ylab = training_metric,
                      main = "Training Scoring History", col = "blue", ylim = ylim)
 
@@ -1978,8 +2017,11 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
     xaxis <- "False Positive Rate"; yaxis = "True Positive Rate"
     if(missing(main)) {
       main <- paste(yaxis, "vs", xaxis)
-      if( x@on_train ) main <- paste(main, "(on train)")
-      else             main <- paste(main, "(on valid)")
+      if(x@on_train) {
+        main <- paste(main, "(on train)")
+      } else if (x@on_valid) {
+        main <- paste(main, "(on valid)")
+      }
     }
     graphics::plot(x@metrics$thresholds_and_metric_scores$fpr, x@metrics$thresholds_and_metric_scores$tpr, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), ...)
     graphics::abline(0, 1, lty = 2)

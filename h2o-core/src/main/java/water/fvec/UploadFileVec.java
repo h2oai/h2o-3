@@ -63,13 +63,11 @@ public class UploadFileVec extends FileVec {
     Log.info("Reading byte InputStream into Frame:");
     Log.info("    frameKey:    " + key.toString());
     Key newVecKey = Vec.newKey();
-
+    UploadFileVec uv = null;
     try {
-      new Frame(key,new String[0],new Vec[0]).delete_and_lock(null);
-
-      UploadFileVec uv = new UploadFileVec(newVecKey);
+      new Frame(key,new String[0],new Vec[0]).delete_and_lock();
+      uv = new UploadFileVec(newVecKey);
       assert uv.writable();
-
       Futures fs = new Futures();
       byte prev[] = null;
       byte bytebuf[] = new byte[FileVec.DFLT_CHUNK_SIZE];
@@ -108,7 +106,7 @@ public class UploadFileVec extends FileVec {
       DKV.put(newVecKey, uv, fs);
       fs.blockForPending();
       Frame f = new Frame(key,new String[]{"bytes"}, new Vec[]{uv});
-      f.unlock(null);
+      f.unlock();
 
       Log.info("    Success.");
     }
@@ -117,7 +115,7 @@ public class UploadFileVec extends FileVec {
       Log.err("Exception caught in Frame::readPut; attempting to clean up the new frame and vector");
       Log.err(e);
       Lockable.delete(key);
-      DKV.remove(newVecKey);
+      if( uv != null ) uv.remove(newVecKey);
       Log.err("Frame::readPut cleaned up new frame and vector successfully");
       throw e;
     }

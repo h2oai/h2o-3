@@ -7,7 +7,6 @@ import hex.DataInfo;
 import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
-import hex.deeplearning.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -30,6 +29,7 @@ import water.util.Log;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -105,7 +105,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return res;
   }
 
+
   public static class GLMParameters extends Model.Parameters {
+    public String algoName() { return "GLM"; }
+    public String fullName() { return "Generalized Linear Modeling"; }
+    public String javaName() { return GLMModel.class.getName(); }
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public Family _family;
@@ -129,7 +133,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _gradient_epsilon = 1e-4;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
-    public boolean _remove_colinear_columns = false;
+    public boolean _remove_collinear_columns = false;
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)

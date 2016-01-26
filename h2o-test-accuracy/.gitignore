@@ -1,0 +1,8 @@
+# Testng
+testng.xml
+
+# Results
+results/
+
+# Build
+build/

@@ -19,7 +19,8 @@ public class TimelineTest extends TestUtil{
   // from all nodes to all nodes (full cross-bar).
   private static class TestTask extends DTask {
     // nothing to do here...
-    @Override protected void compute2() { tryComplete(); }
+    @Override
+    public void compute2() { tryComplete(); }
   }
 
   // RPC call of above simple class from here to 'tgt'
@@ -27,7 +28,8 @@ public class TimelineTest extends TestUtil{
     final H2ONode _tgt;
     TestLauncher (H2ONode tgt, H2O.H2OCountedCompleter cmp) {  super(cmp); _tgt = tgt; }
     TestLauncher (H2ONode tgt){ _tgt = tgt; }
-    @Override protected void compute2() {
+    @Override
+    public void compute2() {
       new RPC(_tgt,new TestTask()).addCompleter(this).call();
     }
 
@@ -46,7 +48,7 @@ public class TimelineTest extends TestUtil{
     // this is the completer.  When they all complete, this one completes as well.
     H2O.H2OCountedCompleter test = new H2O.H2OCountedCompleter() {
       @Override
-      protected void compute2() {
+      public void compute2() {
         if( H2O.CLOUD.size() > 1) {
           for( H2ONode from : H2O.CLOUD.members() ) {
             for( H2ONode to : H2O.CLOUD.members() ) {

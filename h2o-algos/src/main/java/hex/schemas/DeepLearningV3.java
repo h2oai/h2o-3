@@ -2,7 +2,7 @@ package hex.schemas;
 
 import hex.Distribution;
 import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningParameters;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.api.API;
 import water.api.ModelParametersSchema;
 
@@ -33,6 +33,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "checkpoint",
         "overwrite_with_best_model",
         "use_all_factor_levels",
+        "standardize",
         "activation",
         "hidden",
         "epochs",
@@ -68,6 +69,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "stopping_rounds",
         "stopping_metric",
         "stopping_tolerance",
+        "max_runtime_secs",
         "score_validation_sampling",
         "diagnostics",
         "fast_mode",
@@ -141,6 +143,9 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public boolean use_all_factor_levels;
+
+    @API(help="If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public boolean standardize;
 
     /*Neural Net Topology*/
     /**
@@ -399,7 +404,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.Loss loss;
 
-    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie" }, level = API.Level.secondary, gridable = true)
+    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "huber" }, level = API.Level.secondary, gridable = true)
     public Distribution.Family distribution;
 
     @API(help = "Tweedie Power", level = API.Level.secondary)

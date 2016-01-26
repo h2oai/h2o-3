@@ -35,7 +35,6 @@ public class GLMTest  extends TestUtil {
   //------------------- simple tests on synthetic data------------------------------------
   @Test
   public void testGaussianRegression() throws InterruptedException, ExecutionException {
-    GLM job = null;
     Key raw = Key.make("gaussian_test_data_raw");
     Key parsed = Key.make("gaussian_test_data_parsed");
     Key modelKey = Key.make("gaussian_test");
@@ -51,9 +50,7 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
 //      params._standardize= false;
-      job = new GLM(modelKey, "glm test simple gaussian", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      model = new GLM(params,modelKey).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       assertEquals(0.0, coefs.get("Intercept"), 1e-4);
       assertEquals(0.1, coefs.get("x"), 1e-4);
@@ -66,7 +63,6 @@ public class GLMTest  extends TestUtil {
       if (fr != null) fr.remove();
       if (res != null) res.remove();
       if (model != null) model.remove();
-      if (job != null) job.remove();
     }
   }
 
@@ -77,7 +73,6 @@ public class GLMTest  extends TestUtil {
    */
   @Test
   public void testPoissonRegression() throws InterruptedException, ExecutionException {
-    GLM job = null;
     Key raw = Key.make("poisson_test_data_raw");
     Key parsed = Key.make("poisson_test_data_parsed");
     Key modelKey = Key.make("poisson_test");
@@ -95,14 +90,11 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
       params._standardize = false;
-      job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      model = new GLM(params, modelKey).trainModel().get();
       for (double c : model.beta())
         assertEquals(Math.log(2), c, 1e-2); // only 1e-2 precision cause the perfect solution is too perfect -> will trigger grid search
       model.delete();
       fr.delete();
-      job.remove();
 
       // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
       FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n150,7.193936e+16\n");
@@ -112,16 +104,11 @@ public class GLMTest  extends TestUtil {
       // params2._response = 1;
       params2._response_column = fr._names[1];
       params2._lambda = new double[]{0};
-      params2._standardize = true;
-      params2._beta_epsilon = 1e-6;
-      params2._gradient_epsilon = 0;
-      params2._objective_epsilon = 0;
-      params2._max_iterations = 100;
-      job = new GLM(modelKey, "glm test simple poisson", params2);
-      model = job.trainModel().get();
-      System.out.println(model.coefficients());
-      assertEquals(0.3396, model.beta()[1], 1e-1); // precision not great because of mixing small and huge numbers in the data
-      assertEquals(0.2565, model.beta()[0], 1e-1);
+      params2._standardize = false;
+      params2._beta_epsilon = 1e-5;
+      model = new GLM(params2,modelKey).trainModel().get();
+      assertEquals(0.3396, model.beta()[1], 1e-4);
+      assertEquals(0.2565, model.beta()[0], 1e-4);
       // test scoring
       res = model.score(fr);
       // Build a POJO, validate same results
@@ -131,7 +118,6 @@ public class GLMTest  extends TestUtil {
       if (fr != null) fr.delete();
       if (res != null) res.delete();
       if (model != null) model.delete();
-      if (job != null) job.remove();
     }
   }
 
@@ -144,8 +130,7 @@ public class GLMTest  extends TestUtil {
    * @throws InterruptedException
    */
   @Test
-  public void testJavaScoringtestGammaRegression() throws InterruptedException, ExecutionException {
-    GLM job = null;
+  public void testGammaRegression() throws InterruptedException, ExecutionException {
     GLMModel model = null;
     Frame fr = null, res = null;
     try {
@@ -162,10 +147,7 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._train = parsed;
       params._lambda = new double[]{0};
-      Key modelKey = Key.make("gamma_test");
-      job = new GLM(modelKey, "glm test simple gamma", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      model = new GLM(params,glmkey("gamma_test")).trainModel().get();
       for (double c : model.beta()) assertEquals(1.0, c, 1e-4);
       // test scoring
       res = model.score(fr);
@@ -176,7 +158,6 @@ public class GLMTest  extends TestUtil {
       if (fr != null) fr.delete();
       if (res != null) res.delete();
       if (model != null) model.delete();
-      if (job != null) job.remove();
     }
   }
 
@@ -184,7 +165,7 @@ public class GLMTest  extends TestUtil {
 //  @Test public void testTweedieRegression() throws InterruptedException, ExecutionException{
 //    Key raw = Key.make("gaussian_test_data_raw");
 //    Key parsed = Key.make("gaussian_test_data_parsed");
-//    Key modelKey = Key.make("gaussian_test");
+//    Key<GLMModel> modelKey = Key.make("gaussian_test");
 //    Frame fr = null;
 //    GLMModel model = null;
 //    try {
@@ -225,14 +206,12 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._train = parsed;
       params._lambda = new double[]{0};
-      Key modelKey = Key.make("gamma_test");
-      job = new GLM(modelKey, "glm test simple gamma", params);
-      job.trainModel().get();
+      GLM glm = new GLM( params, glmkey("gamma_test"));
+      glm.trainModel().get();
       assertFalse("should've thrown IAE", true);
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("No rows left in the dataset"));
     } finally {
-      if (job != null) job.remove();
       fr.delete();
     }
   }
@@ -286,7 +265,6 @@ public class GLMTest  extends TestUtil {
 
   @Test
   public void testMultinomialGradient(){
-    GLM job = null;
     Key parsed = Key.make("covtype");
 
     Frame fr = null;
@@ -437,9 +415,8 @@ public class GLMTest  extends TestUtil {
    */
   @Test
   public void testCars() throws InterruptedException, ExecutionException {
-    GLM job = null;
     Key parsed = Key.make("cars_parsed");
-    Key modelKey = Key.make("cars_model");
+    Key<GLMModel> modelKey = Key.make("cars_model");
     Frame fr = null;
     GLMModel model = null;
     Frame score = null;
@@ -452,9 +429,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
-      job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      model = new GLM( params, modelKey).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       String[] cfs1 = new String[]{"Intercept", "economy (mpg)", "cylinders", "displacement (cc)", "weight (lb)", "0-60 mph (s)", "year"};
       double[] vls1 = new double[]{4.9504805, -0.0095859, -0.0063046, 0.0004392, 0.0001762, -0.0469810, 0.0002891};
@@ -465,7 +440,6 @@ public class GLMTest  extends TestUtil {
       score = model.score(fr);
       score.delete();
       model.delete();
-      job.remove();
 
       params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0},0,0);
       params._response_column = "power (hp)";
@@ -474,15 +448,12 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._beta_epsilon = 1e-5;
-      job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      model = new GLM( params, modelKey).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls2[i], coefs.get(cfs1[i]), 1e-4);
       score = model.score(fr);
       model.delete();
-      job.remove();
       // test gaussian
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
       params = new GLMParameters(Family.gaussian);
@@ -491,9 +462,7 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
       params._lambda = new double[]{0};
-      job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      model = new GLM( params, modelKey).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls3[i], coefs.get(cfs1[i]), 1e-4);
@@ -502,14 +471,12 @@ public class GLMTest  extends TestUtil {
       if (fr != null) fr.delete();
       if (score != null) score.delete();
       if (model != null) model.delete();
-      if (job != null) job.remove();
       checkLeakedKeys();
     }
   }
 
   // Leask xval keys
 //  @Test public void testXval() {
-//    GLM job = null;
 //    GLMModel model = null;
 //    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
 //    Frame score = null;
@@ -526,9 +493,8 @@ public class GLMTest  extends TestUtil {
 //      params._response_column = "CAPSULE";
 //      params._ignored_columns = new String[]{"ID"};
 //      params._train = fr._key;
-//      params._l2pen = new double[]{0};
-//      job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
-//      model = job.trainModel().get();
+//      params._lambda = new double[]{0};
+//      model = new GLM(params,Key.make("prostate_model")).trainModel().get();
 //      HashMap<String, Double> coefs = model.coefficients();
 //      for(int i = 0; i < cfs1.length; ++i)
 //        assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
@@ -549,7 +515,6 @@ public class GLMTest  extends TestUtil {
 //      fr.delete();
 //      if(model != null)model.delete();
 //      if(score != null)score.delete();
-//      if( job != null ) job.remove();
 //      Scope.exit();
 //    }
 //  }
@@ -598,10 +563,9 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{1};
       params._lambda = new double[]{0.001607};
       params._obj_reg = 1.0/380;
-      GLM job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      assertTrue(job.isDone());
-      model = DKV.get(modelKey).get();
+      GLM glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
+      assertTrue(glm.isStopped());
 //      Map<String, Double> coefs =  model.coefficients();
 //      for (int i = 0; i < cfs1.length; ++i)
 //        assertEquals(vals[i], coefs.get(cfs1[i]), 1e-1);
@@ -614,10 +578,9 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{0};
       FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
       betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
-      job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      assertTrue(job.isDone());
-      model = DKV.get(modelKey).get();
+      glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
+      assertTrue(glm.isStopped());
       double[] beta = model.beta();
       System.out.println("beta = " + Arrays.toString(beta));
       fr.add("CAPSULE", fr.remove("CAPSULE"));
@@ -652,7 +615,7 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
 
     Key parsed = Key.make("airlines_parsed");
-    Key modelKey = Key.make("airlines_model");
+    Key<GLMModel> modelKey = Key.make("airlines_model");
 
     Frame fr = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
 
@@ -665,10 +628,9 @@ public class GLMTest  extends TestUtil {
       params._response_column = "IsDepDelayed";
       params._ignored_columns = new String[]{"IsDepDelayed_REC"};
       params._train = fr._key;
-      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
-      job.trainModel().get();
-      assertTrue(job.isDone());
-      model = DKV.get(modelKey).get();
+      GLM glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
+      assertTrue(glm.isStopped());
       System.out.println(model._output._training_metrics);
 
     } finally {
@@ -682,7 +644,7 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
 
     Key parsed = Key.make("airlines_parsed");
-    Key modelKey = Key.make("airlines_model");
+    Key<GLMModel> modelKey = Key.make("airlines_model");
 
     Frame fr = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
 
@@ -695,10 +657,9 @@ public class GLMTest  extends TestUtil {
       params._response_column = "IsDepDelayed";
       params._ignored_columns = new String[]{"IsDepDelayed_REC"};
       params._train = fr._key;
-      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
-      job.trainModel().get();
-      assertTrue(job.isDone());
-      model = DKV.get(modelKey).get();
+      GLM glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
+      assertTrue(glm.isStopped());
       System.out.println(model._output._training_metrics);
 
     } finally {
@@ -711,7 +672,7 @@ public class GLMTest  extends TestUtil {
   public void testCoordinateDescent_anomaly() {
     GLMModel model = null;
     Key parsed = Key.make("anomaly_parsed");
-    Key modelKey = Key.make("anomaly_model");
+    Key<GLMModel> modelKey = Key.make("anomaly_model");
 
     Frame fr = parse_test_file(parsed, "smalldata/anomaly/ecg_discord_train.csv");
 
@@ -723,10 +684,9 @@ public class GLMTest  extends TestUtil {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       params._response_column = "C1";
       params._train = fr._key;
-      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
-      job.trainModel().get();
-      assertTrue(job.isDone());
-      model = DKV.get(modelKey).get();
+      GLM glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
+      assertTrue(glm.isStopped());
       System.out.println(model._output._training_metrics);
 
     } finally {
@@ -740,7 +700,7 @@ public class GLMTest  extends TestUtil {
   public void testCoordinateDescent_anomaly_CovUpdates() {
     GLMModel model = null;
     Key parsed = Key.make("anomaly_parsed");
-    Key modelKey = Key.make("anomaly_model");
+    Key<GLMModel> modelKey = Key.make("anomaly_model");
 
     Frame fr = parse_test_file(parsed, "smalldata/anomaly/ecg_discord_train.csv");
 
@@ -752,10 +712,9 @@ public class GLMTest  extends TestUtil {
       params._solver = Solver.COORDINATE_DESCENT;
       params._response_column = "C1";
       params._train = fr._key;
-      GLM job = new GLM(modelKey, "glm test simple coordinate descent", params);
-      job.trainModel().get();
-      assertTrue(job.isDone());
-      model = DKV.get(modelKey).get();
+      GLM glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
+      assertTrue(glm.isStopped());
       System.out.println(model._output._training_metrics);
 
     } finally {
@@ -777,7 +736,7 @@ public class GLMTest  extends TestUtil {
 //    -4.155864
 //    lambda = 0.001108, null dev =  512.2888, res dev = 379.7597
     Key parsed = Key.make("prostate_parsed");
-    Key modelKey = Key.make("prostate_model");
+    Key<GLMModel> modelKey = Key.make("prostate_model");
     GLMModel model = null;
 
     Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
@@ -799,16 +758,13 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{0};
       params._lambda = new double[]{0};
       params._obj_reg = 1.0/380;
-      GLM job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
-
+      GLM glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
       double[] beta_1 = model.beta();
       params._solver = Solver.L_BFGS;
       params._max_iterations = 1000;
-      job = new GLM(modelKey, "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.get(modelKey).get();
+      glm = new GLM( params, modelKey);
+      model = glm.trainModel().get();
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
@@ -827,7 +783,6 @@ public class GLMTest  extends TestUtil {
 //  // test categorical autoexpansions, run on airlines which has several categorical columns,
 //  // once on explicitly expanded data, once on h2o autoexpanded and compare the results
 //  @Test public void testSparseCategoricals() {
-//    GLM job = null;
 //    GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
 //
 //    Frame frMM = parse_test_file("smalldata/glm_tets/train-2.csv");
@@ -847,8 +802,7 @@ public class GLMTest  extends TestUtil {
 //      params._train = fr._key;
 //      params._l2pen = new double[]{1e-5};
 //      params._standardize = false;
-//      job = new GLM(Key.make("airlines_cat_nostd"),"Airlines with auto-expanded categoricals, no standardization",params);
-//      model1 = job.trainModel().get();
+//      model1 = new GLM(params,glmkey("airlines_cat_nostd")).trainModel().get();
 //      Frame score1 = model1.score(fr);
 //      ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
 //      Assert.assertEquals(model1.validation().residual_deviance, mm._resDev, 1e-4);
@@ -861,8 +815,7 @@ public class GLMTest  extends TestUtil {
 //
 //      params._train = frMM._key;
 //      params._ignored_columns = new String[]{"X"};
-//      job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
-//      model2 = job.trainModel().get();
+//      model2 = new GLM(params,glmkey("airlines_mm")).trainModel().get();
 //      params._standardize = true;
 //      params._train = frMM._key;
 //      params._use_all_factor_levels = true;
@@ -880,12 +833,10 @@ public class GLMTest  extends TestUtil {
 //      params._standardize = true;
 //      params._family = Family.binomial;
 //      params._link = Link.logit;
-//      job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
-//      model3 = job.trainModel().get();
+//      model3 = new GLM(params,glmkey("airlines_mm")).trainModel().get();
 //      params._train = fr._key;
 //      params._ignored_columns = ignoredCols;
-//      job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
-//      model4 = job.trainModel().get();
+//      model4 = new GLM(params,glmkey("airlines_mm")).trainModel().get();
 //      assertEquals(model3.validation().null_deviance,model4.validation().nullDeviance(),1e-4);
 //      assertEquals(model4.validation().residual_deviance, model3.validation().residualDeviance(), model3.validation().null_deviance * 1e-3);
 //      HashMap<String, Double> coefs1 = model1.coefficients();
@@ -915,12 +866,10 @@ public class GLMTest  extends TestUtil {
 //      // lbfgs
 ////      params._solver = Solver.L_BFGS;
 ////      params._train = fr._key;
-////      params._l2pen = new double[]{.3};
-////      job = new GLM(Key.make("lbfgs_cat"),"lbfgs glm built over categorical columns",params);
-////      model3 = job.trainModel().get();
+////      params._lambda = new double[]{.3};
+////      model3 = new GLM(params,glmkey("lbfgs_cat")).trainModel().get();
 ////      params._train = frMM._key;
-////      job = new GLM(Key.make("lbfgs_mm"),"lbfgs glm built over pre-expanded categoricals (model.matrix)",params);
-////      model4 = job.trainModel().get();
+////      model4 = new GLM(params,glmkey("lbfgs_mm")).trainModel().get();
 ////      HashMap<String, Double> coefs3 = model3.coefficients();
 ////      HashMap<String, Double> coefs4 = model4.coefficients();
 ////      // compare against each other
@@ -944,7 +893,6 @@ public class GLMTest  extends TestUtil {
 //      if(model3 != null)model3.delete();
 //      if(model4 != null)model4.delete();
 ////      if(score != null)score.delete();
-//      if( job != null ) job.remove();
 //      Scope.exit();
 //    }
 //  }
@@ -1016,8 +964,8 @@ public class GLMTest  extends TestUtil {
     // now do the same but weighted, use LSM solution as beta to generate meaningfull weights
     H2O.submitTask(new H2OCountedCompleter() {
       @Override
-      protected void compute2() {
-//        new GLM.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, 0, null, null).solve(null, beta);
+      public void compute2() {
+        new GLM.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, null, null).solve(null, beta);
         tryComplete();
       }
     }).join();
@@ -1037,7 +985,6 @@ public class GLMTest  extends TestUtil {
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test
   public void testAirlines() {
-    GLM job = null;
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
     Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv", true);
@@ -1058,8 +1005,7 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{0};
       params._standardize = false;
       params._use_all_factor_levels = false;
-      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categoricals, no standardization", params);
-      model1 = job.trainModel().get();
+      model1 = new GLM(params,glmkey("airlines_cat_nostd")).trainModel().get();
       Frame score1 = model1.score(fr);
       ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
       Assert.assertEquals(((ModelMetricsRegressionGLM) model1._output._training_metrics)._resDev, mm._resDev, 1e-4);
@@ -1071,10 +1017,7 @@ public class GLMTest  extends TestUtil {
       Assert.assertTrue(model1.testJavaScoring(fr, res, 1e-15));
       params._train = frMM._key;
       params._ignored_columns = new String[]{"X"};
-      job = new GLM(Key.make("airlines_mm"), "Airlines with pre-expanded (mode.matrix) categoricals, no standardization", params);
-      model2 = job.trainModel().get();
-
-      HashMap<String, Double> coefs1 = model1.coefficients();
+      model2 = new GLM( params,glmkey("airlines_mm")).trainModel().get();      HashMap<String, Double> coefs1 = model1.coefficients();
       HashMap<String, Double> coefs2 = model2.coefficients();
       boolean failed = false;
       // compare against each other
@@ -1110,12 +1053,10 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._family = Family.binomial;
       params._link = Link.logit;
-      job = new GLM(Key.make("airlines_mm"), "Airlines with pre-expanded (mode.matrix) categoricals", params);
-      model3 = job.trainModel().get();
+      model3 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
       params._train = fr._key;
       params._ignored_columns = ignoredCols;
-      job = new GLM(Key.make("airlines_mm"), "Airlines with categoricals", params);
-      model4 = job.trainModel().get();
+      model4 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
       assertEquals(nullDeviance(model3), nullDeviance(model4), 1e-4);
       assertEquals(residualDeviance(model4), residualDeviance(model3), nullDeviance(model3) * 1e-3);
 
@@ -1130,12 +1071,10 @@ public class GLMTest  extends TestUtil {
       // lbfgs
 //      params._solver = Solver.L_BFGS;
 //      params._train = fr._key;
-//      params._l2pen = new double[]{.3};
-//      job = new GLM(Key.make("lbfgs_cat"),"lbfgs glm built over categorical columns",params);
-//      model3 = job.trainModel().get();
+//      params._lambda = new double[]{.3};
+//      model3 = new GLM(params,glmkey("lbfgs_cat")).trainModel().get();
 //      params._train = frMM._key;
-//      job = new GLM(Key.make("lbfgs_mm"),"lbfgs glm built over pre-expanded categoricals (model.matrix)",params);
-//      model4 = job.trainModel().get();
+//      mdoel4 = new GLM(params,glmkey("lbfgs_mm")).trainModel().get();
 //      HashMap<String, Double> coefs3 = model3.coefficients();
 //      HashMap<String, Double> coefs4 = model4.coefficients();
 //      // compare against each other
@@ -1161,7 +1100,6 @@ public class GLMTest  extends TestUtil {
       if (model3 != null) model3.delete();
       if (model4 != null) model4.delete();
 //      if(score != null)score.delete();
-      if (job != null) job.remove();
       Scope.exit();
     }
   }
@@ -1171,7 +1109,6 @@ public class GLMTest  extends TestUtil {
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test
   public void test_COD_Airlines_SingleLambda() {
-    GLM job = null;
     GLMModel model1 = null;
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
@@ -1188,8 +1125,8 @@ public class GLMTest  extends TestUtil {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       params._lambda_search = true;
       params._nlambdas = 5;
-      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
-      model1 = job.trainModel().get();
+      GLM glm = new GLM( params,glmkey("airlines_cat_nostd")); 
+      model1 = glm.trainModel().get();
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm2(beta,true);
@@ -1203,14 +1140,12 @@ public class GLMTest  extends TestUtil {
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
-      if (job != null) job.remove();
     }
   }
 
 
   @Test
   public void test_COD_Airlines_SingleLambda_CovUpdates() {
-    GLM job = null;
     GLMModel model1 = null;
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
@@ -1226,8 +1161,8 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._solver = Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
-      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
-      model1 = job.trainModel().get();
+      GLM glm = new GLM( params,glmkey("airlines_cat_nostd"));
+      model1 = glm.trainModel().get();
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm2(beta,true);
@@ -1238,14 +1173,12 @@ public class GLMTest  extends TestUtil {
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
-      if (job != null) job.remove();
     }
   }
 
 
   @Test
   public void test_COD_Airlines_LambdaSearch() {
-    GLM job = null;
     GLMModel model1 = null;
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
@@ -1262,8 +1195,8 @@ public class GLMTest  extends TestUtil {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;//IRLSM
       params._lambda_search = true;
       params._nlambdas = 5;
-      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
-      model1 = job.trainModel().get();
+      GLM glm = new GLM( params,glmkey("airlines_cat_nostd"));
+      model1 = glm.trainModel().get();
       GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
       double [] beta = sm.beta;
       System.out.println("lambda " + sm.lambda_value);
@@ -1275,14 +1208,12 @@ public class GLMTest  extends TestUtil {
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
-      if (job != null) job.remove();
     }
   }
 
 
   @Test
   public void test_COD_Airlines_LambdaSearch_CovUpdates() {
-    GLM job = null;
     GLMModel model1 = null;
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
@@ -1299,8 +1230,8 @@ public class GLMTest  extends TestUtil {
       params._solver = Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
       params._nlambdas = 5;
-      job = new GLM(Key.make("airlines_cat_nostd"), "Airlines with auto-expanded categorical variables, no standardization", params);
-      model1 = job.trainModel().get();
+      GLM glm = new GLM( params,glmkey("airlines_cat_nostd"));
+      model1 = glm.trainModel().get();
       GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
       double [] beta = sm.beta;
       System.out.println("lambda " + sm.lambda_value);
@@ -1312,7 +1243,6 @@ public class GLMTest  extends TestUtil {
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
-      if (job != null) job.remove();
     }
   }
 
@@ -1446,7 +1376,6 @@ public class GLMTest  extends TestUtil {
    * @throws InterruptedException
    */
   @Test public void testProstate() throws InterruptedException, ExecutionException {
-    GLM job = null;
     GLMModel model = null, model2 = null, model3 = null, model4 = null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     try{
@@ -1463,9 +1392,8 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._lambda = new double[]{0};
       params._standardize = false;
-      params._objective_epsilon = 1e-16;
-      job = new GLM(Key.make("prostate_model"),"glm test simple glm",params);
-      model = job.trainModel().get();
+      GLM glm = new GLM(params,glmkey("prostate_model"));
+      model = glm.trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       for(int i = 0; i < cfs1.length; ++i)
         assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
@@ -1488,10 +1416,9 @@ public class GLMTest  extends TestUtil {
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       double prior = 1e-5;
       params._prior = prior;
-      job.remove();
       // test the same data and model with prior, should get the same model except for the intercept
-      job = new GLM(Key.make("prostate_model2"),"glm test glm with prior",params);
-      model2 = job.trainModel().get();
+      glm = new GLM(params,glmkey("prostate_model2"));
+      model2 = glm.trainModel().get();
       for(int i = 0; i < model2.beta().length-1; ++i)
         assertEquals(model.beta()[i], model2.beta()[i], 1e-8);
       assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu[0] * (1-prior)/(prior * (1-model._ymu[0]))),model2.beta()[model.beta().length-1],1e-10);
@@ -1503,23 +1430,28 @@ public class GLMTest  extends TestUtil {
       params._prior = -1;
       params._obj_reg = -1;
       params._max_iterations = 500;
-      job.remove();
-
-      job = new GLM(Key.make("prostate_model2"),"glm test simple glm lambda search",params);
-      model3 = job.trainModel().get();
-      job.remove();
-      System.out.println("metrics key = " + model3._output._training_metrics._key);
-      System.out.println("metrics key exist? " + (DKV.get(model3._output._training_metrics._key) != null));
+      // test the same data and model with prior, should get the same model except for the intercept
+      glm = new GLM(params,glmkey("prostate_model2"));
+      model3 = glm.trainModel().get();
+      double lambda =  model3._output._submodels[model3._output._best_lambda_idx].lambda_value;
+      params._lambda_search = false;
+      params._lambda = new double[]{lambda};
       ModelMetrics mm3 = ModelMetrics.getFromDKV(model3,fr);
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)mm3)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm3)._resDev,1e-4);
-      double lambda =  model3._output._submodels[model3._output._best_lambda_idx].lambda_value;
-      System.out.println("best lambda = " + lambda);
-      params._lambda_search = false;
-      params._lambda = new double[]{lambda};
-      job = new GLM(Key.make("prostate_model2"),"glm test simple poisson",params);
-      model4 = job.trainModel().get();
-      assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + model4._output._training_metrics._MSE,model3._output._training_metrics._MSE,model4._output._training_metrics._MSE,1e-6);
+      fr.add("CAPSULE", fr.remove("CAPSULE"));
+      fr.remove("ID").remove();
+      DKV.put(fr._key,fr);
+      DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+      GLMIterationTaskTest gtt = (GLMIterationTaskTest)new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu[0],model3).doAll(dinfo._adaptedFrame);
+      model3.score(fr).delete();
+      mm3 = ModelMetrics.getFromDKV(model3,fr);
+      assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
+      assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)mm3)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm3)._resDev,1e-4);
+      // test the same data and model with prior, should get the same model except for the intercept
+      glm = new GLM(params,glmkey("prostate_model2"));
+      model4 = glm.trainModel().get();
+      assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + model4._output._training_metrics._MSE,model3._output._training_metrics._MSE,model4._output._training_metrics._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,1e-4);
       model4.score(fr).delete();
       ModelMetrics mm4 = ModelMetrics.getFromDKV(model4,fr);
@@ -1534,13 +1466,11 @@ public class GLMTest  extends TestUtil {
       if(model2 != null)model2.delete();
       if(model3 != null)model3.delete();
       if(model4 != null)model4.delete();
-      if( job != null ) job.remove();
       Scope.exit();
     }
   }
 
   @Test public void testSynthetic() throws Exception {
-    GLM job = null;
     GLMModel model = null;
     Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
     Frame score = null;
@@ -1554,8 +1484,8 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0};
       params._standardize = false;
       params._max_iterations = 20;
-      job = new GLM(Key.make("glm_model"), "glm test simple poisson", params);
-      model = job.trainModel().get();
+      GLM glm = new GLM( params,glmkey("glm_model"));
+      model = glm.trainModel().get();
       double [] beta = model.beta();
       System.out.println("beta = " + Arrays.toString(beta));
       assertEquals(auc(model), 1, 1e-4);
@@ -1569,14 +1499,12 @@ public class GLMTest  extends TestUtil {
       fr.remove();
       if(model != null)model.delete();
       if(score != null)score.delete();
-      if( job != null ) job.remove();
       Scope.exit();
     }
   }
 
   @Test //PUBDEV-1839
   public void testCitibikeReproPUBDEV1839() throws Exception {
-    GLM job = null;
     GLMModel model = null;
     Frame tfr = parse_test_file("smalldata/jira/pubdev_1839_repro_train.csv");
     Frame vfr = parse_test_file("smalldata/jira/pubdev_1839_repro_test.csv");
@@ -1587,21 +1515,19 @@ public class GLMTest  extends TestUtil {
       params._response_column = "bikes";
       params._train = tfr._key;
       params._valid = vfr._key;
-      job = new GLM(Key.make("glm_model"), "glm test PUBDEV-1839", params);
-      model = job.trainModel().get();
+      GLM glm = new GLM( params,glmkey("glm_model"));
+      model = glm.trainModel().get();
 
     } finally {
       tfr.remove();
       vfr.remove();
       if(model != null)model.delete();
-      if( job != null ) job.remove();
       Scope.exit();
     }
   }
 
   @Test @Ignore("PUBDEV-1953")
   public void testCitibikeReproPUBDEV1953() throws Exception {
-    GLM job = null;
     GLMModel model = null;
     Frame tfr = parse_test_file("smalldata/glm_test/citibike_small_train.csv");
     Frame vfr = parse_test_file("smalldata/glm_test/citibike_small_test.csv");
@@ -1613,14 +1539,13 @@ public class GLMTest  extends TestUtil {
       params._train = tfr._key;
       params._valid = vfr._key;
       params._family = Family.poisson;
-      job = new GLM(Key.make("glm_model"), "glm test PUBDEV-1839", params);
-      model = job.trainModel().get();
+      GLM glm = new GLM( params,glmkey("glm_model"));
+      model = glm.trainModel().get();
 
     } finally {
       tfr.remove();
       vfr.remove();
       if(model != null)model.delete();
-      if( job != null ) job.remove();
       Scope.exit();
     }
   }
@@ -1634,9 +1559,8 @@ public class GLMTest  extends TestUtil {
    * Compares the objective value to expected one.
    */
   @Test public void testArcene() throws InterruptedException, ExecutionException{
-    GLM job = null;
     Key parsed = Key.make("arcene_parsed");
-    Key modelKey = Key.make("arcene_model");
+    Key<GLMModel> modelKey = Key.make("arcene_model");
     GLMModel model = null;
     Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
     try{
@@ -1655,14 +1579,13 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{1};
       for(Solver s: new Solver[]{ Solver.IRLSM}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
         params._solver = s;
-        job = new GLM(modelKey, "glm test simple poisson", params);
-        job.trainModel().get();
+        GLM glm = new GLM( params, modelKey);
+        glm.trainModel().get();
         model = DKV.get(modelKey).get();
         // assert on that we got all submodels (if strong rules work, we should be able to get the results with this many active predictors)
         assertEquals(params._nlambdas, model._output._submodels.length);
         System.out.println(model._output._training_metrics);
         // assert on the quality of the result, technically should compare objective value, but this should be good enough for now
-        job.remove();
       }
 
       // test behavior when we can not fit within the active cols limit (should just bail out early and give us whatever it got)
@@ -1676,15 +1599,14 @@ public class GLMTest  extends TestUtil {
       params._lambda_min_ratio = 0.18;
       params._max_active_predictors = 20;
       params._alpha = new double[]{1};
-      job = new GLM(modelKey,"glm test simple poisson",params);
-      job.trainModel().get();
+      GLM glm = new GLM(params,modelKey);
+      glm.trainModel().get();
       model = DKV.get(modelKey).get();
       assertTrue(model._output._submodels.length > 3);
       assertTrue(residualDeviance(model) <= 93);
     } finally {
       fr.delete();
       if(model != null)model.delete();
-      if( job != null ) job.remove();
       Scope.exit();
     }
   }
@@ -1693,7 +1615,6 @@ public class GLMTest  extends TestUtil {
    *  Make a 10K predictor model, emit, javac, and score with it.
    */
   @Test public void testBigPOJO() {
-    GLM job = null;
     GLMModel model = null;
     Frame fr = parse_test_file(Key.make("arcene_parsed"), "smalldata/glm_test/arcene.csv"), res=null;
     try{
@@ -1707,16 +1628,39 @@ public class GLMTest  extends TestUtil {
       params._max_active_predictors = 100000;
       params._alpha = new double[]{0};
       params._solver = Solver.L_BFGS;
-      job = new GLM(Key.make("arcene_model"), "glm test simple poisson", params);
-      job.trainModel().get();
-      model = DKV.getGet(job._dest);
+      GLM glm = new GLM(params,glmkey("arcene_model"));
+      model = glm.trainModel().get();
       res = model.score(fr);
       model.testJavaScoring(fr,res,0.0);
     } finally {
       fr.delete();
       if(model != null) model.delete();
       if( res != null ) res.delete();
-      if( job != null ) job.remove();
+      Scope.exit();
+    }
+  }
+
+  private static Key<GLMModel> glmkey(String str) { return Key.<GLMModel>make(str); }
+
+  @Test public void testAbalone() {
+    Scope.enter();
+    GLMModel model = null;
+    try {
+      Frame fr = parse_test_file("smalldata/glm_test/Abalone.gz");
+      Scope.track(fr);
+      GLMParameters params = new GLMParameters(Family.gaussian);
+      params._train = fr._key;
+      params._response_column = fr._names[8];
+      params._alpha = new double[]{1.0};
+      params._lambda_search = true;
+      GLM glm = new GLM(params);
+      model = glm.trainModel().get();
+      Frame res = model.score(fr);
+      Scope.track(res);
+      model.testJavaScoring(fr,res,0.0);
+      
+    } finally {
+      if( model != null ) model.delete();
       Scope.exit();
     }
   }

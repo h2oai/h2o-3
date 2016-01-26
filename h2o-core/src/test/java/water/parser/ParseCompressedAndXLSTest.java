@@ -61,7 +61,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
                 ctypes,
                 null, null, null);
       try {
-        k1 = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, setup, true).get();
+        k1 = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, setup, true)._job.get();
         assertTrue("Should have thrown ParseException since file isn't XLS file",false); // fail - should've thrown
         k1.delete();
       } catch (Throwable t) {

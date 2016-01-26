@@ -3,14 +3,14 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-from six import iteritems, itervalues, PY3
+import requests
+from six import iteritems, itervalues
 import collections
 from io import StringIO
 import csv
 import imp
 import os
 import tempfile
-from datetime import datetime
 import sys
 import traceback
 from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, quote
@@ -22,6 +22,8 @@ from .group_by import GroupBy
 import h2o
 from past.builtins import basestring
 from functools import reduce
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 
 # TODO: Automatically convert column names into Frame properties!
@@ -406,7 +408,7 @@ class H2OFrame(object):
     # cached, so must be pulled.  While we're at it, go ahead and fill in
     # the default caches if they are not already filled in
 
-    res = H2OConnection.get_json("Frames/"+quote(self.frame_id)+"?row_count="+str(10))["frames"][0]
+    res = H2OConnection.get_json("Frames/"+self.frame_id+"?row_count="+str(10))["frames"][0]
     self._ex._cache._fill_data(res)
     print("Rows:{:,}".format(self.nrow), "Cols:{:,}".format(self.ncol))
     res["chunk_summary"].show()
@@ -759,8 +761,8 @@ class H2OFrame(object):
       True if the column is numeric, otherwise return False
     """
     if self._ex._cache.types_valid():
-      return str(list(itervalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]
-    return bool(ExprNode("is.numeric",self)._eager_scalar())
+      return [str(list(itervalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]]
+    return [bool(o) for o in ExprNode("is.numeric",self)._eager_scalar()]
 
   def isstring(self):
     """
@@ -768,7 +770,7 @@ class H2OFrame(object):
     -------
       True if the column is a string column, otherwise False (same as ischaracter)
     """
-    return  bool(ExprNode("is.character",self)._eager_scalar())
+    return  [bool(o) for o in ExprNode("is.character",self)._eager_scalar()]
 
   def ischaracter(self):
     """
@@ -878,39 +880,23 @@ class H2OFrame(object):
       use_pandas=False, otherwise a pandas DataFrame) containing this H2OFrame instance's
       data.
     """
-    url = "http://{}:{}/3/DownloadDataset?frame_id={}&hex_string=false".format(H2OConnection.ip(), H2OConnection.port(), quote(self.frame_id))
-    if PY3:
-      from urllib import request
-      response = StringIO(request.urlopen(url).read().decode())
-    else:
-      import urllib2
-      response = urllib2.urlopen(url)
     if can_use_pandas() and use_pandas:
       import pandas
-      df = pandas.read_csv(response, low_memory=False)
-      time_cols = []
-      # category_cols = []
-      if self.types is not None:
-        for col_name in self.names:
-          xtype = self.type(col_name)
-          if xtype.lower() == 'time': time_cols.append(col_name)
-          # elif xtype.lower() == 'enum': category_cols.append(col_name)
-        #change Time to pandas datetime
-        if time_cols:
-          #hacky way to get the utc offset
-          sample_timestamp = 1380610868
-          utc_offset = 1000 * ((datetime.utcfromtimestamp(sample_timestamp) - datetime.fromtimestamp(sample_timestamp)).total_seconds())
-          try:
-            df[time_cols] = (df[time_cols] - utc_offset).astype('datetime64[ms]')
-          except pandas.tslib.OutOfBoundsDatetime:
-            pass
-        #change Enum to pandas category
-        # for cat_col in category_cols: #for loop is required
-        #   df[cat_col] = df[cat_col].astype('category')
-      return df
-    else:
-      cr = csv.reader(response)
-      return [[''] if row == [] else row for row in cr]
+      return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False)
+    return [row for row in csv.reader(StringIO(self.get_frame_data()))]
+
+  def get_frame_data(self):
+    """Get frame data as str in csv format
+    
+    Returns
+    -------
+      A local python string, each line is a row and each element separated by commas, containing this H2OFrame 
+      instance's data.
+    """
+    url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(self.frame_id)
+    return requests.get(url, headers = {'User-Agent': 'H2O Python client/'+sys.version.replace('\n','')},
+                        auth = (H2OConnection.username(), H2OConnection.password()),
+                        verify = not H2OConnection.insecure(), stream = True).text
 
   def flatten(self):
     return ExprNode("flatten",self)._eager_scalar()
@@ -1203,15 +1189,24 @@ class H2OFrame(object):
       For even samples, how to combine quantiles.
       Should be one of ["interpolate", "average", "low", "hi"]
     weights_column : str, default=None
-      Name of column with optional observation weights in this H2OFrame
+      Name of column with optional observation weights in this H2OFrame or a 1-column H2OFrame of observation weights.
 
     Returns
     -------
       A new H2OFrame containing the quantiles and probabilities.
     """
     if len(self) == 0: return self
-    if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
-    if not weights_column: weights_column="_"
+    if prob is None: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
+    if weights_column is None: weights_column="_"
+    else:
+      if not (isinstance(weights_column, basestring) or (isinstance(weights_column, H2OFrame) 
+                                                        and weights_column.ncol == 1 
+                                                        and weights_column.nrow == self.nrow)):
+        raise ValueError("`weights_column` must be a column name in x or an H2OFrame object with 1 column and same row count as x")
+      if isinstance(weights_column, H2OFrame):
+        merged = self.cbind(weights_column)
+        weights_column = merged.names[-1]
+        return H2OFrame._expr(expr=ExprNode("quantile",merged,prob,combine_method,weights_column))
     return H2OFrame._expr(expr=ExprNode("quantile",self,prob,combine_method,weights_column))
 
   def cbind(self,data):
@@ -1246,7 +1241,7 @@ class H2OFrame(object):
     """
     if not isinstance(data, H2OFrame): raise ValueError("`data` must be an H2OFrame, but got {0}".format(type(data)))
     fr = H2OFrame._expr(expr=ExprNode("rbind", self, data), cache=self._ex._cache)
-    fr._ex._cache.nrows=self.nrow + data.nrow
+    fr._ex._cache.nrows = self.nrow + data.nrow
     return fr
 
   def split_frame(self, ratios=None, destination_frames=None, seed=None):
@@ -1341,7 +1336,7 @@ class H2OFrame(object):
     """
     return GroupBy(self,by)
 
-  def impute(self,column,method="mean",combine_method="interpolate",by=None):
+  def impute(self, column, method="mean", combine_method="interpolate", by=None):
     """Impute a column in this H2OFrame
 
     Parameters
@@ -1365,7 +1360,7 @@ class H2OFrame(object):
     if isinstance(by, basestring):     by     = self.names.index(by)
     return H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
 
-  def merge(self, other, all_x = False, all_y = False, by_x = None, by_y = None, method="auto"):
+  def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
     """Merge two datasets based on common column names
 
     Parameters
@@ -1420,6 +1415,7 @@ class H2OFrame(object):
     job = {}
     job['job'] = H2OConnection.post_json("MissingInserter", **kwargs)
     H2OJob(job, job_type=("Insert Missing Values")).poll()
+    self._ex._cache.flush()
     return self
 
   def min(self):
@@ -1459,6 +1455,15 @@ class H2OFrame(object):
       A list containing the mean for each column (NaN for non-numeric columns).
     """
     return ExprNode("mean", self, na_rm)._eager_scalar()
+
+  def nacnt(self):
+    """Count of NAs for each column in this H2OFrame.
+
+      Returns
+      -------
+        A list of the na cnts (one entry per column).
+    """
+    return ExprNode("naCnt",self)._eager_scalar()
 
   def median(self, na_rm=False):
     """Compute the median.
@@ -1531,8 +1536,8 @@ class H2OFrame(object):
       False.
     """
     if self._ex._cache.types_valid():
-      return str(list(itervalues(self._ex._cache.types))[0]) == "enum"
-    return bool(ExprNode("is.factor", self)._eager_scalar())
+      return [str(list(itervalues(self._ex._cache.types))[0]) == "enum"]
+    return [bool(o) for o in ExprNode("is.factor", self)._eager_scalar()]
 
   def anyfactor(self):
     """Test if H2OFrame has any factor columns.
@@ -1607,7 +1612,7 @@ class H2OFrame(object):
     """
     return H2OFrame._expr(expr=ExprNode("length", self))
 
-  def table(self, data2=None):
+  def table(self, data2=None, dense=True):
     """Compute the counts of values appearing in a column, or co-occurence counts between
     two columns.
 
@@ -1615,12 +1620,15 @@ class H2OFrame(object):
     ----------
       data2 : H2OFrame
         Default is None, can be an optional single column to aggregate counts by.
+      dense : bool
+        Default is True, for dense representation, which lists only non-zero counts, 1 combination per row. Set to False 
+        to expand counts across all combinations.  
 
     Returns
     -------
       H2OFrame of the counts at each combination of factor levels
     """
-    return H2OFrame._expr(expr=ExprNode("table",self,data2)) if data2 is not None else H2OFrame._expr(expr=ExprNode("table",self))
+    return H2OFrame._expr(expr=ExprNode("table",self,data2,dense)) if data2 is not None else H2OFrame._expr(expr=ExprNode("table",self,dense))
 
   def hist(self, breaks="Sturges", plot=True, **kwargs):
     """Compute a histogram over a numeric column.

@@ -211,13 +211,13 @@ public class RapidsTest extends TestUtil {
     tree = "({x . (var x x \"everything\")} a.hex)";
     checkTree(tree);
 
-    tree = "(table (trunc (cols a.hex 1)))";
+    tree = "(table (trunc (cols a.hex 1)) FALSE)";
     checkTree(tree);
 
-    tree = "(table (cols a.hex 1))";
+    tree = "(table (cols a.hex 1) FALSE)";
     checkTree(tree);
 
-    tree = "(table (cols a.hex 1) (cols a.hex 2))";
+    tree = "(table (cols a.hex 1) (cols a.hex 2) FALSE)";
     checkTree(tree);
   }
 
@@ -241,6 +241,20 @@ public class RapidsTest extends TestUtil {
       }
     } catch( IllegalArgumentException iae ) {
       if( !expectThrow ) throw iae;
+    } finally {
+      fr.delete();
+    }
+  }
+
+  @Test public void testProstate_assign_frame_scalar() {
+    Frame fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
+    try {
+      Val val = Exec.exec("(tmp= py_1 (:= prostate.hex -1 1 (== (cols_py prostate.hex 1) 0)))");
+      if( val instanceof ValFrame ) {
+        Frame fr2= ((ValFrame)val)._fr;
+        System.out.println(fr2.vec(0));
+        fr2.remove();
+      }
     } finally {
       fr.delete();
     }

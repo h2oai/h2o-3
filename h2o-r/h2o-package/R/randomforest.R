@@ -19,6 +19,7 @@
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
 #'        where p is the number of predictors.
 #' @param sample_rate Sample rate, from 0 to 1.0.
+#' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param ntrees A nonnegative integer that determines the number of trees to
@@ -53,6 +54,8 @@
 #'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop)
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -64,6 +67,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
+                             col_sample_rate_per_tree = 1.0,
                              build_tree_one_node = FALSE,
                              ntrees = 50,
                              max_depth = 20,
@@ -84,7 +88,8 @@ h2o.randomForest <- function(x, y, training_frame,
                              score_each_iteration = FALSE,
                              stopping_rounds=0,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
-                             stopping_tolerance=1e-3
+                             stopping_tolerance=1e-3,
+                             max_runtime_secs=0
                              )
 {
   # Training_frame and validation_frame may be a key or a H2OFrame object
@@ -122,6 +127,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$mtries <- mtries
   if(!missing(sample_rate))
     parms$sample_rate <- sample_rate
+  if(!missing(col_sample_rate_per_tree))
+    parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if(!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
   if(!missing(binomial_double_trees))
@@ -156,6 +163,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if(!missing(stopping_rounds)) parms$stopping_rounds <- stopping_rounds
   if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
+  if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
 
   .h2o.modelJob('drf', parms)
 }

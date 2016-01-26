@@ -1,6 +1,7 @@
 package hex;
 
 import water.H2O;
+import water.Iced;
 import water.Job;
 import water.Key;
 import water.fvec.Frame;
@@ -13,7 +14,8 @@ import java.util.Random;
  * Create a Frame from scratch
  * If randomize = true, then the frame is filled with Random values.
  */
-public class CreateFrame extends Job<Frame> {
+public class CreateFrame extends Iced {
+  public final Job<Frame> _job;
   public long rows = 10000;
   public int cols = 10;
   public long seed = new Random().nextLong();
@@ -31,8 +33,8 @@ public class CreateFrame extends Job<Frame> {
   public boolean positive_response; // only for response_factors=1
   public boolean has_response = false;
 
-  public CreateFrame(Key<Frame> dest, String desc) { super(dest, (desc == null ? "CreateFrame" : desc)); }
-  public CreateFrame() { super(Key.<Frame>make(), "CreateFrame"); }
+  public CreateFrame(Key<Frame> key) { _job = new Job<>(key,Frame.class.getName(),"CreateFrame"); }
+  public CreateFrame() { this(Key.<Frame>make()); }
 
   public Job<Frame> execImpl() {
     if (integer_fraction + binary_fraction + categorical_fraction > 1) throw new IllegalArgumentException("Integer, binary and categorical fractions must add up to <= 1.");
@@ -53,7 +55,7 @@ public class CreateFrame extends Job<Frame> {
                     + categorical_fraction * (factors < 128 ? 1 : factors < 32768 ? 2 : 4)
                     + integer_fraction * (integer_range < 128 ? 1 : integer_range < 32768 ? 2 : integer_range < (1<<31) ? 4 : 8)
                     + (1-integer_fraction - binary_fraction - categorical_fraction) * 8 ) //reals
-            + rows * 1 //response is
+            + rows //response is
             : 0; // all constants - should be small
 
     long cluster_free_mem = H2O.CLOUD.free_mem();
@@ -67,10 +69,8 @@ public class CreateFrame extends Job<Frame> {
       if (value != 0)
         throw new IllegalArgumentException("Cannot set data to a constant value if randomize=true.");
     }
-    if (_dest == null) throw new IllegalArgumentException("Destination frame name cannot be null.");
 
-    FrameCreator fc = new FrameCreator(this, this._key);
-    start(fc, fc.nChunks()*5, true);
-    return this;
+    FrameCreator fc = new FrameCreator(this);
+    return _job.start(fc,fc.nChunks()*5);      // And start FrameCreator
   }
 }

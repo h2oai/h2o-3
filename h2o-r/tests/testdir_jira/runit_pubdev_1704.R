@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.pubdev_1704 <- function() {
     df <- as.h2o(iris)
-    df$fold <- as.h2o(ceiling(runif(nrow(iris))*5))
+    df$fold <- as.h2o(as.factor(ceiling(runif(nrow(iris))*5)))
 
     m <- h2o.gbm(x=1:4,y=5,training_frame=df,fold_column="fold", ntrees=5)
     print(m)

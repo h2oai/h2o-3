@@ -159,7 +159,7 @@ class ExprNode(object):
     -------
       The JSON response (as a python dictionary) of the Rapids execution
     """
-    return H2OConnection.post_json("Rapids", ast=quote(expr),session_id=H2OConnection.session_id(), _rest_version=99)
+    return H2OConnection.post_json("Rapids", ast=expr,session_id=H2OConnection.session_id(), _rest_version=99)
 
 class ASTId:
   def __init__(self, name=None):
@@ -221,7 +221,7 @@ class H2OCache(object):
     if self._data is not None:
       if rows <= len(self):
         return
-    res = H2OConnection.get_json("Frames/"+quote(self._id), row_count=rows)["frames"][0]
+    res = H2OConnection.get_json("Frames/"+self._id, row_count=rows)["frames"][0]
     self._l     = rows
     self._nrows = res["rows"]
     self._ncols = res["total_column_count"]

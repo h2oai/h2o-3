@@ -30,6 +30,9 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' } ),
        ]
     
+    # For grid testing, don't build any non-grid models:
+    # models_to_build = []
+
     built_models = {}
     for model_spec in models_to_build:
         model = model_spec.build_and_validate_model(a_node)
@@ -55,7 +58,10 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         GridSpec.for_dataset('gbm_prostate_binomial_grid', 'gbm', datasets['prostate_binomial'], {  }, { 'ntrees': [5, 7], 'max_depth': [1, 3, 5] } ),
         GridSpec.for_dataset('gbm_airlines_binomial_grid', 'gbm', datasets['airlines_binomial'], { 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
         GridSpec.for_dataset('gbm_iris_multinomial_grid', 'gbm', datasets['iris_multinomial'], { 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
-        # TODO: this should trigger a parameter validation error, but instead the non-grid ntrees silently overrides the drid values:        GridSpec.for_dataset('gbm_iris_multinomial_grid', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
+        # TODO: this should trigger a parameter validation error, but instead the non-grid ntrees silently overrides the grid values:        GridSpec.for_dataset('gbm_iris_multinomial_grid', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
+
+        # Test stopping criteria:
+        GridSpec.for_dataset('gbm_prostate_regression_grid_max_3', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_models': 3 } ),
        ]
     
     for grid_spec in grids_to_build:
@@ -74,7 +80,8 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', sort_order='asc')
     h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', sort_order='asc')
 
-
+#    import sys
+#    sys.exit(0)
     #######################################
     # Test default parameters validation for each model builder
     #
@@ -91,6 +98,8 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         if algo in algo_additional_default_params:
             test_parameters.update(algo_additional_default_params[algo])
     
+        if h2o_test_utils.isVerboser(): print 'Testing ' + algo + ' with params: ' + repr(test_parameters)
+    
         parameters_validation = a_node.validate_model_parameters(algo=algo, training_frame=None, parameters=test_parameters, timeoutSecs=240) # synchronous
         assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
         h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
@@ -106,6 +115,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     # Test DeepLearning parameters validation
     #
     # Default parameters:
+    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning default parameters. . .'
     model_builder = a_node.model_builders(algo='deeplearning', timeoutSecs=240)['model_builders']['deeplearning']
     dl_test_parameters_list = model_builder['parameters']
     dl_test_parameters = {value['name'] : value['default_value'] for value in dl_test_parameters_list}
@@ -119,6 +129,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     assert 0 == parameters_validation['error_count'], "FAIL: 0 != error_count in good-parameters parameters validation result."
     
     # Good parameters (note: testing with null training_frame):
+    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning good parameters. . .'
     dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
@@ -130,6 +141,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     
     # Bad parameters (hidden is null):
     # (note: testing with null training_frame)
+    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning bad parameters, null training_frame. . .'
     dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in bad-parameters parameters validation result (input_dropout_ratio)."
@@ -143,6 +155,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     assert found_expected_error, "FAIL: Failed to find error message about input_dropout_ratio in the validation messages."
     
     # Bad parameters (no response_column):
+    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning bad parameters, null response_column. . .'
     dl_test_parameters = {'hidden': "[10, 20, 10]" }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame='prostate_binomial', parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in bad-parameters parameters validation result (response_column)."

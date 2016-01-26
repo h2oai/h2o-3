@@ -1,7 +1,6 @@
 package hex.glm;
 
 import hex.*;
-import hex.deeplearning.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.ComputationState.GLMSubsetGinfo;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
@@ -17,25 +16,16 @@ import hex.optimization.ADMM;
 import hex.optimization.ADMM.ProximalSolver;
 import hex.optimization.L_BFGS.*;
 import hex.optimization.OptimizationUtils.*;
-import hex.schemas.GLMV3;
-import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
-import org.joda.time.field.UnsupportedDateTimeField;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import sun.misc.Unsafe;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.H2O.H2OCountedCompleter;
-import water.nbhm.UtilUnsafe;
 import water.parser.BufferedString;
 import water.util.*;
 import water.util.ArrayUtils;
-
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,6 +39,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   public static final int SCORING_INTERVAL_MSEC = 15000; // scoreAndUpdateModel every minute unless socre every iteration is set
   public String _generatedWeights = null;
+
+  public GLM(GLMModel.GLMParameters parms) {
+    super(parms);
+    init(false);
+  }
+  public GLM(GLMModel.GLMParameters parms,Key dest) {
+    super(parms,dest);
+    init(false);
+  }
 
   public boolean isSupervised() {
     return true;
@@ -76,25 +75,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
           + ") - try reducing the number of columns and/or the number of categorical factors (or switch to the L-BFGS solver).";
         error("_train", msg);
-        cancel(msg);
       }
     }
   }
 
-  public GLM(Key dest, String desc, GLMModel.GLMParameters parms) {
-    super(dest, desc, parms);
-    init(false);
-  }
-
-  public GLM(GLMModel.GLMParameters parms) {
-    super("GLM", parms);
-    init(false);
-  }
 
 
-  static class TooManyPredictorsException extends RuntimeException {
-  }
-
+  static class TooManyPredictorsException extends RuntimeException {}
 
   DataInfo _dinfo;
 
@@ -189,7 +176,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return 2;
     return 1;
   }
-
   private boolean doingIRLSM() {
     if (_parms._family == Family.gaussian && _parms._link == Link.identity)
       return false; // no need for IRLSM, standard LSM will do
@@ -240,6 +226,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return null;
   }
 
+
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
@@ -275,7 +262,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       BetaConstraint bc = (_parms._beta_constraints != null)?new BetaConstraint(_parms._beta_constraints.get()):new BetaConstraint();
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
-      _state = new ComputationState(jobKey(), _parms, _dinfo, bc, nclasses());
+      _state = new ComputationState(_job._key, _parms, _dinfo, bc, nclasses());
       // skipping extra rows? (outside of weights == 0)
       boolean skippingRows = true;//(_parms._missing_value_handling == MissingValuesHandling.Skip && _train.hasNAs());
       if (hasWeightCol() || skippingRows) { // need to re-compute means and sd
@@ -307,7 +294,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state._ymu = new double[]{_parms._intercept?_train.lastVec().mean():0};
       }
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
-        GLMGradientSolver gslvr = new GLMGradientSolver(jobKey(),_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
+        GLMGradientSolver gslvr = new GLMGradientSolver(_job._key,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
         double [] x = new L_BFGS().solve(gslvr,new double[1]).coefs;
         x[0] = _parms.linkInv(x[0]);
         _state._ymu = x;
@@ -325,13 +312,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         boolean testOffset = false;
         testVecs.add(_valid.vec(_parms._response_column));
       }
-      _model = new GLMModel(_dest, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+      _model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
       String[] warns = _model.adaptTestForTrain(_valid, true, true);
       for (String s : warns) warn("_validation_frame", s);
       if (_parms._lambda_min_ratio == -1)
         _parms._lambda_min_ratio = _nobs > 10 * _dinfo.fullN() ? 1e-4 : 1e-2;
       double [] beta = getNullBeta();
-      GLMGradientInfo ginfo = new GLMGradientSolver(jobKey(),_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
+      GLMGradientInfo ginfo = new GLMGradientSolver(_job._key,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
       _state.updateState(beta,ginfo);
       if (_parms._lambda == null) {  // no lambda given, we will base lambda as a fraction of lambda max
         _lmax = lmax(_state.ginfo()._gradient);
@@ -351,28 +338,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       // clone2 so that I don't change instance which is in the DKV directly
       // (clone2 also shallow clones _output)
-      _model.clone2().delete_and_lock(GLM.this._key);
+      _model.clone2().delete_and_lock(_job._key);
     }
   }
 
-  @Override
-  public ModelBuilderSchema schema() {
-    return new GLMV3();
-  }
-
-
   private static final long WORK_TOTAL = 1000000;
 
-  @Override
-  protected Job<GLMModel> trainModelImpl(long work, boolean restartTimer) {
-    start(new GLMDriver(), work, restartTimer);
-    return this;
-  }
+  @Override protected GLMDriver trainModelImpl() { return new GLMDriver(); }
 
-  @Override
-  public long progressUnits() {
-    return WORK_TOTAL;
-  }
+  @Override public long progressUnits() { return WORK_TOTAL; }
 
   private final double lmax(double[] grad) {
     return Math.max(ArrayUtils.maxValue(grad), -ArrayUtils.minValue(grad)) / Math.max(1e-2, _parms._alpha[0]);
@@ -382,33 +356,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   /**
    * Main loop of the glm algo.
    */
-  public final class GLMDriver extends H2OCountedCompleter<GLMDriver> implements ProgressMonitor {
+  public final class GLMDriver extends Driver implements ProgressMonitor {
     private int _workPerIteration;
 
-    GLMDriver() {
-      super(true);
-    }
 
     private void doCleanup() {
-      updateModelOutput();
       try {
-        _model.unlock(jobKey());
+        _model.unlock(_job);
       } catch(Throwable t){
         // nada
       }
       try {
-        _parms.read_unlock_frames(GLM.this);
+        _parms.read_unlock_frames(_job);
       } catch (Throwable t) {
         // nada
       }
       Scope.exit(_keys2Keep.values().toArray(new Key[0]));
     }
-
-
-
-
     private transient Cholesky _chol;
-
     private transient L1Solver _lslvr;
 
     private double[] solveGram(Gram gram, double [] xy) {
@@ -418,7 +383,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       gram.mul(_parms._obj_reg);
       ArrayUtils.mult(xy, _parms._obj_reg);
-      if(_state._iter == 0 && (_parms._remove_colinear_columns || _parms._compute_p_values)) {
+      if(_state._iter == 0 && (_parms._remove_collinear_columns || _parms._compute_p_values)) {
         ArrayList<Integer> ignoredCols = new ArrayList<>();
         Cholesky chol = _chol = gram.qrCholesky(ignoredCols);
         if(!ignoredCols.isEmpty()) { // got some redundant cols
@@ -426,7 +391,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for(int i = 0; i < collinear_cols.length; ++i)
             collinear_cols[i] = ignoredCols.get(i);
           String [] collinear_col_names = ArrayUtils.select(_state.activeData().coefNames(),collinear_cols);
-          if(!_parms._remove_colinear_columns)
+          if(!_parms._remove_collinear_columns)
             throw new IllegalArgumentException("Got collinear columns, can not compute p-values unless some of the co-lienar columns are removed, please re-run with remove collinear_columns flag on or remove the collinear columns manually. Found following dependent columns " + collinear_col_names);
           // need to drop the cols from everywhere
           _model.addWarning("Removed collinear columns " + collinear_col_names);
@@ -460,8 +425,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           GLMWeightsFun glmw = new GLMWeightsFun(_parms);
           double bdiff = _parms._beta_epsilon + 1;
           while (bdiff > _parms._beta_epsilon && _state._iter++ < _parms._max_iterations) {
-            new GLMMultinomialUpdate(_state.activeData(),jobKey(),_state.beta(),c).doAll(_state.activeData()._adaptedFrame);
-            GLMIterationTask t = new GLMTask.GLMIterationTask(jobKey(), _state.activeDataMultinomial(c), glmw, ls.getX(),c).doAll(_state.activeDataMultinomial(c)._adaptedFrame);
+            new GLMMultinomialUpdate(_state.activeData(),_job._key,_state.beta(),c).doAll(_state.activeData()._adaptedFrame);
+            GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeDataMultinomial(c), glmw, ls.getX(),c).doAll(_state.activeDataMultinomial(c)._adaptedFrame);
             double[] betaCnd = solveGram(t._gram, t._xy);
             if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-6, 1e4, 20))
               break;
@@ -477,7 +442,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     private void fitLSM(){
-      GLMIterationTask t = new GLMTask.GLMIterationTask(jobKey(), _state.activeData(), new GLMWeightsFun(_parms), null).doAll(_state.activeData()._adaptedFrame);
+      GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), new GLMWeightsFun(_parms), null).doAll(_state.activeData()._adaptedFrame);
       double ysqr = t._xy[t._xy.length-1];
       double [] xy = t._xy.clone();
       double[][]  XX = t._gram.getXX(false);
@@ -494,7 +459,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
       while(true) {
         long t1 = System.currentTimeMillis();
-        GLMIterationTask t = new GLMTask.GLMIterationTask(jobKey(), _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
+        GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
         long t2 = System.currentTimeMillis();
         double [] betaCnd = solveGram(t._gram,t._xy);
         long t3 = System.currentTimeMillis();
@@ -520,6 +485,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < _nclass; ++i)
           beta[i * P + P - 1] = glmw.link(_state._ymu[i]);
       }
+
       if (beta == null) {
         beta = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
         if (_parms._intercept)
@@ -602,7 +568,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         fr.add("z", z);
         fr.add("zTilda", zTilda);
 
-        GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(GLM.this._key, _state.activeData(), _parms, beta).doAll(fr);
+        GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key, _state.activeData(), _parms, beta).doAll(fr);
         double objVal = objVal(gt._likelihood, gt._betaw, _state.lambda());
         denums = gt.denums;
         wsum = gt.wsum;
@@ -627,7 +593,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               prev_level_num = _state.activeData()._catOffsets[i]-_state.activeData()._catOffsets[i-1];
               fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(i-1)); // add previous categorical variable
             }
-
             int start_old = _state.activeData()._catOffsets[i];
             GLMCoordinateDescentTaskSeqNaive stupdate;
             if(intercept)
@@ -755,7 +720,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double [] beta = _state.beta();
         if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
           seEst = true;
-          ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), GLM.this.jobKey(), beta, _parms).doAll(_state.activeData()._adaptedFrame);
+          ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
         double [] zvalues = new double[_state.activeData().fullN()+1];
@@ -790,19 +755,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         _keys2Keep.put("validation_metrics",_model._output._validation_metrics._key);
       }
-      _model.update(jobKey());
+      _model.update(_job._key);
       _lastScore = System.currentTimeMillis();
       long scoringTime = System.currentTimeMillis() - t1;
       _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
     }
     @Override
-    protected void compute2() {
+    public void compute2() {
       Scope.enter();
       _keys2Keep.put("dest",dest());
-      _parms.read_lock_frames(GLM.this);
+      _parms.read_lock_frames(_job);
       init(true);
       if (error_count() > 0) {
-        GLM.this.updateValidationMessages();
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       }
       if(_parms._family == Family.multinomial && _parms._solver == Solver.IRLSM) {
@@ -814,7 +778,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for(int i = 1; i < _nclass; ++i)
           sumExp += Math.exp(nb[i*N + P] - maxRow);
         _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
-
       }
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
@@ -824,8 +787,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         do { fitModel(); } while(!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if(_parms._lambda_search) {  // compute train and test dev
-          double trainDev = new GLMResDevTask(jobKey(), _state._dinfo, _parms, _state.beta()).doAll(_state._dinfo._adaptedFrame)._resDev;
-          double testDev = _validDinfo != null ? new GLMResDevTask(jobKey(), _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev : -1;
+          double trainDev = new GLMResDevTask(_job._key, _state._dinfo, _parms, _state.beta()).doAll(_state._dinfo._adaptedFrame)._resDev;
+          double testDev = _validDinfo != null ? new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev : -1;
           Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
           if(_model._output.pickBestModel().lambda_value == _state.lambda()) {
@@ -843,10 +806,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         assert _model._output._submodels.length == 1;
         _model._output._submodels[0].beta[_model._output._submodels[0].beta.length-1] += _iceptAdjust;
         _model._output.setSubmodelIdx(0);
-        _model.update(jobKey());
+        _model.update(_job._key);
       }
       doCleanup();
-      done();
       tryComplete();
     }
 
@@ -871,7 +833,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double bdiff = betaDiff(beta,_state.beta());
       double relImprovement = _state.updateState(beta,gginfo);
       updateProgress();
-      return isRunning(GLM.this._key) && _state._iter++ < _parms._max_iterations && bdiff > _parms._beta_epsilon && relImprovement > _parms._objective_epsilon;
+      return _job.isRunning() && _state._iter++ < _parms._max_iterations && bdiff > _parms._beta_epsilon && relImprovement > _parms._objective_epsilon;
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
@@ -882,7 +844,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int iterDelta = _state._iter < 4 ? 1 : 4;
       _state._worked += _workPerIteration * iterDelta;
       if (_state._iter < 4 || (_state._iter & 3) == 0)
-        update(_workPerIteration * iterDelta, "iteration " + (_state._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(_state.objVal(), 4), GLM.this._key);
+        _job.update(_workPerIteration * iterDelta, "iteration " + (_state._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(_state.objVal(), 4));
       if(!_parms._lambda_search && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
         _model.update(_state.expandBeta(_state.beta()), -1, -1, _state._iter);
         scoreAndUpdateModel();
@@ -897,41 +859,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double currentLambda() {
     return _parms._lambda[_lambdaId];
   }
-
-//  /**
-//   * Objective value computation multinomial
-//   *
-//   * @param likelihood
-//   * @param beta
-//   * @return
-//   */
-//  double objVal(double likelihood, double[][] beta) {
-//    return objVal(likelihood, beta, currentLambda());
-//  }
-//
-//  double objVal(double likelihood, double[][] beta, double lambda) {
-//    double alpha = _parms._alpha[0];
-//
-//    double proximalPen = 0;
-//    if (_bc._betaGiven != null) {
-//      throw H2O.unimpl();
-//    }
-//    double l1normSum = 0;
-//    double l2normSum = 0;
-//    for (double[] b : beta) {
-//      l1normSum += ArrayUtils.l1norm(b, _parms._intercept);
-//      l2normSum += ArrayUtils.l2norm2(b, _parms._intercept);
-//    }
-//    double res = likelihood * _parms._obj_reg
-//      + proximalPen
-//      + lambda * ((alpha * l1normSum) + (1 - alpha) * .5 * l2normSum);
-//    return res;
-//  }
-//
-//  double objVal(double likelihood, double[] beta) {
-//    return objVal(likelihood, beta, currentLambda());
-//  }
-//
   double objVal(double likelihood, double[] beta, double lambda) {
     double alpha = _parms._alpha[0];
     double proximalPen = 0;
@@ -1320,6 +1247,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     return etaOffset;
   }
+
 
   public class BetaConstraint extends Iced {
     double[] _betaStart;

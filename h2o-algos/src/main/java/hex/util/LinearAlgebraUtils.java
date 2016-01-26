@@ -5,11 +5,13 @@ import Jama.Matrix;
 import hex.DataInfo;
 import hex.FrameTask;
 import hex.gram.Gram;
+import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 public class LinearAlgebraUtils {
@@ -17,7 +19,7 @@ public class LinearAlgebraUtils {
   /*
    * Forward substitution: Solve Lx = b for x with L = lower triangular matrix, b = real vector
    */
-  public static final double[] forwardSolve(double[][] L, double[] b) {
+  public static double[] forwardSolve(double[][] L, double[] b) {
     assert L != null && L.length == L[0].length && L.length == b.length;
     double[] res = new double[b.length];
 
@@ -31,28 +33,10 @@ public class LinearAlgebraUtils {
   }
 
   /*
-   * Backward substitution: Solve Ux = b for x = U = upper triangular matrix, b = real vector
-   */
-  public static final double[] backwardSolve(double[][] U, double[] b) {
-    assert U != null && U.length == U[0].length && U.length == b.length;
-    double[] res = new double[b.length];
-
-    for(int i = b.length-1; i >= 0; i--) {
-      res[i] = b[i];
-      for(int j = i+1; j < b.length; j++)
-        res[i] -= U[i][j] * res[j];
-      res[i] /= U[i][i];
-    }
-    return res;
-  }
-
-  /*
    * Impute missing values and transform numeric value x in col of dinfo._adaptedFrame
    */
   private static double modifyNumeric(double x, int col, DataInfo dinfo) {
-    double y = x;
-    if (Double.isNaN(x) && dinfo._imputeMissing)  // Impute missing value with mean
-      y = dinfo._numMeans[col];
+    double y = (Double.isNaN(x) && dinfo._imputeMissing) ? dinfo._numMeans[col] : x;  // Impute missing value with mean
     if (dinfo._normSub != null && dinfo._normMul != null)  // Transform x if requested
       y = (y - dinfo._normSub[col]) * dinfo._normMul[col];
     return y;
@@ -61,7 +45,6 @@ public class LinearAlgebraUtils {
   /*
    * Return row with categoricals expanded in array tmp
    */
-  public static double[] expandRow(double[] row, DataInfo dinfo, double[] tmp) { return expandRow(row, dinfo, tmp, true); }
   public static double[] expandRow(double[] row, DataInfo dinfo, double[] tmp, boolean modify_numeric) {
     // Categorical columns
     int cidx;
@@ -89,34 +72,6 @@ public class LinearAlgebraUtils {
     return tmp;
   }
 
-  public static double[] expandRow(Chunk[] chks, int row_in_chunk, DataInfo dinfo, double[] tmp, boolean modify_numeric) {
-    // Categorical columns
-    int cidx;
-    for(int col = 0; col < dinfo._cats; col++) {
-      double x = chks[col].atd(row_in_chunk);
-      if (Double.isNaN(x)) {
-        if (dinfo._imputeMissing)
-          cidx = dinfo._catModes[col];
-        else if (dinfo._catMissing[col] == 0)
-          continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
-        else
-          cidx = dinfo._catOffsets[col+1]-1;     // Otherwise, missing value turns into extra (last) factor
-      } else
-        cidx = dinfo.getCategoricalId(col, (int)x);
-      if(cidx >= 0) tmp[cidx] = 1;
-    }
-
-    // Numeric columns
-    int exp_cnt = dinfo.numStart();
-    for(int col = 0; col < dinfo._nums; col++) {
-      double x = chks[col].atd(row_in_chunk);
-      // Only do imputation and transformation if requested
-      tmp[exp_cnt] = modify_numeric ? modifyNumeric(x, col, dinfo) : x;
-      exp_cnt++;
-    }
-    return tmp;
-  }
-
   /**
    * Computes B = XY where X is n by k and Y is k by p, saving result in new vecs
    * Input: dinfo = X (large frame) with dinfo._adaptedFrame passed to doAll
@@ -126,7 +81,7 @@ public class LinearAlgebraUtils {
   public static class BMulTask extends FrameTask<BMulTask> {
     final double[][] _yt;   // _yt = Y' (transpose of Y)
 
-    public BMulTask(Key jobKey, DataInfo dinfo, double[][] yt) {
+    public BMulTask(Key<Job> jobKey, DataInfo dinfo, double[][] yt) {
       super(jobKey, dinfo);
       _yt = yt;
     }
@@ -151,7 +106,7 @@ public class LinearAlgebraUtils {
     final int _ncolX;     // Number of cols in X
 
     public BMulInPlaceTask(DataInfo xinfo, double[][] yt) {
-      assert yt != null && yt[0].length == xinfo._adaptedFrame.numColsExp();
+      assert yt != null && yt[0].length == numColsExp(xinfo._adaptedFrame,true);
       _xinfo = xinfo;
       _ncolX = xinfo._adaptedFrame.numCols();
       _yt = yt;
@@ -161,17 +116,17 @@ public class LinearAlgebraUtils {
       assert cs.length == _ncolX + _yt.length;
       // Copy over only X frame chunks
       Chunk[] xchk = new Chunk[_ncolX];
-      for(int i = 0; i < _ncolX; i++) xchk[i] = cs[i];
       DataInfo.Row xrow = _xinfo.newDenseRow();
+      System.arraycopy(cs,0,xchk,0,_ncolX);
       double sum;
       for(int row = 0; row < cs[0]._len; row++) {
         // Extract row of X
         _xinfo.extractDenseRow(xchk, row, xrow);
         if (xrow.bad) continue;
         int bidx = _ncolX;
-        for (int p = 0; p < _yt.length; p++) {
+        for (double[] ps : _yt ) {
           // Inner product of X row with Y column (Y' row)
-          sum = xrow.innerProduct(_yt[p]);
+          sum = xrow.innerProduct(ps);
           cs[bidx].set(row, sum);   // Save inner product to B
           bidx++;
         }
@@ -196,7 +151,7 @@ public class LinearAlgebraUtils {
     public SMulTask(DataInfo ainfo, int ncolQ) {
       _ainfo = ainfo;
       _ncolA = ainfo._adaptedFrame.numCols();
-      _ncolExp = ainfo._adaptedFrame.numColsExp();
+      _ncolExp = numColsExp(ainfo._adaptedFrame,true);
       _ncolQ = ncolQ;
     }
 
@@ -255,7 +210,7 @@ public class LinearAlgebraUtils {
    * @param transpose Should result be transposed to get L?
    * @return L or R matrix from Cholesky of Y Gram
    */
-  public static double[][] computeR(Key jobKey, DataInfo yinfo, boolean transpose) {
+  public static double[][] computeR(Key<Job> jobKey, DataInfo yinfo, boolean transpose) {
     // Calculate Cholesky of Y Gram to get R' = L matrix
     Gram.GramTask gtsk = new Gram.GramTask(jobKey, yinfo);  // Gram is Y'Y/n where n = nrow(Y)
     gtsk.doAll(yinfo._adaptedFrame);
@@ -275,7 +230,7 @@ public class LinearAlgebraUtils {
    * @param ywfrm Input frame [Y,W] where we write into W
    * @return l2 norm of Q - W, where W is old matrix in frame, Q is computed factorization
    */
-  public static double computeQ(Key jobKey, DataInfo yinfo, Frame ywfrm) {
+  public static double computeQ(Key<Job> jobKey, DataInfo yinfo, Frame ywfrm) {
     double[][] cholL = computeR(jobKey, yinfo, true);
     ForwardSolve qrtsk = new ForwardSolve(yinfo, cholL);
     qrtsk.doAll(ywfrm);
@@ -287,7 +242,7 @@ public class LinearAlgebraUtils {
    * @param jobKey Job key for Gram calculation
    * @param yinfo DataInfo for Y matrix
    */
-  public static void computeQInPlace(Key jobKey, DataInfo yinfo) {
+  public static void computeQInPlace(Key<Job> jobKey, DataInfo yinfo) {
     double[][] cholL = computeR(jobKey, yinfo, true);
     ForwardSolveInPlace qrtsk = new ForwardSolveInPlace(yinfo, cholL);
     qrtsk.doAll(yinfo._adaptedFrame);
@@ -317,7 +272,7 @@ public class LinearAlgebraUtils {
 
       // Copy over only A frame chunks
       Chunk[] achks = new Chunk[_ncols];
-      for(int i = 0; i <_ncols; i++) achks[i] = cs[i];
+      System.arraycopy(cs,0,achks,0,_ncols);
 
       for(int row = 0; row < cs[0]._len; row++) {
         // 1) Extract single expanded row of A
@@ -364,7 +319,7 @@ public class LinearAlgebraUtils {
 
       // Copy over only A frame chunks
       Chunk[] achks = new Chunk[_ncols];
-      for(int i = 0; i < _ncols; i++) achks[i] = cs[i];
+      System.arraycopy(cs,0,achks,0,_ncols);
 
       for(int row = 0; row < cs[0]._len; row++) {
         // 1) Extract single expanded row of A
@@ -382,5 +337,15 @@ public class LinearAlgebraUtils {
           cs[d].set(row, qrow[d]);
       }
     }
+  }
+
+  /** Number of columns with categoricals expanded.
+   *  @return Number of columns with categoricals expanded into indicator columns */
+  public static int numColsExp(Frame fr, boolean useAllFactorLevels) {
+    final int uAFL = useAllFactorLevels ? 0 : 1;
+    int cols = 0;
+    for( Vec vec : fr.vecs() )
+      cols += (vec.isCategorical() && vec.domain() != null) ? vec.domain().length - uAFL : 1;
+    return cols;
   }
 }

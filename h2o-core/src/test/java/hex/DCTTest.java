@@ -32,9 +32,7 @@ public class DCTTest extends TestUtil {
       cf.missing_fraction = 0;
       cf.factors = 0;
       cf.seed = 1234;
-      cf.execImpl();
-      cf.get();
-      frame = DKV.getGet(cf.dest());
+      frame = cf.execImpl().get();
       long now = System.currentTimeMillis();
       frameDCT = MathUtils.DCT.transform1D(frame, height, false);
       Log.info("Computed 1D DCT of " + cf.rows + " rows of size " + cf.cols + " in" + PrettyPrint.msecs(System.currentTimeMillis() - now, true));
@@ -71,9 +69,7 @@ public class DCTTest extends TestUtil {
       cf.missing_fraction = 0;
       cf.factors = 0;
       cf.seed = 1234;
-      cf.execImpl();
-      cf.get();
-      frame = DKV.getGet(cf.dest());
+      frame = cf.execImpl().get();
       long now = System.currentTimeMillis();
       frameDCT = MathUtils.DCT.transform2D(frame, height, width, false);
       Log.info("Computed 2D DCT of " + cf.rows + " rows of size " + cf.cols + " in" + PrettyPrint.msecs(System.currentTimeMillis() - now, true));
@@ -110,9 +106,7 @@ public class DCTTest extends TestUtil {
       cf.missing_fraction = 0;
       cf.factors = 0;
       cf.seed = 1234;
-      cf.execImpl();
-      cf.get();
-      frame = DKV.getGet(cf.dest());
+      frame = cf.execImpl().get();
       long now = System.currentTimeMillis();
       frameDCT = MathUtils.DCT.transform3D(frame, height, width, depth, false);
       Log.info("Computed 3D DCT of " + cf.rows + " rows of size " + cf.cols + " in" + PrettyPrint.msecs(System.currentTimeMillis() - now, true));

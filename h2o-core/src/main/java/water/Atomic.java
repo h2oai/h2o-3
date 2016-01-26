@@ -10,8 +10,8 @@ package water;
 abstract public class Atomic<T extends Atomic> extends DTask<T> {
   protected Key _key;           // Transaction key
 
-  public Atomic(){}
-  public Atomic(H2O.H2OCountedCompleter completer){super(completer);}
+  public Atomic(){ super(H2O.ATOMIC_PRIORITY); }
+  public Atomic(H2O.H2OCountedCompleter completer){super(completer,H2O.ATOMIC_PRIORITY);}
   // User's function to be run atomically.  The Key's Value is fetched from the
   // home STORE and passed in.  The returned Value is atomically installed as
   // the new Value (and the function is retried until it runs atomically).  The
@@ -27,9 +27,9 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
   protected void onSuccess( Value old ){}
 
   /** Block until it completes, even if run remotely */
-  public final T invoke( Key key ) {
+  public final Atomic<T> invoke( Key key ) {
     RPC<Atomic<T>> rpc = fork(key);
-    return (T)(rpc == null ? this : rpc.get()); // Block for it
+    return (rpc == null ? this : rpc.get()); // Block for it
   }
 
   // Fork off
@@ -44,7 +44,8 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
   }
 
   // The (remote) workhorse:
-  @Override protected final void compute2( ) {
+  @Override
+  public final void compute2() {
     assert _key.home() : "Atomic on wrong node; SELF="+H2O.SELF+
       ", key_home="+_key.home_node()+", key_is_home="+_key.home()+", class="+getClass();
     Futures fs = new Futures(); // Must block on all invalidates eventually
@@ -53,7 +54,16 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
       // Run users' function.  This is supposed to read-only from val1 and
       // return new val2 to atomically install.
       Value val2 = atomic(val1);
-      if( val2 == null ) break; // ABORT: they gave up
+      if( val2 == null ) {      // ABORT: they gave up
+        // Strongly order XTNs on same key, EVEN if aborting.  Generally abort
+        // means some interesting condition is already met, but perhaps met by
+        // the exactly proceeding XTN whose invalidates are still roaming about
+        // the system.  If we do not block, the Atomic.invoke might complete
+        // before the invalidates, and the invoker might then do a DKV.get()
+        // and get his original value - instead of inval & fetching afresh.
+        val1.blockTillNoReaders(); // Prior XTN that made val1 may not yet have settled out; block for it
+        break; 
+      }
       assert val1 != val2;      // No returning the same Value
       // Attempt atomic update
       Value res = DKV.DputIfMatch(_key,val2,val1,fs);
@@ -67,6 +77,4 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
     _key = null;                // No need for key no more, don't send it back
     tryComplete();
   }
-
-  @Override protected byte priority() { return H2O.ATOMIC_PRIORITY; }
 }

@@ -178,6 +178,8 @@ git pull
 
 ### 4.2. Setup on all Platforms
 
+> **Note**: The following instructions assume you have installed the latest version of [**Pip**](https://pip.pypa.io/en/latest/installing/#install-or-upgrade-pip), which is installed with the latest version of [**Python**](https://www.python.org/downloads/).  
+
 ##### Install required Python packages (prepending with `sudo` if unsuccessful)
 
     pip install grip
@@ -193,6 +195,7 @@ Python tests require:
     pip install pandas
     pip install statsmodels
     pip install patsy
+    pip install future
 
 ### 4.3. Setup on Windows
 
@@ -370,6 +373,14 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 Installation instructions can be found here [R installation](http://cran.r-project.org).  Click “Download R for Linux”.  Click “ubuntu”.  Follow the given instructions.
 
 To install the required packages, follow the [same instructions as for OS X above](#InstallRPackagesInUnix).
+
+>**Note**: If the process fails to install RStudio Server on Linux, run one of the following: 
+>
+>`sudo apt-get install libcurl4-openssl-dev`
+>
+>or
+> 
+>`sudo apt-get install libcurl4-gnutls-dev`
 
 ##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 

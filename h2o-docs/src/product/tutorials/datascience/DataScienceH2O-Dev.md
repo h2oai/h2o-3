@@ -4,13 +4,6 @@ This document describes how to define the models and how to interpret the model,
 
 ##Commonalities 
 
-###Missing Value Handling for Training
-
-If missing values are found in the validation frame during model training or during the scoring process for creating predictions, the missing values are automatically imputed. 
-
-If the missing values are found during POJO scoring, the answer is converted to `NaN`. 
-
-
 ###Quantiles
 
 
@@ -330,6 +323,11 @@ where M is the number of observations, N is the number of columns (categorical c
 
 For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula 250^2*1000000/(32*1e8)  = 19.5 ~= 20). 
 
+- **How is variable importance calculated for GLM?**
+
+For GLM, the variable importance represents the coefficient magnitudes. 
+
+
 
 ###GLM Algorithm
 
@@ -480,7 +478,9 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **mtries**: Specify the columns to randomly select at each level. If the default value of `-1` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). The range is -1 to >=1. 
 
-- **sample\_rate**: Specify the sample rate. The range is 0 to 1.0. 
+- **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
+
+- **col\_sample_rate**: Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -590,6 +590,20 @@ By default, the following output displays:
 - **How is variable importance calculated for DRF?**
 
 Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result. 
+
+- **How is column sampling implemented for DRF?**
+
+For an example model using: 
+
+- 100 columns
+- `col_sample_rate_per_tree` is 0.602
+- `mtries` is -1 or 7 (refers to the number of active predictor columns for the dataset)
+
+For each tree, the floor is used to determine the number - for this example, (0.602*100)=60 out of the 100 - of columns that are randomly picked. For classification cases where `mtries=-1`, the square root - for this example, (100)=10 columns - are then randomly chosen for each split decision (out of the total 60). 
+
+For regression, the floor - in this example, (100/3)=33 columns - is used for each split by default. If `mtries=7`, then 7 columns are picked for each split decision (out of the 60). 
+
+`mtries` is configured independently of `col_sample_rate_per_tree`, but it can be limited by it. For example, if `col_sample_rate_per_tree=0.01`, then there's only one column left for each split, regardless of how large the value for `mtries` is.
 
 
 ###DRF Algorithm 
@@ -1170,6 +1184,15 @@ The output for GBM includes the following:
  
 This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature. 
 
+- **How is column sampling implemented for GBM?**
+
+For an example model using: 
+
+- 100 columns
+- `col_sample_rate_per_tree=0.754`
+- `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
+
+For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
 
 
 
@@ -1204,6 +1227,31 @@ val weight
 The above vec has a real-valued type if passed as a whole, but if the zero-weighted rows are sliced away first, the integer weight is used. The resulting histogram is either kept at full `nbins` resolution or potentially shrunk to the discrete integer range, which affects the split points. 
 
 For more information about the GBM algorithm, refer to the [Gradient Boosted Machines booklet](http://h2o.ai/resources). 
+
+
+###Binning In GBM
+
+**Is the binning range-based or percentile-based?**
+
+It's range based, and re-binned at each tree split.
+NAs always "go to the left" (smallest) bin.
+There's a minimum observations required value (default 10).
+There has to be at least 1 FP ULP improvement in error to split (all-constant predictors won't split).
+nbins is at least 1024 at the top-level, and divides by 2 down each level until you hit the nbins parameter (default: 20).
+Categoricals use a separate, more aggressive, binning range.
+
+Re-binning means, eg, suppose your column C1 data is: {1,1,2,4,8,16,100,1000}.
+Then a 20-way binning will use the range from 1 to 1000, bin by units of 50.
+The first binning will be a lumpy: {1,1,2,4,8,16},{100},{47_empty_bins},{1000}.  Suppose the split peels out the {1000} bin from the rest.
+
+Next layer in the tree for the left-split has value from 1 to 100 (not 1000!) and so re-bins in units of 5:  {1,1,2,4},{8},{},{16},{lots of empty bins}{100}
+(the RH split has the single value 1000).
+
+And so on: important dense ranges with split essentially logrithmeticaly at each layer.
+
+**What should I do if my variables are long skewed in the tail and might have large outliers?**
+
+You can try adding a new predictor column which is either pre-binned (e.g. as a categorical - "small", "median", and "giant" values), or a log-transform - plus keep the old column.
 
 ###References
 
@@ -1541,6 +1589,9 @@ To specify the per-class over- or under-sampling factors, use `class\_sampling\_
 
 In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
 
+- **How is variable importance calculated for Deep Learning?**
+
+For Deep Learning, variable importance is calculated using the Gedeon method. 
 
 
 ---
@@ -1584,3 +1635,163 @@ For more information about how the Deep Learning algorithm works, refer to the [
 
   [Hawkins, Simon et al. "Outlier Detection Using Replicator Neural Networks." CSIRO Mathematical and Information Sciences](http://neuro.bstu.by/ai/To-dom/My_research/Paper-0-again/For-research/D-mining/Anomaly-D/KDD-cup-99/NN/dawak02.pdf)
 
+## Cross-Validation
+
+N-fold cross-validation is used to validate a model internally, i.e., estimate the model performance without having to sacrifice a validation split. Also, you avoid statistical issues with your validation split (it might be a “lucky” split, especially for imbalanced data). Good values for N are around 5 to 10. Comparing the N validation metrics is always a good idea, to check the stability of the estimation, before “trusting” the main model.
+
+You have to make sure, however, that the holdout sets for each of the N models are good. For i.i.d. data, the random splitting of the data into N pieces (default behavior) or modulo-based splitting is fine. For temporal or otherwise structured data with distinct “events”, you have to make sure to split the folds based on the events. For example, if you have observations (e.g., user transactions) from N cities and you want to build models on users from only N-1 cities and validate them on the remaining city (if you want to study the generalization to new cities, for example), you will need to specify the parameter “fold_column" to be the city column. Otherwise, you will have rows (users) from all N cities randomly blended into the N folds, and all N cv models will see all N cities, making the validation less useful (or totally wrong, depending on the distribution of the data).  This is known as “data leakage”: https://youtu.be/NHw_aKO5KUM?t=889
+
+### How Cross-Validation is Calculated
+
+In general, for all algos that support the nfolds parameter, H2O’s cross-validation works as follows:
+
+For example, for nfolds=5, 6 models are built. The first 5 models (cross-validation models) are built on 80% of the training data, and a different 20% is held out for each of the 5 models. Then the main model is built on 100% of the training data. This main model is the model you get back from H2O in R, Python and Flow.
+
+This main model contains training metrics and cross-validation metrics (and optionally, validation metrics if a validation frame was provided). The main model also contains pointers to the 5 cross-validation models for further inspection.
+
+All 5 cross-validation models contain training metrics (from the 80% training data) and validation metrics (from their 20% holdout/validation data). To compute their individual validation metrics, each of the 5 cross-validation models had to make predictions on their 20% of of rows of the original training frame, and score against the true labels of the 20% holdout.
+
+For the main model, this is how the cross-validation metrics are computed: The 5 holdout predictions are combined into one prediction for the full training dataset (i.e., predictions for every row of the training data, but the model making the prediction for a particular row has not seen that row during training). This “holdout prediction" is then scored against the true labels, and the overall cross-validation metrics are computed.
+
+This approach has some implications. Scoring the holdout predictions freshly can result in different metrics than taking the average of the 5 validation metrics of the cross-validation models. For example, if the sizes of the holdout folds differ a lot (e.g., when a user-given fold_column is used), then the average should probably be replaced with a weighted average. Also, if the cross-validation models map to slightly different probability spaces, which can happen for small DL models that converge to different local minima, then the confused rank ordering of the combined predictions would lead to a significantly different AUC than the average.
+
+### Example in R
+
+To gain more insights into the variance of the holdout metrics (e.g., AUCs), you can look up the cross-validation models, and inspect their validation metrics. Here’s an R code example showing the two approaches:
+
+```
+library(h2o)
+h2o.init()
+df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+df$CAPSULE <- as.factor(df$CAPSULE)
+model_fit <- h2o.gbm(3:8,2,df,nfolds=5,seed=1234)
+
+# Default: AUC of holdout predictions
+h2o.auc(model_fit,xval=TRUE)
+
+# Optional: Average the holdout AUCs
+cvAUCs <- sapply(sapply(model_fit@model$cross_validation_models, `[[`, "name"), function(x) { h2o.auc(h2o.getModel(x), valid=TRUE) })
+print(cvAUCs)
+mean(cvAUCs)
+```
+
+#Using Cross-Validated Predictions
+
+With cross-validated model building, H2O builds N+1 models: N cross-validated model and 1 overarching model over all of the training data.
+
+Each cv-model produces a prediction frame pertaining to its fold. It can be saved and probed from the various clients if `keep_cross_validation_predictions` parameter is set in the model constructor.
+
+These holdout predictions have some interesting properties. First they have names like:
+
+```
+  prediction_GBM_model_1452035702801_1_cv_1
+```
+and they contain, unsurprisingly, predictions for the data held out in the fold. They also have the same number of rows as the entire input training frame with `0`s filled in for all rows that are not in the hold out. 
+
+Let's look at an example. 
+
+Here is a snippet of a three-class classification dataset (last column is the response column), with a 3-fold identification column appended to the end:
+
+
+| sepal_len | sepal_wid | petal_len | petal_wid | class   | foldId |
+|-----------|-----------|-----------|-----------|---------|--------|
+| 5.1       | 3.5       | 1.4       | 0.2       | setosa  | 0      |
+| 4.9       | 3.0       | 1.4       | 0.2       | setosa  | 0      |
+| 4.7       | 3.2       | 1.3       | 0.2       | setosa  | 2      |
+| 4.6       | 3.1       | 1.5       | 0.2       | setosa  | 1      |
+| 5.0       | 3.6       | 1.4       | 0.2       | setosa  | 2      |
+| 5.4       | 3.9       | 1.7       | 0.4       | setosa  | 1      |
+| 4.6       | 3.4       | 1.4       | 0.3       | setosa  | 1      |
+| 5.0       | 3.4       | 1.5       | 0.2       | setosa  | 0      |
+| 4.4       | 2.9       | 1.4       | 0.4       | setosa  | 1      |
+
+
+Each cross-validated model produces a prediction frame
+
+```
+  prediction_GBM_model_1452035702801_1_cv_1
+  prediction_GBM_model_1452035702801_1_cv_2 
+  prediction_GBM_model_1452035702801_1_cv_3
+```
+
+and each one has the following shape (for example the first one):
+
+```
+  prediction_GBM_model_1452035702801_1_cv_1
+``` 
+
+| prediction | setosa | versicolor | virginica |
+|------------|--------|------------|-----------|
+| 1          | 0.0232 | 0.7321     | 0.2447    |
+| 2          | 0.0543 | 0.2343     | 0.7114    |
+| 0          | 0      | 0          | 0         |
+| 0          | 0      | 0          | 0         |
+| 0          | 0      | 0          | 0         |
+| 0          | 0      | 0          | 0         |
+| 0          | 0      | 0          | 0         |
+| 0          | 0.8921 | 0.0321     | 0.0758    |
+| 0          | 0      | 0          | 0         |
+
+The training rows receive a prediction of `0` (more on this below) as well as `0` for all class probabilities. Each of these holdout predictions has the same number of rows as the input frame.
+
+##Combining holdout predictions
+
+The frame of cross-validated predictions is simply the superposition of the individual predictions. [Here's an example from R](https://0xdata.atlassian.net/browse/PUBDEV-2236):
+
+``` 
+library(h2o)
+h2o.init()
+
+# H2O Cross-validated K-means example 
+prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+prostate.hex <- h2o.uploadFile(path = prosPath)
+fit <- h2o.kmeans(training_frame = prostate.hex, 
+                  k = 10, 
+                  x = c("AGE", "RACE", "VOL", "GLEASON"), 
+                  nfolds = 5,  #If you want to specify folds directly, then use "fold_column" arg
+                  keep_cross_validation_predictions = TRUE)
+
+# This is where cv preds are stored:
+fit@model$cross_validation_predictions$name
+
+
+# Compress the CV preds into a single H2O Frame:
+# Each fold's preds are stored in a N x 1 col, where the row values for non-active folds are set to zero
+# So we will compress this into a single 1-col H2O Frame (easier to digest)
+
+nfolds <- fit@parameters$nfolds
+predlist <- sapply(1:nfolds, function(v) h2o.getFrame(fit@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
+cvpred_sparse <- h2o.cbind(predlist)  # N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
+pred <- apply(cvpred_sparse, 1, sum)  # These are the cross-validated predicted cluster IDs for each of the 1:N observations
+```
+
+This can be extended to other family types as well (multinomial, binomial, regression):
+
+```
+# helper function
+.compress_to_cvpreds <- function(h2omodel, family) {
+  # return the frame_id of the resulting 1-col Hdf of cvpreds for learner l
+  V <- h2omodel@allparameters$nfolds
+  if (family %in% c("bernoulli", "binomial")) {
+    predlist <- sapply(1:V, function(v) h2o.getFrame(h2omodel@model$cross_validation_predictions[[v]]$name)[,3], simplify = FALSE)
+  } else {
+    predlist <- sapply(1:V, function(v) h2o.getFrame(h2omodel@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
+  }
+  cvpred_sparse <- h2o.cbind(predlist)  # N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
+  cvpred_col <- apply(cvpred_sparse, 1, sum)
+  return(cvpred_col)
+}
+
+
+# Extract cross-validated predicted values (in order of original rows)
+h2o.cvpreds <- function(object) {
+
+  # Need to extract family from model object
+  if (class(object) == "H2OBinomialModel") family <- "binomial"
+  if (class(object) == "H2OMulticlassModel") family <- "multinomial"
+  if (class(object) == "H2ORegressionModel") family <- "gaussian"
+    
+  cvpreds <- .compress_to_cvpreds(h2omodel = object, family = family)
+  return(cvpreds)
+}
+```

@@ -1,19 +1,12 @@
 package water.util;
 
-import jsr166y.CountedCompleter;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Random;
 
-import water.DKV;
-import water.H2O;
-import water.Job;
-import water.Key;
-import water.MRTask;
-import water.MemoryManager;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
@@ -160,13 +153,13 @@ public class FrameUtils {
   /**
    * Helper to insert missing values into a Frame
    */
-  public static class MissingInserter extends Job<Frame> {
+  public static class MissingInserter extends Iced {
+    Job<Frame> _job;
     final Key _dataset;
     final double _fraction;
     final long _seed;
 
-    public MissingInserter(Key frame, long seed, double frac){
-      super(frame, "MissingValueInserter");
+    public MissingInserter(Key<Frame> frame, long seed, double frac){
       _dataset = frame; _seed = seed; _fraction = frac;
     }
 
@@ -177,7 +170,7 @@ public class FrameUtils {
       final Frame _frame;
       MissingInserterDriver(Frame frame) {_frame = frame; }
       @Override
-      protected void compute2() {
+      public void compute2() {
         new MRTask() {
           @Override public void map (Chunk[]cs){
             final Random rng = RandomUtils.getRNG(0);
@@ -187,41 +180,22 @@ public class FrameUtils {
                 if (rng.nextDouble() < _fraction) cs[c].setNA(r);
               }
             }
-            update(1);
+            _job.update(1);
           }
         }.doAll(_frame);
         tryComplete();
       }
-
-      @Override
-      public void onCompletion(CountedCompleter caller){
-        done();
-      }
-
-      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc) {
-        failed(ex);
-        return true;
-      }
     }
 
-    public void execImpl() {
+    public Job<Frame> execImpl() {
+      _job = new Job(_dataset, Frame.class.getName(), "MissingValueInserter");
       if (DKV.get(_dataset) == null)
         throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
-      try {
-        final Frame frame = DKV.getGet(_dataset);
-        MissingInserterDriver mid = new MissingInserterDriver(frame);
-        int work = frame.vecs()[0].nChunks();
-        start(mid, work, true);
-      } catch (Throwable t) {
-        Job thisJob = DKV.getGet(_key);
-        if (thisJob._state == JobState.CANCELLED) {
-          Log.info("Job cancelled by user.");
-        } else {
-          failed(t);
-          throw t;
-        }
-      }
+      final Frame frame = DKV.getGet(_dataset);
+      MissingInserterDriver mid = new MissingInserterDriver(frame);
+      int work = frame.vecs()[0].nChunks();
+      return _job.start(mid, work);
     }
   }
 

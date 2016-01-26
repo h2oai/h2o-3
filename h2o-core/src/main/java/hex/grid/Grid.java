@@ -1,83 +1,52 @@
 package hex.grid;
 
+import hex.Model;
+import water.*;
+import water.fvec.Frame;
+import water.util.*;
+import water.util.PojoUtils.FieldNaming;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 
-import hex.Model;
-import water.*;
-import water.fvec.Frame;
-import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.IcedLong;
-import water.util.PojoUtils;
-import water.util.PojoUtils.FieldNaming;
-import water.util.StringUtils;
-
-/**
- * A Grid of Models representing result of hyper-parameter space exploration.  Lazily filled in,
- * this object represents the potentially infinite variety of hyperparameters of a given model &
- * dataset.
+/** A Grid of Models representing result of hyper-parameter space exploration.
+ *  Lazily filled in, this object represents the potentially infinite variety
+ *  of hyperparameters of a given model & dataset.
  *
  * @param <MP> type of model build parameters
  */
-public class Grid<MP extends Model.Parameters>
-    extends Lockable<Grid<MP>> {
+public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
-  /**
-   * Publicly available Grid prototype - used by REST API.
-   *
-   * @see hex.schemas.GridSchemaV99
-   */
-  public static final Grid GRID_PROTO = new Grid(null, null, null, null, null);
+  /** Publicly available Grid prototype - used by REST API.
+   *  @see hex.schemas.GridSchemaV99  */
+  public static final Grid GRID_PROTO = new Grid(null, null, null, null);
 
-  /**
-   * A cache of double[] hyper-parameters mapping to Models.
-   */
-  private final IcedHashMap<IcedLong, Key<Model>> _cache = new IcedHashMap<>();
+  // A cache of double[] hyper-parameters mapping to Models.
+  private final IcedHashMap<IcedLong, Key<Model>> _models = new IcedHashMap<>();
 
-  /**
-   * Used "based" model parameters for this grid search.
-   */
+  // Used "based" model parameters for this grid search.
   private final MP _params;
 
-  /**
-   * Failed model parameters - represents points in hyper space for which model generation failed.
-   * If the element is null, then look into
-   */
+  // Failed model parameters - represents points in hyper space for which model
+  // generation failed.  If the element is null, then look into
   private MP[] _failed_params;
 
-  /**
-   * Detailed messages about a failure for given failed model parameters in
-   * <code>_failed_params</code>.
-   */
+  // Detailed messages about a failure for given failed model parameters in
+  // <code>_failed_params</code>.
   private String[] _failure_details;
 
-  /**
-   * Collected stack trace for failure.
-   */
+  // Collected stack trace for failure.
   private String[] _failure_stack_traces;
 
-  /**
-   * Contains "raw" representation of parameters which fail The parameters are represented in
-   * textual form, since simple <code>java.lang.Object</code> cannot be serialized by H2O
-   * serialization.
-   */
+  // Contains "raw" representation of parameters which fail The parameters are
+  // represented in textual form, since simple <code>java.lang.Object</code>
+  // cannot be serialized by H2O serialization.
   private String[][] _failed_raw_params;
 
-  /**
-   * Name of model generated included in this grid.
-   */
-  private final String _modelName;
-
-  /**
-   * Names of used hyper parameters for this grid search.
-   */
+  // Names of used hyper parameters for this grid search.
   private final String[] _hyper_names;
 
-  /**
-   *
-   */
   private final FieldNaming _field_naming_strategy;
 
   /**
@@ -86,13 +55,11 @@ public class Grid<MP extends Model.Parameters>
    * @param key        reference to this object
    * @param params     initial parameters used by grid search
    * @param hyperNames names of used hyper parameters
-   * @param modelName  name of model included in this object (e.g., "GBM")
    */
-  protected Grid(Key key, MP params, String[] hyperNames, String modelName, FieldNaming fieldNaming) {
+  protected Grid(Key key, MP params, String[] hyperNames, FieldNaming fieldNaming) {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
-    _modelName = modelName;
     Class<MP> paramsClass = params != null ? (Class<MP>) params.getClass() : null;
     _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
     _failure_details = new String[]{};
@@ -101,14 +68,10 @@ public class Grid<MP extends Model.Parameters>
     _field_naming_strategy = fieldNaming;
   }
 
-  /**
-   * Returns name of model included in this object.
-   *
-   * @return name of model (for example, "DRF", "GBM")
-   */
-  public String getModelName() {
-    return _modelName;
-  }
+  /** Returns name of model included in this object.  Note: only sensible for
+   *  Grids which search over a single class of Models.
+   *  @return name of model (for example, "DRF", "GBM") */
+  public String getModelName() { return _params.algoName(); }
 
   /**
    * Ask the Grid for a suggested next hyperparameter value, given an existing Model as a starting
@@ -153,7 +116,7 @@ public class Grid<MP extends Model.Parameters>
   }
 
   Key<Model> getModelKey(long paramsChecksum) {
-    Key<Model> mKey = _cache.get(IcedLong.valueOf(paramsChecksum));
+    Key<Model> mKey = _models.get(IcedLong.valueOf(paramsChecksum));
     return mKey;
   }
 
@@ -161,7 +124,7 @@ public class Grid<MP extends Model.Parameters>
    * parameters are not imutable and model builder modifies them! */
   /* package */
   synchronized Key<Model> putModel(long checksum, Key<Model> modelKey) {
-    return _cache.put(IcedLong.valueOf(checksum), modelKey);
+    return _models.put(IcedLong.valueOf(checksum), modelKey);
   }
 
   /**
@@ -238,7 +201,7 @@ public class Grid<MP extends Model.Parameters>
    * @return list of model keys
    */
   public Key<Model>[] getModelKeys() {
-    return _cache.values().toArray(new Key[_cache.size()]);
+    return _models.values().toArray(new Key[_models.size()]);
   }
 
   /**
@@ -247,7 +210,7 @@ public class Grid<MP extends Model.Parameters>
    * @return all models in this grid
    */
   public Model[] getModels() {
-    Collection<Key<Model>> modelKeys = _cache.values();
+    Collection<Key<Model>> modelKeys = _models.values();
     Model[] models = new Model[modelKeys.size()];
     int i = 0;
     for (Key<Model> mKey : modelKeys) {
@@ -261,7 +224,7 @@ public class Grid<MP extends Model.Parameters>
    * Returns number of models in this grid.
    */
   public int getModelCount() {
-    return _cache.size();
+    return _models.size();
   }
 
   /**
@@ -330,20 +293,21 @@ public class Grid<MP extends Model.Parameters>
 
   // Cleanup models and grid
   @Override protected Futures remove_impl(final Futures fs) {
-    for (Key<Model> k : _cache.values())
+    for (Key<Model> k : _models.values())
       k.remove(fs);
-    _cache.clear();
+    _models.clear();
     return fs;
   }
 
   /** Write out K/V pairs */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
-    for (Key<Model> k : _cache.values())
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    for (Key<Model> k : _models.values())
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { throw H2O.unimpl(); }
 
   @Override protected long checksum_impl() { throw H2O.unimpl(); }
-}
 
+  @Override public Class<water.api.KeyV3.GridKeyV3> makeSchema() { return water.api.KeyV3.GridKeyV3.class; }
+}

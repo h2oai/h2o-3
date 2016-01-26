@@ -16,7 +16,8 @@ public class TaskPutKey extends DTask<TaskPutKey> {
   }
 
   protected TaskPutKey( Key key, Value val ) { this(key,val,false);}
-  protected TaskPutKey( Key key, Value val, boolean removeCache ) { _xkey = _key = key; _xval = _val = val; _dontCache = removeCache;}
+  protected TaskPutKey( Key key, Value val, boolean removeCache ) { super(H2O.PUT_KEY_PRIORITY); _xkey = _key = key; _xval = _val = val; _dontCache = removeCache;}
+  protected TaskPutKey( Key key ) { super(H2O.INVALIDATE_PRIORITY); _xkey = _key = key; _xval = _val = null; _dontCache = false;}
 
   @Override public void dinvoke( H2ONode sender ) {
     assert _key.home() || _val==null; // Only PUT to home for keys, or remote invalidation from home
@@ -51,8 +52,5 @@ public class TaskPutKey extends DTask<TaskPutKey> {
     // (ie memory can be reclaimed and we assume we have plenty of disk space)
     if( _dontCache && !_xval.isPersisted() ) H2O.putIfMatch(_xkey, null, _xval);
     if( _xval != null ) _xval.completeRemotePut();
-  }
-  @Override public byte priority() {
-    return H2O.PUT_KEY_PRIORITY;
   }
 }

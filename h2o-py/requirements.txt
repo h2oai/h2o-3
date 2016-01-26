@@ -1,0 +1,14 @@
+requests
+grip
+tabulate
+wheel
+numpy
+scipy
+pandas
+statsmodels
+patsy
+sklearn
+six
+seaborn
+future
+matplotlib

@@ -35,15 +35,17 @@ public class MRUtils {
     Frame r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
-        final Random rng = getRNG(seed + cs[0].cidx());
+        final Random rng = getRNG(0);
         int count = 0;
-        for (int r = 0; r < cs[0]._len; r++)
+        for (int r = 0; r < cs[0]._len; r++) {
+          rng.setSeed(seed+r+cs[0].start());
           if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
             count++;
             for (int i = 0; i < ncs.length; i++) {
               ncs[i].addNum(cs[i].atd(r));
             }
           }
+        }
       }
     }.doAll(fr.types(), fr).outputFrame(newKey, fr.names(), fr.domains());
     if (r.numRows() == 0) {
@@ -120,9 +122,9 @@ public class MRUtils {
   }
 
   public static class Dist extends MRTask<Dist> {
-    private transient NonBlockingHashMap<Double,Integer> _dist;
+    private IcedHashMap<Double,Integer> _dist;
     @Override public void map(Chunk ys) {
-      _dist = new NonBlockingHashMap<>();
+      _dist = new IcedHashMap<>();
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) ) {
           double v = ys.atd(row);
@@ -133,8 +135,8 @@ public class MRUtils {
 
     @Override public void reduce(Dist mrt) {
       if( _dist != mrt._dist ) {
-        NonBlockingHashMap<Double,Integer> l = _dist;
-        NonBlockingHashMap<Double,Integer> r = mrt._dist;
+        IcedHashMap<Double,Integer> l = _dist;
+        IcedHashMap<Double,Integer> r = mrt._dist;
         if( l.size() < r.size() ) { l=r; r=_dist; }
         for( Double v: r.keySet() ) {
           Integer oldVal = l.putIfAbsent(v, r.get(v));
@@ -260,9 +262,10 @@ public class MRUtils {
     Frame r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
-        final Random rng = getRNG(seed + cs[0].cidx());
+        final Random rng = getRNG(seed);
         for (int r = 0; r < cs[0]._len; r++) {
           if (cs[labelidx].isNA(r)) continue; //skip missing labels
+          rng.setSeed(cs[0].start()+r+seed);
           final int label = (int)cs[labelidx].at8(r);
           assert(sampling_ratios.length > label && label >= 0);
           int sampling_reps;
@@ -311,53 +314,5 @@ public class MRUtils {
     r.delete();
 
     return shuffled;
-  }
-
-  public static class ParallelTasks<T extends DTask<T>> extends H2OCountedCompleter {
-    public transient final T [] _tasks;
-    transient final public int _maxP;
-    transient private AtomicInteger _nextTask;
-
-    public ParallelTasks(H2OCountedCompleter cmp, T[] tsks){
-      this(cmp,tsks,H2O.CLOUD.size());
-    }
-    public ParallelTasks(H2OCountedCompleter cmp, T[] tsks, int maxP){
-      super(cmp);
-      _maxP = maxP;
-      _tasks = tsks;
-      addToPendingCount(_tasks.length-1);
-    }
-
-    private void forkDTask(int i){
-      int nodeId = i%H2O.CLOUD.size();
-      forkDTask(i,H2O.CLOUD._memary[nodeId]);
-    }
-    private void forkDTask(final int i, H2ONode n){
-      if(n == H2O.SELF) {
-        _tasks[i].setCompleter(new Callback(H2O.SELF,i));
-        H2O.submitTask(_tasks[i]);
-      } else
-        new RPC(n,_tasks[i]).addCompleter(this).call();
-    }
-    class Callback extends H2OCallback<H2OCountedCompleter> {
-      final int i;
-      final H2ONode n;
-
-      public Callback(H2ONode n, int i){
-        super(ParallelTasks.this); this.n = n; this.i = i;
-      }
-      @Override public void callback(H2OCountedCompleter cc){
-        Log.info("callback for task " + i);
-        int nextI;
-        if((nextI = _nextTask.getAndIncrement()) < _tasks.length)  // not done yet
-          forkDTask(nextI, n);
-      }
-    }
-    @Override public void compute2(){
-      final int n = Math.min(_maxP, _tasks.length);
-      _nextTask = new AtomicInteger(n);
-      for(int i = 0; i < n; ++i)
-        forkDTask(i);
-    }
   }
 }

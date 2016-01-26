@@ -16,6 +16,7 @@ public class LogsHandler extends Handler {
     public boolean success = false;
 
     public GetLogTask() {
+      super( H2O.MIN_HI_PRIORITY);
       log = null;
     }
 
@@ -105,10 +106,6 @@ public class LogsHandler extends Handler {
     @Override public void compute2() {
       doIt();
       tryComplete();
-    }
-
-    @Override public byte priority() {
-      return H2O.MIN_HI_PRIORITY;
     }
   }
 
