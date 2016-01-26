@@ -713,6 +713,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         res[i] = _global_beta[i]/_zvalues[i];
       return res;
     }
+
+    @Override
+    protected long checksum_impl() {
+      long d = _global_beta == null?1:Arrays.hashCode(_global_beta);
+      return d*super.checksum_impl();
+    }
     public double [] zValues(){return _zvalues.clone();}
     public double [] pValues(){
       double [] res = zValues();
