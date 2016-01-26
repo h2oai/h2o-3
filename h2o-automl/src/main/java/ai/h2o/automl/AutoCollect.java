@@ -24,10 +24,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.*;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -100,7 +97,7 @@ public class AutoCollect {
     int[] x;
     int y;
     boolean isClass;
-    Frame fr;
+    Frame fr=null;
     try (BufferedReader br = new BufferedReader(new FileReader(_path))) {
       String line;
       while ((line = br.readLine()) != null) {
@@ -114,9 +111,12 @@ public class AutoCollect {
         fr = parseFrame(new File(datasetPath));
         computeMetaData(datasetName,fr,x,y,isClass);
         collect();
+        fr.delete();fr=null;
       }
     } catch( IOException ex ) {
       throw new RuntimeException(ex);
+    } finally {
+      if( fr!=null ) fr.delete();
     }
   }
 
@@ -127,25 +127,34 @@ public class AutoCollect {
   }
 
   private void collect() {
+    System.out.println("================================================");
+    System.out.println("             Beginning New Collection           ");
+    System.out.println("================================================");
     try {
       conn.setAutoCommit(false);  // allow failed model builds... don't let them load in!
       long start = System.currentTimeMillis();
       long elapsed = 0;
       long seedSplit;
       while (elapsed <= _seconds) {
+        Model m=null;
+        Frame[] fs=null;
         try {
-          Frame[] fs = ShuffleSplitFrame.shuffleSplitFrame(_fr, new Key[]{Key.make(),Key.make()}, new double[]{0.8,0.2}, seedSplit=getRNG(new Random().nextLong()).nextLong());
+          fs = ShuffleSplitFrame.shuffleSplitFrame(_fr, new Key[]{Key.make(),Key.make()}, new double[]{0.8,0.2}, seedSplit=getRNG(new Random().nextLong()).nextLong());
           ModelBuilder builder = selectNewBuilder(seedSplit);
           builder._parms._train = fs[0]._key;
           builder._parms._valid = fs[1]._key;
           builder._parms._response_column = _fr.name(_resp);
           builder._parms._ignored_columns = ignored();
-          Model m = (Model) builder.trainModel().get();
+          m = (Model) builder.trainModel().get();
           elapsed = System.currentTimeMillis() - start;
           logScoreHistory(m._output, getConfig(m._parms));
           conn.commit();
         } catch( IllegalArgumentException iae) {
           iae.printStackTrace();
+        } finally {
+          if( m!=null ) m.delete();
+          if( fs!=null )
+            for(Frame f: fs) f.delete();
         }
       }
     } catch(SQLException ex){
@@ -164,16 +173,38 @@ public class AutoCollect {
   }
 
   private void logScoreHistory(Model.Output output, String configID) {
-//    `ts`, `train_mse`, `test_mse`, `train_logloss`, `test_logloss`, `train_classification_error`, `test_classification_error`, `train_deviance`, `test_devian`
     HashMap<String, Object> scoreHistory = new HashMap<>();
+    List<String> colHeaders = Arrays.asList(output._scoring_history.getColHeaders());
+    scoreHistory.put("ConfigID", configID);
     for( IcedWrapper[] iw: output._scoring_history.getCellValues()) {
-      scoreHistory.put("ts", iw[0].get());
-      scoreHistory.put("train_mse", iw[3].get());
-      scoreHistory.put("train_logloss", iw[4].get());
-//      scoreHistory.put("test_mse");
+      if (output instanceof GLMModel.GLMOutput) {
+        scoreHistory.put("ts", iw[colHeaders.indexOf("timestamp")].get());
+        scoreHistory.put("duration", ((String)iw[colHeaders.indexOf("duration")].get()).trim().split(" ")[0]);
+        scoreHistory.put("iteration", iw[colHeaders.indexOf("iteration")].get());
+        scoreHistory.put("negative_log_likelihood", iw[colHeaders.indexOf("negative_log_likelihood")].get());
+        scoreHistory.put("objective", iw[colHeaders.indexOf("objective")].get());
+        scoreHistory.put("lambda", _isClass?sanitize(iw[colHeaders.indexOf("lambda")]): AutoML.SQLNAN);
+        scoreHistory.put("num_predictors", _isClass?sanitize(iw[colHeaders.indexOf("Number of Predictors")]):AutoML.SQLNAN);
+        scoreHistory.put("train_explained_deviance", _isClass?sanitize(iw[colHeaders.indexOf("Explained Deviance (train)")]):AutoML.SQLNAN);
+        scoreHistory.put("test_explained_deviance", _isClass?sanitize(iw[colHeaders.indexOf("Explained Deviance (test)")]):AutoML.SQLNAN);
+        pushMeta(scoreHistory, scoreHistory.keySet().toArray(new String[scoreHistory.size()]), "GLMScoreHistory");
+      } else {
+        scoreHistory.put("ts", iw[colHeaders.indexOf("Timestamp")].get());
+        scoreHistory.put("train_mse", sanitize((double) iw[colHeaders.indexOf("Training MSE")].get()));
+        scoreHistory.put("train_logloss", _isClass ? sanitize((double) iw[colHeaders.indexOf("Training LogLoss")].get()) : AutoML.SQLNAN);
+        scoreHistory.put("train_classification_error", sanitize((double) (_isClass ? iw[colHeaders.indexOf("Training Classification Error")].get() : AutoML.SQLNAN)));
+        scoreHistory.put("test_mse", sanitize((double) iw[colHeaders.indexOf("Validation MSE")].get()));
+        scoreHistory.put("test_logloss", _isClass ? sanitize((double) (iw[colHeaders.indexOf("Validation LogLoss")].get())) : AutoML.SQLNAN);
+        scoreHistory.put("test_classification_error", sanitize((double) (_isClass ? iw[colHeaders.indexOf("Validation Classification Error")].get() : AutoML.SQLNAN)));
+        scoreHistory.put("train_deviance", sanitize((double) (_isClass ? AutoML.SQLNAN : iw[colHeaders.indexOf("Training Deviance")].get())));
+        scoreHistory.put("test_deviance", sanitize((double) (_isClass ? AutoML.SQLNAN : iw[colHeaders.indexOf("Validation Deviance")].get())));
+        pushMeta(scoreHistory, scoreHistory.keySet().toArray(new String[scoreHistory.size()]), "ScoreHistory");
+      }
     }
-    System.out.println();
   }
+
+  private static double sanitize(double d) { return Double.isNaN(d) ? AutoML.SQLNAN : d; }
+  private static Object sanitize(IcedWrapper o) { return o==null?AutoML.SQLNAN : o.get(); }
 
   private void grabConfigs() {
     configs = new HashSet<>();
@@ -230,15 +261,15 @@ public class AutoCollect {
     DRFModel.DRFParameters p = new DRFModel.DRFParameters();
     HashMap<String, Object> config = new HashMap<>();
     config.put("idFrame", _idFrame);
-    config.put("SeedSplit", seedSplit);
+    config.put("SplitSeed", seedSplit);
     do {
-      config.put("mtries", p._mtries = getRNG(new Random().nextLong()).nextInt(_preds.length));
+      config.put("mtries", p._mtries = 1+getRNG(new Random().nextLong()).nextInt(_preds.length));
       config.put("sample_rate", p._sample_rate = getRNG(new Random().nextLong()).nextFloat());
       config.put("ntrees", p._ntrees = getRNG(new Random().nextLong()).nextInt(RFMAXNTREES));
       config.put("max_depth", p._max_depth = getRNG(new Random().nextLong()).nextInt(RFMAXDEPTH));
       config.put("min_rows", p._min_rows = getRNG(new Random().nextLong()).nextInt(RFMAXNROWS));
-      config.put("nbins", p._nbins = getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
-      config.put("nbins_cats", p._nbins_cats = getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
+      config.put("nbins", p._nbins = 20+getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
+      config.put("nbins_cats", p._nbins_cats = 20+getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
       config.put("ConfigID", configID = getConfig(p));
     } while(!isValidConfig(configID));
     configs.add(configID);
@@ -251,7 +282,7 @@ public class AutoCollect {
     GBMModel.GBMParameters p = new GBMModel.GBMParameters();
     HashMap<String, Object> config = new HashMap<>();
     config.put("idFrame", _idFrame);
-    config.put("SeedSplit", seedSplit);
+    config.put("SplitSeed", seedSplit);
     do {
       config.put("ntrees", p._ntrees = getRNG(new Random().nextLong()).nextInt(RFMAXNTREES));
       config.put("max_depth", p._max_depth = getRNG(new Random().nextLong()).nextInt(RFMAXDEPTH));
@@ -260,8 +291,8 @@ public class AutoCollect {
       config.put("sample_rate", p._sample_rate = getRNG(new Random().nextLong()).nextFloat());
       config.put("col_sample_rate", p._col_sample_rate = getRNG(new Random().nextLong()).nextFloat());
       config.put("col_sample_rate_per_tree", p._col_sample_rate_per_tree = getRNG(new Random().nextLong()).nextFloat());
-      config.put("nbins", p._nbins = getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
-      config.put("nbins_cats", p._nbins_cats = getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
+      config.put("nbins", p._nbins = 20+getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
+      config.put("nbins_cats", p._nbins_cats = 20+getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
       config.put("ConfigID", configID = getConfig(p));
     } while(!isValidConfig(configID));
     configs.add(configID);
@@ -274,7 +305,7 @@ public class AutoCollect {
     GLMModel.GLMParameters p = new GLMModel.GLMParameters();
     HashMap<String, Object> config = new HashMap<>();
     config.put("idFrame", _idFrame);
-    config.put("SeedSplit", seedSplit);
+    config.put("SplitSeed", seedSplit);
     do {
       config.put("alpha", (p._alpha = new double[]{getRNG(new Random().nextLong()).nextDouble()})[0]);
       // for lambda, place probability distribution heavily weighted to the left: [0,1e-3) U [1e-3, 1) U [1, 10)  ... with probs (0.8, 0.1, 0.1)
@@ -294,6 +325,9 @@ public class AutoCollect {
     } while(!isValidConfig(configID));
     configs.add(configID);
     pushMeta(config, config.keySet().toArray(new String[config.size()]), "GLMConfig");
+    if( _isClass ) {
+      p._family = _fr.vec(_resp).domain().length==2? GLMModel.GLMParameters.Family.binomial: GLMModel.GLMParameters.Family.multinomial;
+    }
     return p;
   }
 
@@ -324,7 +358,7 @@ public class AutoCollect {
   public void computeMetaData(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
     _fr=f; _preds=x; _resp=y; _isClass=isClassification; ignored(x, f);
     if( _isClass ) {
-      _fr.replace(y, _fr.vec(y).toCategoricalVec());
+      _fr.replace(y, _fr.vec(y).toCategoricalVec()).remove();
       DKV.put(_fr);
       _fr.reloadVecs();
     }
