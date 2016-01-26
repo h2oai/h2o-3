@@ -19,7 +19,7 @@ import java.util.Arrays;
 */
 public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
-  public transient Frame _adaptedFrame;
+  public Frame _adaptedFrame;
   public int _responses;   // number of responses
   public int _outpus; // number of outputs
 
