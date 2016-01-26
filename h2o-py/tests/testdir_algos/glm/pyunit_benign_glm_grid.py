@@ -14,7 +14,7 @@ def benign_grid():
   Y = 3
   X = list(range(3)) + list(range(4,11))
 
-
+  # NOTE: this tests bad parameter value handling; 'a' is not a float:
   hyper_parameters = {'alpha': [0.01,0.5,'a'], 'lambda': [1e-5,1e-6]}
   gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
   gs.train(x=X,y=Y, training_frame=training_data)
@@ -35,6 +35,19 @@ def benign_grid():
   print(new_g.sort_by('F1', False))
 
   assert best_model.params['family']['actual'] == 'binomial'
+
+  # test search_criteria plumbing
+  search_criteria = { 'strategy': "Random", 'max_models': 3 }
+  max_models_g = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters, search_criteria=search_criteria)
+  max_models_g.train(x=X,y=Y, training_frame=training_data)
+
+  max_models_g.show()
+  print(max_models_g.grid_id)
+  print(max_models_g.sort_by('F1', False))
+
+  ##### TODO: remove:
+  print("before assert")
+  assert len(max_models_g.models) == 3, "expected 3 models, got: {}".format(len(max_models_g.models))
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(benign_grid)
