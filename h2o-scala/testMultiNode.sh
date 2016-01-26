@@ -38,7 +38,7 @@ trap cleanup SIGTERM SIGINT
 
 MAX_MEM="-Xmx2g"
 # Check if coverage should be run
-if [ JACOCO_ENABLED = true ]
+if [ $JACOCO_ENABLED = true ]
 then
     AGENT="../jacoco/jacocoagent.jar"
     COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-scala.exec"
