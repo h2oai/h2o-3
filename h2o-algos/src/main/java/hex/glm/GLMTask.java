@@ -1340,7 +1340,7 @@ public abstract class GLMTask  {
 
     transient double _sparseOffsetOld = 0;
     transient double _sparseOffsetNew = 0;
-    transient GLMWeightsFun _glmf;
+    final GLMWeightsFun _glmf;
     transient GLMWeights _glmw;
     @Override public void chunkInit(){
       if(_sparse) {
