@@ -48,7 +48,8 @@ public class VIF extends DTask<VIF> {
   public double vif() {
     if( _glm!=null ) {
       Model m;
-      _vif = 1. / (1. - ((ModelMetricsSupervised) (m=_glm.get())._output._training_metrics).r2());
+      double denom = (1. - ((ModelMetricsSupervised) (m=_glm.get())._output._training_metrics).r2());
+      _vif = denom==0?100:1./denom;
       m.delete();
       _glm=null;
     }
