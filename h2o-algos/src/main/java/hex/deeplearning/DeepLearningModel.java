@@ -1080,6 +1080,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
       }
     }
+    DKV.remove(model_info().data_info()._key);
     deleteElasticAverageModels();
     super.delete();
   }
