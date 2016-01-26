@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Argument parsing
+if [ "$1" = "jacoco" ]
+then
+    JACOCO_ENABLED=true
+else
+    JACOCO_ENABLED=false
+fi
+
 # Clean out any old sandbox, make a new one
 OUTDIR=sandbox
 rm -fr $OUTDIR; mkdir -p $OUTDIR
@@ -53,17 +61,21 @@ else
   fi
 fi
 
+# Memory should be explicitly kept to 2g. If the JVM runs out of
+# memory on these tests, we need to diagnose the extra memory requirements
+MAX_MEM="-Xmx2g"
+
 # Check if coverage should be run
-if [ "$1" = "jacoco" ]
+if [ $JACOCO_ENABLED = true ]
 then
     AGENT="../jacoco/jacocoagent.jar"
     COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-core_multi.exec"
+    MAX_MEM="-Xmx8g"
 else
     COVERAGE=""
 fi
-# Command to invoke test.  Note the explicit 2g sizes; if the JVM runs out of
-# memory on these tests, we need to diagnose the extra memory requirements
-JVM="nice $JAVA_CMD $COVERAGE -Xmx2g -Xms2g -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+# Command to invoke test.
+JVM="nice $JAVA_CMD $COVERAGE $MAX_MEM -Xms2g -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests
@@ -93,9 +105,17 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT --ga_opt_out 1> $
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT --ga_opt_out 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT --ga_opt_out 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
+# If coverage is being run, then pass a system variable flag so that timeout limits are increased.
+if [ $JACOCO_ENABLED = true ]
+then
+    JACOCO_FLAG="-Dtest.jacocoEnabled=true"
+else
+    JACOCO_FLAG=""
+fi
+
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-core junit tests...
-($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 grep EXECUTION $OUTDIR/out.0 | cut "-d " -f22,19 | awk '{print $2 " " $1}'| sort -gr | head -n 10 >> $OUTDIR/out.0
 

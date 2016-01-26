@@ -53,6 +53,8 @@ fi
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
 
+MAX_MEM="-Xmx2g"
+
 # Check if coverage should be run
 if [ $JACOCO_ENABLED = true ]
 then
@@ -61,7 +63,6 @@ then
     MAX_MEM="-Xmx8g"
 else
     COVERAGE=""
-    MAX_MEM="-Xmx2g"
 fi
 JVM="nice $JAVA_CMD $COVERAGE -ea $MAX_MEM -Xms2g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
@@ -99,7 +100,7 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $O
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
-# If coverage is being run, then pass that in as a parameter to the junit runner
+# If coverage is being run, then pass a system variable flag so that timeout limits are increased.
 if [ $JACOCO_ENABLED = true ]
 then
     JACOCO_FLAG="-Dtest.jacocoEnabled=true"

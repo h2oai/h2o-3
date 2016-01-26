@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
-  public final static boolean jacocoEnabled = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
+  public final static boolean JACOCO_ENABLED = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
   private static boolean _stall_called_before = false;
   protected static int _initial_keycnt = 0;
   protected static int MINCLOUDSIZE;
@@ -37,13 +37,12 @@ public class TestUtil extends Iced {
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
   public static void stall_till_cloudsize(int x) {
-    System.out.println (jacocoEnabled);
     if( !_stall_called_before ) {
       H2O.main(new String[]{});
       H2O.registerRestApis(System.getProperty("user.dir"));
       _stall_called_before = true;
     }
-    if (jacocoEnabled) {
+    if (JACOCO_ENABLED) {
       H2O.waitForCloudSize(x, 60000);
     } else {
       H2O.waitForCloudSize(x, 30000);
