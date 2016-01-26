@@ -444,13 +444,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void fitLSM(){
       GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), new GLMWeightsFun(_parms), null).doAll(_state.activeData()._adaptedFrame);
-      double ysqr = t._xy[t._xy.length-1];
-      double [] xy = t._xy.clone();
-      double[][]  XX = t._gram.getXX(false);
-      double [] beta = solveGram(t._gram,t._xy);
-      double [] beta2 = _state.expandBeta(beta); // some columns might have been removed as colinear, fill them back with zeros
-      double mse = ysqr - 2*ArrayUtils.innerProduct(xy,beta2) + ArrayUtils.innerProduct(ArrayUtils.multArrVec(XX,beta2),beta2);
-      _state.updateState(beta, mse);
+      _state.updateState(solveGram(t._gram,t._xy), -1);
     }
 
     private void fitIRLSM() {
