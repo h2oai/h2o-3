@@ -296,9 +296,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
         GLMGradientSolver gslvr = new GLMGradientSolver(_job._key,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
-        double [] x = new L_BFGS().solve(gslvr,new double[1]).coefs;
+        double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;
         x[0] = _parms.linkInv(x[0]);
         _state._ymu = x;
+        Log.info(LogMsg("fitted intercept = " + x[0]));
       }
 
       if (_parms._prior > 0)
