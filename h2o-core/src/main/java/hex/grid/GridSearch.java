@@ -74,6 +74,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP> _hyperSpaceWalker;
 
+  /** For advanced search methods we can put a time limit on the overall grid search.  This doesn't make much sense
+   * for strict Cartesian.
+   */
+  private long _max_time_ms = Long.MAX_VALUE;
+
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP> hyperSpaceWalker) {
     _result = gkey;
@@ -153,6 +158,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       int counter = 0;
       while (it.hasNext(model)) {
         if(_job.stop_requested() ) return;  // Handle end-user cancel request
+        if  (it.timeRemaining() < 0) {
+          Log.info("Grid max_time_ms has expired; stopping early.");
+          return;
+        }
+
         MP params;
         try {
           // Get parameters for next model
@@ -160,7 +170,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong
           try {
-            model = buildModel(params, grid, counter++, protoModelKey);
+            model = buildModel(params, grid, counter++, protoModelKey); // TODO: pass in remaining time!
           } catch (RuntimeException e) { // Catch everything
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
