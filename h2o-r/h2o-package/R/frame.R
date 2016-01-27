@@ -2753,3 +2753,12 @@ h2o.trim <- function(x) .newExpr("trim", x)
 #' @param x The column whose string lengths will be returned.
 #' @export
 h2o.nchar <- function(x) .newExpr("length", x)
+
+#'
+#' Substring
+#'
+#' @param x The column on which to operate.
+#' @param start The index of the first element to be included in the substring.
+#' @param stop The index of the last element to be included in the substring. 
+#' @export
+h2o.substring <- function(x, start, stop) .newExpr("substring", x, start-1, stop)

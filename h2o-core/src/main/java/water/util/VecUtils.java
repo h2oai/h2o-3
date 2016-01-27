@@ -15,7 +15,7 @@ import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
 
-import java.util.Arrays;
+import java.util.*;
 
 public class VecUtils {
   /**
@@ -430,6 +430,40 @@ public class VecUtils {
     }
   }
 
+  /**
+   * Create a new categorical {@link Vec} with deduplicated domains from a categorical {@link Vec}.
+   * 
+   * Categoricals may have the same values after munging, and should have the same domain index in the numerical chunk 
+   * representation. Unify categoricals that are the same by remapping their domain indices. 
+   */
+
+  public static class DomainDedupe extends MRTask<DomainDedupe> {
+    private final HashMap<Integer, Integer> _oldToNewDomainIndex;
+    public DomainDedupe(HashMap<Integer, Integer> oldToNewDomainIndex) {_oldToNewDomainIndex = oldToNewDomainIndex; }
+    @Override public void map(Chunk c, NewChunk nc) {
+      for( int row=0; row < c._len; row++) {
+        if ( !c.isNA(row) ) {
+          int oldDomain = (int) c.at8(row);
+          nc.addNum(_oldToNewDomainIndex.get(oldDomain));
+        }
+      }
+    }
+    public static Vec domainDeduper(Vec vec, HashMap<String, ArrayList<Integer>> substringToOldDomainIndices) {
+      HashMap<Integer, Integer> oldToNewDomainIndex = new HashMap<>();
+      int newDomainIndex = 0;
+      SortedSet<String> alphabetizedSubstrings = new TreeSet<>(substringToOldDomainIndices.keySet());
+      for (String sub : alphabetizedSubstrings) {
+        for (int oldDomainIndex : substringToOldDomainIndices.get(sub)) {
+          oldToNewDomainIndex.put(oldDomainIndex, newDomainIndex);
+        }
+        newDomainIndex++;
+      }
+      VecUtils.DomainDedupe domainDedupe = new VecUtils.DomainDedupe(oldToNewDomainIndex);
+      String[][] dom2D = {Arrays.copyOf(alphabetizedSubstrings.toArray(), alphabetizedSubstrings.size(), String[].class)};
+      return domainDedupe.doAll(new byte[]{Vec.T_CAT}, vec).outputFrame(null, null, dom2D).anyVec();
+    }
+  }
+
   // >11x faster than CollectDomain
   /** (Optimized for positive ints) Collect numeric domain of given {@link Vec}
    *  A map-reduce task to collect up the unique values of an integer {@link Vec}
@@ -455,7 +489,7 @@ public class VecUtils {
       for (int i = 0; i < _u.length;++i)
         if (_u[i])
           _d[id++]=i;
-      Arrays.sort(_d);
+      Arrays.sort(_d); //is this necessary? 
     }
 
     /** Returns exact numeric domain of given {@link Vec} computed by this task.

@@ -5,11 +5,9 @@ import water.MRTask;
 import water.MemoryManager;
 import water.fvec.*;
 import water.parser.BufferedString;
+import water.util.VecUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Locale;
+import java.util.*;
 
 public class ASTStrOp { /*empty*/}
 
@@ -280,7 +278,7 @@ class ASTToLower extends ASTPrim {
   }
 
   private Vec toLowerCategoricalCol(Vec vec) {
-    String[] dom = vec.domain();
+    String[] dom = vec.domain().clone();
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toLowerCase(Locale.ENGLISH);
 
@@ -344,7 +342,7 @@ class ASTToUpper extends ASTPrim {
   }
 
   private Vec toUpperCategoricalCol(Vec vec) {
-    String[] dom = vec.domain();
+    String[] dom = vec.domain().clone();
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toUpperCase(Locale.ENGLISH);
 
@@ -622,9 +620,9 @@ class ASTStrLength extends ASTPrim {
   }
 
   private Vec lengthCategoricalCol(Vec vec) {
-    String[] doms = vec.domain();
-    int[] catLengths = new int[doms.length];
-    for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
+    //String[] doms = vec.domain();
+    //int[] catLengths = new int[doms.length];
+    //for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
     Vec res = new MRTask() {
         transient int[] catLengths;
         @Override public void setupLocal() {
@@ -664,4 +662,96 @@ class ASTStrLength extends ASTPrim {
       }
     }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
   }
+}
+
+class ASTSubstring extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary", "startIndex", "endIndex"}; }
+  @Override int nargs() {return 4; } // (substring x startIndex endIndex)
+  @Override public String str() { return "substring"; }
+  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    int startIndex = (int) asts[2].exec(env).getNum();
+    if (startIndex < 0) startIndex = 0;
+    int endIndex = asts[3] instanceof ASTNumList ? Integer.MAX_VALUE : (int) asts[3].exec(env).getNum();
+    // Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("substring() requires a string or categorical column. "
+                +"Received "+fr.anyVec().get_type_str()
+                +". Please convert column to a string or categorical first.");
+    
+    // Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for (Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = substringCategoricalCol(v, startIndex, endIndex);
+      else
+        nvs[i] = substringStringCol(v, startIndex, endIndex);
+      i++;
+    }
+    
+    return new ValFrame(new Frame(nvs));
+  }
+
+  private Vec substringCategoricalCol(Vec vec, int startIndex, int endIndex) {
+    if (startIndex >= endIndex) {
+      Vec v = Vec.makeZero(vec.length());
+      v.setDomain(new String[]{""});
+      return v;
+    }
+    String[] dom = vec.domain().clone();
+    
+    HashMap<String, ArrayList<Integer>> substringToOldDomainIndices = new HashMap<>();
+    String substr;
+    for (int i = 0; i < dom.length; i++) {
+      substr = dom[i].substring(startIndex < dom[i].length() ? startIndex : dom[i].length(),
+              endIndex < dom[i].length() ? endIndex : dom[i].length());
+      dom[i] = substr;
+
+      if (!substringToOldDomainIndices.containsKey(substr)) {
+        ArrayList<Integer> val = new ArrayList<>();
+        val.add(i);
+        substringToOldDomainIndices.put(substr, val);
+      } else {
+        substringToOldDomainIndices.get(substr).add(i);
+      }
+    }
+    //Check for duplicated domains
+    if (substringToOldDomainIndices.size() < dom.length)
+      return VecUtils.DomainDedupe.domainDeduper(vec, substringToOldDomainIndices);
+    
+    return vec.makeCopy(dom);
+  }
+  
+  private Vec substringStringCol(Vec vec, final int startIndex, final int endIndex) {
+    return new MRTask() {
+      @Override
+      public void map(Chunk chk, NewChunk newChk) {
+        if (chk instanceof C0DChunk) // all NAs
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addNA();
+        else if (startIndex >= endIndex) {
+          for (int i = 0; i < chk.len(); i++)
+            newChk.addStr("");
+        }
+        else if (((CStrChunk) chk)._isAllASCII) { // fast-path operations
+          ((CStrChunk) chk).asciiSubstring(newChk, startIndex, endIndex);
+        } 
+        else { //UTF requires Java string methods
+          BufferedString tmpStr = new BufferedString();
+          for (int i = 0; i < chk._len; i++) {
+            if (chk.isNA(i))
+              newChk.addNA();
+            else {
+              String str = chk.atStr(tmpStr, i).toString();
+              newChk.addStr(str.substring(startIndex < str.length() ? startIndex : str.length(), 
+                      endIndex < str.length() ? endIndex : str.length()));
+            }
+          }
+        }
+      }
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+  }
+  
 }
