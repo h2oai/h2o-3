@@ -20,7 +20,7 @@ test.pvalue.syn <- function(conn){
 	#For gaussian
 	(gg3 =glm(y~.- wts,family = "gaussian",data = data,offset = wts))
 	r_pval = as.numeric(summary(gg3)$coefficients[,4])
-	hh3 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
+	hh3 = h2o.glm(objective_epsilon=0,beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
               family ="gaussian",standardize = F)
 	h_pval = hh3@model$coefficients_table[,5]
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -32,7 +32,7 @@ test.pvalue.syn <- function(conn){
 	(gg3 =glm(y~.- wts,family = tweedie(var.power=1,link.power=0),data = data,offset = wts/10))
 	r_pval = as.numeric(summary(gg3)$coefficients[,4])
 	hdata$wts = hdata$wts/10
-	hh3 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
+	hh3 = h2o.glm(objective_epsilon=0,beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
               tweedie_variance_power = 1,tweedie_link_power = 0,family ="tweedie",standardize = F)
 	h_pval = hh3@model$coefficients_table[,5]
 	diff = abs(h_pval - r_pval)
