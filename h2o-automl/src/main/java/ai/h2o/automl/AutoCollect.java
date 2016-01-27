@@ -18,6 +18,7 @@ import water.Key;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.Log;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -127,9 +128,7 @@ public class AutoCollect {
   }
 
   private void collect() {
-    System.out.println("================================================");
-    System.out.println("             Beginning New Collection           ");
-    System.out.println("================================================");
+    logNewCollection();
     try {
       conn.setAutoCommit(false);  // allow failed model builds... don't let them load in!
       long start = System.currentTimeMillis();
@@ -170,6 +169,14 @@ public class AutoCollect {
         System.out.println("VendorError: " + ex.getErrorCode());
       }
     }
+  }
+
+  private static void logNewCollection() {
+    String s =
+    "================================================\n" +
+    "             Beginning New Collection           \n"+
+    "================================================";
+    Log.info(s);
   }
 
   private void logScoreHistory(Model.Output output, String configID) {
