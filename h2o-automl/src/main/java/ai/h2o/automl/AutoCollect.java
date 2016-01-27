@@ -362,13 +362,16 @@ public class AutoCollect {
       DKV.put(_fr);
       _fr.reloadVecs();
     }
-    if( hasMeta(datasetName) ) _idFrame=getidFrameMeta(datasetName);
-    FrameMeta fm = new FrameMeta(f, y, x, datasetName, isClassification);
-    HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
-    fm.fillSimpleMeta(frameMeta);
-    fm.fillDummies(frameMeta);
-    _idFrame = pushFrameMeta(frameMeta);
-    computeAndPushColMeta(fm, _idFrame);
+    if( hasMeta(datasetName) )
+      _idFrame=getidFrameMeta(datasetName);
+    else {
+      FrameMeta fm = new FrameMeta(f, y, x, datasetName, isClassification);
+      HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
+      fm.fillSimpleMeta(frameMeta);
+      fm.fillDummies(frameMeta);
+      _idFrame = pushFrameMeta(frameMeta);
+      computeAndPushColMeta(fm, _idFrame);
+    }
   }
 
   private void ignored(int[] x, Frame f) {
@@ -423,7 +426,7 @@ public class AutoCollect {
     ResultSet rs = query(query);
     try {
       rs.next();
-      if (rs.getInt(1) == 1) return true;
+      if (rs.getInt(1) != 0) return true;
     } catch( SQLException ex) {
       System.out.println("SQLException: " + ex.getMessage());
       System.out.println("SQLState: " + ex.getSQLState());
