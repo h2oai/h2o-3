@@ -799,10 +799,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       scoreAndUpdateModel();
       if(_iceptAdjust != 0) { // apply the intercept adjust according to prior probability
         assert _parms._intercept;
-        assert !_parms._lambda_search;
-        assert _model._output._submodels.length == 1;
-        _model._output._submodels[0].beta[_model._output._submodels[0].beta.length-1] += _iceptAdjust;
-        _model._output.setSubmodelIdx(0);
+        double [] b = _model._output._global_beta;
+        b[b.length-1] += _iceptAdjust;
+        for(Submodel sm:_model._output._submodels)
+          sm.beta[sm.beta.length-1] += _iceptAdjust;
         _model.update(_job._key);
       }
       doCleanup();
