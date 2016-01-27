@@ -1,11 +1,11 @@
 #'
 #' Principal Components Analysis
 #'
-#' Principal components analysis of a H2O dataset using the power method
+#' Principal components analysis of an H2O data frame using the power method
 #' to calculate the singular value decomposition of the Gram matrix.
 #'
 #'
-#' @param training_frame An H2O H2OFrame object containing the
+#' @param training_frame An H2OFrame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param k The number of principal components to be computed. This must be
@@ -72,7 +72,7 @@ h2o.prcomp <- function(training_frame, x, k,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
-  # Training_frame may be a key or an H2O H2OFrame object
+  # Training_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {

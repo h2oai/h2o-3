@@ -4,16 +4,16 @@
 #` Export data to local disk or HDFS.
 #` Save models to local disk or HDFS.
 
-#' Export an H2O Data H2OFrame to a File
+#' Export an H2O Data Frame (H2OFrame) to a File
 #'
-#' Exports an H2O H2OFrame (which can be either VA or FV) to a file.
+#' Exports an H2OFrame (which can be either VA or FV) to a file.
 #' This file may be on the H2O instace's local filesystem, or to HDFS (preface
 #' the path with hdfs://) or to S3N (preface the path with s3n://).
 #'
 #' In the case of existing files \code{forse = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
 #'
-#' @param data An H2O H2OFrame data frame.
+#' @param data An H2OFrame object.
 #' @param path The path to write the file to. Must include the directory and
 #'        filename. May be prefaced with hdfs:// or s3n://. Each row of data
 #'        appears as line of the file.
@@ -33,7 +33,7 @@
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE) {
   if (!is.H2OFrame(data))
-    stop("`data` must be an H2O H2OFrame object")
+    stop("`data` must be an H2OFrame object")
 
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
@@ -63,7 +63,7 @@ h2o.exportHDFS <- function(object, path, force=FALSE) { h2o.exportFile(object,pa
 #'
 #' @section Warning: Files located on the H2O server may be very large! Make
 #'        sure you have enough hard drive space to accomodate the entire file.
-#' @param data an H2O H2OFrame object to be downloaded.
+#' @param data an H2OFrame object to be downloaded.
 #' @param filename A string indicating the name that the CSV file should be
 #'        should be saved to.
 #' @examples
@@ -81,7 +81,7 @@ h2o.exportHDFS <- function(object, path, force=FALSE) { h2o.exportFile(object,pa
 #' @export
 h2o.downloadCSV <- function(data, filename) {
   if (!is.H2OFrame(data))
-    stop("`data` must be an H2O H2OFrame object")
+    stop("`data` must be an H2OFrame object")
 
   conn = h2o.getConnection()
   str <- paste0('http://', conn@ip, ':', conn@port, '/3/DownloadDataset?frame_id=', h2o.getId(data))
