@@ -672,11 +672,33 @@ h2o.clusterInfo <- function() {
 #' @export
 h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 
+
+#'
+#' Disable Progress Bar
+#' 
+#' @export
+h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
+
+#'
+#' Enable Progress Bar
+#' 
+#' @export
+h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
+
+#'
+#' Check if Progress Bar is Enabled 
+#' 
+.h2o.is_progress <- function() get("PROGRESS_BAR", .pkg.env)
+
+h2o.show_progress()
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 #   Job Polling
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__waitOnJob <- function(job_key, pollInterval = 1, progressBar = TRUE) {
+.h2o.__waitOnJob <- function(job_key, pollInterval = 1) {
+  progressBar <- .h2o.is_progress()
   if (progressBar) pb <- txtProgressBar(style = 3L)
   keepRunning <- TRUE
   tryCatch({
