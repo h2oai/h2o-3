@@ -119,7 +119,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /**
      * Maximum allowed runtime in seconds for model training. Use 0 to disable.
-     * For cross-validation and grid searches, this time limit applies to all sub-models.
      */
     public double _max_runtime_secs = 0;
 

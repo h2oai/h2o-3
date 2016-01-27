@@ -54,7 +54,6 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop)
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.

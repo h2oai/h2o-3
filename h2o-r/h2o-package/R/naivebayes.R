@@ -25,7 +25,6 @@
 #' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
 #'        FALSE to reduce the runtime of the algorithm.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional
 #'        on the response, and a Gaussian distribution of numeric predictors with mean and standard
 #'        deviation computed from the training dataset. When building a naive Bayes classifier,

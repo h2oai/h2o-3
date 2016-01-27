@@ -36,7 +36,6 @@
 #'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
 #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
