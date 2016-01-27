@@ -1,10 +1,10 @@
 #'
 #' Generalized Low Rank Model
 #'
-#' Generalized low rank decomposition of a H2O dataset.
+#' Generalized low rank decomposition of an H2O data frame.
 #'
 #'
-#' @param training_frame An H2O H2OFrame object containing the
+#' @param training_frame An H2OFrame object containing the
 #'        variables in the model.
 #' @param cols (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -12,7 +12,7 @@
 #'        between 1 and the number of columns in the training frame, inclusive.
 #' @param model_id (Optional) The unique id assigned to the resulting model.
 #'        If none is given, an id will automatically be generated.
-#' @param validation_frame An H2O H2OFrame object containing the
+#' @param validation_frame An H2OFrame object containing the
 #'        variables in the model.
 #' @param loading_name (Optional) The unique name assigned to the loading matrix X
 #'        in the XY decomposition. Automatically generated if none is provided.
@@ -125,7 +125,7 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
   
-  # Training_frame may be a key or an H2O H2OFrame object
+  # Training_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
@@ -233,12 +233,12 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
 #' 
 #' @param object An \linkS4class{H2ODimReductionModel} object that represents the
 #'        model to be used for reconstruction.
-#' @param data An H2O H2OFrame object representing the training data for the H2O GLRM model.
+#' @param data An H2OFrame object representing the training data for the H2O GLRM model.
 #'        Used to set the domain of each column in the reconstructed frame.
 #' @param reverse_transform (Optional) A logical value indicating whether to reverse the
 #'        transformation from model-building by re-scaling columns and adding back the 
 #'        offset to each column of the reconstructed frame.
-#' @return Returns an H2O H2OFrame object containing the approximate reconstruction of the
+#' @return Returns an H2OFrame object containing the approximate reconstruction of the
 #'         training data;
 #' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
 #' @examples
@@ -262,16 +262,16 @@ h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
 
 #' Convert Archetypes to Features from H2O GLRM Model
 #'
-#' Project each archetype in a H2O GLRM model into the corresponding feature
+#' Project each archetype in an H2O GLRM model into the corresponding feature
 #' space from the H2O training frame.
 #'
 #' @param object An \linkS4class{H2ODimReductionModel} object that represents the
 #'        model containing archetypes to be projected.
-#' @param data An H2O H2OFrame object representing the training data for the H2O GLRM model.
+#' @param data An H2OFrame object representing the training data for the H2O GLRM model.
 #' @param reverse_transform (Optional) A logical value indicating whether to reverse the
 #'        transformation from model-building by re-scaling columns and adding back the 
 #'        offset to each column of the projected archetypes.
-#' @return Returns an H2O H2OFrame object containing the projection of the archetypes
+#' @return Returns an H2OFrame object containing the projection of the archetypes
 #'         down into the original feature space, where each row is one archetype.
 #' @seealso \code{\link{h2o.glrm}} for making an H2ODimReductionModel.
 #' @examples

@@ -207,7 +207,7 @@ h2o.getModel <- function(model_id) {
 }
 
 #'
-#' Download the Scoring POJO (Plain Old Java Object) of a H2O Model
+#' Download the Scoring POJO (Plain Old Java Object) of an H2O Model
 #'
 #' @param model An H2OModel
 #' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to

@@ -1,16 +1,16 @@
 # ---------------------------- Deep Learning - Neural Network ---------------- #
 #' Build a Deep Learning Neural Network
 #'
-#' Performs Deep Learning neural networks on an H2O H2OFrame
+#' Performs Deep Learning neural networks on an H2OFrame
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
-#' @param training_frame An H2O H2OFrame object containing the variables in the model.
+#' @param training_frame An H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logical. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
-#' @param validation_frame An H2O H2OFrame object indicating the validation dataset used to construct the confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
-#' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+#' @param validation_frame An H2OFrame object indicating the validation dataset used to construct the confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
+#' @param checkpoint Model checkpoint (either key or H2ODeepLearningModel) to resume training with.
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
 #'        Otherwise the first factor level is omitted (without loss of accuracy). Useful for
@@ -18,8 +18,8 @@
 #' @param standardize \code{Logical}. If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
 #' @param activation A string indicating the activation function to use. Must be either "Tanh",
 #'        "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", or "MaxoutWithDropout"
-#' @param hidden Hidden layer sizes (e.g. c(100,100))
-#' @param epochs How many times the dataset should be iterated (streamed), can be fractional
+#' @param hidden Hidden layer sizes (e.g. c(100,100)).
+#' @param epochs How many times the dataset should be iterated (streamed), can be fractional.
 #' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration.
 #'        Special values are: \bold{0} one epoch; \bold{-1} all available data (e.g., replicated
 #'        training data); or \bold{-2} auto-tuning (default)
@@ -28,44 +28,44 @@
 #'        Higher values can lead to faster convergence.
 #' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running
 #'        single threaded
-#' @param adaptive_rate \code{Logical}. Adaptive learning rate (ADAELTA)
-#' @param rho Adaptive learning rate time decay factor (similarity to prior updates)
+#' @param adaptive_rate \code{Logical}. Adaptive learning rate (ADAELTA).
+#' @param rho Adaptive learning rate time decay factor (similarity to prior updates).
 #' @param epsilon Adaptive learning rate parameter, similar to learn rate annealing during initial
 #'        training phase. Typical values are between \code{1.0e-10} and \code{1.0e-4}
-#' @param rate Learning rate (higher => less stable, lower => slower convergence)
+#' @param rate Learning rate (higher => less stable, lower => slower convergence).
 #' @param rate_annealing Learning rate annealing: \eqn{(rate)/(1 + rate_annealing*samples)}
 #' @param rate_decay Learning rate decay factor between layers (N-th layer: \eqn{rate*\alpha^(N-1)})
-#' @param momentum_start Initial momentum at the beginning of training (try 0.5)
-#' @param momentum_ramp Number of training samples for which momentum increases
-#' @param momentum_stable Final momentum after the amp is over (try 0.99)
+#' @param momentum_start Initial momentum at the beginning of training (try 0.5).
+#' @param momentum_ramp Number of training samples for which momentum increases.
+#' @param momentum_stable Final momentum after the amp is over (try 0.99).
 #' @param nesterov_accelerated_gradient \code{Logical}. Use Nesterov accelerated gradient
-#'        (recommended)
+#'        (recommended).
 #' @param input_dropout_ratio A fraction of the features for each training row to be omitted from
 #'        training in order to improve generalization (dimension sampling).
 #' @param hidden_dropout_ratios Input layer dropout ratio (can improve generalization) specify one
-#'        value per hidden layer, defaults to 0.5
+#'        value per hidden layer, defaults to 0.5.
 #' @param l1 L1 regularization (can add stability and improve generalization, causes many weights to
-#'        become 0)
+#'        become 0).
 #' @param l2 L2 regularization (can add stability and improve generalization, causes many weights to
-#'        be small)
-#' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
-#' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
+#'        be small).
+#' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier).
+#' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal".
 #' @param initial_weight_scale Uniform: -value ... value, Normal: stddev
 #' @param loss Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute"
 #'        (experimental) or "Huber" (experimental)
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
 #'        "laplace", "huber" or "gaussian"
-#' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
-#' @param score_interval Shortest time interval (in secs) between model scoring
-#' @param score_training_samples Number of training set samples for scoring (0 for all)
-#' @param score_validation_samples Number of validation set samples for scoring (0 for all)
+#' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2).
+#' @param score_interval Shortest time interval (in secs) between model scoring.
+#' @param score_training_samples Number of training set samples for scoring (0 for all).
+#' @param score_validation_samples Number of validation set samples for scoring (0 for all).
 #' @param score_duty_cycle Maximum duty cycle fraction for scoring (lower: more training, higher:
-#'        more scoring)
+#'        more scoring).
 #' @param classification_stop Stopping criterion for classification error fraction on training data
-#'        (-1 to disable)
+#'        (-1 to disable).
 #' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to
-#'        disable)
+#'        disable).
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric.
 #'        Stop if simple moving average of length k of the stopping_metric does not improve
 #'        (by stopping_tolerance) for k=stopping_rounds scoring events.
@@ -73,50 +73,50 @@
 #' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
 #'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
-#'        improvement is not at least this much, stop)
+#'        improvement is not at least this much, stop).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #'        For cross-validation and grid searches, this time limit applies to all sub-models.
-#' @param quiet_mode Enable quiet mode for less output to standard output
+#' @param quiet_mode Enable quiet mode for less output to standard output.
 #' @param max_confusion_matrix_size Max. size (number of classes) for confusion matrices to be shown
-#' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ratio computation(for
-#'        multi-class only, 0 to disable)
+#' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ratio computation (for
+#'        multi-class only, 0 to disable).
 #' @param balance_classes Balance training data class counts via over/under-sampling (for imbalanced
-#'        data)
+#'        data).
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic
 #'        order). If not specified, sampling factors will be automatically computed to obtain class
 #'        balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class
-#'        counts (can be less than 1.0)
-#' @param score_validation_sampling Method used to sample validation dataset for scoring
-#' @param diagnostics Enable diagnostics for hidden layers
+#'        counts (can be less than 1.0).
+#' @param score_validation_sampling Method used to sample validation dataset for scoring.
+#' @param diagnostics Enable diagnostics for hidden layers.
 #' @param variable_importances Compute variable importances for input features (Gedeon method) - can
-#'        be slow for large networks)
-#' @param fast_mode Enable fast mode (minor approximations in back-propagation)
-#' @param ignore_const_cols Ignore constant columns (no information can be gained anyway)
+#'        be slow for large networks.
+#' @param fast_mode Enable fast mode (minor approximations in back-propagation).
+#' @param ignore_const_cols Ignore constant columns (no information can be gained anyway).
 #' @param force_load_balance Force extra load balancing to increase training speed for small
-#'        datasets (to keep all cores busy)
+#'        datasets (to keep all cores busy).
 #' @param replicate_training_data Replicate the entire training dataset onto every node for faster
-#'        training
-#' @param single_node_mode Run on a single node for fine-tuning of model parameters
+#'        training.
+#' @param single_node_mode Run on a single node for fine-tuning of model parameters.
 #' @param shuffle_training_data Enable shuffling of training data (recommended if training data is
-#'        replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes}
-#' @param sparse Sparse data handling (more efficient for data with lots of 0 values)
+#'        replicated and train_samples_per_iteration is close to \eqn{numRows*numNodes}.
+#' @param sparse Sparse data handling (more efficient for data with lots of 0 values).
 #' @param col_major Use a column major weight matrix for input layer. Can speed up forward
-#'        propagation, but might slow down backpropagation (Experimental)
-#' @param average_activation Average activation for sparse auto-encoder (Experimental)
-#' @param sparsity_beta Sparsity regularization (Experimental)
+#'        propagation, but might slow down backpropagation (Experimental).
+#' @param average_activation Average activation for sparse auto-encoder (Experimental).
+#' @param sparsity_beta Sparsity regularization (Experimental).
 #' @param max_categorical_features Max. number of categorical features, enforced via hashing
-#'        Experimental)
-#' @param reproducible Force reproducibility on small data (requires setting the \code{seed} argument and this will be slow - only uses 1 thread)
-#' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O
+#'        Experimental).
+#' @param reproducible Force reproducibility on small data (requires setting the \code{seed} argument and this will be slow - only uses 1 thread).
+#' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O.
 #'        Frames"
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
-#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "AUTO", "Random" or "Modulo"
-#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified.
+#'        Must be "AUTO", "Random" or "Modulo".
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -205,7 +205,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              keep_cross_validation_predictions = FALSE)
 {
 
-  # Training_frame and validation_frame may be a key or an H2O H2OFrame object
+  # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
@@ -375,9 +375,9 @@ h2o.deeplearning <- function(x, y, training_frame,
 #'
 #' @param object An \linkS4class{H2OAutoEncoderModel} object that represents the
 #'        model to be used for anomaly detection.
-#' @param data An H2O H2OFrame object.
+#' @param data An H2OFrame object.
 #' @param per_feature Whether to return the per-feature squared reconstruction error
-#' @return Returns an H2O H2OFrame object containing the
+#' @return Returns an H2OFrame object containing the
 #'         reconstruction MSE or the per-feature squared error.
 #' @seealso \code{\link{h2o.deeplearning}} for making an H2OAutoEncoderModel.
 #' @examples
@@ -407,9 +407,9 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 #' model.
 #' @param object An \linkS4class{H2OModel} object that represents the deep
 #' learning model to be used for feature extraction.
-#' @param data An H2O H2OFrame object.
+#' @param data An H2OFrame object.
 #' @param layer Index of the hidden layer to extract.
-#' @return Returns an H2O H2OFrame object with as many features as the
+#' @return Returns an H2OFrame object with as many features as the
 #'         number of units in the hidden layer of the specified index.
 #' @seealso \code{link{h2o.deeplearning}} for making deep learning models.
 #' @examples
