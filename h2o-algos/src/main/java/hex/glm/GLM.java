@@ -317,7 +317,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       String[] warns = _model.adaptTestForTrain(_valid, true, true);
       for (String s : warns) warn("_validation_frame", s);
       if (_parms._lambda_min_ratio == -1)
-        _parms._lambda_min_ratio = _nobs > 10 * _dinfo.fullN() ? 1e-4 : 1e-2;
+        _parms._lambda_min_ratio = (_nobs >> 4) >  _dinfo.fullN() ? 1e-4 : 1e-2;
       double [] beta = getNullBeta();
       GLMGradientInfo ginfo = new GLMGradientSolver(_job._key,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
       _state.updateState(beta,ginfo);
@@ -335,7 +335,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _parms._lambda[i] = (l *= dec);
           // todo set the null submodel
         } else
-          _parms._lambda = new double[]{_parms._lambda_min_ratio * _lmax};
+          _parms._lambda = new double[]{10 * _parms._lambda_min_ratio * _lmax};
       }
       // clone2 so that I don't change instance which is in the DKV directly
       // (clone2 also shallow clones _output)

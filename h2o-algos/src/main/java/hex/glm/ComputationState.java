@@ -309,7 +309,7 @@ public final class ComputationState {
     return l1pen()*l1norm + l2pen()*l2norm;
   }
   private double objective() {
-    return _likelihood * _parms._obj_reg + penalty(_beta) + _bc.proxPen(_beta);
+    return _likelihood * _parms._obj_reg + penalty(_beta) + _activeBC.proxPen(_beta);
   }
   protected double  updateState(double [] beta, double likelihood) {
     _beta = beta;
