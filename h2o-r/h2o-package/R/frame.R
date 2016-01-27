@@ -643,6 +643,15 @@ h2o.table <- function(x, y = NULL, dense = TRUE) {
 #' @export
 table.H2OFrame <- h2o.table
 
+
+#' H2O Unique
+#'
+#' Extract unique values in the column.
+#'
+#' @param x An H2OFrame object.
+#' @export
+h2o.unique <- function(x) .newExpr("unique", x)
+
 #' H2O Median
 #'
 #' Compute the median of an H2OFrame.
