@@ -242,14 +242,18 @@ class H2OCloudNode:
 
         # If the jacoco flag was included, then modify cmd to generate coverage
         # data using the jacoco agent
-        if g_include_jacoco:
-            root_dir = os.path.abspath(__file__ + "/../../")
-            agent_dir = root_dir + "/jacoco/jacocoagent.jar"
-            jresults_dir = self.output_dir + "/jacoco/"
+        if g_jacoco_include:
+            root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
+            agent_dir = os.path.join(root_dir,"jacoco","jacocoagent.jar")
+            jresults_dir = os.path.join(self.output_dir,"jacoco")
             if not os.path.exists(jresults_dir):
                 os.mkdir(jresults_dir)
             jresults_dir += "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num)
-            jacoco = "-javaagent:" + agent_dir + "=destfile=" + jresults_dir + "/{cloud}_{node}.exec".format(cloud = self.cloud_num, node = self.node_num) + ",excludes=jsr166y"
+            jacoco = "-javaagent:" + agent_dir + "=destfile=" + \
+                     os.path.join(jresults_dir,"{cloud}_{node}.exec".format(cloud=self.cloud_num,
+                                                                            node=self.node_num)) + \
+                     ",includes={inc},excludes={ex}:jsr166y".format(inc=g_jacoco_options[0].replace(',',':'),
+                                                                    ex=g_jacoco_options[1].replace(',',':'))
             cmd = cmd[:1] + [jacoco] + cmd[1:]
 
 
@@ -801,7 +805,7 @@ class Test:
       elif is_ipython_notebook(test_name): cmd = cmd + ["--ipynb"]
       elif is_pydemo(test_name):           cmd = cmd + ["--pyDemo"]
       else:                                cmd = cmd + ["--pyBooklet"]
-      if g_include_jacoco: cmd = cmd + ["--forceConnect"] # When using JaCoCo we don't want the test to return an error
+      if g_jacoco_include: cmd = cmd + ["--forceConnect"] # When using JaCoCo we don't want the test to return an error
                                                         # if a cloud reports as unhealthy
       return cmd
 
@@ -1709,7 +1713,7 @@ class TestRunner:
         if not h2o_okay:
             # JaCoCo tends to cause clouds to temporarily report as unhealthy even when they aren't,
             # so we'll just consider an unhealthy cloud as suspicious
-            if g_include_jacoco: self._suspect_cloud(ip, port)
+            if g_jacoco_include: self._suspect_cloud(ip, port)
             else: self._remove_cloud(ip, port)
         return h2o_okay
 
@@ -1768,7 +1772,8 @@ g_jvm_xmx = "1g"
 g_nopass = False
 g_nointernal = False
 g_convenient = False
-g_include_jacoco = False
+g_jacoco_include = False
+g_jacoco_options = ["",""]
 g_path_to_h2o_jar = None
 g_path_to_tar = None
 g_path_to_whl = None
@@ -1902,7 +1907,10 @@ def usage():
     print("                     pass, ncpus, os, and job name of each test to perf.csv in the results directory.")
     print("                     Takes three parameters: git hash, git branch, and build id, job name in that order.")
     print("")
-    print("    --jacoco         Generate code coverage data using JaCoCo")
+    print("    --jacoco         Generate code coverage data using JaCoCo. Class includes and excludes may optionally")
+    print("                     be appended in the format of =[includes]:[excludes] where [...] denotes a list of")
+    print("                     classes, each separated by a comma (,). Wildcard characters (* and ?) may be used.")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -1934,6 +1942,8 @@ def usage():
     print("")
     print("    Run tests on a pre-existing cloud (e.g. in a debugger), keeping old random seeds:")
     print("        "+g_script_name+" --wipe --usecloud ip:port")
+    print("    Run tests with JaCoCo enabled, excluding org.example1 and org.example2")
+    print("        "+g_script_name+" --jacoco=:org.example1,org.example2")
     sys.exit(1)
 
 
@@ -1986,7 +1996,8 @@ def parse_args(argv):
     global g_path_to_h2o_jar
     global g_path_to_tar
     global g_path_to_whl
-    global g_include_jacoco
+    global g_jacoco_include
+    global g_jacoco_options
     global g_produce_unit_reports
     global g_phantomjs_to
     global g_phantomjs_packs
@@ -2131,7 +2142,7 @@ def parse_args(argv):
         elif (s == "--noxunit"):
             g_produce_unit_reports = False
         elif (s == "--jacoco"):
-            g_include_jacoco = True
+            g_jacoco_include = True
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         elif (s == "--rPkgVerChk"):
@@ -2166,7 +2177,14 @@ def parse_args(argv):
                 usage()
             g_job_name = argv[i]
         else:
-            unknown_arg(s)
+            # Regex is required to parse the includes and excludes to the JaCoCo agent
+            m = re.match(r'--jacoco=(?P<includes>([^:,]+(,[^:,]+)*)?):(?P<excludes>([^:,]+(,[^:,]+)*)?)$', s)
+            if m is not None:
+                g_jacoco_include = True
+                g_jacoco_options[0] = m.group("includes")
+                g_jacoco_options[1] = m.group("excludes")
+            else:
+                unknown_arg(s)
 
         i += 1
 
