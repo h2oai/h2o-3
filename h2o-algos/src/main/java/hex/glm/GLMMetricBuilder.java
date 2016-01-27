@@ -24,24 +24,20 @@ import water.util.MathUtils;
 public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> {
   double residual_deviance;
   double null_devince;
-//  final double [] _ymu;
-
   long _nobs;
   double _aic;// internal AIC used only for poisson family!
   private double _aic2;// internal AIC used only for poisson family!
   final GLMModel.GLMWeightsFun _glmf;
   final private int _rank;
-  final double _threshold;
   MetricBuilder _metricBuilder;
   final boolean _intercept;
   private final double [] _ymu;
 
   final boolean _computeMetrics;
-  public GLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, double threshold, boolean computeMetrics, boolean intercept){
+  public GLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept){
     super(domain == null?1:domain.length, domain);
     _rank = rank;
     _glmf = glmf;
-    _threshold = threshold;
     _computeMetrics = computeMetrics;
     _intercept = intercept;
     _ymu = ymu;
@@ -112,7 +108,6 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     if(weight == 0)return;
     _yact[0] = (float) yreal;
     if(_glmf._family == Family.binomial) {
-      _ds[0] = ymodel > _threshold ? 1 : 0;
       _ds[1] = 1 - ymodel;
       _ds[2] = ymodel;
     } else {

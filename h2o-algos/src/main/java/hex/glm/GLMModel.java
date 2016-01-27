@@ -68,7 +68,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     if(domain == null && _parms._family == Family.binomial)
       domain = binomialClassNames;
-    return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), _output._threshold, true, _parms._intercept);
+    return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
   }
 
   protected double [] beta_internal(){
@@ -700,7 +700,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     String[] _coefficient_names;
     public int _best_lambda_idx;
 
-    double _threshold;
     double[] _global_beta;
     private double[] _zvalues;
     private double _dispersion;
@@ -1050,7 +1049,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         preds[1] = Double.NaN;
         preds[2] = Double.NaN;
       } else {
-        preds[0] = (mu >= _output._threshold ? 1 : 0);
         preds[1] = 1.0 - mu; // class 0
         preds[2] =       mu; // class 1
       }
@@ -1134,7 +1132,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         preds[1] = Double.NaN;
         preds[2] = Double.NaN;
       } else {
-        preds[0] = (mu >= _output._threshold ? 1 : 0);
         preds[1] = 1.0 - mu; // class 0
         preds[2] =       mu; // class 1
       }
@@ -1186,7 +1183,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 //    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
       body.p(");").nl();
       if (_parms._family == Family.binomial) {
-        body.ip("preds[0] = (mu > ").p(_output._threshold).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
+        body.ip("preds[0] = (mu > ").p(defaultThreshold()).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
         body.ip("preds[1] = 1.0 - mu; // class 0").nl();
         body.ip("preds[2] =       mu; // class 1").nl();
       } else {
