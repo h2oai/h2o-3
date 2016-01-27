@@ -666,7 +666,7 @@ class ASTStrLength extends ASTPrim {
 
 class ASTSubstring extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "startIndex", "endIndex"}; }
-  @Override int nargs() {return 4; } // (substring x startIndex endIndex)
+  @Override int nargs() {return 4; } // (substring x startIndex [endIndex])
   @Override public String str() { return "substring"; }
   @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();

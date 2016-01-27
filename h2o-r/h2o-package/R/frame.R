@@ -2761,4 +2761,4 @@ h2o.nchar <- function(x) .newExpr("length", x)
 #' @param start The index of the first element to be included in the substring.
 #' @param stop The index of the last element to be included in the substring. 
 #' @export
-h2o.substring <- function(x, start, stop) .newExpr("substring", x, start-1, stop)
+h2o.substring <- function(x, start, stop) .newExpr("substring", x, start-1, stop="[]")
