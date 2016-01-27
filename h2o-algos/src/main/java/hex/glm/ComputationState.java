@@ -82,7 +82,7 @@ public final class ComputationState {
   public void dropActiveData(){_activeData = null;}
 
   public String toString() {
-    return "iter=" + _iter + " lambda=" + MathUtils.roundToNDigits(_lambda, 4) + " obj=" + MathUtils.roundToNDigits(objVal(),4);
+    return "iter=" + _iter + " lambda=" + MathUtils.roundToNDigits(_lambda, 4) + " obj=" + MathUtils.roundToNDigits(objVal(),4) + ", relImprovement = " + MathUtils.roundToNDigits(_relImprovement,4) + ", betaDiff = " + MathUtils.roundToNDigits(_relImprovement,4) ;
   }
 
   private void adjustToNewLambda() {
@@ -319,13 +319,17 @@ public final class ComputationState {
     _objVal = objective();
     return (objOld - _objVal)/objOld;
   }
+  private double _betaDiff;
+  private double _relImprovement;
+
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
+    _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
     _beta = beta;
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
     double objOld = _objVal;
     _objVal = objective();
-    return (objOld - _objVal)/objOld;
+    return (_relImprovement = (objOld - _objVal)/objOld);
   }
 
   public double [] expandBeta(double [] beta) {

@@ -458,8 +458,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         long t2 = System.currentTimeMillis();
         double [] betaCnd = solveGram(t._gram,t._xy);
         long t3 = System.currentTimeMillis();
-        if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-4, 1e4, 20))
+        if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-4, 1e4, 20)) {
+          Log.info(LogMsg("Ls failed " + ls));
           break;
+        }
         long t4 = System.currentTimeMillis();
         if(!progress(ls.getX(),ls.ginfo()))
           break;
