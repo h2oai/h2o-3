@@ -351,10 +351,10 @@ h2o.getFutureModel <- function(object) {
 #'
 #' @param object a fitted \linkS4class{H2OModel} object for which prediction is
 #'        desired
-#' @param newdata A H2OFrame object in which to look for
+#' @param newdata An H2OFrame object in which to look for
 #'        variables with which to predict.
 #' @param ... additional arguments to pass on.
-#' @return Returns an H2O H2OFrame object with probabilites and
+#' @return Returns an H2OFrame object with probabilites and
 #'         default predictions.
 #' @seealso \code{\link{h2o.deeplearning}}, \code{\link{h2o.gbm}},
 #'          \code{\link{h2o.glm}}, \code{\link{h2o.randomForest}} for model
@@ -422,7 +422,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #'
 #'
 #' @param model An \linkS4class{H2OModel} object
-#' @param newdata An H2O H2OFrame. The model will make predictions
+#' @param newdata An H2OFrame. The model will make predictions
 #'        on this dataset, and subsequently score them. The dataset should
 #'        match the dataset that was used to train the model, in terms of
 #'        column names, types, and dimensions. If newdata is passed in, then train, valid, and xval are ignored.
@@ -1675,7 +1675,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'
 #' @param object Either an \linkS4class{H2OModel} object or an
 #'        \linkS4class{H2OModelMetrics} object.
-#' @param newdata An H2O H2OFrame object that can be scored on.
+#' @param newdata An H2OFrame object that can be scored on.
 #'        Requires a valid response column.
 #' @param valid Retrieve the validation metric.
 #' @param xval Retrieve the cross-validation metric.
@@ -1755,7 +1755,7 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #'
 #' @param object Either an \linkS4class{H2OModel} object or an
 #'        \linkS4class{H2OModelMetrics} object.
-#' @param newdata An H2O H2OFrame object that can be scored on.
+#' @param newdata An H2OFrame object that can be scored on.
 #'        Requires a valid response column.
 #' @param thresholds (Optional) A value or a list of valid values between 0.0 and 1.0.
 #'        This value is only used in the case of
@@ -2030,7 +2030,7 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
 
 #' @export
 screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...) {
-    if(x@algorithm != "pca") stop("x must be a H2O PCA model")
+    if(x@algorithm != "pca") stop("x must be an H2O PCA model")
     if(missing(npcs))
       npcs = min(10, x@model$parameters$k)
     else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
@@ -2054,7 +2054,7 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 #' @export
 h2o.sdev <- function(object) {
   if(!is(object, "H2ODimReductionModel") || object@algorithm != "pca")
-    stop("object must be a H2O PCA model")
+    stop("object must be an H2O PCA model")
   as.numeric(object@model$importance[1,])
 }
 
@@ -2108,13 +2108,13 @@ h2o.sdev <- function(object) {
   result
 }
 
-#' Tabulation between Two Columns of a H2O H2OFrame
+#' Tabulation between Two Columns of an H2OFrame
 #'
 #' Simple Co-Occurrence based tabulation of X vs Y, where X and Y are two Vecs in a given dataset.
 #' Uses histogram of given resolution in X and Y.
 #' Handles numerical/categorical data and missing values. Supports observation weights.
 #'
-#' @param data An H2O H2OFrame object.
+#' @param data An H2OFrame object.
 #' @param x predictor column
 #' @param y response column
 #' @param weights_column (optional) observation weights column

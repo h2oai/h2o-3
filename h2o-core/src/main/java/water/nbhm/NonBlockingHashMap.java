@@ -1,6 +1,6 @@
 package water.nbhm;
 import sun.misc.Unsafe;
-import water.exceptions.H2OIllegalArgumentException;
+import water.util.Log;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -968,9 +968,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // racing resizing threads.  Extra CHM's will be GC'd.
       if( CAS_newkvs( newkvs ) ) { // NOW a resize-is-in-progress!
         //notifyAll();            // Wake up any sleepers
-        //long nano = System.nanoTime();
-        //System.out.println(" "+nano+" Resize from "+oldlen+" to "+(1<<log2)+" and had "+(_resizers-1)+" extras" );
-        //if( System.out != null ) System.out.print("["+log2);
+        Log.info("Resizing NBHM: "+oldlen+" -> "+(1<<log2)+" extras: "+(_resizers-1));
         topmap.rehash();        // Call for Hashtable's benefit
       } else                    // CAS failed?
         newkvs = _newkvs;       // Reread new table

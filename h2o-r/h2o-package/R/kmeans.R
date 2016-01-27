@@ -4,7 +4,7 @@
 #' Performs k-means clustering on an H2O dataset.
 #'
 #'
-#' @param training_frame An H2O H2OFrame object containing the
+#' @param training_frame An H2OFrame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
@@ -63,7 +63,7 @@ h2o.kmeans <- function(training_frame, x, k,
                        keep_cross_validation_predictions = FALSE,
                        max_runtime_secs=0)
 {
-  # Training_frame may be a key or an H2O H2OFrame object
+  # Training_frame may be a key or an H2OFrame object
   if( !is.H2OFrame(training_frame) )
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {

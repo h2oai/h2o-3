@@ -38,7 +38,7 @@
 #' @param sep (Optional) The field separator character. Values on each line of
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
-#' @param col.names (Optional) A H2OFrame object containing a single
+#' @param col.names (Optional) An H2OFrame object containing a single
 #'        delimited line with the column names for the file.
 #' @param col.types (Optional) A vector to specify whether columns should be
 #'        forced to a certain type upon import parsing.
