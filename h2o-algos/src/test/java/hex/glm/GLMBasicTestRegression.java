@@ -88,7 +88,7 @@ public class GLMBasicTestRegression extends TestUtil {
       System.out.println("Solver = " + s);
       System.out.println("===============================================================");
       try {
-        parms._lambda = null;
+        parms._lambda = new double[]{1e-5};
         parms._alpha = null;
         parms._train = _weighted._key;
         parms._solver = s;
@@ -98,7 +98,7 @@ public class GLMBasicTestRegression extends TestUtil {
         System.out.println("coefs1 = " + coefs1);
         parms._train = _upsampled._key;
         parms._weights_column = null;
-        parms._lambda = null;
+        parms._lambda = new double[]{1e-5};
         parms._alpha = null;
         model2 = new GLM(parms).trainModel().get();
         HashMap<String, Double> coefs2 = model2.coefficients();
