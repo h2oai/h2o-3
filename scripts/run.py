@@ -1908,7 +1908,7 @@ def usage():
     print("                     Takes three parameters: git hash, git branch, and build id, job name in that order.")
     print("")
     print("    --jacoco         Generate code coverage data using JaCoCo. Class includes and excludes may optionally")
-    print("                     be appended in the format of =[includes]:[excludes] where [...] denotes a list of")
+    print("                     follow in the format of [includes]:[excludes] where [...] denotes a list of")
     print("                     classes, each separated by a comma (,). Wildcard characters (* and ?) may be used.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
@@ -1943,7 +1943,7 @@ def usage():
     print("    Run tests on a pre-existing cloud (e.g. in a debugger), keeping old random seeds:")
     print("        "+g_script_name+" --wipe --usecloud ip:port")
     print("    Run tests with JaCoCo enabled, excluding org.example1 and org.example2")
-    print("        "+g_script_name+" --jacoco=:org.example1,org.example2")
+    print("        "+g_script_name+" --jacoco :org.example1,org.example2")
     sys.exit(1)
 
 
@@ -2143,6 +2143,12 @@ def parse_args(argv):
             g_produce_unit_reports = False
         elif (s == "--jacoco"):
             g_jacoco_include = True
+            if (i + 1 < len(argv)):
+                s = argv[i + 1]
+                m = re.match(r'(?P<includes>([^:,]+(,[^:,]+)*)?):(?P<excludes>([^:,]+(,[^:,]+)*)?)$', s)
+                if m is not None:
+                    g_jacoco_options[0] = m.group("includes")
+                    g_jacoco_options[1] = m.group("excludes")
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         elif (s == "--rPkgVerChk"):
@@ -2177,14 +2183,7 @@ def parse_args(argv):
                 usage()
             g_job_name = argv[i]
         else:
-            # Regex is required to parse the includes and excludes to the JaCoCo agent
-            m = re.match(r'--jacoco=(?P<includes>([^:,]+(,[^:,]+)*)?):(?P<excludes>([^:,]+(,[^:,]+)*)?)$', s)
-            if m is not None:
-                g_jacoco_include = True
-                g_jacoco_options[0] = m.group("includes")
-                g_jacoco_options[1] = m.group("excludes")
-            else:
-                unknown_arg(s)
+           unknown_arg(s)
 
         i += 1
 
