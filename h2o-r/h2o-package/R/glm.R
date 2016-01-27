@@ -26,7 +26,7 @@
 #' @param tweedie_link_power A numeric specifying the power for the link function when \code{family = "tweedie"}.
 #' @param alpha A numeric in [0, 1] specifying the elastic-net mixing parameter.
 #'                The elastic-net penalty is defined to be:
-#'                \deqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|]},
+#'                \deqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|]}
 #'                making \code{alpha = 1} the lasso penalty and \code{alpha = 0} the ridge penalty.
 #' @param lambda A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta)} in the objective function.
 #'               When \code{lambda = 0}, no elastic-net penalty is applied and ordinary generalized linear models are fit.
@@ -47,16 +47,16 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
-#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "AUTO", "Random" or "Modulo"
+#'        Must be "AUTO", "Random" or "Modulo".
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
-#' @param intercept Logical, include constant term (intercept) in the model
+#' @param intercept Logical, include constant term (intercept) in the model.
 #' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
 #' @param objective_epsilon Convergence criteria. Converge if relative change in objective function is below this threshold.
 #' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold.
 #' @param non_negative Logical, allow only positive coefficients.
-#' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are co-linear predictors.
+#' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are collinear predictors.
 #' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #'        For cross-validation and grid searches, this time limit applies to all sub-models.
