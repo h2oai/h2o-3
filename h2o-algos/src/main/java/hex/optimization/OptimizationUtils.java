@@ -116,6 +116,8 @@ public class OptimizationUtils {
     public GradientInfo ginfo() {
       return _ginfo;
     }
+
+    @Override public String toString(){return "";}
   }
 
 

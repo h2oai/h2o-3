@@ -82,7 +82,7 @@ public final class ComputationState {
   public void dropActiveData(){_activeData = null;}
 
   public String toString() {
-    return "iter=" + _iter + " lambda=" + MathUtils.roundToNDigits(_lambda, 4) + " obj=" + MathUtils.roundToNDigits(objVal(),4) + ", relImprovement = " + MathUtils.roundToNDigits(_relImprovement,4) + ", betaDiff = " + MathUtils.roundToNDigits(_relImprovement,4) ;
+    return "itr=" + _iter + " lmb=" + MathUtils.roundToNDigits(_lambda, 4) + " obj=" + MathUtils.roundToNDigits(objVal(),4) + " imp=" + MathUtils.roundToNDigits(_relImprovement,4) + " bdf=" + MathUtils.roundToNDigits(_relImprovement,4);
   }
 
   private void adjustToNewLambda() {
@@ -92,8 +92,8 @@ public final class ComputationState {
     double l1norm = 0, l2norm = 0;
     for (int c = 0; c < _nclasses; ++c)
       for (int i = 0; i < _activeData.fullN(); ++i) {
-        double b = _beta[_classOffsets[c] + i];
-        _ginfo._gradient[_classOffsets[c] + i] += ldiff * b;
+        double b = _beta[c*N + i];
+        _ginfo._gradient[c*N + i] += ldiff * b;
         l2norm += b * b;
         l1norm += b >= 0 ? b : -b;
       }
@@ -146,23 +146,41 @@ public final class ComputationState {
   }
 
   private DataInfo [] _activeDataMultinomial;
-  private int [] _classOffsets = new int[]{0};
+//  private int [] _classOffsets = new int[]{0};
 
 
   public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial != null?_activeDataMultinomial[c]:_dinfo;}
 
-  public double [] betaMultinomial(int c) {
-    return Arrays.copyOfRange(_beta,_classOffsets[c],_classOffsets[c+1]);
+  private static double [] extractSubRange(int N, int c, int [] ids, double [] src) {
+    if(ids == null) return Arrays.copyOfRange(src,c*N,c*N+N);
+    double [] res = MemoryManager.malloc8d(ids.length);
+    int j = 0;
+    int off = c*N;
+    for(int i:ids)
+      res[j++] = src[off+i];
+    return res;
+  }
+  private static void fillSubRange(int N, int c, int [] ids, double [] src, double [] dst) {
+    if(ids == null) {
+      System.arraycopy(src,0,dst,c*N,N);
+    } else {
+      int j = 0;
+      int off = c * N;
+      for (int i : ids)
+        dst[off + i] = src[j++];
+    }
   }
 
+  public double [] betaMultinomial(int c) {return extractSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),_beta);}
+
   public GLMSubsetGinfo ginfoMultinomial(int c) {
-    return new GLMSubsetGinfo(_ginfo,_classOffsets[c],_classOffsets[c+1]);
+    return new GLMSubsetGinfo(_ginfo,(_activeData.fullN()+1),c,_activeDataMultinomial[c].activeCols());
   }
 
   public static class GLMSubsetGinfo extends GLMGradientInfo {
     public final GLMGradientInfo _fullInfo;
-    public GLMSubsetGinfo(GLMGradientInfo fullInfo, int from, int to) {
-      super(fullInfo._likelihood, fullInfo._objVal, Arrays.copyOfRange(fullInfo._gradient,from,to));
+    public GLMSubsetGinfo(GLMGradientInfo fullInfo, int N, int c, int [] ids) {
+      super(fullInfo._likelihood, fullInfo._objVal, extractSubRange(N,c,ids,fullInfo._gradient));
       _fullInfo = fullInfo;
     }
   }
@@ -171,9 +189,9 @@ public final class ComputationState {
     return new GradientSolver() {
       @Override
       public GradientInfo getGradient(double[] beta) {
-        System.arraycopy(beta,0,fullbeta,_classOffsets[c],beta.length);
+        fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta,fullbeta);
         GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);
-        return new GLMSubsetGinfo(fullGinfo,_classOffsets[c],_classOffsets[c+1]);
+        return new GLMSubsetGinfo(fullGinfo,_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols());
       }
       @Override
       public GradientInfo getObjective(double[] beta) {return getGradient(beta);}
@@ -181,8 +199,8 @@ public final class ComputationState {
   }
 
   public void setBetaMultinomial(int c, double [] b, GLMSubsetGinfo ginfo) {
-    assert _classOffsets[c+1] - _classOffsets[c] == b.length;
-    System.arraycopy(b,0,_beta,_classOffsets[c],b.length);
+    fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),b,_beta);
+//    System.arraycopy(b,0,_beta,_classOffsets[c],b.length);
     _ginfo = ginfo._fullInfo;
   }
   /**
@@ -196,19 +214,16 @@ public final class ComputationState {
     int selected = 0;
     _activeBC = _bc;
     _activeData = _dinfo;
-    _classOffsets = new int[_nclasses+1];
     if (!_allIn && _alpha > 0) {
-      if(_activeDataMultinomial == null) {
+      if(_activeDataMultinomial == null)
         _activeDataMultinomial = new DataInfo[_nclasses];
-
-      }
       final double rhs = _alpha * (2 * _lambda - _previousLambda);
       int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
       int [] cols = MemoryManager.malloc4(N*_nclasses);
       int j = 0;
 
       for(int c = 0; c < _nclasses; ++c) {
-        _classOffsets[c] = selected;
+        int start = selected;
         for (int i = 0; i < P; ++i) {
           if (j < oldActiveCols.length && i == oldActiveCols[j]) {
             cols[selected++] = i;
@@ -218,19 +233,12 @@ public final class ComputationState {
           }
         }
         cols[selected++] = P;// intercept
-        _activeDataMultinomial[c] = _dinfo.filterExpandedColumns(Arrays.copyOfRange(cols,_classOffsets[c],selected));
-        for(int i = _classOffsets[c]; i < selected; ++i)
+        _activeDataMultinomial[c] = _dinfo.filterExpandedColumns(Arrays.copyOfRange(cols,start,selected));
+        for(int i = start; i < selected; ++i)
           cols[i] += c*N;
       }
-      _classOffsets[_nclasses] = selected;
       _allIn = _alpha == 0 || selected == cols.length;
-      if(!_allIn) {
-        cols = Arrays.copyOf(cols, selected);
-        _beta = ArrayUtils.select(_beta, cols);
-        _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
-      }
-    } else for(int c = 1; c <= _nclasses; ++c)
-      _classOffsets[c] = c*N;
+    }
     return selected;
   }
 

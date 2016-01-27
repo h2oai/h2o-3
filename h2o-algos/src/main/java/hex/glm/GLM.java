@@ -396,6 +396,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if(!_parms._remove_collinear_columns)
             throw new IllegalArgumentException("Got collinear columns, can not compute p-values unless some of the co-lienar columns are removed, please re-run with remove collinear_columns flag on or remove the collinear columns manually. Found following dependent columns " + collinear_col_names);
           // need to drop the cols from everywhere
+          Log.info(LogMsg("Removed collinear columns " + collinear_col_names));
           _model.addWarning("Removed collinear columns " + collinear_col_names);
           Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
           xy = ArrayUtils.select(xy,_state.removeCols(collinear_cols));
@@ -427,16 +428,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           GLMWeightsFun glmw = new GLMWeightsFun(_parms);
           double bdiff = _parms._beta_epsilon + 1;
           while (bdiff > _parms._beta_epsilon && _state._iter++ < _parms._max_iterations) {
+            long t1 = System.currentTimeMillis();
             new GLMMultinomialUpdate(_state.activeData(),_job._key,_state.beta(),c).doAll(_state.activeData()._adaptedFrame);
+            long t2 = System.currentTimeMillis();
             GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeDataMultinomial(c), glmw, ls.getX(),c).doAll(_state.activeDataMultinomial(c)._adaptedFrame);
+            long t3 = System.currentTimeMillis();
             double[] betaCnd = solveGram(t._gram, t._xy);
-            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-6, 1e4, 20))
+            long t4 = System.currentTimeMillis();
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-6, 1e4, 20)){
+              Log.info(LogMsg("Ls failed " + ls));
               break;
+            }
+            long t5 = System.currentTimeMillis();
             gs = (GLMSubsetGinfo) ls.ginfo();
             _state.setBetaMultinomial(c, ls.getX(), gs);
             bdiff = betaDiff(t._beta, ls.getX());
             // update multinomial
             updateProgress();
+            Log.info(LogMsg("computed in " + (t2-t1) + "+" + (t3 - t2) + "+" + (t4-t3) + "+" + (t5-t4) + "=" + (t5-t1) +"ms, step = " + ls.step() + ((_lslvr != null)?", l1solver " + _lslvr:"")));
           }
         }
         relImprovement = _state.updateState(_state.beta(),gs._fullInfo);
@@ -1193,7 +1202,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._family == Family.multinomial) {
         if (_betaMultinomial == null) {
           int nclasses = beta.length / (_dinfo.fullN() + 1);
-          assert beta.length % (_dinfo.fullN() + 1) == 0;
+          assert beta.length % (_dinfo.fullN() + 1) == 0:"beta len = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
           _betaMultinomial = new double[nclasses][];
           for (int i = 0; i < nclasses; ++i)
             _betaMultinomial[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);
