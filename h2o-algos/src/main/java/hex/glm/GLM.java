@@ -418,6 +418,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void fitIRLSM_multinomial(){
       assert _dinfo._responses == 3;
       double relImprovement = 1;
+      double obj = _state.objVal();
       while(_state._iter < _parms._max_iterations && relImprovement > _parms._objective_epsilon) {
         GLMSubsetGinfo gs = _state.ginfoMultinomial(0);
         for (int c = 0; c < _nclass; ++c) {
@@ -445,13 +446,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             gs = (GLMSubsetGinfo) ls.ginfo();
             _state.setBetaMultinomial(c, ls.getX(), gs);
             bdiff = betaDiff(t._beta, ls.getX());
-            Log.info("betaDiff = " + bdiff);
             // update multinomial
             updateProgress();
-            Log.info(LogMsg("computed in " + (t2-t1) + "+" + (t3 - t2) + "+" + (t4-t3) + "+" + (t5-t4) + "=" + (t5-t1) +"ms, step = " + ls.step() + ((_lslvr != null)?", l1solver " + _lslvr:"")));
+            Log.info(LogMsg("computed in " + (t2-t1) + "+" + (t3 - t2) + "+" + (t4-t3) + "+" + (t5-t4) + "=" + (t5-t1) +"ms, step = " + ls.step() + ((_lslvr != null)?", l1solver " + _lslvr:"") + " bdiff = " + bdiff));
           }
         }
-        relImprovement = _state.updateState(_state.beta(),gs._fullInfo);
+        relImprovement = (obj - _state.objVal())/obj;
+        obj = _state.objVal();
       }
     }
 

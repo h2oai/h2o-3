@@ -160,6 +160,7 @@ public final class ComputationState {
       res[j++] = src[off+i];
     return res;
   }
+
   private static void fillSubRange(int N, int c, int [] ids, double [] src, double [] dst) {
     if(ids == null) {
       System.arraycopy(src,0,dst,c*N,N);
@@ -200,8 +201,11 @@ public final class ComputationState {
 
   public void setBetaMultinomial(int c, double [] b, GLMSubsetGinfo ginfo) {
     fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),b,_beta);
-//    System.arraycopy(b,0,_beta,_classOffsets[c],b.length);
+    double objOld = _objVal;
     _ginfo = ginfo._fullInfo;
+    _likelihood = ginfo._likelihood;
+    _objVal = objective();
+    _relImprovement = (objOld - _objVal)/objOld;
   }
   /**
    * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
@@ -320,12 +324,13 @@ public final class ComputationState {
     return _likelihood * _parms._obj_reg + penalty(_beta) + _activeBC.proxPen(_beta);
   }
   protected double  updateState(double [] beta, double likelihood) {
+    _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
     _beta = beta;
     _ginfo = null;
     _likelihood = likelihood;
     double objOld = _objVal;
     _objVal = objective();
-    return (objOld - _objVal)/objOld;
+    return (_relImprovement = (objOld - _objVal)/objOld);
   }
   private double _betaDiff;
   private double _relImprovement;
