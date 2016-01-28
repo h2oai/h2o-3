@@ -56,7 +56,7 @@ test.apply <- function() {
 
   lookup <- as.h2o(data.frame(matrix(rnorm(100), ncol=50, nrow=50)))
   i <- 4 
-  print(apply(as.h2o(1:50, 1, function(x) { lookup[i,] - lookup[10,] })))
+  print(apply(as.h2o(1:50), 1, function(x) { lookup[i,] - lookup[10,] }))
 
   
 }

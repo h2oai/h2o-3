@@ -29,10 +29,10 @@ public class ASTGroupedPermute extends ASTPrim {
     int i = 0;
     for (; i < gbCols.length; ++i)
       names[i] = fr.name(gbCols[i]);
-    names[i] = "C" + i++;
-    names[i] = "C" + i++;
-    names[i] = "C" + i++;
-    names[i] = "C" + i;
+    names[i++] = "In";
+    names[i++] = "Out";
+    names[i++] = "InAmnt";
+    names[i] = "OutAmnt";
 
     String[][] domains = new String[names.length][];
     int d = 0;
