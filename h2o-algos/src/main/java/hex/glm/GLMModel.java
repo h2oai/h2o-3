@@ -515,7 +515,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             ?Math.max(2e-16,Math.exp(x))
             :Math.pow(x, 1/ _link_power);
         default:
-          throw new RuntimeException("unexpected link function id  " + this);
+          throw new RuntimeException("unexpected link function id  " + _link);
       }
     }
     public final double variance(double mu){

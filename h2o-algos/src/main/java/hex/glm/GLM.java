@@ -419,8 +419,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       assert _dinfo._responses == 3;
       double relImprovement = 1;
       while(_state._iter < _parms._max_iterations && relImprovement > _parms._objective_epsilon) {
-        GLMSubsetGinfo gs = null;
+        GLMSubsetGinfo gs = _state.ginfoMultinomial(0);
         for (int c = 0; c < _nclass; ++c) {
+          if(_state.activeDataMultinomial(c).fullN() == 0) continue;
+          Log.info("c = " + c);
           gs = _state.ginfoMultinomial(c);
           LineSearchSolver ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
             ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c), _state.ginfoMultinomial(c))
@@ -443,6 +445,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             gs = (GLMSubsetGinfo) ls.ginfo();
             _state.setBetaMultinomial(c, ls.getX(), gs);
             bdiff = betaDiff(t._beta, ls.getX());
+            Log.info("betaDiff = " + bdiff);
             // update multinomial
             updateProgress();
             Log.info(LogMsg("computed in " + (t2-t1) + "+" + (t3 - t2) + "+" + (t4-t3) + "+" + (t5-t4) + "=" + (t5-t1) +"ms, step = " + ls.step() + ((_lslvr != null)?", l1solver " + _lslvr:"")));
@@ -789,13 +792,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _state.setLambda(_parms._lambda[i]);
-        Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+        if(_parms._family == Family.multinomial)
+          for(int c = 0; c < _nclass; ++c)
+            Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+        else
+          Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
         _model.addSubmodel(_state.beta(),_state.lambda(),_state._iter);
         do { fitModel(); } while(!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if(_parms._lambda_search) {  // compute train and test dev
-          double trainDev = new GLMResDevTask(_job._key, _state._dinfo, _parms, _state.beta()).doAll(_state._dinfo._adaptedFrame)._resDev;
-          double testDev = _validDinfo != null ? new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev : -1;
+          double trainDev = _parms._family == Family.multinomial
+            ?new GLMResDevTaskMultinomial(_job._key,_state._dinfo,_state.beta(), _nclass).doAll(_state._dinfo._adaptedFrame)._likelihood*2
+            :new GLMResDevTask(_job._key, _state._dinfo, _parms, _state.beta()).doAll(_state._dinfo._adaptedFrame)._resDev;
+          double testDev = -1;
+          if(_validDinfo != null)
+            testDev = _parms._family == Family.multinomial
+              ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,_dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
+              :new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
           Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
           if(_model._output.pickBestModel().lambda_value == _state.lambda()) {

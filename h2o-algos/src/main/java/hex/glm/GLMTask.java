@@ -90,6 +90,37 @@ public abstract class GLMTask  {
     @Override public void reduce(GLMResDevTask gt) {_resDev += gt._resDev;}
   }
 
+  static class GLMResDevTaskMultinomial extends FrameTask2<GLMResDevTaskMultinomial> {
+    final double [][] _beta;
+    double _likelihood;
+    final int _nclasses;
+
+    public GLMResDevTaskMultinomial(Key jobKey, DataInfo dinfo, double [] beta, int nclasses) {
+      super(null,dinfo, jobKey);
+      _beta = ArrayUtils.convertTo2DMatrix(beta,beta.length/nclasses);
+      _nclasses = nclasses;
+    }
+
+    @Override public boolean handlesSparseData(){return true;}
+    private transient double [] _sparseOffsets;
+
+    @Override
+    public void chunkInit() {
+      _sparseOffsets = MemoryManager.malloc8d(_nclasses);
+      for(int c = 0; c < _nclasses; ++c)
+        _sparseOffsets[c] = GLM.sparseOffset(_beta[c],_dinfo);
+    }
+    @Override
+    protected void processRow(Row r) {
+      double sumExp = 0;
+      for(int c = 0; c < _nclasses; ++c)
+        sumExp += Math.exp(r.innerProduct(_beta[c]) + _sparseOffsets[c]);
+      int c = (int)r.response(0);
+      _likelihood -= r.weight * ((r.innerProduct(_beta[c]) + _sparseOffsets[c]) - Math.log(sumExp));
+    }
+    @Override public void reduce(GLMResDevTaskMultinomial gt) {_likelihood += gt._likelihood;}
+  }
+
  static class YMUTask extends MRTask<YMUTask> {
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
    long _nobs;
@@ -102,8 +133,6 @@ public abstract class GLMTask  {
    final boolean _setIgnores;
    final boolean _comupteWeightedSigma;
 
-//   double [] _mean; // weighted sum of x
-//   double [] _m2;   // weighted sum of x^2
    BasicStats _basicStats;
    double [] _yMu;
    final int _nClasses;
