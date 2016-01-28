@@ -144,7 +144,9 @@ public class AutoCollect {
           builder._parms._valid = fs[1]._key;
           builder._parms._response_column = _fr.name(_resp);
           builder._parms._ignored_columns = ignored();
+          // start resource collector thread
           m = (Model) builder.trainModel().get();
+          // stop resource collector thread
           elapsed = System.currentTimeMillis() - start;
           logScoreHistory(m._output, getConfig(m._parms));
           conn.commit();
