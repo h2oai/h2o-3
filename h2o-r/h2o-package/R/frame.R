@@ -2766,8 +2766,18 @@ h2o.nchar <- function(x) .newExpr("length", x)
 #'
 #' Substring
 #'
+#' 
+#' Returns a copy of the target column that is a substring at the specified start 
+#' and stop indices, inclusive. If the stop index is not specified, then the substring extends
+#' to the end of the original string. If start is longer than the number of characters
+#' in the original string, or is greater than stop, an empty string is returned. Negative start
+#' is coerced to 0. 
+#'
 #' @param x The column on which to operate.
 #' @param start The index of the first element to be included in the substring.
-#' @param stop The index of the last element to be included in the substring. 
+#' @param stop Optional, The index of the last element to be included in the substring. 
 #' @export
-h2o.substring <- function(x, start, stop) .newExpr("substring", x, start-1, stop="[]")
+h2o.substring <- function(x, start, stop="[]") .newExpr("substring", x, start-1, stop)
+
+#' @rdname h2o.substring
+h2o.substr <- h2o.substring

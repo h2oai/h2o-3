@@ -493,7 +493,7 @@ class ASTReplaceAll extends ASTPrim {
   }
 
   private Vec replaceAllCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
-    String[] doms = vec.domain();
+    String[] doms = vec.domain().clone();
     for (int i = 0; i < doms.length; ++i)
       doms[i] = ignoreCase
           ? doms[i].toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement)
@@ -565,12 +565,28 @@ class ASTTrim extends ASTPrim {
     return new ValFrame(new Frame(nvs));
   }
 
-  // FIXME: this should resolve any categoricals that now have the same value after the trim
   private Vec trimCategoricalCol(Vec vec) {
-    String[] doms = vec.domain();
-    for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
-    Vec v = vec.makeCopy(doms);
-    return v;
+    String[] doms = vec.domain().clone();
+    
+    HashMap<String, ArrayList<Integer>> trimmedToOldDomainIndices = new HashMap<>();
+    String trimmed;
+    for (int i = 0; i < doms.length; ++i) {
+      trimmed = doms[i].trim();
+      doms[i] = trimmed;
+      
+      if(!trimmedToOldDomainIndices.containsKey(trimmed)) {
+        ArrayList<Integer> val = new ArrayList<>();
+        val.add(i);
+        trimmedToOldDomainIndices.put(trimmed, val);
+      } else {
+        trimmedToOldDomainIndices.get(trimmed).add(i);
+      }
+    }
+    //Check for duplicated domains
+    if (trimmedToOldDomainIndices.size() < doms.length)
+      return VecUtils.DomainDedupe.domainDeduper(vec, trimmedToOldDomainIndices);
+    
+    return vec.makeCopy(doms);
   }
 
   private Vec trimStringCol(Vec vec) {

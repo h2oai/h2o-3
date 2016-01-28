@@ -435,6 +435,8 @@ public class VecUtils {
    * 
    * Categoricals may have the same values after munging, and should have the same domain index in the numerical chunk 
    * representation. Unify categoricals that are the same by remapping their domain indices. 
+   * 
+   * Could be more efficient with a vec copy and replace domain indices as needed. PUBDEV-2587
    */
 
   public static class DomainDedupe extends MRTask<DomainDedupe> {
@@ -445,6 +447,8 @@ public class VecUtils {
         if ( !c.isNA(row) ) {
           int oldDomain = (int) c.at8(row);
           nc.addNum(_oldToNewDomainIndex.get(oldDomain));
+        } else {
+          nc.addNA();
         }
       }
     }
