@@ -224,18 +224,23 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public double[] denormalizeBeta(double [] beta) {
-    assert beta.length == fullN()+1:"beta len = " + beta.length;
+    int N = fullN()+1;
+    assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
+    int nclasses = beta.length/N;
     beta = MemoryManager.arrayCopyOf(beta,beta.length);
     if (_predictor_transform == DataInfo.TransformType.STANDARDIZE) {
-      double norm = 0.0;        // Reverse any normalization on the intercept
-      // denormalize only the numeric coefs (categoricals are not normalized)
-      final int numoff = numStart();
-      for (int i = numoff; i < beta.length - 1; i++) {
-        double b = beta[i] * _normMul[i - numoff];
-        norm += b * _normSub[i - numoff]; // Also accumulate the intercept adjustment
-        beta[i] = b;
+      for(int c = 0; c < nclasses; ++c) {
+        int off = N*c;
+        double norm = 0.0;        // Reverse any normalization on the intercept
+        // denormalize only the numeric coefs (categoricals are not normalized)
+        final int numoff = numStart();
+        for (int i = numoff; i < N-1; i++) {
+          double b = beta[off + i] * _normMul[i - numoff];
+          norm += b * _normSub[i - numoff]; // Also accumulate the intercept adjustment
+          beta[off + i] = b;
+        }
+        beta[off + N - 1] -= norm;
       }
-      beta[beta.length-1] -= norm;
     }
     return beta;
   }

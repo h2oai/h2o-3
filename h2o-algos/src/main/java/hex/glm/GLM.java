@@ -97,7 +97,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private ArrayList<Long> _scoringTimes = new ArrayList<>();
     private ArrayList<Double> _likelihoods = new ArrayList<>();
     private ArrayList<Double> _objectives = new ArrayList<>();
-    
+
     public synchronized void addIterationScore(int iter, double likelihood, double obj) {
       if (_scoringIters.size() > 0 && _scoringIters.get(_scoringIters.size() - 1) == iter)
         return; // do not record twice, happens for the last iteration, need to record scoring history in checkKKTs because of gaussian fam.
@@ -798,8 +798,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           :new GLMResDevTask(_job._key, _state._dinfo, _parms, getNullBeta()).doAll(_state._dinfo._adaptedFrame)._resDev;
         if(_validDinfo != null)
           nullDevTest = _parms._family == Family.multinomial
-            ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,_dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
-            :new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
+            ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
+            :new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame)._resDev;
       }
       if (error_count() > 0) {
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
