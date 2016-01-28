@@ -2406,6 +2406,10 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
   .newExprList("GB",args)
 }
 
+h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
+  .newExpr("grouped_permute", fr, permCol-1, groupByCols-1, permByCol-1, keepCol-1)
+}
+
 #'
 #' Basic Imputation of H2O Vectors
 #'
