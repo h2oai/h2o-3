@@ -420,36 +420,31 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double relImprovement = 1;
       double obj = _state.objVal();
       while(_state._iter < _parms._max_iterations && relImprovement > _parms._objective_epsilon) {
-        GLMSubsetGinfo gs = _state.ginfoMultinomial(0);
         for (int c = 0; c < _nclass; ++c) {
-          if(_state.activeDataMultinomial(c).fullN() == 0) continue;
-          Log.info("c = " + c);
-          gs = _state.ginfoMultinomial(c);
+          if (_state.activeDataMultinomial(c).fullN() == 0) continue;
           LineSearchSolver ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
             ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c), _state.ginfoMultinomial(c))
             : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c), _state.l1pen());
           GLMWeightsFun glmw = new GLMWeightsFun(_parms);
           double bdiff = _parms._beta_epsilon + 1;
-          while (bdiff > _parms._beta_epsilon && _state._iter++ < _parms._max_iterations) {
-            long t1 = System.currentTimeMillis();
-            new GLMMultinomialUpdate(_state.activeData(),_job._key,_state.beta(),c).doAll(_state.activeData()._adaptedFrame);
-            long t2 = System.currentTimeMillis();
-            GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeDataMultinomial(c), glmw, ls.getX(),c).doAll(_state.activeDataMultinomial(c)._adaptedFrame);
-            long t3 = System.currentTimeMillis();
-            double[] betaCnd = solveGram(t._gram, t._xy);
-            long t4 = System.currentTimeMillis();
-            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-6, 1e4, 20)){
-              Log.info(LogMsg("Ls failed " + ls));
-              break;
-            }
-            long t5 = System.currentTimeMillis();
-            gs = (GLMSubsetGinfo) ls.ginfo();
-            _state.setBetaMultinomial(c, ls.getX(), gs);
-            bdiff = betaDiff(t._beta, ls.getX());
-            // update multinomial
-            updateProgress();
-            Log.info(LogMsg("computed in " + (t2-t1) + "+" + (t3 - t2) + "+" + (t4-t3) + "+" + (t5-t4) + "=" + (t5-t1) +"ms, step = " + ls.step() + ((_lslvr != null)?", l1solver " + _lslvr:"") + " bdiff = " + bdiff));
+          _state._iter++;
+          long t1 = System.currentTimeMillis();
+          new GLMMultinomialUpdate(_state.activeData(), _job._key, _state.beta(), c).doAll(_state.activeData()._adaptedFrame);
+          long t2 = System.currentTimeMillis();
+          GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeDataMultinomial(c), glmw, ls.getX(), c).doAll(_state.activeDataMultinomial(c)._adaptedFrame);
+          long t3 = System.currentTimeMillis();
+          double[] betaCnd = solveGram(t._gram, t._xy);
+          long t4 = System.currentTimeMillis();
+          if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-6, 1e4, 20)) {
+            Log.info(LogMsg("Ls failed " + ls));
+            continue;
           }
+          long t5 = System.currentTimeMillis();
+          _state.setBetaMultinomial(c, ls.getX(), (GLMSubsetGinfo) ls.ginfo());
+          bdiff = betaDiff(t._beta, ls.getX());
+          // update multinomial
+          updateProgress();
+          Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "+" + (t5 - t4) + "=" + (t5 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "") + " bdiff = " + bdiff));
         }
         relImprovement = (obj - _state.objVal())/obj;
         obj = _state.objVal();
