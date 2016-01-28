@@ -94,12 +94,13 @@ public class ASTGroupedPermute extends ASTPrim {
         int type = dom[(int) chks[_permuteBy].at8(row)].equals("D") ? 0 : 1;
         if( grps.containsKey(jid) ) {
           IcedHashMap<Long, double[]>[] dcWork = grps.get(jid);
-          dcWork[type].putIfAbsent(rid, aci);
+          if(dcWork[type].putIfAbsent(rid, aci)!=null)
+            dcWork[type].get(rid)[1]+=aci[1];
         } else {
           IcedHashMap<Long, double[]>[] dcAcnts = new IcedHashMap[2];
           dcAcnts[0] = new IcedHashMap<>();
           dcAcnts[1] = new IcedHashMap<>();
-          dcAcnts[type].putIfAbsent(rid, aci);
+          dcAcnts[type].put(rid, aci);
           grps.put(jid,dcAcnts);
         }
       }
