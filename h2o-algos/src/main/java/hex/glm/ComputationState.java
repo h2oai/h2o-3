@@ -300,6 +300,10 @@ public final class ComputationState {
   }
   public int []  removeCols(int [] cols) {
     int [] activeCols = ArrayUtils.removeSorted(_activeData.activeCols(),cols);
+    if(_beta != null)
+      _beta = ArrayUtils.select(_beta,activeCols);
+    if(_ginfo != null)
+      _ginfo._gradient = ArrayUtils.select(_ginfo._gradient,activeCols);
     _activeData = _activeData.filterExpandedColumns(activeCols);
     return activeCols;
   }

@@ -13,7 +13,7 @@ public class OptimizationUtils {
 
   public static class GradientInfo extends Iced {
     public double _objVal;
-    public final double [] _gradient;
+    public double [] _gradient;
 
     public GradientInfo(double objVal, double [] grad){
       _objVal = objVal;
