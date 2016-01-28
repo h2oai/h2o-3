@@ -91,17 +91,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient ArrayList<Integer> _scoring_iters = new ArrayList<>();
   // time per iteration in ms
 
+
   private static class ScoringHistory {
     private ArrayList<Integer> _scoringIters = new ArrayList<>();
     private ArrayList<Long> _scoringTimes = new ArrayList<>();
     private ArrayList<Double> _likelihoods = new ArrayList<>();
     private ArrayList<Double> _objectives = new ArrayList<>();
-    private ArrayList<Double> _lambdas = new ArrayList<>();
-    private ArrayList<Integer> _lambdaIters = new ArrayList<>();
-    private ArrayList<Integer> _lambdaPredictors = new ArrayList<>();
-    private ArrayList<Double> _lambdaDevTrain = new ArrayList<>();
-    private ArrayList<Double> _lambdaDevTest = new ArrayList<>();
-
+    
     public synchronized void addIterationScore(int iter, double likelihood, double obj) {
       if (_scoringIters.size() > 0 && _scoringIters.get(_scoringIters.size() - 1) == iter)
         return; // do not record twice, happens for the last iteration, need to record scoring history in checkKKTs because of gaussian fam.
@@ -111,24 +107,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _objectives.add(obj);
     }
 
-    public synchronized void addLambdaScore(int iter, double lambda, int preds, double devExpTrain, double devExpTest) {
-      _lambdaIters.add(iter);
-      _lambdas.add(lambda);
-      _lambdaPredictors.add(preds);
-      _lambdaDevTrain.add(devExpTrain);
-      if (!Double.isNaN(devExpTest))
-        _lambdaDevTest.add(devExpTest);
-    }
-
     public synchronized TwoDimTable to2dTable() {
       String[] cnames = new String[]{"timestamp", "duration", "iteration", "negative_log_likelihood", "objective"};
       String[] ctypes = new String[]{"string", "string", "int", "double", "double"};
       String[] cformats = new String[]{"%s", "%s", "%d", "%.5f", "%.5f"};
-      if (_lambdaIters.size() > 1) { // lambda search info
-        cnames = ArrayUtils.append(cnames, new String[]{"lambda", "Number of Predictors", "Explained Deviance (train)", "Explained Deviance (test)"});
-        ctypes = ArrayUtils.append(ctypes, new String[]{"double", "int", "double", "double"});
-        cformats = ArrayUtils.append(cformats, new String[]{"%.3f", "%d", "%.3f", "%.3f"});
-      }
       TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_scoringIters.size()], cnames, ctypes, cformats, "");
       int j = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -139,20 +121,52 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         res.set(i, col++, _scoringIters.get(i));
         res.set(i, col++, _likelihoods.get(i));
         res.set(i, col++, _objectives.get(i));
-        if (_lambdaIters.size() > 1 && j < _lambdaIters.size() && (_scoringIters.get(i).equals(_lambdaIters.get(j)))) {
-          res.set(i, col++, _lambdas.get(j));
-          res.set(i, col++, _lambdaPredictors.get(j));
-          res.set(i, col++, _lambdaDevTrain.get(j));
-          if (j < _lambdaDevTest.size())
-            res.set(i, col++, _lambdaDevTest.get(j));
-          j++;
-        }
       }
       return res;
     }
   }
 
-  private transient ScoringHistory _sc;
+  private static class LambdaSearchScoringHistory {
+    ArrayList<Long> _scoringTimes = new ArrayList<>();
+    private ArrayList<Double> _lambdas = new ArrayList<>();
+    private ArrayList<Integer> _lambdaIters = new ArrayList<>();
+    private ArrayList<Integer> _lambdaPredictors = new ArrayList<>();
+    private ArrayList<Double> _lambdaDevTrain = new ArrayList<>();
+    private ArrayList<Double> _lambdaDevTest = new ArrayList<>();
+
+    public synchronized void addLambdaScore(int iter, int predictors, double lambda, double devRatioTrain, double devRatioTest) {
+      _scoringTimes.add(System.currentTimeMillis());
+      _lambdaIters.add(iter);
+      _lambdas.add(lambda);
+      _lambdaPredictors.add(predictors);
+      _lambdaDevTrain.add(devRatioTrain);
+      _lambdaDevTest.add(devRatioTest);
+    }
+
+    public synchronized TwoDimTable to2dTable() {
+      String[] cnames = new String[]{"timestamp", "duration", "iteration", "lambda", "predictors", "Explained Deviance (train)", "Explained Deviance (test)"};
+      String[] ctypes = new String[]{"string", "string", "int", "double","int", "double","double"};
+      String[] cformats = new String[]{"%s", "%s", "%d","%d", "%.5f", "%.5f","%.5f"};
+      TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_lambdaIters.size()], cnames, ctypes, cformats, "");
+      int j = 0;
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+      for (int i = 0; i < _lambdaIters.size(); ++i) {
+        int col = 0;
+        res.set(i, col++, fmt.print(_scoringTimes.get(i)));
+        res.set(i, col++, PrettyPrint.msecs(_scoringTimes.get(i) - _scoringTimes.get(0), true));
+        res.set(i, col++, _lambdaIters.get(i));
+        res.set(i, col++, _lambdas.get(i));
+        res.set(i, col++, _lambdaPredictors.get(i));
+        res.set(i, col++, _lambdaDevTrain.get(i));
+        if(_lambdaDevTest.size() > i)
+          res.set(i, col++, _lambdaDevTest.get(i));
+      }
+      return res;
+    }
+  }
+
+  private transient ScoringHistory _sc = new ScoringHistory();
+  private transient LambdaSearchScoringHistory _lsc = new LambdaSearchScoringHistory();
 
   long _t0 = System.currentTimeMillis();
 
@@ -321,6 +335,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._lambda_min_ratio = (_nobs >> 4) >  _dinfo.fullN() ? 1e-4 : 1e-2;
       double [] beta = getNullBeta();
       GLMGradientInfo ginfo = new GLMGradientSolver(_job._key,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
+
       _state.updateState(beta,ginfo);
       if (_parms._lambda == null) {  // no lambda given, we will base lambda as a fraction of lambda max
         _lmax = lmax(_state.ginfo()._gradient);
@@ -400,6 +415,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model.addWarning("Removed collinear columns " + collinear_col_names);
           Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
           xy = ArrayUtils.select(xy,_state.removeCols(collinear_cols));
+
         }
         chol.solve(xy);
       } else { // todo add switch between COD and ADMM
@@ -761,7 +777,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         _keys2Keep.put("validation_metrics",_model._output._validation_metrics._key);
       }
-      _model._output._scoring_history = _sc.to2dTable();
+      _model._output._scoring_history = _parms._lambda_search?_lsc.to2dTable():_sc.to2dTable();
       _model.update(_job._key);
       _model.generateSummary(_parms._train,_state._iter);
       _lastScore = System.currentTimeMillis();
@@ -774,6 +790,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _keys2Keep.put("dest",dest());
       _parms.read_lock_frames(_job);
       init(true);
+      double nullDevTrain = Double.NaN;
+      double nullDevTest = Double.NaN;
+      if(_parms._lambda_search) {
+        nullDevTrain =  _parms._family == Family.multinomial
+          ?new GLMResDevTaskMultinomial(_job._key,_state._dinfo,getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame)._likelihood*2
+          :new GLMResDevTask(_job._key, _state._dinfo, _parms, getNullBeta()).doAll(_state._dinfo._adaptedFrame)._resDev;
+        if(_validDinfo != null)
+          nullDevTest = _parms._family == Family.multinomial
+            ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,_dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
+            :new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
+      }
       if (error_count() > 0) {
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       }
@@ -808,6 +835,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,_dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
               :new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
           Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
+          _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/nullDevTrain, 1.0 - testDev/nullDevTest);
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
           if(_model._output.pickBestModel().lambda_value == _state.lambda()) {
             if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)
@@ -858,7 +886,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     // update user visible progress
     protected void updateProgress(){
-      _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objVal());
+      if(!_parms._lambda_search)
+        _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objVal());
       int iterDelta = _state._iter < 4 ? 1 : 4;
       _state._worked += _workPerIteration * iterDelta;
       if (_state._iter < 4 || (_state._iter & 3) == 0)

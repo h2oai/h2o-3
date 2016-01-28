@@ -308,7 +308,6 @@ public final class ComputationState {
     return activeCols;
   }
 
-
   private double penalty(double [] beta) {
     if(_lambda == 0) return 0;
     double l1norm = 0, l2norm = 0;
