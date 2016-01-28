@@ -765,7 +765,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         _keys2Keep.put("validation_metrics",_model._output._validation_metrics._key);
       }
+      _model._output._scoring_history = _sc.to2dTable();
       _model.update(_job._key);
+      _model.generateSummary(_parms._train,_state._iter);
       _lastScore = System.currentTimeMillis();
       long scoringTime = System.currentTimeMillis() - t1;
       _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring

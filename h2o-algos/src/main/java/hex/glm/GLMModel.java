@@ -936,7 +936,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     int intercept = _parms._intercept ? 1 : 0;
     if(_output.nclasses() > 2) {
-      _output._model_summary.set(0, 3 + lambdaSearch,_output.bestSubmodel().betaMultinomial[0].length*_output.nclasses());
+      _output._model_summary.set(0, 3 + lambdaSearch,_output.bestSubmodel().beta.length);
     } else {
       _output._model_summary.set(0, 3 + lambdaSearch, beta().length);
     }
