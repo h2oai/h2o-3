@@ -35,6 +35,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
      */
     boolean hasNext(Model previousModel);
 
+    long timeRemaining();
+
     /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
      * @param failedModel
@@ -244,6 +246,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         }
 
         @Override
+        public long timeRemaining() { return Long.MAX_VALUE; }
+
+        @Override
         public void modelFailed(Model failedModel) {
           // nada
         }
@@ -318,6 +323,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         /** One-based count of the permutations we've visited, primarily used as an index into _visitedHyperparamIndices. */
         private int _currentPermutationNum = 0;
 
+        /** Start time of this grid */
+        private long _start_time = System.currentTimeMillis();
+
         // TODO: override into a common subclass:
         @Override
         public MP nextModelParameters(Model previousModel) {
@@ -349,6 +357,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         public boolean hasNext(Model previousModel) {
           // _currentPermutationNum is 1-based
           return _currentPermutationNum < _maxHyperSpaceSize && _currentPermutationNum < _max_models;
+        }
+
+        @Override
+        public long timeRemaining() {
+          return _max_time_ms - (System.currentTimeMillis() - _start_time);
         }
 
         @Override

@@ -16,7 +16,7 @@ JVM process.
 The color scheme in the diagram shows each layer in a consistent color
 but always shows user-added customer algorithm code as gray.
 
-![H2O stack](images/h2o_stack.pdf)
+![H2O stack](images/h2o_stack.png)
 
 
 ### REST API Clients
@@ -110,13 +110,13 @@ The following sequence of three steps shows how an R program tells an H2O cluste
 
 #### Step 1: The R user calls the importFile function
 
-![](images/r_hdfs_read_step1.pdf)
+![](images/r_hdfs_read_step1.png)
 
 #### Step 2: The R client tells the cluster to read the data
 
 The thin arrows show control information.
 
-![](images/r_hdfs_read_step2.pdf)
+![](images/r_hdfs_read_step2.png)
 
 #### Step 3: The data is returned from HDFS into a distributed H2O Frame
 
@@ -124,7 +124,7 @@ The thin arrows show control information.
 The thick arrows show data being returned from HDFS.
 The blocks of data live in the distributed H2O Frame cluster memory.
 
-![](images/r_hdfs_read_step3.pdf)
+![](images/r_hdfs_read_step3.png)
 
 
 ### How R Scripts Call H2O GLM
@@ -147,14 +147,14 @@ In the R program, the different components are:
 * dependent packages (RCurl, rjson, etc.)
 * the R core runtime
 
-![](images/start_glm_from_r.pdf)
+![](images/start_glm_from_r.png)
 
 The following diagram shows the R program retrieving the resulting GLM
 model.  (Not shown: the GLM model executing subtasks within
 H2O and depositing the result into the K/V store or R
 polling the /3/Jobs URL for the GLM model to complete.)
 
-![](images/retrieve_glm_result_from_r.pdf)
+![](images/retrieve_glm_result_from_r.png)
 
 An end-to-end sequence diagram of the same transaction is below.
 This gives a different perspective of the R and H2O interactions for the same 
