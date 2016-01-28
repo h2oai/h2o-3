@@ -95,7 +95,7 @@ public class ASTGroupedPermute extends ASTPrim {
         if( grps.containsKey(jid) ) {
           IcedHashMap<Long, double[]>[] dcWork = grps.get(jid);
           if(dcWork[type].putIfAbsent(rid, aci)!=null)
-            dcWork[type].get(rid)[1]+=aci[1];
+            dcWork[type].get(rid)[1] += aci[1];
         } else {
           IcedHashMap<Long, double[]>[] dcAcnts = new IcedHashMap[2];
           dcAcnts[0] = new IcedHashMap<>();
@@ -113,8 +113,14 @@ public class ASTGroupedPermute extends ASTPrim {
         if (_grps.putIfAbsent(l, r.get(l)) != null) {
           IcedHashMap<Long, double[]>[] rdbls = r.get(l);
           IcedHashMap<Long, double[]>[] ldbls = _grps.get(l);
-          ldbls[0].putAll(rdbls[0]);
-          ldbls[1].putAll(rdbls[1]);
+
+          for(Long rr: rdbls[0].keySet())
+            if( ldbls[0].putIfAbsent(rr, rdbls[0].get(rr))!=null)
+              ldbls[0].get(rr)[1]+=rdbls[0].get(rr)[1];
+
+          for(Long rr: rdbls[1].keySet())
+            if( ldbls[1].putIfAbsent(rr, rdbls[1].get(rr))!=null)
+              ldbls[1].get(rr)[1]+=rdbls[1].get(rr)[1];
         }
       }
     }
