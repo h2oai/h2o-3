@@ -1920,7 +1920,7 @@ def usage():
     print("                     pass, ncpus, os, and job name of each test to perf.csv in the results directory.")
     print("                     Takes three parameters: git hash, git branch, and build id, job name in that order.")
     print("")
-    print("    --xml2           Generate xml file that contains the actual unit test errors and the actual Java error.")
+    print("    --geterrs        Generate xml file that contains the actual unit test errors and the actual Java error.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
