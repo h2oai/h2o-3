@@ -63,6 +63,7 @@ public class AutoCollect {
   private final String _path;  // directory of datasets to collect on
   private byte   _algo;        // algo to run collection on
   private static Connection conn=null;
+  private static Connection conn2=null;
   static {
     try {
       Class.forName("com.mysql.jdbc.Driver").newInstance();
@@ -73,6 +74,7 @@ public class AutoCollect {
 
     try {
       conn = DriverManager.getConnection("jdbc:mysql://172.16.2.171/autocollect?user=spencer&password=spencer");
+      conn2 = DriverManager.getConnection("jdbc:mysql://172.16.2.171/autocollect?user=spencer&password=spencer");
     } catch (SQLException ex) {
       System.out.println("SQLException: " + ex.getMessage());
       System.out.println("SQLState: " + ex.getSQLState());
@@ -134,6 +136,24 @@ public class AutoCollect {
       long start = System.currentTimeMillis();
       long elapsed = 0;
       long seedSplit;
+      Thread resource = new Thread(new Runnable() {
+        public void run() {
+          //Collect resources info...
+
+          //For the time being create a dummy hash map and send to ResourceMeta
+          // Create a hash map
+          HashMap<String, Object> hashMap = new HashMap<>();
+
+          //Put elements into hash map
+          hashMap.put("RSS", 2);
+          hashMap.put("SysCPU",3);
+          hashMap.put("ProcCPU",4);
+          hashMap.put("timestamp",5);
+
+          //Push to ResourceMeta
+          pushResourceMeta(hashMap);
+        }
+      });
       while (elapsed <= _seconds) {
         Model m=null;
         Frame[] fs=null;
@@ -144,9 +164,16 @@ public class AutoCollect {
           builder._parms._valid = fs[1]._key;
           builder._parms._response_column = _fr.name(_resp);
           builder._parms._ignored_columns = ignored();
+
+          /*===== Beginning of Resource Collection=====*/
           // start resource collector thread
+          resource.start();
+          //Model training
           m = (Model) builder.trainModel().get();
           // stop resource collector thread
+          resource.interrupt();
+          /*=====End of Resource Collection=====*/
+
           elapsed = System.currentTimeMillis() - start;
           logScoreHistory(m._output, getConfig(m._parms));
           conn.commit();
@@ -196,7 +223,7 @@ public class AutoCollect {
         scoreHistory.put("num_predictors", _isClass?sanitize(iw[colHeaders.indexOf("Number of Predictors")]):AutoML.SQLNAN);
         scoreHistory.put("train_explained_deviance", _isClass?sanitize(iw[colHeaders.indexOf("Explained Deviance (train)")]):AutoML.SQLNAN);
         scoreHistory.put("test_explained_deviance", _isClass?sanitize(iw[colHeaders.indexOf("Explained Deviance (test)")]):AutoML.SQLNAN);
-        pushMeta(scoreHistory, scoreHistory.keySet().toArray(new String[scoreHistory.size()]), "GLMScoreHistory");
+        pushMeta(scoreHistory, scoreHistory.keySet().toArray(new String[scoreHistory.size()]), "GLMScoreHistory",null);
       } else {
         scoreHistory.put("ts", iw[colHeaders.indexOf("Timestamp")].get());
         scoreHistory.put("train_mse", sanitize((double) iw[colHeaders.indexOf("Training MSE")].get()));
@@ -207,7 +234,7 @@ public class AutoCollect {
         scoreHistory.put("test_classification_error", sanitize((double) (_isClass ? iw[colHeaders.indexOf("Validation Classification Error")].get() : AutoML.SQLNAN)));
         scoreHistory.put("train_deviance", sanitize((double) (_isClass ? AutoML.SQLNAN : iw[colHeaders.indexOf("Training Deviance")].get())));
         scoreHistory.put("test_deviance", sanitize((double) (_isClass ? AutoML.SQLNAN : iw[colHeaders.indexOf("Validation Deviance")].get())));
-        pushMeta(scoreHistory, scoreHistory.keySet().toArray(new String[scoreHistory.size()]), "ScoreHistory");
+        pushMeta(scoreHistory, scoreHistory.keySet().toArray(new String[scoreHistory.size()]), "ScoreHistory",null);
       }
     }
   }
@@ -282,7 +309,7 @@ public class AutoCollect {
       config.put("ConfigID", configID = getConfig(p));
     } while(!isValidConfig(configID));
     configs.add(configID);
-    pushMeta(config, config.keySet().toArray(new String[config.size()]), "RFConfig");
+    pushMeta(config, config.keySet().toArray(new String[config.size()]), "RFConfig",null);
     return p;
   }
 
@@ -305,7 +332,7 @@ public class AutoCollect {
       config.put("ConfigID", configID = getConfig(p));
     } while(!isValidConfig(configID));
     configs.add(configID);
-    pushMeta(config, config.keySet().toArray(new String[config.size()]), "GBMConfig");
+    pushMeta(config, config.keySet().toArray(new String[config.size()]), "GBMConfig",null);
     return p;
   }
 
@@ -333,7 +360,7 @@ public class AutoCollect {
       config.put("ConfigId", configID = getConfig(p));
     } while(!isValidConfig(configID));
     configs.add(configID);
-    pushMeta(config, config.keySet().toArray(new String[config.size()]), "GLMConfig");
+    pushMeta(config, config.keySet().toArray(new String[config.size()]), "GLMConfig",null);
     if( _isClass ) {
       p._family = _fr.vec(_resp).domain().length==2? GLMModel.GLMParameters.Family.binomial: GLMModel.GLMParameters.Family.multinomial;
     }
@@ -461,10 +488,11 @@ public class AutoCollect {
     throw new RuntimeException("Query failed");
   }
 
-  public static int update(String query) {
+  public static int update(String query,Connection c) {
+
     Statement s;
     try {
-      s = conn.createStatement();
+      s = (c==null?conn:c).createStatement();
       s.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
       ResultSet genKeys = s.getGeneratedKeys();
       genKeys.next();
@@ -478,9 +506,10 @@ public class AutoCollect {
     throw new RuntimeException("Query failed");
   }
 
-  private int pushFrameMeta(HashMap<String,Object> fm) { return pushMeta(fm, FrameMeta.METAVALUES, "FrameMeta"); }
-  private int pushColMeta  (HashMap<String,Object> cm) { return pushMeta(cm, ColMeta.METAVALUES, "ColMeta"); }
-  private int pushMeta(HashMap<String, Object> fm, String[] metaValues, String tableName) {
+  private int pushFrameMeta(HashMap<String,Object> fm) { return pushMeta(fm, FrameMeta.METAVALUES, "FrameMeta",null); }
+  private int pushColMeta  (HashMap<String,Object> cm) { return pushMeta(cm, ColMeta.METAVALUES, "ColMeta",null); }
+  private int pushResourceMeta (HashMap<String,Object> cm) { return pushMeta(cm, cm.keySet().toArray(new String[0]), "ResourceMeta",conn2); }
+  private int pushMeta(HashMap<String, Object> fm, String[] metaValues, String tableName, Connection c) {
     StringBuilder sb = new StringBuilder("INSERT INTO " + tableName + " (");
     sb.append(collapseStringArray(metaValues)).append(") \n");
     sb.append("VALUES (");
@@ -490,7 +519,7 @@ public class AutoCollect {
       if(i++==fm.size()-1) sb.append(");");
       else sb.append(",");
     }
-    return update(sb.toString());
+    return update(sb.toString(),c);
   }
 
   static String collapseStringArray(String[] strs) {
