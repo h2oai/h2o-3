@@ -15,7 +15,7 @@ public class AutoMLTest extends TestUtil {
     Frame fr = null;
     AutoML aml = null;
     try {
-      fr = parse_test_file(Key.make("a.hex"), "/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+      fr = parse_test_file(Key.make("a.hex"), "smalldata/iris.csv");
       aml = new AutoML("iris_wheader", fr, 4, "", -1, -1, false, null, true);
       aml.learn();
     } finally {
@@ -28,7 +28,7 @@ public class AutoMLTest extends TestUtil {
     Frame fr=null;
     AutoML aml=null;
     try {
-      fr = parse_test_file(Key.make("a.hex"), "/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+      fr = parse_test_file(Key.make("a.hex"), "smalldata/iris.csv");
       aml = new AutoML("iris_wheader",fr, 4, "", -1, -1, false, null, true);
       aml.learn();
 
