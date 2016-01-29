@@ -88,7 +88,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private int _lambdaId;
   private transient DataInfo _validDinfo;
-  private transient ArrayList<Integer> _scoring_iters = new ArrayList<>();
   // time per iteration in ms
 
 
@@ -165,8 +164,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
   }
 
-  private transient ScoringHistory _sc = new ScoringHistory();
-  private transient LambdaSearchScoringHistory _lsc = new LambdaSearchScoringHistory();
+  private transient ScoringHistory _sc;
+  private transient LambdaSearchScoringHistory _lsc;
 
   long _t0 = System.currentTimeMillis();
 
@@ -251,6 +250,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     _parms.validate(this);
     if (error_count() > 0) return;
     if (expensive) {
+      _lsc = new LambdaSearchScoringHistory();
+      _sc = new ScoringHistory();
       if (_parms._alpha == null)
         _parms._alpha = new double[]{_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT_NAIVE ? .5 : 0};
       _train.bulkRollups(); // make sure we have all the rollups computed in parallel
@@ -816,13 +817,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
+        _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
         _state.setLambda(_parms._lambda[i]);
         if(_parms._family == Family.multinomial)
           for(int c = 0; c < _nclass; ++c)
             Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
         else
           Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-        _model.addSubmodel(_state.beta(),_state.lambda(),_state._iter);
         do { fitModel(); } while(!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if(_parms._lambda_search) {  // compute train and test dev

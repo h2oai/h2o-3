@@ -671,7 +671,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             if (beta[i] != 0) idxs[j++] = i;
           this.beta = ArrayUtils.select(beta,idxs);
         } else {
-          this.beta = beta;
+          this.beta = beta.clone();
           idxs = null;
         }
       } else {
